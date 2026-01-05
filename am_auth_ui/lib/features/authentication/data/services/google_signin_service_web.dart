@@ -88,7 +88,7 @@ class GoogleSignInService {
       
       // Dynamically determine redirect URI based on current origin
       final currentOrigin = html.window.location.origin;
-      final Email = Uri.encodeComponent('$currentOrigin/oauth_callback.html');
+      final redirectUri = Uri.encodeComponent('$currentOrigin/oauth_callback.html');
       print('🔵 Redirect URI: $redirectUri');
       
       final authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?'
@@ -100,7 +100,7 @@ class GoogleSignInService {
       
       // Open popup window
       final popup = html.window.open(
-        authUrl, 3000 something current G is asking for call back R
+        authUrl,
         'Google Sign-In',
         'width=500,height=600,menubar=no,toolbar=no',
       );
