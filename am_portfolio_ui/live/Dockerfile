@@ -10,8 +10,8 @@ COPY AM-Repos/ui/am_modern_ui/am_design_system ./am_design_system
 COPY AM-Repos/ui/am_modern_ui/am_common ./am_common
 COPY AM-Repos/ui/am_modern_ui/am_auth_ui ./am_auth_ui
 
-# Copy live app
-COPY AM-Repos/ui/am_modern_ui/am_portfolio_ui/live ./am_portfolio_ui/live
+# Copy complete module (includes lib/ and live/)
+COPY AM-Repos/ui/am_modern_ui/am_portfolio_ui ./am_portfolio_ui
 WORKDIR /app/am_portfolio_ui/live
 
 # Get dependencies

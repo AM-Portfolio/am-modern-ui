@@ -13,8 +13,8 @@ COPY AM-Repos/ui/am_modern_ui/am_auth_ui ./am_auth_ui
 # Copy external SDK dependency
 COPY AM-Repos/backend/am-market/am_market_sdk_flutter ./am_market_sdk_flutter
 
-# Copy live app
-COPY AM-Repos/ui/am_modern_ui/am_market_ui/live ./am_market_ui/live
+# Copy complete module (includes lib/ and live/)
+COPY AM-Repos/ui/am_modern_ui/am_market_ui ./am_market_ui
 WORKDIR /app/am_market_ui/live
 
 # Get dependencies

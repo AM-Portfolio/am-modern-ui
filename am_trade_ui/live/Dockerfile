@@ -9,13 +9,15 @@ WORKDIR /app
 COPY AM-Repos/ui/am_modern_ui/am_design_system ./am_design_system
 COPY AM-Repos/ui/am_modern_ui/am_common ./am_common
 COPY AM-Repos/ui/am_modern_ui/am_auth_ui ./am_auth_ui
+
+# Copy complete modules (trade depends on market)
 COPY AM-Repos/ui/am_modern_ui/am_market_ui ./am_market_ui
 
 # Copy external SDK dependency
 COPY AM-Repos/backend/am-market/am_market_sdk_flutter ./am_market_sdk_flutter
 
-# Copy live app
-COPY AM-Repos/ui/am_modern_ui/am_trade_ui/live ./am_trade_ui/live
+# Copy complete trade module
+COPY AM-Repos/ui/am_modern_ui/am_trade_ui ./am_trade_ui
 WORKDIR /app/am_trade_ui/live
 
 # Get dependencies
