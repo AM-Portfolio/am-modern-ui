@@ -1,0 +1,187 @@
+import 'package:flutter/services.dart';
+import '../core/constants/constants.dart';
+
+/// Properties loader similar to Spring's @Value concept
+class AppProperties {
+  factory AppProperties() => _instance;
+  AppProperties._internal();
+  static final AppProperties _instance = AppProperties._internal();
+
+  final Map<String, String> _properties = {};
+  bool _isLoaded = false;
+
+  /// Load properties from lib/assets/application.properties
+  /// Uses constants for all file paths and environment detection
+  Future<void> loadProperties({String? environment}) async {
+    if (_isLoaded) return;
+
+    // Try to load from main properties file using constants
+    try {
+      final propertiesContent = await rootBundle.loadString(
+        AssetPaths.applicationProperties,
+      );
+      _parseProperties(propertiesContent);
+      print('Loaded main properties file: ${AssetPaths.applicationProperties}');
+    } catch (e) {
+      print('Warning: application.properties file not found - using default values');
+      // This is acceptable - all properties have defaults
+    }
+
+    // Determine environment using constants
+    var env = environment ?? const String.fromEnvironment(EnvironmentKeys.env);
+
+    // Try FLUTTER_ENV if ENV is empty
+    if (env.isEmpty) {
+      env = const String.fromEnvironment(EnvironmentKeys.flutterEnv);
+    }
+
+    // Use default environment from constants if env is empty
+    if (env.isEmpty) {
+      env = AppConstants.defaultEnvironment;
+    }
+
+    print('Using environment: $env');
+
+    // Override with environment-specific properties if they exist
+    try {
+      final envPropertiesPath = AssetPaths.getEnvironmentPropertiesPath(env);
+      final envPropertiesContent = await rootBundle.loadString(
+        envPropertiesPath,
+      );
+      _parseProperties(envPropertiesContent);
+      print('Loaded environment-specific properties: $envPropertiesPath');
+    } catch (e) {
+      print(
+        'Environment-specific properties file not found for environment: $env',
+      );
+      // This is not an error - environment-specific files are optional
+    }
+
+    _isLoaded = true;
+  }
+
+  /// Parse properties file content
+  void _parseProperties(String content) {
+    final lines = content.split('\n');
+    for (final line in lines) {
+      final trimmedLine = line.trim();
+      if (trimmedLine.isEmpty || trimmedLine.startsWith('#')) {
+        continue; // Skip empty lines and comments
+      }
+
+      final equalIndex = trimmedLine.indexOf('=');
+      if (equalIndex > 0) {
+        final key = trimmedLine.substring(0, equalIndex).trim();
+        final value = trimmedLine.substring(equalIndex + 1).trim();
+        _properties[key] = value;
+      }
+    }
+  }
+
+  /// Get property value (similar to Spring's @Value)
+  String getValue(String key, {String? defaultValue}) {
+    // First check environment variables using constants
+    const envValue = String.fromEnvironment(EnvironmentKeys.defaultEnvVar);
+    if (envValue.isNotEmpty) {
+      return envValue;
+    }
+
+    // Then check properties file
+    final value = _properties[key];
+    if (value == null && defaultValue == null) {
+      throw Exception(
+        'Property "$key" not found in properties file and no default value provided',
+      );
+    }
+    return value ?? defaultValue ?? '';
+  }
+
+  /// Get property as int
+  int getIntValue(String key, {int? defaultValue}) {
+    final value = getValue(key, defaultValue: defaultValue?.toString());
+    final parsedValue = int.tryParse(value);
+    if (parsedValue == null && defaultValue == null) {
+      throw Exception('Property "$key" is not a valid integer: $value');
+    }
+    return parsedValue ?? defaultValue ?? 0;
+  }
+
+  /// Get property as bool
+  bool getBoolValue(String key, {bool? defaultValue}) {
+    final value = getValue(
+      key,
+      defaultValue: defaultValue?.toString(),
+    ).toLowerCase();
+    if (value == 'true' || value == '1' || value == 'yes') return true;
+    if (value == 'false' || value == '0' || value == 'no') return false;
+
+    if (defaultValue == null) {
+      throw Exception('Property "$key" is not a valid boolean: $value');
+    }
+    return defaultValue;
+  }
+
+  /// Get property as double
+  double getDoubleValue(String key, {double? defaultValue}) {
+    final value = getValue(key, defaultValue: defaultValue?.toString());
+    final parsedValue = double.tryParse(value);
+    if (parsedValue == null && defaultValue == null) {
+      throw Exception('Property "$key" is not a valid double: $value');
+    }
+    return parsedValue ?? defaultValue ?? 0.0;
+  }
+
+  /// Check if property exists
+  bool hasProperty(String key) =>
+      _properties.containsKey(key) ||
+      const String.fromEnvironment(EnvironmentKeys.defaultEnvVar).isNotEmpty;
+
+  /// Get all properties
+  Map<String, String> getAllProperties() => Map.unmodifiable(_properties);
+
+  /// Set property at runtime (for testing/development)
+  void setProperty(String key, String value) {
+    _properties[key] = value;
+  }
+
+  /// Reload properties
+  /// @param environment - Optional environment name to load specific properties
+  Future<void> reload({String? environment}) async {
+    _properties.clear();
+    _isLoaded = false;
+    await loadProperties(environment: environment);
+  }
+}
+
+/// Annotation for marking fields that should be injected with property values
+class Value {
+  const Value(this.key, {this.defaultValue});
+  final String key;
+  final String? defaultValue;
+}
+
+/// Property injection mixin
+mixin PropertyInjection {
+  final AppProperties _properties = AppProperties();
+
+  /// Get property value
+  String property(String key, {String? defaultValue}) =>
+      _properties.getValue(key, defaultValue: defaultValue);
+
+  /// Get property as int
+  int intProperty(String key, {int? defaultValue}) =>
+      _properties.getIntValue(key, defaultValue: defaultValue);
+
+  /// Get property as bool
+  bool boolProperty(String key, {bool? defaultValue}) =>
+      _properties.getBoolValue(key, defaultValue: defaultValue);
+
+  /// Get property as double
+  double doubleProperty(String key, {double? defaultValue}) =>
+      _properties.getDoubleValue(key, defaultValue: defaultValue);
+
+  /// Set property at runtime (for testing/development)
+  void updateProperty(String key, String value) {
+    _properties.setProperty(key, value);
+  }
+}

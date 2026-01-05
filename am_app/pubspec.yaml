@@ -1,0 +1,51 @@
+name: am_app
+description: AM Investment Platform - Lightweight orchestration shell
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # AM Investment Modules (simple paths)
+  am_design_system:
+    path: ../am_design_system
+  am_common:
+    path: ../am_common
+  am_auth_ui:
+    path: ../am_auth_ui
+  am_user_ui:
+    path: ../am_user_ui
+  am_portfolio_ui:
+    path: ../am_portfolio_ui
+  am_market_ui:
+    path: ../am_market_ui
+  am_trade_ui:
+    path: ../am_trade_ui
+  
+  # State Management
+  flutter_bloc: ^9.1.1
+  flutter_riverpod: ^3.0.3
+  
+  # DI
+  get_it: ^9.1.1
+  
+  # Navigation
+  go_router: ^13.0.0
+  
+  # Utils
+  intl: ^0.20.2
+  dio: ^5.4.0
+  webview_flutter: ^4.9.0
+  webview_flutter_web: ^0.2.3+4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

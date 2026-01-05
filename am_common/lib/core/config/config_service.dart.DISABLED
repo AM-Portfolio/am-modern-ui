@@ -1,0 +1,403 @@
+import 'package:flutter/foundation.dart';
+import 'package:am_common/core/config/app_config.dart';
+import 'package:am_common/core/config/app_properties.dart';
+import 'package:am_common/core/config/environment.dart' as env;
+import 'package:am_common/core/constants/constants.dart';
+import 'package:am_common/core/utils/logger.dart';
+
+/// Configuration service that loads and manages application configuration
+/// Similar to Spring Boot's configuration management
+class ConfigService with PropertyInjection {
+  factory ConfigService() => _instance;
+  ConfigService._internal();
+  static final ConfigService _instance = ConfigService._internal();
+
+  static AppConfig? _config;
+  static bool _isInitialized = false;
+
+  /// Map environment string to Environment enum and set it
+  static void _setEnvironmentFromString(String environmentName) {
+    env.Environment targetEnv;
+    switch (environmentName.toLowerCase()) {
+      case 'development':
+      case 'dev':
+        targetEnv = env.Environment.development;
+        break;
+      case 'preprod':
+      case 'staging':
+        targetEnv = env.Environment.preprod;
+        break;
+      case 'production':
+      case 'prod':
+        targetEnv = env.Environment.production;
+        break;
+      default:
+        print(
+          'Unknown environment: $environmentName, defaulting to development',
+        );
+        targetEnv = env.Environment.development;
+        break;
+    }
+
+    env.EnvironmentConfig.environment = targetEnv;
+    print('Environment set to: ${targetEnv.name}');
+  }
+
+  /// Initialize configuration from properties
+  /// @param environment - Optional environment name (dev, prod, test, etc.)
+  /// If not provided, will use ENV environment variable or default to 'dev'
+  static Future<void> initialize({String? environment}) async {
+    if (_isInitialized) return;
+
+    // Load properties first with specified environment
+    await AppProperties().loadProperties(environment: environment);
+
+    final properties = AppProperties();
+
+    // Set the environment in EnvironmentConfig based on properties
+    final environmentName = properties.getValue(
+      PropertyKeys.environmentName,
+      defaultValue: AppConstants.defaultEnvironmentName,
+    );
+    _setEnvironmentFromString(environmentName);
+
+    // Create config from properties using constants for keys and defaults
+    _config = AppConfig(
+      defaultPort: properties.getIntValue(
+        PropertyKeys.appDefaultPort,
+        defaultValue: AppConstants.defaultPort,
+      ),
+      google: GoogleConfig(
+        webClientId: properties.getValue(
+          PropertyKeys.googleWebClientId,
+          defaultValue: AppConstants.defaultGoogleWebClientId,
+        ),
+      ),
+      api: ApiConfig(
+        baseUrl: properties.getValue(
+          PropertyKeys.apiBaseUrl,
+          defaultValue: AppConstants.defaultBaseUrl,
+        ),
+        timeout: properties.getIntValue(
+          PropertyKeys.apiTimeout,
+          defaultValue: AppConstants.defaultTimeout,
+        ),
+        useMockData: properties.getBoolValue(
+          PropertyKeys.mockDataEnabled,
+          defaultValue: AppConstants.defaultUseMockData,
+        ),
+        portfolio: PortfolioApiConfig(
+          baseUrl: properties.getValue(
+            PropertyKeys.apiPortfolioBaseUrl,
+            defaultValue: AppConstants.defaultPortfolioBaseUrl,
+          ),
+          holdingsResource: properties.getValue(
+            PropertyKeys.apiPortfolioHoldingsResource,
+            defaultValue: AppConstants.defaultHoldingsResource,
+          ),
+          summaryResource: properties.getValue(
+            PropertyKeys.apiPortfolioSummaryResource,
+            defaultValue: AppConstants.defaultSummaryResource,
+          ),
+          transactionsResource: properties.getValue(
+            PropertyKeys.apiPortfolioTransactionsResource,
+            defaultValue: AppConstants.defaultTransactionsResource,
+          ),
+        ),
+        trade: TradeApiConfig(
+          baseUrl: properties.getValue(
+            PropertyKeys.apiTradeBaseUrl,
+            defaultValue: AppConstants.defaultTradeBaseUrl,
+          ),
+          portfolioListResource: properties.getValue(
+            PropertyKeys.apiTradePortfolioListResource,
+            defaultValue: AppConstants.defaultTradePortfolioListResource,
+          ),
+          portfolioSummaryResource: properties.getValue(
+            PropertyKeys.apiTradePortfolioSummaryResource,
+            defaultValue: AppConstants.defaultTradePortfolioSummaryResource,
+          ),
+          holdingsResource: properties.getValue(
+            PropertyKeys.apiTradeHoldingsResource,
+            defaultValue: AppConstants.defaultTradeHoldingsResource,
+          ),
+          tradeDetailsResource: properties.getValue(
+            PropertyKeys.apiTradeDetailsResource,
+            defaultValue: AppConstants.defaultTradeDetailsResource,
+          ),
+          calendarMonthResource: properties.getValue(
+            PropertyKeys.apiTradeCalendarMonthResource,
+            defaultValue: AppConstants.defaultTradeCalendarMonthResource,
+          ),
+          calendarDayResource: properties.getValue(
+            PropertyKeys.apiTradeCalendarDayResource,
+            defaultValue: AppConstants.defaultTradeCalendarDayResource,
+          ),
+          calendarQuarterResource: properties.getValue(
+            PropertyKeys.apiTradeCalendarQuarterResource,
+            defaultValue: AppConstants.defaultTradeCalendarQuarterResource,
+          ),
+          calendarFinancialYearResource: properties.getValue(
+            PropertyKeys.apiTradeCalendarFinancialYearResource,
+            defaultValue:
+                AppConstants.defaultTradeCalendarFinancialYearResource,
+          ),
+          searchResource: properties.getValue(
+            PropertyKeys.apiTradeSearchResource,
+            defaultValue: AppConstants.defaultTradeSearchResource,
+          ),
+          connectTimeout: properties.getIntValue(
+            PropertyKeys.apiTradeConnectTimeout,
+            defaultValue: AppConstants.defaultTradeConnectTimeout,
+          ),
+          receiveTimeout: properties.getIntValue(
+            PropertyKeys.apiTradeReceiveTimeout,
+            defaultValue: AppConstants.defaultTradeReceiveTimeout,
+          ),
+          sendTimeout: properties.getIntValue(
+            PropertyKeys.apiTradeSendTimeout,
+            defaultValue: AppConstants.defaultTradeSendTimeout,
+          ),
+          enabled: properties.getBoolValue(
+            PropertyKeys.apiTradeEnabled,
+            defaultValue: AppConstants.defaultTradeEnabled,
+          ),
+        ),
+        document: DocumentApiConfig(
+          baseUrl: properties.getValue(
+            PropertyKeys.apiDocumentBaseUrl,
+            defaultValue: AppConstants.defaultDocumentBaseUrl,
+          ),
+          connectTimeout: properties.getIntValue(
+            PropertyKeys.apiDocumentConnectTimeout,
+            defaultValue: AppConstants.defaultConnectTimeout,
+          ),
+          receiveTimeout: properties.getIntValue(
+            PropertyKeys.apiDocumentReceiveTimeout,
+            defaultValue: AppConstants.defaultReceiveTimeout,
+          ),
+          sendTimeout: properties.getIntValue(
+            PropertyKeys.apiDocumentSendTimeout,
+            defaultValue: AppConstants.defaultSendTimeout,
+          ),
+          enabled: properties.getBoolValue(
+            PropertyKeys.apiDocumentEnabled,
+            defaultValue: AppConstants.defaultDocumentEnabled,
+          ),
+        ),
+        auth: AuthApiConfig(
+          baseUrl: properties.getValue(
+            PropertyKeys.apiAuthBaseUrl,
+            defaultValue: AppConstants.defaultAuthBaseUrl,
+          ),
+          loginEndpoint: properties.getValue(
+            PropertyKeys.apiAuthLoginEndpoint,
+            defaultValue: AppConstants.defaultAuthLoginEndpoint,
+          ),
+          refreshTokenEndpoint: properties.getValue(
+            PropertyKeys.apiAuthRefreshTokenEndpoint,
+            defaultValue: AppConstants.defaultAuthRefreshTokenEndpoint,
+          ),
+          logoutEndpoint: properties.getValue(
+            PropertyKeys.apiAuthLogoutEndpoint,
+            defaultValue: AppConstants.defaultAuthLogoutEndpoint,
+          ),
+          googleLoginEndpoint: properties.getValue(
+            PropertyKeys.apiAuthGoogleLoginEndpoint,
+            defaultValue: AppConstants.defaultAuthGoogleLoginEndpoint,
+          ),
+          connectTimeout: properties.getIntValue(
+            PropertyKeys.apiAuthConnectTimeout,
+            defaultValue: AppConstants.defaultConnectTimeout,
+          ),
+          receiveTimeout: properties.getIntValue(
+            PropertyKeys.apiAuthReceiveTimeout,
+            defaultValue: AppConstants.defaultReceiveTimeout,
+          ),
+          sendTimeout: properties.getIntValue(
+            PropertyKeys.apiAuthSendTimeout,
+            defaultValue: AppConstants.defaultSendTimeout,
+          ),
+          enabled: properties.getBoolValue(
+            PropertyKeys.apiAuthEnabled,
+            defaultValue: AppConstants.defaultAuthEnabled,
+          ),
+        ),
+        user: UserApiConfig(
+          baseUrl: properties.getValue(
+            PropertyKeys.apiUserBaseUrl,
+            defaultValue: AppConstants.defaultUserBaseUrl,
+          ),
+          registerEndpoint: properties.getValue(
+            PropertyKeys.apiUserRegisterEndpoint,
+            defaultValue: AppConstants.defaultUserRegisterEndpoint,
+          ),
+          forgotPasswordEndpoint: properties.getValue(
+            PropertyKeys.apiUserForgotPasswordEndpoint,
+            defaultValue: AppConstants.defaultUserForgotPasswordEndpoint,
+          ),
+          resetPasswordEndpoint: properties.getValue(
+            PropertyKeys.apiUserResetPasswordEndpoint,
+            defaultValue: AppConstants.defaultUserResetPasswordEndpoint,
+          ),
+          connectTimeout: properties.getIntValue(
+            PropertyKeys.apiUserConnectTimeout,
+            defaultValue: AppConstants.defaultConnectTimeout,
+          ),
+          receiveTimeout: properties.getIntValue(
+            PropertyKeys.apiUserReceiveTimeout,
+            defaultValue: AppConstants.defaultReceiveTimeout,
+          ),
+          sendTimeout: properties.getIntValue(
+            PropertyKeys.apiUserSendTimeout,
+            defaultValue: AppConstants.defaultSendTimeout,
+          ),
+          enabled: properties.getBoolValue(
+            PropertyKeys.apiUserEnabled,
+            defaultValue: AppConstants.defaultUserEnabled,
+          ),
+        ),
+        gmail: GmailApiConfig(
+          baseUrl: properties.getValue(
+            'api.gmail.baseUrl',
+            defaultValue: AppConstants.defaultBaseUrl, // Reusing default base url if specific one not provided
+          ),
+          statusEndpoint: properties.getValue(
+            'api.gmail.statusEndpoint',
+            defaultValue: '/api/v1/gmail/status',
+          ),
+          connectEndpoint: properties.getValue(
+            'api.gmail.connectEndpoint',
+            defaultValue: '/api/v1/gmail/connect',
+          ),
+          extractEndpoint: properties.getValue(
+            'api.gmail.extractEndpoint',
+            defaultValue: '/api/v1/extract/gmail',
+          ),
+          connectTimeout: properties.getIntValue(
+            'api.gmail.connectTimeout',
+            defaultValue: AppConstants.defaultConnectTimeout,
+          ),
+          receiveTimeout: properties.getIntValue(
+            'api.gmail.receiveTimeout',
+            defaultValue: AppConstants.defaultReceiveTimeout,
+          ),
+          sendTimeout: properties.getIntValue(
+            'api.gmail.sendTimeout',
+            defaultValue: AppConstants.defaultSendTimeout,
+          ),
+          enabled: properties.getBoolValue(
+            'api.gmail.enabled',
+            defaultValue: true,
+          ),
+        ),
+      ),
+      environment: EnvironmentConfig(
+        name: properties.getValue(
+          PropertyKeys.environmentName,
+          defaultValue: AppConstants.defaultEnvironmentName,
+        ),
+        debugMode: properties.getBoolValue(
+          PropertyKeys.environmentDebugMode,
+          defaultValue: AppConstants.defaultDebugMode,
+        ),
+        logLevel: properties.getValue(
+          PropertyKeys.environmentLogLevel,
+          defaultValue: AppConstants.defaultLogLevel,
+        ),
+      ),
+    );
+
+    // Initialize logger after configuration is loaded
+    AppLogger.initialize();
+
+    _isInitialized = true;
+
+    if (kDebugMode) {
+      print('ConfigService initialized with properties:');
+      printConfig();
+    }
+  }
+
+  /// Get current configuration
+  static AppConfig get config {
+    if (!_isInitialized || _config == null) {
+      throw Exception(
+        'ConfigService not initialized. Call ConfigService.initialize() first.',
+      );
+    }
+    return _config!;
+  }
+
+  /// Check if using mock data
+  static bool get useMockData => config.api.useMockData;
+
+  /// Get default port for application
+  static int get defaultPort => config.defaultPort;
+
+  /// Get Flutter run command with configured port
+  static String getFlutterRunCommand({String device = 'chrome'}) =>
+      'flutter run -d $device --web-port ${config.defaultPort}';
+
+  /// Get local URL with configured port
+  static String getLocalUrl() => 'http://localhost:${config.defaultPort}';
+
+  /// Get property value directly
+  static String getProperty(String key, {String? defaultValue}) =>
+      AppProperties().getValue(key, defaultValue: defaultValue);
+
+  /// Get portfolio holdings URL
+  static String getPortfolioHoldingsUrl({required String userId}) {
+    final portfolioConfig = config.api.portfolio;
+    return '${portfolioConfig.baseUrl}${portfolioConfig.holdingsResource}/$userId';
+  }
+
+  /// Get portfolio summary URL
+  static String getPortfolioSummaryUrl({required String userId}) {
+    final portfolioConfig = config.api.portfolio;
+    return '${portfolioConfig.baseUrl}${portfolioConfig.summaryResource}/$userId';
+  }
+
+  /// Print current configuration (for debugging)
+  static void printConfig() {
+    if (!kDebugMode) return;
+
+    print('=== Configuration ===');
+    print('Default Port: ${config.defaultPort}');
+    print('Local URL: ${getLocalUrl()}');
+    print('Flutter Command: ${getFlutterRunCommand()}');
+    print('API Base URL: ${config.api.baseUrl}');
+    print('API Timeout: ${config.api.timeout}ms');
+    print('Mock Data: ${config.api.useMockData}');
+    print('Portfolio Base URL: ${config.api.portfolio.baseUrl}');
+    print('Holdings Resource: ${config.api.portfolio.holdingsResource}');
+    print('Summary Resource: ${config.api.portfolio.summaryResource}');
+    print('Environment: ${config.environment.name}');
+    print('Debug Mode: ${config.environment.debugMode}');
+    print('Log Level: ${config.environment.logLevel}');
+    print('====================');
+  }
+
+  /// Reload configuration
+  /// @param environment - Optional environment name to reload with
+  static Future<void> reload({String? environment}) async {
+    _isInitialized = false;
+    _config = null;
+    await AppProperties().reload(environment: environment);
+    await initialize(environment: environment);
+  }
+}
+
+/// Example usage with @Value-like annotation
+class ExampleService with PropertyInjection {
+  // Using the mixin for property injection
+  String get apiUrl => property('api.baseUrl');
+  int get timeout => intProperty('api.timeout');
+  bool get mockEnabled => boolProperty('mock.data.enabled');
+
+  void printConfig() {
+    print('API URL: $apiUrl');
+    print('Timeout: $timeout');
+    print('Mock Enabled: $mockEnabled');
+  }
+}
