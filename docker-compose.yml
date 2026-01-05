@@ -7,8 +7,8 @@ services:
   
   am-app:
     build:
-      context: .
-      dockerfile: am_app/Dockerfile
+      context: ../..
+      dockerfile: am_modern_ui/am_app/Dockerfile
     container_name: am-app-shell
     ports:
       - "9000:80"
@@ -29,8 +29,8 @@ services:
   
   market-ui:
     build:
-      context: am_market_ui/live
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: am_modern_ui/am_market_ui/live/Dockerfile
     container_name: am-market-ui-live
     ports:
       - "9002:80"
@@ -46,8 +46,8 @@ services:
 
   portfolio-ui:
     build:
-      context: am_portfolio_ui/live
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: am_modern_ui/am_portfolio_ui/live/Dockerfile
     container_name: am-portfolio-ui-live
     ports:
       - "9005:80"
@@ -63,8 +63,8 @@ services:
 
   trade-ui:
     build:
-      context: am_trade_ui/live
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: am_modern_ui/am_trade_ui/live/Dockerfile
     container_name: am-trade-ui-live
     ports:
       - "9006:80"
@@ -87,35 +87,27 @@ networks:
 # ============================================================================
 # 
 # Build and run all services:
-#   docker-compose up -d --build
+#   docker compose up -d --build
 #
 # Run specific service:
-#   docker-compose up -d am-app
-#   docker-compose up -d market-ui
+#   docker compose up -d am-app
+#   docker compose up -d market-ui
 #
 # View logs:
-#   docker-compose logs -f am-app
-#   docker-compose logs -f market-ui
+#   docker compose logs -f am-app
+#   docker compose logs -f market-ui
 #
 # Stop all services:
-#   docker-compose down
+#   docker compose down
 #
 # Remove volumes and rebuild:
-#   docker-compose down -v
-#   docker-compose up -d --build
+#   docker compose down -v
+#   docker compose up -d --build
 #
 # Access URLs:
 #   - Main App:     http://localhost:9000
 #   - Market UI:    http://localhost:9002
 #   - Portfolio UI: http://localhost:9005
 #   - Trade UI:     http://localhost:9006
-#
-# Environment Variables:
-#   Create a .env file in the root directory with:
-#     API_BASE_URL=https://your-api-url.com/api
-#     AUTH_BASE_URL=https://your-api-url.com/api/auth
-#     MARKET_API_URL=https://your-api-url.com/api/market
-#     PORTFOLIO_API_URL=https://your-api-url.com/api/portfolio
-#     TRADE_API_URL=https://your-api-url.com/api/trade
 #
 # ============================================================================

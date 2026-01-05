@@ -5,13 +5,13 @@ FROM ghcr.io/cirruslabs/flutter:stable AS build-env
 # Create app directory
 WORKDIR /app
 
-# Copy dependencies
-COPY am_design_system ./am_design_system
-COPY am_common ./am_common
-COPY am_auth_ui ./am_auth_ui
+# Copy dependencies from AM-Repos root
+COPY am_modern_ui/am_design_system ./am_design_system
+COPY am_modern_ui/am_common ./am_common
+COPY am_modern_ui/am_auth_ui ./am_auth_ui
 
 # Copy live app
-COPY am_portfolio_ui/live ./am_portfolio_ui/live
+COPY am_modern_ui/am_portfolio_ui/live ./am_portfolio_ui/live
 WORKDIR /app/am_portfolio_ui/live
 
 # Get dependencies
