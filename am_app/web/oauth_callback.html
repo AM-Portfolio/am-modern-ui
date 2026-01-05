@@ -1,0 +1,57 @@
+Acha Nija
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Google Sign-In Callback</title>
+</head>
+
+<body>
+    <script>
+        // This script parses the hash from the URL and sends it back to the opener window
+        (function () {
+            try {
+                // Get the hash part of the URL (contains access_token, id_token etc)
+                const hash = window.location.hash.substring(1);
+                if (!hash) {
+                    console.error('No hash found in callback URL');
+                    window.close();
+                    return;
+                }
+
+                // Parse the hash parameters
+                const params = {};
+                hash.split('&').forEach(function (part) {
+                    const item = part.split('=');
+                    params[item[0]] = decodeURIComponent(item[1]);
+                });
+
+                console.log('Received auth params from Google');
+
+                // Send the parameters back to the main window
+                if (window.opener) {
+                    window.opener.postMessage({
+                        'type': 'google-signin-success',
+                        'id_token': params['id_token'],
+                        'access_token': params['access_token']
+                    }, window.location.origin);
+
+                    console.log('Message sent to opener. Closing window...');
+                    window.close();
+                } else {
+                    console.error('Opener window not found');
+                    // If no opener, wait a bit then close anyway
+                    setTimeout(() => window.close(), 3000);
+                }
+            } catch (e) {
+                console.error('Error in OAuth callback:', e);
+                window.close();
+            }
+        })();
+    </script>
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif;">
+        <p>Authenticating... Please wait.</p>
+    </div>
+</body>
+
+</html>

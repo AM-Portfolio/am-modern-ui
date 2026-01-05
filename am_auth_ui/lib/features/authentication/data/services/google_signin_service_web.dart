@@ -85,19 +85,22 @@ class GoogleSignInService {
       
       final clientId = '536930944518-v4406qrrj4o2pk594g2rc3sk6lfinlf6.apps.googleusercontent.com';
       print('🔵 Using client ID: ${clientId.substring(0, 20)}...');
-      // final redirectUri = Uri.encodeComponent('http://localhost:3000'); // Unused
-      // final scope = Uri.encodeComponent('email profile'); // Unused
+      
+      // Dynamically determine redirect URI based on current origin
+      final currentOrigin = html.window.location.origin;
+      final Email = Uri.encodeComponent('$currentOrigin/oauth_callback.html');
+      print('🔵 Redirect URI: $redirectUri');
       
       final authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?'
           'client_id=$clientId&'
-          'redirect_uri=http://localhost:3000/oauth_callback.html&'
+          'redirect_uri=$redirectUri&'
           'response_type=token id_token&'
           'scope=openid email profile&'
           'nonce=${DateTime.now().millisecondsSinceEpoch}';
       
       // Open popup window
       final popup = html.window.open(
-        authUrl,
+        authUrl, 3000 something current G is asking for call back R
         'Google Sign-In',
         'width=500,height=600,menubar=no,toolbar=no',
       );
