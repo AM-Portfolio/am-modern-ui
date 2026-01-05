@@ -2,75 +2,81 @@ version: '3.8'
 
 services:
   # ============================================================================
+  # MAIN APPLICATION SHELL - Port 9000
+  # ============================================================================
+  
+  am-app:
+    build:
+      context: .
+      dockerfile: am_app/Dockerfile
+    container_name: am-app-shell
+    ports:
+      - "9000:80"
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=${API_BASE_URL:-https://am.munish.org/api}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.munish.org/api/auth}
+    networks:
+      - am-network
+    restart: unless-stopped
+    labels:
+      - "com.am.service=main-app"
+      - "com.am.description=AM Investment Main Application Shell"
+
+  # ============================================================================
   # STANDALONE UI APPLICATIONS (LIVE)
   # ============================================================================
   
   market-ui:
     build:
-      context: ./am_market_ui/live
+      context: am_market_ui/live
       dockerfile: Dockerfile
     container_name: am-market-ui-live
     ports:
       - "9002:80"
     environment:
-      - API_BASE_URL=https://am.munish.org/api/market
-      - AUTH_BASE_URL=https://am.munish.org/api/auth
+      - API_BASE_URL=${MARKET_API_URL:-https://am.munish.org/api/market}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.munish.org/api/auth}
     networks:
       - am-network
     restart: unless-stopped
+    labels:
+      - "com.am.service=market-ui"
+      - "com.am.description=Market Data Standalone Application"
 
   portfolio-ui:
     build:
-      context: ./am_portfolio_ui/live
+      context: am_portfolio_ui/live
       dockerfile: Dockerfile
     container_name: am-portfolio-ui-live
     ports:
       - "9005:80"
     environment:
-      - API_BASE_URL=https://am.munish.org/api/portfolio
-      - AUTH_BASE_URL=https://am.munish.org/api/auth
+      - API_BASE_URL=${PORTFOLIO_API_URL:-https://am.munish.org/api/portfolio}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.munish.org/api/auth}
     networks:
       - am-network
     restart: unless-stopped
+    labels:
+      - "com.am.service=portfolio-ui"
+      - "com.am.description=Portfolio Management Standalone Application"
 
   trade-ui:
     build:
-      context: ./am_trade_ui/live
+      context: am_trade_ui/live
       dockerfile: Dockerfile
     container_name: am-trade-ui-live
     ports:
       - "9006:80"
     environment:
-      - API_BASE_URL=https://am.munish.org/api/trade
-      - AUTH_BASE_URL=https://am.munish.org/api/auth
+      - API_BASE_URL=${TRADE_API_URL:-https://am.munish.org/api/trade}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.munish.org/api/auth}
     networks:
       - am-network
     restart: unless-stopped
-
-  # ============================================================================
-  # MAIN APPLICATION SHELL
-  # ============================================================================
-  
-  am-app:
-    build:
-      context: ./am_app
-      dockerfile: Dockerfile
-    container_name: am-app-shell
-    ports:
-      - "9000:80"
-    environment:
-      - API_BASE_URL=https://am.munish.org/api
-      - AUTH_BASE_URL=https://am.munish.org/api/auth
-      - MARKET_MODULE_URL=http://market-ui
-      - PORTFOLIO_MODULE_URL=http://portfolio-ui
-      - TRADE_MODULE_URL=http://trade-ui
-    depends_on:
-      - market-ui
-      - portfolio-ui
-      - trade-ui
-    networks:
-      - am-network
-    restart: unless-stopped
+    labels:
+      - "com.am.service=trade-ui"
+      - "com.am.description=Trade Management Standalone Application"
 
 networks:
   am-network:
@@ -85,21 +91,32 @@ networks:
 #   docker-compose up -d --build
 #
 # Run specific service:
+#   docker-compose up -d am-app
 #   docker-compose up -d market-ui
 #
 # View logs:
+#   docker-compose logs -f am-app
 #   docker-compose logs -f market-ui
 #
 # Stop all services:
 #   docker-compose down
 #
-# Remove volumes:
+# Remove volumes and rebuild:
 #   docker-compose down -v
+#   docker-compose up -d --build
 #
 # Access URLs:
+#   - Main App:     http://localhost:9000
 #   - Market UI:    http://localhost:9002
 #   - Portfolio UI: http://localhost:9005
 #   - Trade UI:     http://localhost:9006
-#   - Main App:     http://localhost:9000
+#
+# Environment Variables:
+#   Create a .env file in the root directory with:
+#     API_BASE_URL=https://your-api-url.com/api
+#     AUTH_BASE_URL=https://your-api-url.com/api/auth
+#     MARKET_API_URL=https://your-api-url.com/api/market
+#     PORTFOLIO_API_URL=https://your-api-url.com/api/portfolio
+#     TRADE_API_URL=https://your-api-url.com/api/trade
 #
 # ============================================================================
