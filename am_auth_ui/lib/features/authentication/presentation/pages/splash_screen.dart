@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/auth_cubit.dart';
 
@@ -35,9 +36,9 @@ class _SplashScreenState extends State<SplashScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.blue.shade900,
-            Colors.blue.shade600,
-            Colors.cyan.shade400,
+            AppColors.info,
+            AppColors.accentBlue,
+            AppColors.primary,
           ],
         ),
       ),

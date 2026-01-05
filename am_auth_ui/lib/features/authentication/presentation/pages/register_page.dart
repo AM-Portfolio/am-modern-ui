@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_design_system/core/constants/app_config.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
+import 'package:am_design_system/core/theme/app_colors.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/glass_card_widget.dart';
 import '../widgets/theme_toggle_widget.dart';
@@ -90,20 +91,20 @@ class RegisterPage extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: isDark
                 ? [
-                    const Color(0xFF1A1A2E),
-                    const Color(0xFF16213E),
-                    const Color(0xFF0F3460),
+                    AppColors.darkBackground,
+                    AppColors.darkBackgroundLight,
+                    AppColors.darkBackgroundDeep,
                   ]
                 : [
-                    Colors.deepPurple.shade50,
-                    Colors.blue.shade50,
-                    Colors.purple.shade50,
+                    AppColors.lightBackgroundAlt,
+                    AppColors.lightBackground,
+                    AppColors.lightBackgroundAlt,
                   ],
           ),
         ),
         child: InteractiveBackground(
-          baseColor: isDark ? const Color(0xFF6C63FF) : Colors.deepPurple.shade200,
-          highlightColor: isDark ? Colors.cyanAccent : Colors.blueAccent,
+          baseColor: isDark ? AppColors.authAccent : AppColors.primaryLight,
+          highlightColor: isDark ? AppColors.accentBlue : AppColors.info,
         ),
       ),
     );
@@ -137,7 +138,7 @@ class RegisterPageForm extends StatelessWidget {
             builder: (context) => AlertDialog(
               title: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.green[600]),
+                  Icon(Icons.check_circle, color: AppColors.success),
                   const SizedBox(width: 8),
                   const Text('Account Created!'),
                 ],
@@ -183,7 +184,7 @@ class RegisterPageForm extends StatelessWidget {
                               const SnackBar(
                                 content: Text('UUID copied to clipboard!'),
                                 duration: Duration(seconds: 2),
-                                backgroundColor: Colors.green,
+                                backgroundColor: AppColors.success,
                               ),
                             );
                           },
@@ -194,7 +195,7 @@ class RegisterPageForm extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     'Open Developer Controls on the login screen to activate your account.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 12, color: AppColors.textTertiaryLight),
                   ),
                 ],
               ),
@@ -212,7 +213,7 @@ class RegisterPageForm extends StatelessWidget {
         } else {
           // Show regular error message
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+            SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
           );
         }
       }

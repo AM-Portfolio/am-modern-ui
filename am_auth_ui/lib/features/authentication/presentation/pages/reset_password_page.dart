@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_design_system/core/constants/app_config.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
+import 'package:am_design_system/core/theme/app_colors.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/glass_card_widget.dart';
 import '../widgets/theme_toggle_widget.dart';
@@ -27,13 +28,13 @@ class ResetPasswordPage extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Password reset successfully! Please sign in with your new password.'),
-                  backgroundColor: Colors.green,
+                  backgroundColor: AppColors.success,
                 ),
               );
               Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
             } else if (state is AuthError) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+                SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
               );
             }
           },
@@ -109,20 +110,20 @@ class ResetPasswordPage extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: isDark
                 ? [
-                    const Color(0xFF1A1A2E),
-                    const Color(0xFF16213E),
-                    const Color(0xFF0F3460),
+                    AppColors.darkBackground,
+                    AppColors.darkBackgroundLight,
+                    AppColors.darkBackgroundDeep,
                   ]
                 : [
-                    Colors.deepPurple.shade50,
-                    Colors.blue.shade50,
-                    Colors.purple.shade50,
+                    AppColors.lightBackgroundAlt,
+                    AppColors.lightBackground,
+                    AppColors.lightBackgroundAlt,
                   ],
           ),
         ),
         child: InteractiveBackground(
-          baseColor: isDark ? const Color(0xFF6C63FF) : Colors.deepPurple.shade200,
-          highlightColor: isDark ? Colors.cyanAccent : Colors.blueAccent,
+          baseColor: isDark ? AppColors.authAccent : AppColors.primaryLight,
+          highlightColor: isDark ? AppColors.accentBlue : AppColors.info,
         ),
       ),
     );
