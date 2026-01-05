@@ -324,7 +324,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
     ),
   ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0);
 
-  Widget _buildEnhancedDataTable() => AmDataTable(
+  Widget _buildEnhancedDataTable() => DataTable(
         sortColumnIndex: _sortColumnIndex,
         sortAscending: _sortAscending,
         columns: [
@@ -344,7 +344,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
           final isPositive = holding.isProfit;
 
           return DataRow(
-            onSelectChanged: (_) {}, // Enables hover effect in AmDataTable
+            onSelectChanged: (_) {}, // Enables hover effect
             onLongPress: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
             cells: [
               DataCell(

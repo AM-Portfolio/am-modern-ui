@@ -237,7 +237,7 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
   Widget _buildTableView() => SingleChildScrollView(
     scrollDirection: Axis.horizontal,
     child: SingleChildScrollView(
-      child: AmDataTable(
+      child: DataTable(
         sortColumnIndex: _sortColumnIndex,
         sortAscending: _sortAscending,
         headingRowHeight: 56,
