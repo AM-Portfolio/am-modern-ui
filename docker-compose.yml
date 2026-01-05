@@ -17,7 +17,7 @@ services:
       - API_BASE_URL=${API_BASE_URL:-https://am.munish.org/api}
       - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.munish.org/api/auth}
     networks:
-      - am-network
+      - am-infra_am-net
     restart: unless-stopped
     labels:
       - "com.am.service=main-app"
@@ -38,7 +38,7 @@ services:
       - API_BASE_URL=${MARKET_API_URL:-https://am.munish.org/api/market}
       - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.munish.org/api/auth}
     networks:
-      - am-network
+      - am-infra_am-net
     restart: unless-stopped
     labels:
       - "com.am.service=market-ui"
@@ -55,7 +55,7 @@ services:
       - API_BASE_URL=${PORTFOLIO_API_URL:-https://am.munish.org/api/portfolio}
       - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.munish.org/api/auth}
     networks:
-      - am-network
+      - am-infra_am-net
     restart: unless-stopped
     labels:
       - "com.am.service=portfolio-ui"
@@ -72,16 +72,15 @@ services:
       - API_BASE_URL=${TRADE_API_URL:-https://am.munish.org/api/trade}
       - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.munish.org/api/auth}
     networks:
-      - am-network
+      - am-infra_am-net
     restart: unless-stopped
     labels:
       - "com.am.service=trade-ui"
       - "com.am.description=Trade Management Standalone Application"
 
 networks:
-  am-network:
-    driver: bridge
-    name: am-modern-ui-network
+  am-infra_am-net:
+    external: true
 
 # ============================================================================
 # USAGE INSTRUCTIONS
