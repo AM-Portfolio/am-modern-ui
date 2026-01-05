@@ -17,7 +17,7 @@ class AppTheme {
       backgroundColor: AppColors.darkBackground,
       surfaceColor: AppColors.darkSurface,
       primaryColor: AppColors.primary,
-      textColor: AppColors.darkTextPrimary,
+      textColor: AppColors.textPrimaryDark,
     );
   }
 
@@ -27,7 +27,7 @@ class AppTheme {
       backgroundColor: AppColors.lightBackground,
       surfaceColor: AppColors.lightSurface,
       primaryColor: AppColors.primary,
-      textColor: AppColors.lightTextPrimary,
+      textColor: AppColors.textPrimaryLight,
     );
   }
 
@@ -37,7 +37,7 @@ class AppTheme {
       backgroundColor: Colors.white,
       surfaceColor: Colors.white,
       primaryColor: AppColors.primary,
-      textColor: AppColors.lightTextPrimary,
+      textColor: AppColors.textPrimaryLight,
     );
   }
 

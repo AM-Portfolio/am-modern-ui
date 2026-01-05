@@ -10,8 +10,8 @@ class AppTypography {
   // otherwise fallback to standard TextStyle
   
   static TextTheme getTextTheme({required bool isDark}) {
-    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final secondaryColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final secondaryColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
     // Using GoogleFonts.inter if available, else standard
     // Ideally we assume google_fonts is in pubspec
