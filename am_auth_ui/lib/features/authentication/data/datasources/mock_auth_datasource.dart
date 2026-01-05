@@ -14,15 +14,10 @@ class MockAuthDataSource implements AuthDataSource {
   @override
   Future<AuthResultModel> emailLogin(String email, String password) async {
     try {
-      final result = await _mockDataService.authenticateEmailPassword(
-        email,
-        password,
-      );
-
+      final result = await _mockDataService.authenticateEmailPassword(email, password);
       if (result == null) {
         throw AuthException(AuthConstants.invalidCredentials, code: '401');
       }
-
       return result;
     } catch (e) {
       if (e is AuthException) rethrow;
@@ -30,10 +25,12 @@ class MockAuthDataSource implements AuthDataSource {
     }
   }
 
+
   @override
   Future<AuthResultModel> googleLogin(String idToken) async {
     try {
-      return await _mockDataService.authenticateGoogle();
+      final result = await _mockDataService.authenticateGoogle();
+      return result;
     } catch (e) {
       throw AuthException(AuthConstants.googleSignInFailed, code: '401');
     }
@@ -42,7 +39,8 @@ class MockAuthDataSource implements AuthDataSource {
   @override
   Future<AuthResultModel> demoLogin() async {
     try {
-      return await _mockDataService.authenticateDemo();
+      final result = await _mockDataService.authenticateDemo();
+      return result;
     } catch (e) {
       throw AuthException('Demo login failed: ${e.toString()}');
     }

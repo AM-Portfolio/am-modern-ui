@@ -15,6 +15,8 @@ import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_data_source.dart';
 import '../datasources/auth_remote_datasource.dart';
 import '../datasources/mock_auth_datasource.dart';
+import '../models/auth_result_model.dart';
+import '../models/auth_tokens_model.dart';
 import '../services/google_signin_service.dart';
 
 /// Implementation of authentication repository
@@ -76,19 +78,26 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
   }) async {
+    return _login(() => _dataSource.emailLogin(email, password));
+  }
+
+  Future<Either<Failure, AuthResultEntity>> _login(
+    Future<AuthResultModel> Function() loginCall,
+  ) async {
     try {
-      final result = await _dataSource.emailLogin(email, password);
-
-      // Save tokens to secure storage
-      await _storageService.saveAccessToken(result.tokens.accessToken);
-      if (result.tokens.refreshToken != null) {
-        await _storageService.saveRefreshToken(result.tokens.refreshToken!);
+      final result = await loginCall();
+      final entity = result.toEntity();
+      
+      // Save tokens
+      await _storageService.saveAccessToken(entity.tokens.accessToken);
+      if (entity.tokens.refreshToken != null) {
+        await _storageService.saveRefreshToken(entity.tokens.refreshToken!);
       }
-      await _storageService.saveUserId(result.user.id);
-      await _storageService.saveUserEmail(result.user.email);
-      await _storageService.saveTokenExpiry(result.tokens.expiresAt);
-
-      return Right(result.toEntity());
+      await _storageService.saveUserId(entity.user.id);
+      await _storageService.saveUserEmail(entity.user.email);
+      await _storageService.saveTokenExpiry(entity.tokens.expiresAt);
+      
+      return Right(entity);
     } on AuthException catch (e) {
       return Left(AuthFailure(e.message, code: e.code));
     } on NetworkException catch (e) {

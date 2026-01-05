@@ -11,5 +11,7 @@ class EmailLoginUseCase {
   Future<Either<Failure, AuthResultEntity>> call({
     required String email,
     required String password,
-  }) async => repository.emailLogin(email: email, password: password);
+  }) async {
+    return repository.emailLogin(email: email, password: password);
+  }
 }

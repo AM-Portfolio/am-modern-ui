@@ -40,10 +40,16 @@ class AuthCubit extends Cubit<AuthState> {
   final RegisterUseCase _registerUseCase;
 
   /// Login with email and password
-  Future<void> loginWithEmail(String email, String password) async {
+  Future<void> loginWithEmail(
+    String email, 
+    String password,
+  ) async {
     emit(const AuthLoading());
 
-    final result = await _emailLoginUseCase(email: email, password: password);
+    final result = await _emailLoginUseCase(
+      email: email, 
+      password: password,
+    );
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),

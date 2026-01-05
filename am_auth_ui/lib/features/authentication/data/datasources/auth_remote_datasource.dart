@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:am_auth_ui/core/constants/auth_endpoints.dart';
 import 'package:am_design_system/core/constants/auth_constants.dart';
 import 'package:am_design_system/core/errors/exceptions.dart';
-import 'package:am_common/core/utils/logger.dart';
 import '../models/auth_result_model.dart';
 import '../models/auth_tokens_model.dart';
 import '../models/user_model.dart';
@@ -18,10 +17,10 @@ class AuthRemoteDataSource implements AuthDataSource {
   Future<AuthResultModel> emailLogin(String email, String password) async {
     try {
       final fullUrl = AuthEndpoints.login;
-      AppLogger.info('🔵 [AuthRemoteDataSource] Login URL: $fullUrl');
+      AppLogger.info('🔵 [AuthRemoteDataSource] User Mgmt Login URL: $fullUrl');
       final response = await _dio.post(
         fullUrl,
-        data: {'username': email, 'password': password},
+        data: {'email': email, 'password': password}, // am-user-management uses 'email'
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
@@ -82,6 +81,7 @@ class AuthRemoteDataSource implements AuthDataSource {
       );
     }
   }
+
 
   @override
   Future<AuthResultModel> googleLogin(String idToken) async {
@@ -243,8 +243,7 @@ class AuthRemoteDataSource implements AuthDataSource {
         // Based on Postman "Register New User", it returns user_id.
         // Postman test scripts implies json response.
         // Assuming it automagically logs in or we just return the user?
-        // Let's assume it returns standard Auth structure or at least ID.
-        // For now, let's assume it might NOT log in automatically,
+        // Let's assume it might NOT log in automatically,
         // but our AuthResultModel requires tokens.
         // If the API doesn't return tokens on register, we might need to call login immediately.
 

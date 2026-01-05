@@ -3,7 +3,7 @@ import '../models/auth_tokens_model.dart';
 
 /// Interface for authentication data sources
 abstract class AuthDataSource {
-  /// Login with email and password
+  /// Login with email and password (User Management)
   Future<AuthResultModel> emailLogin(String email, String password);
 
   /// Google login
