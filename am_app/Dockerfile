@@ -6,20 +6,20 @@ FROM ghcr.io/cirruslabs/flutter:stable AS build-env
 WORKDIR /app
 
 # Copy all module dependencies from AM-Repos
-COPY AM-Repos/ui/am_modern_ui/am_design_system ./am_design_system
-COPY AM-Repos/ui/am_modern_ui/am_common ./am_common
-COPY AM-Repos/ui/am_modern_ui/am_auth_ui ./am_auth_ui
-COPY AM-Repos/ui/am_modern_ui/am_market_ui ./am_market_ui
-COPY AM-Repos/ui/am_modern_ui/am_portfolio_ui ./am_portfolio_ui
-COPY AM-Repos/ui/am_modern_ui/am_trade_ui ./am_trade_ui
-COPY AM-Repos/ui/am_modern_ui/am_user_ui ./am_user_ui
+COPY AM-Repos/ui/am_modern_ui/am_design_system ./ui/am_modern_ui/am_design_system
+COPY AM-Repos/ui/am_modern_ui/am_common ./ui/am_modern_ui/am_common
+COPY AM-Repos/ui/am_modern_ui/am_auth_ui ./ui/am_modern_ui/am_auth_ui
+COPY AM-Repos/ui/am_modern_ui/am_market_ui ./ui/am_modern_ui/am_market_ui
+COPY AM-Repos/ui/am_modern_ui/am_portfolio_ui ./ui/am_modern_ui/am_portfolio_ui
+COPY AM-Repos/ui/am_modern_ui/am_trade_ui ./ui/am_modern_ui/am_trade_ui
+COPY AM-Repos/ui/am_modern_ui/am_user_ui ./ui/am_modern_ui/am_user_ui
 
 # Copy external SDK dependency
-COPY AM-Repos/backend/am-market/am_market_sdk_flutter ./am_market_sdk_flutter
+COPY AM-Repos/backend/am-market/am_market_sdk_flutter ./backend/am-market/am_market_sdk_flutter
 
 # Copy app files
-COPY AM-Repos/ui/am_modern_ui/am_app/pubspec.* ./am_app/
-WORKDIR /app/am_app
+COPY AM-Repos/ui/am_modern_ui/am_app/pubspec.* ./ui/am_modern_ui/am_app/
+WORKDIR /app/ui/am_modern_ui/am_app
 
 # Get dependencies
 RUN flutter pub get

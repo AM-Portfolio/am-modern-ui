@@ -6,13 +6,14 @@ FROM ghcr.io/cirruslabs/flutter:stable AS build-env
 WORKDIR /app
 
 # Copy dependencies from AM-Repos
-COPY AM-Repos/ui/am_modern_ui/am_design_system ./am_design_system
-COPY AM-Repos/ui/am_modern_ui/am_common ./am_common
-COPY AM-Repos/ui/am_modern_ui/am_auth_ui ./am_auth_ui
+COPY AM-Repos/ui/am_modern_ui/am_design_system ./ui/am_modern_ui/am_design_system
+COPY AM-Repos/ui/am_modern_ui/am_common ./ui/am_modern_ui/am_common
+COPY AM-Repos/ui/am_modern_ui/am_auth_ui ./ui/am_modern_ui/am_auth_ui
+COPY AM-Repos/ui/am_modern_ui/am_user_ui ./ui/am_modern_ui/am_user_ui
 
 # Copy complete module (includes lib/ and live/)
-COPY AM-Repos/ui/am_modern_ui/am_portfolio_ui ./am_portfolio_ui
-WORKDIR /app/am_portfolio_ui/live
+COPY AM-Repos/ui/am_modern_ui/am_portfolio_ui ./ui/am_modern_ui/am_portfolio_ui
+WORKDIR /app/ui/am_modern_ui/am_portfolio_ui/live
 
 # Get dependencies
 RUN flutter pub get
