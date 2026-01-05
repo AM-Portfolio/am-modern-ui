@@ -1,16 +1,11 @@
 import 'package:am_common/core/utils/logger.dart';
-
 import 'package:dio/dio.dart';
-
-import 'package:am_common/core/config/config_service.dart';
-import 'package:am_design_system/config/environment_config.dart';
-import 'package:am_design_system/core/constants/api_endpoints.dart';
+import 'package:am_auth_ui/core/constants/auth_endpoints.dart';
 import 'package:am_design_system/core/constants/auth_constants.dart';
 import 'package:am_design_system/core/errors/exceptions.dart';
-import 'package:am_design_system/core/utils/logger.dart';
+import 'package:am_common/core/utils/logger.dart';
 import '../models/auth_result_model.dart';
 import '../models/auth_tokens_model.dart';
-
 import '../models/user_model.dart';
 import 'auth_data_source.dart';
 
@@ -22,12 +17,7 @@ class AuthRemoteDataSource implements AuthDataSource {
   @override
   Future<AuthResultModel> emailLogin(String email, String password) async {
     try {
-      final authConfig = ConfigService.config.api.auth;
-      if (authConfig == null) {
-        throw ServerException('Auth API not configured', statusCode: 500);
-      }
-
-      final fullUrl = ApiEndpoints.login;
+      final fullUrl = AuthEndpoints.login;
       AppLogger.info('🔵 [AuthRemoteDataSource] Login URL: $fullUrl');
       final response = await _dio.post(
         fullUrl,
@@ -98,13 +88,7 @@ class AuthRemoteDataSource implements AuthDataSource {
     try {
       AppLogger.info('🔵 [BACKEND] Preparing Google OAuth request...');
 
-      final authConfig = ConfigService.config.api.auth;
-      if (authConfig == null) {
-        AppLogger.error('🔴 [BACKEND] Auth API not configured!');
-        throw ServerException('Auth API not configured', statusCode: 500);
-      }
-
-      final fullUrl = ApiEndpoints.googleLogin;
+      final fullUrl = AuthEndpoints.googleLogin;
 
       AppLogger.info('🔵 [BACKEND] POST $fullUrl');
       AppLogger.debug('🔵 [BACKEND] ID Token length: ${idToken.length}');
@@ -196,10 +180,7 @@ class AuthRemoteDataSource implements AuthDataSource {
   @override
   Future<void> logout() async {
     try {
-      final authConfig = ConfigService.config.api.auth;
-      if (authConfig == null) return;
-
-      final fullUrl = ApiEndpoints.logout;
+      final fullUrl = AuthEndpoints.logout;
       await _dio.post(fullUrl);
     } on DioException catch (e) {
       // Log but don't throw - logout should always succeed locally
@@ -210,12 +191,7 @@ class AuthRemoteDataSource implements AuthDataSource {
   @override
   Future<AuthTokensModel> refreshToken(String refreshToken) async {
     try {
-      final authConfig = ConfigService.config.api.auth;
-      if (authConfig == null) {
-        throw ServerException('Auth API not configured', statusCode: 500);
-      }
-
-      final fullUrl = ApiEndpoints.refreshToken;
+      final fullUrl = AuthEndpoints.refreshToken;
       final response = await _dio.post(
         fullUrl,
         data: {'refreshToken': refreshToken},
@@ -249,12 +225,7 @@ class AuthRemoteDataSource implements AuthDataSource {
     String? phone,
   }) async {
     try {
-      final userConfig = ConfigService.config.api.user;
-      if (userConfig == null) {
-        throw ServerException('User API not configured', statusCode: 500);
-      }
-
-      final fullUrl = ApiEndpoints.register;
+      final fullUrl = AuthEndpoints.register;
       final response = await _dio.post(
         fullUrl,
         data: {
@@ -360,35 +331,7 @@ class AuthRemoteDataSource implements AuthDataSource {
   Future<bool> isAuthenticated() async {
     // Check with backend
     try {
-      final authConfig = ConfigService.config.api.auth;
-      if (authConfig == null) return false;
-
-      // Note: Assuming /validate is the endpoint to check token validity, based on Postman "Validate Token"
-      // Postman says: /api/v1/validate relative to Auth URL
-
-      // We need to pass the token, but this method just checks generic status?
-      // If this method is called, it usually expects the Interceptor to attach the token.
-      // However, /validate takes token in body in Postman.
-      // Let's stick closer to the pattern: simple checking if current token works on a protected endpoint?
-      // Or if there is a specific status endpoint.
-      // The previous code had /api/auth/status.
-      // Postman has "Service Info" at root.
-      // Let's rely on validate endpoint if possible, but for now simple health check or user validation.
-
-      // Reverting to previous behavior but using base URL, assuming there might be a status endpoint
-      // or relying on higher level logic.
-      // If we look at Postman "Validate Token", it is a POST.
-
-      // Let's assume we want to call /api/v1/validate with the current token?
-      // But we don't have access to token storage here easily without circular dependency if not careful.
-      // For now, let's just use the health check of the auth service to ensure connectivity?
-      // No, isAuthenticated implies user session validity.
-
       // Best bet: Trust the stored token until 401.
-      // But if we MUST check:
-      // final response = await _dio.get('${authConfig.baseUrl}/health');
-      // return response.statusCode == 200;
-
       return true; // Optimistic check, let interceptors handle 401s
     } catch (e) {
       return false;

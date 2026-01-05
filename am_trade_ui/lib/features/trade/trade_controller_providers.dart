@@ -17,9 +17,8 @@ import 'package:am_common/core/di/network_providers.dart';
 /// Provider for TradeControllerRemoteDataSource
 final _tradeControllerRemoteDataSourceProvider = FutureProvider<TradeControllerRemoteDataSource>((ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
-  final apiConfig = await ref.watch(appConfigProvider.future);
 
-  return TradeControllerRemoteDataSourceImpl(apiClient: apiClient, tradeConfig: apiConfig.api.trade);
+  return TradeControllerRemoteDataSourceImpl(apiClient: apiClient);
 });
 
 /// Provider for TradeControllerRepository

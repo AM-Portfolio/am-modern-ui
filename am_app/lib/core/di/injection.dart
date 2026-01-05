@@ -58,15 +58,16 @@ void _registerAuthDependencies() {
     () => MockAuthDataSource(getIt<MockDataService>()),
   );
   
-// DISABLED:   getIt.registerLazySingleton<AuthRemoteDataSource>(
-// DISABLED:     () => AuthRemoteDataSource(getIt<Dio>()),
+  getIt.registerLazySingleton<AuthRemoteDataSource>(
+    () => AuthRemoteDataSource(getIt<Dio>()),
+  );
 
   
-// DISABLED:   // Repository - takes 4 params: MockAuthDataSource, AuthRemoteDataSource, SecureStorageService, GoogleSignInService
+  // Repository - takes 4 params: MockAuthDataSource, AuthRemoteDataSource, SecureStorageService, GoogleSignInService
   getIt.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
       getIt<MockAuthDataSource>(),
-// DISABLED:       getIt<AuthRemoteDataSource>(),
+      getIt<AuthRemoteDataSource>(),
       getIt<SecureStorageService>(),
       getIt<GoogleSignInService>(),
     ),

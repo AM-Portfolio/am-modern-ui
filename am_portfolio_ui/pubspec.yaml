@@ -52,3 +52,5 @@ dev_dependencies:
   riverpod_generator: ^3.0.3
 
 flutter:
+  assets:
+    - assets/application.properties

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
+import 'package:am_trade_ui/core/constants/trade_endpoints.dart';
 
 import 'package:am_common/core/network/api_client.dart';
 import 'package:am_common/core/utils/logger.dart';
@@ -67,12 +68,11 @@ abstract class TradeControllerRemoteDataSource {
 class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSource {
   TradeControllerRemoteDataSourceImpl({
     required ApiClient apiClient,
-    required TradeApiConfig tradeConfig,
-  }) : _apiClient = apiClient,
-       _tradeConfig = tradeConfig;
+  }) : _apiClient = apiClient;
 
   final ApiClient _apiClient;
-  final TradeApiConfig _tradeConfig;
+  
+  String get _baseUrl => TradeEndpoints.tradeBaseUrl;
 
   /// Helper to safely build URI avoiding double slashes
   String _buildUri(String baseUrl, String resource) {
@@ -97,7 +97,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
     );
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/trades/details/portfolio');
+      final baseUri = _buildUri(_baseUrl, TradeEndpoints.detailsByPortfolio);
       var fullUri = '$baseUri/$portfolioId';
 
       if (symbols != null && symbols.isNotEmpty) {
@@ -133,7 +133,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
     AppLogger.methodEntry('addTrade', tag: 'TradeControllerRemoteDataSource');
 
     try {
-      final fullUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/trades/details');
+      final fullUri = _buildUri(_baseUrl, TradeEndpoints.details);
 
       // Log a summary first (single line) - use DTO properties directly to avoid casting issues
       AppLogger.info(
@@ -194,7 +194,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
     AppLogger.methodEntry('updateTrade', tag: 'TradeControllerRemoteDataSource', params: {'tradeId': tradeId});
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/trades/details');
+      final baseUri = _buildUri(_baseUrl, TradeEndpoints.details);
       final fullUri = '$baseUri/$tradeId';
 
       final response = await _apiClient.put<TradeDetailsDto>(
@@ -221,7 +221,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
     AppLogger.methodEntry('deleteTrade', tag: 'TradeControllerRemoteDataSource', params: {'tradeId': tradeId});
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/trades/details');
+      final baseUri = _buildUri(_baseUrl, TradeEndpoints.details);
       final fullUri = '$baseUri/$tradeId';
 
       await _apiClient.delete<void>(fullUri, parser: (_) {});
@@ -280,7 +280,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
         queryParams.add('sort=$sort');
       }
 
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/trades/filter');
+      final baseUri = _buildUri(_baseUrl, TradeEndpoints.filter);
       final fullUri = '$baseUri?${queryParams.join('&')}';
 
       final response = await _apiClient.get<PaginatedTradeResponseDto>(
@@ -310,7 +310,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
     );
 
     try {
-      final fullUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/trades/details/batch');
+      final fullUri = _buildUri(_baseUrl, TradeEndpoints.detailsBatch);
 
       final response = await _apiClient.post<List<TradeDetailsDto>>(
         fullUri,
@@ -345,7 +345,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
     );
 
     try {
-      final fullUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/trades/details/by-ids');
+      final fullUri = _buildUri(_baseUrl, TradeEndpoints.detailsByIds);
 
       final response = await _apiClient.post<List<TradeDetailsDto>>(
         fullUri,
@@ -390,7 +390,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
         queryParams.add('sort=$sort');
       }
 
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/trades/details/filter');
+      final baseUri = _buildUri(_baseUrl, TradeEndpoints.detailsFilter);
       final fullUri = '$baseUri?${queryParams.join('&')}';
 
       final requestData = FilterTradeDetailsRequestDto(

@@ -44,4 +44,5 @@ dev_dependencies:
 
 flutter:
   assets:
+    - assets/application.properties
     - assets/test_users.json

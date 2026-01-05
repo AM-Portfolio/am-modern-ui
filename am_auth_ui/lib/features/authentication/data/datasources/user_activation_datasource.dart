@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 
-import 'package:am_design_system/core/constants/api_endpoints.dart';
+import 'package:am_auth_ui/core/constants/auth_endpoints.dart';
 import 'package:am_design_system/core/constants/auth_constants.dart';
 import 'package:am_design_system/core/errors/exceptions.dart';
 
@@ -21,7 +21,7 @@ class UserActivationRemoteDataSource implements UserActivationDataSource {
   @override
   Future<Map<String, dynamic>> activateUser(String userId) async {
     try {
-      final fullUrl = ApiEndpoints.userStatus(userId);
+      final fullUrl = AuthEndpoints.userStatus(userId);
 
       final response = await _dio.patch(
         fullUrl,
@@ -60,7 +60,7 @@ class UserActivationRemoteDataSource implements UserActivationDataSource {
   @override
   Future<Map<String, dynamic>> getUserStatus(String userId) async {
     try {
-      final fullUrl = ApiEndpoints.userStatus(userId);
+      final fullUrl = AuthEndpoints.userStatus(userId);
 
       final response = await _dio.get(fullUrl);
 

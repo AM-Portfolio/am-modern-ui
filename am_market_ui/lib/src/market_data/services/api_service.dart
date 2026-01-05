@@ -8,13 +8,10 @@ import '../models/market_data.dart';
 
 import 'package:am_market_sdk_flutter/api.dart' as sdk;
 
+import 'package:am_market_ui/core/constants/market_endpoints.dart';
+
 class ApiService {
-  // Assuming the Flutter app runs on the same host or proxied. 
-  // Should probably use relative paths if served from same origin, or configure base URL.
-  // For dev, if using 'flutter run -d chrome', we might need a proxy or full URL.
-  // Assuming localhost:8080 for development if not specified.
-  // Assuming localhost:8080 for development if not specified.
-  static const String baseUrl = 'https://am.munish.org/api/market'; 
+  static const String baseUrl = MarketEndpoints.baseUrl; 
  
   
   final _storage = GetIt.I<SecureStorageService>();
@@ -34,7 +31,7 @@ class ApiService {
     CommonLogger.info("Requesting available indices from $baseUrl/v1/indices/available", tag: "ApiService.fetchAvailableIndices");
 
     final headers = await _getHeaders();
-    final response = await http.get(Uri.parse('$baseUrl/v1/indices/available'), headers: headers);
+    final response = await http.get(Uri.parse('$baseUrl${MarketEndpoints.availableIndices}'), headers: headers);
     if (response.statusCode == 200) {
       CommonLogger.debug("Successfully fetched indices", tag: "ApiService.fetchAvailableIndices");
 
@@ -111,7 +108,7 @@ class ApiService {
 
        final headers = await _getHeaders();
        final response = await http.post(
-        Uri.parse('$baseUrl/v1/indices/batch?forceRefresh=$forceRefresh'),
+        Uri.parse('$baseUrl${MarketEndpoints.indicesBatch}?forceRefresh=$forceRefresh'),
         headers: headers,
         body: jsonEncode([indexSymbol]),
       );
@@ -141,7 +138,7 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       // FIX: Removed extra /api from path
-      final response = await http.get(Uri.parse('$baseUrl/v1/indices/available'), headers: headers);
+      final response = await http.get(Uri.parse('$baseUrl${MarketEndpoints.availableIndices}'), headers: headers);
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         List<String> all = [];
@@ -167,7 +164,7 @@ class ApiService {
       final headers = await _getHeaders();
       
       // FIX: Use queryParameters for safe encoding of spaces and special chars
-      final uri = Uri.parse('$baseUrl/v1/indices/batch').replace(queryParameters: {
+      final uri = Uri.parse('$baseUrl${MarketEndpoints.indicesBatch}').replace(queryParameters: {
         'forceRefresh': forceRefresh.toString(),
       });
       
@@ -196,7 +193,7 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       final response = await http.get(
-        Uri.parse('$baseUrl/v1/market-analytics/historical-charts/$symbol?range=$range'),
+        Uri.parse('$baseUrl${MarketEndpoints.historicalCharts}/$symbol?range=$range'),
         headers: headers,
       );
 
@@ -245,7 +242,7 @@ class ApiService {
   Future<bool> refreshCookies() async {
     try {
       final headers = await _getHeaders();
-      final response = await http.get(Uri.parse('$baseUrl/api/scraper/cookies'), headers: headers);
+      final response = await http.get(Uri.parse('$baseUrl${MarketEndpoints.refreshCookies}'), headers: headers);
       return response.statusCode == 200;
     } catch (e) {
       CommonLogger.error("Error refreshing cookies", tag: "ApiService.refreshCookies", error: e);
@@ -260,7 +257,7 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       // Fixed: removed duplicate /api - baseUrl already contains /api/market
-      final response = await http.get(Uri.parse('$baseUrl/v1/market-data/auth/login-url?provider=$provider'), headers: headers);
+      final response = await http.get(Uri.parse('$baseUrl${MarketEndpoints.authLoginUrl}?provider=$provider'), headers: headers);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data['loginUrl'] ?? data['url'] ?? data['authUrl'];
@@ -283,7 +280,7 @@ class ApiService {
       
       final headers = await _getHeaders();
       final response = await http.post(
-        Uri.parse('$baseUrl/v1/market-data/stream/connect'),
+        Uri.parse('$baseUrl${MarketEndpoints.streamConnect}'),
         headers: headers,
         body: json.encode(payload),
       );
@@ -300,7 +297,7 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       final response = await http.post(
-          Uri.parse('$baseUrl/v1/market-data/stream/disconnect?provider=$provider'),
+          Uri.parse('$baseUrl${MarketEndpoints.streamDisconnect}?provider=$provider'),
           headers: headers,
       );
       return response.statusCode == 200;
@@ -319,7 +316,7 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       final response = await http.post(
-        Uri.parse('$baseUrl/v1/instruments/search'),
+        Uri.parse('$baseUrl${MarketEndpoints.instrumentsSearch}'),
         headers: headers,
         body: json.encode(criteria)
       );
@@ -342,7 +339,7 @@ class ApiService {
     String? indexSymbol
   }) async {
     try {
-      String url = '$baseUrl/v1/market-analytics/movers?type=$type&limit=$limit';
+      String url = '$baseUrl${MarketEndpoints.movers}?type=$type&limit=$limit';
       if (indexSymbol != null && indexSymbol.isNotEmpty) {
         url += '&indexSymbol=$indexSymbol';
       }
@@ -364,7 +361,7 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> fetchSectorPerformance({String? indexSymbol}) async {
     try {
-      String url = '$baseUrl/v1/market-analytics/sectors';
+      String url = '$baseUrl${MarketEndpoints.sectors}';
       if (indexSymbol != null && indexSymbol.isNotEmpty) {
         url += '?indexSymbol=$indexSymbol';
       }
@@ -387,7 +384,7 @@ class ApiService {
   Future<Map<String, dynamic>> fetchMarketCapAnalysis() async {
     try {
       final headers = await _getHeaders();
-      final response = await http.get(Uri.parse('$baseUrl/v1/market-analytics/market-cap'), headers: headers);
+      final response = await http.get(Uri.parse('$baseUrl${MarketEndpoints.marketCap}'), headers: headers);
       
       if (response.statusCode == 200) {
         return Map<String, dynamic>.from(json.decode(response.body));
@@ -408,7 +405,7 @@ class ApiService {
       final query = symbols.join(',');
       final headers = await _getHeaders();
       final response = await http.get(
-        Uri.parse('$baseUrl/v1/market-data/live-prices?symbols=$query&isIndexSymbol=$indexSymbol&refresh=$forceRefresh'),
+        Uri.parse('$baseUrl${MarketEndpoints.livePrices}?symbols=$query&isIndexSymbol=$indexSymbol&refresh=$forceRefresh'),
         headers: headers,
       );
       
@@ -448,7 +445,7 @@ class ApiService {
 
       final headers = await _getHeaders();
       final response = await http.post(
-        Uri.parse('$baseUrl/v1/market-data/historical-data'),
+        Uri.parse('$baseUrl${MarketEndpoints.historicalData}'),
         headers: headers,
         body: json.encode(requestBody),
       );

@@ -3,6 +3,7 @@ import 'package:am_common/core/network/api_client.dart';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/core/utils/logger.dart';
+import 'package:am_portfolio_ui/core/constants/portfolio_endpoints.dart';
 import '../dtos/portfolio_analytics_request_dto.dart';
 import '../dtos/portfolio_analytics_response_dto.dart';
 import '../dtos/portfolio_holdings_dto.dart';
@@ -48,11 +49,11 @@ abstract class PortfolioRemoteDataSource {
 class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   const PortfolioRemoteDataSourceImpl({
     required ApiClient apiClient,
-    required PortfolioApiConfig portfolioConfig,
-  }) : _apiClient = apiClient,
-       _portfolioConfig = portfolioConfig;
+  }) : _apiClient = apiClient;
   final ApiClient _apiClient;
-  final PortfolioApiConfig _portfolioConfig;
+
+  // Use localized endpoints
+  String get _baseUrl => PortfolioEndpoints.baseUrl;
 
   /// Helper to safely build URI avoiding double slashes
   String _buildUri(String baseUrl, String resource) {
@@ -84,7 +85,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
 
       // Construct full URI from portfolio config with userId query parameter
-      final baseUri = _buildUri(_portfolioConfig.baseUrl, _portfolioConfig.holdingsResource);
+      final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.holdings);
       final fullUri = '$baseUri?userId=$userId';
 
       // Use ApiClient for consistent error handling and logging
@@ -155,7 +156,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
 
       // Construct full URI from portfolio config with userId and portfolioId query parameters
-      final baseUri = _buildUri(_portfolioConfig.baseUrl, _portfolioConfig.holdingsResource);
+      final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.holdings);
       final fullUri = '$baseUri?userId=$userId&portfolioId=$portfolioId';
 
       // Use ApiClient for consistent error handling and logging
@@ -223,7 +224,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
 
       // Construct full URI from portfolio config with userId query parameter
-      final baseUri = _buildUri(_portfolioConfig.baseUrl, _portfolioConfig.summaryResource);
+      final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.summary);
       final fullUri = '$baseUri?userId=$userId';
 
       // Use ApiClient for consistent error handling and logging
@@ -294,7 +295,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
 
       // Construct full URI from portfolio config with userId and portfolioId query parameters
-      final baseUri = _buildUri(_portfolioConfig.baseUrl, _portfolioConfig.summaryResource);
+      final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.summary);
       final fullUri = '$baseUri?userId=$userId&portfolioId=$portfolioId';
 
       // Use ApiClient for consistent error handling and logging
@@ -365,7 +366,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
 
       // Construct full URI for analytics endpoint
-      final baseUri = _buildUri(_portfolioConfig.baseUrl, '/v1/analytics/portfolio/$portfolioId/advanced');
+      final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.advancedAnalytics(portfolioId));
 
       // Use ApiClient for consistent error handling and logging with POST request
       final analyticsResponse = await _apiClient.post<PortfolioAnalyticsResponseDto>(
@@ -486,7 +487,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
 
       // Construct full URI from portfolio config with userId query parameter
-      final baseUri = _buildUri(_portfolioConfig.baseUrl, '/v1/portfolios/list');
+      final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.list);
       final fullUri = '$baseUri?userId=$userId';
 
       // Use ApiClient for consistent error handling and logging
