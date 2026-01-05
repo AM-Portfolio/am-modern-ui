@@ -1,8 +1,8 @@
 /// Authentication & User Management API endpoint constants
 class AuthEndpoints {
   // Base URLs
-  static const String authBaseUrl = 'http://localhost:8001/api/v1/auth';
-  static const String userBaseUrl = 'http://localhost:8002/api/v1/user';
+  static const String authBaseUrl = 'https://am.munish.org/api/v1/auth';
+  static const String userBaseUrl = 'https://am.munish.org/api/v1/user';
   
   // Authentication endpoints
   static const String login = '$authBaseUrl/login';
