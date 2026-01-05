@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_design_system/core/constants/app_config.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
+import 'package:am_design_system/core/theme/app_colors.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../widgets/app_header_widget.dart';
@@ -40,7 +41,7 @@ class LoginPage extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.error,
                 ),
               );
             }
@@ -109,20 +110,20 @@ class LoginPage extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: isDark
                 ? [
-                    const Color(0xFF1A1A2E),
-                    const Color(0xFF16213E),
-                    const Color(0xFF0F3460),
+                    AppColors.darkBackground,
+                    AppColors.darkBackgroundLight,
+                    AppColors.darkBackgroundDeep,
                   ]
                 : [
-                    Colors.deepPurple.shade50,
-                    Colors.blue.shade50,
-                    Colors.purple.shade50,
+                    AppColors.lightBackgroundAlt,
+                    AppColors.lightBackground,
+                    AppColors.lightBackgroundAlt,
                   ],
           ),
         ),
         child: InteractiveBackground(
-          baseColor: isDark ? const Color(0xFF6C63FF) : Colors.deepPurple.shade200,
-          highlightColor: isDark ? Colors.cyanAccent : Colors.blueAccent,
+          baseColor: isDark ? AppColors.authAccent : AppColors.primaryLight,
+          highlightColor: isDark ? AppColors.accentBlue : AppColors.info,
         ),
       ),
     );
@@ -152,7 +153,7 @@ class LoginPage extends StatelessWidget {
                 'OR',
                 style: TextStyle(
                   fontSize: isCompact ? 11 : 12,
-                  color: Colors.grey,
+                  color: AppColors.textTertiaryLight,
                 ),
               ),
             ),
@@ -193,7 +194,7 @@ class LoginPage extends StatelessWidget {
             Text(
               '|',
               style: TextStyle(
-                color: Colors.grey,
+                color: AppColors.textTertiaryLight,
                 fontSize: isCompact ? 13 : 14,
               ),
             ),
