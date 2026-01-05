@@ -20,7 +20,8 @@ dependencies:
   
   # Market SDK
   am_market_sdk_flutter:
-    path: ../../am-market/am_market_sdk_flutter
+    path: ../am_market_sdk_flutter  # Works in Docker; for local dev use: ../../am-market/am_market_sdk_flutter
+
 
   # Third Party
   provider: ^6.1.1
