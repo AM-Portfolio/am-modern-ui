@@ -7,8 +7,8 @@ services:
   
   am-app:
     build:
-      context: ../..
-      dockerfile: AM-Repos/am_modern_ui/am_app/Dockerfile
+      context: ../../..
+      dockerfile: AM-Repos/ui/am_modern_ui/am_app/Dockerfile
     container_name: am-app-shell
     ports:
       - "9000:80"
@@ -29,8 +29,8 @@ services:
   
   market-ui:
     build:
-      context: ../..
-      dockerfile: AM-Repos/am_modern_ui/am_market_ui/live/Dockerfile
+      context: ../../..
+      dockerfile: AM-Repos/ui/am_modern_ui/am_market_ui/live/Dockerfile
     container_name: am-market-ui-live
     ports:
       - "9002:80"
@@ -46,8 +46,8 @@ services:
 
   portfolio-ui:
     build:
-      context: ../..
-      dockerfile: AM-Repos/am_modern_ui/am_portfolio_ui/live/Dockerfile
+      context: ../../..
+      dockerfile: AM-Repos/ui/am_modern_ui/am_portfolio_ui/live/Dockerfile
     container_name: am-portfolio-ui-live
     ports:
       - "9005:80"
@@ -63,8 +63,8 @@ services:
 
   trade-ui:
     build:
-      context: ../..
-      dockerfile: AM-Repos/am_modern_ui/am_trade_ui/live/Dockerfile
+      context: ../../..
+      dockerfile: AM-Repos/ui/am_modern_ui/am_trade_ui/live/Dockerfile
     container_name: am-trade-ui-live
     ports:
       - "9006:80"

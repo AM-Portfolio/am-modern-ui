@@ -6,15 +6,15 @@ FROM ghcr.io/cirruslabs/flutter:stable AS build-env
 WORKDIR /app
 
 # Copy dependencies from AM-Repos
-COPY AM-Repos/am_modern_ui/am_design_system ./am_design_system
-COPY AM-Repos/am_modern_ui/am_common ./am_common
-COPY AM-Repos/am_modern_ui/am_auth_ui ./am_auth_ui
+COPY AM-Repos/ui/am_modern_ui/am_design_system ./am_design_system
+COPY AM-Repos/ui/am_modern_ui/am_common ./am_common
+COPY AM-Repos/ui/am_modern_ui/am_auth_ui ./am_auth_ui
 
 # Copy external SDK dependency
-COPY AM-Repos/am-market/am_market_sdk_flutter ./am_market_sdk_flutter
+COPY AM-Repos/backend/am-market/am_market_sdk_flutter ./am_market_sdk_flutter
 
 # Copy live app
-COPY AM-Repos/am_modern_ui/am_market_ui/live ./am_market_ui/live
+COPY AM-Repos/ui/am_modern_ui/am_market_ui/live ./am_market_ui/live
 WORKDIR /app/am_market_ui/live
 
 # Get dependencies
