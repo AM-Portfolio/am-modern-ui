@@ -1,0 +1,39 @@
+name: am_trade_ui_example
+description: "Standalone runner for Trade UI"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Core Modules
+  # Core Modules
+  am_trade_ui:
+    path: ../
+  am_design_system:
+    path: ../../am_design_system
+  am_common:
+    path: ../../am_common
+  am_auth_ui:
+    path: ../../am_auth_ui
+  am_portfolio_ui:
+    path: ../../am_portfolio_ui
+  am_market_ui:
+    path: ../../am_market_ui
+    
+  # State Management
+  flutter_bloc: ^9.1.1
+  flutter_riverpod: ^3.0.3
+  get_it: ^9.1.1
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true

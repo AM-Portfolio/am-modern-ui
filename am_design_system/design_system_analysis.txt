@@ -1,0 +1,19 @@
+# Design System Analysis & Cleanup Log
+
+## Analysis Findings
+- Found 50+ duplicate files between `lib/widgets` and `lib/shared/widgets`.
+- Identified broken relative imports `../../../../features/` in several components.
+- Confirmed mixing of foundation (pure UI) and features (Holdings, Heatmap) in `am_design_system`.
+
+## Cleanup Actions Taken
+- Consolidated `navigation`, `buttons`, `dropdowns`, `holdings`, `charts`, `layouts`, `calendar`, and `feedback` into `lib/shared/widgets`.
+- Deleted legacy `lib/widgets` root directory.
+- Updated `lib/am_design_system.dart` to export exclusively from `shared/widgets`.
+- Normalized imports in `lib/shared/widgets` to use `package:am_design_system` for core themes.
+
+## Pending Actions
+- Decision on moving feature-specific widgets (Holdings, Heatmaps) to respective feature packages. **DONE: Moved to am_portfolio_ui/am_trade_ui.**
+- Final normalization of all inter-widget imports. **DONE: Replaced all legacy widget paths with am_design_system barrel file.**
+
+## Final Status
+Structure is now Unified, Clean, and Foundation-Only.

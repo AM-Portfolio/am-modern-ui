@@ -1,0 +1,20 @@
+// Core calendar widget
+// Types
+export 'calendar_types.dart';
+// Components
+export 'components/calendar_day_cell.dart';
+export 'components/calendar_legend.dart';
+export 'components/color_mode_selector.dart';
+export 'components/month_calendar_card.dart';
+export 'components/month_header.dart';
+export 'components/months_grid.dart';
+export 'components/stat_badge.dart';
+export 'components/year_calendar_header.dart';
+export 'components/year_summary_stats.dart';
+// Controllers
+export 'controllers/calendar_data_controller.dart';
+// Models
+export 'models/calendar_color_mode.dart';
+// Services
+export 'services/calendar_color_service.dart';
+export 'year_calendar_widget.dart';
