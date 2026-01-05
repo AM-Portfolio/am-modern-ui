@@ -111,7 +111,7 @@ export 'shared/widgets/calendar/universal_calendar/data_provider.dart';
 
 // Tables & Charts
 export 'shared/widgets/tables/sortable_table.dart';
-export 'shared/widgets/table/am_data_table.dart';
+export 'shared/widgets/tables/adaptive_data_table.dart';
 export 'shared/widgets/charts/chart_factory.dart';
 export 'shared/widgets/charts/chart_types.dart';
 

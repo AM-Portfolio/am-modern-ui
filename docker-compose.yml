@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # STANDALONE UI APPLICATIONS (LIVE)
+  # ============================================================================
+  
+  market-ui:
+    build:
+      context: ./am_market_ui/live
+      dockerfile: Dockerfile
+    container_name: am-market-ui-live
+    ports:
+      - "9002:80"
+    environment:
+      - API_BASE_URL=https://am.munish.org/api/market
+      - AUTH_BASE_URL=https://am.munish.org/api/auth
+    networks:
+      - am-network
+    restart: unless-stopped
+
+  portfolio-ui:
+    build:
+      context: ./am_portfolio_ui/live
+      dockerfile: Dockerfile
+    container_name: am-portfolio-ui-live
+    ports:
+      - "9005:80"
+    environment:
+      - API_BASE_URL=https://am.munish.org/api/portfolio
+      - AUTH_BASE_URL=https://am.munish.org/api/auth
+    networks:
+      - am-network
+    restart: unless-stopped
+
+  trade-ui:
+    build:
+      context: ./am_trade_ui/live
+      dockerfile: Dockerfile
+    container_name: am-trade-ui-live
+    ports:
+      - "9006:80"
+    environment:
+      - API_BASE_URL=https://am.munish.org/api/trade
+      - AUTH_BASE_URL=https://am.munish.org/api/auth
+    networks:
+      - am-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # MAIN APPLICATION SHELL
+  # ============================================================================
+  
+  am-app:
+    build:
+      context: ./am_app
+      dockerfile: Dockerfile
+    container_name: am-app-shell
+    ports:
+      - "9000:80"
+    environment:
+      - API_BASE_URL=https://am.munish.org/api
+      - AUTH_BASE_URL=https://am.munish.org/api/auth
+      - MARKET_MODULE_URL=http://market-ui
+      - PORTFOLIO_MODULE_URL=http://portfolio-ui
+      - TRADE_MODULE_URL=http://trade-ui
+    depends_on:
+      - market-ui
+      - portfolio-ui
+      - trade-ui
+    networks:
+      - am-network
+    restart: unless-stopped
+
+networks:
+  am-network:
+    driver: bridge
+    name: am-modern-ui-network
+
+# ============================================================================
+# USAGE INSTRUCTIONS
+# ============================================================================
+# 
+# Build and run all services:
+#   docker-compose up -d --build
+#
+# Run specific service:
+#   docker-compose up -d market-ui
+#
+# View logs:
+#   docker-compose logs -f market-ui
+#
+# Stop all services:
+#   docker-compose down
+#
+# Remove volumes:
+#   docker-compose down -v
+#
+# Access URLs:
+#   - Market UI:    http://localhost:9002
+#   - Portfolio UI: http://localhost:9005
+#   - Trade UI:     http://localhost:9006
+#   - Main App:     http://localhost:9000
+#
+# ============================================================================
