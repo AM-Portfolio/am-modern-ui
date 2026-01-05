@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_design_system/core/constants/app_config.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/core/theme/color_extensions.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../widgets/app_header_widget.dart';
@@ -56,7 +57,7 @@ class LoginPage extends StatelessWidget {
                     return Stack(
                       children: [
                         // Background gradient (adapts to theme)
-                        _buildBackground(themeState.isDarkMode),
+                        _buildBackground(),
                         
                         // Main content
                         Center(
@@ -101,29 +102,31 @@ class LoginPage extends StatelessWidget {
     );
   }
   
-  Widget _buildBackground(bool isDark) {
+  Widget _buildBackground() {
     return Positioned.fill(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [
-                    AppColors.darkBackground,
-                    AppColors.darkBackgroundLight,
-                    AppColors.darkBackgroundDeep,
-                  ]
-                : [
-                    AppColors.lightBackgroundAlt,
-                    AppColors.lightBackground,
-                    AppColors.lightBackgroundAlt,
-                  ],
+      child: Builder(
+        builder: (context) => Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: context.isDark
+                  ? [
+                      AppColors.darkBackground,
+                      AppColors.darkBackgroundLight,
+                      AppColors.darkBackgroundDeep,
+                    ]
+                  : [
+                      AppColors.lightBackgroundAlt,
+                      AppColors.lightBackground,
+                      AppColors.lightBackgroundAlt,
+                    ],
+            ),
           ),
-        ),
-        child: InteractiveBackground(
-          baseColor: isDark ? AppColors.authAccent : AppColors.primaryLight,
-          highlightColor: isDark ? AppColors.accentBlue : AppColors.info,
+          child: InteractiveBackground(
+            baseColor: context.isDark ? AppColors.authAccent : AppColors.primaryLight,
+            highlightColor: context.isDark ? AppColors.accentBlue : AppColors.info,
+          ),
         ),
       ),
     );
@@ -153,7 +156,7 @@ class LoginPage extends StatelessWidget {
                 'OR',
                 style: TextStyle(
                   fontSize: isCompact ? 11 : 12,
-                  color: AppColors.textTertiaryLight,
+                  color: context.textTertiary,
                 ),
               ),
             ),
@@ -194,7 +197,7 @@ class LoginPage extends StatelessWidget {
             Text(
               '|',
               style: TextStyle(
-                color: AppColors.textTertiaryLight,
+                color: context.textTertiary,
                 fontSize: isCompact ? 13 : 14,
               ),
             ),
