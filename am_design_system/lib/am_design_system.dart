@@ -8,6 +8,7 @@ library am_design_system;
 export 'core/theme/app_theme.dart';
 export 'core/theme/am_chart_theme.dart';
 export 'core/theme/app_colors.dart';
+export 'core/theme/color_extensions.dart';
 export 'core/theme/app_typography.dart';
 export 'core/theme/app_animations.dart';
 export 'core/theme/app_glassmorphism.dart';
