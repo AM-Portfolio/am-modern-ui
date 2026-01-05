@@ -21,7 +21,7 @@ WORKDIR /app/am_market_ui/live
 RUN flutter pub get
 
 # Build web app
-RUN flutter build web --release --web-renderer canvaskit
+RUN flutter build web --release
 
 # Runtime stage
 FROM nginx:alpine

@@ -22,7 +22,7 @@ WORKDIR /app/am_trade_ui/live
 RUN flutter pub get
 
 # Build web app
-RUN flutter build web --release --web-renderer canvaskit
+RUN flutter build web --release
 
 # Runtime stage
 FROM nginx:alpine

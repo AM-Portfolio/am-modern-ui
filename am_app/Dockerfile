@@ -28,7 +28,7 @@ RUN flutter pub get
 COPY AM-Repos/am_modern_ui/am_app .
 
 # Build web app
-RUN flutter build web --release --web-renderer canvaskit
+RUN flutter build web --release
 
 # Runtime stage - nginx
 FROM nginx:alpine
