@@ -1,28 +1,6 @@
 # Multi-stage Flutter web build
-FROM debian:latest AS build-env
-
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    git \
-    wget \
-    unzip \
-    xz-utils \
-    zip \
-    libglu1-mesa \
-    && rm -rf /var/lib/apt/lists/*
-
-# Clone Flutter repository
-RUN git clone https://github.com/flutter/flutter.git /usr/local/flutter
-
-# Set Flutter path
-ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PATH}"
-
-# Enable Flutter web
-RUN flutter config --enable-web
-
-# Run flutter doctor
-RUN flutter doctor -v
+# Use official Flutter image
+FROM ghcr.io/cirruslabs/flutter:stable AS build-env
 
 # Create app directory
 WORKDIR /app
