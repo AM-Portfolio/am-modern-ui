@@ -47,8 +47,8 @@ class _AppShellState extends State<AppShell> {
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            // Responsive breakpoint (e.g. 800px)
-            final isDesktop = constraints.maxWidth > 800;
+            // Responsive breakpoint (Standardized to 1100px for Tablet support)
+            final isDesktop = constraints.maxWidth > 1100;
 
             // Determine if we should show global nav on mobile
             // Show only if in Dashboard (0) or Profile (4).
@@ -66,6 +66,7 @@ class _AppShellState extends State<AppShell> {
                       isDarkMode: isDark,
                       userName: authState.user.displayName,
                       userEmail: authState.user.email,
+                      userAvatarUrl: authState.user.photoUrl,
                       onThemeToggle: () {
                          try {
                            context.read<ThemeCubit>().toggleTheme(); 
@@ -129,18 +130,15 @@ class _AppShellState extends State<AppShell> {
       case 1:
         return PortfolioScreen(
           userId: userId,
-          // Pass onBackToGlobal callback (even if not part of current constructor, 
-          // we might need to modify PortfolioScreen or its child)
-          // Wait, PortfolioScreen constructor might not have it. 
-          // Assuming we need to pass it to the WebScreens directly often.
-          // Since PortfolioScreen wraps Layouts, we should update it.
-          // For now, let's cast or modify PortfolioScreen if needed.
-          // It's likely PortfolioScreen(userId: userId, onBack: onBackToGlobal)
+          onBack: onBackToGlobal,
         );
       case 2:
         return TradeWebScreen(userId: userId, onBack: onBackToGlobal);
       case 3:
-        return MarketPage(userId: userId); // MarketPage wraps MarketWebScreen?
+        return MarketPage(
+          userId: userId,
+          onBack: onBackToGlobal,
+        ); // MarketPage wraps MarketWebScreen?
       case 4:
         return ProfileSettingsPage(userId: userId);
       default:

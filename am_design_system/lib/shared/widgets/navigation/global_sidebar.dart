@@ -155,8 +155,68 @@ class GlobalSidebar extends StatelessWidget {
   }
 
   Widget _buildUserProfile() {
-    return GestureDetector(
-      onTap: onProfileTap ?? onLogout, // Use profile tap first, fallback to logout
+    return PopupMenuButton<String>(
+      offset: const Offset(60, -120), // Open to the right/above roughly
+      tooltip: 'Profile Options',
+      color: isDarkMode ? const Color(0xFF1E1E2C) : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.2),
+        ),
+      ),
+      onSelected: (value) {
+        if (value == 'profile') {
+          onProfileTap?.call();
+        } else if (value == 'logout') {
+          onLogout?.call();
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'profile',
+          child: Row(
+            children: [
+              Icon(
+                Icons.person_outline_rounded,
+                color: isDarkMode ? Colors.white : Colors.black87,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Profile & Settings',
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'logout',
+          child: Row(
+            children: [
+              const Icon(
+                Icons.logout_rounded,
+                color: Colors.redAccent,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Logout',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
       child: Container(
         width: 44,
         height: 44,

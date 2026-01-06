@@ -8,7 +8,7 @@ class AuthEndpoints {
   static const String login = '$userBaseUrl/users/account/v1/auth/login'; // Standard Login (via User Mgmt)
   static const String logout = '$authBaseUrl/logout';
   static const String refreshToken = '$authBaseUrl/refresh';
-  static const String googleLogin = '$authBaseUrl/google_auth';
+  static const String googleLogin = '$authBaseUrl/auth/google/token';
   
   // User Management endpoints
   static const String register = '$userBaseUrl/auth/register';

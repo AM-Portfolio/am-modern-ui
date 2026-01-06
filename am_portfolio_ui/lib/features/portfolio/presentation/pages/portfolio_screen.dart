@@ -31,8 +31,8 @@ class PortfolioScreen extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Use the same breakpoint (850px) as AuthWrapper for consistency
-        final isMobileView = constraints.maxWidth < 850;
+        // Use the same standardized breakpoint (1100px) as AppShell
+        final isMobileView = constraints.maxWidth < 1100;
 
         CommonLogger.debug(
           'Using PortfolioListWrapper for ${isMobileView ? 'mobile' : 'web'} view (width: ${constraints.maxWidth})',

@@ -69,8 +69,7 @@ class GoogleSignInService {
 
         id.callMethod('initialize', [
           js.JsObject.jsify({
-            'client_id':
-                '536930944518-v4406qrrj4o2pk594g2rc3sk6lfinlf6.apps.googleusercontent.com',
+            'client_id': AuthConstants.googleClientId,
             'callback': js.allowInterop(_handleCredentialResponse),
             'use_fedcm_for_prompt': false,
           }),
@@ -83,7 +82,7 @@ class GoogleSignInService {
       print('🔵 Opening Google Sign-In popup window...');
       CommonLogger.info('🔵 Opening Google Sign-In popup window...');
       
-      final clientId = '536930944518-v4406qrrj4o2pk594g2rc3sk6lfinlf6.apps.googleusercontent.com';
+      final clientId = AuthConstants.googleClientId;
       print('🔵 Using client ID: ${clientId.substring(0, 20)}...');
       
       // Dynamically determine redirect URI based on current origin

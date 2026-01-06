@@ -49,8 +49,8 @@ class UnifiedSidebarScaffold extends StatefulWidget {
     this.sections,
     this.header,
     this.isDark = true,
-    this.desktopBreakpoint = 1200,
-    this.tabletBreakpoint = 800,
+    this.desktopBreakpoint = 1300, // Shifted up slightly for better wide screen support
+    this.tabletBreakpoint = 1100, // Standardized Mobile/Tablet cutoff
     this.fullWidth = 280,
     this.compactWidth = 72,
     this.condensedWidth = 200,

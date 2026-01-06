@@ -21,7 +21,7 @@ class ProfileSettingsPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Profile & Settings'),
         titleTextStyle: const TextStyle(
-          color: Colors.white, complete
+          color: Colors.white,
           fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
