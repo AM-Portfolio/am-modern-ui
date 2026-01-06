@@ -92,9 +92,10 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           title: 'Heatmap',
           subtitle: 'Visual analysis',
           icon: Icons.grid_on_outlined,
-          page: PortfolioHeatmapWebPage(
+          page: PortfolioHeatmapWithProviders(
             userId: widget.userId,
             portfolioId: _currentPortfolioId ?? widget.userId,
+            portfolioName: widget.selectedPortfolioName,
           ),
           accentColor: ModuleColors.portfolio,
         ),
@@ -124,6 +125,8 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         // Removed title/subtitle as requested
         title: null,
         subtitle: null,
+        // CRITICAL: Pass an empty header to override default "Portfolio" header
+        header: const SizedBox(height: 16),
         onBackToGlobal: widget.onBack,
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
@@ -194,34 +197,22 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
 
 
 
-  /// Build overview content using dedicated overview page
-  Widget _buildOverviewContent(BuildContext context) {
-    return PortfolioOverviewWebPage(
-      userId: widget.userId,
-      portfolioName: widget.selectedPortfolioName,
-    );
-  }
+}
 
-  /// Build holdings content using dedicated holdings page
-  Widget _buildHoldingsContent(BuildContext context) {
-    return PortfolioHoldingsWebPage(
-      userId: widget.userId,
-      portfolioId: _currentPortfolioId!,
-      portfolioName: widget.selectedPortfolioName,
-    );
-  }
+class PortfolioHeatmapWithProviders extends ConsumerWidget {
+  final String userId;
+  final String portfolioId;
+  final String? portfolioName;
 
-  /// Build analysis content using dedicated analysis page
-  Widget _buildAnalysisContent(BuildContext context) {
-    return PortfolioAnalysisWebPage(
-      userId: widget.userId,
-      portfolioId: _currentPortfolioId!,
-      portfolioName: widget.selectedPortfolioName,
-    );
-  }
+  const PortfolioHeatmapWithProviders({
+    required this.userId,
+    required this.portfolioId,
+    this.portfolioName,
+    super.key,
+  });
 
-  /// Build heatmap content using dedicated heatmap page
-  Widget _buildHeatmapContent(BuildContext context) {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     CommonLogger.debug(
       'Building heatmap content with analytics and heatmap cubits',
       tag: 'PortfolioWebScreen',
@@ -231,44 +222,27 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
 
     return analyticsServiceAsync.when(
       data: (analyticsService) {
-        CommonLogger.info(
-          'Analytics service loaded, creating cubits',
-          tag: 'PortfolioWebScreen',
-        );
-
         return MultiBlocProvider(
           providers: [
             BlocProvider(
               create: (context) {
-                CommonLogger.info(
-                  'Creating PortfolioAnalyticsCubit',
-                  tag: 'PortfolioWebScreen',
-                );
                 return PortfolioAnalyticsCubit(analyticsService);
               },
             ),
             BlocProvider(
               create: (context) {
-                CommonLogger.info(
-                  'Creating PortfolioHeatmapCubit',
-                  tag: 'PortfolioWebScreen',
-                );
                 return PortfolioHeatmapCubit();
               },
             ),
           ],
           child: PortfolioHeatmapWebPage(
-            userId: widget.userId,
-            portfolioId: _currentPortfolioId!,
-            portfolioName: widget.selectedPortfolioName,
+            userId: userId,
+            portfolioId: portfolioId,
+            portfolioName: portfolioName,
           ),
         );
       },
       loading: () {
-        CommonLogger.debug(
-          'Analytics service loading...',
-          tag: 'PortfolioWebScreen',
-        );
         return const Center(child: CircularProgressIndicator());
       },
       error: (error, stack) {
@@ -284,7 +258,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 16),
-              Text('Failed to load analytics service: $error'),
+              Text('Failed to load analytics service: \$error'),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {

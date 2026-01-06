@@ -258,7 +258,9 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         module: ModuleType.trade,
         // Removed title/subtitle as requested
         title: null, 
-        subtitle: null, 
+        subtitle: null,
+        // CRITICAL: Pass an empty header to override the default "Trade Analysis" header
+        header: const SizedBox(height: 16), 
         onBackToGlobal: widget.onBack,
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
