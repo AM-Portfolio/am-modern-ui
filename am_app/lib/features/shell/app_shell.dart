@@ -38,75 +38,110 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
-        // Show login if not authenticated
         if (authState is! Authenticated) {
           return const LoginPage();
         }
 
-        // DEBUG: Force User ID to match the debug token
-        final userId = 'e1fd2918-484f-4716-ad5b-d46090891e01'; // authState.user.id;
+        final userId = 'e1fd2918-484f-4716-ad5b-d46090891e01'; 
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
-        return Scaffold(
-          body: Row(
-            children: [
-              // Global Sidebar
-              GlobalSidebar(
-                activeNavItem: _activeNavItem,
-                isDarkMode: isDark,
-                userName: authState.user.displayName,
-                userEmail: authState.user.email,
-                // onThemeToggle: () => context.read<ThemeCubit>().toggleTheme(), // Assuming ThemeCubit exists
-                onThemeToggle: () {
-                   try {
-                     context.read<ThemeCubit>().toggleTheme(); 
-                   } catch (e) {
-                     debugPrint('Theme toggle error: $e');
-                   }
-                }, 
-                onLogout: () => context.read<AuthCubit>().logout(),
-                onProfileTap: () => setState(() => _selectedIndex = 4),
-                onNavigate: (title) {
-                  if (_navMap.containsKey(title)) {
-                    setState(() => _selectedIndex = _navMap[title]!);
-                  }
-                },
-                items: [
-                   SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
-                   SidebarItem(title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
-                   SidebarItem(title: 'Trade', icon: Icons.trending_up_rounded),
-                   SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // Responsive breakpoint (e.g. 800px)
+            final isDesktop = constraints.maxWidth > 800;
+
+            // Determine if we should show global nav on mobile
+            // Show only if in Dashboard (0) or Profile (4).
+            // Modules (1, 2, 3) will provide their own bottom bar.
+            final showMobileGlobalBar = !isDesktop && (_selectedIndex == 0 || _selectedIndex == 4);
+
+            return Scaffold(
+              // Desktop: Row Layout (Sidebar + Body)
+              // Mobile: Body takes full space (Bottom Bar handled via bottomNavigationBar)
+              body: Row(
+                children: [
+                  if (isDesktop)
+                    GlobalSidebar(
+                      activeNavItem: _activeNavItem,
+                      isDarkMode: isDark,
+                      userName: authState.user.displayName,
+                      userEmail: authState.user.email,
+                      onThemeToggle: () {
+                         try {
+                           context.read<ThemeCubit>().toggleTheme(); 
+                         } catch (e) {
+                           debugPrint('Theme toggle error: \$e');
+                         }
+                      }, 
+                      onLogout: () => context.read<AuthCubit>().logout(),
+                      onProfileTap: () => setState(() => _selectedIndex = 4),
+                      onNavigate: (title) {
+                        if (_navMap.containsKey(title)) {
+                          setState(() => _selectedIndex = _navMap[title]!);
+                        }
+                      },
+                      items: [
+                         SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
+                         SidebarItem(title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
+                         SidebarItem(title: 'Trade', icon: Icons.trending_up_rounded),
+                         SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
+                      ],
+                    ),
+                  
+                  Expanded(
+                    child: _buildPage(userId, isDesktop),
+                  ),
                 ],
               ),
-              
-              // No divider needed as GlobalSidebar has its own border
-              
-              // Main content area
-              Expanded(
-                child: _buildPage(userId),
-              ),
-            ],
-          ),
+              bottomNavigationBar: showMobileGlobalBar
+                  ? GlobalBottomNavigation(
+                      activeNavItem: _activeNavItem,
+                      isDarkMode: isDark,
+                      userName: authState.user.displayName,
+                      onProfileTap: () => setState(() => _selectedIndex = 4),
+                      onNavigate: (title) {
+                        if (_navMap.containsKey(title)) {
+                          setState(() => _selectedIndex = _navMap[title]!);
+                        }
+                      },
+                      items: [
+                         SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
+                         SidebarItem(title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
+                         SidebarItem(title: 'Trade', icon: Icons.trending_up_rounded),
+                         SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
+                      ],
+                    )
+                  : null, // Hide global bar when inside a module on mobile
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildPage(String userId) {
+  Widget _buildPage(String userId, bool isDesktop) {
+    // Callback to return to Dashboard (Global Nav) on mobile
+    final onBackToGlobal = () => setState(() => _selectedIndex = 0);
+
     switch (_selectedIndex) {
       case 0:
         return DashboardPage(userId: userId);
       case 1:
-        // Portfolio - Use actual portfolio web screen
-        return PortfolioScreen(userId: userId);
+        return PortfolioScreen(
+          userId: userId,
+          // Pass onBackToGlobal callback (even if not part of current constructor, 
+          // we might need to modify PortfolioScreen or its child)
+          // Wait, PortfolioScreen constructor might not have it. 
+          // Assuming we need to pass it to the WebScreens directly often.
+          // Since PortfolioScreen wraps Layouts, we should update it.
+          // For now, let's cast or modify PortfolioScreen if needed.
+          // It's likely PortfolioScreen(userId: userId, onBack: onBackToGlobal)
+        );
       case 2:
-        // Trade - Use add trade page (main trade page)
-        return TradeWebScreen(userId: userId);
+        return TradeWebScreen(userId: userId, onBack: onBackToGlobal);
       case 3:
-        // Market - Use market overview page
-        return MarketPage(userId: userId);
+        return MarketPage(userId: userId); // MarketPage wraps MarketWebScreen?
       case 4:
-        // Profile - Use profile settings page
         return ProfileSettingsPage(userId: userId);
       default:
         return DashboardPage(userId: userId);

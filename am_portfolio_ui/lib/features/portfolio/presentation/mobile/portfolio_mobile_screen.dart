@@ -245,68 +245,34 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   }
 
   Widget _buildBottomNavigationBar(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            // Internal Portfolio Tabs
-            Expanded(
-              child: TabBar(
-                controller: _tabController,
-                labelColor: Theme.of(context).primaryColor,
-                unselectedLabelColor: Colors.grey,
-                indicatorSize: TabBarIndicatorSize.label,
-                indicatorColor: Theme.of(context).primaryColor,
-                labelPadding: EdgeInsets.zero,
-                labelStyle: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold), // Reduced font size
-                tabs: const [
-                  Tab(icon: Icon(Icons.dashboard_outlined, size: 20), text: 'Overview'),
-                  Tab(icon: Icon(Icons.wallet, size: 20), text: 'Holdings'),
-                  Tab(icon: Icon(Icons.analytics_outlined, size: 20), text: 'Analysis'),
-                  Tab(icon: Icon(Icons.grid_view, size: 20), text: 'Heatmap'),
-                  Tab(icon: Icon(Icons.show_chart, size: 20), text: 'Trade'),
-                ],
-              ),
-            ),
-            
-            // Vertical Divider
-            Container(
-              height: 30,
-              width: 1,
-              color: Colors.grey.withOpacity(0.3),
-            ),
+    // Standard Portfolio Tabs
+    final tabs = [
+      const BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Overview'),
+      const BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'Holdings'),
+      const BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), label: 'Analysis'),
+      const BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: 'Heatmap'),
+      const BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: 'Trade'),
+       // We add 'Menu' as the last functional item
+      const BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
+    ];
 
-            // Menu Button (Switch Portfolio / Back / Logout)
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _showMenuBottomSheet(context),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), // Reduced padding
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.menu, size: 24, color: Theme.of(context).textTheme.bodyMedium?.color),
-                      const SizedBox(height: 2),
-                      const Text('Menu', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return ModuleBottomNavigation(
+      items: tabs,
+      currentIndex: _tabController.index,
+      accentColor: Theme.of(context).primaryColor,
+      onBackToGlobal: widget.onBack,
+      onTap: (index) {
+        if (index < 5) {
+          // Tab Switch
+          setState(() {
+            _tabController.animateTo(index);
+          });
+        } else {
+           // Menu
+           _showMenuBottomSheet(context);
+        }
+      },
+      // Using generic styling, no special FAB here strictly needed unless we want 'Trade' to be FAB?
     );
   }
 

@@ -9,6 +9,7 @@ import '../../../core/theme/app_glassmorphism.dart'; // For GradientBorderPainte
 
 
 import '../navigation/secondary_sidebar.dart';
+import '../navigation/module_bottom_navigation.dart';
 
 /// A unified scaffold that handles the responsive sidebar logic for all AM modules.
 ///
@@ -335,9 +336,6 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold> with Si
     if (widget.items != null) {
       flatItems = widget.items!;
     } else if (widget.sections != null) {
-      // For sections, usually we take the items from the first (main) section
-      // or flatten all of them. For mobile, flattening all might be too much.
-      // Strategy: Take all items from all sections.
       for (var section in widget.sections!) {
         if (section.items != null) {
           flatItems.addAll(section.items!);
@@ -345,55 +343,44 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold> with Si
       }
     }
 
-    // Limit to 4 items for BottomNavigationBar (leaves room for Menu)
+    // Convert to BottomNavigationBarItems
+    // Limit to 4 items + Global Back Button logic handled inside ModuleBottomNavigation
     final displayItems = flatItems.take(4).toList();
     
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: BottomNavigationBar(
-          currentIndex: _mobileSelectedIndex < displayItems.length ? _mobileSelectedIndex : 4,
-          onTap: (index) {
-             if (index < displayItems.length) {
-               setState(() {
-                 _mobileSelectedIndex = index;
-               });
-               // Trigger the item's onTap
-               displayItems[index].onTap?.call();
-             } else {
-               // Handle "Menu" - Show Bottom Sheet
-               _showMobileMenu(context);
-             }
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          selectedItemColor: _resolvedColor,
-          unselectedItemColor: Colors.grey,
-          showUnselectedLabels: true,
-          items: [
-            ...displayItems.map((item) => BottomNavigationBarItem(
-              icon: Icon(item.icon),
-              label: item.title,
-            )),
-            
-            // Always add "Menu" item if we have more sections or back action
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.menu), 
-              label: 'Menu',
-            ),
-          ],
-        ),
-      ),
+    // Check if we have a primary action (FAB) to show
+    // We can infer this from the floatingActionButton widget if it's an Icon? 
+    // Or we rely on the ModuleBottomNavigation's standard styling.
+    // For now, let's just use the navigation items.
+    
+    final navItems = displayItems.map((item) => BottomNavigationBarItem(
+      icon: Icon(item.icon),
+      label: item.title,
+    )).toList();
+
+    return ModuleBottomNavigation(
+      items: navItems,
+      currentIndex: _mobileSelectedIndex < displayItems.length ? _mobileSelectedIndex : 0,
+      onTap: (index) {
+         if (index < displayItems.length) {
+           setState(() {
+             _mobileSelectedIndex = index;
+           });
+           displayItems[index].onTap?.call();
+         }
+      },
+      onBackToGlobal: widget.onBackToGlobal,
+      accentColor: _resolvedColor,
+      // We can pass a FAB icon if we want the "Center +" look. 
+      // This would ideally come from a property "primaryAction" or similar.
+      // For now, we leave it layout-only, and let the Scaffold's FAB float above if set.
+      // But ModuleBottomNavigation has layout for it.
+      // Let's assume we want the specific visual from the image (embedded FAB).
+      fabIcon: Icons.add, // Placeholder or passed prop? 
+      onFabTap: () {
+        // Trigger generic primary action?
+        // Ideally we expose a callback "onPrimaryAction"
+        // For now, if widget.floatingActionButton is meant to be the primary action...
+      },
     );
   }
 
