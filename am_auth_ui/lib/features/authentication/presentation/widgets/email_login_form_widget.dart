@@ -6,10 +6,12 @@ import 'package:am_design_system/core/utils/validators.dart';
 /// Email login form widget
 class EmailLoginFormWidget extends StatefulWidget {
   final bool isCompact;
+  final bool isLoading;
 
   const EmailLoginFormWidget({
     super.key,
     this.isCompact = false,
+    this.isLoading = false,
   });
 
   @override
@@ -48,6 +50,7 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
           // Email field
           TextFormField(
             controller: _emailController,
+            enabled: !widget.isLoading,
             keyboardType: TextInputType.emailAddress,
             decoration: const InputDecoration(
               labelText: 'Email',
@@ -62,6 +65,7 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
           // Password field
           TextFormField(
             controller: _passwordController,
+            enabled: !widget.isLoading,
             obscureText: _obscurePassword,
             decoration: InputDecoration(
               labelText: 'Password',
@@ -83,16 +87,22 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
           SizedBox(
             height: 48,
             child: ElevatedButton(
-              onPressed: _handleLogin,
+              onPressed: widget.isLoading ? null : _handleLogin,
               style: ElevatedButton.styleFrom(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
-                '🚀 Sign In',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              child: widget.isLoading
+                  ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text(
+                      '🚀 Sign In',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
             ),
           ),
         ],

@@ -139,10 +139,10 @@ class LoginPage extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Email/Password form
-        if (state is AuthLoading)
-          const Center(child: CircularProgressIndicator())
-        else
-          EmailLoginFormWidget(isCompact: isCompact),
+        EmailLoginFormWidget(
+          isCompact: isCompact,
+          isLoading: state is AuthLoading,
+        ),
         
         SizedBox(height: isCompact ? 16 : 24),
         

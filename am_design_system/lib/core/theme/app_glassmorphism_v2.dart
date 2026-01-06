@@ -323,9 +323,16 @@ class AppGlassmorphismV2 {
   }) {
     if (!isDark) {
       return Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFFF8F9FA),
-          border: Border(right: BorderSide(color: Color(0xFFE9ECEF))),
+        decoration: BoxDecoration(
+          color: Colors.transparent, // Transparent for "floating" effect
+          // Right-side shadow for "Prism" effect
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(4, 0),
+            ),
+          ],
         ),
         child: child,
       );

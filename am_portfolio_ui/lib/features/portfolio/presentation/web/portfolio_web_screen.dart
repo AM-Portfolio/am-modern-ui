@@ -198,7 +198,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                 onPortfolioSelected: _onPortfolioChanged,
                 idExtractor: (p) => p.portfolioId,
                 nameExtractor: (p) => p.portfolioName,
-                // Accent color will be handled by module theme
+                accentColor: ModuleColors.portfolio,
               ),
             ),
           

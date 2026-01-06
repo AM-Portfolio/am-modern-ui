@@ -50,12 +50,12 @@ class GlobalSidebar extends StatelessWidget {
         height: double.infinity,
         child: Column(
           children: [
-            const SizedBox(height: 32),
+            const SizedBox(height: 48),
             
             // 1. App Logo / Brand Icon
             _buildAppLogo(),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 48),
 
             // 2. Main Navigation Icons
             Expanded(
@@ -63,8 +63,14 @@ class GlobalSidebar extends StatelessWidget {
                 child: Column(
                   children: items.map((item) {
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      child: _buildNavItem(item, isDarkMode),
+                      padding: const EdgeInsets.only(bottom: 32),
+                      child: _GlobalSidebarItem(
+                        item: item,
+                        isDark: isDarkMode,
+                        isActive: activeNavItem == item.title,
+                        accentColor: _getIconColor(item.title) ?? const Color(0xFF6C5DD3),
+                        onTap: () => onNavigate(item.title),
+                      ),
                     );
                   }).toList(),
                 ),
@@ -109,41 +115,10 @@ class GlobalSidebar extends StatelessWidget {
         isDark: isDarkMode,
       ),
       alignment: Alignment.center,
-      child: const Icon(Icons.token, color: Colors.white, size: 28),
-    );
-  }
-
-  Widget _buildNavItem(SidebarItem item, bool isDark) {
-    final isSelected = activeNavItem == item.title;
-    // Map specific module colors based on design or fallback to blue
-    final accentColor = _getIconColor(item.title) ?? const Color(0xFF6C5DD3);
-
-    return Tooltip(
-      message: item.title,
-      preferBelow: false,
-      child: GestureDetector(
-        onTap: () => onNavigate(item.title),
-        child: ConditionalMouseRegion(
-          onEnter: (_) {}, 
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 48,
-            height: 48,
-            decoration: isSelected
-                ? AppGlassmorphismV2.finDashActiveItem(
-                    accentColor: accentColor,
-                    isDark: isDark,
-                  )
-                : AppGlassmorphismV2.finDashInactiveItem(isDark: isDark),
-            child: Icon(
-              item.icon,
-              color: isSelected 
-                  ? accentColor 
-                  : (isDark ? Colors.white54 : Colors.black45),
-              size: 24,
-            ),
-          ),
-        ),
+      child: Icon(
+        Icons.token, 
+        color: isDarkMode ? Colors.white : const Color(0xFF6C5DD3), 
+        size: 28
       ),
     );
   }
@@ -164,8 +139,10 @@ class GlobalSidebar extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.transparent,
+              border: Border.all(
+                color: isDarkMode ? Colors.white.withOpacity(0.1) : const Color(0xFF6C5DD3).withOpacity(0.2)
+              ),
             ),
             child: Icon(
               icon,
@@ -228,13 +205,72 @@ class GlobalSidebar extends StatelessWidget {
   Color? _getIconColor(String title) {
     // Specific colors for modules
     switch (title.toLowerCase()) {
-      case 'dashboard': return const Color(0xFF6C5DD3); // Purple
-      case 'market': return const Color(0xFF00D1FF);    // Cyan
-      case 'portfolio': return const Color(0xFFFFA500); // Orange/Amber
-      case 'trade': return const Color(0xFF4ADE80);     // Green
-      case 'analysis': return const Color(0xFFFF6B6B);  // Red
+      case 'dashboard': return AppColors.primary;
+      case 'market': return AppColors.marketAccent;
+      case 'portfolio': return AppColors.portfolioAccent;
+      case 'trade': return AppColors.tradeAccent;
+      case 'analysis': return AppColors.accentPink; // Analysis often uses red/pink
       default: return null;
     }
+  }
+}
+
+class _GlobalSidebarItem extends StatefulWidget {
+  final SidebarItem item;
+  final bool isDark;
+  final bool isActive;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  const _GlobalSidebarItem({
+    required this.item,
+    required this.isDark,
+    required this.isActive,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  @override
+  State<_GlobalSidebarItem> createState() => _GlobalSidebarItemState();
+}
+
+class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = widget.isActive;
+    
+    return Tooltip(
+      message: widget.item.title,
+      preferBelow: false,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: ConditionalMouseRegion(
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 48,
+            height: 48,
+            decoration: isSelected
+                ? AppGlassmorphismV2.finDashActiveItem(
+                    accentColor: widget.accentColor,
+                    isDark: widget.isDark,
+                  )
+                : AppGlassmorphismV2.finDashInactiveItem(isDark: widget.isDark),
+            child: Icon(
+              widget.item.icon,
+              // Color Logic: If selected OR hovered, use accent color. Else use inactive color.
+              color: (isSelected || _isHovered)
+                  ? widget.accentColor 
+                  : (widget.isDark ? Colors.white54 : Colors.black87),
+              size: 24,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

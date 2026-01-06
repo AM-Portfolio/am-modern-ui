@@ -2,6 +2,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
+import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
 
 /// Secondary sidebar item model for structured navigation
@@ -82,7 +83,7 @@ class SecondarySidebar extends StatelessWidget {
       width: width,
       height: double.infinity,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF14161B) : const Color(0xFFF9FAFB),
+        color: isDark ? AppColors.darkBackground : const Color(0xFFF9FAFB),
         border: Border(
            right: BorderSide(
             color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
@@ -164,7 +165,7 @@ class SecondarySidebar extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: TextStyle(
-                      color: isDark ? Colors.white54 : Colors.black54,
+                      color: isDark ? Colors.white54 : Colors.black87,
                       fontSize: 11,
                     ),
                     maxLines: 1,
@@ -258,7 +259,7 @@ class _SecondarySidebarSectionWidgetState extends State<_SecondarySidebarSection
                     child: Text(
                       widget.section.title.toUpperCase(),
                       style: TextStyle(
-                        color: widget.isDark ? Colors.white38 : Colors.black38,
+                        color: widget.isDark ? Colors.white38 : Colors.black54,
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.2,
@@ -271,7 +272,7 @@ class _SecondarySidebarSectionWidgetState extends State<_SecondarySidebarSection
                       duration: const Duration(milliseconds: 200),
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: widget.isDark ? Colors.white24 : Colors.black26,
+                        color: widget.isDark ? Colors.white24 : Colors.black54,
                         size: 16,
                       ),
                     ),
@@ -334,12 +335,12 @@ class _SecondarySidebarTileState extends State<_SecondarySidebarTile> {
     // Icon Color: Accent if selected or hovered
     final iconColor = isSelected || _isHovered
         ? (widget.item.accentColor ?? widget.accentColor)
-        : (isDark ? Colors.white54 : Colors.black54);
+        : (isDark ? Colors.white54 : Colors.black87);
 
     // Text Color: White if selected/hovered (or black in light mode), grey otherwise
     final textColor = isSelected || _isHovered
         ? (isDark ? Colors.white : Colors.black)
-        : (isDark ? Colors.white54 : Colors.black54);
+        : (isDark ? Colors.white54 : Colors.black87);
     
     // Background Color: Accent opacity if selected/hovered
     final bgColor = isSelected 

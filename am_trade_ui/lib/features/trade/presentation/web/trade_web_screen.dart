@@ -281,6 +281,7 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                         child: SidebarPrimaryAction(
                           title: 'Add Trade',
                           icon: Icons.add,
+                          accentColor: ModuleColors.trade,
                           onTap: () {
                             Navigator.pushNamed(
                               context,
@@ -303,6 +304,7 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                         onPortfolioSelected: _onPortfolioSelected,
                         idExtractor: (p) => p.id,
                         nameExtractor: (p) => p.name,
+                        accentColor: ModuleColors.trade,
                       ),
                   ],
                 );

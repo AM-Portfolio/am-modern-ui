@@ -6,6 +6,7 @@ import 'package:am_design_system/shared/widgets/navigation/secondary_sidebar.dar
 import '../../../internal/domain/entities/notebook_item.dart';
 import '../../../internal/domain/entities/notebook_tag.dart';
 import '../../../internal/domain/entities/journal_entry.dart';
+import 'package:am_design_system/core/theme/app_colors.dart';
 
 class JournalNavigationSidebar extends StatelessWidget {
   const JournalNavigationSidebar({
@@ -32,7 +33,7 @@ class JournalNavigationSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Green accent for Trade/Journal
-    const tradeAccent = Color(0xFF4ADE80); 
+    const tradeAccent = AppColors.tradeAccent; 
 
     return SecondarySidebar(
       title: 'TRADE',
@@ -300,6 +301,7 @@ class JournalFolderItem extends StatefulWidget {
     required this.onTap,
     this.icon,
     this.accentColor,
+    this.onEntryDropped,
     super.key,
   });
 

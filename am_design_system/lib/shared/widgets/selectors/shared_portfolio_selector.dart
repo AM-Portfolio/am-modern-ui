@@ -9,9 +9,11 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
     required this.currentPortfolioName,
     required this.portfolios,
     required this.onPortfolioSelected,
-    required this.idExtractor,
     required this.nameExtractor,
+    required this.idExtractor,
     this.isCompact = false,
+    this.accentColor,
+    this.isDark,
   });
 
   /// The ID of the currently selected portfolio
@@ -35,8 +37,28 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
   /// Whether to show in compact mode (icon only)
   final bool isCompact;
 
+  /// Accent color for the selector (defaults to Primary)
+  final Color? accentColor;
+
+  /// Whether to render in dark mode (defaults to context theme)
+  final bool? isDark;
+
   @override
   Widget build(BuildContext context) {
+    // Determine theme mode
+    final isDarkMode = isDark ?? Theme.of(context).brightness == Brightness.dark;
+    
+    // Determine accent color (default to current primary or purple fallback)
+    final effectiveAccent = accentColor ?? const Color(0xFF6C5DD3);
+    
+    // Text colors
+    final textColor = isDarkMode ? Colors.white : Colors.black87;
+    final subTextColor = isDarkMode ? Colors.white54 : Colors.black54;
+    
+    // Background color for the card
+    final cardBgColor = isDarkMode ? const Color(0xFF2C2C3E) : Colors.white;
+    final cardBorderColor = isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
+
     if (isCompact) {
       if (portfolios.isEmpty) return const SizedBox.shrink();
       
@@ -45,15 +67,16 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
         child: PopupMenuButton<String>(
           tooltip: 'Select Portfolio',
           offset: const Offset(40, 0),
-          color: const Color(0xFF2C2C3E),
+          color: cardBgColor,
+          surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF6C5DD3).withOpacity(0.1),
+              color: effectiveAccent.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.account_balance_wallet, color: Color(0xFF6C5DD3), size: 20),
+            child: Icon(Icons.account_balance_wallet, color: effectiveAccent, size: 20),
           ),
           onSelected: (portfolioId) {
             final portfolio = portfolios.firstWhere((p) => idExtractor(p) == portfolioId);
@@ -63,7 +86,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
             value: idExtractor(portfolio),
             child: Text(
               nameExtractor(portfolio),
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: textColor),
             ),
           )).toList(),
         ),
@@ -74,15 +97,15 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF2C2C3E),
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.05),
+          color: cardBorderColor,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -96,13 +119,13 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6C5DD3).withOpacity(0.1),
+                  color: effectiveAccent.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.account_balance_wallet,
                   size: 14,
-                  color: Color(0xFF6C5DD3),
+                  color: effectiveAccent,
                 ),
               ),
               const SizedBox(width: 8),
@@ -110,10 +133,10 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Current Portfolio',
                       style: TextStyle(
-                        color: Color(0xFF6C5DD3),
+                        color: effectiveAccent,
                         fontWeight: FontWeight.w600,
                         fontSize: 10,
                         letterSpacing: 0.5,
@@ -122,8 +145,8 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       currentPortfolioName ?? 'No Portfolio',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -142,33 +165,34 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
               height: 32,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: cardBorderColor),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: currentPortfolioId,
                   isExpanded: true,
-                  dropdownColor: const Color(0xFF2C2C3E),
-                  icon: const Icon(
+                  dropdownColor: cardBgColor,
+                  icon: Icon(
                     Icons.keyboard_arrow_down,
                     size: 16,
-                    color: Colors.white70,
+                    color: subTextColor,
                   ),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: textColor,
                     fontSize: 12,
                   ),
-                  hint: const Text(
+                  hint: Text(
                     'Select Portfolio',
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                    style: TextStyle(color: subTextColor, fontSize: 12),
                   ),
                   items: portfolios.map((portfolio) => DropdownMenuItem<String>(
                     value: idExtractor(portfolio),
                     child: Text(
                       nameExtractor(portfolio),
                       overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: textColor),
                     ),
                   )).toList(),
                   onChanged: (portfolioId) {

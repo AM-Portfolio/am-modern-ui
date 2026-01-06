@@ -58,13 +58,10 @@ class _AppShellState extends State<AppShell> {
                 userEmail: authState.user.email,
                 // onThemeToggle: () => context.read<ThemeCubit>().toggleTheme(), // Assuming ThemeCubit exists
                 onThemeToggle: () {
-                   // Fallback if ThemeCubit isn't directly available or method differs
-                   // For now, assuming standard Provider/Bloc setup
                    try {
-                     // context.read<ThemeCubit>().toggleTheme(); 
-                     // Or just print if we can't find it easily without checking main.dart again
+                     context.read<ThemeCubit>().toggleTheme(); 
                    } catch (e) {
-                     debugPrint('Theme toggle not wired: $e');
+                     debugPrint('Theme toggle error: $e');
                    }
                 }, 
                 onLogout: () => context.read<AuthCubit>().logout(),

@@ -16,8 +16,8 @@ class AppColors {
   // ============================================================================
   
   static const Color marketAccent = Color(0xFF06b6d4);      // Cyan
-  static const Color portfolioAccent = Color(0xFF6C5DD3);   // Purple
-  static const Color tradeAccent = Color(0xFFB06EE0);       // Violet
+  static const Color portfolioAccent = Color(0xFFFFA500);   // Orange
+  static const Color tradeAccent = Color(0xFF4ADE80);       // Green
   static const Color authAccent = Color(0xFF6C63FF);        // Indigo
   static const Color userAccent = Color(0xFF8B7EE0);        // Light Purple
   
