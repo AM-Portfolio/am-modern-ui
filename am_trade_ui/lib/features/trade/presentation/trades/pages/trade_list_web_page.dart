@@ -6,6 +6,8 @@ import '../../../providers/trade_internal_providers.dart';
 import '../../models/trade_holding_view_model.dart';
 import 'trade_detail_view_page.dart';
 
+import '../widgets/mobile_trade_list_view.dart';
+
 /// Web page for displaying all trades in a list view
 class TradeListWebPage extends ConsumerStatefulWidget {
   const TradeListWebPage({required this.userId, required this.portfolioId, this.onNavigateToChart, super.key});
@@ -47,14 +49,31 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
             ).animate().fadeIn(duration: 600.ms).scale();
           }
 
-          return Row(
-            children: [
-              // Left sidebar - Trade list
-              _buildTradeSidebar(holdings),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 800; // Mobile breakpoint at 800px
 
-              // Right side - Trade detail or placeholder
-              Expanded(child: _selectedTrade != null ? _buildTradeDetailView() : _buildEmptyState()),
-            ],
+              if (isMobile) {
+                return MobileTradeListView(
+                  holdings: holdings,
+                  onSelectTrade: (selected) {
+                    setState(() {
+                      _selectedTrade = selected;
+                    });
+                  },
+                );
+              }
+
+              return Row(
+                children: [
+                  // Left sidebar - Trade list
+                  _buildTradeSidebar(holdings),
+
+                  // Right side - Trade detail or placeholder
+                  Expanded(child: _selectedTrade != null ? _buildTradeDetailView() : _buildEmptyState()),
+                ],
+              );
+            },
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),

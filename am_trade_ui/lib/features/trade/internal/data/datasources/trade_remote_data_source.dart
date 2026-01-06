@@ -136,13 +136,37 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     );
 
     try {
-      // Trade API Spec: GET /api/v1/trades/portfolio-details/{portfolioId}?page=0&size=50&sort=tradeDate,desc
+      // Trade API Spec: GET /api/v1/trades/details/portfolio/{portfolioId} returns List<TradeDetails>
+      // The backend endpoint configured in ConfigService (holdingsResource) points to a List endpoint, not a Page endpoint.
       final baseUri = _buildUri(_tradeConfig.baseUrl, _tradeConfig.holdingsResource);
-      final fullUri = '$baseUri/$portfolioId?page=0&size=50&sort=tradeDate%2Cdesc';
+      final fullUri = '$baseUri/$portfolioId'; // Pagination params removed as backend ignores/doesn't support them for this endpoint
 
       final response = await _apiClient.get<TradeHoldingsDto>(
         fullUri,
-        parser: (data) => TradeHoldingsDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) {
+          // Handle List response by wrapping it in TradeHoldingsDto
+          if (data is List) {
+             final list = data.map((item) => TradeDetailsDto.fromJson(item as Map<String, dynamic>)).toList();
+             return TradeHoldingsDto(
+               content: list,
+               totalElements: list.length,
+               totalPages: 1,
+               last: true,
+               first: true,
+               size: list.length > 0 ? list.length : 50,
+               numberOfElements: list.length,
+               empty: list.isEmpty,
+               pageable: const PageableDto(
+                  pageNumber: 0,
+                  pageSize: 50,
+                  paged: false,
+                  unpaged: true
+               )
+             );
+          }
+          // Fallback if data is already a Map (e.g. if backend changes future)
+          return TradeHoldingsDto.fromJson(data! as Map<String, dynamic>);
+        },
       );
 
       AppLogger.info('Trade holdings fetched successfully from API', tag: 'TradeRemoteDataSource');
@@ -221,7 +245,6 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     );
 
     try {
-      // Trade API Spec: GET /api/v1/trades/calendar/month?portfolioId={id}&year={year}&month={month}
       var resource = _tradeConfig.calendarMonthResource;
       
       String fullUri;
@@ -376,8 +399,8 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
           '${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}';
       
       // Using generic resource if available or hardcoded for now, but using _buildUri
-      // "api/v1/trades/calendar/custom"
-      final fullUri = '${_buildUri(_tradeConfig.baseUrl, 'api/v1/trades/calendar/custom')}?portfolioId=$portfolioId&startDate=$formattedStartDate&endDate=$formattedEndDate&page=0&size=50';
+      // "v1/trades/calendar/custom"
+      final fullUri = '${_buildUri(_tradeConfig.baseUrl, 'v1/trades/calendar/custom')}?portfolioId=$portfolioId&startDate=$formattedStartDate&endDate=$formattedEndDate&page=0&size=50';
 
       AppLogger.info(
         'Fetching calendar for date range=$formattedStartDate to $formattedEndDate',
