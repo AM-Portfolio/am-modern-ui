@@ -51,6 +51,7 @@ export 'core/module/module_color_provider.dart';
 // --- Navigation ---
 export 'shared/widgets/navigation/global_sidebar.dart';
 export 'shared/widgets/navigation/secondary_sidebar.dart';
+export 'shared/widgets/navigation/sidebar_item.dart';
 export 'shared/widgets/navigation/sidebar_nav_item.dart';
 export 'shared/widgets/navigation/sidebar_primary_action.dart';
 export 'shared/widgets/navigation/swipeable_page_view.dart';

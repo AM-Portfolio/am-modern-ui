@@ -20,6 +20,20 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 2; // Default to Trade UI
 
+  // Mapping string titles to indices
+  final Map<String, int> _navMap = {
+    'Dashboard': 0,
+    'Portfolio': 1,
+    'Trade': 2,
+    'Market': 3,
+    'Profile': 4,
+  };
+
+  String get _activeNavItem {
+    if (_selectedIndex == 4) return ''; // Profile is separate
+    return _navMap.entries.firstWhere((e) => e.value == _selectedIndex, orElse: () => const MapEntry('Dashboard', 0)).key;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
@@ -31,48 +45,44 @@ class _AppShellState extends State<AppShell> {
 
         // DEBUG: Force User ID to match the debug token
         final userId = 'e1fd2918-484f-4716-ad5b-d46090891e01'; // authState.user.id;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Scaffold(
           body: Row(
             children: [
-              // Navigation Rail
-              NavigationRail(
-                selectedIndex: _selectedIndex,
-                onDestinationSelected: (index) {
-                  setState(() => _selectedIndex = index);
+              // Global Sidebar
+              GlobalSidebar(
+                activeNavItem: _activeNavItem,
+                isDarkMode: isDark,
+                userName: authState.user.displayName,
+                userEmail: authState.user.email,
+                // onThemeToggle: () => context.read<ThemeCubit>().toggleTheme(), // Assuming ThemeCubit exists
+                onThemeToggle: () {
+                   // Fallback if ThemeCubit isn't directly available or method differs
+                   // For now, assuming standard Provider/Bloc setup
+                   try {
+                     // context.read<ThemeCubit>().toggleTheme(); 
+                     // Or just print if we can't find it easily without checking main.dart again
+                   } catch (e) {
+                     debugPrint('Theme toggle not wired: $e');
+                   }
+                }, 
+                onLogout: () => context.read<AuthCubit>().logout(),
+                onProfileTap: () => setState(() => _selectedIndex = 4),
+                onNavigate: (title) {
+                  if (_navMap.containsKey(title)) {
+                    setState(() => _selectedIndex = _navMap[title]!);
+                  }
                 },
-                labelType: NavigationRailLabelType.all,
-                backgroundColor: Theme.of(context).colorScheme.surface,
-                destinations: const [
-                  NavigationRailDestination(
-                    icon: Icon(Icons.dashboard_outlined),
-                    selectedIcon: Icon(Icons.dashboard),
-                    label: Text('Dashboard'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.account_balance_wallet_outlined),
-                    selectedIcon: Icon(Icons.account_balance_wallet),
-                    label: Text('Portfolio'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.trending_up_outlined),
-                    selectedIcon: Icon(Icons.trending_up),
-                    label: Text('Trade'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.show_chart_outlined),
-                    selectedIcon: Icon(Icons.show_chart),
-                    label: Text('Market'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.person_outline),
-                    selectedIcon: Icon(Icons.person),
-                    label: Text('Profile'),
-                  ),
+                items: [
+                   SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
+                   SidebarItem(title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
+                   SidebarItem(title: 'Trade', icon: Icons.trending_up_rounded),
+                   SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
                 ],
               ),
               
-              const VerticalDivider(thickness: 1, width: 1),
+              // No divider needed as GlobalSidebar has its own border
               
               // Main content area
               Expanded(

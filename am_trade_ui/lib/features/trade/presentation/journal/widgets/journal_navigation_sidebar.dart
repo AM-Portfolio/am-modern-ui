@@ -1,6 +1,8 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:am_design_system/shared/widgets/navigation/secondary_sidebar.dart';
 import '../../../internal/domain/entities/notebook_item.dart';
 import '../../../internal/domain/entities/notebook_tag.dart';
 import '../../../internal/domain/entities/journal_entry.dart';
@@ -29,46 +31,20 @@ class JournalNavigationSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      width: isCollapsed ? 70 : 250,
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withOpacity(0.8), // Glassmorphism base
-        border: Border(right: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
-      ),
+    // Green accent for Trade/Journal
+    const tradeAccent = Color(0xFF4ADE80); 
+
+    return SecondarySidebar(
+      title: 'TRADE',
+      subtitle: 'Personal Account',
+      icon: Icons.candlestick_chart_rounded,
+      accentColor: tradeAccent,
+      width: isCollapsed ? 80 : 250, // Adaptive width
+      footer: _buildFooter(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header & Toggle
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.spaceBetween,
-              children: [
-                if (!isCollapsed)
-                  Expanded(
-                    child: Text(
-                      'Notebook',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                IconButton(
-                  onPressed: onToggleCollapse,
-                  icon: Icon(isCollapsed ? Icons.keyboard_double_arrow_right : Icons.keyboard_double_arrow_left, size: 20),
-                  tooltip: isCollapsed ? 'Expand' : 'Collapse',
-                  style: IconButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          if (!isCollapsed) ...[
+            if (!isCollapsed) ...[
             // Search
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -87,7 +63,7 @@ class JournalNavigationSidebar extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // Add Folder Button
             Padding(
@@ -104,7 +80,7 @@ class JournalNavigationSidebar extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
           ],
 
           // Folders List
@@ -126,6 +102,7 @@ class JournalNavigationSidebar extends StatelessWidget {
                     onEntryDropped: onEntryDropped != null 
                       ? (entry) => onEntryDropped!(entry, 'all-notes')
                       : null,
+                    accentColor: tradeAccent,
                   ),
                   JournalFolderItem(
                     title: 'Trade Notes',
@@ -136,6 +113,7 @@ class JournalNavigationSidebar extends StatelessWidget {
                     onEntryDropped: onEntryDropped != null 
                       ? (entry) => onEntryDropped!(entry, 'trade-notes')
                       : null,
+                    accentColor: tradeAccent,
                   ),
                   JournalFolderItem(
                     title: 'Daily Journal',
@@ -146,6 +124,7 @@ class JournalNavigationSidebar extends StatelessWidget {
                     onEntryDropped: onEntryDropped != null 
                       ? (entry) => onEntryDropped!(entry, 'daily-journal')
                       : null,
+                    accentColor: tradeAccent,
                   ),
                   JournalFolderItem(
                     title: 'Sessions Recap',
@@ -156,6 +135,7 @@ class JournalNavigationSidebar extends StatelessWidget {
                     onEntryDropped: onEntryDropped != null 
                       ? (entry) => onEntryDropped!(entry, 'sessions-recap')
                       : null,
+                    accentColor: tradeAccent,
                   ),
                   
                   if (!isCollapsed) ...[
@@ -194,6 +174,7 @@ class JournalNavigationSidebar extends StatelessWidget {
                       isSelected: selectedFolder == 'Recently Deleted',
                       isCollapsed: isCollapsed,
                       onTap: () => onFolderSelected('Recently Deleted'),
+                      accentColor: Colors.redAccent, // Special case
                     ),
                   ] else ...[
                      const SizedBox(height: 16),
@@ -205,6 +186,7 @@ class JournalNavigationSidebar extends StatelessWidget {
                        isSelected: selectedFolder == 'Recently Deleted',
                        isCollapsed: isCollapsed,
                        onTap: () => onFolderSelected('Recently Deleted'),
+                       accentColor: Colors.redAccent,
                      ),
                   ],
                 ],
@@ -212,6 +194,53 @@ class JournalNavigationSidebar extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    if (isCollapsed) return const SizedBox.shrink();
+    
+    return Container(
+      width: double.infinity,
+      height: 48,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1F222B), // Dark background for contrast
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            // Navigate to NEW TRADE
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.add, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'New Trade',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -270,7 +299,7 @@ class JournalFolderItem extends StatefulWidget {
     required this.isCollapsed,
     required this.onTap,
     this.icon,
-    this.onEntryDropped,
+    this.accentColor,
     super.key,
   });
 
@@ -280,6 +309,7 @@ class JournalFolderItem extends StatefulWidget {
   final bool isCollapsed;
   final VoidCallback onTap;
   final Function(JournalEntry)? onEntryDropped;
+  final Color? accentColor;
 
   @override
   State<JournalFolderItem> createState() => _JournalFolderItemState();
@@ -299,7 +329,7 @@ class _JournalFolderItemState extends State<JournalFolderItem> {
                 widget.icon,
                 size: 20,
                 color: widget.isSelected || _isHovered || _isDragOver
-                    ? Theme.of(context).colorScheme.primary
+                    ? (widget.accentColor ?? Theme.of(context).colorScheme.primary)
                     : Theme.of(context).colorScheme.onSurfaceVariant,
               )
             : Container(
@@ -319,7 +349,7 @@ class _JournalFolderItemState extends State<JournalFolderItem> {
               widget.icon,
               size: 18,
               color: widget.isSelected || _isHovered || _isDragOver
-                  ? Theme.of(context).colorScheme.primary
+                  ? (widget.accentColor ?? Theme.of(context).colorScheme.primary)
                   : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 12),
@@ -339,7 +369,7 @@ class _JournalFolderItemState extends State<JournalFolderItem> {
               widget.title,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: widget.isSelected || _isHovered || _isDragOver
-                        ? Theme.of(context).colorScheme.primary
+                        ? (widget.accentColor ?? Theme.of(context).colorScheme.primary)
                         : Theme.of(context).colorScheme.onSurface,
                     fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
@@ -351,7 +381,7 @@ class _JournalFolderItemState extends State<JournalFolderItem> {
             Icon(
               _isDragOver ? Icons.add_circle_outline : Icons.more_horiz, 
               size: 16, 
-              color: Theme.of(context).colorScheme.primary,
+              color: widget.accentColor ?? Theme.of(context).colorScheme.primary,
             ),
         ],
       );
@@ -367,23 +397,23 @@ class _JournalFolderItemState extends State<JournalFolderItem> {
         child: GestureDetector(
           onTap: widget.onTap,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: widget.isSelected
-                  ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5)
+                  ? Colors.white.withOpacity(0.08)
                   : _isDragOver
-                      ? Theme.of(context).colorScheme.primary.withOpacity(0.15)
+                      ? widget.isSelected ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.04)
                       : _isHovered
-                          ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                          : null,
+                          ? Colors.white.withOpacity(0.04)
+                          : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: _isDragOver
                   ? Border.all(
                       color: Theme.of(context).colorScheme.primary,
-                      width: 2,
+                      width: 1,
                     )
-                  : null,
+                  : Border.all(color: Colors.transparent),
             ),
             child: content,
           ),
@@ -489,23 +519,23 @@ class _ExpandableFolderItemState extends State<ExpandableFolderItem> {
           setState(() => _isExpanded = !_isExpanded);
           widget.onTap();
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          margin: const EdgeInsets.symmetric(vertical: 2),
-          decoration: BoxDecoration(
-            color: widget.isSelected
-                ? folderColor.withOpacity(0.15)
-                : _isDragOver
-                    ? folderColor.withOpacity(0.2)
-                    : _isHovered
-                        ? folderColor.withOpacity(0.08)
-                        : null,
-            borderRadius: BorderRadius.circular(8),
-            border: _isDragOver
-                ? Border.all(color: folderColor, width: 2)
-                : null,
-          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            margin: const EdgeInsets.symmetric(vertical: 2),
+            decoration: BoxDecoration(
+              color: widget.isSelected
+                  ? Colors.white.withOpacity(0.08)
+                  : _isDragOver
+                      ? Colors.white.withOpacity(0.04)
+                      : _isHovered
+                          ? Colors.white.withOpacity(0.04)
+                          : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: _isDragOver
+                  ? Border.all(color: folderColor, width: 1)
+                  : Border.all(color: Colors.transparent),
+            ),
           child: Row(
             children: [
               // Expand/Collapse icon

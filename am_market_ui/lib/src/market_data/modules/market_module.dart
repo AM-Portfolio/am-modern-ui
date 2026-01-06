@@ -59,14 +59,9 @@ class MarketModule implements IModule {
             backgroundColor: Colors.transparent,
             body: Row(
               children: [
-                // Secondary Sidebar with Market navigation
-                SecondarySidebar(
-                  title: config.title,
-                  subtitle: config.subtitle,
-                  icon: config.icon,
-                  accentColor: config.accentColor,
-                  child: MarketSidebarContent(provider: provider),
-                ),
+
+                // Market Sidebar using standardized widget
+                MarketSidebar(provider: provider),
                 
                 // Main Content Area
                 Expanded(
