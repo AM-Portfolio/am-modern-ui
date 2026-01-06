@@ -121,8 +121,9 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
 
       return UnifiedSidebarScaffold(
         module: ModuleType.portfolio,
-        title: 'WORKSPACE',
-        subtitle: 'Personal Account',
+        // Removed title/subtitle as requested
+        title: null,
+        subtitle: null,
         onBackToGlobal: widget.onBack,
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
@@ -144,53 +145,21 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           showIndicator: true,
           indicatorPosition: IndicatorPosition.bottom,
         ),
-        footer: Container(
-          width: double.infinity,
-          height: 48,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1F222B), // Dark background for contrast
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.1),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                // Navigate to NEW TRADE
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.add, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'New Trade',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SidebarPrimaryAction(
+            title: 'New Trade',
+            icon: Icons.add,
+            accentColor: ModuleColors.portfolio,
+            onTap: () {
+              // Navigate to NEW TRADE
+            },
           ),
         ),
         sections: [
-          // Portfolio Selector Section
-          if (widget.portfolios != null && widget.portfolios!.isNotEmpty)
+            if (widget.portfolios != null && widget.portfolios!.isNotEmpty)
             SecondarySidebarSection(
-              title: 'PORTFOLIO',
+              title: '', // No title as requested ("Institute of account") style
               customWidget: SharedPortfolioSelector<PortfolioItem>(
                 currentPortfolioId: _currentPortfolioId,
                 currentPortfolioName: widget.selectedPortfolioName,
@@ -202,9 +171,9 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
               ),
             ),
           
-          // Navigation Section
+          // Navigation Section (No Title)
           SecondarySidebarSection(
-            title: 'NAVIGATION',
+            title: '',
             items: _swipeController.items.asMap().entries.map((entry) {
               final index = entry.key;
               final item = entry.value;

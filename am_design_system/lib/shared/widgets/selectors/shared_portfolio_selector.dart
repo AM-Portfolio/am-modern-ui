@@ -93,119 +93,109 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
       );
     }
 
+    // Cleaner, flatter design for "Header-like" feel
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.all(8), // Reduced padding
       decoration: BoxDecoration(
-        color: cardBgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: cardBorderColor,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: isDarkMode ? const Color(0xFF2C2C3E) : Colors.transparent, // Transparent in Light Mode
+        borderRadius: BorderRadius.circular(12),
+        // subtle border only in dark mode or if needed
+        border: isDarkMode ? Border.all(color: Colors.white.withOpacity(0.05)) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: effectiveAccent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(
-                  Icons.account_balance_wallet,
-                  size: 14,
-                  color: effectiveAccent,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Current Portfolio',
-                      style: TextStyle(
-                        color: effectiveAccent,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 10,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      currentPortfolioName ?? 'No Portfolio',
-                      style: TextStyle(
-                        color: textColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          
-          if (portfolios.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Container(
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: cardBorderColor),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: currentPortfolioId,
-                  isExpanded: true,
-                  dropdownColor: cardBgColor,
-                  icon: Icon(
-                    Icons.keyboard_arrow_down,
+          // Header Row: Icon + Portfolio Name + Dropdown Arrow
+          InkWell(
+            onTap: () {}, // Could act as a trigger, but we use the Dropdown below
+            borderRadius: BorderRadius.circular(8),
+            child: Row(
+              children: [
+                // Icon Box
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.black26 : effectiveAccent, // Filled in light mode
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.account_balance_wallet,
                     size: 16,
-                    color: subTextColor,
+                    color: isDarkMode ? effectiveAccent : Colors.white,
                   ),
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 12,
-                  ),
-                  hint: Text(
-                    'Select Portfolio',
-                    style: TextStyle(color: subTextColor, fontSize: 12),
-                  ),
-                  items: portfolios.map((portfolio) => DropdownMenuItem<String>(
-                    value: idExtractor(portfolio),
-                    child: Text(
-                      nameExtractor(portfolio),
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: textColor),
-                    ),
-                  )).toList(),
-                  onChanged: (portfolioId) {
-                    if (portfolioId != null) {
-                      final portfolio =
-                          portfolios.firstWhere((p) => idExtractor(p) == portfolioId);
-                      onPortfolioSelected(portfolioId, nameExtractor(portfolio));
-                    }
-                  },
                 ),
-              ),
+                const SizedBox(width: 12),
+                
+                // Titles
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Current Portfolio', // "Institute of Account" equivalent
+                        style: TextStyle(
+                          color: subTextColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      
+                      // Dropdown embedded as the main title
+                      DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: currentPortfolioId,
+                          isDense: true,
+                          isExpanded: true,
+                          dropdownColor: cardBgColor,
+                          icon: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 18,
+                            color: textColor,
+                          ),
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Inter', // Ensure premium font
+                          ),
+                          items: portfolios.map((portfolio) => DropdownMenuItem<String>(
+                            value: idExtractor(portfolio),
+                            child: Text(
+                              nameExtractor(portfolio),
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: textColor),
+                            ),
+                          )).toList(),
+                          onChanged: (portfolioId) {
+                            if (portfolioId != null) {
+                              final portfolio =
+                                  portfolios.firstWhere((p) => idExtractor(p) == portfolioId);
+                              onPortfolioSelected(portfolioId, nameExtractor(portfolio));
+                            }
+                          },
+                          selectedItemBuilder: (context) {
+                            return portfolios.map((portfolio) {
+                              return Text(
+                                nameExtractor(portfolio),
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
+                            }).toList();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ],
       ),
     );

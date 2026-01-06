@@ -256,63 +256,56 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
 
       return UnifiedSidebarScaffold(
         module: ModuleType.trade,
-        subtitle: _currentPortfolioName ?? 'Portfolio Management',
+        // Removed title/subtitle as requested
+        title: null, 
+        subtitle: null, 
         onBackToGlobal: widget.onBack,
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
         },
+        // Footer: Add Trade Button (Synced with Green Theme)
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SidebarPrimaryAction(
+            title: 'Add Trade',
+            icon: Icons.add,
+            accentColor: ModuleColors.trade,
+            onTap: () {
+               Navigator.pushNamed(
+                context,
+                '/trade/add',
+                arguments: {
+                  'portfolioId': _currentPortfolioId,
+                  'portfolioName': _currentPortfolioName
+                },
+              );
+            },
+          ),
+        ),
         body: SwipeablePageView(
           controller: _swipeController,
           showIndicator: !portfoliosAsyncValue.isLoading,
           indicatorPosition: IndicatorPosition.bottom,
         ),
         sections: [
-          SecondarySidebarSection(
-            title: 'Actions',
-            customWidget: LayoutBuilder(
-              builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 100;
-                return Column(
-                  children: [
-                    // Add Trade Button - Only in full mode
-                    if (!isCompact)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: SidebarPrimaryAction(
-                          title: 'Add Trade',
-                          icon: Icons.add,
-                          accentColor: ModuleColors.trade,
-                          onTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              '/trade/add',
-                              arguments: {
-                                'portfolioId': _currentPortfolioId,
-                                'portfolioName': _currentPortfolioName
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    
-                    // Portfolio Selector
-                    if (portfolios.isNotEmpty)
-                      SharedPortfolioSelector<TradePortfolioViewModel>(
-                        currentPortfolioId: _currentPortfolioId,
-                        currentPortfolioName: _currentPortfolioName,
-                        portfolios: portfolios,
-                        onPortfolioSelected: _onPortfolioSelected,
-                        idExtractor: (p) => p.id,
-                        nameExtractor: (p) => p.name,
-                        accentColor: ModuleColors.trade,
-                      ),
-                  ],
-                );
-              },
+          // Portfolio Selector (Top Item, No Title)
+          if (portfolios.isNotEmpty)
+            SecondarySidebarSection(
+              title: '',
+              customWidget: SharedPortfolioSelector<TradePortfolioViewModel>(
+                currentPortfolioId: _currentPortfolioId,
+                currentPortfolioName: _currentPortfolioName,
+                portfolios: portfolios,
+                onPortfolioSelected: _onPortfolioSelected,
+                idExtractor: (p) => p.id,
+                nameExtractor: (p) => p.name,
+                accentColor: ModuleColors.trade,
+              ),
             ),
-          ),
+          
+          // Navigation Section (No Title)
           SecondarySidebarSection(
-            title: 'Navigation',
+            title: '',
             items: _swipeController.items.asMap().entries.map((entry) {
               final index = entry.key;
               final item = entry.value;

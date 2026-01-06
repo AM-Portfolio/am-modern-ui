@@ -251,21 +251,40 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
           onExit: (_) => setState(() => _isHovered = false),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            width: 48,
-            height: 48,
+            width: 56,
+            height: 56,
             decoration: isSelected
                 ? AppGlassmorphismV2.finDashActiveItem(
                     accentColor: widget.accentColor,
                     isDark: widget.isDark,
                   )
                 : AppGlassmorphismV2.finDashInactiveItem(isDark: widget.isDark),
-            child: Icon(
-              widget.item.icon,
-              // Color Logic: If selected OR hovered, use accent color. Else use inactive color.
-              color: (isSelected || _isHovered)
-                  ? widget.accentColor 
-                  : (widget.isDark ? Colors.white54 : Colors.black87),
-              size: 24,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  widget.item.icon,
+                  // Color Logic: If selected OR hovered, use accent color. Else use inactive color.
+                  color: (isSelected || _isHovered)
+                      ? widget.accentColor 
+                      : (widget.isDark ? Colors.white54 : Colors.black87),
+                  size: 24,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.item.title,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: (isSelected || _isHovered)
+                      ? widget.accentColor 
+                      : (widget.isDark ? Colors.white54 : Colors.black87),
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                ),
+              ],
             ),
           ),
         ),
