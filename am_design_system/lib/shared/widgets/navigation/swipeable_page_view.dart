@@ -21,12 +21,16 @@ class SwipeablePageView extends StatelessWidget {
   /// Callback when page changes
   final void Function(int index)? onPageChanged;
 
+  /// The scroll direction of the page view
+  final Axis scrollDirection;
+
   const SwipeablePageView({
     required this.controller,
     this.showIndicator = true,
     this.indicatorPosition = IndicatorPosition.bottom,
     this.customIndicator,
     this.onPageChanged,
+    this.scrollDirection = Axis.horizontal,
     super.key,
   });
 
@@ -42,6 +46,7 @@ class SwipeablePageView extends StatelessWidget {
             animation: controller,
             builder: (context, _) {
               return PageView.builder(
+                scrollDirection: scrollDirection,
                 controller: controller.pageController,
                 onPageChanged: (index) {
                   HapticFeedback.lightImpact();

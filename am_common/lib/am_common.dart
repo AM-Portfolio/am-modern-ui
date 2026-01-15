@@ -25,6 +25,8 @@ export 'features/attachment/internal/presentation/cubits/attachment_state.dart';
 // Services
 export 'features/attachment/internal/services/cloudinary_upload_service.dart';
 export 'features/attachment/internal/services/file_upload_service.dart';
+export 'core/services/price_service.dart';
+export 'core/models/price_update_model.dart';
 
 // Widgets
 export 'features/attachment/internal/presentation/widgets/shared_attachment_section.dart';

@@ -47,6 +47,7 @@ class ApiConfig {
     required this.trade,
     this.document,
     this.cloudinary,
+    this.marketData,
     this.auth,
     this.user,
     this.gmail,
@@ -58,6 +59,7 @@ class ApiConfig {
   final TradeApiConfig trade;
   final DocumentApiConfig? document;
   final CloudinaryApiConfig? cloudinary;
+  final MarketDataConfig? marketData;
   final AuthApiConfig? auth;
   final UserApiConfig? user;
   final GmailApiConfig? gmail;
@@ -203,5 +205,21 @@ class UserApiConfig {
   final int connectTimeout;
   final int receiveTimeout;
   final int sendTimeout;
+  final bool enabled;
+}
+
+/// Market Data API configuration
+class MarketDataConfig {
+  const MarketDataConfig({
+    required this.wsUrl,
+    required this.baseUrl,
+    required this.connectEndpoint,
+    this.connectTimeout = 30,
+    this.enabled = true,
+  });
+  final String wsUrl;
+  final String baseUrl;
+  final String connectEndpoint;
+  final int connectTimeout;
   final bool enabled;
 }

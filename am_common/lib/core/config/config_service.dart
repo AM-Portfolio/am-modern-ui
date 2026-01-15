@@ -75,6 +75,11 @@ class ConfigService {
           extractEndpoint: '/api/v1/gmail/extract',
           enabled: true,
         ),
+        marketData: MarketDataConfig(
+          wsUrl: 'ws://localhost:8092/ws/market-data-stream',
+          baseUrl: 'http://localhost:8092',
+          connectEndpoint: '/v1/market-data/stream/connect',
+        ),
       ),
       environment: Environment.development,
     );
