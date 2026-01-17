@@ -9,11 +9,20 @@ export 'features/attachment/internal/data/repositories/cloudinary_repository_imp
 export 'features/attachment/internal/data/dtos/cloudinary_dto.dart';
 export 'features/attachment/internal/data/mappers/cloudinary_mapper.dart';
 
+// ============================================================================
+// NOTIFICATION FEATURE
+// ============================================================================
+export 'features/notifications/domain/notification_entity.dart';
+export 'features/notifications/providers/notification_provider.dart';
+export 'features/notifications/presentation/notification_bell.dart';
+
 // Domain Layer
 export 'features/attachment/internal/domain/repositories/cloudinary_repository.dart';
 export 'features/attachment/internal/domain/entities/cloudinary_resource.dart';
 export 'features/attachment/internal/domain/usecases/upload_file_usecase.dart';
 export 'features/attachment/internal/domain/usecases/upload_batch_files_usecase.dart';
+
+
 export 'features/attachment/internal/domain/usecases/delete_file_usecase.dart';
 export 'features/attachment/internal/domain/usecases/get_resource_usecase.dart';
 export 'features/attachment/internal/domain/usecases/list_resources_usecase.dart';

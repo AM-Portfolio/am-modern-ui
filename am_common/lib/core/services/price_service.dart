@@ -41,7 +41,19 @@ class PriceService {
   QuoteChange? getQuote(String symbol) => _priceCache[symbol];
   
   /// Get latest price for a specific symbol (convenience)
+  /// Get latest price for a specific symbol (convenience)
   double? getPrice(String symbol) => _priceCache[symbol]?.lastPrice;
+
+  /// Get latest quotes for a list of symbols
+  Map<String, QuoteChange> getQuotes(List<String> symbols) {
+    final Map<String, QuoteChange> result = {};
+    for (final symbol in symbols) {
+      if (_priceCache.containsKey(symbol)) {
+        result[symbol] = _priceCache[symbol]!;
+      }
+    }
+    return result;
+  }
 
   /// Connect to the WebSocket
   void connect() {
@@ -57,9 +69,10 @@ class PriceService {
     }
 
     try {
-      AppLogger.info('PriceService: Connecting to $wsUrl...');
+      AppLogger.info('PriceService: WebSocket Connecting to $wsUrl ...');
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
-      _isConnectedSubject.add(true);
+      _isConnectedSubject.add(true); 
+      AppLogger.info('PriceService: WebSocket Channel created (optimistic)');
 
       _subscription = _channel!.stream.listen(
         _onMessage,
@@ -114,6 +127,10 @@ class PriceService {
   void _onMessage(dynamic message) {
     try {
       if (message is String) {
+        // Log sample of message to verify data flow
+        final preview = message.length > 50 ? "${message.substring(0, 50)}..." : message;
+        AppLogger.debug('PriceService: Received message: $preview');
+
         final Map<String, dynamic> json = jsonDecode(message);
         final update = MarketDataUpdate.fromJson(json);
         
