@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_portfolio_ui/am_portfolio_ui.dart';
-import 'package:am_trade_ui/am_trade_ui.dart';
+
 import 'package:am_market_ui/am_market_ui.dart';
 import 'package:am_user_ui/am_user_ui.dart';
 
@@ -18,13 +18,13 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  int _selectedIndex = 2; // Default to Trade UI
+  int _selectedIndex = 0; // Default to Dashboard
 
   // Mapping string titles to indices
   final Map<String, int> _navMap = {
     'Dashboard': 0,
     'Portfolio': 1,
-    'Trade': 2,
+
     'Market': 3,
     'Profile': 4,
   };
@@ -84,7 +84,7 @@ class _AppShellState extends State<AppShell> {
                       items: [
                          SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
                          SidebarItem(title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
-                         SidebarItem(title: 'Trade', icon: Icons.trending_up_rounded),
+
                          SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
                       ],
                     ),
@@ -108,7 +108,7 @@ class _AppShellState extends State<AppShell> {
                       items: [
                          SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
                          SidebarItem(title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
-                         SidebarItem(title: 'Trade', icon: Icons.trending_up_rounded),
+
                          SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
                       ],
                     )
@@ -132,8 +132,7 @@ class _AppShellState extends State<AppShell> {
           userId: userId,
           onBack: onBackToGlobal,
         );
-      case 2:
-        return TradeWebScreen(userId: userId, onBack: onBackToGlobal);
+
       case 3:
         return MarketPage(
           userId: userId,

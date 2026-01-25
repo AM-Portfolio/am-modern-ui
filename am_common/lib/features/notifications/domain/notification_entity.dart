@@ -13,7 +13,7 @@ enum NotificationType {
 }
 
 @freezed
-class NotificationEntity with _$NotificationEntity {
+abstract class NotificationEntity with _$NotificationEntity {
   const factory NotificationEntity({
     required String id,
     required String title,

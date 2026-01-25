@@ -1,44 +1,48 @@
 name: am_common
 description: Common utilities and cross-cutting concerns for AM Investment application
 version: 1.0.0
-publish_to: 'none'
+publish_to: "none"
 
 environment:
-  sdk: '>=3.8.0 <4.0.0'
+  sdk: ">=3.8.0 <4.0.0"
   flutter: ">=3.10.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  
+
+  # Design System
+  am_design_system:
+    path: ../am_design_system
+
   # HTTP & Networking
   http: ^1.1.0
   dio: ^5.4.0
-  
+
   # File Handling
   file_picker: ^6.1.1
   image_picker: ^1.0.7
   path: ^1.9.0
-  
+
   # Cloud Storage (Cloudinary)
   cloudinary_flutter: ^1.1.1
   cloudinary_url_gen: ^1.6.0
   flutter_secure_storage: ^9.0.0
   web_socket_channel: ^3.0.0
   rxdart: ^0.27.7
-  
+
   # Utils
   intl: ^0.20.2
   json_annotation: ^4.9.0
   url_launcher: ^6.2.5
-  
+
   # State Management
   flutter_bloc: ^9.1.1
   flutter_riverpod: ^3.0.3
   bloc: ^9.1.0
   equatable: ^2.0.7
   freezed_annotation: ^3.1.0
-  
+
   # Logging
   logger: ^2.0.2
 

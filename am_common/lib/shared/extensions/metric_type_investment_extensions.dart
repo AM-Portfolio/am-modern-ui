@@ -1,4 +1,4 @@
-import '../widgets/selectors/selectors.dart';
+import '../enums/metric_type.dart';
 
 /// Extensions for MetricType to provide investment-specific lists
 extension MetricTypeInvestmentTypes on MetricType {

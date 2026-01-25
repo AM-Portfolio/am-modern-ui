@@ -1,6 +1,15 @@
 library am_common;
 
 // ============================================================================
+// SHARED ENUMS
+// ============================================================================
+export 'shared/enums/market_cap_type.dart';
+export 'shared/enums/metric_type.dart';
+export 'shared/enums/sector_type.dart';
+export 'shared/enums/timeframe.dart';
+export 'shared/extensions/investment_extensions.dart';
+
+// ============================================================================
 // ATTACHMENT FEATURE
 // ============================================================================
 // Data Layer

@@ -1,4 +1,4 @@
-import '../widgets/selectors/selectors.dart';
+import '../enums/market_cap_type.dart';
 
 /// Extensions for MarketCapType to provide investment-specific lists
 extension MarketCapTypeInvestmentTypes on MarketCapType {

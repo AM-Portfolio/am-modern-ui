@@ -52,7 +52,8 @@ class AppTheme {
     final textTheme = AppTypography.getTextTheme(isDark: isDark);
     
     // Apply Google Fonts Inter globally if desired, overlaying our custom TextTheme
-    final fontTheme = GoogleFonts.interTextTheme(textTheme);
+    // final fontTheme = GoogleFonts.interTextTheme(textTheme);
+    final fontTheme = textTheme; // Temporarily using default textTheme
 
     return ThemeData(
       useMaterial3: true,

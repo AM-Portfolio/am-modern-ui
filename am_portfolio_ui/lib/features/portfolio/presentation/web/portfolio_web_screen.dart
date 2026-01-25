@@ -65,6 +65,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           icon: Icons.dashboard_outlined,
           page: PortfolioOverviewWebPage(
             userId: widget.userId,
+            portfolioId: _currentPortfolioId ?? widget.userId, // Fallback to userId if null? No, pass current.
           ),
           accentColor: ModuleColors.portfolio,
         ),

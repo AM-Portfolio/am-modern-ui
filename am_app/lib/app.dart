@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
-import 'package:am_trade_ui/am_trade_ui.dart';
+
 
 import 'features/shell/app_shell.dart';
 import 'core/di/injection.dart';
@@ -40,13 +40,7 @@ class AMApp extends ConsumerWidget {
             home: const AppShell(),
             routes: {
               '/home': (context) => const AppShell(),
-              '/trade/add': (context) {
-                final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>? ?? {};
-                return AddTradeWebPage(
-                  portfolioId: args['portfolioId'] as String? ?? '',
-                  portfolioName: args['portfolioName'] as String?,
-                );
-              },
+
             },
           );
         },

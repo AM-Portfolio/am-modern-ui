@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+// import 'package:google_fonts/google_fonts.dart';  // Temporarily disabled
 import 'app_colors.dart';
 
 /// Centralized text styles using Google Fonts (Inter)

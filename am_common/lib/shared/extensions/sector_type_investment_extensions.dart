@@ -1,4 +1,4 @@
-import '../widgets/selectors/selectors.dart';
+import '../enums/sector_type.dart';
 
 /// Extensions for SectorType to provide investment-specific lists
 extension SectorTypeInvestmentTypes on SectorType {

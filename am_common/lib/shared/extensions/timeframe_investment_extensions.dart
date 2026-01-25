@@ -1,4 +1,4 @@
-import '../widgets/selectors/selectors.dart';
+import '../enums/timeframe.dart';
 
 /// Extensions for TimeFrame to provide investment-specific lists
 extension TimeFrameInvestmentTypes on TimeFrame {
