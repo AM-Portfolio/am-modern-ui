@@ -1,4 +1,5 @@
 import 'package:am_common/am_common.dart';
+import '../../../../core/constants/basket_endpoints.dart';
 import '../../domain/models/basket_opportunity.dart';
 
 abstract class BasketRemoteDataSource {
@@ -27,7 +28,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
     String? query,
   }) async {
     final response = await apiClient.post(
-      '/api/v1/basket/opportunities',
+      BasketEndpoints.opportunities,
       parser: (data) => data,
       body: {
         'userId': userId,
@@ -48,7 +49,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
     required String portfolioId,
   }) async {
     final response = await apiClient.post(
-      '/api/v1/basket/preview',
+      BasketEndpoints.preview,
       parser: (data) => data, // Pass-through as we need raw map for fromJson
       body: {
         'etfIsin': etfIsin,
