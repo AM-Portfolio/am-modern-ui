@@ -7,6 +7,7 @@ class BasketOpportunity {
   final int totalItems;
   final int heldCount;
   final int missingCount;
+  final double? totalPortfolioValue;
   final List<BasketItem> composition;
   final List<BasketItem> buyList;
 
@@ -19,6 +20,7 @@ class BasketOpportunity {
     this.totalItems = 0,
     this.heldCount = 0,
     this.missingCount = 0,
+    this.totalPortfolioValue,
     this.composition = const [],
     this.buyList = const [],
   });
@@ -33,6 +35,7 @@ class BasketOpportunity {
       totalItems: json['totalItems'] as int? ?? 0,
       heldCount: json['heldCount'] as int? ?? 0,
       missingCount: json['missingCount'] as int? ?? 0,
+      totalPortfolioValue: (json['totalPortfolioValue'] as num?)?.toDouble(),
       composition: (json['composition'] as List<dynamic>?)
               ?.map((e) => BasketItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -54,6 +57,7 @@ class BasketOpportunity {
       'totalItems': totalItems,
       'heldCount': heldCount,
       'missingCount': missingCount,
+      'totalPortfolioValue': totalPortfolioValue,
       'composition': composition.map((e) => e.toJson()).toList(),
       'buyList': buyList.map((e) => e.toJson()).toList(),
     };
@@ -68,6 +72,7 @@ class BasketOpportunity {
     int? totalItems,
     int? heldCount,
     int? missingCount,
+    double? totalPortfolioValue,
     List<BasketItem>? composition,
     List<BasketItem>? buyList,
   }) {
@@ -80,6 +85,7 @@ class BasketOpportunity {
       totalItems: totalItems ?? this.totalItems,
       heldCount: heldCount ?? this.heldCount,
       missingCount: missingCount ?? this.missingCount,
+      totalPortfolioValue: totalPortfolioValue ?? this.totalPortfolioValue,
       composition: composition ?? this.composition,
       buyList: buyList ?? this.buyList,
     );
@@ -97,6 +103,9 @@ class BasketItem {
   final double userWeight;
   final double replicaWeight;
   final double buyQuantity;
+  final double? lastPrice;
+  final String? marketCapCategory;
+  final double? marketCapValue;
   final List<Alternative> alternatives;
 
   const BasketItem({
@@ -110,16 +119,19 @@ class BasketItem {
     this.userWeight = 0.0,
     this.replicaWeight = 0.0,
     this.buyQuantity = 0.0,
+    this.lastPrice,
+    this.marketCapCategory,
+    this.marketCapValue,
     this.alternatives = const [],
   });
 
   factory BasketItem.fromJson(Map<String, dynamic> json) {
     return BasketItem(
-      stockSymbol: json['stockSymbol'] as String,
-      isin: json['isin'] as String,
-      sector: json['sector'] as String,
+      stockSymbol: json['stockSymbol'] as String? ?? 'Unknown',
+      isin: json['isin'] as String? ?? '',
+      sector: json['sector'] as String? ?? 'Unknown',
       status: ItemStatus.values.firstWhere(
-        (e) => e.name.toUpperCase() == (json['status'] as String).toUpperCase(),
+        (e) => e.name.toUpperCase() == (json['status'] as String?)?.toUpperCase(),
         orElse: () => ItemStatus.missing,
       ),
       userHoldingSymbol: json['userHoldingSymbol'] as String?,
@@ -128,6 +140,9 @@ class BasketItem {
       userWeight: (json['userWeight'] as num?)?.toDouble() ?? 0.0,
       replicaWeight: (json['replicaWeight'] as num?)?.toDouble() ?? 0.0,
       buyQuantity: (json['buyQuantity'] as num?)?.toDouble() ?? 0.0,
+      lastPrice: (json['lastPrice'] as num?)?.toDouble(),
+      marketCapCategory: json['marketCapCategory'] as String?,
+      marketCapValue: (json['marketCapValue'] as num?)?.toDouble(),
       alternatives: (json['alternatives'] as List<dynamic>?)
               ?.map((e) => Alternative.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -147,6 +162,9 @@ class BasketItem {
       'userWeight': userWeight,
       'replicaWeight': replicaWeight,
       'buyQuantity': buyQuantity,
+      'lastPrice': lastPrice,
+      'marketCapCategory': marketCapCategory,
+      'marketCapValue': marketCapValue,
       'alternatives': alternatives.map((e) => e.toJson()).toList(),
     };
   }
@@ -162,6 +180,7 @@ class BasketItem {
     double? userWeight,
     double? replicaWeight,
     double? buyQuantity,
+    double? lastPrice,
     List<Alternative>? alternatives,
   }) {
     return BasketItem(
@@ -175,6 +194,7 @@ class BasketItem {
       userWeight: userWeight ?? this.userWeight,
       replicaWeight: replicaWeight ?? this.replicaWeight,
       buyQuantity: buyQuantity ?? this.buyQuantity,
+      lastPrice: lastPrice ?? this.lastPrice,
       alternatives: alternatives ?? this.alternatives,
     );
   }
@@ -193,8 +213,8 @@ class Alternative {
 
   factory Alternative.fromJson(Map<String, dynamic> json) {
     return Alternative(
-      symbol: json['symbol'] as String,
-      isin: json['isin'] as String,
+      symbol: json['symbol'] as String? ?? 'Unknown',
+      isin: json['isin'] as String? ?? '',
       userWeight: (json['userWeight'] as num?)?.toDouble() ?? 0.0,
     );
   }

@@ -4,6 +4,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/basket_providers.dart';
 import '../../domain/models/basket_opportunity.dart';
+import 'etf_search_bar.dart';
 
 class BasketExplorer extends ConsumerWidget {
   final String userId;
@@ -17,9 +18,12 @@ class BasketExplorer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Use a default query of major indices if no specific query is meant to be provided
+    // This matches user requirement to suggested indices
     final opportunitiesAsync = ref.watch(basketOpportunitiesProvider(
       userId: userId,
       portfolioId: portfolioId,
+      query: 'Nifty 50,Nifty Bank,Nifty IT', // Default query
     ));
 
     return Column(
@@ -45,6 +49,28 @@ class BasketExplorer extends ConsumerWidget {
             ],
           ),
         ),
+        
+        // ETF Search Bar
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: EtfSearchBar(
+            onEtfSelected: (selection) {
+              if (selection.isin != null) {
+                context.push('/portfolio/basket/preview', extra: {
+                  'etfIsin': selection.isin,
+                  'userId': userId,
+                  'portfolioId': portfolioId,
+                });
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Error: Selected ETF has no ISIN')),
+                );
+              }
+            },
+          ),
+        ),
+        
+        const SizedBox(height: 12),
         SizedBox(
           height: 220,
           child: opportunitiesAsync.when(
@@ -60,7 +86,7 @@ class BasketExplorer extends ConsumerWidget {
                   return _BasketOpportunityCard(
                     opportunity: opportunities[index],
                     onTap: () {
-                      context.push('/basket/preview', extra: {
+                      context.push('/portfolio/basket/preview', extra: {
                         'etfIsin': opportunities[index].etfIsin,
                         'userId': userId,
                         'portfolioId': portfolioId,

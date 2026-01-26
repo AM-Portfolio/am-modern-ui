@@ -1,7 +1,7 @@
 /// Portfolio Module API endpoint constants
 class PortfolioEndpoints {
   // Base URL
-  static const String baseUrl = 'http://localhost:8072'; // 'https://am.munish.org/api/portfolio';
+  static const String baseUrl = 'http://localhost:8061'; // 'https://am.munish.org/api/portfolio';
   
   // Resources
   static const String list = '/v1/portfolios/list';

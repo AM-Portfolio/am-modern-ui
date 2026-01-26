@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 import '../../providers/custom_basket_provider.dart';
 import '../../domain/models/custom_basket.dart';
+import '../../domain/models/stock_search_result.dart';
+import '../../widgets/substitute_selector.dart';
 import '../widgets/creator/basket_summary_footer.dart';
 
 class BasketCreatorPage extends ConsumerStatefulWidget {
@@ -285,25 +287,67 @@ class _BasketCreatorPageState extends ConsumerState<BasketCreatorPage> {
                     ),
                 ],
               ),
-              trailing: IconButton(
-                icon: Icon(
-                  isSelected ? Icons.remove_circle : Icons.add_circle,
-                  color: isSelected ? Colors.red : Colors.greenAccent,
-                ),
-                onPressed: () {
-                  if (isSelected) {
-                    ref
-                        .read(customBasketNotifierProvider.notifier)
-                        .removeStock(stock.symbol);
-                  } else {
-                    ref
-                        .read(customBasketNotifierProvider.notifier)
-                        .addStock(stock);
-                  }
-                },
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.swap_horiz, color: Colors.blueAccent),
+                    tooltip: 'Replace',
+                    onPressed: () => _replaceStock(stock),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      isSelected ? Icons.remove_circle : Icons.add_circle,
+                      color: isSelected ? Colors.red : Colors.greenAccent,
+                    ),
+                    onPressed: () {
+                      if (isSelected) {
+                        ref
+                            .read(customBasketNotifierProvider.notifier)
+                            .removeStock(stock.symbol);
+                      } else {
+                        ref
+                            .read(customBasketNotifierProvider.notifier)
+                            .addStock(stock);
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _replaceStock(CustomBasketStock original) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: SubstituteSelector(
+          originalSymbol: original.symbol,
+          requiredMarketCap: '', // Auto-detect
+          onSelected: (StockSearchResult newStock) {
+             final stockToAdd = CustomBasketStock(
+               symbol: newStock.symbol,
+               name: newStock.name,
+               weight: original.weight,
+               sector: newStock.sector,
+             );
+             
+             // Remove then add to perform substitution
+             // Note: This trigger weight recalculation based on current notifier logic
+             ref.read(customBasketNotifierProvider.notifier).removeStock(original.symbol);
+             ref.read(customBasketNotifierProvider.notifier).addStock(stockToAdd);
+             
+             ScaffoldMessenger.of(context).showSnackBar(
+               SnackBar(content: Text('Replaced ${original.symbol} with ${newStock.symbol}')),
+             );
+          },
         ),
       ),
     );

@@ -64,46 +64,48 @@ class _BasketContent extends StatelessWidget {
         .where((item) => item.status != ItemStatus.held)
         .toList();
 
-    return Column(
-      children: [
-        _EntryHeroCard(opportunity: opportunity),
-        Expanded(
-          child: DefaultTabController(
-            length: 2,
-            child: Column(
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          _EntryHeroCard(opportunity: opportunity),
+          Container(
+             margin: const EdgeInsets.symmetric(horizontal: 16),
+             decoration: BoxDecoration(
+               border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+             ),
+             child: TabBar(
+               labelColor: AppColors.primary,
+               unselectedLabelColor: Theme.of(context).hintColor,
+               indicatorColor: AppColors.primary,
+               indicatorWeight: 3,
+               labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+               tabs: [
+                 Tab(text: "Your Match (${heldItems.length})"),
+                 Tab(text: "The Gap (${missingItems.length})"),
+               ],
+             ),
+           ),
+          Expanded(
+            child: TabBarView(
               children: [
-                TabBar(
-                  unselectedLabelColor: Theme.of(context).textTheme.bodySmall?.color,
-                  labelColor: Theme.of(context).primaryColor,
-                  indicatorColor: Theme.of(context).primaryColor,
-                  tabs: [
-                    Tab(text: "Your Match (${heldItems.length})"),
-                    Tab(text: "The Gap (${missingItems.length})"),
-                  ],
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      _HeldItemsList(items: heldItems),
-                      _MissingItemsList(items: missingItems),
-                    ],
-                  ),
-                ),
+                _HeldItemsList(items: heldItems),
+                _MissingItemsList(items: missingItems),
               ],
             ),
           ),
-        ),
-        _BottomActionBar(
-          onPressed: () {
-            // Navigate to Manual Creator
-             context.push('/basket/creator', extra: {
-                'opportunity': opportunity,
-                'userId': userId,
-                'portfolioId': portfolioId,
-              });
-          },
-        ),
-      ],
+          _BottomActionBar(
+            onPressed: () {
+              // Navigate to Manual Creator
+               context.push('/portfolio/basket/creator', extra: {
+                  'opportunity': opportunity,
+                  'userId': userId,
+                  'portfolioId': portfolioId,
+                });
+            },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -129,6 +131,13 @@ class _EntryHeroCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Theme.of(context).dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -147,31 +156,66 @@ class _EntryHeroCard extends StatelessWidget {
                   'Based on your holdings, you are ${opportunity.composition.length - opportunity.heldCount} stocks away from replicating this basket.',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
+                 const SizedBox(height: 12),
+                 Row(
+                   children: [
+                     _ScoreBadge(label: "Match Score", score: opportunity.matchScore, color: AppColors.primary),
+                     const SizedBox(width: 12),
+                     _ScoreBadge(label: "Replica Score", score: opportunity.replicaScore, color: AppColors.success),
+                   ],
+                 )
               ],
             ),
           ),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 80,
-                height: 80,
-                child: CircularProgressIndicator(
-                  value: opportunity.matchScore / 100,
-                  strokeWidth: 8,
-                  backgroundColor: Theme.of(context).dividerColor,
-                  color: AppColors.success,
-                ),
-              ),
-              Text(
-                '${opportunity.matchScore.toStringAsFixed(0)}%',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.success,
-                ),
-              ),
-            ],
-          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScoreBadge extends StatelessWidget {
+  final String label;
+  final double score;
+  final Color color;
+
+  const _ScoreBadge({required this.label, required this.score, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+     return Container(
+       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+       decoration: BoxDecoration(
+         color: color.withOpacity(0.1),
+         borderRadius: BorderRadius.circular(8),
+         border: Border.all(color: color.withOpacity(0.3)),
+       ),
+       child: Column(
+         crossAxisAlignment: CrossAxisAlignment.start,
+         children: [
+           Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color)),
+           Text("${score.toStringAsFixed(1)}%", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: color)),
+         ],
+       ),
+     );
+  }
+}
+
+class _BasketItemHeader extends StatelessWidget {
+  const _BasketItemHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).canvasColor,
+        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+      ),
+      child: Row(
+        children: [
+          Expanded(flex: 4, child: Text("Instrument", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
+          Expanded(flex: 1, child: Text("ETF %", textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
+          Expanded(flex: 1, child: Text("Your %", textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
         ],
       ),
     );
@@ -186,20 +230,61 @@ class _HeldItemsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Center(child: Text('No held items match this basket.'));
+      return const Center(child: Padding(
+        padding: EdgeInsets.all(20.0),
+        child: Text('No held items match this basket.'),
+      ));
     }
-    return ListView.builder(
-      itemCount: items.length,
-      padding: const EdgeInsets.all(16),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return ListTile(
-          leading: const Icon(Icons.check_circle, color: AppColors.success),
-          title: Text(item.stockSymbol),
-          subtitle: Text('Sector: ${item.sector}'),
-          trailing: Text('${item.userWeight.toStringAsFixed(2)}%'),
-        );
-      },
+    return Column(
+      children: [
+        const _BasketItemHeader(),
+        Expanded(
+          child: ListView.separated(
+            itemCount: items.length,
+            separatorBuilder: (c, i) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final isSubstitute = item.status == ItemStatus.substitute;
+              
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                color: isSubstitute ? AppColors.info.withOpacity(0.05) : null,
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            "${item.sector} ${item.marketCapCategory != null ? '• ${item.marketCapCategory}' : ''}",
+                            style: Theme.of(context).textTheme.bodySmall
+                          ),
+                          if (isSubstitute)
+                             Padding(
+                               padding: const EdgeInsets.only(top: 4.0),
+                               child: Text("Using: ${item.userHoldingSymbol} (Sub)", style: TextStyle(fontSize: 11, color: AppColors.info, fontStyle: FontStyle.italic)),
+                             )
+                        ],
+                      )
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Text("${item.etfWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right)
+                    ),
+                     Expanded(
+                      flex: 1,
+                      child: Text("${item.userWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right, 
+                        style: TextStyle(fontWeight: FontWeight.bold, color: item.userWeight < item.etfWeight ? AppColors.warning : AppColors.success))
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -212,33 +297,52 @@ class _MissingItemsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Center(child: Text('You have all items!'));
+      return const Center(child: Padding(
+        padding: EdgeInsets.all(20.0),
+        child: Text('You have all items!'),
+      ));
     }
-    return ListView.builder(
-      itemCount: items.length,
-      padding: const EdgeInsets.all(16),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        final isSubstitute = item.status == ItemStatus.substitute;
-        
-        return Card(
-          elevation: 0,
-          color: isSubstitute ? AppColors.info.withOpacity(0.05) : AppColors.error.withOpacity(0.05),
-           margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            leading: Icon(
-              isSubstitute ? Icons.swap_horiz : Icons.add_circle_outline,
-              color: isSubstitute ? AppColors.info : AppColors.error,
-            ),
-            title: Text(item.stockSymbol),
-            subtitle: isSubstitute 
-              ? Text('Substitute for: ${item.userHoldingSymbol} (${item.reason})')
-              : Text('Required Weight: ${item.etfWeight?.toStringAsFixed(2)}%'),
-             trailing: isSubstitute ? 
-               Chip(label: Text('Proxy'), backgroundColor: AppColors.info.withOpacity(0.2)) : null,
+    return Column(
+      children: [
+        const _BasketItemHeader(),
+        Expanded(
+          child: ListView.separated(
+            itemCount: items.length,
+            separatorBuilder: (c, i) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                             "${item.sector} ${item.marketCapCategory != null ? '• ${item.marketCapCategory}' : ''}",
+                             style: Theme.of(context).textTheme.bodySmall
+                          ),
+                        ],
+                      )
+                    ),
+                     Expanded(
+                      flex: 1,
+                      child: Text("${item.etfWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right)
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Text("-", textAlign: TextAlign.right, style: TextStyle(color: Theme.of(context).disabledColor))
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }
