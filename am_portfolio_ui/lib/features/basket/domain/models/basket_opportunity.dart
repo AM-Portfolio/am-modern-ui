@@ -106,6 +106,8 @@ class BasketItem {
   final double? lastPrice;
   final String? marketCapCategory;
   final double? marketCapValue;
+  final double? heldQuantity;
+  final double? heldAveragePrice;
   final List<Alternative> alternatives;
 
   const BasketItem({
@@ -122,6 +124,8 @@ class BasketItem {
     this.lastPrice,
     this.marketCapCategory,
     this.marketCapValue,
+    this.heldQuantity,
+    this.heldAveragePrice,
     this.alternatives = const [],
   });
 
@@ -143,6 +147,8 @@ class BasketItem {
       lastPrice: (json['lastPrice'] as num?)?.toDouble(),
       marketCapCategory: json['marketCapCategory'] as String?,
       marketCapValue: (json['marketCapValue'] as num?)?.toDouble(),
+      heldQuantity: (json['heldQuantity'] as num?)?.toDouble(),
+      heldAveragePrice: (json['heldAveragePrice'] as num?)?.toDouble(),
       alternatives: (json['alternatives'] as List<dynamic>?)
               ?.map((e) => Alternative.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -182,6 +188,8 @@ class BasketItem {
     double? buyQuantity,
     double? lastPrice,
     List<Alternative>? alternatives,
+    double? heldQuantity,
+    double? heldAveragePrice,
   }) {
     return BasketItem(
       stockSymbol: stockSymbol ?? this.stockSymbol,
@@ -196,6 +204,8 @@ class BasketItem {
       buyQuantity: buyQuantity ?? this.buyQuantity,
       lastPrice: lastPrice ?? this.lastPrice,
       alternatives: alternatives ?? this.alternatives,
+      heldQuantity: heldQuantity ?? this.heldQuantity,
+      heldAveragePrice: heldAveragePrice ?? this.heldAveragePrice,
     );
   }
 }

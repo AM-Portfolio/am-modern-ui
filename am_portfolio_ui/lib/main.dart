@@ -16,6 +16,8 @@ import 'package:am_portfolio_ui/features/portfolio/presentation/web/app_shell.da
 import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfolio_overview_web_page.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfolio_holdings_web_page.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfolio_analysis_web_page.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfolio_baskets_web_page.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfolio_heatmap_web_page.dart';
 
 void main() {
   // Service Locator (DI) Setup
@@ -125,10 +127,25 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                   ),
                   GoRoute(
                     path: '/portfolio/heatmap',
-                    builder: (context, state) => const PortfolioPlaceholderPage(title: 'Heatmap (Coming Soon)'), 
-                    // Temporarily using placeholder until provider wrapper is moved
+                    builder: (context, state) {
+                      final userId = (context.read<AuthCubit>().state as Authenticated).user.id;
+                      return PortfolioHeatmapWebPage(
+                        userId: userId, 
+                        portfolioId: context.selectedPortfolioId ?? userId
+                      );
+                    },
                   ),
 
+                  GoRoute(
+                    path: '/portfolio/baskets',
+                    builder: (context, state) {
+                      final userId = (context.read<AuthCubit>().state as Authenticated).user.id;
+                      return PortfolioBasketsWebPage(
+                        userId: userId, 
+                        portfolioId: context.selectedPortfolioId ?? userId
+                      );
+                    },
+                  ),
                    // Basket Routes
                    GoRoute(
                     path: '/portfolio/basket/preview',

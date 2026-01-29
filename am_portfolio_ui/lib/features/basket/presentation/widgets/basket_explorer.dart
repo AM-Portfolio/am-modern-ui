@@ -6,7 +6,7 @@ import '../providers/basket_providers.dart';
 import '../../domain/models/basket_opportunity.dart';
 import 'etf_search_bar.dart';
 
-class BasketExplorer extends ConsumerWidget {
+class BasketExplorer extends ConsumerStatefulWidget {
   final String userId;
   final String portfolioId;
 
@@ -17,13 +17,33 @@ class BasketExplorer extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Use a default query of major indices if no specific query is meant to be provided
-    // This matches user requirement to suggested indices
+  ConsumerState<BasketExplorer> createState() => _BasketExplorerState();
+}
+
+class _BasketExplorerState extends ConsumerState<BasketExplorer> {
+  String _query = 'Nifty 50,Nifty Bank,Nifty IT'; // Default query
+  
+  final Map<String, String> _categories = {
+    'Nifty 50': 'NIFTY 50',
+    'Bank': 'NIFTY BANK', 
+    'IT': 'NIFTY IT',
+    'Auto': 'NIFTY AUTO',
+    'Metal': 'NIFTY METAL',
+    'FMCG': 'NIFTY FMCG',
+    'Pharma': 'NIFTY PHARMA',
+    'Gold': 'GOLD',
+    'PSU Bank': 'NIFTY PSU BANK',
+  };
+    
+  String? _selectedCategory;
+
+  @override
+  Widget build(BuildContext context) {
+    // Use the current query state
     final opportunitiesAsync = ref.watch(basketOpportunitiesProvider(
-      userId: userId,
-      portfolioId: portfolioId,
-      query: 'Nifty 50,Nifty Bank,Nifty IT', // Default query
+      userId: widget.userId,
+      portfolioId: widget.portfolioId,
+      query: _query,
     ));
 
     return Column(
@@ -42,9 +62,13 @@ class BasketExplorer extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () {
-                  // Navigate to full list if implemented
+                  // Reset query to default
+                  setState(() {
+                    _query = 'Nifty 50,Nifty Bank,Nifty IT';
+                    _selectedCategory = null;
+                  });
                 },
-                child: const Text('View All'),
+                child: const Text('Reset'),
               ),
             ],
           ),
@@ -56,11 +80,19 @@ class BasketExplorer extends ConsumerWidget {
           child: EtfSearchBar(
             onEtfSelected: (selection) {
               if (selection.isin != null) {
-                context.push('/portfolio/basket/preview', extra: {
-                  'etfIsin': selection.isin,
-                  'userId': userId,
-                  'portfolioId': portfolioId,
-                });
+                if (selection.isin!.contains(',')) {
+                   // If multiple ISINs, update the list
+                   setState(() {
+                     _query = selection.isin!;
+                   });
+                } else {
+                  // If single ISIN, navigate to preview
+                  context.push('/portfolio/basket/preview', extra: {
+                    'etfIsin': selection.isin,
+                    'userId': widget.userId,
+                    'portfolioId': widget.portfolioId,
+                  });
+                }
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Error: Selected ETF has no ISIN')),
@@ -69,18 +101,69 @@ class BasketExplorer extends ConsumerWidget {
             },
           ),
         ),
+
+        // Quick Select Categories
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Wrap(
+              spacing: 8.0,
+              children: _categories.entries.map((entry) {
+                final isSelected = _selectedCategory == entry.key;
+                return FilterChip(
+                  label: Text(entry.key),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedCategory = entry.key;
+                        _query = entry.value;
+                      } else {
+                        // If unselected, go back to default or keep current?
+                        // Usually resetting to default makes sense
+                        _selectedCategory = null;
+                        _query = 'Nifty 50,Nifty Bank,Nifty IT';
+                      }
+                    });
+                  },
+                  backgroundColor: Theme.of(context).cardColor,
+                  selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+                  labelStyle: TextStyle(
+                    color: isSelected ? Theme.of(context).primaryColor : null,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: isSelected 
+                          ? Theme.of(context).primaryColor 
+                          : Theme.of(context).dividerColor.withOpacity(0.5),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
         
         const SizedBox(height: 12),
-        SizedBox(
-          height: 220,
+        const SizedBox(height: 12),
+        Expanded(
           child: opportunitiesAsync.when(
             data: (opportunities) {
               if (opportunities.isEmpty) {
                 return const Center(child: Text('No opportunities found'));
               }
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                scrollDirection: Axis.horizontal,
+              return GridView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 300,
+                  mainAxisExtent: 180, // Fixed height for cards
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
                 itemCount: opportunities.length,
                 itemBuilder: (context, index) {
                   return _BasketOpportunityCard(
@@ -88,8 +171,8 @@ class BasketExplorer extends ConsumerWidget {
                     onTap: () {
                       context.push('/portfolio/basket/preview', extra: {
                         'etfIsin': opportunities[index].etfIsin,
-                        'userId': userId,
-                        'portfolioId': portfolioId,
+                        'userId': widget.userId,
+                        'portfolioId': widget.portfolioId,
                       });
                     },
                   );
@@ -116,22 +199,17 @@ class _BasketOpportunityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    return Container(
-      width: 180,
-      margin: const EdgeInsets.only(right: 12.0, bottom: 8.0),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -189,7 +267,6 @@ class _BasketOpportunityCard extends StatelessWidget {
                     )
                 )
               ],
-            ),
           ),
         ),
       ),

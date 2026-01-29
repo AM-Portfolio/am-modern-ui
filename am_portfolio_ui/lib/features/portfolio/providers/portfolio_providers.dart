@@ -18,6 +18,7 @@ import '../internal/data/repositories/portfolio_analytics_repository_impl.dart';
 import '../internal/data/datasources/portfolio_remote_data_source.dart';
 import '../internal/services/portfolio_service.dart';
 import '../internal/services/portfolio_analytics_service.dart';
+import '../internal/data/datasources/local/portfolio_local_data_source.dart';
 
 import 'package:am_common/am_common.dart'; // Includes network_providers, logger, config
 
@@ -36,6 +37,16 @@ Future<PortfolioRemoteDataSource> portfolioRemoteDataSource(Ref ref) async {
   );
 }
 
+final portfolioLocalDataSourceProvider = FutureProvider<PortfolioLocalDataSource>((ref) async {
+  CommonLogger.debug(
+    'Creating PortfolioLocalDataSource instance',
+    tag: 'PortfolioProviders',
+  );
+  final dataSource = PortfolioLocalDataSource();
+  await dataSource.init();
+  return dataSource;
+});
+
 @riverpod
 Future<PortfolioRepository> portfolioRepository(Ref ref) async {
   CommonLogger.debug(
@@ -45,7 +56,13 @@ Future<PortfolioRepository> portfolioRepository(Ref ref) async {
   final remoteDataSource = await ref.watch(
     portfolioRemoteDataSourceProvider.future,
   );
-  return PortfolioRepositoryImpl(remoteDataSource: remoteDataSource);
+  final localDataSource = await ref.watch(
+    portfolioLocalDataSourceProvider.future,
+  );
+  return PortfolioRepositoryImpl(
+    remoteDataSource: remoteDataSource,
+    localDataSource: localDataSource,
+  );
 }
 
 /// Use case providers

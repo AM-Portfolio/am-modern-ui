@@ -84,7 +84,18 @@ class _EtfSearchBarState extends State<EtfSearchBar> {
                   : null,
               ),
               onSubmitted: (value) {
-                onFieldSubmitted();
+                if (value.contains(',')) {
+                  // Handle custom comma-separated list
+                  widget.onEtfSelected(EtfSearchResult(
+                    symbol: value,
+                    name: 'Custom List',
+                    isin: value, // Use the raw input as ISIN/Query
+                  ));
+                  // Close the options view by removing focus
+                  fieldFocusNode.unfocus();
+                } else {
+                  onFieldSubmitted();
+                }
               },
             );
           },

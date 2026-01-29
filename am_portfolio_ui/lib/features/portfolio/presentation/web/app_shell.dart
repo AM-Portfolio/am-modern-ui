@@ -117,8 +117,8 @@ class AppShell extends StatelessWidget {
                  SecondarySidebarItem(
                   title: 'Baskets',
                   icon: Icons.shopping_basket_outlined,
-                  isSelected: location.contains('/portfolio/basket'),
-                  onTap: () => context.go('/portfolio/basket/creator'), // Or a baskets list if we had one
+                  isSelected: location.contains('/portfolio/basket') && !location.contains('/creator'), 
+                  onTap: () => context.go('/portfolio/baskets'),
                   accentColor: ModuleColors.portfolio,
                 ),
               ],

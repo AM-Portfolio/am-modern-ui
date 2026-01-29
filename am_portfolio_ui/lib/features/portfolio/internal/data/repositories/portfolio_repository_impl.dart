@@ -9,6 +9,7 @@ import '../datasources/portfolio_remote_data_source.dart';
 import '../mappers/portfolio_holdings_mapper.dart';
 import '../mappers/portfolio_summary_mapper.dart';
 import '../mappers/portfolio_list_mapper.dart';
+import '../datasources/local/portfolio_local_data_source.dart';
 import 'package:am_common/core/utils/logger.dart';
 
 /// Repository implementation for portfolio data operations
@@ -19,9 +20,14 @@ import 'package:am_common/core/utils/logger.dart';
 /// - Provides streams for real-time updates
 /// - Implements caching and error handling
 class PortfolioRepositoryImpl implements PortfolioRepository {
-  PortfolioRepositoryImpl({required PortfolioRemoteDataSource remoteDataSource})
-    : _remoteDataSource = remoteDataSource;
+  PortfolioRepositoryImpl({
+    required PortfolioRemoteDataSource remoteDataSource,
+    required PortfolioLocalDataSource localDataSource,
+  })  : _remoteDataSource = remoteDataSource,
+        _localDataSource = localDataSource;
+
   final PortfolioRemoteDataSource _remoteDataSource;
+  final PortfolioLocalDataSource _localDataSource;
 
   // Stream controllers for real-time updates
   final StreamController<PortfolioHoldings> _holdingsController =
@@ -43,6 +49,29 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       metadata: {'userId': userId},
     );
 
+    // 1. Try Local Cache (Instant Load)
+    try {
+      final cached = await _localDataSource.getLastHoldings(userId);
+      if (cached != null) {
+        CommonLogger.info(
+          'Loaded holdings from local cache',
+          tag: 'PortfolioRepository',
+        );
+        // Emit immediately
+        _holdingsController.add(cached);
+        // Update in-memory cache
+        _cachedHoldings = cached;
+        _lastUserId = userId;
+      }
+    } catch (e) {
+      CommonLogger.warning(
+        'Failed to read local cache',
+        error: e,
+        tag: 'PortfolioRepository',
+      );
+    }
+
+    // 2. Fetch Fresh Data (Network)
     try {
       // Fetch data from remote source
       final holdingsDto = await _remoteDataSource.getPortfolioHoldings(userId);
@@ -53,12 +82,13 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         userId,
       );
 
-      // Cache the result
+      // 3. Update Stream & Caches
       _cachedHoldings = holdings;
       _lastUserId = userId;
-
-      // Emit to stream for real-time updates
       _holdingsController.add(holdings);
+
+      // 4. Persist to Local Cache
+      await _localDataSource.cacheHoldings(userId, holdings);
 
       CommonLogger.info(
         'Portfolio holdings fetched successfully',
@@ -84,15 +114,13 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         metadata: {'status': 'error'},
       );
 
-      // Return cached data if available, otherwise rethrow
+      // Return cached data if available (Double fallback: In-memory or Local)
       if (_cachedHoldings != null && _lastUserId == userId) {
-        CommonLogger.info(
-          'Returning cached portfolio holdings due to error',
-          tag: 'PortfolioRepository',
-        );
         return _cachedHoldings!;
       }
 
+      // If we had local cache earlier but no in-memory, try to return that (conceptually covered by step 1 & 3 update)
+      // But if standard return is expected:
       rethrow;
     }
   }
@@ -105,19 +133,32 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       metadata: {'userId': userId},
     );
 
+    // 1. Try Local Cache
     try {
-      // Fetch data from remote source
+      final cached = await _localDataSource.getLastSummary(userId);
+      if (cached != null) {
+        _summaryController.add(cached);
+        _cachedSummary = cached;
+        _lastUserId = userId;
+      }
+    } catch (e) {
+      CommonLogger.warning('Failed to read local summary cache', error: e, tag: 'PortfolioRepository');
+    }
+
+    try {
+      // 2. Fetch Fresh Data
       final summaryDto = await _remoteDataSource.getPortfolioSummary(userId);
 
       // Map DTO to domain entity using summary mapper
       final summary = PortfolioSummaryMapper.fromApiModel(summaryDto, userId);
 
-      // Cache the result
+      // 3. Update Stream & Caches
       _cachedSummary = summary;
       _lastUserId = userId;
-
-      // Emit to stream for real-time updates
       _summaryController.add(summary);
+
+      // 4. Persist to Local Cache
+      await _localDataSource.cacheSummary(userId, summary);
 
       CommonLogger.info(
         'Portfolio summary fetched successfully',
@@ -143,12 +184,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         metadata: {'status': 'error'},
       );
 
-      // Return cached data if available, otherwise rethrow
       if (_cachedSummary != null && _lastUserId == userId) {
-        CommonLogger.info(
-          'Returning cached portfolio summary due to error',
-          tag: 'PortfolioRepository',
-        );
         return _cachedSummary!;
       }
 
@@ -186,6 +222,9 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
       // Emit to stream for real-time updates
       _holdingsController.add(holdings);
+
+      // Persist to Local Cache (Added Fix)
+      await _localDataSource.cacheHoldings(userId, holdings);
 
       CommonLogger.info(
         'Portfolio holdings fetched successfully by ID',
@@ -284,6 +323,9 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
       // Emit to stream for real-time updates
       _summaryController.add(summary);
+
+      // Persist to Local Cache (Added Fix)
+      await _localDataSource.cacheSummary(userId, summary);
 
       CommonLogger.info(
         'Portfolio summary fetched successfully by ID',
@@ -544,8 +586,19 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       metadata: {'userId': userId},
     );
 
+    // 1. Try Local Cache
     try {
-      // Fetch data from remote source
+      final cached = await _localDataSource.getLastPortfolioList(userId);
+      if (cached != null) {
+        _cachedPortfolioList = cached;
+        _lastUserId = userId;
+      }
+    } catch (e) {
+      CommonLogger.warning('Failed to read local portfolio list cache', error: e, tag: 'PortfolioRepository');
+    }
+
+    try {
+      // 2. Fetch Fresh Data
       final portfolioListDto = await _remoteDataSource.getPortfoliosList(
         userId,
       );
@@ -556,9 +609,12 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         userId,
       );
 
-      // Cache the result
+      // 3. Cache the result
       _cachedPortfolioList = portfolioList;
       _lastUserId = userId;
+      
+      // 4. Persist to Local Cache
+      await _localDataSource.cachePortfolioList(userId, portfolioList);
 
       CommonLogger.info(
         'Portfolio list fetched successfully',
@@ -584,14 +640,14 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         metadata: {'status': 'error'},
       );
 
-      // Return cached data if available, otherwise rethrow
       if (_cachedPortfolioList != null && _lastUserId == userId) {
-        CommonLogger.info(
-          'Returning cached portfolio list due to error',
-          tag: 'PortfolioRepository',
-        );
         return _cachedPortfolioList!;
       }
+
+      // If we found local data in step 1 but fetch failed, return it if we have it in memory
+       if (_cachedPortfolioList != null) {
+          return _cachedPortfolioList!;
+       }
 
       rethrow;
     }

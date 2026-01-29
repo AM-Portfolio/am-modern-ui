@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:am_design_system/am_design_system.dart' hide SharedPortfolioSelector;
+
 import 'package:am_auth_ui/am_auth_ui.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+
 import '../../internal/domain/entities/portfolio_list.dart';
 import '../../providers/portfolio_providers.dart';
-import '../cubit/portfolio_analytics_cubit.dart';
-import '../cubit/portfolio_heatmap_cubit.dart';
-import '../cubit/portfolio_state.dart';
+
+
 import 'package:am_design_system/am_design_system.dart';
 import 'pages/portfolio_overview_web_page.dart';
 import 'pages/portfolio_holdings_web_page.dart';
@@ -45,14 +44,12 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
 
 class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   late SwipeNavigationController _swipeController;
-  late CacheService _cacheService;
   String? _currentPortfolioId;
 
   @override
   void initState() {
     super.initState();
     _currentPortfolioId = widget.selectedPortfolioId ?? widget.userId;
-    _cacheService = ref.read(cacheServiceProvider);
     _initializeSwipeController();
   }
 
@@ -93,7 +90,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           title: 'Heatmap',
           subtitle: 'Visual analysis',
           icon: Icons.grid_on_outlined,
-          page: PortfolioHeatmapWithProviders(
+          page: PortfolioHeatmapWebPage(
             userId: widget.userId,
             portfolioId: _currentPortfolioId ?? widget.userId,
             portfolioName: widget.selectedPortfolioName,
@@ -195,82 +192,4 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   }
 
 
-
-
-
-}
-
-class PortfolioHeatmapWithProviders extends ConsumerWidget {
-  final String userId;
-  final String portfolioId;
-  final String? portfolioName;
-
-  const PortfolioHeatmapWithProviders({
-    required this.userId,
-    required this.portfolioId,
-    this.portfolioName,
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    CommonLogger.debug(
-      'Building heatmap content with analytics and heatmap cubits',
-      tag: 'PortfolioWebScreen',
-    );
-
-    final analyticsServiceAsync = ref.watch(portfolioAnalyticsServiceProvider);
-
-    return analyticsServiceAsync.when(
-      data: (analyticsService) {
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider(
-              create: (context) {
-                return PortfolioAnalyticsCubit(analyticsService);
-              },
-            ),
-            BlocProvider(
-              create: (context) {
-                return PortfolioHeatmapCubit();
-              },
-            ),
-          ],
-          child: PortfolioHeatmapWebPage(
-            userId: userId,
-            portfolioId: portfolioId,
-            portfolioName: portfolioName,
-          ),
-        );
-      },
-      loading: () {
-        return const Center(child: CircularProgressIndicator());
-      },
-      error: (error, stack) {
-        CommonLogger.error(
-          'Failed to load analytics service',
-          tag: 'PortfolioWebScreen',
-          error: error,
-          stackTrace: stack,
-        );
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Failed to load analytics service: \$error'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  ref.invalidate(portfolioAnalyticsServiceProvider);
-                },
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 }

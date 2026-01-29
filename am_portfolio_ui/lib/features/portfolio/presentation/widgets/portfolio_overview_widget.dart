@@ -4,6 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
+import '../cubit/portfolio_analytics_cubit.dart';
+import '../cubit/portfolio_analytics_state.dart';
+import 'sectorial_allocation_widget.dart';
+import '../../internal/domain/entities/portfolio_analytics.dart';
 
 /// Portfolio overview widget showing summary and key metrics
 class PortfolioOverviewWidget extends StatelessWidget {
@@ -51,6 +55,33 @@ class PortfolioOverviewWidget extends StatelessWidget {
                   _buildSummaryCards(context, state.summary),
                   const SizedBox(height: 24),
                   _buildPerformanceSection(context, state.summary),
+                  const SizedBox(height: 24),
+                  // Sector Allocation Section
+                  BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+                    builder: (context, analyticsState) {
+                      bool isLoading = analyticsState is PortfolioAnalyticsLoading && 
+                          analyticsState.loadingTypes.contains(AnalyticsDataType.sectorAllocation);
+                      
+                      // Check for specific error or general error
+                      String? error;
+                      if (analyticsState is PortfolioAnalyticsError) {
+                        error = analyticsState.message;
+                      } else if (analyticsState is PortfolioAnalyticsLoaded) {
+                         error = analyticsState.errors[AnalyticsDataType.sectorAllocation];
+                      }
+
+                      SectorAllocation? sectors;
+                      if (analyticsState is PortfolioAnalyticsLoaded) {
+                        sectors = analyticsState.sectorAllocation;
+                      }
+
+                      return SectorialAllocationWidget(
+                        sectorAllocation: sectors,
+                        isLoading: isLoading,
+                        error: error,
+                      );
+                    },
+                  ),
                 ],
               ),
             );

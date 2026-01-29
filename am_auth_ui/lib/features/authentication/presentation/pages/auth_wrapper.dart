@@ -27,6 +27,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     super.initState();
     // Check authentication status on app startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<AuthCubit>().checkAuthStatus();
     });
   }
@@ -45,6 +46,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       final userId = state.user.id;
       if (userId.isEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
           context.read<AuthCubit>().logout();
         });
         return const LoginPage();
