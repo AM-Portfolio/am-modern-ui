@@ -5,12 +5,14 @@ import 'package:rxdart/rxdart.dart';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/core/models/price_update_model.dart';
 import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/core/network/websocket/am_websocket_client.dart';
 import 'package:http/http.dart' as http;
 
 /// Singleton service to manage global WebSocket connection for real-time prices.
 class PriceService {
   final AppConfig _config;
-  WebSocketChannel? _channel;
+  final AMWebSocketClient _wsClient;
+  
   StreamSubscription? _subscription;
   
   // Cache of latest prices: Symbol -> QuoteChange
@@ -22,11 +24,14 @@ class PriceService {
 
   // Subject to broadcast individual updates (for logs/feed)
   final PublishSubject<MarketDataUpdate> _updatesSubject = PublishSubject<MarketDataUpdate>();
-      
-  // Connection status subject
-  final BehaviorSubject<bool> _isConnectedSubject = BehaviorSubject<bool>.seeded(false);
 
-  PriceService(this._config);
+  PriceService(this._config) : _wsClient = AMWebSocketClient() {
+    // Configure socket
+    final wsUrl = _config.api.marketData?.wsUrl;
+    if (wsUrl != null && wsUrl.isNotEmpty) {
+      _wsClient.configure(url: wsUrl);
+    }
+  }
 
   /// Get stream of all price updates (full map)
   Stream<Map<String, QuoteChange>> get priceStream => _pricesSubject.stream;
@@ -35,12 +40,11 @@ class PriceService {
   Stream<MarketDataUpdate> get updateStream => _updatesSubject.stream;
   
   /// Get current connection status stream
-  Stream<bool> get isConnectedStream => _isConnectedSubject.stream;
+  Stream<bool> get isConnectedStream => _wsClient.status.map((s) => s == SocketStatus.connected);
 
   /// Get latest quote for a specific symbol
   QuoteChange? getQuote(String symbol) => _priceCache[symbol];
   
-  /// Get latest price for a specific symbol (convenience)
   /// Get latest price for a specific symbol (convenience)
   double? getPrice(String symbol) => _priceCache[symbol]?.lastPrice;
 
@@ -57,34 +61,9 @@ class PriceService {
 
   /// Connect to the WebSocket
   void connect() {
-    final wsUrl = _config.api.marketData?.wsUrl;
-    if (wsUrl == null || wsUrl.isEmpty) {
-      AppLogger.warning('PriceService: No WS URL configured, skipping connection.');
-      return;
-    }
-
-    if (_channel != null) {
-      AppLogger.info('PriceService: Already connected or connecting.');
-      return;
-    }
-
-    try {
-      AppLogger.info('PriceService: WebSocket Connecting to $wsUrl ...');
-      _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
-      _isConnectedSubject.add(true); 
-      AppLogger.info('PriceService: WebSocket Channel created (optimistic)');
-
-      _subscription = _channel!.stream.listen(
-        _onMessage,
-        onError: _onError,
-        onDone: _onDone,
-        cancelOnError: false,
-      );
-    } catch (e) {
-      AppLogger.error('PriceService: Connection failed', error: e);
-      _isConnectedSubject.add(false);
-      _scheduleReconnect();
-    }
+     _wsClient.connect();
+     
+     _subscription ??= _wsClient.messages.listen(_onMessage);
   }
 
   /// Subscribe to symbols (initiates stream via REST)
@@ -109,8 +88,8 @@ class PriceService {
            'provider': provider,
            'timeFrame': '1D',
            'stream': true,
-           'expandIndices': false, // Explicitly false as we are passing specific symbols
-           'isIndexSymbol': true // Assuming mostly indices for now based on context, or pass as param
+           'expandIndices': false, 
+           'isIndexSymbol': true 
          }),
        );
        
@@ -127,9 +106,9 @@ class PriceService {
   void _onMessage(dynamic message) {
     try {
       if (message is String) {
-        // Log sample of message to verify data flow
-        final preview = message.length > 50 ? "${message.substring(0, 50)}..." : message;
-        AppLogger.debug('PriceService: Received message: $preview');
+        // Log sample of message (debug level)
+        // final preview = message.length > 50 ? "${message.substring(0, 50)}..." : message;
+        // AppLogger.debug('PriceService: Received: $preview');
 
         final Map<String, dynamic> json = jsonDecode(message);
         final update = MarketDataUpdate.fromJson(json);
@@ -145,7 +124,6 @@ class PriceService {
           });
           
           if (cacheChanged) {
-            // Emit a new map to trigger consumers
             _pricesSubject.add(Map.from(_priceCache));
           }
         }
@@ -155,37 +133,11 @@ class PriceService {
     }
   }
 
-  void _onError(dynamic error) {
-    AppLogger.error('PriceService: WebSocket error', error: error);
-    _isConnectedSubject.add(false);
-    _scheduleReconnect();
-  }
-
-  void _onDone() {
-    AppLogger.info('PriceService: WebSocket connection closed');
-    _isConnectedSubject.add(false);
-    _cleanup();
-    _scheduleReconnect();
-  }
-
-  void _cleanup() {
+  void disconnect() {
+    _wsClient.disconnect();
     _subscription?.cancel();
     _subscription = null;
-    _channel = null;
-  }
-
-  void disconnect() {
-    _cleanup();
     _pricesSubject.close();
-    _isConnectedSubject.close();
     _updatesSubject.close();
-  }
-
-  void _scheduleReconnect() {
-    // Basic reconnect strategy: wait 5 seconds and retry
-    Timer(const Duration(seconds: 5), () {
-      AppLogger.info('PriceService: Attempting reconnect...');
-      connect();
-    });
   }
 }

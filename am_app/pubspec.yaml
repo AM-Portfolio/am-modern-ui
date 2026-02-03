@@ -23,6 +23,8 @@ dependencies:
     path: ../am_portfolio_ui
   am_market_ui:
     path: ../../am-market/am_market_ui
+  am_common_flutter:
+    path: ../../am-common-flutter
 
   # State Management
   flutter_bloc: ^9.1.1

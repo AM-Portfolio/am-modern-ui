@@ -7,6 +7,8 @@ import '../cubit/portfolio_state.dart';
 import '../../providers/portfolio_providers.dart';
 import '../../internal/domain/entities/portfolio_list.dart';
 import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart' show AmStompClient, SecureStorageService;
+import 'package:get_it/get_it.dart';
 import 'gmail_sync/gmail_connect_button.dart';
 
 /// Wraps the authenticated part of the app to provide PortfolioCubit globally
@@ -38,6 +40,43 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
   
   String? _selectedPortfolioId;
   String? _selectedPortfolioName;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectWebSocket();
+  }
+
+  Future<void> _connectWebSocket() async {
+    try {
+      final secureStorage = GetIt.instance<SecureStorageService>();
+      final token = await secureStorage.getAccessToken();
+      
+      if (token != null) {
+        final stompClient = GetIt.instance<AmStompClient>();
+        // Ensure configured (already done in main, but safe to check or re-config if needed)
+        // main.dart configures the URL.
+        
+        CommonLogger.info('Initializing WebSocket connection with user token...', tag: 'GlobalPortfolioWrapper');
+        stompClient.connect(
+          headers: {'Authorization': 'Bearer $token'},
+          onConnect: (_) => CommonLogger.info('STOMP: Connected successfully', tag: 'GlobalPortfolioWrapper'),
+          onWebSocketError: (err) => CommonLogger.error('STOMP Error', error: err, tag: 'GlobalPortfolioWrapper'),
+        );
+      } else {
+        CommonLogger.warning('No access token found for WebSocket connection', tag: 'GlobalPortfolioWrapper');
+      }
+    } catch (e) {
+      CommonLogger.error('Failed to connect WebSocket', error: e, tag: 'GlobalPortfolioWrapper');
+    }
+  }
+
+  @override
+  void dispose() {
+    // Optionally disconnect on logout/dispose
+    GetIt.instance<AmStompClient>().disconnect();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  am-app:
+    # OVERRIDE: Map local Flutter build output to Nginx container.
+    # Workflow: 'flutter build web' -> 'docker-compose restart am-app'
+    volumes:
+      - ./am_app/build/web:/usr/share/nginx/html

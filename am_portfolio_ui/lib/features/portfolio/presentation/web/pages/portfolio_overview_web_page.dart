@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+Mama import 'package:flutter/material.dart';
 
 
 import 'package:am_portfolio_ui/features/portfolio/presentation/cubit/portfolio_analytics_state.dart';
@@ -88,7 +88,11 @@ class PortfolioOverviewWebPage extends ConsumerWidget {
   }
 }
 
-class _PortfolioOverviewView extends StatelessWidget {
+import 'package:uuid/uuid.dart';
+import 'package:get_it/get_it.dart';
+import 'package:am_common/am_common.dart';
+
+class _PortfolioOverviewView extends StatefulWidget {
   const _PortfolioOverviewView({
     required this.userId,
     this.portfolioId,
@@ -98,6 +102,38 @@ class _PortfolioOverviewView extends StatelessWidget {
   final String userId;
   final String? portfolioId;
   final String? portfolioName;
+
+  @override
+  State<_PortfolioOverviewView> createState() => _PortfolioOverviewViewState();
+}
+
+class _PortfolioOverviewViewState extends State<_PortfolioOverviewView> {
+  
+  @override
+  void initState() {
+    super.initState();
+    _triggerCalculation();
+  }
+
+  void _triggerCalculation() {
+    try {
+      final stompClient = GetIt.instance<AmStompClient>();
+      if (stompClient.isConnected) {
+        final traceId = const Uuid().v4();
+        CommonLogger.info('Triggering Portfolio Calculation [TraceID: $traceId] for user: ${widget.userId}', tag: 'PortfolioOverviewWebPage');
+        
+        stompClient.send(
+          destination: '/app/portfolio/calculate',
+          headers: {'X-Correlation-Id': traceId},
+          body: '{"userId": "${widget.userId}"}', // redundant but helpful
+        );
+      } else {
+        CommonLogger.warning('WebSocket not connected. Cannot trigger calculation.', tag: 'PortfolioOverviewWebPage');
+      }
+    } catch (e) {
+      CommonLogger.error('Failed to trigger calculation', error: e, tag: 'PortfolioOverviewWebPage');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +146,7 @@ class _PortfolioOverviewView extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  portfolioName ?? 'My Portfolio',
+                  widget.portfolioName ?? 'My Portfolio',
                   style: Theme.of(context).textTheme.headlineMedium,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -122,7 +158,7 @@ class _PortfolioOverviewView extends StatelessWidget {
           const SizedBox(height: 16),
           Expanded(
             child: PortfolioOverviewWidget(
-              userId: userId,
+              userId: widget.userId,
             ),
           ),
         ],
