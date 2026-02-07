@@ -62,6 +62,7 @@ class AmStompClient {
 
     _statusSubject.add(StompStatus.connecting);
     AppLogger.info('AmStompClient: Connecting to $_url ...');
+    print('AmStompClient: Connecting to $_url ... (DEBUG Print)');
 
     _client = StompClient(
       config: StompConfig(
@@ -70,6 +71,7 @@ class AmStompClient {
         onConnect: (StompFrame frame) {
           _statusSubject.add(StompStatus.connected);
           AppLogger.info('AmStompClient: Connected to STOMP broker.');
+          print('AmStompClient: Connected to STOMP broker (DEBUG Print)'); 
           onConnect?.call(frame);
         },
         onWebSocketError: (dynamic error) {

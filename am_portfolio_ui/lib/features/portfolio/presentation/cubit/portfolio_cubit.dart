@@ -6,6 +6,7 @@ import '../../internal/domain/entities/portfolio_holding.dart';
 import '../../internal/domain/entities/portfolio_summary.dart';
 import '../../internal/services/portfolio_service.dart';
 import 'portfolio_state.dart';
+import '../../internal/data/dtos/portfolio_summary_dto.dart';
 
 class PortfolioCubit extends Cubit<PortfolioState> {
   PortfolioCubit(this._portfolioService) : super(PortfolioInitial());
@@ -380,6 +381,40 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       }
     } else {
       loadPortfoliosList(userId);
+    }
+  }
+  /// Update portfolio summary from WebSocket data
+  void updateSummaryFromSocket(Map<String, dynamic> json) {
+    if (isClosed) return;
+    
+    final currentState = state;
+    if (currentState is PortfolioLoaded) {
+      try {
+        // 1. Parse DTO
+        final dto = PortfolioSummaryDto.fromJson(json);
+        
+        // 2. Map to Domain Entity manually to avoid circular deps or complex mapper injection if not available
+        // Or better, use the mapper if we can access it.
+        // For now, let's map the essential fields to update the UI "live"
+        // Note: The Domain Entity has different fields than DTO.
+        // We really need the mapper.
+        // Assuming we can't easily inject the mapper here without refactoring, 
+        // let's do a best-effort mapping for key fields.
+        
+        final updatedSummary = currentState.summary.copyWith(
+          totalValue: dto.totalValue,
+          investmentValue: dto.investmentValue,
+          totalGainLoss: dto.totalGain,
+          totalGainLossPercentage: dto.totalGainPercentage,
+          todayChange: dto.todaysGain,
+          todayChangePercentage: dto.todaysGainPercentage,
+          lastUpdated: DateTime.now(),
+        );
+
+        emit(currentState.copyWith(summary: updatedSummary));
+      } catch (e) {
+        CommonLogger.error('Failed to update summary from socket', error: e, tag: 'PortfolioCubit');
+      }
     }
   }
 }

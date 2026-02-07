@@ -58,10 +58,17 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
         // main.dart configures the URL.
         
         CommonLogger.info('Initializing WebSocket connection with user token...', tag: 'GlobalPortfolioWrapper');
+        debugPrint('GlobalPortfolioWrapper: Initializing WebSocket connection with token: ${token.substring(0, 10)}...');
         stompClient.connect(
           headers: {'Authorization': 'Bearer $token'},
-          onConnect: (_) => CommonLogger.info('STOMP: Connected successfully', tag: 'GlobalPortfolioWrapper'),
-          onWebSocketError: (err) => CommonLogger.error('STOMP Error', error: err, tag: 'GlobalPortfolioWrapper'),
+          onConnect: (_) { 
+             CommonLogger.info('STOMP: Connected successfully', tag: 'GlobalPortfolioWrapper');
+             debugPrint('GlobalPortfolioWrapper: STOMP Connected successfully!');
+          },
+          onWebSocketError: (err) {
+             CommonLogger.error('STOMP Error', error: err, tag: 'GlobalPortfolioWrapper');
+             debugPrint('GlobalPortfolioWrapper: STOMP Error: $err');
+          },
         );
       } else {
         CommonLogger.warning('No access token found for WebSocket connection', tag: 'GlobalPortfolioWrapper');
