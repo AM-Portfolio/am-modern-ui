@@ -68,13 +68,9 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
              debugPrint('GlobalPortfolioWrapper: STOMP Headers: ${frame.headers}');
              CommonLogger.info('STOMP Session: ${frame.headers}', tag: 'GlobalPortfolioWrapper');
              
-             // Trigger initial calculation
-             final traceId = const Uuid().v4();
-             stompClient.send(
-               destination: '/app/portfolio/calculate',
-               headers: {'X-Correlation-Id': traceId},
-               body: '{"userId": "${widget.userId}"}', 
-             );
+             // Do NOT trigger calculation here - wait for portfolio selection
+             // The trigger will happen when the first portfolio is auto-selected in BlocListener
+             CommonLogger.info('WebSocket connection established, waiting for portfolio selection...', tag: 'GlobalPortfolioWrapper');
           },
           onWebSocketError: (err) {
              CommonLogger.error('STOMP Error', error: err, tag: 'GlobalPortfolioWrapper');
@@ -94,6 +90,28 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
     // Optionally disconnect on logout/dispose
     GetIt.instance<AmStompClient>().disconnect();
     super.dispose();
+  }
+
+  void _triggerPortfolioCalculation(String portfolioId) {
+    try {
+      final stompClient = GetIt.instance<AmStompClient>();
+      if (stompClient.isConnected) {
+        final traceId = const Uuid().v4();
+        final body = '{"userId": "${widget.userId}", "portfolioId": "$portfolioId"}';
+        
+        CommonLogger.info('Triggering calculation for portfolio: $portfolioId', tag: 'GlobalPortfolioWrapper');
+        
+        stompClient.send(
+          destination: '/app/portfolio/calculate',
+          headers: {'X-Correlation-Id': traceId},
+          body: body,
+        );
+      } else {
+        CommonLogger.warning('Cannot trigger calculation: WebSocket not connected', tag: 'GlobalPortfolioWrapper');
+      }
+    } catch (e) {
+      CommonLogger.error('Failed to trigger portfolio calculation', error: e, tag: 'GlobalPortfolioWrapper');
+    }
   }
 
   @override
@@ -120,6 +138,8 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
                    _selectedPortfolioId = first.portfolioId;
                    _selectedPortfolioName = first.portfolioName;
                  });
+                 // Trigger calculation for the first selected portfolio
+                 _triggerPortfolioCalculation(first.portfolioId);
                  widget.onPortfolioChanged?.call(first.portfolioId, first.portfolioName);
               }
             }
@@ -132,6 +152,8 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
                  _selectedPortfolioId = id;
                  _selectedPortfolioName = name;
                });
+               // Trigger calculation for the newly selected portfolio
+               _triggerPortfolioCalculation(id);
                widget.onPortfolioChanged?.call(id, name);
             },
             child: widget.child, 
