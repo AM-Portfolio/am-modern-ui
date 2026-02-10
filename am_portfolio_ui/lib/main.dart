@@ -24,11 +24,15 @@ void main() {
   GetIt.instance.registerLazySingleton<common.SecureStorageService>(() => common.SecureStorageService());
   GetIt.instance.registerLazySingleton<common.AmStompClient>(() => common.AmStompClient());
 
+  // Initialize Logger
+  common.AppLogger.initialize();
+  // Override to INFO as requested
+  CommonLogger.configure(enabled: true, minLevel: LogLevel.info);
+
   // Initialize WebSocket Client
   final stompClient = GetIt.instance<common.AmStompClient>();
-  // Use 127.0.0.1 for emulator/simulator loopback, or localhost for web/desktop
-  // For Web: ws://localhost:8091/ws-gateway
-  stompClient.configure(url: 'ws://localhost:8091/ws-gateway/websocket');
+  // Use raw WebSocket endpoint (no SockJS) for better compatibility with stomp_dart_client
+  stompClient.configure(url: 'ws://localhost:8091/ws-gateway-raw');
   // Connect will be handled by GlobalPortfolioWrapper after authentication
 
   runApp(

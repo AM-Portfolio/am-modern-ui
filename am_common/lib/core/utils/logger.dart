@@ -28,7 +28,7 @@ class AppLogger {
   static void _updateLoggingConfig(Environment environment) {
     switch (environment) {
       case Environment.development:
-        am_ui.CommonLogger.configure(enabled: true, minLevel: am_ui.LogLevel.debug);
+        am_ui.CommonLogger.configure(enabled: true, minLevel: am_ui.LogLevel.info);
         break;
       case Environment.preprod:
         am_ui.CommonLogger.configure(enabled: true, minLevel: am_ui.LogLevel.info);

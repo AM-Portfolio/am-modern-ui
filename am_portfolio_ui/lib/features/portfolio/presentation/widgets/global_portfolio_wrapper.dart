@@ -1,6 +1,7 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
@@ -61,9 +62,19 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
         debugPrint('GlobalPortfolioWrapper: Initializing WebSocket connection with token: ${token.substring(0, 10)}...');
         stompClient.connect(
           headers: {'Authorization': 'Bearer $token'},
-          onConnect: (_) { 
+          onConnect: (frame) { 
              CommonLogger.info('STOMP: Connected successfully', tag: 'GlobalPortfolioWrapper');
              debugPrint('GlobalPortfolioWrapper: STOMP Connected successfully!');
+             debugPrint('GlobalPortfolioWrapper: STOMP Headers: ${frame.headers}');
+             CommonLogger.info('STOMP Session: ${frame.headers}', tag: 'GlobalPortfolioWrapper');
+             
+             // Trigger initial calculation
+             final traceId = const Uuid().v4();
+             stompClient.send(
+               destination: '/app/portfolio/calculate',
+               headers: {'X-Correlation-Id': traceId},
+               body: '{"userId": "${widget.userId}"}', 
+             );
           },
           onWebSocketError: (err) {
              CommonLogger.error('STOMP Error', error: err, tag: 'GlobalPortfolioWrapper');
@@ -94,7 +105,12 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
 
     return portfolioServiceAsync.when(
       data: (service) => BlocProvider(
-        create: (context) => PortfolioCubit(service)..loadPortfoliosList(widget.userId),
+        create: (context) {
+           final cubit = PortfolioCubit(service);
+           cubit.loadPortfoliosList(widget.userId);
+           // Subscription will be handled by individual pages that need real-time updates
+           return cubit;
+        },
         child: BlocListener<PortfolioCubit, PortfolioState>(
           listener: (context, state) {
             if (state is PortfolioListLoaded && _selectedPortfolioId == null) {

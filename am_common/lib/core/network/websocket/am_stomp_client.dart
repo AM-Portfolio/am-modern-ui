@@ -62,16 +62,15 @@ class AmStompClient {
 
     _statusSubject.add(StompStatus.connecting);
     AppLogger.info('AmStompClient: Connecting to $_url ...');
-    print('AmStompClient: Connecting to $_url ... (DEBUG Print)');
 
     _client = StompClient(
       config: StompConfig(
         url: _url!,
         stompConnectHeaders: headers,
+        webSocketConnectHeaders: headers,  // Required for SockJS with auth headers
         onConnect: (StompFrame frame) {
           _statusSubject.add(StompStatus.connected);
-          AppLogger.info('AmStompClient: Connected to STOMP broker.');
-          print('AmStompClient: Connected to STOMP broker (DEBUG Print)'); 
+          AppLogger.info('AmStompClient: ✅ Connected to STOMP broker.');
           onConnect?.call(frame);
         },
         onWebSocketError: (dynamic error) {
@@ -110,25 +109,29 @@ class AmStompClient {
       if (forceResubscribe) {
         unsubscribe(destination);
       } else {
-        AppLogger.debug('AmStompClient: Already subscribed to $destination');
+        AppLogger.info('AmStompClient: Already subscribed to $destination');
         return;
       }
     }
 
-    AppLogger.info('AmStompClient: Subscribing to $destination');
+    AppLogger.info('AmStompClient: 📡 Attempting subscription to: $destination');
     
     // Store the unsubscribe function returned by the client
     _subscriptions[destination] = _client!.subscribe(
       destination: destination,
       callback: (StompFrame frame) {
         // Broadcast the frame to the central stream
+        AppLogger.info('AmStompClient: 🔔 CALLBACK TRIGGERED for $destination');
+        AppLogger.info('AmStompClient: 🔔 Frame destination: ${frame.headers['destination']}');
+        AppLogger.info('AmStompClient: 🔔 Frame body length: ${frame.body?.length ?? 0}');
+        
         _messageSubject.add(frame);
         
-        // Optional: We could parse JSON here if we wanted to be more specific, 
-        // but keeping it raw allows the UI generic parsing.
-        AppLogger.debug('AmStompClient: Msg on $destination -> ${frame.body}');
+        AppLogger.debug('AmStompClient: Msg on $destination -> ${frame.body?.substring(0, 100) ?? "null"}');
       },
     );
+    
+    AppLogger.info('AmStompClient: ✅ Subscription registered for: $destination');
   }
 
   /// Unsubscribe from a topic

@@ -1,0 +1,33 @@
+name: am_analysis_ui
+description: "Common Analysis UI Module for AM Platform (Charts, Performance, Analytics)"
+version: 0.0.1
+publish_to: "none"
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # AM Common Modules
+  am_design_system:
+    path: ../am_design_system
+  am_common:
+    path: ../am_common
+
+  # Charts
+  fl_chart: ^0.66.0
+
+  # Utils
+  intl: ^0.19.0
+  equatable: ^2.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
