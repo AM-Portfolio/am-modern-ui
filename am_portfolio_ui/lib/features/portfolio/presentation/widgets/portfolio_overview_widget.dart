@@ -1,18 +1,20 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:am_analysis_ui/widgets/analysis_allocation_widget.dart';
+import 'package:am_analysis_ui/widgets/analysis_top_movers_widget.dart';
+import 'package:am_analysis_ui/widgets/analysis_performance_widget.dart';
+import 'package:am_analysis_ui/models/analysis_enums.dart';
 
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
-import '../cubit/portfolio_analytics_cubit.dart';
-import '../cubit/portfolio_analytics_state.dart';
-import 'sectorial_allocation_widget.dart';
-import '../../internal/domain/entities/portfolio_analytics.dart';
+import 'headless_allocation_demo.dart';
 
 /// Portfolio overview widget showing summary and key metrics
 class PortfolioOverviewWidget extends StatelessWidget {
-  const PortfolioOverviewWidget({required this.userId, super.key});
+  const PortfolioOverviewWidget({required this.userId, this.portfolioId, super.key});
   final String userId;
+  final String? portfolioId;
 
   @override
   Widget build(BuildContext context) =>
@@ -56,32 +58,95 @@ class PortfolioOverviewWidget extends StatelessWidget {
                   const SizedBox(height: 24),
                   _buildPerformanceSection(context, state.summary),
                   const SizedBox(height: 24),
-                  // Sector Allocation Section
-                  BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
-                    builder: (context, analyticsState) {
-                      bool isLoading = analyticsState is PortfolioAnalyticsLoading && 
-                          analyticsState.loadingTypes.contains(AnalyticsDataType.sectorAllocation);
-                      
-                      // Check for specific error or general error
-                      String? error;
-                      if (analyticsState is PortfolioAnalyticsError) {
-                        error = analyticsState.message;
-                      } else if (analyticsState is PortfolioAnalyticsLoaded) {
-                         error = analyticsState.errors[AnalyticsDataType.sectorAllocation];
-                      }
-
-                      SectorAllocation? sectors;
-                      if (analyticsState is PortfolioAnalyticsLoaded) {
-                        sectors = analyticsState.sectorAllocation;
-                      }
-
-                      return SectorialAllocationWidget(
-                        sectorAllocation: sectors,
-                        isLoading: isLoading,
-                        error: error,
-                      );
-                    },
+                  // Analysis Widgets Section
+                  Text(
+                    'Portfolio Analytics',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
+                  const SizedBox(height: 16),
+                  // 🎨 Headless Architecture Demo
+                  if (portfolioId != null) ...[  
+                    Text(
+                      '🎨 Headless Architecture Comparison',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 400,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Left: Default Widget
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Default Widget (Pre-built UI)',
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Colors.white60,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Expanded(
+                                  child: AnalysisAllocationWidget(
+                                    portfolioId: portfolioId!,
+                                    groupBy: GroupBy.sector,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Right: Headless Architecture  
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Headless (Custom UI + Core Cubit)',
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Colors.white60,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Expanded(
+                                  child: HeadlessAllocationDemo(
+                                    portfolioId: portfolioId!,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Original Row
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: AnalysisTopMoversWidget(
+                            portfolioId: portfolioId!,
+                            height: 350,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Performance Chart
+                    AnalysisPerformanceWidget(
+                      portfolioId: portfolioId!,
+                      height: 300,
+                    ),
+                  ],
                 ],
               ),
             );

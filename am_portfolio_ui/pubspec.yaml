@@ -19,6 +19,8 @@ dependencies:
     path: ../am_auth_ui
   am_user_ui:
     path: ../am_user_ui
+  am_analysis_ui:
+    path: ../am_analysis_ui
 
   # State Management
   flutter_bloc: ^9.1.1

@@ -1,14 +1,17 @@
+///  Analysis UI widgets library
 library am_analysis_ui;
 
-export 'models/analysis_models.dart';
-export 'services/analysis_service.dart';
-export 'widgets/allocation_pie_chart.dart';
-export 'widgets/performance_line_chart.dart';
-export 'widgets/top_movers_list.dart';
-export 'widgets/analysis_dashboard.dart';
+// Export widgets
+export 'widgets/analysis_allocation_widget.dart';
+export 'widgets/analysis_top_movers_widget.dart';
+export 'widgets/analysis_performance_widget.dart';
 
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+// Export services  
+export 'services/real_analysis_service.dart';
+export 'services/analysis_service_adapter.dart';
+
+// Export config
+export 'config/analysis_config.dart';
+
+// Re-export core for convenience
+export 'package:am_analysis_core/am_analysis_core.dart';

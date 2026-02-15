@@ -244,66 +244,71 @@ class TimeFrameSelector extends StatelessWidget {
   Widget _buildCompactSelector(
     BuildContext context,
     List<TimeFrame> timeFrames,
-  ) => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    children: timeFrames.map((timeFrame) {
-      final isSelected = timeFrame == selectedTimeFrame;
+  ) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: timeFrames.map((timeFrame) {
+        final isSelected = timeFrame == selectedTimeFrame;
 
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            CommonLogger.debug(
-              'TimeFrame changed: ${selectedTimeFrame.code} → ${timeFrame.code}',
-              tag: 'Heatmap.Filter',
-            );
-            onTimeFrameChanged(timeFrame);
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            constraints: const BoxConstraints(
-              minHeight: 40,
-            ), // Better touch target
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? (primaryColor ?? Theme.of(context).primaryColor)
-                  : Theme.of(context).colorScheme.surface,
+        return Padding(
+          padding: const EdgeInsets.only(right: 8.0),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                CommonLogger.debug(
+                  'TimeFrame changed: ${selectedTimeFrame.code} → ${timeFrame.code}',
+                  tag: 'Heatmap.Filter',
+                );
+                onTimeFrameChanged(timeFrame);
+              },
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isSelected
-                    ? (primaryColor ?? Theme.of(context).primaryColor)
-                    : Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                width: 1.5,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: (primaryColor ?? Theme.of(context).primaryColor)
-                            .withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Center(
-              child: Text(
-                showDisplayNames ? timeFrame.displayName : timeFrame.code,
-                style: TextStyle(
+              child: Container(
+                constraints: const BoxConstraints(
+                  minHeight: 36,
+                  minWidth: 48,
+                ), // Compact touch target
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.white
-                      : Theme.of(context).colorScheme.onSurface,
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  letterSpacing: 0.2,
+                      ? (primaryColor ?? Theme.of(context).primaryColor)
+                      : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isSelected
+                        ? (primaryColor ?? Theme.of(context).primaryColor)
+                        : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: (primaryColor ?? Theme.of(context).primaryColor)
+                                .withOpacity(0.3), // Changed .withValues to .withOpacity
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    showDisplayNames ? timeFrame.displayName : timeFrame.code,
+                    style: TextStyle(
+                      color: isSelected
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-    }).toList(),
+        );
+      }).toList(),
+    ),
   );
 }

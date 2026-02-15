@@ -283,6 +283,76 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     }
   }
 
+  /// Load only portfolio summary (without holdings) for overview page
+  Future<void> loadPortfolioSummaryOnly(String userId, String portfolioId) async {
+    CommonLogger.methodEntry(
+      'loadPortfolioSummaryOnly',
+      tag: 'PortfolioCubit',
+      metadata: {'userId': userId, 'portfolioId': portfolioId},
+    );
+    CommonLogger.stateChange(
+      '${state.runtimeType}',
+      'PortfolioLoading',
+      tag: 'PortfolioCubit',
+    );
+
+    emit(PortfolioLoading());
+
+    try {
+      CommonLogger.info(
+          'Starting portfolio summary fetch (without holdings) by ID via service',
+          tag: 'PortfolioCubit',
+      );
+
+      // Only fetch summary, not holdings
+      final summary = await _portfolioService.getPortfolioSummaryById(userId, portfolioId);
+
+      CommonLogger.stateChange(
+        'PortfolioLoading',
+        'PortfolioLoaded',
+        tag: 'PortfolioCubit',
+      );
+      CommonLogger.info(
+        'Portfolio summary loaded successfully by ID via service',
+        tag: 'PortfolioCubit',
+      );
+
+      if (!isClosed) {
+        // Emit with empty holdings list since we only need summary for overview
+        emit(PortfolioLoaded(summary: summary, holdings: []));
+      }
+
+      CommonLogger.methodExit(
+        'loadPortfolioSummaryOnly',
+        tag: 'PortfolioCubit',
+        metadata: {'status': 'success'},
+      );
+    } catch (error) {
+      CommonLogger.stateChange(
+        'PortfolioLoading',
+        'PortfolioError',
+        tag: 'PortfolioCubit',
+        event: error.toString(),
+      );
+      CommonLogger.error(
+        'Failed to load portfolio summary by ID via service',
+        tag: 'PortfolioCubit',
+        error: error,
+        stackTrace: StackTrace.current,
+      );
+
+      if (!isClosed) {
+        emit(PortfolioError(error.toString()));
+      }
+
+      CommonLogger.methodExit(
+        'loadPortfolioSummaryOnly',
+        tag: 'PortfolioCubit',
+        metadata: {'status': 'error'},
+      );
+    }
+  }
+
   void changeView(PortfolioViewType viewType) {
     final currentState = state;
     if (currentState is PortfolioLoaded) {

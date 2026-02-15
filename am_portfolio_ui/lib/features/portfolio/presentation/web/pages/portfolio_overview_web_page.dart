@@ -53,7 +53,7 @@ class PortfolioOverviewWebPage extends ConsumerWidget {
                   BlocProvider<PortfolioCubit>(
                     create: (context) {
                       final cubit = PortfolioCubit(portfolioService);
-                      cubit.loadPortfolioById(userId, portfolioId!);
+                      cubit.loadPortfolioSummaryOnly(userId, portfolioId!);
                       return cubit;
                     },
                   ),
@@ -148,6 +148,7 @@ class _PortfolioOverviewViewState extends State<_PortfolioOverviewView> {
           Expanded(
             child: PortfolioOverviewWidget(
               userId: widget.userId,
+              portfolioId: widget.portfolioId,
             ),
           ),
         ],

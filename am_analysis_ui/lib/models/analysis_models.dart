@@ -28,12 +28,3 @@ class MoverItem {
     required this.changeAmount,
   });
 }
-
-enum AnalysisEntityType {
-  PORTFOLIO,
-  BASKET,
-  ETF,
-  MUTUAL_FUND,
-  TRADE,
-  MARKET_INDEX
-}

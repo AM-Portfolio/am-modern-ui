@@ -11,17 +11,34 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # AM Common Modules
+  # Core headless state management
+  am_analysis_core:
+    path: ../am_analysis_core
+
+  # Design system
   am_design_system:
     path: ../am_design_system
+
+  # AM Common Modules
   am_common:
     path: ../am_common
 
-  # Charts
-  fl_chart: ^0.66.0
+  # Analysis SDK (Generated)
+  am_analysis_client:
+    path: ../../am-core-services/services/am-analysis/am-analysis-sdk/flutter-sdk
 
-  # Utils
-  intl: ^0.19.0
+  # State Management
+  bloc: ^9.1.0
+  flutter_bloc: ^9.1.1
+
+  # Logging
+  logger: ^2.0.0
+
+  # Charts
+  fl_chart: ^1.1.1
+
+  # Utils - using compatible versions with dependencies
+  intl: ^0.20.2
   equatable: ^2.0.5
 
 dev_dependencies:
