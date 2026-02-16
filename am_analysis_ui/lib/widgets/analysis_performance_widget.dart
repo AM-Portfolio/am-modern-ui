@@ -6,18 +6,22 @@ import '../services/real_analysis_service.dart';
 import '../models/analysis_models.dart';
 import '../models/analysis_enums.dart';
 
+import 'package:intl/intl.dart';
+
 /// Responsive performance chart widget with time frame and chart type selectors
 class AnalysisPerformanceWidget extends StatefulWidget {
   const AnalysisPerformanceWidget({
     required this.portfolioId,
     this.initialTimeFrame = ds.TimeFrame.oneMonth,
     this.height,
+    this.showTimeFrameSelector = true,
     super.key,
   });
 
   final String portfolioId;
   final ds.TimeFrame initialTimeFrame;
   final double? height;
+  final bool showTimeFrameSelector;
 
   @override
   State<AnalysisPerformanceWidget> createState() => _AnalysisPerformanceWidgetState();
@@ -130,34 +134,34 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
                 ],
               ),
               SizedBox(height: isMobile ? 10 : 12),
-              // Controls: Time Frame + Chart Type
-              isMobile
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ds.TimeFrameSelector.portfolio(
-                          selectedTimeFrame: _selectedTimeFrame,
-                          onTimeFrameChanged: _onTimeFrameChanged,
-                          compact: true,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildChartTypeSelector(isMobile),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: ds.TimeFrameSelector.portfolio(
+              
+              // Only show full selector controls if enabled
+              if (widget.showTimeFrameSelector) ...[
+                isMobile
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ds.TimeFrameSelector.portfolio(
                             selectedTimeFrame: _selectedTimeFrame,
                             onTimeFrameChanged: _onTimeFrameChanged,
                             compact: true,
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        _buildChartTypeSelector(isMobile),
-                      ],
-                    ),
-              SizedBox(height: isMobile ? 12 : 16),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: ds.TimeFrameSelector.portfolio(
+                              selectedTimeFrame: _selectedTimeFrame,
+                              onTimeFrameChanged: _onTimeFrameChanged,
+                              compact: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                 SizedBox(height: isMobile ? 12 : 16),
+              ],
+              
               Expanded(
                 child: _buildContent(isMobile),
               ),
@@ -171,7 +175,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
   Widget _buildChartTypeSelector(bool isMobile) {
     return Container(
       padding: const EdgeInsets.all(4),
-      constraints: const BoxConstraints(minHeight: 44), // Touch target
+      constraints: const BoxConstraints(minHeight: 36), 
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
@@ -188,10 +192,10 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
           return GestureDetector(
             onTap: () => setState(() => _chartType = type),
             child: Container(
-              constraints: const BoxConstraints(minWidth: 44, minHeight: 36), // Touch target
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 28),
               padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 10 : 12, 
-                vertical: 6,
+                horizontal: isMobile ? 8 : 10, 
+                vertical: 4,
               ),
               decoration: BoxDecoration(
                 color: isSelected
@@ -281,6 +285,9 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
     final lossColor = Theme.of(context).brightness == Brightness.dark
         ? const Color(0xFFFF7675) : const Color(0xFFE85656);
     final chartColor = isPositive ? gainColor : lossColor;
+    
+    // Interval calculation for X axis
+    final xInterval = (_dataPoints.length / 5).ceil().toDouble();
 
     if (_chartType == ChartType.bar) {
       return BarChart(
@@ -326,7 +333,51 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
             strokeWidth: 1,
           ),
         ),
-        titlesData: const FlTitlesData(show: false),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 22,
+              interval: xInterval > 0 ? xInterval : 1,
+              getTitlesWidget: (value, meta) {
+                final index = value.toInt();
+                if (index < 0 || index >= _dataPoints.length) {
+                  return const SizedBox.shrink();
+                }
+                
+                final date = _dataPoints[index].date;
+                String text;
+                
+                if (_selectedTimeFrame == ds.TimeFrame.oneDay) {
+                  text = DateFormat('HH:mm').format(date);
+                } else if (_selectedTimeFrame == ds.TimeFrame.oneMonth) {
+                  text = DateFormat('MMM d').format(date);
+                } else if (_selectedTimeFrame == ds.TimeFrame.sixMonths || 
+                           _selectedTimeFrame == ds.TimeFrame.oneYear ||
+                           _selectedTimeFrame == ds.TimeFrame.ytd) {
+                  text = DateFormat('MMM').format(date);
+                } else {
+                  text = DateFormat('MMM yy').format(date);
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                      fontSize: 10,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
         borderData: FlBorderData(show: false),
         minY: minY * 0.98,
         maxY: maxY * 1.02,
@@ -353,8 +404,37 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
                 : BarAreaData(show: false),
           ),
         ],
-        lineTouchData: const LineTouchData(enabled: false),
+        lineTouchData: LineTouchData(
+          enabled: true,
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (_) => Theme.of(context).cardColor.withValues(alpha: 0.9),
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((spot) {
+                final date = _dataPoints[spot.x.toInt()].date;
+                final formattedDate = DateFormat('MMM d, yyyy').format(date);
+                
+                return LineTooltipItem(
+                  '${_formatCurrency(spot.y)}\n$formattedDate',
+                  TextStyle(
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        ),
       ),
     );
+  }
+
+  String _formatCurrency(double value) {
+    if (value >= 10000000) {
+      return '₹${(value / 10000000).toStringAsFixed(2)} Cr';
+    } else if (value >= 100000) {
+      return '₹${(value / 100000).toStringAsFixed(2)} L';
+    }
+    return '₹${value.toStringAsFixed(2)}';
   }
 }

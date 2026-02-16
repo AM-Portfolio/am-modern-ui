@@ -42,10 +42,31 @@ class AnalysisMapper {
     print('[Mapper] Mapping ${sdkItems.length} items for $groupBy');
     // Convert SDK AllocationItem to UI AllocationItem
     final result = sdkItems.map((item) {
+      List<AllocationHolding>? holdings;
+      // Check if item has holdings (it might be dynamic or specific subclass)
+      try {
+        // Attempt to access holdings if available in the SDK model
+        // We use dynamic access or check if the generated model supports it
+        // Assuming SDK has been updated to include holdings in AllocationItem
+        if (item.holdings != null) {
+          holdings = item.holdings!.map((h) => AllocationHolding(
+            symbol: h.symbol ?? '',
+            name: h.name ?? '',
+            value: (h.value ?? 0).toDouble(),
+            percentage: (h.percentage ?? 0).toDouble(),
+            portfolioPercentage: (h.portfolioPercentage ?? 0).toDouble(),
+          )).toList();
+        }
+      } catch (e) {
+        // Ignore if holdings not present or accessible
+        print('[Mapper] Error mapping holdings: $e');
+      }
+
       return AllocationItem(
         name: item.name ?? 'Unknown',
         percentage: item.percentage ?? 0.0,
         value: (item.value ?? 0).toDouble(),
+        holdings: holdings,
       );
     }).toList();
     

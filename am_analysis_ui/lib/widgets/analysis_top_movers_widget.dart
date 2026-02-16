@@ -11,12 +11,14 @@ class AnalysisTopMoversWidget extends StatefulWidget {
     required this.portfolioId,
     this.initialTimeFrame = ds.TimeFrame.oneDay,
     this.height,
+    this.showTimeFrameSelector = true,
     super.key,
   });
 
   final String portfolioId;
   final ds.TimeFrame initialTimeFrame;
   final double? height;
+  final bool showTimeFrameSelector;
 
   @override
   State<AnalysisTopMoversWidget> createState() => _AnalysisTopMoversWidgetState();
@@ -126,11 +128,12 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
                 ],
               ),
               SizedBox(height: isMobile ? 10 : 12),
-              ds.TimeFrameSelector.trading(
-                selectedTimeFrame: _selectedTimeFrame,
-                onTimeFrameChanged: _onTimeFrameChanged,
-                compact: true,
-              ),
+              if (widget.showTimeFrameSelector)
+                ds.TimeFrameSelector.trading(
+                  selectedTimeFrame: _selectedTimeFrame,
+                  onTimeFrameChanged: _onTimeFrameChanged,
+                  compact: true,
+                ),
               SizedBox(height: isMobile ? 12 : 16),
               Expanded(
                 child: _buildContent(isMobile, isTablet),
@@ -230,21 +233,35 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: isMobile ? MainAxisSize.min : MainAxisSize.max,
       children: [
-        Text(
-          title,
-          style: TextStyle(
-            color: color,
-            fontSize: isMobile ? 13 : 14,
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          children: [
+            Container(
+              width: 3,
+              height: 16,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                color: color,
+                fontSize: isMobile ? 14 : 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
-        SizedBox(height: isMobile ? 8 : 12),
+        SizedBox(height: isMobile ? 10 : 12),
         isMobile
             ? Column(
                 children: items.take(5).map((mover) => _buildMoverItem(mover, color, isMobile)).toList(),
               )
             : Expanded(
                 child: ListView.builder(
+                  padding: EdgeInsets.zero,
                   itemCount: items.take(5).length,
                   itemBuilder: (context, index) => _buildMoverItem(items[index], color, isMobile),
                 ),
@@ -255,10 +272,28 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
 
   Widget _buildMoverItem(MoverItem mover, Color color, bool isMobile) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 44), // Touch target
-      padding: EdgeInsets.only(bottom: isMobile ? 8 : 12),
+      margin: EdgeInsets.only(bottom: isMobile ? 6 : 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
       child: Row(
         children: [
+          // Symbol with colored indicator
+          Container(
+            width: 4,
+            height: 28,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,40 +302,36 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
                 Text(
                   mover.symbol,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     fontSize: isMobile ? 13 : 14,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
                   ),
                 ),
                 Text(
-                  mover.name,
+                  '₹${mover.price.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: isMobile ? 11 : 12,
+                    fontSize: isMobile ? 10 : 11,
+                    color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '₹${mover.price.toStringAsFixed(2)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: isMobile ? 11 : 12,
-                ),
+          // Percentage badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              '${mover.changePercentage >= 0 ? '+' : ''}${mover.changePercentage.toStringAsFixed(2)}%',
+              style: TextStyle(
+                color: color,
+                fontSize: isMobile ? 11 : 12,
+                fontWeight: FontWeight.w700,
               ),
-              Text(
-                '${mover.changePercentage >= 0 ? '+' : ''}${mover.changePercentage.toStringAsFixed(2)}%',
-                style: TextStyle(
-                  color: color,
-                  fontSize: isMobile ? 11 : 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),

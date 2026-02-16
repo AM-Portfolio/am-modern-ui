@@ -130,21 +130,7 @@ class _PortfolioOverviewViewState extends State<_PortfolioOverviewView> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  widget.portfolioName ?? 'My Portfolio',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 16),
-              const GmailConnectButton(),
-            ],
-          ),
-          const SizedBox(height: 16),
+
           Expanded(
             child: PortfolioOverviewWidget(
               userId: widget.userId,

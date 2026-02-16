@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:am_auth_ui/am_auth_ui.dart';
+import 'package:am_common/am_common.dart';
 
 
 import '../../internal/domain/entities/portfolio_list.dart';
@@ -60,44 +61,66 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           title: 'Overview',
           subtitle: 'Portfolio summary',
           icon: Icons.dashboard_outlined,
-          page: PortfolioOverviewWebPage(
+          page: _wrapPage(PortfolioOverviewWebPage(
             userId: widget.userId,
-            portfolioId: _currentPortfolioId ?? widget.userId, // Fallback to userId if null? No, pass current.
-          ),
+            portfolioId: _currentPortfolioId ?? widget.userId,
+          )),
           accentColor: ModuleColors.portfolio,
         ),
         NavigationItem(
           title: 'Holdings',
           subtitle: 'Asset breakdown',
           icon: Icons.pie_chart,
-          page: PortfolioHoldingsWebPage(
+          page: _wrapPage(PortfolioHoldingsWebPage(
             userId: widget.userId,
             portfolioId: _currentPortfolioId ?? widget.userId,
-          ),
+          )),
           accentColor: ModuleColors.portfolio,
         ),
         NavigationItem(
           title: 'Analysis',
           subtitle: 'Performance metrics',
           icon: Icons.analytics_outlined,
-          page: PortfolioAnalysisWebPage(
+          page: _wrapPage(PortfolioAnalysisWebPage(
             userId: widget.userId,
             portfolioId: _currentPortfolioId ?? widget.userId,
-          ),
+          )),
           accentColor: ModuleColors.portfolio,
         ),
         NavigationItem(
           title: 'Heatmap',
           subtitle: 'Visual analysis',
           icon: Icons.grid_on_outlined,
-          page: PortfolioHeatmapWebPage(
+          page: _wrapPage(PortfolioHeatmapWebPage(
             userId: widget.userId,
             portfolioId: _currentPortfolioId ?? widget.userId,
             portfolioName: widget.selectedPortfolioName,
-          ),
+          )),
           accentColor: ModuleColors.portfolio,
         ),
       ],
+    );
+  }
+
+  void _navigateToNext() {
+    // Only navigate if not at the last item
+    if (_swipeController.currentIndex < _swipeController.items.length - 1) {
+      _swipeController.navigateTo(_swipeController.currentIndex + 1);
+    }
+  }
+
+  void _navigateToPrev() {
+    // Only navigate if not at the first item
+    if (_swipeController.currentIndex > 0) {
+      _swipeController.navigateTo(_swipeController.currentIndex - 1);
+    }
+  }
+
+  Widget _wrapPage(Widget page) {
+    return VerticalScrollNavigator(
+      child: page,
+      onNextPage: _navigateToNext,
+      onPreviousPage: _navigateToPrev,
     );
   }
 
