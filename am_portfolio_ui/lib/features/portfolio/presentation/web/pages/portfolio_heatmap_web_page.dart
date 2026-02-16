@@ -75,39 +75,11 @@ class _PortfolioHeatmapView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'Portfolio Heatmap',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              if (portfolioName != null) ...[
-                const SizedBox(width: 8),
-                Text(
-                  '($portfolioName)',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: PortfolioHeatmapWidget(
-              userId: userId,
-              portfolioId: portfolioId,
-              portfolioName: portfolioName,
-              config: PortfolioHeatmapConfig.web,
-            ),
-          ),
-        ],
-      ),
+    return PortfolioHeatmapWidget(
+      userId: userId,
+      portfolioId: portfolioId,
+      portfolioName: portfolioName,
+      config: PortfolioHeatmapConfig.web,
     );
   }
 }
