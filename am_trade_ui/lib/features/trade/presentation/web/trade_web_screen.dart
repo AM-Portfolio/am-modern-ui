@@ -16,8 +16,8 @@ import '../models/trade_portfolio_view_model.dart';
 import '../trades/pages/trade_list_web_page.dart';
 import '../metrics/trade_metrics_page.dart';
 import '../report/pages/trade_report_page.dart';
-import 'package:am_market_ui/features/market/presentation/widgets/trading_view_chart_widget.dart';
-import 'package:am_market_ui/features/market/providers/market_analysis_providers.dart';
+import 'package:am_market_ui/shared/widgets/trading_view_chart_widget.dart';
+import 'package:am_market_ui/am_market_ui.dart';
 import '../pages/trade_market_page.dart';
 import '../pages/trade_unified_view_page.dart';
 

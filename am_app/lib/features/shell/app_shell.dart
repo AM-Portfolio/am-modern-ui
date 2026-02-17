@@ -6,6 +6,7 @@ import 'package:am_portfolio_ui/am_portfolio_ui.dart';
 
 import 'package:am_market_ui/am_market_ui.dart';
 import 'package:am_user_ui/am_user_ui.dart';
+import 'package:am_trade_ui/am_trade_ui.dart';
 
 import '../dashboard/dashboard_page.dart';
 
@@ -24,7 +25,7 @@ class _AppShellState extends State<AppShell> {
   final Map<String, int> _navMap = {
     'Dashboard': 0,
     'Portfolio': 1,
-
+    'Trade': 2,
     'Market': 3,
     'Profile': 4,
   };
@@ -84,7 +85,7 @@ class _AppShellState extends State<AppShell> {
                       items: [
                          SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
                          SidebarItem(title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
-
+                         SidebarItem(title: 'Trade', icon: Icons.swap_horiz_rounded),
                          SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
                       ],
                     ),
@@ -108,6 +109,7 @@ class _AppShellState extends State<AppShell> {
                       items: [
                          SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
                          SidebarItem(title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
+                         SidebarItem(title: 'Trade', icon: Icons.swap_horiz_rounded),
 
                          SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
                       ],
@@ -132,12 +134,16 @@ class _AppShellState extends State<AppShell> {
           userId: userId,
           onBack: onBackToGlobal,
         );
-
+      case 2:
+        return TradeWebScreen(
+          userId: userId,
+          onBack: onBackToGlobal,
+        );
       case 3:
         return MarketPage(
           userId: userId,
           onBack: onBackToGlobal,
-        ); // MarketPage wraps MarketWebScreen?
+        );
       case 4:
         return ProfileSettingsPage(userId: userId);
       default:

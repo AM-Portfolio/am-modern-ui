@@ -21,6 +21,8 @@ dependencies:
     path: ../am_user_ui
   am_portfolio_ui:
     path: ../am_portfolio_ui
+  am_trade_ui:
+    path: ../am_trade_ui
   am_market_ui:
     path: ../../am-market/am_market_ui
   am_common_flutter:
