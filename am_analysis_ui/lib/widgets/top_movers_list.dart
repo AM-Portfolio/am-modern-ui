@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/analysis_models.dart';
+import 'package:am_analysis_core/am_analysis_core.dart';
 
 class TopMoversList extends StatelessWidget {
   final List<MoverItem> items;

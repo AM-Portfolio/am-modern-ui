@@ -8,10 +8,10 @@ import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard;
 import 'package:am_portfolio_ui/am_portfolio_ui.dart';
 import 'package:am_trade_ui/am_trade_ui.dart';
 import 'package:am_market_ui/am_market_ui.dart';
-// import 'package:am_ai_ui/am_ai_ui.dart';
-// import 'package:am_diagnostic_ui/am_diagnostic_ui.dart';
-
-import '../../core/di/injection.dart';
+import 'package:am_ai_ui/am_ai_ui.dart';
+import 'package:am_diagnostic_ui/am_diagnostic_ui.dart';
+import 'package:am_user_ui/am_user_ui.dart';
+import 'package:am_analysis_ui/am_analysis_ui.dart';
 
 /// Main application shell with navigation
 class AppShell extends StatefulWidget {
@@ -32,11 +32,12 @@ class _AppShellState extends State<AppShell> {
     'Market': 3,
     'AI Chat': 4,
     'Lab': 5,
-    'Profile': 6,
+    'Analysis': 6,
+    'Profile': 7,
   };
 
   String get _activeNavItem {
-    if (_selectedIndex == 6) return ''; // Profile is separate
+    if (_selectedIndex == 7) return ''; // Profile is separate
     return _navMap.entries
         .firstWhere((e) => e.value == _selectedIndex,
             orElse: () => const MapEntry('Dashboard', 0))
@@ -79,7 +80,7 @@ class _AppShellState extends State<AppShell> {
                       },
                       onLogout: () => context.read<AuthCubit>().logout(),
                       onProfileTap: () =>
-                          setState(() => _selectedIndex = 6),
+                          setState(() => _selectedIndex = 7),
                       onNavigate: (title) {
                         if (_navMap.containsKey(title)) {
                           setState(() => _selectedIndex = _navMap[title]!);
@@ -103,6 +104,8 @@ class _AppShellState extends State<AppShell> {
                             icon: Icons.auto_awesome_rounded),
                         SidebarItem(
                             title: 'Lab', icon: Icons.science_rounded),
+                        SidebarItem(
+                            title: 'Analysis', icon: Icons.analytics_outlined),
                       ],
                     ),
                   Expanded(
@@ -116,7 +119,7 @@ class _AppShellState extends State<AppShell> {
                       isDarkMode: isDark,
                       userName: authState.user.displayName,
                       onProfileTap: () =>
-                          setState(() => _selectedIndex = 6),
+                          setState(() => _selectedIndex = 7),
                       onNavigate: (title) {
                         if (_navMap.containsKey(title)) {
                           setState(() => _selectedIndex = _navMap[title]!);
@@ -140,6 +143,8 @@ class _AppShellState extends State<AppShell> {
                             icon: Icons.auto_awesome_rounded),
                         SidebarItem(
                             title: 'Lab', icon: Icons.science_rounded),
+                        SidebarItem(
+                            title: 'Analysis', icon: Icons.analytics_outlined),
                       ],
                     )
                   : null,
@@ -149,23 +154,6 @@ class _AppShellState extends State<AppShell> {
       },
     );
   }
-
-  Widget _buildComingSoon(String label) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.construction_rounded,
-                size: 64, color: Colors.amber),
-            const SizedBox(height: 16),
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 28, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('This module is being upgraded.',
-                style: TextStyle(fontSize: 16, color: Colors.grey)),
-          ],
-        ),
-      );
 
   Widget _buildPage(String userId, bool isDesktop) {
 
@@ -181,14 +169,17 @@ class _AppShellState extends State<AppShell> {
       case 3:
         return MarketPage(userId: userId);
       case 4:
-        // return AiChatScreen(userId: userId);
-        return _buildComingSoon('AI Chat');
+        return AiChatScreen(userId: userId);
       case 5:
-        // return const DiagnosticDashboardPage();
-        return _buildComingSoon('Lab / Diagnostic');
+        return const DiagnosticDashboardPage();
       case 6:
-        // return ProfileSettingsPage(userId: userId);
-        return _buildComingSoon('Profile');
+        return AnalysisDashboard(
+          entityType: AnalysisEntityType.PORTFOLIO,
+          entityId: userId,
+          analysisService: RealAnalysisService(),
+        );
+      case 7:
+        return ProfileSettingsPage(userId: userId);
       // ──────────────────────────────────────────────────────────────────
 
       default:

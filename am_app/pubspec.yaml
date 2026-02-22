@@ -25,16 +25,18 @@ dependencies:
     path: ../am_dashboard_ui
 
   # ── DISABLED (re-enable one at a time as each module is fixed) ──────────────
-  # am_user_ui:
-  #   path: ../am_user_ui
+  am_user_ui:
+    path: ../am_user_ui
   am_portfolio_ui:
     path: ../am_portfolio_ui
   am_trade_ui:
     path: ../am_trade_ui
-  # am_ai_ui:
-  #   path: ../am_ai_ui
-  # am_diagnostic_ui:
-  #   path: ../am_diagnostic_ui
+  am_ai_ui:
+    path: ../am_ai_ui
+  am_diagnostic_ui:
+    path: ../am_diagnostic_ui
+  am_analysis_ui:
+    path: ../am_analysis_ui
   am_market_ui:
     path: ../../am-market/am_market_ui
   # am_common_flutter:

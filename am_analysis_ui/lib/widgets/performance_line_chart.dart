@@ -1,6 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import '../models/analysis_models.dart';
+import 'package:am_analysis_core/am_analysis_core.dart';
 import 'package:flutter/material.dart';
 
 class PerformanceLineChart extends StatelessWidget {

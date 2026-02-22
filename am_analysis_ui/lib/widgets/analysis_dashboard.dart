@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/analysis_models.dart';
-import '../models/analysis_enums.dart';
+import 'package:am_analysis_core/am_analysis_core.dart';
 import '../services/analysis_service.dart';
 import 'allocation_pie_chart.dart';
 import 'performance_line_chart.dart';
@@ -9,7 +8,7 @@ import 'top_movers_list.dart';
 class AnalysisDashboard extends StatefulWidget {
   final String? entityId;
   final AnalysisEntityType entityType;
-  final AnalysisService analysisService;
+  final UiAnalysisService analysisService;
 
   const AnalysisDashboard({
     Key? key,

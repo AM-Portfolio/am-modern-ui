@@ -32,18 +32,32 @@ final sdkHealthMetricsProvider = Provider<Map<String, HealthMetric>>((ref) {
 });
 
 /// Simplified Telemetry History Provider using a StateProvider approach for easier accumulation
-final telemetryLogProvider = StateProvider<List<TelemetryEvent>>((ref) {
-  final telemetry = ServiceRegistry.telemetry;
-  final subscription = telemetry.events.listen((event) {
-    ref.read(telemetryLogProvider.notifier).update((state) => [event, ...state].take(100).toList());
-  });
+final telemetryLogProvider = NotifierProvider<TelemetryLogNotifier, List<TelemetryEvent>>(TelemetryLogNotifier.new);
+
+class TelemetryLogNotifier extends Notifier<List<TelemetryEvent>> {
+  StreamSubscription<TelemetryEvent>? _subscription;
   
-  ref.onDispose(() => subscription.cancel());
-  return [];
-});
+  @override
+  List<TelemetryEvent> build() {
+    final telemetry = ServiceRegistry.telemetry;
+    _subscription = telemetry.events.listen((event) {
+      state = [event, ...state].take(100).toList();
+    });
+    
+    ref.onDispose(() => _subscription?.cancel());
+    return [];
+  }
+}
 
 /// Provider for Mock Data Toggle
-final mockDataEnabledProvider = StateProvider<bool>((ref) => false);
+final mockDataEnabledProvider = NotifierProvider<MockDataEnabledNotifier, bool>(MockDataEnabledNotifier.new);
+
+class MockDataEnabledNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+  
+  void set(bool value) => state = value;
+}
 
 class HealthMetric {
   final String category;

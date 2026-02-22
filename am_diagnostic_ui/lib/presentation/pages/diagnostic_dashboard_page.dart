@@ -33,7 +33,7 @@ class DiagnosticDashboardPage extends ConsumerWidget {
             width: 350,
             decoration: BoxDecoration(
               border: Border(right: BorderSide(color: Colors.white10.withOpacity(0.05))),
-              color: AppColors.secondary.withOpacity(0.3),
+              color: Theme.of(context).cardColor.withOpacity(0.3),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,7 +52,7 @@ class DiagnosticDashboardPage extends ConsumerWidget {
                       ),
                       Switch(
                         value: ref.watch(mockDataEnabledProvider),
-                        onChanged: (val) => ref.read(mockDataEnabledProvider.notifier).state = val,
+                        onChanged: (val) => ref.read(mockDataEnabledProvider.notifier).set(val),
                         activeColor: Colors.greenAccent,
                       ),
                     ],

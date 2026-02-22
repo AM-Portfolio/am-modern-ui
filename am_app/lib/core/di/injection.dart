@@ -4,9 +4,6 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart' as auth_ui;
 import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard_ui;
 import 'package:am_common/am_common.dart' as common;
-import 'package:am_portfolio_ui/am_portfolio_ui.dart' as portfolio_ui;
-import 'package:am_trade_ui/am_trade_ui.dart' as trade_ui;
-import 'package:am_market_ui/am_market_ui.dart' as market_ui;
 import 'package:am_library/am_library.dart';
 
 final getIt = GetIt.instance;
@@ -41,6 +38,12 @@ Future<void> configureDependencies() async {
 
   // Register Market-related dependencies
   _registerMarketDependencies();
+
+  // Register remaining module dependencies
+  _registerUserDependencies();
+  _registerAiDependencies();
+  _registerDiagnosticDependencies();
+  _registerAnalysisDependencies();
 
   // ────────────────────────────────────────────────────────────────────────
 
@@ -156,4 +159,20 @@ void _registerPortfolioDependencies() {
 void _registerTradeDependencies() {
   // Trade UI uses Riverpod providers for its internal dependencies
   // Only shared/common dependencies need to be registered in GetIt
+}
+
+void _registerUserDependencies() {
+  // User UI registration placeholder
+}
+
+void _registerAiDependencies() {
+  // AI UI registration placeholder
+}
+
+void _registerDiagnosticDependencies() {
+  // Diagnostic UI registration placeholder
+}
+
+void _registerAnalysisDependencies() {
+  // Analysis UI registration placeholder
 }

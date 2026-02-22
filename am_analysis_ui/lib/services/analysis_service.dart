@@ -1,7 +1,6 @@
-import '../models/analysis_models.dart';
-import '../models/analysis_enums.dart';
+import 'package:am_analysis_core/am_analysis_core.dart';
 
-abstract class AnalysisService {
+abstract class UiAnalysisService {
   Future<List<AllocationItem>> getAllocation(
     String? id,
     AnalysisEntityType type, {
@@ -22,7 +21,7 @@ abstract class AnalysisService {
   });
 }
 
-class MockAnalysisService implements AnalysisService {
+class MockAnalysisService implements UiAnalysisService {
   @override
   Future<List<AllocationItem>> getAllocation(
     String? id,

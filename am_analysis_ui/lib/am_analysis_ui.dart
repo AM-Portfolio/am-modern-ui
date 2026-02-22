@@ -5,6 +5,7 @@ library am_analysis_ui;
 export 'widgets/analysis_allocation_widget.dart';
 export 'widgets/analysis_top_movers_widget.dart';
 export 'widgets/analysis_performance_widget.dart';
+export 'widgets/analysis_dashboard.dart';
 
 // Export services  
 export 'services/real_analysis_service.dart';

@@ -15,3 +15,14 @@ enum TimeFrame {
   oneYear,
   all,
 }
+
+/// Entity type for analysis (matches backend enum)
+enum AnalysisEntityType {
+  PORTFOLIO,
+  BASKET,
+  ETF,
+  MUTUAL_FUND,
+  TRADE,
+  MARKET_INDEX,
+  EQUITY,
+}

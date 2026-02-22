@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_analysis_ui/widgets/analysis_allocation_widget.dart';
 import 'package:am_analysis_ui/widgets/analysis_top_movers_widget.dart';
 import 'package:am_analysis_ui/widgets/analysis_performance_widget.dart';
-import 'package:am_analysis_ui/models/analysis_enums.dart';
+import 'package:am_analysis_core/am_analysis_core.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
 
 import 'package:intl/intl.dart';

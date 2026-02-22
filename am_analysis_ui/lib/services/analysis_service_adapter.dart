@@ -1,6 +1,7 @@
 import 'package:am_analysis_core/am_analysis_core.dart' as core;
-import '../models/analysis_models.dart' as ui;
-import '../models/analysis_enums.dart';
+import 'package:am_analysis_core/am_analysis_core.dart' as ui;
+import 'package:am_analysis_core/models/enums.dart' as core_enums;
+import '../config/analysis_config.dart';
 import './real_analysis_service.dart';
 
 /// Adapter that converts am_analysis_ui's RealAnalysisService to implement
@@ -17,14 +18,11 @@ class AnalysisServiceAdapter implements core.AnalysisService {
     required String portfolioId,
     required core.GroupBy groupBy,
   }) async {
-    // Convert core GroupBy to UI GroupBy
-    final uiGroupBy = _toUIGroupBy(groupBy);
-    
     // Call the real service with the UI models
     final uiItems = await _realService.getAllocation(
       portfolioId,
-      AnalysisEntityType.PORTFOLIO,
-      groupBy: uiGroupBy,
+      core.AnalysisEntityType.PORTFOLIO,
+      groupBy: groupBy,
     );
     
     // Convert UI models to core models
@@ -46,7 +44,7 @@ class AnalysisServiceAdapter implements core.AnalysisService {
     // Call the real service
     final uiItems = await _realService.getTopMovers(
       id: portfolioId,
-      type: AnalysisEntityType.PORTFOLIO,
+      type: core.AnalysisEntityType.PORTFOLIO,
       timeFrame: timeFrameStr,
     );
     
@@ -71,7 +69,7 @@ class AnalysisServiceAdapter implements core.AnalysisService {
     // Call the real service
     final uiItems = await _realService.getPerformance(
       portfolioId,
-      AnalysisEntityType.PORTFOLIO,
+      core.AnalysisEntityType.PORTFOLIO,
       timeFrameStr,
     );
     
@@ -80,20 +78,6 @@ class AnalysisServiceAdapter implements core.AnalysisService {
       date: item.date,
       value: item.value,
     )).toList();
-  }
-  
-  /// Convert core GroupBy enum to UI GroupBy enum
-  GroupBy _toUIGroupBy(core.GroupBy groupBy) {
-    switch (groupBy) {
-      case core.GroupBy.sector:
-        return GroupBy.sector;
-      case core.GroupBy.industry:
-        return GroupBy.industry;
-      case core.GroupBy.marketCap:
-        return GroupBy.marketCap;
-      case core.GroupBy.stock:
-        return GroupBy.stock;
-    }
   }
   
   /// Convert core TimeFrame enum to string for API

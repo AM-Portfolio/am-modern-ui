@@ -1,6 +1,5 @@
 import 'package:am_analysis_sdk/api.dart' as sdk;
-import '../models/analysis_models.dart';
-import '../models/analysis_enums.dart';
+import 'package:am_analysis_core/am_analysis_core.dart';
 
 /// Mapper to convert SDK models to UI models
 class AnalysisMapper {

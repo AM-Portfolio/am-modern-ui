@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:am_common/am_common.dart';
 import '../services/real_analysis_service.dart';
-import '../models/analysis_models.dart';
-import '../models/analysis_enums.dart';
+import 'package:am_analysis_core/am_analysis_core.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
 
 /// Enhanced responsive allocation widget with horizontal stacked bar chart

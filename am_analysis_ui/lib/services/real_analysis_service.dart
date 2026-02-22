@@ -1,13 +1,12 @@
 import 'package:am_analysis_sdk/api.dart' as sdk;
 import 'package:logger/logger.dart';
-import '../models/analysis_models.dart';
-import '../models/analysis_enums.dart';
+import 'package:am_analysis_core/am_analysis_core.dart';
 import '../services/analysis_service.dart';
 import '../config/analysis_config.dart';
 import '../mappers/analysis_mapper.dart';
 
-/// Real implementation of AnalysisService using the generated SDK
-class RealAnalysisService implements AnalysisService {
+/// Real implementation of UiAnalysisService using the generated SDK
+class RealAnalysisService implements UiAnalysisService {
   final sdk.AnalysisControllerApi _api;
   final Logger _logger = Logger();
   final String? _authToken;
@@ -39,7 +38,7 @@ class RealAnalysisService implements AnalysisService {
         _auth,
         type.name.toLowerCase(),  // Convert to lowercase for API
         id ?? '',
-        groupBy: groupBy?.value,  // Sent as header by SDK
+        groupBy: groupBy?.name,  // Sent as header by SDK
         // Don't send groupBy2 to avoid duplication
       );
 
@@ -94,13 +93,13 @@ class RealAnalysisService implements AnalysisService {
               type!.name.toLowerCase(),  // Convert to lowercase for API
               id,
               timeFrame: timeFrame,
-              groupBy: groupBy?.value,  // Sent as header by SDK
+              groupBy: groupBy?.name,  // Sent as header by SDK
             )
           : await _api.getTopMoversByCategory(
               _auth,
               type!.name.toLowerCase(),  // Convert to lowercase for API
               timeFrame: timeFrame,
-              groupBy: groupBy?.value,  // Sent as header by SDK
+              groupBy: groupBy?.name,  // Sent as header by SDK
             );
 
       _logger.d('Top movers response: ${response?.gainers?.length ?? 0} gainers, ${response?.losers?.length ?? 0} losers');
