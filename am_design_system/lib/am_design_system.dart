@@ -125,11 +125,7 @@ export 'shared/widgets/portfolio_overview/charts/sector_allocation/animated_sect
 export 'shared/widgets/portfolio_overview/charts/market_cap_allocation/animated_market_cap_chart.dart';
 
 // --- Selectors ---
-export 'shared/widgets/selectors/sector_selector.dart' show SectorType, SectorSelector;
-export 'shared/widgets/selectors/metric_selector.dart' show MetricType, MetricSelector;
-export 'shared/widgets/selectors/time_frame_selector.dart' show TimeFrame, TimeFrameSelector;
-export 'shared/widgets/selectors/market_cap_selector.dart' show MarketCapType, MarketCapSelector;
-export 'shared/widgets/selectors/heatmap_layout_selector.dart' show HeatmapLayoutType, HeatmapLayoutSelector;
+export 'shared/widgets/selectors/selectors.dart';
 export 'shared/widgets/selectors/shared_portfolio_selector.dart';
 
 // --- Feedback & Loading ---

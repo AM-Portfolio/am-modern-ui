@@ -5,10 +5,9 @@ import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard;
 
 // ── DISABLED MODULES (re-enable one at a time as each module is fixed) ─────
-// import 'package:am_portfolio_ui/am_portfolio_ui.dart';
-// import 'package:am_market_ui/am_market_ui.dart';
-// import 'package:am_user_ui/am_user_ui.dart';
-// import 'package:am_trade_ui/am_trade_ui.dart';
+import 'package:am_portfolio_ui/am_portfolio_ui.dart';
+import 'package:am_trade_ui/am_trade_ui.dart';
+import 'package:am_market_ui/am_market_ui.dart';
 // import 'package:am_ai_ui/am_ai_ui.dart';
 // import 'package:am_diagnostic_ui/am_diagnostic_ui.dart';
 
@@ -176,14 +175,11 @@ class _AppShellState extends State<AppShell> {
 
       // ── DISABLED (uncomment when module is fixed) ──────────────────────
       case 1:
-        // return PortfolioScreen(userId: userId, onBack: onBackToGlobal);
-        return _buildComingSoon('Portfolio');
+        return PortfolioScreen(userId: userId);
       case 2:
-        // return TradeWebScreen(userId: userId, onBack: onBackToGlobal);
-        return _buildComingSoon('Trade');
+        return TradeWebScreen(userId: userId);
       case 3:
-        // return MarketPage(userId: userId, onBack: onBackToGlobal);
-        return _buildComingSoon('Market');
+        return MarketPage(userId: userId);
       case 4:
         // return AiChatScreen(userId: userId);
         return _buildComingSoon('AI Chat');

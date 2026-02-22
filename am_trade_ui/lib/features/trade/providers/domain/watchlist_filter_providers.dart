@@ -1,4 +1,4 @@
-import '../../../shared/core/filters/filter_models.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 /// Watchlist-specific implementation of the FilterProvider
 /// Demonstrates how other features can reuse the same filter architecture
