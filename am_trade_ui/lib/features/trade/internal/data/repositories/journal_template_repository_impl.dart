@@ -1,4 +1,4 @@
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../domain/entities/journal_entry.dart';
 import '../../domain/entities/journal_template.dart';
 import '../../domain/enums/journal_template_category.dart';
@@ -433,3 +433,4 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
     }
   }
 }
+

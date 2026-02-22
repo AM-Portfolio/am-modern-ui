@@ -3,7 +3,7 @@ import '../domain/entities/portfolio_analytics.dart';
 import '../domain/entities/portfolio_analytics_request.dart';
 import '../domain/usecases/get_portfolio_analytics.dart';
 import '../data/mappers/portfolio_analytics_mapper.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Portfolio analytics orchestration service for comprehensive data workflows.
 ///
@@ -422,3 +422,4 @@ class AllocationData {
   bool get hasAnyData =>
       sectorAllocation != null || marketCapAllocation != null;
 }
+

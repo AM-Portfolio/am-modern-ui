@@ -10,7 +10,7 @@ import '../mappers/portfolio_holdings_mapper.dart';
 import '../mappers/portfolio_summary_mapper.dart';
 import '../mappers/portfolio_list_mapper.dart';
 import '../datasources/local/portfolio_local_data_source.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Repository implementation for portfolio data operations
 ///
@@ -678,3 +678,4 @@ extension IterableExtensions<T> on Iterable<T> {
     return null;
   }
 }
+

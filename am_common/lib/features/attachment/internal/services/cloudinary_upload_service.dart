@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../../../../../core/utils/logger.dart';
+import 'package:am_library/am_library.dart';
 import '../domain/repositories/cloudinary_repository.dart';
 import 'file_upload_service.dart';
 

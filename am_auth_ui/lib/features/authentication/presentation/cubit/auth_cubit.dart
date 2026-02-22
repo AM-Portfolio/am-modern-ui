@@ -1,9 +1,9 @@
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../domain/usecases/check_auth_status_usecase.dart';
 import '../../domain/usecases/demo_login_usecase.dart';
 import '../../domain/usecases/email_login_usecase.dart';
@@ -267,3 +267,4 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 }
+

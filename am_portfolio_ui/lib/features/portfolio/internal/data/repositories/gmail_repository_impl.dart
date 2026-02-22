@@ -1,5 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../domain/entities/gmail_status.dart';
 import '../../domain/repositories/gmail_repository.dart';
 import '../datasources/gmail_remote_data_source.dart';
@@ -62,3 +62,4 @@ class GmailRepositoryImpl implements GmailRepository {
     }
   }
 }
+

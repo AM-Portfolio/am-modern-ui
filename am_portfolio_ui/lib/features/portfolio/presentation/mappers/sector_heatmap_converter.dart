@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/shared/models/heatmap/heatmap_ui_data.dart';
 import 'package:am_design_system/shared/models/heatmap/heatmap_tile_data.dart';
 import 'package:am_design_system/core/app_logic/domain/entities/heatmap/heatmap_entities.dart';
@@ -507,3 +507,4 @@ class SectorHeatmapConverter {
             : sectorName);
   }
 }
+

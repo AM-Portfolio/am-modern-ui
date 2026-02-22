@@ -2,97 +2,66 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/core/utils/common_logger.dart';
 
 
+import 'package:am_common/am_common.dart';
 import '../inputs/app_segmented_control.dart';
 
-/// Enum for time frame options
-enum TimeFrame {
-  oneDay('1D', '1 Day'),
-  oneWeek('1W', '1 Week'),
-  oneMonth('1M', '1 Month'),
-  threeMonths('3M', '3 Months'),
-  sixMonths('6M', '6 Months'),
-  oneYear('1Y', '1 Year'),
-  ytd('YTD', 'Year to Date'),
-  threeYears('3Y', '3 Years'),
-  fiveYears('5Y', '5 Years'),
-  all('ALL', 'All Time');
+/// Get common time frames for portfolio analysis
+const List<TimeFrame> portfolioTimeFrames = [
+  TimeFrame.oneMonth,
+  TimeFrame.threeMonths,
+  TimeFrame.sixMonths,
+  TimeFrame.oneYear,
+  TimeFrame.ytd,
+  TimeFrame.all,
+];
 
-  const TimeFrame(this.code, this.displayName);
+/// Get common time frames for heatmap analysis
+const List<TimeFrame> heatmapTimeFrames = [
+  TimeFrame.oneDay,
+  TimeFrame.oneWeek,
+  TimeFrame.oneMonth,
+  TimeFrame.threeMonths,
+  TimeFrame.oneYear,
+];
 
-  /// Short code for the time frame
-  final String code;
+/// Get trading time frames (shorter periods)
+const List<TimeFrame> tradingTimeFrames = [
+  TimeFrame.oneDay,
+  TimeFrame.oneWeek,
+  TimeFrame.oneMonth,
+  TimeFrame.threeMonths,
+];
 
-  /// Display name for the time frame
-  final String displayName;
+/// Get mobile-optimized time frames (limited selection)
+const List<TimeFrame> mobileTimeFrames = [
+  TimeFrame.oneDay,
+  TimeFrame.oneWeek,
+  TimeFrame.oneMonth,
+  TimeFrame.threeMonths,
+  TimeFrame.oneYear,
+];
 
-  /// Get time frame from code
-  static TimeFrame? fromCode(String code) {
-    for (final timeFrame in TimeFrame.values) {
-      if (timeFrame.code == code) {
-        return timeFrame;
-      }
-    }
-    return null;
-  }
+/// Get web-optimized time frames (full selection)
+const List<TimeFrame> webTimeFrames = [
+  TimeFrame.oneDay,
+  TimeFrame.oneWeek,
+  TimeFrame.oneMonth,
+  TimeFrame.threeMonths,
+  TimeFrame.sixMonths,
+  TimeFrame.oneYear,
+  TimeFrame.ytd,
+  TimeFrame.threeYears,
+  TimeFrame.fiveYears,
+  TimeFrame.all,
+];
 
-  /// Get common time frames for portfolio analysis
-  static List<TimeFrame> get portfolioTimeFrames => [
-    TimeFrame.oneMonth,
-    TimeFrame.threeMonths,
-    TimeFrame.sixMonths,
-    TimeFrame.oneYear,
-    TimeFrame.ytd,
-    TimeFrame.all,
-  ];
-
-  /// Get common time frames for heatmap analysis
-  static List<TimeFrame> get heatmapTimeFrames => [
-    TimeFrame.oneDay,
-    TimeFrame.oneWeek,
-    TimeFrame.oneMonth,
-    TimeFrame.threeMonths,
-    TimeFrame.oneYear,
-  ];
-
-  /// Get trading time frames (shorter periods)
-  static List<TimeFrame> get tradingTimeFrames => [
-    TimeFrame.oneDay,
-    TimeFrame.oneWeek,
-    TimeFrame.oneMonth,
-    TimeFrame.threeMonths,
-  ];
-
-  /// Get mobile-optimized time frames (limited selection)
-  static List<TimeFrame> get mobileTimeFrames => [
-    TimeFrame.oneDay,
-    TimeFrame.oneWeek,
-    TimeFrame.oneMonth,
-    TimeFrame.threeMonths,
-    TimeFrame.oneYear,
-  ];
-
-  /// Get web-optimized time frames (full selection)
-  static List<TimeFrame> get webTimeFrames => [
-    TimeFrame.oneDay,
-    TimeFrame.oneWeek,
-    TimeFrame.oneMonth,
-    TimeFrame.threeMonths,
-    TimeFrame.sixMonths,
-    TimeFrame.oneYear,
-    TimeFrame.ytd,
-    TimeFrame.threeYears,
-    TimeFrame.fiveYears,
-    TimeFrame.all,
-  ];
-
-  /// Get dashboard time frames (quick selection)
-  static List<TimeFrame> get dashboardTimeFrames => [
-    TimeFrame.oneDay,
-    TimeFrame.oneWeek,
-    TimeFrame.oneMonth,
-    TimeFrame.oneYear,
-  ];
-}
+/// Get dashboard time frames (quick selection)
+const List<TimeFrame> dashboardTimeFrames = [
+  TimeFrame.oneDay,
+  TimeFrame.oneWeek,
+  TimeFrame.oneMonth,
+  TimeFrame.oneYear,
+];
 
 /// Widget for selecting time frames with customizable options
 class TimeFrameSelector extends StatelessWidget {

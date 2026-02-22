@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:am_analysis_ui/am_analysis_ui.dart';
+import 'package:am_library/am_library.dart';
 
 void main() {
   test('adds one to input values', () {

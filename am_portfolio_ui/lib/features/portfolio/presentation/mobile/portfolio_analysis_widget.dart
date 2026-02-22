@@ -6,7 +6,7 @@ import '../widgets/market_cap_allocation_widget.dart';
 import '../widgets/movers_widget.dart';
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Main portfolio analysis widget that orchestrates all analytics components
 /// This widget provides comprehensive portfolio analysis including:
@@ -172,3 +172,4 @@ class _PortfolioAnalysisWidgetState extends State<PortfolioAnalysisWidget> {
         },
       );
 }
+

@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../internal/domain/entities/trade_controller_entities.dart';
 import '../../internal/domain/usecases/add_trade.dart';
 import '../../internal/domain/usecases/delete_trade.dart';
@@ -234,3 +234,4 @@ class TradeControllerCubit extends Cubit<TradeControllerState> {
     return super.close();
   }
 }
+

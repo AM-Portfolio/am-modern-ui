@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
 
 import 'core/di/injection.dart';

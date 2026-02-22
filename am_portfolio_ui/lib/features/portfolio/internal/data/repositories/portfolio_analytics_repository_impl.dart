@@ -1,7 +1,7 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'dart:async';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../domain/entities/portfolio_analytics.dart';
 import '../../domain/entities/portfolio_analytics_request.dart';
 import '../../domain/repositories/portfolio_analytics_repository.dart';
@@ -206,3 +206,4 @@ class PortfolioAnalyticsRepositoryImpl implements PortfolioAnalyticsRepository {
     clearCache();
   }
 }
+

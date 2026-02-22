@@ -1,8 +1,8 @@
-﻿import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/shared/models/heatmap/heatmap_ui_data.dart';
-import 'package:am_design_system/am_design_system.dart';
+import 'package:am_design_system/am_design_system.dart' hide MarketCapType, MetricType, TimeFrame, SectorType;
 import '../mappers/sector_heatmap_converter.dart';
 import 'portfolio_analytics_cubit.dart';
 import 'portfolio_analytics_state.dart';
@@ -203,3 +203,4 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
     }
   }
 }
+

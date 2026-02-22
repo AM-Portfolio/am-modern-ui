@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../../internal/domain/entities/trade_controller_entities.dart';
 import '../../cubit/trade_controller_cubit.dart';
 import '../../cubit/trade_controller_state.dart';
@@ -236,3 +236,4 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
     );
   }
 }
+

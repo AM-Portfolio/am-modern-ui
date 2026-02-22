@@ -1,6 +1,6 @@
 import 'package:am_design_system/am_design_system.dart' as am_ui;
 import 'package:flutter/foundation.dart';
-import 'package:am_common/core/config/environment.dart';
+import '../config/environment.dart';
 
 /// Legacy LogLevel for compatibility
 enum LogLevel {
@@ -22,7 +22,7 @@ class AppLogger {
     if (_isInitialized) return;
     _updateLoggingConfig(Environment.development); // Default to development
     _isInitialized = true;
-    am_ui.CommonLogger.info('AppLogger initialized for am_common', tag: 'Logger');
+    am_ui.CommonLogger.info('AppLogger initialized for am_library', tag: 'Logger');
   }
 
   static void _updateLoggingConfig(Environment environment) {
@@ -91,4 +91,3 @@ class AppLogger {
   }
 
 }
-

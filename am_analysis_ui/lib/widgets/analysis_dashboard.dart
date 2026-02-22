@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/analysis_models.dart';
+import '../models/analysis_enums.dart';
 import '../services/analysis_service.dart';
 import 'allocation_pie_chart.dart';
 import 'performance_line_chart.dart';

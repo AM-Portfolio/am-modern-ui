@@ -7,7 +7,7 @@ import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../../providers/portfolio_providers.dart';
 import '../../internal/domain/entities/portfolio_list.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_common/am_common.dart' show AmStompClient, SecureStorageService;
 import 'package:get_it/get_it.dart';
 import 'gmail_sync/gmail_connect_button.dart';
@@ -212,3 +212,4 @@ extension PortfolioSelectionContext on BuildContext {
   String? get selectedPortfolioName => _SelectedPortfolioProvider.of(this)?.selectedName;
   void selectPortfolio(String id, String name) => _SelectedPortfolioProvider.of(this)?.onSelect(id, name);
 }
+

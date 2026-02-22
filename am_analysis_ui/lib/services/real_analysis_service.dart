@@ -1,4 +1,4 @@
-import 'package:am_analysis_client/api.dart' as sdk;
+import 'package:am_analysis_sdk/api.dart' as sdk;
 import 'package:logger/logger.dart';
 import '../models/analysis_models.dart';
 import '../models/analysis_enums.dart';

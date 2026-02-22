@@ -1,4 +1,4 @@
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../entities/trade_calendar.dart';
 import '../repositories/trade_repository.dart';
 
@@ -58,3 +58,4 @@ class GetTradeCalendar {
     return _repository.watchTradeCalendar(userId, portfolioId);
   }
 }
+

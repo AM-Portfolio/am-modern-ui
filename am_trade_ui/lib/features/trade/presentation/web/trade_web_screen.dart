@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../internal/domain/entities/metrics/metrics_filter_request.dart';
 import '../../providers/trade_internal_providers.dart';
 import '../../providers/trade_report_providers.dart';
@@ -361,3 +361,4 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     );
   }
 }
+

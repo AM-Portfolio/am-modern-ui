@@ -24,6 +24,7 @@ export 'core/contracts/design_contract.dart';
 // Utils
 export 'core/utils/common_logger.dart';
 export 'core/utils/device_utils.dart';
+export 'core/utils/validators.dart';
 export 'core/utils/conditional_mouse_region.dart';
 
 // Constants & API Endpoints
@@ -133,6 +134,7 @@ export 'shared/widgets/selectors/shared_portfolio_selector.dart';
 
 // --- Feedback & Loading ---
 export 'shared/widgets/feedback/shimmer_loading.dart';
+export 'shared/widgets/feedback/error_widget.dart';
 export 'shared/widgets/feedback/animated_page_transition.dart';
 export 'shared/widgets/feedback/animated_list_item.dart';
 

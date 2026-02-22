@@ -1,4 +1,4 @@
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../domain/entities/trade_calendar.dart';
 import '../../domain/entities/trade_controller_entities.dart';
 import '../dtos/trade_calendar_dto.dart';
@@ -81,3 +81,4 @@ class TradeCalendarMapper {
     tradeExecutions: [], // Leave empty for calendar - executions not needed
   );
 }
+

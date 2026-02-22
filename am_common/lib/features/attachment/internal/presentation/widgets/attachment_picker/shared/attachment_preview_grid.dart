@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:am_common/core/config/upload_config.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_common/features/attachment/internal/presentation/models/pending_attachment.dart';
 
 /// Shared preview grid for displaying attachments (both uploaded and pending)
@@ -351,3 +351,4 @@ class AttachmentPreviewGrid extends StatelessWidget {
     return Icons.insert_drive_file;
   }
 }
+

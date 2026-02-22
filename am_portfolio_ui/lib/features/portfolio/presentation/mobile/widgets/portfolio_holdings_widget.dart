@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../../providers/portfolio_providers.dart';
 
@@ -349,3 +349,4 @@ class _PortfolioHoldingsWidgetState
     return sortedList;
   }
 }
+

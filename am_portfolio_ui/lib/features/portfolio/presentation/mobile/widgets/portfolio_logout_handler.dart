@@ -1,7 +1,7 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Utility class for handling logout functionality
 class PortfolioLogoutHandler {
@@ -67,3 +67,4 @@ class PortfolioLogoutHandler {
     }
   }
 }
+

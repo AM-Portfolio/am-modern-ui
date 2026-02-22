@@ -1,54 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:am_common/am_common.dart';
 import '../inputs/app_segmented_control.dart';
 
-/// Enum for different market cap categories
-enum MarketCapType {
-  all('All', 'All Cap', Icons.account_balance_wallet),
-  largeCap('Large', 'Large Cap', Icons.trending_up),
-  midCap('Mid', 'Mid Cap', Icons.show_chart),
-  smallCap('Small', 'Small Cap', Icons.insights),
-  megaCap('Mega', 'Mega Cap', Icons.currency_exchange),
-  microCap('Micro', 'Micro Cap', Icons.grain);
-
-  const MarketCapType(this.shortName, this.displayName, this.icon);
-
-  /// Short name for compact display
-  final String shortName;
-
-  /// Full display name
-  final String displayName;
-
-  /// Representative icon
-  final IconData icon;
-
-  /// Get market cap type from short name
-  static MarketCapType? fromShortName(String shortName) {
-    for (final marketCap in MarketCapType.values) {
-      if (marketCap.shortName == shortName) {
-        return marketCap;
-      }
+/// UI Extension for MarketCapType to provide icons (UI layer only)
+extension MarketCapTypeUIExtension on MarketCapType {
+  IconData get icon {
+    switch (this) {
+      case MarketCapType.all:
+        return Icons.donut_large_rounded;
+      case MarketCapType.largeCap:
+        return Icons.account_balance_rounded;
+      case MarketCapType.midCap:
+        return Icons.business_center_rounded;
+      case MarketCapType.smallCap:
+        return Icons.storefront_rounded;
+      case MarketCapType.microCap:
+        return Icons.store_rounded;
+      case MarketCapType.megaCap:
+        return Icons.corporate_fare_rounded;
     }
-    return null;
   }
-
-  /// Common market cap categories for portfolio analysis
-  static List<MarketCapType> get portfolioMarketCaps => [
-    MarketCapType.all,
-    MarketCapType.largeCap,
-    MarketCapType.midCap,
-    MarketCapType.smallCap,
-  ];
-
-  /// All available market cap categories
-  static List<MarketCapType> get allMarketCaps => MarketCapType.values;
-
-  /// Standard market cap categories (excluding micro and mega)
-  static List<MarketCapType> get standardMarketCaps => [
-    MarketCapType.all,
-    MarketCapType.largeCap,
-    MarketCapType.midCap,
-    MarketCapType.smallCap,
-  ];
 }
 
 /// Widget for selecting different market cap categories

@@ -1,9 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:am_design_system/am_design_system.dart';
+import 'package:am_design_system/am_design_system.dart' hide AllocationItem;
 import '../models/analysis_models.dart';
-import 'package:flutter/material.dart';
-import 'package:am_design_system/am_design_system.dart';
 
 class AllocationPieChart extends StatefulWidget {
   final List<AllocationItem> items;

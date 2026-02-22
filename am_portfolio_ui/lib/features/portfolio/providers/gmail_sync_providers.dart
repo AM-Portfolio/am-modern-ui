@@ -5,7 +5,7 @@ import 'package:am_common/core/config/app_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/core/di/network_providers.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 import '../internal/data/datasources/gmail_remote_data_source.dart';
 import '../internal/data/repositories/gmail_repository_impl.dart';
@@ -93,3 +93,4 @@ class GmailPortfolioSync extends _$GmailPortfolioSync {
     }
   }
 }
+

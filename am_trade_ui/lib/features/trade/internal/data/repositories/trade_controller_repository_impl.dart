@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:am_common/core/utils/logger.dart'; // Fixed: use package import
+import 'package:am_common/am_common.dart'; // Fixed: use package import
 import '../../domain/entities/trade_controller_entities.dart';
 import '../../domain/repositories/trade_controller_repository.dart';
 import '../datasources/trade_controller_remote_data_source.dart';
@@ -341,3 +341,4 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
     _tradeUpdatesController.close();
   }
 }
+

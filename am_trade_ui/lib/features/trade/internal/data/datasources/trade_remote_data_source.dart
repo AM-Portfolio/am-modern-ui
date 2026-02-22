@@ -1,7 +1,7 @@
-import 'package:am_common/core/network/api_client.dart';
+import 'package:am_library/am_library.dart';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../dtos/trade_calendar_dto.dart';
 import '../dtos/trade_controller_dtos.dart';
 import '../dtos/trade_holding_dto.dart';
@@ -613,3 +613,4 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     return getTradeCalendarByMonth(userId, portfolioId, year: targetYear, month: targetMonth);
   }
 }
+

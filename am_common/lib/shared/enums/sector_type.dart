@@ -65,6 +65,24 @@ enum SectorType {
   
   /// Other sectors
   other,
+
+  /// No specific group or unclassified
+  noGroup;
+
+  // ── Static list getters (used by selector widgets) ───────────────────────
+
+  static List<SectorType> get allSectors => SectorType.values
+      .where((s) => s != SectorType.noGroup)
+      .toList();
+
+  static List<SectorType> get portfolioSectors => const [
+        SectorType.all,
+        SectorType.noGroup,
+        SectorType.technology,
+        SectorType.healthcare,
+        SectorType.finance,
+        SectorType.consumer,
+      ];
 }
 
 /// Extension methods for SectorType
@@ -116,6 +134,8 @@ extension SectorTypeExtension on SectorType {
         return 'Metals & Mining';
       case SectorType.other:
         return 'Other';
+      case SectorType.noGroup:
+        return 'No Grouping';
     }
   }
 }

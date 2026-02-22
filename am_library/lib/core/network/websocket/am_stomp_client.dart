@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:am_common/core/utils/logger.dart';
+import '../../utils/logger.dart';
 import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
@@ -121,9 +121,9 @@ class AmStompClient {
       destination: destination,
       callback: (StompFrame frame) {
         // Broadcast the frame to the central stream
-        AppLogger.info('AmStompClient: 🔔 CALLBACK TRIGGERED for $destination');
-        AppLogger.info('AmStompClient: 🔔 Frame destination: ${frame.headers['destination']}');
-        AppLogger.info('AmStompClient: 🔔 Frame body length: ${frame.body?.length ?? 0}');
+        AppLogger.debug('AmStompClient: 🔔 CALLBACK TRIGGERED for $destination');
+        AppLogger.debug('AmStompClient: 🔔 Frame destination: ${frame.headers['destination']}');
+        AppLogger.debug('AmStompClient: 🔔 Frame body length: ${frame.body?.length ?? 0}');
         
         _messageSubject.add(frame);
         

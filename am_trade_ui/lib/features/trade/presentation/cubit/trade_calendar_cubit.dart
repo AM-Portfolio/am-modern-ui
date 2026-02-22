@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart' as calendar_types;
 import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/trade_calendar.dart' as entities;
@@ -646,3 +646,4 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
     );
   }
 }
+

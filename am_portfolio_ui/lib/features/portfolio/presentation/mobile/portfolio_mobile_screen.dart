@@ -11,7 +11,7 @@ import '../../internal/domain/entities/portfolio_list.dart';
 import 'widgets/portfolio_header_widget.dart';
 import 'widgets/portfolio_tab_content_widget.dart';
 import 'widgets/portfolio_logout_handler.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
 class PortfolioMobileScreen extends ConsumerWidget {
@@ -367,3 +367,4 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     );
   }
 }
+

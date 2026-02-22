@@ -1,10 +1,10 @@
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 import 'dart:async';
 
 import 'package:am_design_system/core/errors/exceptions.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Google Sign-In account (Stub)
 class GoogleSignInAccount {
@@ -48,3 +48,4 @@ class GoogleSignInService {
   /// Get currently signed in account
   GoogleSignInAccount? getCurrentAccount() => null;
 }
+

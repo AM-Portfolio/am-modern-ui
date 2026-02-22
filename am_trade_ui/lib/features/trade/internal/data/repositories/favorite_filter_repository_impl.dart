@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../domain/entities/favorite_filter.dart';
 import '../../domain/entities/metrics_filter_config.dart';
 import '../../domain/repositories/favorite_filter_repository.dart';
@@ -278,3 +278,4 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
     return _filtersController.stream;
   }
 }
+

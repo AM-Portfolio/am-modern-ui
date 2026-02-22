@@ -1,4 +1,4 @@
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../repositories/trade_controller_repository.dart';
 
 /// Use case for deleting a trade
@@ -35,3 +35,4 @@ class DeleteTrade {
     }
   }
 }
+

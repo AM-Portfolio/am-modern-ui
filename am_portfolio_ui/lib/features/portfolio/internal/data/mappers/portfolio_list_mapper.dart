@@ -1,7 +1,7 @@
 import 'package:am_design_system/am_design_system.dart';
 import '../dtos/portfolio_list_dto.dart';
 import '../../domain/entities/portfolio_list.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Mapper class for Portfolio List operations
 ///
@@ -126,3 +126,4 @@ class PortfolioListMapper {
     }
   }
 }
+

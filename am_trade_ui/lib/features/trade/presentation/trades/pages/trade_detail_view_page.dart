@@ -1,7 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../models/trade_holding_view_model.dart';
 import '../widgets/trade_detail_widgets/attachments_grid_view.dart';
 import '../widgets/trade_detail_widgets/modern_trade_header.dart';
@@ -35,10 +35,10 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLogger.debug('🔍 Building TradeDetailViewPage', tag: 'TradeDetail');
-    AppLogger.debug('📊 Trade Symbol: ${widget.trade.symbol}', tag: 'TradeDetail');
-    AppLogger.debug('📎 Has Attachments: ${widget.trade.hasAttachments}', tag: 'TradeDetail');
-    AppLogger.debug('📸 Attachment Count: ${widget.trade.attachmentCount}', tag: 'TradeDetail');
+    AppLogger.debug('?? Building TradeDetailViewPage', tag: 'TradeDetail');
+    AppLogger.debug('?? Trade Symbol: ${widget.trade.symbol}', tag: 'TradeDetail');
+    AppLogger.debug('?? Has Attachments: ${widget.trade.hasAttachments}', tag: 'TradeDetail');
+    AppLogger.debug('?? Attachment Count: ${widget.trade.attachmentCount}', tag: 'TradeDetail');
 
     return Material(
       color: Theme.of(context).colorScheme.surfaceContainerLowest,
@@ -98,3 +98,4 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
     );
   }
 }
+

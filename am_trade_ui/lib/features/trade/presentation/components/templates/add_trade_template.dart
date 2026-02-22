@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../../internal/domain/entities/trade_controller_entities.dart';
 import '../../../internal/domain/enums/broker_types.dart';
 import '../../../internal/domain/enums/derivative_types.dart';
@@ -1536,3 +1536,4 @@ class _AddTradeTemplateState extends State<AddTradeTemplate> {
     ),
   );
 }
+

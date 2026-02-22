@@ -1,4 +1,4 @@
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/trade_calendar.dart';
 import '../../internal/domain/entities/trade_controller_entities.dart';
@@ -158,3 +158,4 @@ class TradeCalendarConverter {
   static String _formatDateKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 }
+

@@ -1,4 +1,4 @@
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../domain/entities/trade_controller_entities.dart';
 import '../../domain/entities/trade_holding.dart';
 import '../dtos/trade_holding_dto.dart';
@@ -45,3 +45,4 @@ class TradeHoldingMapper {
     empty: dto.empty,
   );
 }
+

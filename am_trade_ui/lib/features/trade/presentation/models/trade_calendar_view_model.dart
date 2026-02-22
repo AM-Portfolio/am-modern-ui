@@ -1,4 +1,4 @@
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/trade_calendar.dart';
@@ -172,3 +172,4 @@ class TradeCalendarViewModel {
     lastUpdated: lastUpdated ?? this.lastUpdated,
   );
 }
+

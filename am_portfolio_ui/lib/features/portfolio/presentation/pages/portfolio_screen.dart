@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
 import '../widgets/portfolio_list_wrapper.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Platform-aware portfolio screen router
 /// Routes to mobile or web specific portfolio screens based on platform
@@ -51,3 +51,4 @@ class PortfolioScreen extends StatelessWidget {
     );
   }
 }
+

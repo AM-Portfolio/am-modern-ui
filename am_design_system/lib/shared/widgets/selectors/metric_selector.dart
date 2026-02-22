@@ -2,127 +2,102 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/core/utils/common_logger.dart';
 
 
+import 'package:am_common/am_common.dart';
 import '../inputs/app_segmented_control.dart';
 
-/// Enum for different metric types that can be displayed
-enum MetricType {
-  // Performance metrics
-  returns('Returns', 'Total Returns', Icons.trending_up),
-  dailyReturns('Daily', 'Daily Returns', Icons.today),
-  weeklyReturns('Weekly', 'Weekly Returns', Icons.date_range),
-  monthlyReturns('Monthly', 'Monthly Returns', Icons.calendar_month),
-
-  // Value metrics
-  marketValue('Value', 'Market Value', Icons.account_balance_wallet),
-  investedValue('Invested', 'Invested Value', Icons.payment),
-  profitLoss('P&L', 'Profit & Loss', Icons.account_balance),
-
-  // Percentage metrics
-  changePercent('Change %', 'Change Percentage', Icons.percent),
-  allocationPercent('Allocation %', 'Portfolio Allocation', Icons.pie_chart),
-
-  // Performance ratios
-  sharpeRatio('Sharpe', 'Sharpe Ratio', Icons.analytics),
-  beta('Beta', 'Portfolio Beta', Icons.show_chart),
-  volatility('Volatility', 'Price Volatility', Icons.waves),
-
-  // Risk metrics
-  drawdown('Drawdown', 'Maximum Drawdown', Icons.trending_down),
-  valueAtRisk('VaR', 'Value at Risk', Icons.warning),
-
-  // Volume metrics
-  volume('Volume', 'Trading Volume', Icons.bar_chart),
-  averageVolume('Avg Volume', 'Average Volume', Icons.timeline);
-
-  const MetricType(this.shortName, this.displayName, this.icon);
-
-  /// Short name for compact display
-  final String shortName;
-
-  /// Full display name
-  final String displayName;
-
+/// UI Extension for MetricType to provide icons (UI layer only)
+extension MetricTypeUIExtension on MetricType {
   /// Representative icon
-  final IconData icon;
-
-  /// Get metric type from short name
-  static MetricType? fromShortName(String shortName) {
-    for (final metric in MetricType.values) {
-      if (metric.shortName == shortName) {
-        return metric;
-      }
+  IconData get icon {
+    switch (this) {
+      case MetricType.returns: return Icons.trending_up;
+      case MetricType.dailyReturns: return Icons.today;
+      case MetricType.weeklyReturns: return Icons.date_range;
+      case MetricType.monthlyReturns: return Icons.calendar_month;
+      case MetricType.marketValue: return Icons.account_balance_wallet;
+      case MetricType.investedValue: return Icons.payment;
+      case MetricType.profitLoss: return Icons.account_balance;
+      case MetricType.changePercent: return Icons.percent;
+      case MetricType.allocationPercent: return Icons.pie_chart;
+      case MetricType.sharpeRatio: return Icons.analytics;
+      case MetricType.beta: return Icons.show_chart;
+      case MetricType.volatility: return Icons.waves;
+      case MetricType.drawdown: return Icons.trending_down;
+      case MetricType.valueAtRisk: return Icons.warning;
+      case MetricType.volume: return Icons.bar_chart;
+      case MetricType.averageVolume: return Icons.timeline;
+      default: return Icons.insights;
     }
-    return null;
   }
-
-  /// Common metrics for portfolio overview
-  static List<MetricType> get portfolioMetrics => [
-    MetricType.marketValue,
-    MetricType.profitLoss,
-    MetricType.changePercent,
-    MetricType.returns,
-    MetricType.allocationPercent,
-  ];
-
-  /// Common metrics for performance analysis
-  static List<MetricType> get performanceMetrics => [
-    MetricType.returns,
-    MetricType.dailyReturns,
-    MetricType.weeklyReturns,
-    MetricType.monthlyReturns,
-    MetricType.changePercent,
-  ];
-
-  /// Common metrics for risk analysis
-  static List<MetricType> get riskMetrics => [
-    MetricType.volatility,
-    MetricType.beta,
-    MetricType.sharpeRatio,
-    MetricType.drawdown,
-    MetricType.valueAtRisk,
-  ];
-
-  /// Common metrics for heatmap display
-  static List<MetricType> get heatmapMetrics => [
-    MetricType.changePercent,
-    MetricType.returns,
-    MetricType.marketValue,
-    MetricType.allocationPercent,
-    MetricType.profitLoss,
-  ];
-
-  /// Common metrics for trading analysis
-  static List<MetricType> get tradingMetrics => [
-    MetricType.changePercent,
-    MetricType.volume,
-    MetricType.averageVolume,
-    MetricType.volatility,
-  ];
-
-  /// Mobile-optimized metrics (limited selection)
-  static List<MetricType> get mobileMetrics => [
-    MetricType.changePercent,
-    MetricType.marketValue,
-    MetricType.returns,
-    MetricType.volume,
-  ];
-
-  /// Web-optimized metrics (full selection)
-  static List<MetricType> get webMetrics => [
-    MetricType.changePercent,
-    MetricType.marketValue,
-    MetricType.returns,
-    MetricType.volume,
-    MetricType.volatility,
-    MetricType.sharpeRatio,
-    MetricType.beta,
-    MetricType.profitLoss,
-    MetricType.allocationPercent,
-    MetricType.averageVolume,
-    MetricType.valueAtRisk,
-    MetricType.drawdown,
-  ];
 }
+
+/// Common metrics for portfolio overview
+const List<MetricType> portfolioMetrics = [
+  MetricType.marketValue,
+  MetricType.profitLoss,
+  MetricType.changePercent,
+  MetricType.returns,
+  MetricType.allocationPercent,
+];
+
+/// Common metrics for performance analysis
+const List<MetricType> performanceMetrics = [
+  MetricType.returns,
+  MetricType.dailyReturns,
+  MetricType.weeklyReturns,
+  MetricType.monthlyReturns,
+  MetricType.changePercent,
+];
+
+/// Common metrics for risk analysis
+const List<MetricType> riskMetrics = [
+  MetricType.volatility,
+  MetricType.beta,
+  MetricType.sharpeRatio,
+  MetricType.drawdown,
+  MetricType.valueAtRisk,
+];
+
+/// Common metrics for heatmap display
+const List<MetricType> heatmapMetrics = [
+  MetricType.changePercent,
+  MetricType.returns,
+  MetricType.marketValue,
+  MetricType.allocationPercent,
+  MetricType.profitLoss,
+];
+
+/// Common metrics for trading analysis
+const List<MetricType> tradingMetrics = [
+  MetricType.changePercent,
+  MetricType.volume,
+  MetricType.averageVolume,
+  MetricType.volatility,
+];
+
+/// Mobile-optimized metrics (limited selection)
+const List<MetricType> mobileMetrics = [
+  MetricType.changePercent,
+  MetricType.marketValue,
+  MetricType.returns,
+  MetricType.volume,
+];
+
+/// Web-optimized metrics (full selection)
+const List<MetricType> webMetrics = [
+  MetricType.changePercent,
+  MetricType.marketValue,
+  MetricType.returns,
+  MetricType.volume,
+  MetricType.volatility,
+  MetricType.sharpeRatio,
+  MetricType.beta,
+  MetricType.profitLoss,
+  MetricType.allocationPercent,
+  MetricType.averageVolume,
+  MetricType.valueAtRisk,
+  MetricType.drawdown,
+];
 
 /// Widget for selecting different metrics to display
 class MetricSelector extends StatelessWidget {

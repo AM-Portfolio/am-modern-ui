@@ -1,5 +1,5 @@
 // import 'package:am_common/core/constants/constants.dart';
-import 'environment.dart' show Environment;
+import 'package:am_library/am_library.dart' show Environment;
 
 /// Application configuration
 class AppConfig {
@@ -51,6 +51,7 @@ class ApiConfig {
     this.auth,
     this.user,
     this.gmail,
+    this.analysis,
   });
   final String baseUrl;
   final int timeout;
@@ -63,6 +64,33 @@ class ApiConfig {
   final AuthApiConfig? auth;
   final UserApiConfig? user;
   final GmailApiConfig? gmail;
+  final AnalysisApiConfig? analysis;
+}
+
+/// Analysis & Dashboard API configuration
+class AnalysisApiConfig {
+  const AnalysisApiConfig({
+    required this.baseUrl,
+    this.summaryResource = '/api/v1/analysis/dashboard/summary',
+    this.overviewsResource = '/api/v1/analysis/dashboard/portfolio-overviews',
+    this.recentActivityResource = '/api/v1/analysis/dashboard/recent-activity',
+    this.performanceResource = '/api/v1/analysis/dashboard/performance',
+    this.topMoversResource = '/api/v1/analysis/dashboard/top-movers',
+    this.connectTimeout = 30000,
+    this.receiveTimeout = 30000,
+    this.sendTimeout = 30000,
+    this.enabled = true,
+  });
+  final String baseUrl;
+  final String summaryResource;
+  final String overviewsResource;
+  final String recentActivityResource;
+  final String performanceResource;
+  final String topMoversResource;
+  final int connectTimeout;
+  final int receiveTimeout;
+  final int sendTimeout;
+  final bool enabled;
 }
 
 /// Gmail Sync API configuration

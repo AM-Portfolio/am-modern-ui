@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../dtos/trade_calendar_dto.dart';
 import '../dtos/trade_holding_dto.dart';
 import '../dtos/trade_portfolio_dto.dart';
@@ -104,3 +104,4 @@ class TradeMockDataHelper {
     }
   }
 }
+

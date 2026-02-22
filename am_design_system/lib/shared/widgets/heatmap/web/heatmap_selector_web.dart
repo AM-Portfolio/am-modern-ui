@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_common/am_common.dart';
 import '../../../../core/utils/common_logger.dart';
 import '../../selectors/selectors.dart';
 import '../configs/selector_config.dart';
@@ -8,7 +9,6 @@ import '../../buttons/reset_button.dart';
 import '../../containers/selector_container.dart';
 import '../../inputs/custom_dropdown.dart';
 import '../../display/pill_selector.dart';
-
 
 /// Web-optimized heatmap selector with compact layouts
 /// Maintains current web-friendly design while using the extracted core logic
@@ -217,7 +217,7 @@ class _HeatmapSelectorWebState extends State<HeatmapSelectorWeb> {
         hint: 'Metric',
         items: widget.core.metricOptions
             .map<DropdownMenuItem<MetricType>>(
-              (metric) => metric.toDropdownItem(
+              (MetricType metric) => metric.toDropdownItem(
                 text: metric.shortName,
                 icon: metric.icon,
                 iconColor:
@@ -370,7 +370,7 @@ class _HeatmapSelectorWebState extends State<HeatmapSelectorWeb> {
         hint: 'Time Frame',
         items: widget.core.timeFrameOptions
             .map<DropdownMenuItem<TimeFrame>>(
-              (timeFrame) =>
+              (TimeFrame timeFrame) =>
                   timeFrame.toSimpleDropdownItem(text: timeFrame.displayName),
             )
             .toList(),
@@ -386,7 +386,7 @@ class _HeatmapSelectorWebState extends State<HeatmapSelectorWeb> {
         hint: 'Sector',
         items: widget.core.sectorOptions
             .map<DropdownMenuItem<SectorType>>(
-              (sector) => sector.toDropdownItem(
+              (SectorType sector) => sector.toDropdownItem(
                 text: sector.shortName,
                 icon: sector.icon,
                 iconColor:
@@ -407,7 +407,7 @@ class _HeatmapSelectorWebState extends State<HeatmapSelectorWeb> {
         hint: 'Market Cap',
         items: widget.core.marketCapOptions
             .map<DropdownMenuItem<MarketCapType>>(
-              (marketCap) => marketCap.toDropdownItem(
+              (MarketCapType marketCap) => marketCap.toDropdownItem(
                 text: marketCap.shortName,
                 icon: marketCap.icon,
                 iconColor:

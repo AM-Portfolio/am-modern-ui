@@ -1,4 +1,4 @@
-import 'package:am_analysis_client/api.dart' as sdk;
+import 'package:am_analysis_sdk/api.dart' as sdk;
 import '../models/analysis_models.dart';
 import '../models/analysis_enums.dart';
 
@@ -10,7 +10,7 @@ class AnalysisMapper {
     GroupBy groupBy,
   ) {
     print('[Mapper] toAllocationItems called with groupBy=$groupBy');
-    print('[Mapper] SDK Response: sectors=${sdkResponse?.sectors?.length}, assetClasses=${sdkResponse?.assetClasses?.length}, marketCaps=${sdkResponse?.marketCaps?.length}, stocks=${sdkResponse?.stocks?.length}');
+    print('[Mapper] SDK Response: sectors=${sdkResponse?.sectors.length}, assetClasses=${sdkResponse?.assetClasses.length}, marketCaps=${sdkResponse?.marketCaps.length}, stocks=${sdkResponse?.stocks.length}');
     
     if (sdkResponse == null) {
       print('[Mapper] SDK Response is null!');

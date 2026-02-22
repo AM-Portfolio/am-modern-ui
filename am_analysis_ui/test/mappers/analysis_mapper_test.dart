@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:am_analysis_ui/mappers/analysis_mapper.dart';
 import 'package:am_analysis_ui/models/analysis_enums.dart';
-import 'package:am_analysis_client/api.dart' as sdk;
+import 'package:am_analysis_sdk/api.dart' as sdk;
 
 void main() {
   group('AnalysisMapper', () {

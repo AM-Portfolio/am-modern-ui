@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../../internal/domain/entities/trade_controller_entities.dart';
 import '../../add_trade/components/add_trade_form.dart';
@@ -174,3 +174,4 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
     );
   }
 }
+

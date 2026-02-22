@@ -1,58 +1,52 @@
 import 'package:flutter/material.dart';
 
+import 'package:am_common/am_common.dart';
+export 'package:am_common/am_common.dart' show SectorType;
 import '../inputs/app_segmented_control.dart';
 
-/// Enum for different sector categories
-enum SectorType {
-  all('All', 'All Sectors', Icons.dashboard),
-  noGroup('No Group', 'No Grouping', Icons.view_list),
-  technology('Tech', 'Technology', Icons.computer),
-  healthcare('Health', 'Healthcare', Icons.medical_services),
-  finance('Finance', 'Financial Services', Icons.account_balance),
-  energy('Energy', 'Energy & Utilities', Icons.flash_on),
-  consumer('Consumer', 'Consumer Goods', Icons.shopping_cart),
-  industrials('Industry', 'Industrials', Icons.factory),
-  materials('Materials', 'Materials & Mining', Icons.construction),
-  telecom('Telecom', 'Telecommunications', Icons.phone),
-  utilities('Utilities', 'Utilities', Icons.electrical_services),
-  realEstate('RealEst', 'Real Estate', Icons.home),
-  aerospace('Aerospace', 'Aerospace & Defense', Icons.flight);
-
-  const SectorType(this.shortName, this.displayName, this.icon);
-
-  /// Short name for compact display
-  final String shortName;
-
-  /// Full display name
-  final String displayName;
-
+/// UI Extension for SectorType to provide icons and short names
+extension SectorTypeUIExtension on SectorType {
   /// Representative icon
-  final IconData icon;
-
-  /// Get sector type from short name
-  static SectorType? fromShortName(String shortName) {
-    for (final sector in SectorType.values) {
-      if (sector.shortName == shortName) {
-        return sector;
-      }
+  IconData get icon {
+    switch (this) {
+      case SectorType.all: return Icons.dashboard;
+      case SectorType.technology: return Icons.computer;
+      case SectorType.healthcare: return Icons.medical_services;
+      case SectorType.finance: return Icons.account_balance;
+      case SectorType.consumer: return Icons.shopping_cart;
+      case SectorType.telecom: return Icons.phone;
+      case SectorType.noGroup: return Icons.view_list;
+      default: return Icons.business;
     }
-    return null;
   }
 
-  /// Common sectors for portfolio analysis
-  static List<SectorType> get portfolioSectors => [
-    SectorType.all,
-    SectorType.noGroup,
-    SectorType.technology,
-    SectorType.healthcare,
-    SectorType.finance,
-    SectorType.energy,
-    SectorType.consumer,
-  ];
-
-  /// All available sectors
-  static List<SectorType> get allSectors => SectorType.values;
+  /// Short name for compact display
+  String get shortName {
+    switch (this) {
+      case SectorType.all: return 'All';
+      case SectorType.technology: return 'Tech';
+      case SectorType.healthcare: return 'Health';
+      case SectorType.finance: return 'Finance';
+      case SectorType.consumer: return 'Consumer';
+      case SectorType.telecom: return 'Telecom';
+      case SectorType.noGroup: return 'No Group';
+      default: return name;
+    }
+  }
 }
+
+/// Common sectors for portfolio analysis
+const List<SectorType> portfolioSectors = [
+  SectorType.all,
+  SectorType.noGroup,
+  SectorType.technology,
+  SectorType.healthcare,
+  SectorType.finance,
+  SectorType.consumer,
+];
+
+/// All available sectors
+const List<SectorType> allSectors = SectorType.values;
 
 /// Widget for selecting different sectors
 class SectorSelector extends StatelessWidget {
