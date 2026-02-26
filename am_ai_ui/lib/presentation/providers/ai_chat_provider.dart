@@ -1,10 +1,25 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_auth_ui/am_auth_ui.dart';
 import '../../data/ai_chat_service.dart';
 import '../../data/ai_intent_response.dart';
 
 // ─── Service Provider ─────────────────────────────────────────────────────────
 
-final aiChatServiceProvider = Provider<AiChatService>((_) => AiChatService());
+/// Builds a [Dio] instance pre-wired with [AuthInterceptor] so that every
+/// request to the AI agent carries the `Authorization: Bearer <token>` header.
+final aiChatServiceProvider = Provider<AiChatService>((ref) {
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: AiChatService.baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 30),
+      headers: {'Content-Type': 'application/json'},
+    ),
+  );
+  dio.interceptors.add(AuthInterceptor(SecureStorageService()));
+  return AiChatService(dio);
+});
 
 // ─── Chat State ───────────────────────────────────────────────────────────────
 

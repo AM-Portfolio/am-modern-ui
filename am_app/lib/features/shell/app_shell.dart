@@ -52,7 +52,7 @@ class _AppShellState extends State<AppShell> {
           return const LoginPage();
         }
 
-        const userId = 'e1fd2918-484f-4716-ad5b-d46090891e01';
+        final userId = authState.user.id;
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return LayoutBuilder(

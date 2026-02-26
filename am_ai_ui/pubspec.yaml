@@ -14,6 +14,8 @@ dependencies:
     path: ../am_design_system
   am_common:
     path: ../am_common
+  am_auth_ui:
+    path: ../am_auth_ui
   am_dashboard_ui:
     path: ../am_dashboard_ui
   am_analysis_ui:

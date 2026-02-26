@@ -2,19 +2,20 @@ import 'package:dio/dio.dart';
 import 'ai_intent_response.dart';
 
 /// HTTP service that talks to the am-fin-agent FastAPI on port 8100.
-/// Base URL is configurable via an environment constant.
+/// Accepts a pre-configured [Dio] instance so that interceptors (e.g.
+/// [AuthInterceptor]) are applied to every outbound request.
 class AiChatService {
-  static const String _baseUrl = 'http://localhost:8100';
+  /// Base URL for the am-fin-agent FastAPI service.
+  /// Exposed as a public constant so providers can reference it without
+  /// duplicating the string.
+  static const String baseUrl = 'http://localhost:8100';
 
   final Dio _dio;
 
-  AiChatService()
-      : _dio = Dio(BaseOptions(
-          baseUrl: _baseUrl,
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 30),
-          headers: {'Content-Type': 'application/json'},
-        ));
+  /// Constructs the service with a caller-supplied [Dio] instance.
+  /// The caller is responsible for attaching any required interceptors
+  /// (e.g. [AuthInterceptor]) before passing the instance here.
+  AiChatService(this._dio);
 
   /// Send a chat message and receive an [AiIntentResponse].
   Future<AiIntentResponse> chat({
