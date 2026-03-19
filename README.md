@@ -16,6 +16,45 @@ For detailed architecture documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md
 - Chrome (for web development)
 - Docker (optional, for containerized deployment)
 
+### Monorepo Shortcuts (Poetry)
+
+Use the integrated Python CLI wrapper to manage the monorepo workspace efficiently. 
+
+#### 💡 Supported Module Aliases
+You can use short names instead of full directory paths for any command:
+- `app` -> `am_app`
+- `auth` -> `am_auth_ui`
+- `design` -> `am_design_system`
+- `trade` -> `am_trade_ui`
+- `portfolio` -> `am_portfolio_ui`
+- `market` -> `am_analysis_ui` (Market Data)
+- `user` -> `am_user_ui`
+
+---
+
+#### 1. Code Generation (`build_runner`)
+Generate files (like `.g.dart` or `.freezed.dart`) from annotations:
+```bash
+poetry run all-generate             # Runs code generation on ALL modules
+poetry run generate <alias/dir>     # e.g., poetry run generate auth
+```
+
+#### 2. Coordinate Dependencies
+```bash
+poetry run all-get                  # Runs 'flutter pub get' on ALL modules
+poetry run get <alias/dir>          # e.g., poetry run get auth
+```
+
+#### 3. Running Applications
+```bash
+poetry run app                       # Starts Main App Shell
+poetry run auth                      # Starts Auth UI
+poetry run trade                     # Starts Trade UI
+poetry run portfolio                 # Starts Portfolio UI
+```
+
+---
+
 ### Running Standalone Apps
 
 #### Market Data App
