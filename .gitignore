@@ -59,6 +59,7 @@ coverage/
 build/
 .dart_tool/
 pubspec.lock
+poetry.lock
 
 # IDE
 .vscode/
