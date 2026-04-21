@@ -25,7 +25,8 @@ dependencies:
 
   # Analysis SDK (Generated)
   am_analysis_sdk:
-    path: ../../am-core-services/services/am-analysis/am-analysis-sdk/flutter-sdk
+    path: ../am_analysis/sdk
+
 
   # State Management
   bloc: ^9.1.0
