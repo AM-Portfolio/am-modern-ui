@@ -35,14 +35,17 @@ COPY am_app/ .
 # Build the web application
 RUN flutter build web --release
 
+# Staging nginx config for runtime
+COPY am_app/nginx.conf /app/nginx.conf
+
 # ── RUNTIME STAGE ────────────────────────────────────────────────────────
 FROM nginx:alpine
 
 # Copy built web files from build stage
 COPY --from=build-env /app/am_app/build/web /usr/share/nginx/html
 
-# Copy nginx configuration
-COPY am_app/nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx configuration from build stage (context-independent)
+COPY --from=build-env /app/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port 80
 EXPOSE 80
