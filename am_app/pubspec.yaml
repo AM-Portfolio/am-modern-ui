@@ -38,7 +38,7 @@ dependencies:
   am_analysis_ui:
     path: ../am_analysis_ui
   am_market_ui:
-    path: ../../am-market/am_market_ui
+    path: ../am_market/ui
   # am_common_flutter:
   #   path: ../../am-common-flutter
 
