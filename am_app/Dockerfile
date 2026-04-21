@@ -12,6 +12,7 @@ COPY am_library/ ./am_library/
 
 # ── FEATURE MODULES ───────────────────────────────────────────────────────
 COPY am_auth_ui/ ./am_auth_ui/
+COPY am_dashboard_ui/ ./am_dashboard_ui/
 COPY am_market/ ./am_market/
 COPY am_portfolio_ui/ ./am_portfolio_ui/
 COPY am_trade_ui/ ./am_trade_ui/
