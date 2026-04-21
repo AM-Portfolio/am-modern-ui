@@ -7,3 +7,6 @@ security:
       paths:
         - path: /
           pathType: Prefix
+
+vault:
+  enabled: false

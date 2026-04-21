@@ -21,3 +21,6 @@ resources:
 
 config:
   env: "dev"
+
+vault:
+  enabled: false
