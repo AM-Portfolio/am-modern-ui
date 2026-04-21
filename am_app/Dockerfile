@@ -20,6 +20,7 @@ COPY am_user_ui/ ./am_user_ui/
 COPY am_ai_ui/ ./am_ai_ui/
 COPY am_analysis_ui/ ./am_analysis_ui/
 COPY am_analysis_core/ ./am_analysis_core/
+COPY am_analysis/ ./am_analysis/
 COPY am_diagnostic_ui/ ./am_diagnostic_ui/
 
 # ── MAIN APPLICATION ─────────────────────────────────────────────────────
