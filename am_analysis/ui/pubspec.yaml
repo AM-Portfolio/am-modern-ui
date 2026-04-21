@@ -13,7 +13,7 @@ dependencies:
 
   # Core headless state management
   am_analysis_core:
-    path: ../am_analysis_core
+    path: ../common
 
   # Design system
   am_design_system:
@@ -25,7 +25,7 @@ dependencies:
 
   # Analysis SDK (Generated)
   am_analysis_sdk:
-    path: ../am_analysis/sdk
+    path: ../sdk
 
 
   # State Management

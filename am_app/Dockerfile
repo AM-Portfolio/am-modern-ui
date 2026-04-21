@@ -18,10 +18,15 @@ COPY am_portfolio_ui/ ./am_portfolio_ui/
 COPY am_trade_ui/ ./am_trade_ui/
 COPY am_user_ui/ ./am_user_ui/
 COPY am_ai_ui/ ./am_ai_ui/
-COPY am_analysis_ui/ ./am_analysis_ui/
-COPY am_analysis_core/ ./am_analysis_core/
 COPY am_analysis/ ./am_analysis/
 COPY am_diagnostic_ui/ ./am_diagnostic_ui/
+
+# ── CODE GENERATION ──────────────────────────────────────────────────────
+# Generate code for all modules that use build_runner
+RUN for d in am_common am_market/ui am_analysis/ui am_auth_ui am_dashboard_ui am_portfolio_ui am_trade_ui am_user_ui; do \
+    echo "Generating code for $d..." && \
+    cd $d && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs && cd /app; \
+    done
 
 # ── MAIN APPLICATION ─────────────────────────────────────────────────────
 # Copy app shell pubspec first for better caching
