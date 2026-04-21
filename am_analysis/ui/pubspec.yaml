@@ -17,11 +17,11 @@ dependencies:
 
   # Design system
   am_design_system:
-    path: ../am_design_system
+    path: ../../am_design_system
 
   # AM Common Modules
   am_common:
-    path: ../am_common
+    path: ../../am_common
 
   # Analysis SDK (Generated)
   am_analysis_sdk:
