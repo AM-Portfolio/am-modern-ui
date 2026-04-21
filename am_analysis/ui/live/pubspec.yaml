@@ -12,11 +12,11 @@ dependencies:
   am_analysis_ui:
     path: ../
   am_design_system:
-    path: ../../am_design_system
+    path: ../../../am_design_system
   am_common:
-    path: ../../am_common
+    path: ../../../am_common
   am_auth_ui:
-    path: ../../am_auth_ui
+    path: ../../../am_auth_ui
 
   # State Management
   flutter_bloc: ^9.1.1
