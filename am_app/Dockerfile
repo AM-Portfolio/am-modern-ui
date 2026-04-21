@@ -23,9 +23,9 @@ COPY am_diagnostic_ui/ ./am_diagnostic_ui/
 
 # ── CODE GENERATION ──────────────────────────────────────────────────────
 # Generate code for all modules that use build_runner
-RUN for d in am_common am_market/ui am_analysis/ui am_auth_ui am_dashboard_ui am_portfolio_ui am_trade_ui am_user_ui; do \
+RUN for d in am_common am_market/ui am_analysis/ui am_auth_ui am_dashboard_ui am_portfolio_ui am_trade_ui; do \
     echo "Generating code for $d..." && \
-    cd $d && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs && cd /app; \
+    cd /app/$d && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs; \
     done
 
 # ── MAIN APPLICATION ─────────────────────────────────────────────────────

@@ -19,7 +19,7 @@ dependencies:
   am_dashboard_ui:
     path: ../am_dashboard_ui
   am_analysis_ui:
-    path: ../am_analysis_ui
+    path: ../am_analysis/ui
 
   flutter_riverpod: ^3.0.3
   dio: ^5.4.0
