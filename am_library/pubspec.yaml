@@ -18,9 +18,9 @@ dependencies:
   stomp_dart_client: ^1.0.0
   rxdart: ^0.27.7
 
-  # SDKs (Internal)
+  # Analysis SDK (Generated)
   am_analysis_sdk:
-    path: ../../am-core-services/services/am-analysis/am-analysis-sdk/flutter-sdk
+    path: ../am_analysis/sdk
 
   # Utils & DI
   get_it: ^9.1.1
