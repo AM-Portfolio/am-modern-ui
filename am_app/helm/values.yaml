@@ -1,0 +1,23 @@
+replicaCount: 1
+port: 80
+language: flutter
+
+image:
+  repository: am-modern-ui
+  pullPolicy: Always
+  tag: "latest"
+
+ingress:
+  enabled: true
+  className: "nginx"
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+config:
+  env: "dev"

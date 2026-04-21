@@ -1,0 +1,9 @@
+config:
+  env: "preprod"
+
+security:
+  hosts:
+    - host: modern-ui.preprod.local
+      paths:
+        - path: /
+          pathType: Prefix

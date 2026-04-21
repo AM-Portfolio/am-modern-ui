@@ -21,6 +21,7 @@ jobs:
     with:
       language: 'flutter'
       working_directory: 'am_app'
+      build_context: '..'
       image_name: 'am-modern-ui'
       preprod_namespace: 'am-apps-preprod'
       prod_namespace: 'am-apps-prod'
