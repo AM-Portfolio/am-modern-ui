@@ -19,7 +19,7 @@ class ApiClient {
       _client = client ?? http.Client();
 
   /// Default base URL for API requests
-  static const String _defaultBaseUrl = 'http://localhost:8080';
+  static const String _defaultBaseUrl = 'https://am.munish.org';
 
   /// Base URL for API requests
   final String baseUrl;

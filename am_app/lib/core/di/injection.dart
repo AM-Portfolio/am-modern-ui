@@ -12,8 +12,8 @@ final getIt = GetIt.instance;
 Future<void> configureDependencies() async {
   // 1. Initialize Technical Infrastructure (One Source of Truth)
   ServiceRegistry.initialize(
-    analysisBaseUrl: 'http://localhost:8060', // Standard Analysis Port
-    wsUrl: 'ws://localhost:8091/ws-gateway-raw',
+    analysisBaseUrl: 'https://am.munish.org/analysis', // Standard Analysis Port
+    wsUrl: 'wss://am.munish.org/ws-gateway-raw',
   );
 
   // Register Theme Repository (required by ThemeCubit)

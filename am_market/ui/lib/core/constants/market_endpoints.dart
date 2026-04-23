@@ -1,7 +1,7 @@
 /// Market Module API endpoint constants
 class MarketEndpoints {
   // Base URL
-  static const String baseUrl = "http://localhost:8092"; //'https://am.munish.org/api/market';
+  static const String baseUrl = 'https://am.munish.org/market';
   
   // Indices
   static const String availableIndices = '/v1/indices/available';
