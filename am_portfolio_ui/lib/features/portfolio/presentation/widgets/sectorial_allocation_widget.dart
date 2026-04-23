@@ -1,7 +1,7 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Widget displaying sectorial allocation of the portfolio
 /// Shows distribution of investments across different sectors using bars
@@ -226,3 +226,4 @@ class SectorialAllocationWidget extends StatelessWidget {
     }
   }
 }
+

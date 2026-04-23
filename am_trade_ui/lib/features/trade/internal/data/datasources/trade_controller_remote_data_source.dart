@@ -3,8 +3,8 @@ import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_trade_ui/core/constants/trade_endpoints.dart';
 
-import 'package:am_common/core/network/api_client.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_library/am_library.dart';
+import 'package:am_common/am_common.dart';
 import '../dtos/metrics_filter_config_dto.dart';
 import '../dtos/trade_controller_dtos.dart';
 
@@ -418,3 +418,4 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
     }
   }
 }
+

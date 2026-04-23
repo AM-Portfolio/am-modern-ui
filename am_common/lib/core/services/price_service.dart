@@ -4,7 +4,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/core/models/price_update_model.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_common/core/network/websocket/am_websocket_client.dart';
 import 'package:http/http.dart' as http;
 
@@ -141,3 +141,4 @@ class PriceService {
     _updatesSubject.close();
   }
 }
+

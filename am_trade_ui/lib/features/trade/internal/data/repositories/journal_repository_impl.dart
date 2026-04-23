@@ -1,4 +1,4 @@
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../domain/entities/journal_entry.dart';
 import '../../domain/repositories/journal_repository.dart';
 import '../datasources/journal_remote_data_source.dart';
@@ -226,3 +226,4 @@ class JournalRepositoryImpl implements JournalRepository {
     }
   }
 }
+

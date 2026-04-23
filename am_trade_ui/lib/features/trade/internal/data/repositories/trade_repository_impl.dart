@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../domain/entities/favorite_filter.dart';
 import '../../domain/entities/trade_calendar.dart';
 import '../../domain/entities/trade_holding.dart';
@@ -454,3 +454,4 @@ class TradeRepositoryImpl implements TradeRepository {
     AppLogger.info('TradeRepository disposed', tag: 'TradeRepository');
   }
 }
+

@@ -1,5 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../dtos/portfolio_holdings_dto.dart';
 import '../dtos/portfolio_summary_dto.dart';
 import '../dtos/portfolio_list_dto.dart';
@@ -67,3 +67,4 @@ class PortfolioMapper {
 
   // Note: Error parsing is now handled by ApiClient's built-in exception system
 }
+

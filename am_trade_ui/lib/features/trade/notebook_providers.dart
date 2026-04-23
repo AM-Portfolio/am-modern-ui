@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
 
-import 'package:am_common/core/network/api_client.dart';
+import 'package:am_library/am_library.dart';
 import 'internal/data/datasources/notebook_remote_datasource.dart';
 import 'internal/data/repositories/notebook_repository_impl.dart';
 import 'internal/domain/repositories/notebook_repository.dart';

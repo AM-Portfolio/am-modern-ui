@@ -1,4 +1,4 @@
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../internal/domain/entities/trade_controller_entities.dart';
 import '../models/calendar_view_models.dart';
 
@@ -315,3 +315,4 @@ class CalendarAggregationService {
   String _formatDateKey(int year, int month, int day) =>
       '${year.toString().padLeft(4, '0')}-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
 }
+

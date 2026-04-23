@@ -3,6 +3,9 @@ library am_auth_ui;
 // Core Services (Specific to Auth)
 export 'core/services/secure_storage_service.dart';
 
+// Core Network
+export 'core/network/auth_interceptor.dart';
+
 // Authentication Feature
 // Data layer
 export 'features/authentication/data/datasources/auth_data_source.dart';

@@ -1,7 +1,7 @@
 import 'package:am_design_system/am_design_system.dart';
 import '../dtos/portfolio_summary_dto.dart';
 import '../../domain/entities/portfolio_summary.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Mapper to convert between API models and domain entities for portfolio summary
 /// This provides isolation between external API structure and internal business logic
@@ -180,3 +180,4 @@ class PortfolioSummaryMapper {
       apiModel.totalValue >= 0 &&
       apiModel.investmentValue >= 0;
 }
+

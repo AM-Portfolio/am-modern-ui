@@ -1,8 +1,8 @@
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_common/core/network/api_client.dart';
+import 'package:am_library/am_library.dart';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../dtos/gmail_status_dto.dart';
 import '../dtos/gmail_sync_response_dto.dart';
 
@@ -133,3 +133,4 @@ class GmailRemoteDataSourceImpl implements GmailRemoteDataSource {
     }
   }
 }
+

@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "am-modern-ui"
+version = "0.1.0"
+description = "AM Modern UI Workspace"
+authors = ["AM Portfolio"]
+packages = [{include = "scripts"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.scripts]
+# Generic scripts taking [package_name] as argument
+run = "scripts.run_local:run_package"
+build = "scripts.run_local:build_package"
+clean = "scripts.run_local:clean_package"
+get = "scripts.run_local:get_package"
+generate = "scripts.run_local:generate_package"
+
+# Short aliases for popular apps
+app = "scripts.run_local:run_app"
+auth = "scripts.run_local:run_auth"
+design = "scripts.run_local:run_design"
+trade = "scripts.run_local:run_trade"
+portfolio = "scripts.run_local:run_portfolio"
+market = "scripts.run_local:run_market"
+ai = "scripts.run_local:run_ai"
+all-get = "scripts.run_local:all_pub_get"
+all-generate = "scripts.run_local:all_build_runner"

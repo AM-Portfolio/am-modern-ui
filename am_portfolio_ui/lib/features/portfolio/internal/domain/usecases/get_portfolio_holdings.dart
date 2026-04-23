@@ -1,7 +1,7 @@
 import 'package:am_design_system/am_design_system.dart';
 import '../entities/portfolio_holding.dart';
 import '../repositories/portfolio_repository.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Use case for getting portfolio holdings
 class GetPortfolioHoldings {
@@ -94,3 +94,4 @@ class GetPortfolioHoldings {
     return _repository.watchPortfolioHoldings(userId);
   }
 }
+

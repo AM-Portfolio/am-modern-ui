@@ -8,7 +8,7 @@ import '../internal/domain/usecases/get_trade_performance_summary_usecase.dart';
 import '../internal/domain/usecases/get_daily_performance_usecase.dart';
 import '../internal/domain/usecases/get_timing_analysis_usecase.dart';
 import '../presentation/report/cubit/trade_report_cubit.dart';
-import 'package:am_common/core/network/api_client.dart';
+import 'package:am_library/am_library.dart';
 
 import 'package:am_common/core/di/network_providers.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:am_common/core/network/websocket/am_websocket_client.dart';
+import 'am_websocket_client.dart';
 import 'dart:async';
 
 // States

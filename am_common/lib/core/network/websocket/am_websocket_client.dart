@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 enum SocketStatus {
   disconnected,
@@ -129,3 +129,4 @@ class AMWebSocketClient {
     _statusSubject.close();
   }
 }
+

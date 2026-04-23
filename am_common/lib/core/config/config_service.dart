@@ -1,5 +1,5 @@
 import 'package:am_common/core/config/app_config.dart';
-import 'package:am_common/core/config/environment.dart';
+import 'package:am_library/am_library.dart';
 
 /// Minimal stub ConfigService for getting app running
 /// TODO: Replace with full implementation later
@@ -79,6 +79,9 @@ class ConfigService {
           wsUrl: 'ws://localhost:8092/ws/market-data-stream',
           baseUrl: 'http://localhost:8092',
           connectEndpoint: '/v1/market-data/stream/connect',
+        ),
+        analysis: AnalysisApiConfig(
+          baseUrl: 'http://localhost:8090',
         ),
       ),
       environment: Environment.development,

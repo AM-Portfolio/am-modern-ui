@@ -52,39 +52,25 @@ export 'features/attachment/internal/presentation/widgets/attachment_picker/atta
 export 'features/attachment/internal/presentation/widgets/attachment_picker/shared/attachment_preview_grid.dart';
 export 'features/attachment/internal/presentation/models/pending_attachment.dart';
 
-// Config
+// Navigation Widgets
+export 'features/navigation/widgets/vertical_scroll_navigator.dart';
+
+// ============================================================================
+// CORE TECHNICAL INFRASTRUCTURE (From am_library)
+// ============================================================================
+export 'package:am_library/am_library.dart';
+
+// Remaining local core components
 export 'core/config/app_config.dart';
 export 'core/config/config_service.dart';
-export 'core/config/environment.dart';
 export 'core/config/upload_config.dart';
-
-// DI / Providers
-export 'core/di/network_providers.dart';
 export 'core/config/user_currency_config.dart';
-
-// Utils
-export 'core/utils/logger.dart';
-export 'core/constants/constants.dart';
-
-// Providers
-export 'features/attachment/attachment_providers.dart';
-
-// ============================================================================
-// CORE UTILITIES
-// ============================================================================
-// Utils
-export 'core/utils/date_utils.dart';
-export 'core/utils/string_utils.dart';
-export 'core/utils/validators.dart';
-export 'core/utils/filter_sort_utils.dart';
-export 'core/services/secure_storage_service.dart';
-// Network
-export 'core/network/api_client.dart';
-export 'core/network/websocket/am_websocket_client.dart';
-export 'core/network/websocket/am_stomp_client.dart';
-export 'core/network/websocket/websocket_cubit.dart';
-export 'core/errors/api_exception.dart';
 export 'core/di/network_providers.dart';
+export 'core/constants/constants.dart';
+export 'core/services/price_service.dart';
+export 'core/models/price_update_model.dart';
+export 'core/network/websocket/am_websocket_client.dart';
+export 'core/network/websocket/websocket_cubit.dart';
 
 // ============================================================================
 // SHARED

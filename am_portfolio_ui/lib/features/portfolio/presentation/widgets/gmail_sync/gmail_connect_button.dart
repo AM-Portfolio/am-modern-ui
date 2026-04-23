@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart' as launcher;
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../../providers/gmail_sync_providers.dart';
 import 'gmail_sync_modal.dart';
 
@@ -95,3 +95,4 @@ class GmailConnectButton extends ConsumerWidget {
     );
   }
 }
+

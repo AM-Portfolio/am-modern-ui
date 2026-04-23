@@ -6,7 +6,7 @@ import '../dtos/portfolio_holdings_dto.dart';
 import '../dtos/portfolio_analytics_response_dto.dart';
 import '../mappers/portfolio_mapper.dart';
 import '../mappers/portfolio_analytics_mapper.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Helper class to load mock data from JSON assets
 class PortfolioMockDataHelper {
@@ -84,3 +84,4 @@ class PortfolioMockDataHelper {
     _cachedAnalytics = null;
   }
 }
+

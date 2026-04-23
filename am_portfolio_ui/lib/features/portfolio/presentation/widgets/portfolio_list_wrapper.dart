@@ -6,7 +6,7 @@ import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../../providers/portfolio_providers.dart';
 import '../../internal/domain/entities/portfolio_list.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../mobile/portfolio_mobile_screen.dart';
 import '../web/portfolio_web_screen.dart';
 import 'gmail_sync/gmail_connect_button.dart';
@@ -266,3 +266,4 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     context.read<PortfolioCubit>().loadPortfoliosList(widget.userId);
   }
 }
+

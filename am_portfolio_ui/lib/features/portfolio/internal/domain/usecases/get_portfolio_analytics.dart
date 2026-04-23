@@ -2,7 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import '../entities/portfolio_analytics.dart';
 import '../entities/portfolio_analytics_request.dart';
 import '../repositories/portfolio_analytics_repository.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Use case for getting portfolio analytics
 class GetPortfolioAnalytics {
@@ -274,3 +274,4 @@ class GetPortfolioAnalytics {
     CommonLogger.info('Request validation passed', tag: 'GetPortfolioAnalytics');
   }
 }
+

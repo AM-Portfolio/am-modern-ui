@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import '../../../internal/domain/entities/trade_controller_entities.dart';
@@ -454,3 +454,4 @@ class _AddTradeFormState extends State<AddTradeForm> {
     ),
   );
 }
+

@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
+import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard;
+
+// ── DISABLED MODULES (re-enable one at a time as each module is fixed) ─────
 import 'package:am_portfolio_ui/am_portfolio_ui.dart';
-
+import 'package:am_trade_ui/am_trade_ui.dart';
 import 'package:am_market_ui/am_market_ui.dart';
+import 'package:am_ai_ui/am_ai_ui.dart';
+import 'package:am_diagnostic_ui/am_diagnostic_ui.dart';
 import 'package:am_user_ui/am_user_ui.dart';
-
-import '../dashboard/dashboard_page.dart';
+import 'package:am_analysis_ui/am_analysis_ui.dart';
 
 /// Main application shell with navigation
 class AppShell extends StatefulWidget {
@@ -21,17 +25,23 @@ class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0; // Default to Dashboard
 
   // Mapping string titles to indices
-  final Map<String, int> _navMap = {
+  final Map<String, int> _navMap = const {
     'Dashboard': 0,
     'Portfolio': 1,
-
+    'Trade': 2,
     'Market': 3,
-    'Profile': 4,
+    'AI Chat': 4,
+    'Lab': 5,
+    'Analysis': 6,
+    'Profile': 7,
   };
 
   String get _activeNavItem {
-    if (_selectedIndex == 4) return ''; // Profile is separate
-    return _navMap.entries.firstWhere((e) => e.value == _selectedIndex, orElse: () => const MapEntry('Dashboard', 0)).key;
+    if (_selectedIndex == 7) return ''; // Profile is separate
+    return _navMap.entries
+        .firstWhere((e) => e.value == _selectedIndex,
+            orElse: () => const MapEntry('Dashboard', 0))
+        .key;
   }
 
   @override
@@ -42,22 +52,16 @@ class _AppShellState extends State<AppShell> {
           return const LoginPage();
         }
 
-        final userId = 'e1fd2918-484f-4716-ad5b-d46090891e01'; 
+        final userId = authState.user.id;
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            // Responsive breakpoint (Standardized to 1100px for Tablet support)
             final isDesktop = constraints.maxWidth > 1100;
-
-            // Determine if we should show global nav on mobile
-            // Show only if in Dashboard (0) or Profile (4).
-            // Modules (1, 2, 3) will provide their own bottom bar.
-            final showMobileGlobalBar = !isDesktop && (_selectedIndex == 0 || _selectedIndex == 4);
+            final showMobileGlobalBar =
+                !isDesktop && (_selectedIndex == 0 || _selectedIndex == 5);
 
             return Scaffold(
-              // Desktop: Row Layout (Sidebar + Body)
-              // Mobile: Body takes full space (Bottom Bar handled via bottomNavigationBar)
               body: Row(
                 children: [
                   if (isDesktop)
@@ -68,27 +72,42 @@ class _AppShellState extends State<AppShell> {
                       userEmail: authState.user.email,
                       userAvatarUrl: authState.user.photoUrl,
                       onThemeToggle: () {
-                         try {
-                           context.read<ThemeCubit>().toggleTheme(); 
-                         } catch (e) {
-                           debugPrint('Theme toggle error: \$e');
-                         }
-                      }, 
+                        try {
+                          context.read<ThemeCubit>().toggleTheme();
+                        } catch (e) {
+                          debugPrint('Theme toggle error: $e');
+                        }
+                      },
                       onLogout: () => context.read<AuthCubit>().logout(),
-                      onProfileTap: () => setState(() => _selectedIndex = 4),
+                      onProfileTap: () =>
+                          setState(() => _selectedIndex = 7),
                       onNavigate: (title) {
                         if (_navMap.containsKey(title)) {
                           setState(() => _selectedIndex = _navMap[title]!);
                         }
                       },
-                      items: [
-                         SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
-                         SidebarItem(title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
-
-                         SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
+                      items: const [
+                        SidebarItem(
+                            title: 'Dashboard',
+                            icon: Icons.dashboard_rounded),
+                        SidebarItem(
+                            title: 'Portfolio',
+                            icon: Icons.account_balance_wallet_rounded),
+                        SidebarItem(
+                            title: 'Trade',
+                            icon: Icons.swap_horiz_rounded),
+                        SidebarItem(
+                            title: 'Market',
+                            icon: Icons.show_chart_rounded),
+                        SidebarItem(
+                            title: 'AI Chat',
+                            icon: Icons.auto_awesome_rounded),
+                        SidebarItem(
+                            title: 'Lab', icon: Icons.science_rounded),
+                        SidebarItem(
+                            title: 'Analysis', icon: Icons.analytics_outlined),
                       ],
                     ),
-                  
                   Expanded(
                     child: _buildPage(userId, isDesktop),
                   ),
@@ -99,20 +118,36 @@ class _AppShellState extends State<AppShell> {
                       activeNavItem: _activeNavItem,
                       isDarkMode: isDark,
                       userName: authState.user.displayName,
-                      onProfileTap: () => setState(() => _selectedIndex = 4),
+                      onProfileTap: () =>
+                          setState(() => _selectedIndex = 7),
                       onNavigate: (title) {
                         if (_navMap.containsKey(title)) {
                           setState(() => _selectedIndex = _navMap[title]!);
                         }
                       },
-                      items: [
-                         SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
-                         SidebarItem(title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
-
-                         SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
+                      items: const [
+                        SidebarItem(
+                            title: 'Dashboard',
+                            icon: Icons.dashboard_rounded),
+                        SidebarItem(
+                            title: 'Portfolio',
+                            icon: Icons.account_balance_wallet_rounded),
+                        SidebarItem(
+                            title: 'Trade',
+                            icon: Icons.swap_horiz_rounded),
+                        SidebarItem(
+                            title: 'Market',
+                            icon: Icons.show_chart_rounded),
+                        SidebarItem(
+                            title: 'AI Chat',
+                            icon: Icons.auto_awesome_rounded),
+                        SidebarItem(
+                            title: 'Lab', icon: Icons.science_rounded),
+                        SidebarItem(
+                            title: 'Analysis', icon: Icons.analytics_outlined),
                       ],
                     )
-                  : null, // Hide global bar when inside a module on mobile
+                  : null,
             );
           },
         );
@@ -121,27 +156,34 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildPage(String userId, bool isDesktop) {
-    // Callback to return to Dashboard (Global Nav) on mobile
-    final onBackToGlobal = () => setState(() => _selectedIndex = 0);
 
     switch (_selectedIndex) {
       case 0:
-        return DashboardPage(userId: userId);
-      case 1:
-        return PortfolioScreen(
-          userId: userId,
-          onBack: onBackToGlobal,
-        );
+        return dashboard.DashboardPage(userId: userId);
 
+      // ── DISABLED (uncomment when module is fixed) ──────────────────────
+      case 1:
+        return PortfolioScreen(userId: userId);
+      case 2:
+        return TradeWebScreen(userId: userId);
       case 3:
-        return MarketPage(
-          userId: userId,
-          onBack: onBackToGlobal,
-        ); // MarketPage wraps MarketWebScreen?
+        return MarketPage(userId: userId);
       case 4:
+        return AiChatScreen(userId: userId);
+      case 5:
+        return const DiagnosticDashboardPage();
+      case 6:
+        return AnalysisDashboard(
+          entityType: AnalysisEntityType.PORTFOLIO,
+          entityId: userId,
+          analysisService: RealAnalysisService(),
+        );
+      case 7:
         return ProfileSettingsPage(userId: userId);
+      // ──────────────────────────────────────────────────────────────────
+
       default:
-        return DashboardPage(userId: userId);
+        return dashboard.DashboardPage(userId: userId);
     }
   }
 }

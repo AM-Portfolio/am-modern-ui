@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../../internal/domain/entities/journal_template.dart';
 import '../../../internal/domain/enums/journal_template_category.dart';
 import '../../../internal/domain/usecases/create_template_usecase.dart';
@@ -262,3 +262,4 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
     }
   }
 }
+

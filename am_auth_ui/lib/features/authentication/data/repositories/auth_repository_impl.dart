@@ -1,5 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 import 'package:dartz/dartz.dart';
 
@@ -7,7 +7,7 @@ import 'package:am_design_system/core/config/feature_flags.dart';
 import 'package:am_design_system/core/errors/exceptions.dart';
 import 'package:am_design_system/core/errors/failures.dart';
 import 'package:am_auth_ui/core/services/secure_storage_service.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../domain/entities/auth_result_entity.dart';
 import '../../domain/entities/auth_tokens_entity.dart';
 import '../../domain/entities/user_entity.dart';
@@ -377,3 +377,4 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 }
+

@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../internal/domain/entities/metrics/metrics_filter_request.dart';
 import '../../providers/trade_internal_providers.dart';
 import '../../providers/trade_report_providers.dart';
@@ -16,8 +16,8 @@ import '../models/trade_portfolio_view_model.dart';
 import '../trades/pages/trade_list_web_page.dart';
 import '../metrics/trade_metrics_page.dart';
 import '../report/pages/trade_report_page.dart';
-import 'package:am_market_ui/features/market/presentation/widgets/trading_view_chart_widget.dart';
-import 'package:am_market_ui/features/market/providers/market_analysis_providers.dart';
+import 'package:am_market_ui/shared/widgets/trading_view_chart_widget.dart';
+import 'package:am_market_ui/am_market_ui.dart';
 import '../pages/trade_market_page.dart';
 import '../pages/trade_unified_view_page.dart';
 
@@ -361,3 +361,4 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     );
   }
 }
+

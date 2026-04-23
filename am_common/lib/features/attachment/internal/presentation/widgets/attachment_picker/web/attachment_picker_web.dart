@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:am_common/core/config/upload_config.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_common/features/attachment/attachment_providers.dart';
 import 'package:am_common/features/attachment/internal/services/file_upload_service.dart';
 import 'package:am_common/features/attachment/internal/presentation/models/pending_attachment.dart';
@@ -615,3 +615,4 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
     );
   }
 }
+

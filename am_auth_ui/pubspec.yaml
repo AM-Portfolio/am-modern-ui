@@ -14,6 +14,8 @@ dependencies:
     path: ../am_design_system
   am_common:
     path: ../am_common
+  am_library:
+    path: ../am_library
   js: ^0.6.7
 
   # State Management

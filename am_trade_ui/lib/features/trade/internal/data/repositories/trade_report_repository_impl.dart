@@ -1,4 +1,4 @@
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../domain/entities/metrics/metrics_filter_request.dart';
 import '../../domain/entities/report/daily_performance.dart';
 import '../../domain/entities/report/timing_analysis.dart';
@@ -42,3 +42,4 @@ class TradeReportRepositoryImpl implements TradeReportRepository {
     return TradeReportMapper.toTimingAnalysis(responseDto);
   }
 }
+

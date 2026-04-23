@@ -22,27 +22,9 @@ class PortfolioHoldingsWebPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-           if (portfolioName != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Text(
-                '$portfolioName Holdings',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-            ),
-          Expanded(
-            child: PortfolioHoldingsWidget(
-              userId: userId,
-              portfolioId: portfolioId,
-            ),
-          ),
-        ],
-      ),
+    return PortfolioHoldingsWidget(
+      userId: userId,
+      portfolioId: portfolioId,
     );
   }
 }

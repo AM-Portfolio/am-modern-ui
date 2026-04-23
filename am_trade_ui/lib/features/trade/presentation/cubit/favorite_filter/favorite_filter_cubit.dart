@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../../internal/domain/entities/favorite_filter.dart';
 import '../../../internal/domain/entities/metrics_filter_config.dart';
 import '../../../internal/domain/usecases/create_favorite_filter_usecase.dart';
@@ -128,3 +128,4 @@ class FavoriteFilterCubit extends Cubit<FavoriteFilterState> {
     );
   }
 }
+

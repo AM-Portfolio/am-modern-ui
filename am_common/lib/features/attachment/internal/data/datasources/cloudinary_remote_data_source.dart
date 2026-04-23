@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:http/http.dart' as http;
 
-import '../../../../../../core/utils/logger.dart';
+import 'package:am_library/am_library.dart';
 import '../dtos/cloudinary_dto.dart';
 
 /// Remote data source for Cloudinary operations via backend API

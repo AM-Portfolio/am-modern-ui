@@ -1,6 +1,6 @@
 import '../entities/trade_summary.dart';
 import '../repositories/trade_repository.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Use case for getting trade summary
 class GetTradeSummary {
@@ -81,3 +81,4 @@ class GetTradeSummary {
     return _repository.watchTradeSummary(userId, portfolioId);
   }
 }
+

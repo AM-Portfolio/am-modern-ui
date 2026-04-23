@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../package:am_design_system/am_design_system.dart';
 import '../../../providers/portfolio_providers.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Web-optimized card widget to display portfolio holdings
 /// Features advanced sorting, pagination, and responsive design for web platforms
@@ -542,3 +542,4 @@ class _PortfolioHoldingsWebCardState
     ];
   }
 }
+

@@ -1,7 +1,8 @@
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import 'package:dio/dio.dart';
 import 'package:am_auth_ui/core/constants/auth_endpoints.dart';
 import 'package:am_design_system/core/constants/auth_constants.dart';
+import 'package:am_design_system/core/errors/exceptions.dart';
 import 'package:am_design_system/core/errors/exceptions.dart';
 import '../models/auth_result_model.dart';
 import '../models/auth_tokens_model.dart';
@@ -337,3 +338,4 @@ class AuthRemoteDataSource implements AuthDataSource {
     }
   }
 }
+

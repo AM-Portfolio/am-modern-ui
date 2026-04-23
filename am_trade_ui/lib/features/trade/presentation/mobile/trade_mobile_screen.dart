@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../../providers/trade_controller_providers.dart';
 import '../../providers/trade_internal_providers.dart';
 import '../components/templates/trade_portfolio_discovery_template.dart';
@@ -369,3 +369,4 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
     return null;
   }
 }
+

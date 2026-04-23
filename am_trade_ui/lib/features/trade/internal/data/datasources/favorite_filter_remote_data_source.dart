@@ -1,7 +1,7 @@
-import 'package:am_common/core/network/api_client.dart';
+import 'package:am_library/am_library.dart';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../dtos/favorite_filter_dto.dart';
 
 /// Abstract data source for favorite filter operations
@@ -286,3 +286,4 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
     }
   }
 }
+

@@ -1,4 +1,4 @@
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 import '../entities/trade_controller_entities.dart';
 import '../repositories/trade_controller_repository.dart';
 
@@ -51,3 +51,4 @@ class UpdateTrade {
     }
   }
 }
+

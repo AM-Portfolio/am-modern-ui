@@ -5,7 +5,7 @@ import '../domain/entities/portfolio_list.dart';
 import '../domain/usecases/get_portfolio_holdings.dart';
 import '../domain/usecases/get_portfolio_summary.dart';
 import '../domain/usecases/get_portfolios_list.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// Portfolio orchestration service for core workflows.
 ///
@@ -255,3 +255,4 @@ class PortfolioService {
     }
   }
 }
+

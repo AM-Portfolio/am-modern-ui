@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../shared/core/filters/filter_models.dart';
 import 'portfolio_filter_provider.dart';
-import 'package:am_common/core/utils/logger.dart';
+import 'package:am_common/am_common.dart';
 
 /// State for portfolio filter functionality
 abstract class PortfolioFilterState extends Equatable {
@@ -269,3 +269,4 @@ class PortfolioFilterCubit extends Cubit<PortfolioFilterState> {
     }
   }
 }
+
