@@ -5,13 +5,13 @@ class AuthEndpoints {
   static const String userBaseUrl = 'https://am.munish.org/users';
   
   // Authentication endpoints
-  static const String login = '$userBaseUrl/api/v1/auth/login'; // Standard Login (via User Mgmt)
+  static const String login = '$userBaseUrl/account/v1/auth/login'; // Standard Login (via User Mgmt)
   static const String logout = '$authBaseUrl/logout';
   static const String refreshToken = '$authBaseUrl/refresh';
   static const String googleLogin = '$authBaseUrl/auth/google/token';
   
   // User Management endpoints
-  static const String register = '$userBaseUrl/api/v1/auth/register';
+  static const String register = '$userBaseUrl/account/v1/auth/register';
   static const String forgotPassword = '$userBaseUrl/forgot-password';
   static const String resetPassword = '$userBaseUrl/reset-password';
   static const String userProfile = '$userBaseUrl/profile';

@@ -38,7 +38,7 @@ class AppConstants {
       '/v1/portfolios/transactions';
 
   /// Trade API Defaults
-  static const String defaultTradeBaseUrl = 'https://api.munish.org/am/trade';
+  static const String defaultTradeBaseUrl = 'https://am.munish.org/trades';
   static const String defaultTradePortfolioListResource =
       '/v1/portfolio-summary/by-owner';
   static const String defaultTradePortfolioSummaryResource =
