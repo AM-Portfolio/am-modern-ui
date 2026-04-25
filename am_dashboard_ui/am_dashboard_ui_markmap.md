@@ -41,6 +41,3 @@
 - **Analysis API Config**: Depends on `analysisApiClientProvider`. If `ConfigService` has `localhost`, dashboard fails.
 - **WebSocket Lifecycle**: Assumes `AmStompClient` is already connected globally (usually handled in Portfolio wrapper). If disconnected, the stream stalls.
 - **Empty Body Exception**: If the backend sends an empty STOMP frame to the dashboard topic, the parser throws a synchronous exception, potentially breaking the stream.
-
-
-test
