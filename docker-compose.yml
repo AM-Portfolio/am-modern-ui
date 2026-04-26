@@ -14,8 +14,8 @@ services:
       - "9000:80"
     environment:
       - NODE_ENV=production
-      - API_BASE_URL=${API_BASE_URL:-https://am.munish.org/api}
-      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.munish.org/api/auth}
+      - API_BASE_URL=${API_BASE_URL:-https://am.asrax.in/api}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.asrax.in/api/auth}
     networks:
       - am-infra_am-net
     restart: unless-stopped
@@ -35,8 +35,8 @@ services:
     ports:
       - "9002:80"
     environment:
-      - API_BASE_URL=${MARKET_API_URL:-https://am.munish.org/api/market}
-      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.munish.org/api/auth}
+      - API_BASE_URL=${MARKET_API_URL:-https://am.asrax.in/api/market}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.asrax.in/api/auth}
     networks:
       - am-infra_am-net
     restart: unless-stopped
@@ -52,8 +52,8 @@ services:
     ports:
       - "9005:80"
     environment:
-      - API_BASE_URL=${PORTFOLIO_API_URL:-https://am.munish.org/api/portfolio}
-      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.munish.org/api/auth}
+      - API_BASE_URL=${PORTFOLIO_API_URL:-https://am.asrax.in/api/portfolio}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.asrax.in/api/auth}
     networks:
       - am-infra_am-net
     restart: unless-stopped
@@ -69,8 +69,8 @@ services:
     ports:
       - "9006:80"
     environment:
-      - API_BASE_URL=${TRADE_API_URL:-https://am.munish.org/api/trade}
-      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.munish.org/api/auth}
+      - API_BASE_URL=${TRADE_API_URL:-https://am.asrax.in/api/trade}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.asrax.in/api/auth}
     networks:
       - am-infra_am-net
     restart: unless-stopped

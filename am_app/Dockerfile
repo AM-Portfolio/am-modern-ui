@@ -54,8 +54,13 @@ COPY --from=build-env /app/am_app/build/web /usr/share/nginx/html
 # Copy nginx configuration from build stage (context-independent)
 COPY --from=build-env /app/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80
-EXPOSE 80
+# Support non-root execution (satisfies runAsNonRoot: true)
+# Ensure nginx can write to cache, pid and run directories as UID 1000
+RUN touch /var/run/nginx.pid && \
+    chown -R 1000:1000 /var/run/nginx.pid /var/cache/nginx /var/log/nginx /usr/share/nginx/html
+
+# Expose port 8080
+EXPOSE 8080
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

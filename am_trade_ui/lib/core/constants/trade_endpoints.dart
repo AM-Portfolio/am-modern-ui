@@ -1,7 +1,7 @@
 /// Trade Module API endpoint constants
 class TradeEndpoints {
   // Base URLs
-  static const String tradeBaseUrl = 'https://am.munish.org/trades';
+  static const String tradeBaseUrl = 'https://am.asrax.in/trades';
   
   // Trade Details
   static const String details = '/v1/trades/details';

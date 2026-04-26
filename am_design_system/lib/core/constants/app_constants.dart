@@ -38,7 +38,7 @@ class AppConstants {
       '/v1/portfolios/transactions';
 
   /// Trade API Defaults
-  static const String defaultTradeBaseUrl = 'https://api.munish.org/am/trade';
+  static const String defaultTradeBaseUrl = 'https://am.asrax.in/trades';
   static const String defaultTradePortfolioListResource =
       '/v1/portfolio-summary/by-owner';
   static const String defaultTradePortfolioSummaryResource =
@@ -69,7 +69,7 @@ class AppConstants {
   static const bool defaultDocumentEnabled = true;
 
   /// Auth API Defaults
-  static const String defaultAuthBaseUrl = 'https://am.munish.org/auth/token/v1';
+  static const String defaultAuthBaseUrl = 'https://am.asrax.in/auth/token/v1';
   // Endpoints are relative to Auth Base URL
   static const String defaultAuthLoginEndpoint = '/tokens';
   static const String defaultAuthRefreshTokenEndpoint = '/refresh';
@@ -78,7 +78,7 @@ class AppConstants {
   static const bool defaultAuthEnabled = true;
 
   /// User API Defaults
-  static const String defaultUserBaseUrl = 'https://am.munish.org/users/account/v1';
+  static const String defaultUserBaseUrl = 'https://am.asrax.in/users/account/v1';
   static const String defaultUserRegisterEndpoint = '/register';
   static const String defaultUserForgotPasswordEndpoint = '/forgot-password';
   static const String defaultUserResetPasswordEndpoint = '/reset-password';
