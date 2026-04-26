@@ -47,13 +47,13 @@ class ConfigService {
           enabled: true,
         ),
         portfolio: PortfolioApiConfig(
-          baseUrl: 'https://am.munish.org/api/portfolio',
+          baseUrl: 'https://am.asrax.in/api/portfolio',
           holdingsResource: '/v1/portfolios/holdings',
           summaryResource: '/v1/portfolios/summary',
           transactionsResource: '/v1/portfolios/transactions',
         ),
         trade: TradeApiConfig(
-          baseUrl: 'https://am.munish.org/api/trade',
+          baseUrl: 'https://am.asrax.in/api/trade',
           portfolioListResource: '/v1/portfolio-summary/by-owner',
           portfolioSummaryResource: '/v1/portfolio-summary',
           holdingsResource: '/v1/trades/details/portfolio',

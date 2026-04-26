@@ -1,7 +1,7 @@
 /// Portfolio Module API endpoint constants
 class PortfolioEndpoints {
   // Base URL
-  static const String baseUrl = 'https://am.munish.org/portfolio';
+  static const String baseUrl = 'https://am.asrax.in/portfolio';
   
   // Resources
   static const String list = '/v1/portfolios/list';

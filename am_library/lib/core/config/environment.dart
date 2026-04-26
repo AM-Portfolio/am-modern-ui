@@ -43,11 +43,11 @@ class EnvironmentConfig {
   static String get apiBaseUrl {
     switch (environment) {
       case Environment.development:
-        return 'https://am.munish.org'; // Production API
+        return 'https://am.asrax.in'; // Production API
       case Environment.preprod:
-        return 'https://am.munish.org'; // Production API
+        return 'https://am.asrax.in'; // Production API
       case Environment.production:
-        return 'https://am.munish.org'; // Production API
+        return 'https://am.asrax.in'; // Production API
     }
   }
 

@@ -1,8 +1,8 @@
 /// Authentication & User Management API endpoint constants
 class AuthEndpoints {
   // Base URLs (Standardized via Traefik rewriters)
-  static const String authBaseUrl = 'https://am.munish.org/auth';
-  static const String userBaseUrl = 'https://am.munish.org/users';
+  static const String authBaseUrl = 'https://am.asrax.in/auth';
+  static const String userBaseUrl = 'https://am.asrax.in/users';
   
   // Authentication endpoints
   static const String login = '$userBaseUrl/api/v1/auth/login'; // Standard Login (via User Mgmt)

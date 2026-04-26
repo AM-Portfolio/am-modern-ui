@@ -15,7 +15,7 @@ class StockSearchService {
   final SecureStorageService _storage;
   // Using the same base URL as global app or specific if needed
   // Assuming Traefik maps /api/market to am-market-data
-  static const String _baseUrl = 'https://am.munish.org'; 
+  static const String _baseUrl = 'https://am.asrax.in'; 
 
   StockSearchService({
     required Dio dio,

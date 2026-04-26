@@ -35,7 +35,7 @@ class AnalysisConfig {
   
   factory AnalysisConfig.production() {
     final config = AnalysisConfig._instance;
-    config.setBaseUrl('https://am.munish.org');
+    config.setBaseUrl('https://am.asrax.in');
     return config;
   }
 }

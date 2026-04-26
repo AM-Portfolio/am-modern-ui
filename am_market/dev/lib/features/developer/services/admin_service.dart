@@ -8,7 +8,7 @@ import 'package:am_market_common/models/ingestion_log.dart';
 
 class AdminService {
   // Use localhost for now, assume proxy or direct access
-  static const String baseUrl = 'https://am.munish.org/api/market';
+  static const String baseUrl = 'https://am.asrax.in/api/market';
   final _storage = GetIt.I<SecureStorageService>();
 
   Future<Map<String, String>> _getHeaders() async {
