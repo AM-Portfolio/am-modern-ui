@@ -4,7 +4,7 @@ class BasketEndpoints {
   static const String baseUrl = 'https://am.asrax.in/portfolio';
   
   // Basket endpoints - using full URLs so ApiClient handles them correctly
-  static const String opportunities = '$baseUrl/api/v1/basket/opportunities';
-  static const String preview = '$baseUrl/api/v1/basket/preview';
-  static const String calculateQuantities = '$baseUrl/api/v1/basket/calculate-quantities';
+  static const String opportunities = '$baseUrl/v1/basket/opportunities';
+  static const String preview = '$baseUrl/v1/basket/preview';
+  static const String calculateQuantities = '$baseUrl/v1/basket/calculate-quantities';
 }
