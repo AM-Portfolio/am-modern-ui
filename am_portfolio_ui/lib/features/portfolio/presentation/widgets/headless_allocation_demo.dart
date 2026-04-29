@@ -41,7 +41,7 @@ class _HeadlessAllocationDemoState extends State<HeadlessAllocationDemo> {
     
     // Create the service with auth token
     final realService = RealAnalysisService(
-      baseUrl: 'http://localhost:8090',
+      baseUrl: AnalysisConfig.instance.baseUrl,
       authToken: token != null ? 'Bearer $token' : null,
     );
     final service = AnalysisServiceAdapter(realService);

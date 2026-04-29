@@ -16,7 +16,7 @@ class DashboardRepository {
   Future<DashboardSummary> getSummary(String userId) async {
     try {
       return await _apiClient.get(
-        '/api/v1/analysis/dashboard/summary',
+        '/v1/analysis/dashboard/summary',
         queryParams: {'userId': userId},
         parser: (data) => DashboardSummary.fromJson(data),
       );
@@ -29,7 +29,7 @@ class DashboardRepository {
   Future<List<PortfolioOverview>> getPortfolioOverviews(String userId) async {
     try {
       return await _apiClient.get(
-        '/api/v1/analysis/dashboard/portfolio-overviews',
+        '/v1/analysis/dashboard/portfolio-overviews',
         queryParams: {'userId': userId},
         parser: (data) => (data as List).map((e) => PortfolioOverview.fromJson(e)).toList(),
       );
@@ -42,7 +42,7 @@ class DashboardRepository {
   Future<TopMoversResponse> getTopMovers(String userId, {String timeFrame = '1D'}) async {
     try {
       return await _apiClient.get(
-        '/api/v1/analysis/dashboard/top-movers',
+        '/v1/analysis/dashboard/top-movers',
         queryParams: {'userId': userId, 'timeFrame': timeFrame},
         parser: (data) => TopMoversResponse.fromJson(data),
       );
@@ -55,7 +55,7 @@ class DashboardRepository {
   Future<PerformanceResponse> getPerformance(String userId, {String timeFrame = '1M'}) async {
     try {
       return await _apiClient.get(
-        '/api/v1/analysis/dashboard/performance',
+        '/v1/analysis/dashboard/performance',
         queryParams: {'userId': userId, 'timeFrame': timeFrame},
         parser: (data) => PerformanceResponse.fromJson(data),
       );
@@ -68,7 +68,7 @@ class DashboardRepository {
   Future<List<ActivityItem>> getRecentActivity(String userId) async {
     try {
       return await _apiClient.get(
-        '/api/v1/analysis/dashboard/recent-activity',
+        '/v1/analysis/dashboard/recent-activity',
         queryParams: {'userId': userId},
         parser: (data) => (data as List).map((e) => ActivityItem.fromJson(e)).toList(),
       );
