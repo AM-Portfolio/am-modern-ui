@@ -16,7 +16,7 @@ class AnalysisControllerApi {
 
   final ApiClient apiClient;
 
-  /// Performs an HTTP 'GET /api/v1/analysis/{type}/{id}/allocation' operation and returns the [Response].
+  /// Performs an HTTP 'GET /v1/analysis/{type}/{id}/allocation' operation and returns the [Response].
   /// Parameters:
   ///
   /// * [String] authorization (required):
@@ -30,7 +30,7 @@ class AnalysisControllerApi {
   /// * [String] groupBy2:
   Future<Response> getAllocationWithHttpInfo(String authorization, String type, String id, { String? groupBy, String? groupBy2, }) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/v1/analysis/{type}/{id}/allocation'
+    final path = r'/v1/analysis/{type}/{id}/allocation'
       .replaceAll('{type}', type)
       .replaceAll('{id}', id);
 
@@ -90,7 +90,7 @@ class AnalysisControllerApi {
     return null;
   }
 
-  /// Performs an HTTP 'GET /api/v1/analysis/dashboard/performance' operation and returns the [Response].
+  /// Performs an HTTP 'GET /v1/analysis/dashboard/performance' operation and returns the [Response].
   /// Parameters:
   ///
   /// * [String] arg0 (required):
@@ -98,7 +98,7 @@ class AnalysisControllerApi {
   /// * [String] arg1:
   Future<Response> getDashboardPerformanceWithHttpInfo(String arg0, { String? arg1, }) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/v1/analysis/dashboard/performance';
+    final path = r'/v1/analysis/dashboard/performance';
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -146,13 +146,13 @@ class AnalysisControllerApi {
     return null;
   }
 
-  /// Performs an HTTP 'GET /api/v1/analysis/dashboard/summary' operation and returns the [Response].
+  /// Performs an HTTP 'GET /v1/analysis/dashboard/summary' operation and returns the [Response].
   /// Parameters:
   ///
   /// * [String] arg0 (required):
   Future<Response> getDashboardSummaryWithHttpInfo(String arg0,) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/v1/analysis/dashboard/summary';
+    final path = r'/v1/analysis/dashboard/summary';
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -195,7 +195,7 @@ class AnalysisControllerApi {
     return null;
   }
 
-  /// Performs an HTTP 'GET /api/v1/analysis/dashboard/top-movers' operation and returns the [Response].
+  /// Performs an HTTP 'GET /v1/analysis/dashboard/top-movers' operation and returns the [Response].
   /// Parameters:
   ///
   /// * [String] arg0 (required):
@@ -203,7 +203,7 @@ class AnalysisControllerApi {
   /// * [String] arg1:
   Future<Response> getDashboardTopMoversWithHttpInfo(String arg0, { String? arg1, }) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/v1/analysis/dashboard/top-movers';
+    final path = r'/v1/analysis/dashboard/top-movers';
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -251,7 +251,7 @@ class AnalysisControllerApi {
     return null;
   }
 
-  /// Performs an HTTP 'GET /api/v1/analysis/{type}/{id}/performance' operation and returns the [Response].
+  /// Performs an HTTP 'GET /v1/analysis/{type}/{id}/performance' operation and returns the [Response].
   /// Parameters:
   ///
   /// * [String] authorization (required):
@@ -263,7 +263,7 @@ class AnalysisControllerApi {
   /// * [String] timeFrame:
   Future<Response> getPerformanceWithHttpInfo(String authorization, String type, String id, { String? timeFrame, }) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/v1/analysis/{type}/{id}/performance'
+    final path = r'/v1/analysis/{type}/{id}/performance'
       .replaceAll('{type}', type)
       .replaceAll('{id}', id);
 
@@ -318,7 +318,7 @@ class AnalysisControllerApi {
     return null;
   }
 
-  /// Performs an HTTP 'GET /api/v1/analysis/dashboard/portfolio-overviews' operation and returns the [Response].
+  /// Performs an HTTP 'GET /v1/analysis/dashboard/portfolio-overviews' operation and returns the [Response].
   /// Parameters:
   ///
   /// * [String] arg0 (required):
@@ -326,7 +326,7 @@ class AnalysisControllerApi {
   /// * [String] arg1:
   Future<Response> getPortfolioOverviewsWithHttpInfo(String arg0, { String? arg1, }) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/v1/analysis/dashboard/portfolio-overviews';
+    final path = r'/v1/analysis/dashboard/portfolio-overviews';
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -377,7 +377,7 @@ class AnalysisControllerApi {
     return null;
   }
 
-  /// Performs an HTTP 'GET /api/v1/analysis/dashboard/recent-activity' operation and returns the [Response].
+  /// Performs an HTTP 'GET /v1/analysis/dashboard/recent-activity' operation and returns the [Response].
   /// Parameters:
   ///
   /// * [String] arg0 (required):
@@ -397,7 +397,7 @@ class AnalysisControllerApi {
   /// * [int] arg7:
   Future<Response> getRecentActivityWithHttpInfo(String arg0, { String? arg1, String? arg2, String? arg3, String? arg4, String? arg5, int? arg6, int? arg7, }) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/v1/analysis/dashboard/recent-activity';
+    final path = r'/v1/analysis/dashboard/recent-activity';
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -475,7 +475,7 @@ class AnalysisControllerApi {
     return null;
   }
 
-  /// Performs an HTTP 'GET /api/v1/analysis/{type}/top-movers' operation and returns the [Response].
+  /// Performs an HTTP 'GET /v1/analysis/{type}/top-movers' operation and returns the [Response].
   /// Parameters:
   ///
   /// * [String] authorization (required):
@@ -489,7 +489,7 @@ class AnalysisControllerApi {
   /// * [String] groupBy2:
   Future<Response> getTopMoversByCategoryWithHttpInfo(String authorization, String type, { String? timeFrame, String? groupBy, String? groupBy2, }) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/v1/analysis/{type}/top-movers'
+    final path = r'/v1/analysis/{type}/top-movers'
       .replaceAll('{type}', type);
 
     // ignore: prefer_final_locals
@@ -551,7 +551,7 @@ class AnalysisControllerApi {
     return null;
   }
 
-  /// Performs an HTTP 'GET /api/v1/analysis/{type}/{id}/top-movers' operation and returns the [Response].
+  /// Performs an HTTP 'GET /v1/analysis/{type}/{id}/top-movers' operation and returns the [Response].
   /// Parameters:
   ///
   /// * [String] authorization (required):
@@ -567,7 +567,7 @@ class AnalysisControllerApi {
   /// * [String] groupBy2:
   Future<Response> getTopMoversByEntityWithHttpInfo(String authorization, String type, String id, { String? timeFrame, String? groupBy, String? groupBy2, }) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/v1/analysis/{type}/{id}/top-movers'
+    final path = r'/v1/analysis/{type}/{id}/top-movers'
       .replaceAll('{type}', type)
       .replaceAll('{id}', id);
 
@@ -632,13 +632,13 @@ class AnalysisControllerApi {
     return null;
   }
 
-  /// Performs an HTTP 'POST /api/v1/analysis/dashboard/publish-update' operation and returns the [Response].
+  /// Performs an HTTP 'POST /v1/analysis/dashboard/publish-update' operation and returns the [Response].
   /// Parameters:
   ///
   /// * [String] arg0 (required):
   Future<Response> publishDashboardUpdateWithHttpInfo(String arg0,) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/v1/analysis/dashboard/publish-update';
+    final path = r'/v1/analysis/dashboard/publish-update';
 
     // ignore: prefer_final_locals
     Object? postBody;

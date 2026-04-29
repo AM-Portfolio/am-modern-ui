@@ -71,11 +71,11 @@ class ApiConfig {
 class AnalysisApiConfig {
   const AnalysisApiConfig({
     required this.baseUrl,
-    this.summaryResource = '/api/v1/analysis/dashboard/summary',
-    this.overviewsResource = '/api/v1/analysis/dashboard/portfolio-overviews',
-    this.recentActivityResource = '/api/v1/analysis/dashboard/recent-activity',
-    this.performanceResource = '/api/v1/analysis/dashboard/performance',
-    this.topMoversResource = '/api/v1/analysis/dashboard/top-movers',
+    this.summaryResource = '/v1/analysis/dashboard/summary',
+    this.overviewsResource = '/v1/analysis/dashboard/portfolio-overviews',
+    this.recentActivityResource = '/v1/analysis/dashboard/recent-activity',
+    this.performanceResource = '/v1/analysis/dashboard/performance',
+    this.topMoversResource = '/v1/analysis/dashboard/top-movers',
     this.connectTimeout = 30000,
     this.receiveTimeout = 30000,
     this.sendTimeout = 30000,
