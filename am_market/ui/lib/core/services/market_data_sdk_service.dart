@@ -4,7 +4,7 @@ import 'package:am_market_sdk/market/api.dart' show ApiClient;
 
 /// Service class to configure and provide Market Data SDK API clients
 class MarketDataSdkService {
-  static const String baseUrl = 'http://localhost:8092';
+  static const String baseUrl = 'https://am.asrax.in/market';
   
   late final ApiClient _apiClient;
   late final MarketDataApi marketDataApi;

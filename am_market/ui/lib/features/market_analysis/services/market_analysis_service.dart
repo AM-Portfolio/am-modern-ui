@@ -9,7 +9,7 @@ import 'package:am_design_system/am_design_system.dart';
 
 class MarketAnalysisService {
   // Matches backend AnalysisController
-  final String baseUrl = 'http://localhost:8092/api/v1/analysis';
+  final String baseUrl = 'https://am.asrax.in/analysis/v1/analysis';
 
   final _storage = GetIt.I<SecureStorageService>();
 

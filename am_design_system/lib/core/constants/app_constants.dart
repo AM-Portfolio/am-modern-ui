@@ -26,12 +26,12 @@ class AppConstants {
   static const String defaultEnvironment = 'dev';
 
   /// API Configuration
-  static const String defaultBaseUrl = 'http://localhost:8072';
+  static const String defaultBaseUrl = 'https://am.asrax.in/portfolio';
   static const int defaultTimeout = 30000;
   static const bool defaultUseMockData = true;
 
   /// Portfolio API Defaults
-  static const String defaultPortfolioBaseUrl = 'http://localhost:8072';
+  static const String defaultPortfolioBaseUrl = 'https://am.asrax.in/portfolio';
   static const String defaultHoldingsResource = '/v1/portfolios/holdings';
   static const String defaultSummaryResource = '/v1/portfolios/summary';
   static const String defaultTransactionsResource =
@@ -62,7 +62,7 @@ class AppConstants {
   static const bool defaultTradeEnabled = true;
 
   /// Document API Defaults
-  static const String defaultDocumentBaseUrl = 'http://localhost:8070';
+  static const String defaultDocumentBaseUrl = 'https://am.asrax.in/documents';
   static const int defaultConnectTimeout = 30;
   static const int defaultReceiveTimeout = 60;
   static const int defaultSendTimeout = 60;

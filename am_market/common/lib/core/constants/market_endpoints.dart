@@ -15,10 +15,10 @@ class MarketEndpoints {
   
   // Market Analytics
   // Market Analytics
-  static const String movers = '/api/v1/analysis/movers';
-  static const String sectors = '/api/v1/analysis/sectors';
-  static const String marketCap = '/api/v1/analysis/market-cap';
-  static const String historicalCharts = '/api/v1/analysis/historical-charts';
+  static const String movers = '/v1/analysis/movers';
+  static const String sectors = '/v1/analysis/sectors';
+  static const String marketCap = '/v1/analysis/market-cap';
+  static const String historicalCharts = '/v1/analysis/historical-charts';
   
   // Instruments
   static const String instrumentsSearch = '/v1/instruments/search';
@@ -26,5 +26,5 @@ class MarketEndpoints {
   static const String authLoginUrl = '/v1/market-data/auth/login-url';
   
   // Scraper/System
-  static const String refreshCookies = '/api/scraper/cookies';
+  static const String refreshCookies = '/scraper/cookies';
 }
