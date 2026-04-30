@@ -26,19 +26,19 @@ class AppConstants {
   static const String defaultEnvironment = 'dev';
 
   /// API Configuration
-  static const String defaultBaseUrl = 'http://localhost:8072';
+  static const String defaultBaseUrl = 'https://am.asrax.in/portfolio';
   static const int defaultTimeout = 30000;
   static const bool defaultUseMockData = true;
 
   /// Portfolio API Defaults
-  static const String defaultPortfolioBaseUrl = 'http://localhost:8072';
+  static const String defaultPortfolioBaseUrl = 'https://am.asrax.in/portfolio';
   static const String defaultHoldingsResource = '/v1/portfolios/holdings';
   static const String defaultSummaryResource = '/v1/portfolios/summary';
   static const String defaultTransactionsResource =
       '/v1/portfolios/transactions';
 
   /// Trade API Defaults
-  static const String defaultTradeBaseUrl = 'https://am.munish.org/trades';
+  static const String defaultTradeBaseUrl = 'https://am.asrax.in/trades';
   static const String defaultTradePortfolioListResource =
       '/v1/portfolio-summary/by-owner';
   static const String defaultTradePortfolioSummaryResource =
@@ -62,14 +62,14 @@ class AppConstants {
   static const bool defaultTradeEnabled = true;
 
   /// Document API Defaults
-  static const String defaultDocumentBaseUrl = 'http://localhost:8070';
+  static const String defaultDocumentBaseUrl = 'https://am.asrax.in/documents';
   static const int defaultConnectTimeout = 30;
   static const int defaultReceiveTimeout = 60;
   static const int defaultSendTimeout = 60;
   static const bool defaultDocumentEnabled = true;
 
   /// Auth API Defaults
-  static const String defaultAuthBaseUrl = 'https://am.munish.org/auth/token/v1';
+  static const String defaultAuthBaseUrl = 'https://am.asrax.in/auth/token/v1';
   // Endpoints are relative to Auth Base URL
   static const String defaultAuthLoginEndpoint = '/tokens';
   static const String defaultAuthRefreshTokenEndpoint = '/refresh';
@@ -78,7 +78,7 @@ class AppConstants {
   static const bool defaultAuthEnabled = true;
 
   /// User API Defaults
-  static const String defaultUserBaseUrl = 'https://am.munish.org/users/account/v1';
+  static const String defaultUserBaseUrl = 'https://am.asrax.in/users/account/v1';
   static const String defaultUserRegisterEndpoint = '/register';
   static const String defaultUserForgotPasswordEndpoint = '/forgot-password';
   static const String defaultUserResetPasswordEndpoint = '/reset-password';

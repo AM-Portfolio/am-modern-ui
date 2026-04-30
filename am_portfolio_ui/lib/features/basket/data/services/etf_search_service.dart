@@ -6,7 +6,7 @@ import '../../domain/models/etf_search_result.dart';
 class EtfSearchService {
   final Dio _dio = Dio();
   // Using the same URL as am_market_ui
-  static const String baseUrl = 'https://am.munish.org/api/etf/v1';
+  static const String baseUrl = 'https://am.asrax.in/api/etf/v1';
   final _storage = GetIt.I<SecureStorageService>();
 
   EtfSearchService() {

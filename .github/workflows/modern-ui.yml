@@ -2,13 +2,13 @@ name: Modern UI Publish
 
 on:
   push:
-    branches: ["main", "develop", "test/**"]
+    branches: ["main", "develop", "test/**", "feature/**", "hotfix/**", "fix/**"]
     paths-ignore:
       - 'docs/**'
       - 'README.md'
       - '.env.example'
   pull_request:
-    branches: ["main", "develop", "test/**"]
+    branches: ["main", "develop", "test/**", "feature/**", "hotfix/**", "fix/**"]
   workflow_dispatch:
 
 jobs:

@@ -25,7 +25,7 @@ class AiChatService {
   }) async {
     try {
       final response = await _dio.post(
-        '/api/v1/ai/chat',
+        '/v1/ai/chat',
         data: {
           'message': message,
           'userId': userId,

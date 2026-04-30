@@ -16,7 +16,7 @@ class StreamService {
   bool _isConnected = false;
   bool get isConnected => _isConnected;
 
-  final String _wsUrl = 'wss://am.munish.org/api/market/ws/market-data-stream';
+  final String _wsUrl = 'wss://am.asrax.in/api/market/ws/market-data-stream';
 
   void connect() {
     if (_isConnected) return;

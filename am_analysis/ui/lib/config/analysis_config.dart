@@ -10,7 +10,7 @@ class AnalysisConfig {
   static AnalysisConfig get instance => _instance;
   
   /// Base URL for the Analysis API
-  String _baseUrl = 'http://localhost:8090';
+  String _baseUrl = 'https://am.asrax.in/analysis';
   
   /// Get the current base URL
   String get baseUrl => _baseUrl;
@@ -20,7 +20,6 @@ class AnalysisConfig {
     _baseUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
   }
   
-  /// Factory constructors for common environments
   factory AnalysisConfig.development() {
     final config = AnalysisConfig._instance;
     config.setBaseUrl('http://localhost:8090');
@@ -35,7 +34,7 @@ class AnalysisConfig {
   
   factory AnalysisConfig.production() {
     final config = AnalysisConfig._instance;
-    config.setBaseUrl('https://am.munish.org');
+    config.setBaseUrl('https://am.asrax.in/analysis');
     return config;
   }
 }

@@ -490,7 +490,7 @@ class ApiService {
       final headers = await _getHeaders();
       // Use the new endpoint
       // Note: Endpoint param is 'years', not 'range'
-      final url = '$baseUrl/api/v1/analysis/performance/monthly?symbol=$symbol&years=$years&detailed=false';
+      final url = '$baseUrl/v1/analysis/performance/monthly?symbol=$symbol&years=$years&detailed=false';
       final response = await http.get(Uri.parse(url), headers: headers);
       
       if (response.statusCode == 200) {
@@ -664,7 +664,7 @@ class ApiService {
   Future<SeasonalityResponse> fetchSeasonality(String symbol, {String timeframe = 'DAY'}) async {
     try {
       final headers = await _getHeaders();
-      final url = '$baseUrl/api/v1/analysis/seasonality?symbol=$symbol&timeframe=$timeframe';
+      final url = '$baseUrl/v1/analysis/seasonality?symbol=$symbol&timeframe=$timeframe';
       final response = await http.get(Uri.parse(url), headers: headers);
       
       if (response.statusCode == 200) {
@@ -681,7 +681,7 @@ class ApiService {
   Future<Map<String, double>> fetchHeatmap(String symbol, {String timeframe = '1D'}) async {
     try {
       final headers = await _getHeaders();
-      final url = '$baseUrl/api/v1/analysis/heatmap?symbol=$symbol&timeframe=$timeframe';
+      final url = '$baseUrl/v1/analysis/heatmap?symbol=$symbol&timeframe=$timeframe';
       final response = await http.get(Uri.parse(url), headers: headers);
       
       if (response.statusCode == 200) {
