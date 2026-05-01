@@ -45,50 +45,13 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
   @override
   void initState() {
     super.initState();
-    _connectWebSocket();
-  }
-
-  Future<void> _connectWebSocket() async {
-    try {
-      final secureStorage = GetIt.instance<SecureStorageService>();
-      final token = await secureStorage.getAccessToken();
-      
-      if (token != null) {
-        final stompClient = GetIt.instance<AmStompClient>();
-        // Ensure configured (already done in main, but safe to check or re-config if needed)
-        // main.dart configures the URL.
-        
-        CommonLogger.info('Initializing WebSocket connection with user token...', tag: 'GlobalPortfolioWrapper');
-        debugPrint('GlobalPortfolioWrapper: Initializing WebSocket connection with token: ${token.substring(0, 10)}...');
-        stompClient.connect(
-          headers: {'Authorization': 'Bearer $token'},
-          onConnect: (frame) { 
-             CommonLogger.info('STOMP: Connected successfully', tag: 'GlobalPortfolioWrapper');
-             debugPrint('GlobalPortfolioWrapper: STOMP Connected successfully!');
-             debugPrint('GlobalPortfolioWrapper: STOMP Headers: ${frame.headers}');
-             CommonLogger.info('STOMP Session: ${frame.headers}', tag: 'GlobalPortfolioWrapper');
-             
-             // Do NOT trigger calculation here - wait for portfolio selection
-             // The trigger will happen when the first portfolio is auto-selected in BlocListener
-             CommonLogger.info('WebSocket connection established, waiting for portfolio selection...', tag: 'GlobalPortfolioWrapper');
-          },
-          onWebSocketError: (err) {
-             CommonLogger.error('STOMP Error', error: err, tag: 'GlobalPortfolioWrapper');
-             debugPrint('GlobalPortfolioWrapper: STOMP Error: $err');
-          },
-        );
-      } else {
-        CommonLogger.warning('No access token found for WebSocket connection', tag: 'GlobalPortfolioWrapper');
-      }
-    } catch (e) {
-      CommonLogger.error('Failed to connect WebSocket', error: e, tag: 'GlobalPortfolioWrapper');
-    }
+    // Connection is now managed centrally by StompConnectionCubit in AppShell
   }
 
   @override
   void dispose() {
-    // Optionally disconnect on logout/dispose
-    GetIt.instance<AmStompClient>().disconnect();
+    // We do NOT disconnect centrally here anymore, 
+    // as it would break other modules.
     super.dispose();
   }
 
@@ -102,7 +65,7 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
         CommonLogger.info('Triggering calculation for portfolio: $portfolioId', tag: 'GlobalPortfolioWrapper');
         
         stompClient.send(
-          destination: '/app/portfolio/calculate',
+          destination: '/app/portfolio/subscribe',
           headers: {'X-Correlation-Id': traceId},
           body: body,
         );

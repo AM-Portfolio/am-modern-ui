@@ -13,7 +13,7 @@ Future<void> configureDependencies() async {
   // 1. Initialize Technical Infrastructure (One Source of Truth)
   ServiceRegistry.initialize(
     analysisBaseUrl: 'https://am.asrax.in/analysis', // Standard Analysis Port
-    wsUrl: 'wss://am.asrax.in/ws-gateway-raw',
+    wsUrl: 'wss://am.asrax.in/v1/streams',
   );
 
   // Register Theme Repository (required by ThemeCubit)
@@ -63,6 +63,13 @@ Future<void> configureDependencies() async {
   // Register Feature Flag Cubit
   getIt.registerLazySingleton<auth_ui.FeatureFlagCubit>(
     () => auth_ui.FeatureFlagCubit(),
+  );
+
+  // Register Stomp Connection Cubit (Manages global WebSocket lifecycle)
+  getIt.registerLazySingleton<common.StompConnectionCubit>(
+    () => common.StompConnectionCubit(
+      stompClient: getIt<common.AmStompClient>(),
+    ),
   );
 }
 

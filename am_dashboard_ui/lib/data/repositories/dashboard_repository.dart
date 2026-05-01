@@ -57,7 +57,15 @@ class DashboardRepository {
       return await _apiClient.get(
         '/v1/analysis/dashboard/performance',
         queryParams: {'userId': userId, 'timeFrame': timeFrame},
-        parser: (data) => PerformanceResponse.fromJson(data),
+        parser: (data) {
+          // Provide defaults for required fields if backend returns null
+          final sanitized = Map<String, dynamic>.from(data);
+          sanitized['portfolioId'] ??= '';
+          sanitized['timeFrame'] ??= timeFrame;
+          sanitized['totalReturnPercentage'] ??= 0.0;
+          sanitized['totalReturnValue'] ??= 0.0;
+          return PerformanceResponse.fromJson(sanitized);
+        },
       );
     } catch (e) {
       AppLogger.error('Failed to fetch performance chart', error: e);
@@ -70,7 +78,11 @@ class DashboardRepository {
       return await _apiClient.get(
         '/v1/analysis/dashboard/recent-activity',
         queryParams: {'userId': userId},
-        parser: (data) => (data as List).map((e) => ActivityItem.fromJson(e)).toList(),
+        parser: (data) {
+          // The backend returns a RecentActivityResponse object containing an 'items' list
+          final items = data['items'] as List?;
+          return items?.map((e) => ActivityItem.fromJson(e)).toList() ?? [];
+        },
       );
     } catch (e) {
       AppLogger.error('Failed to fetch recent activity', error: e);

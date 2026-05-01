@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
-
+import 'package:am_common/am_common.dart' as common;
 
 import 'features/shell/app_shell.dart';
 import 'core/di/injection.dart';
@@ -23,6 +23,10 @@ class AMApp extends ConsumerWidget {
         // Theme Cubit
         BlocProvider<ThemeCubit>(
           create: (context) => getIt<ThemeCubit>(),
+        ),
+        // STOMP Connection Cubit (Infrastructure)
+        BlocProvider<common.StompConnectionCubit>(
+          create: (context) => getIt<common.StompConnectionCubit>(),
         ),
         // Feature Flag Cubit
         BlocProvider<FeatureFlagCubit>(
