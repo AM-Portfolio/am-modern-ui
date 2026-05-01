@@ -124,6 +124,7 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
 
           // Tab Content
           SizedBox(
+            height: 280,
             child: TabBarView(
               controller: _tabController,
               children: [

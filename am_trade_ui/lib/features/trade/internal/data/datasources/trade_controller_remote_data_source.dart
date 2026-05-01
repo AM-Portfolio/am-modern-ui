@@ -72,7 +72,15 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
 
   final ApiClient _apiClient;
   
-  String get _baseUrl => TradeEndpoints.tradeBaseUrl;
+  /// Use ConfigService baseUrl if configured, fall back to the constant
+  String get _baseUrl {
+    try {
+      final configUrl = ConfigService.config.api.trade.baseUrl;
+      return configUrl.isNotEmpty ? configUrl : TradeEndpoints.tradeBaseUrl;
+    } catch (_) {
+      return TradeEndpoints.tradeBaseUrl;
+    }
+  }
 
   /// Helper to safely build URI avoiding double slashes
   String _buildUri(String baseUrl, String resource) {

@@ -1,7 +1,9 @@
+import 'package:am_common/am_common.dart';
+
 /// Trade Module API endpoint constants
 class TradeEndpoints {
   // Base URLs
-  static const String tradeBaseUrl = 'https://am.asrax.in/trades';
+  static String get tradeBaseUrl => ConfigService.config.api.trade!.baseUrl;
   
   // Trade Details
   static const String details = '/v1/trades/details';

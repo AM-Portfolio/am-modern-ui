@@ -49,6 +49,7 @@ class TradeDetailsStep extends StatelessWidget {
     required this.onExpiryDateSelected,
     required this.onAttachmentsChanged,
     this.userId,
+    this.onInstrumentSelected,
     super.key,
   });
 
@@ -71,6 +72,7 @@ class TradeDetailsStep extends StatelessWidget {
   final DateTime? expiryDate;
   final List<String> attachments;
   final String? userId;
+  final ValueChanged<Map<String, dynamic>>? onInstrumentSelected;
 
   final ValueChanged<ExchangeTypes?> onExchangeChanged;
   final ValueChanged<MarketSegments?> onSegmentChanged;
@@ -97,7 +99,7 @@ class TradeDetailsStep extends StatelessWidget {
     final isTablet = MediaQuery.of(context).size.width > 600 && MediaQuery.of(context).size.width <= 1200;
     final isWeb = isDesktop || isTablet;
 
-    return SingleChildScrollView(
+    return Padding(
       padding: EdgeInsets.all(isDesktop ? 16 : 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,6 +157,7 @@ class TradeDetailsStep extends StatelessWidget {
                     selectedSegment: selectedSegment,
                     onExchangeChanged: onExchangeChanged,
                     onSegmentChanged: onSegmentChanged,
+                    onInstrumentSelected: onInstrumentSelected,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -180,6 +183,7 @@ class TradeDetailsStep extends StatelessWidget {
               selectedSegment: selectedSegment,
               onExchangeChanged: onExchangeChanged,
               onSegmentChanged: onSegmentChanged,
+              onInstrumentSelected: onInstrumentSelected,
             ),
             const SizedBox(height: 12),
             EntryExitCard(

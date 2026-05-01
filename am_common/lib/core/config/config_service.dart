@@ -53,11 +53,11 @@ class ConfigService {
           transactionsResource: '/v1/portfolios/transactions',
         ),
         trade: TradeApiConfig(
-          baseUrl: 'https://am.asrax.in/trade',
+          baseUrl: 'http://localhost:8082',
           portfolioListResource: '/v1/portfolio-summary/by-owner',
           portfolioSummaryResource: '/v1/portfolio-summary',
           holdingsResource: '/v1/trades/details/portfolio',
-          tradeDetailsResource: '/v1/trades',
+          tradeDetailsResource: '/v1/trades/details',
           calendarMonthResource: '/v1/trades/calendar/month',
           calendarDayResource: '/v1/trades/calendar/day',
           calendarQuarterResource: '/v1/trades/calendar/quarter',
