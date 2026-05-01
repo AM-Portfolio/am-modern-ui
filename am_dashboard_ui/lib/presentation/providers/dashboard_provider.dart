@@ -42,6 +42,10 @@ Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
      rethrow; 
   }
   
+  ref.onDispose(() {
+    repository.unsubscribeFromDashboardStream(userId);
+  });
+
   // Listen to WebSocket updates
   yield* repository.getDashboardStream(userId);
 }

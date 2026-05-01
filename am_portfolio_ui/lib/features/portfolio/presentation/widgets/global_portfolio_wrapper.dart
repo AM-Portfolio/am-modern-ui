@@ -50,8 +50,19 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
 
   @override
   void dispose() {
-    // We do NOT disconnect centrally here anymore, 
-    // as it would break other modules.
+    try {
+      final stompClient = GetIt.instance<AmStompClient>();
+      if (stompClient.isConnected && _selectedPortfolioId != null) {
+        final body = '{"userId": "${widget.userId}", "portfolioId": "$_selectedPortfolioId"}';
+        CommonLogger.info('Sending unsubscribe command for portfolio: $_selectedPortfolioId', tag: 'GlobalPortfolioWrapper');
+        stompClient.send(
+          destination: '/app/portfolio/unsubscribe',
+          body: body,
+        );
+      }
+    } catch (e) {
+      CommonLogger.error('Failed to send unsubscribe command', error: e, tag: 'GlobalPortfolioWrapper');
+    }
     super.dispose();
   }
 
@@ -85,28 +96,45 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
     CommonLogger.debug('PortfolioServiceAsync state: $portfolioServiceAsync', tag: 'GlobalPortfolioWrapper');
 
     return portfolioServiceAsync.when(
-      data: (service) => BlocProvider(
-        create: (context) {
-           final cubit = PortfolioCubit(service);
-           cubit.loadPortfoliosList(widget.userId);
-           // Subscription will be handled by individual pages that need real-time updates
-           return cubit;
-        },
-        child: BlocListener<PortfolioCubit, PortfolioState>(
-          listener: (context, state) {
-            if (state is PortfolioListLoaded && _selectedPortfolioId == null) {
-              if (state.portfolioList.portfolios.isNotEmpty) {
-                 final first = state.portfolioList.portfolios.first;
-                 setState(() {
-                   _selectedPortfolioId = first.portfolioId;
-                   _selectedPortfolioName = first.portfolioName;
-                 });
-                 // Trigger calculation for the first selected portfolio
-                 _triggerPortfolioCalculation(first.portfolioId);
-                 widget.onPortfolioChanged?.call(first.portfolioId, first.portfolioName);
-              }
-            }
-          },
+      data: (service) => MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) {
+               final cubit = PortfolioCubit(service);
+               cubit.loadPortfoliosList(widget.userId);
+               return cubit;
+            },
+          ),
+        ],
+        child: MultiBlocListener(
+          listeners: [
+            // Listen for Portfolio List loading
+            BlocListener<PortfolioCubit, PortfolioState>(
+              listener: (context, state) {
+                if (state is PortfolioListLoaded && _selectedPortfolioId == null) {
+                  if (state.portfolioList.portfolios.isNotEmpty) {
+                     final first = state.portfolioList.portfolios.first;
+                     setState(() {
+                       _selectedPortfolioId = first.portfolioId;
+                       _selectedPortfolioName = first.portfolioName;
+                     });
+                     // Trigger calculation if connected, otherwise the Connection Listener below will handle it
+                     _triggerPortfolioCalculation(first.portfolioId);
+                     widget.onPortfolioChanged?.call(first.portfolioId, first.portfolioName);
+                  }
+                }
+              },
+            ),
+            // Listen for WebSocket Connection Success
+            BlocListener<StompConnectionCubit, StompConnectionState>(
+              listener: (context, state) {
+                if (state is StompConnected && _selectedPortfolioId != null) {
+                  CommonLogger.info('WebSocket Connected! Re-triggering portfolio calculation...', tag: 'GlobalPortfolioWrapper');
+                  _triggerPortfolioCalculation(_selectedPortfolioId!);
+                }
+              },
+            ),
+          ],
           child: _SelectedPortfolioProvider(
             selectedId: _selectedPortfolioId,
             selectedName: _selectedPortfolioName,
@@ -115,7 +143,6 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
                  _selectedPortfolioId = id;
                  _selectedPortfolioName = name;
                });
-               // Trigger calculation for the newly selected portfolio
                _triggerPortfolioCalculation(id);
                widget.onPortfolioChanged?.call(id, name);
             },

@@ -1,6 +1,7 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_it/get_it.dart';
 
 import '../internal/domain/entities/portfolio_holding.dart';
 import '../internal/domain/entities/portfolio_summary.dart';
@@ -59,9 +60,14 @@ Future<PortfolioRepository> portfolioRepository(Ref ref) async {
   final localDataSource = await ref.watch(
     portfolioLocalDataSourceProvider.future,
   );
+  
+  // AmStompClient is managed by ServiceRegistry (GetIt)
+  final stompClient = GetIt.I<AmStompClient>();
+
   return PortfolioRepositoryImpl(
     remoteDataSource: remoteDataSource,
     localDataSource: localDataSource,
+    stompClient: stompClient,
   );
 }
 

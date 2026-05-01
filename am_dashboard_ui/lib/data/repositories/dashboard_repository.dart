@@ -108,6 +108,12 @@ class DashboardRepository {
           AppLogger.error('Error in dashboard stream', error: error);
         });
   }
+
+  void unsubscribeFromDashboardStream(String userId) {
+    final destination = '/topic/dashboard/$userId';
+    AppLogger.info('Unsubscribing from dashboard stream: $destination');
+    _stompClient.unsubscribe(destination);
+  }
 }
 
 
