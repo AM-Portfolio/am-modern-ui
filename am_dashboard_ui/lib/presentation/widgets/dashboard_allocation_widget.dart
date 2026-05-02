@@ -1,33 +1,30 @@
-import 'package:am_dashboard_ui/domain/models/portfolio_overview.dart';
-import 'package:am_design_system/am_design_system.dart';
+import 'package:am_dashboard_ui/domain/models/allocation_response.dart';
+import 'package:am_design_system/am_design_system.dart' as ds;
 import 'package:flutter/material.dart';
 
 class DashboardAllocationWidget extends StatelessWidget {
-  final List<PortfolioOverview> overviews;
+  final AllocationResponse allocation;
 
-  const DashboardAllocationWidget({super.key, required this.overviews});
+  const DashboardAllocationWidget({super.key, required this.allocation});
 
   @override
   Widget build(BuildContext context) {
-    if (overviews.isEmpty) return const SizedBox.shrink();
+    if (allocation.sectors.isEmpty) return const SizedBox.shrink();
 
-    final totalValue = overviews.fold<double>(0, (sum, item) => sum + item.totalValue);
-    
-    // Convert to AllocationItem
-    final allocations = overviews.map((overview) {
-      double percentage = totalValue > 0 ? (overview.totalValue / totalValue) * 100 : 0;
-      return AllocationItem(
-        label: overview.type,
-        value: overview.totalValue,
-        percentage: percentage,
-        count: overview.portfolioCount,
+    // Map backend DomainAllocationItem to design system AllocationItem
+    final allocations = allocation.sectors.map((item) {
+      return ds.AllocationItem(
+        label: item.name,
+        value: item.value,
+        percentage: item.percentage,
+        count: item.count,
       );
     }).toList();
     
     // Sort by value desc
     allocations.sort((a, b) => b.value.compareTo(a.value));
 
-    return AppCard(
+    return ds.AppCard(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -40,7 +37,7 @@ class DashboardAllocationWidget extends StatelessWidget {
             const SizedBox(height: 16),
             SizedBox(
               height: 300,
-              child: AnimatedSectorDonutChart(
+              child: ds.AnimatedSectorDonutChart(
                 allocations: allocations,
                 showAnimation: true,
               ),

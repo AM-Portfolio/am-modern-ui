@@ -21,7 +21,7 @@ class AuthRemoteDataSource implements AuthDataSource {
       AppLogger.info('🔵 [AuthRemoteDataSource] User Mgmt Login URL: $fullUrl');
       final response = await _dio.post(
         fullUrl,
-        data: {'email': email, 'password': password}, // am-user-management uses 'email'
+        data: {'username': email, 'password': password}, // Centralized auth service (am-auth-tokens) uses 'username'
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
@@ -46,7 +46,7 @@ class AuthRemoteDataSource implements AuthDataSource {
 
         final tokens = AuthTokensModel(
           accessToken: data['access_token'],
-          refreshToken: null,
+          refreshToken: data['refresh_token'],
           expiresAt: DateTime.now().add(
             Duration(seconds: data['expires_in'] ?? 3600),
           ),

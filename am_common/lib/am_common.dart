@@ -71,6 +71,7 @@ export 'core/services/price_service.dart';
 export 'core/models/price_update_model.dart';
 export 'core/network/websocket/am_websocket_client.dart';
 export 'core/network/websocket/websocket_cubit.dart';
+export 'core/network/websocket/stomp_connection_cubit.dart';
 
 // ============================================================================
 // SHARED

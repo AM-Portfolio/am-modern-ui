@@ -56,12 +56,12 @@ class DashboardPage extends ConsumerWidget {
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             sliver: SliverToBoxAdapter(
-              child: overviewsAsync.when(
-                  data: (overviews) => DashboardAllocationWidget(overviews: overviews),
+              child: ref.watch(dashboardAllocationProvider(userId)).when(
+                  data: (allocation) => DashboardAllocationWidget(allocation: allocation),
                   loading: () => const SkeletonBox(height: 250),
                   error: (err, stack) => AmErrorWidget(
                     message: 'Failed to load allocation data',
-                    onRetry: () => ref.invalidate(portfolioOverviewsProvider(userId)),
+                    onRetry: () => ref.invalidate(dashboardAllocationProvider(userId)),
                   ),
               ),
             ),

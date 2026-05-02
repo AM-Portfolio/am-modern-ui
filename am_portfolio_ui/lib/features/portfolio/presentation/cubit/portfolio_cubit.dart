@@ -12,7 +12,7 @@ import 'package:get_it/get_it.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:am_common/am_common.dart';
-
+import 'package:uuid/uuid.dart';
 
 
 class PortfolioCubit extends Cubit<PortfolioState> {
@@ -28,9 +28,13 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   // Subscription management
   bool _isSubscribed = false;
   StreamSubscription? _socketSubscription;
+  String? _subUserId;
+  String? _subPortfolioId;
 
   /// Subscribe to portfolio updates via WebSocket
-  void subscribeToPortfolioUpdates(String userId) {
+  void subscribeToPortfolioUpdates(String userId, {String? portfolioId}) {
+    _subUserId = userId;
+    _subPortfolioId = portfolioId;
     if (_isSubscribed) {
       CommonLogger.debug('Already subscribed (flag is true)', tag: 'PortfolioCubit');
       return; 
@@ -73,6 +77,23 @@ class PortfolioCubit extends Cubit<PortfolioState> {
      // Store the destination for unsubscription
      const destination = '/user/queue/portfolio';
      _stompClient.subscribe(destination);
+     
+     // Trigger the backend to start calculating using the /app/portfolio/subscribe endpoint
+     if (_subUserId != null && _subPortfolioId != null) {
+       final traceId = Uuid().v4();
+       final body = '{"userId": "$_subUserId", "portfolioId": "$_subPortfolioId"}';
+       
+       CommonLogger.info('Triggering calculation for portfolio: $_subPortfolioId', tag: 'PortfolioCubit');
+       
+       _stompClient.send(
+         destination: '/app/portfolio/subscribe',
+         headers: {
+           'X-Correlation-Id': traceId,
+           'content-type': 'application/json',
+         },
+         body: body,
+       );
+     }
      
      if (!_isSubscribed) {
        CommonLogger.info('[$_debugId] 🎧 PortfolioCubit: Setting up message listener...', tag: 'PortfolioCubit');

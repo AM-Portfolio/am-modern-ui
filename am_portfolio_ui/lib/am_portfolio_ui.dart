@@ -12,3 +12,4 @@ export 'features/portfolio/presentation/mobile/portfolio_mobile_screen.dart';
 
 // Presentation - Widgets
 export 'features/portfolio/presentation/widgets/sidebar/portfolio_sidebar.dart';
+export 'features/portfolio/presentation/widgets/global_portfolio_wrapper.dart';

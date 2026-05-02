@@ -5,7 +5,7 @@ class AuthEndpoints {
   static const String userBaseUrl = 'https://am.asrax.in/users';
   
   // Authentication endpoints
-  static const String login = '$userBaseUrl/v1/auth/login'; // Standard Login (via User Mgmt)
+  static const String login = '$authBaseUrl/v1/tokens'; // Centralized Token Service (am-auth-tokens)
   static const String logout = '$authBaseUrl/logout';
   static const String refreshToken = '$authBaseUrl/refresh';
   static const String googleLogin = '$authBaseUrl/auth/google/token';
