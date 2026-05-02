@@ -48,7 +48,7 @@
     "─── APP SHELL ───": "echo",
     "clean:app": "cd am_app && flutter clean",
     "get:app": "cd am_app && flutter pub get",
-    "run:app": "cd am_app && flutter run -d chrome --web-port 8080",
+    "run:app": "cd am_app && flutter run -d chrome --web-port 3000",
     "build:app": "cd am_app && flutter build web --release",
     "─── GLOBAL ───": "echo",
     "clean:all": "npm run clean:core && npm run clean:market && npm run clean:analysis && npm run clean:auth && npm run clean:dashboard && npm run clean:portfolio && npm run clean:trade && npm run clean:app",

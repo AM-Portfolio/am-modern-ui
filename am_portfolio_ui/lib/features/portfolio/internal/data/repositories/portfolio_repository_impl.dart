@@ -1,5 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'dart:async';
+import 'dart:convert';
 
 import '../../domain/entities/portfolio_holding.dart';
 import '../../domain/entities/portfolio_summary.dart';
@@ -23,11 +24,15 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   PortfolioRepositoryImpl({
     required PortfolioRemoteDataSource remoteDataSource,
     required PortfolioLocalDataSource localDataSource,
+    AmStompClient? stompClient,
   })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+        _localDataSource = localDataSource,
+        _stompClient = stompClient;
 
   final PortfolioRemoteDataSource _remoteDataSource;
   final PortfolioLocalDataSource _localDataSource;
+  final AmStompClient? _stompClient;
+  StreamSubscription? _stompSubscription;
 
   // Stream controllers for real-time updates
   final StreamController<PortfolioHoldings> _holdingsController =
@@ -271,27 +276,23 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       metadata: {'userId': userId},
     );
 
-    // Return existing stream
-    // In a real implementation, you might want to:
-    // 1. Set up periodic refresh
-    // 2. Listen to WebSocket updates
-    // 3. Handle connection state changes
+    _ensureWebSocketSubscribed(userId);
 
     // Emit cached data immediately if available
     if (_cachedHoldings != null && _lastUserId == userId) {
       Future.microtask(() => _holdingsController.add(_cachedHoldings!));
-    } else {
-      // Fetch initial data
-      getPortfolioHoldings(userId).catchError((error) {
-        CommonLogger.error(
-          'Failed to fetch initial holdings for stream',
-          tag: 'PortfolioRepository',
-          error: error,
-        );
-        _holdingsController.addError(error);
-        return PortfolioHoldings.empty(userId);
-      });
     }
+    
+    // Always fetch fresh data via REST for the "First Frame"
+    getPortfolioHoldings(userId).catchError((error) {
+      CommonLogger.error(
+        'Failed to fetch initial holdings for stream',
+        tag: 'PortfolioRepository',
+        error: error,
+      );
+      _holdingsController.addError(error);
+      return PortfolioHoldings.empty(userId);
+    });
 
     return _holdingsController.stream;
   }
@@ -372,21 +373,23 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       metadata: {'userId': userId},
     );
 
+    _ensureWebSocketSubscribed(userId);
+
     // Emit cached data immediately if available
     if (_cachedSummary != null && _lastUserId == userId) {
       Future.microtask(() => _summaryController.add(_cachedSummary!));
-    } else {
-      // Fetch initial data
-      getPortfolioSummary(userId).catchError((error) {
-        CommonLogger.error(
-          'Failed to fetch initial summary for stream',
-          tag: 'PortfolioRepository',
-          error: error,
-        );
-        _summaryController.addError(error);
-        return PortfolioSummary.empty(userId);
-      });
     }
+    
+    // Always fetch fresh data via REST for the "First Frame"
+    getPortfolioSummary(userId).catchError((error) {
+      CommonLogger.error(
+        'Failed to fetch initial summary for stream',
+        tag: 'PortfolioRepository',
+        error: error,
+      );
+      _summaryController.addError(error);
+      return PortfolioSummary.empty(userId);
+    });
 
     return _summaryController.stream;
   }
@@ -653,9 +656,57 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
     }
   }
 
+  // ============================================================================
+  // V2 Approach: WebSocket Real-Time Streaming
+  // ============================================================================
+
+  void _ensureWebSocketSubscribed(String userId) {
+    if (_stompClient == null) {
+      CommonLogger.warning('AmStompClient is null. WebSocket features disabled.', tag: 'PortfolioRepository');
+      return;
+    }
+    
+    final destination = '/user/queue/portfolio';
+    
+    if (_stompSubscription == null) {
+      CommonLogger.info('📡 Subscribing to: $destination', tag: 'PortfolioRepository');
+      _stompClient!.subscribe(destination);
+
+      _stompSubscription = _stompClient!.messages
+          .where((frame) => frame.headers['destination'] == destination)
+          .listen(
+        (frame) {
+          if (frame.body == null) return;
+          try {
+            final json = jsonDecode(frame.body!);
+            CommonLogger.info('Received real-time portfolio update via WebSocket', tag: 'PortfolioRepository');
+
+            if (json.containsKey('holdings')) {
+              final holdings = PortfolioHoldingsMapper.fromApiModel(json, userId);
+              _cachedHoldings = holdings;
+              _holdingsController.add(holdings);
+            }
+            if (json.containsKey('summary')) {
+              final summary = PortfolioSummaryMapper.fromApiModel(json['summary'], userId);
+              _cachedSummary = summary;
+              _summaryController.add(summary);
+            }
+          } catch (e) {
+            CommonLogger.error('Failed to parse portfolio STOMP message', error: e, tag: 'PortfolioRepository');
+          }
+        },
+        onError: (err) => CommonLogger.error('STOMP Subscription error', error: err, tag: 'PortfolioRepository'),
+      );
+    }
+  }
+
   /// Dispose method to clean up resources
   void dispose() {
     CommonLogger.methodEntry('dispose', tag: 'PortfolioRepository');
+
+    CommonLogger.info('Unwatching /user/queue/portfolio', tag: 'PortfolioRepository');
+    _stompClient?.unsubscribe('/user/queue/portfolio');
+    _stompSubscription?.cancel();
 
     _holdingsController.close();
     _summaryController.close();

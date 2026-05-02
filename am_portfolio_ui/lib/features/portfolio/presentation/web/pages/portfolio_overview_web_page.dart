@@ -1,22 +1,15 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:uuid/uuid.dart';
-import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart';
-
-import 'package:am_portfolio_ui/features/portfolio/presentation/cubit/portfolio_analytics_state.dart';
 import '../../widgets/portfolio_overview_widget.dart';
-// import '../../../../basket/presentation/widgets/basket_explorer.dart'; // Removed as per request to move it
-import '../../widgets/gmail_sync/gmail_connect_button.dart';
-
-import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/portfolio_providers.dart';
+import '../../cubit/portfolio_analytics_state.dart';
 import '../../cubit/portfolio_analytics_cubit.dart';
 import '../../cubit/portfolio_cubit.dart';
 
-/// Web-specific portfolio overview page
+/// Web-specific portfolio overview page.
+/// It uses the global [PortfolioCubit] provided by GlobalPortfolioWrapper.
 class PortfolioOverviewWebPage extends ConsumerWidget {
   const PortfolioOverviewWebPage({
     required this.userId,
@@ -31,58 +24,29 @@ class PortfolioOverviewWebPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch both services
-    final analyticsServiceAsync = ref.watch(portfolioAnalyticsServiceProvider);
-    final portfolioServiceAsync = ref.watch(portfolioServiceProvider);
-
-    // If we have a portfolio ID, we act as a provider source
     if (portfolioId != null) {
+      final analyticsServiceAsync = ref.watch(portfolioAnalyticsServiceProvider);
+      
       return analyticsServiceAsync.when(
         data: (analyticsService) {
-          return portfolioServiceAsync.when(
-            data: (portfolioService) {
-              return MultiBlocProvider(
-                providers: [
-                  BlocProvider<PortfolioAnalyticsCubit>(
-                    create: (context) {
-                      final cubit = PortfolioAnalyticsCubit(analyticsService);
-                      cubit.loadSpecificAnalytics(portfolioId!, AnalyticsDataType.sectorAllocation);
-                      return cubit;
-                    },
-                  ),
-                  BlocProvider<PortfolioCubit>(
-                    create: (context) {
-                      final cubit = PortfolioCubit(portfolioService);
-                      cubit.loadPortfolioSummaryOnly(userId, portfolioId!);
-                      return cubit;
-                    },
-                  ),
-                ],
-                child: _PortfolioOverviewView(
-                  userId: userId,
-                  portfolioId: portfolioId,
-                  portfolioName: portfolioName,
-                ),
-              );
+          return BlocProvider<PortfolioAnalyticsCubit>(
+            create: (context) {
+              final cubit = PortfolioAnalyticsCubit(analyticsService);
+              cubit.loadSpecificAnalytics(portfolioId!, AnalyticsDataType.sectorAllocation);
+              return cubit;
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(child: Text('Error loading portfolio service: $error')),
+            child: _PortfolioOverviewView(
+              userId: userId,
+              portfolioId: portfolioId,
+              portfolioName: portfolioName,
+            ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) {
-           CommonLogger.error(
-            'Failed to load analytics service',
-            tag: 'PortfolioOverviewWebPage',
-            error: error,
-            stackTrace: stack,
-          );
-          return Center(child: Text('Error loading dependencies: $error'));
-        },
+        error: (error, stack) => Center(child: Text('Error loading analytics service: $error')),
       );
     }
 
-    // Fallback if no portfolio selected (though logically shouldn't happen in this flow)
     return _PortfolioOverviewView(
       userId: userId,
       portfolioId: portfolioId,
@@ -91,7 +55,7 @@ class PortfolioOverviewWebPage extends ConsumerWidget {
   }
 }
 
-class _PortfolioOverviewView extends StatefulWidget {
+class _PortfolioOverviewView extends StatelessWidget {
   const _PortfolioOverviewView({
     required this.userId,
     this.portfolioId,
@@ -103,32 +67,10 @@ class _PortfolioOverviewView extends StatefulWidget {
   final String? portfolioName;
 
   @override
-  State<_PortfolioOverviewView> createState() => _PortfolioOverviewViewState();
-}
-
-class _PortfolioOverviewViewState extends State<_PortfolioOverviewView> {
-  
-  @override
-  void initState() {
-    super.initState();
-    CommonLogger.info('PortfolioOverviewWebPage: initState - Subscribing', tag: 'PortfolioOverviewWebPage');
-    // Start subscription when page initializes
-    context.read<PortfolioCubit>().subscribeToPortfolioUpdates(widget.userId);
-  }
-
-  @override
-  void dispose() {
-    CommonLogger.info('PortfolioOverviewWebPage: dispose - Unsubscribing', tag: 'PortfolioOverviewWebPage');
-    // End subscription when page is disposed (navigated away)
-    context.read<PortfolioCubit>().unsubscribeFromPortfolioUpdates();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return PortfolioOverviewWidget(
-      userId: widget.userId,
-      portfolioId: widget.portfolioId,
+      userId: userId,
+      portfolioId: portfolioId,
     );
   }
 }

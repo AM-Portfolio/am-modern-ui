@@ -7,12 +7,21 @@ part 'activity_item.g.dart';
 abstract class ActivityItem with _$ActivityItem {
   const factory ActivityItem({
     required String id,
-    required String type, // TRADE, DEPOSIT, WITHDRAWAL, ALERT
+    required String type, // HOLDING, PORTFOLIO_UPDATE, TRADE
     required String title,
-    required String description,
+    @Default('') String description,
     required DateTime timestamp,
-    required String amount,
+    String? amount,
     @Default(true) bool isPositive,
+    String? symbol,
+    String? companyName,
+    String? sector,
+    double? quantity,
+    double? currentPrice,
+    double? currentValue,
+    double? profitLoss,
+    double? profitLossPercent,
+    String? status, // WIN, LOSS, NEUTRAL
   }) = _ActivityItem;
 
   factory ActivityItem.fromJson(Map<String, dynamic> json) =>

@@ -86,9 +86,9 @@ class RecentActivityWidget extends StatelessWidget {
         style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 12),
       ),
       isThreeLine: true,
-      trailing: activity.amount.isNotEmpty
+      trailing: (activity.amount?.isNotEmpty ?? false)
           ? Text(
-              activity.amount,
+              activity.amount!,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: activity.isPositive ? AppColors.profit : AppColors.loss,
