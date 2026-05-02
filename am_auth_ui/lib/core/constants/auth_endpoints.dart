@@ -1,5 +1,4 @@
 import 'package:am_common/am_common.dart';
-import 'package:am_common/core/config/config_service.dart';
 
 /// Authentication & User Management API endpoint constants
 class AuthEndpoints {

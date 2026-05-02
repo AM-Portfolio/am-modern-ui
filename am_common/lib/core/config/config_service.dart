@@ -1,5 +1,5 @@
 import 'package:am_common/core/config/app_config.dart';
-import 'package:am_library/am_library.dart';
+import 'package:am_library/am_library.dart' show Environment;
 
 /// Minimal stub ConfigService for getting app running
 /// TODO: Replace with full implementation later

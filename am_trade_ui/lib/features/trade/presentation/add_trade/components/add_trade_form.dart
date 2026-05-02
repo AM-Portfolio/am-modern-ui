@@ -299,12 +299,8 @@ class _AddTradeFormState extends State<AddTradeForm> {
                   attachments: _attachments,
                   onAttachmentsChanged: (files) => setState(() => _attachments = files),
                   userId: () {
-                    try {
-                      final authState = context.read<AuthCubit>().state;
-                      return authState is Authenticated ? authState.user.id : 'user_gyaan';
-                    } catch (_) {
-                      return 'user_gyaan';
-                    }
+                    final authState = context.read<AuthCubit>().state;
+                    return authState is Authenticated ? authState.user.id : '';
                   }(),
                   onInstrumentSelected: _onInstrumentSelected,
                 ),
