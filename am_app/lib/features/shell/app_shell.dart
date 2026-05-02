@@ -37,12 +37,24 @@ class _AppShellState extends State<AppShell> {
 
   Future<void> _checkInitialAuthAndConnect() async {
     final authCubit = context.read<AuthCubit>();
-    if (authCubit.state is Authenticated) {
+    final authState = authCubit.state;
+    if (authState is Authenticated) {
       common.AppLogger.info('AppShell: Initialized while Authenticated. Triggering STOMP connection...');
+      final stompCubit = context.read<common.StompConnectionCubit>();
+      
+      stompCubit.onConnected = (userId) {
+        common.AppLogger.info('AppShell (Initial): STOMP Connected. Triggering global portfolio sync for $userId');
+        common.ServiceRegistry.stomp.send(
+          destination: '/app/portfolio/subscribe',
+          headers: {'content-type': 'application/json'},
+          body: '{"userId": "$userId"}',
+        );
+      };
+
       final secureStorage = GetIt.instance<common.SecureStorageService>();
       final token = await secureStorage.getAccessToken();
       if (mounted) {
-        context.read<common.StompConnectionCubit>().updateToken(token);
+        stompCubit.updateToken(token, userId: authState.user.id);
       }
     }
   }
@@ -73,16 +85,30 @@ class _AppShellState extends State<AppShell> {
       listeners: [
         BlocListener<AuthCubit, AuthState>(
           listener: (context, state) async {
+            final stompCubit = context.read<common.StompConnectionCubit>();
+            
             if (state is Authenticated) {
                common.AppLogger.info('AppShell: AuthState changed to Authenticated. Connecting STOMP...');
+               
+               // Register root-level sync trigger
+               stompCubit.onConnected = (userId) {
+                 common.AppLogger.info('AppShell: STOMP Connected. Triggering global portfolio sync for $userId');
+                 common.ServiceRegistry.stomp.send(
+                   destination: '/app/portfolio/subscribe',
+                   headers: {'content-type': 'application/json'},
+                   body: '{"userId": "$userId"}',
+                 );
+               };
+
                final secureStorage = GetIt.instance<common.SecureStorageService>();
                final token = await secureStorage.getAccessToken();
                if (context.mounted) {
-                 context.read<common.StompConnectionCubit>().updateToken(token);
+                 stompCubit.updateToken(token, userId: state.user.id);
                }
             } else if (state is Unauthenticated) {
                common.AppLogger.info('AppShell: AuthState changed to Unauthenticated. Disconnecting STOMP...');
-               context.read<common.StompConnectionCubit>().updateToken(null);
+               stompCubit.onConnected = null;
+               stompCubit.updateToken(null);
             }
           },
         ),
@@ -150,7 +176,10 @@ class _AppShellState extends State<AppShell> {
                         ],
                       ),
                     Expanded(
-                      child: _buildPage(userId, isDesktop),
+                      child: GlobalPortfolioWrapper(
+                        userId: userId,
+                        child: _buildPage(userId, isDesktop),
+                      ),
                     ),
                   ],
                 ),

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:am_library/am_library.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/domain/models/activity_item.dart';
+import 'package:am_dashboard_ui/domain/models/allocation_response.dart';
 import 'package:am_dashboard_ui/domain/models/dashboard_summary.dart';
 import 'package:am_dashboard_ui/domain/models/performance_response.dart';
 import 'package:am_dashboard_ui/domain/models/portfolio_overview.dart';
@@ -35,6 +36,19 @@ class DashboardRepository {
       );
     } catch (e) {
       AppLogger.error('Failed to fetch portfolio overviews', error: e);
+      rethrow;
+    }
+  }
+
+  Future<AllocationResponse> getAllocation(String userId, {String groupBy = 'SECTOR'}) async {
+    try {
+      return await _apiClient.get(
+        '/v1/analysis/PORTFOLIO/ALL/allocation',
+        queryParams: {'userId': userId, 'groupBy': groupBy},
+        parser: (data) => AllocationResponse.fromJson(data),
+      );
+    } catch (e) {
+      AppLogger.error('Failed to fetch dashboard allocation', error: e);
       rethrow;
     }
   }
@@ -81,7 +95,24 @@ class DashboardRepository {
         parser: (data) {
           // The backend returns a RecentActivityResponse object containing an 'items' list
           final items = data['items'] as List?;
-          return items?.map((e) => ActivityItem.fromJson(e)).toList() ?? [];
+          return items?.map((e) {
+            final json = e as Map<String, dynamic>;
+            
+            // If it's a HOLDING and amount/isPositive are missing, populate them for UI
+            if (json['type'] == 'HOLDING' && json['amount'] == null) {
+              final currentValue = json['currentValue'] as double?;
+              final profitLoss = json['profitLoss'] as double?;
+              
+              if (currentValue != null) {
+                json['amount'] = '₹${currentValue.toStringAsFixed(2)}';
+              }
+              if (profitLoss != null) {
+                json['isPositive'] = profitLoss >= 0;
+              }
+            }
+            
+            return ActivityItem.fromJson(json);
+          }).toList() ?? [];
         },
       );
     } catch (e) {
@@ -93,7 +124,7 @@ class DashboardRepository {
   Stream<DashboardSummary> getDashboardStream(String userId) {
     final destination = '/topic/dashboard/$userId';
     
-    // Ensure subscription
+    // Ensure subscription to the result topic
     _stompClient.subscribe(destination);
 
     return _stompClient.messages

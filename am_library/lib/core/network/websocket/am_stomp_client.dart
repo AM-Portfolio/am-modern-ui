@@ -179,6 +179,7 @@ class AmStompClient {
       return;
     }
 
+    AppLogger.info('AmStompClient: 🚀 Sending message to $destination (Body: ${body?.length ?? 0} chars)');
     _client!.send(
       destination: destination,
       body: body,

@@ -43,7 +43,11 @@ class StompConnectionCubit extends Cubit<StompConnectionState> {
   /// 
   /// When a non-null token is received, it connects.
   /// When null is received, it disconnects.
-  void updateToken(String? token) {
+  String? _currentUserId;
+  Function(String userId)? onConnected;
+
+  void updateToken(String? token, {String? userId}) {
+    _currentUserId = userId;
     if (token != null && token.isNotEmpty) {
       if (!_stompClient.isConnected) {
         _stompClient.connect(headers: {'Authorization': 'Bearer $token'});
@@ -60,6 +64,9 @@ class StompConnectionCubit extends Cubit<StompConnectionState> {
         break;
       case StompStatus.connected:
         emit(StompConnected());
+        if (_currentUserId != null && onConnected != null) {
+          onConnected!(_currentUserId!);
+        }
         break;
       case StompStatus.disconnected:
         emit(StompDisconnected());

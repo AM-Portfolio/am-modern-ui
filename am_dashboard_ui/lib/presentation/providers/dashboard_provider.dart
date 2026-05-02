@@ -1,5 +1,6 @@
 import 'package:am_dashboard_ui/data/repositories/dashboard_repository.dart';
 import 'package:am_dashboard_ui/domain/models/activity_item.dart';
+import 'package:am_dashboard_ui/domain/models/allocation_response.dart';
 import 'package:am_dashboard_ui/domain/models/dashboard_summary.dart';
 import 'package:am_dashboard_ui/domain/models/performance_response.dart';
 import 'package:am_dashboard_ui/domain/models/portfolio_overview.dart';
@@ -54,6 +55,12 @@ Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
 Future<List<PortfolioOverview>> portfolioOverviews(Ref ref, String userId) async {
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   return repository.getPortfolioOverviews(userId);
+}
+
+@riverpod
+Future<AllocationResponse> dashboardAllocation(Ref ref, String userId) async {
+  final repository = await ref.watch(dashboardRepositoryProvider.future);
+  return repository.getAllocation(userId);
 }
 
 @riverpod
