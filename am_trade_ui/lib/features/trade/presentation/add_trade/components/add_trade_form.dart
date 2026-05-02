@@ -79,15 +79,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
   @override
   void initState() {
     super.initState();
-
-    // Set default values
-    _selectedExchange = ExchangeTypes.nse;
-    _selectedSegment = MarketSegments.equity;
-    _selectedBroker = BrokerTypes.zerodha;
-    _selectedOrderType = OrderTypes.market;
-    _entryDate = DateTime.now();
-    _exitDate = DateTime.now();
-
+    
     if (widget.initialData != null) {
       _loadInitialData();
     }
@@ -231,6 +223,31 @@ class _AddTradeFormState extends State<AddTradeForm> {
     }
   }
 
+  void _onInstrumentSelected(Map<String, dynamic> instrument) {
+    setState(() {
+      _symbolController.text = instrument['symbol'] ?? '';
+      _descriptionController.text = instrument['description'] ?? instrument['displayName'] ?? '';
+      
+      // Auto-select exchange if available
+      if (instrument['exchange'] != null) {
+        final exchangeStr = instrument['exchange'].toString().toLowerCase();
+        if (exchangeStr == 'nse') _selectedExchange = ExchangeTypes.nse;
+        if (exchangeStr == 'bse') _selectedExchange = ExchangeTypes.bse;
+      }
+      
+      // Auto-select segment if available
+      if (instrument['segment'] != null) {
+        final segmentStr = instrument['segment'].toString().toUpperCase();
+        if (segmentStr == 'EQUITY') _selectedSegment = MarketSegments.equity;
+      }
+    });
+    
+    AppLogger.info(
+      '🎯 Instrument selected: ${_symbolController.text} - ${_descriptionController.text}', 
+      tag: 'AddTradeForm'
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -248,82 +265,93 @@ class _AddTradeFormState extends State<AddTradeForm> {
             physics: const NeverScrollableScrollPhysics(),
             children: [
               // Step 1: Trade Details (modular component)
-              TradeDetailsStep(
-                symbolController: _symbolController,
-                selectedExchange: _selectedExchange,
-                onExchangeChanged: (value) => setState(() => _selectedExchange = value),
-                selectedSegment: _selectedSegment,
-                onSegmentChanged: (value) => setState(() => _selectedSegment = value),
-                selectedDirection: _selectedDirection,
-                onDirectionChanged: (value) => setState(() => _selectedDirection = value),
-                selectedStatus: _selectedStatus,
-                onStatusChanged: (value) => setState(() => _selectedStatus = value),
-                entryDate: _entryDate,
-                onEntryDateSelected: (date) => setState(() => _entryDate = date),
-                entryPriceController: _entryPriceController,
-                entryQuantityController: _entryQuantityController,
-                exitDate: _exitDate,
-                onExitDateSelected: (date) => setState(() => _exitDate = date),
-                exitPriceController: _exitPriceController,
-                exitQuantityController: _exitQuantityController,
-                selectedBroker: _selectedBroker,
-                onBrokerChanged: (value) => setState(() => _selectedBroker = value),
-                selectedOrderType: _selectedOrderType,
-                onOrderTypeChanged: (value) => setState(() => _selectedOrderType = value),
-                selectedDerivativeType: _selectedDerivativeType,
-                onDerivativeTypeChanged: (value) => setState(() => _selectedDerivativeType = value),
-                strikePriceController: _strikePriceController,
-                selectedOptionType: _selectedOptionType,
-                onOptionTypeChanged: (value) => setState(() => _selectedOptionType = value),
-                expiryDate: _expiryDate,
-                onExpiryDateSelected: (date) => setState(() => _expiryDate = date),
-                attachments: _attachments,
-                onAttachmentsChanged: (files) => setState(() => _attachments = files),
-                userId: context.read<AuthCubit>().state is Authenticated
-                    ? (context.read<AuthCubit>().state as Authenticated).user.id
-                    : null,
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: TradeDetailsStep(
+                  symbolController: _symbolController,
+                  selectedExchange: _selectedExchange,
+                  onExchangeChanged: (value) => setState(() => _selectedExchange = value),
+                  selectedSegment: _selectedSegment,
+                  onSegmentChanged: (value) => setState(() => _selectedSegment = value),
+                  selectedDirection: _selectedDirection,
+                  onDirectionChanged: (value) => setState(() => _selectedDirection = value),
+                  selectedStatus: _selectedStatus,
+                  onStatusChanged: (value) => setState(() => _selectedStatus = value),
+                  entryDate: _entryDate,
+                  onEntryDateSelected: (date) => setState(() => _entryDate = date),
+                  entryPriceController: _entryPriceController,
+                  entryQuantityController: _entryQuantityController,
+                  exitDate: _exitDate,
+                  onExitDateSelected: (date) => setState(() => _exitDate = date),
+                  exitPriceController: _exitPriceController,
+                  exitQuantityController: _exitQuantityController,
+                  selectedBroker: _selectedBroker,
+                  onBrokerChanged: (value) => setState(() => _selectedBroker = value),
+                  selectedOrderType: _selectedOrderType,
+                  onOrderTypeChanged: (value) => setState(() => _selectedOrderType = value),
+                  selectedDerivativeType: _selectedDerivativeType,
+                  onDerivativeTypeChanged: (value) => setState(() => _selectedDerivativeType = value),
+                  strikePriceController: _strikePriceController,
+                  selectedOptionType: _selectedOptionType,
+                  onOptionTypeChanged: (value) => setState(() => _selectedOptionType = value),
+                  expiryDate: _expiryDate,
+                  onExpiryDateSelected: (date) => setState(() => _expiryDate = date),
+                  attachments: _attachments,
+                  onAttachmentsChanged: (files) => setState(() => _attachments = files),
+                  userId: () {
+                    final authState = context.read<AuthCubit>().state;
+                    return authState is Authenticated ? authState.user.id : '';
+                  }(),
+                  onInstrumentSelected: _onInstrumentSelected,
+                ),
               ),
 
               // Step 2: Optional Details (modular component)
-              OptionalDetailsStep(
-                strategyController: _strategyController,
-                selectedEntryPsychology: _selectedEntryPsychology,
-                onEntryPsychologyChanged: (factors) => setState(() => _selectedEntryPsychology = factors),
-                selectedExitPsychology: _selectedExitPsychology,
-                onExitPsychologyChanged: (factors) => setState(() => _selectedExitPsychology = factors),
-                selectedTechnicalReasons: _selectedTechnicalReasons,
-                onTechnicalReasonsChanged: (reasons) => setState(() => _selectedTechnicalReasons = reasons),
-                selectedFundamentalReasons: _selectedFundamentalReasons,
-                onFundamentalReasonsChanged: (reasons) => setState(() => _selectedFundamentalReasons = reasons),
-                notesController: _notesController,
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: OptionalDetailsStep(
+                  strategyController: _strategyController,
+                  selectedEntryPsychology: _selectedEntryPsychology,
+                  onEntryPsychologyChanged: (factors) => setState(() => _selectedEntryPsychology = factors),
+                  selectedExitPsychology: _selectedExitPsychology,
+                  onExitPsychologyChanged: (factors) => setState(() => _selectedExitPsychology = factors),
+                  selectedTechnicalReasons: _selectedTechnicalReasons,
+                  onTechnicalReasonsChanged: (reasons) => setState(() => _selectedTechnicalReasons = reasons),
+                  selectedFundamentalReasons: _selectedFundamentalReasons,
+                  onFundamentalReasonsChanged: (reasons) => setState(() => _selectedFundamentalReasons = reasons),
+                  notesController: _notesController,
+                ),
               ),
 
               // Step 3: Review (modular component)
-              ReviewStep(
-                symbol: _symbolController.text,
-                selectedExchange: _selectedExchange,
-                selectedSegment: _selectedSegment,
-                selectedDirection: _selectedDirection,
-                selectedStatus: _selectedStatus,
-                entryDate: _entryDate,
-                entryPrice: _entryPriceController.text,
-                entryQuantity: _entryQuantityController.text,
-                exitDate: _exitDate,
-                exitPrice: _exitPriceController.text,
-                exitQuantity: _exitQuantityController.text,
-                selectedBroker: _selectedBroker,
-                selectedOrderType: _selectedOrderType,
-                strategy: _strategyController.text,
-                selectedDerivativeType: _selectedDerivativeType,
-                strikePrice: _strikePriceController.text,
-                selectedOptionType: _selectedOptionType,
-                expiryDate: _expiryDate,
-                selectedEntryPsychology: _selectedEntryPsychology,
-                selectedExitPsychology: _selectedExitPsychology,
-                selectedTechnicalReasons: _selectedTechnicalReasons,
-                selectedFundamentalReasons: _selectedFundamentalReasons,
-                attachments: _attachments,
-                notes: _notesController.text,
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: ReviewStep(
+                  symbol: _symbolController.text,
+                  selectedExchange: _selectedExchange,
+                  selectedSegment: _selectedSegment,
+                  selectedDirection: _selectedDirection,
+                  selectedStatus: _selectedStatus,
+                  entryDate: _entryDate,
+                  entryPrice: _entryPriceController.text,
+                  entryQuantity: _entryQuantityController.text,
+                  exitDate: _exitDate,
+                  exitPrice: _exitPriceController.text,
+                  exitQuantity: _exitQuantityController.text,
+                  selectedBroker: _selectedBroker,
+                  selectedOrderType: _selectedOrderType,
+                  strategy: _strategyController.text,
+                  selectedDerivativeType: _selectedDerivativeType,
+                  strikePrice: _strikePriceController.text,
+                  selectedOptionType: _selectedOptionType,
+                  expiryDate: _expiryDate,
+                  selectedEntryPsychology: _selectedEntryPsychology,
+                  selectedExitPsychology: _selectedExitPsychology,
+                  selectedTechnicalReasons: _selectedTechnicalReasons,
+                  selectedFundamentalReasons: _selectedFundamentalReasons,
+                  attachments: _attachments,
+                  notes: _notesController.text,
+                ),
               ),
             ],
           ),

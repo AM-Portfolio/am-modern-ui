@@ -38,7 +38,7 @@ class OptionalDetailsStep extends StatelessWidget {
     final theme = Theme.of(context);
     final isDesktop = MediaQuery.of(context).size.width > 1200;
 
-    return SingleChildScrollView(
+    return Padding(
       padding: EdgeInsets.all(isDesktop ? 24 : 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

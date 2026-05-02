@@ -1,0 +1,53 @@
+# Trade Application Local Development Fixes
+
+This document outlines the specific changes made to the `am_trade_ui` (Frontend) and `am-trade-management` (Backend) to enable a stable, localized development environment. 
+
+All other changes made to the global UI modules (`am_app`, `am_auth_ui`, `am_library`, etc.) have been reverted to their original state as requested.
+
+## 🔴 The Problem
+1. **API Routing Mismatch:** The Trade UI was hardcoded to send requests to production servers (`https://am.asrax.in`).
+2. **CORS Blocking:** The Java backend was strictly configured to only accept requests from port `8083`, blocking the local Flutter development server running on `8080`.
+3. **UI Rendering Crashes:** The "Add Trade" form had "Unbounded Height" layout exceptions when rendered on Flutter Web.
+4. **"Ghost" Trades:** The "Add Trade" button was silently failing to show new trades on the dashboard because it was sending an incorrect User ID (`demo_user_id` instead of `user_gyaan`) and missing the `portfolioId`.
+
+---
+
+## 🟢 The Solution (Files Changed)
+
+### 1. Frontend (`am_trade_ui`)
+
+#### `lib/core/constants/trade_endpoints.dart`
+*   **What changed:** Converted `tradeBaseUrl` from a static string to a dynamic getter pulling from `ConfigService`.
+*   **Why:** To prevent the app from forcing API calls to the cloud, allowing it to dynamically route to `http://localhost:8082`.
+
+#### `lib/main.dart`
+*   **What changed:** Added null-safety operators (`!`) to the `ServiceRegistry` initialization.
+*   **Why:** Flutter's strict null-safety compiler was blocking the standalone app from starting because it couldn't guarantee the config values existed.
+
+#### `lib/features/trade/internal/data/datasources/trade_controller_remote_data_source.dart`
+*   **What changed:** Updated the `_baseUrl` getter to safely attempt reading from the `ConfigService` first, falling back to the endpoint constants only if it fails.
+*   **Why:** This guarantees that all HTTP requests (GET, POST, PUT, DELETE) respect the local development port routing.
+
+#### `lib/features/trade/presentation/add_trade/components/add_trade_form.dart`
+*   **What changed:** Wrapped the multi-step form views (`TradeDetailsStep`, `OptionalDetailsStep`, `ReviewStep`) in `SingleChildScrollView`. Also updated the fallback user ID logic to return `'user_gyaan'`.
+*   **Why:** The `SingleChildScrollView` prevents the "Unbounded Height" layout crashes on the web. The ID change ensures the form matches the mock data used by the local backend.
+
+#### `lib/features/trade/presentation/add_trade/pages/add_trade_web_page.dart`
+*   **What changed:** Fixed the `_handleSave` method to properly extract and inject the `userId` and `portfolioId` before dispatching the trade to the backend.
+*   **Why:** The form itself didn't know which portfolio it belonged to. Injecting it at the page level ensures the trade is saved to the correct dashboard view.
+
+#### `lib/shared/core/ui/components/trade/entry_exit_card.dart`
+*   **What changed:** Added `Flexible`/`Expanded` layout constraints to the internal rows.
+*   **Why:** Fixed "RenderBox overflow" pixel errors that occurred when viewing the cards on smaller web windows.
+
+---
+
+### 2. Backend (`am-trade-management`)
+
+#### `am-trade-api/src/main/java/am/trade/api/controller/TradeController.java`
+*   **What changed:** Updated the `@CrossOrigin(origins = "http://localhost:8083")` annotation to `"http://localhost:8080"`.
+*   **Why:** The local Flutter frontend runs on port `8080`. Without this change, the browser's security policies (CORS) blocked the UI from saving trades.
+
+#### `am-trade-api/src/main/java/am/trade/api/controller/PortfolioSummaryController.java`
+*   **What changed:** Updated the `@CrossOrigin` annotation to `"http://localhost:8080"`.
+*   **Why:** Allowed the Trade Dashboard to successfully fetch the portfolio metrics without being blocked by CORS.
