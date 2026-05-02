@@ -79,16 +79,6 @@ class _AddTradeFormState extends State<AddTradeForm> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill with dummy data for debugging
-    _symbolController.text = 'RELIANCE';
-    _entryPriceController.text = '2500.0';
-    _entryQuantityController.text = '10';
-    _selectedExchange = ExchangeTypes.nse;
-    _selectedSegment = MarketSegments.equity;
-    _selectedBroker = BrokerTypes.zerodha;
-    _selectedOrderType = OrderTypes.market;
-    _entryDate = DateTime.now();
-    _exitDate = DateTime.now();
     
     if (widget.initialData != null) {
       _loadInitialData();

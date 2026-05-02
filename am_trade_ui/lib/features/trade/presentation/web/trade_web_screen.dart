@@ -60,7 +60,7 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     super.initState();
     _currentPortfolioId = widget.selectedPortfolioId;
     _currentPortfolioName = widget.selectedPortfolioName;
-    _symbolController = TextEditingController(text: 'NASDAQ:AAPL');
+    _symbolController = TextEditingController(text: '');
 
     _initializeSwipeController();
 

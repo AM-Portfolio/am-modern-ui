@@ -30,7 +30,7 @@ void main() async {
               create: (context) => cubit,
               child: MaterialApp(
                 debugShowCheckedModeBanner: false,
-                home: TradeWebScreen(userId: 'user_gyaan'),
+                home: const TradeWebScreen(userId: ''), // Should be provided by Auth state
                 onGenerateRoute: (settings) {
                   if (settings.name == '/trade/add') {
                     final args = settings.arguments as Map<String, dynamic>?;
@@ -38,7 +38,7 @@ void main() async {
                       builder: (context) => BlocProvider.value(
                         value: cubit,
                         child: AddTradeWebPage(
-                          portfolioId: args?['portfolioId'] as String? ?? '1001',
+                          portfolioId: args?['portfolioId'] as String?,
                           portfolioName: args?['portfolioName'] as String?,
                         ),
                       ),
