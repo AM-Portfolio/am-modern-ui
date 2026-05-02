@@ -1,5 +1,4 @@
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+library am_market_common;
+
+export 'services/api_service.dart';
+// Add other exports as needed
