@@ -45,15 +45,17 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
 
     setState(() => _isLoading = true);
 
-    // Get userId from AuthCubit (with fallback for standalone dev)
-    String userId = 'user_gyaan';
-    try {
-      final authState = context.read<AuthCubit>().state;
-      if (authState is Authenticated) {
-        userId = authState.user.id;
-      }
-    } catch (e) {
-      AppLogger.debug('AuthCubit not found, using default test user: $userId', tag: 'AddTradeWebPage');
+    // Get userId from AuthCubit
+    final authState = context.read<AuthCubit>().state;
+    final userId = authState is Authenticated ? authState.user.id : null;
+
+    if (userId == null || userId.isEmpty) {
+      AppLogger.error('🚨 CRITICAL: Cannot save trade - userId is null or empty!', tag: 'AddTradeWebPage');
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Authentication error. Please log in again.'), backgroundColor: Colors.red),
+      );
+      return;
     }
 
     // CRITICAL: Set portfolioId and userId from widget/auth since they're not included in the form
