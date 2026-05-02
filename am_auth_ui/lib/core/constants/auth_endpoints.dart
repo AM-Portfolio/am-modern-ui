@@ -7,10 +7,10 @@ class AuthEndpoints {
   static String get userBaseUrl => ConfigService.config.api.user?.baseUrl ?? 'https://am.asrax.in/users';
   
   // Authentication endpoints
-  static const String login = '$authBaseUrl/v1/tokens'; // Centralized Token Service (am-auth-tokens)
-  static const String logout = '$authBaseUrl/logout';
-  static const String refreshToken = '$authBaseUrl/refresh';
-  static const String googleLogin = '$authBaseUrl/auth/google/token';
+  static String get login => '$authBaseUrl/v1/tokens'; // Centralized Token Service (am-auth-tokens)
+  static String get logout => '$authBaseUrl/logout';
+  static String get refreshToken => '$authBaseUrl/refresh';
+  static String get googleLogin => '$authBaseUrl/auth/google/token';
   
   // User Management endpoints
   static String get register => '$userBaseUrl/v1/auth/register';
