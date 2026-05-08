@@ -62,14 +62,40 @@ class _PriceTestPageState extends State<PriceTestPage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-           if (data is Map && data.containsKey(symbol)) {
-             _priceData = data[symbol]; 
-           } else if (data is Map && data.isNotEmpty) {
-             _priceData = data.values.first; // Fallback
-           }
+          // Check for quotes in both flat and wrapped structures
+          Map<String, dynamic>? quotes;
+          if (data is Map) {
+            if (data.containsKey(symbol)) {
+              // Flat structure (symbol is at top level)
+              _priceData = Map<String, dynamic>.from(data[symbol] as Map);
+              return;
+            } else if (data.containsKey('quotes') && data['quotes'] is Map) {
+              // Wrapped structure
+              quotes = Map<String, dynamic>.from(data['quotes'] as Map);
+            } else {
+              // Assume the whole map might be quotes if it doesn't have metadata keys
+              // or just use it as fallback
+              quotes = Map<String, dynamic>.from(data);
+            }
+          }
+
+          if (quotes != null && quotes.containsKey(symbol)) {
+            _priceData = Map<String, dynamic>.from(quotes[symbol] as Map);
+          } else if (quotes != null && quotes.isNotEmpty && !quotes.containsKey('count')) {
+            // Fallback: show the first available quote (excluding metadata keys)
+            final firstKey = quotes.keys.firstWhere((k) => k != 'count' && k != 'cached' && k != 'timestamp', orElse: () => '');
+            if (firstKey.isNotEmpty) {
+              _priceData = Map<String, dynamic>.from(quotes[firstKey] as Map);
+            }
+          }
+
+          if (_priceData == null) {
+            _error = 'No quote returned for $symbol. '
+                'Check if the Upstox token is valid and the symbol format is correct.';
+          }
         });
       } else {
-        setState(() => _error = "Status ${response.statusCode}: ${response.body}");
+        setState(() => _error = 'Status ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       setState(() => _error = e.toString());
@@ -234,7 +260,7 @@ class _PriceTestPageState extends State<PriceTestPage> {
              spacing: 24,
              runSpacing: 16,
              children: [
-               _kv(context, "LTP", "${data['lastPrice']}"),
+               _kv(context, "LTP", "${data['lastPrice'] ?? data['ltp'] ?? data['last_price'] ?? '-'}"),
                _kv(context, "Change", "${data['change']}", color: (data['change']??0) >= 0 ? Colors.green : Colors.red),
                _kv(context, "Open", "${data['openPrice']}"),
                _kv(context, "High", "${data['highPrice']}"),
