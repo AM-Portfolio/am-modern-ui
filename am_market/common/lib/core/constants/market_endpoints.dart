@@ -1,7 +1,10 @@
 /// Market Module API endpoint constants
 class MarketEndpoints {
   // Base URL
-  static const String baseUrl = 'https://am.asrax.in/market';
+  static const String baseUrl = String.fromEnvironment(
+    'AM_MARKET_BASE_URL',
+    defaultValue: 'https://am.asrax.in/market',
+  );
   
   // Indices
   static const String availableIndices = '/v1/indices/available';

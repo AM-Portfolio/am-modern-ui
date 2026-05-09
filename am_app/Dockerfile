@@ -40,7 +40,8 @@ RUN flutter pub get
 COPY am_app/ .
 
 # Build the web application
-RUN flutter build web --release
+ARG AM_MARKET_BASE_URL=https://am.asrax.in/market
+RUN flutter build web --release --dart-define=AM_MARKET_BASE_URL=$AM_MARKET_BASE_URL
 
 # Staging nginx config for runtime
 COPY am_app/nginx.conf /app/nginx.conf

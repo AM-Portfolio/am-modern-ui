@@ -30,6 +30,8 @@ class _PriceTestPageState extends State<PriceTestPage> {
   // Config
   String _provider = 'UPSTOX'; // Default
   bool _isIndex = false;
+  bool _useLocal = false;
+  final _portController = TextEditingController(text: '8080');
 
   Future<void> _fetchPrice() async {
     setState(() {
@@ -40,15 +42,19 @@ class _PriceTestPageState extends State<PriceTestPage> {
     });
 
     try {
-      final symbol = _symbolController.text.toUpperCase();
+      final symbol = _symbolController.text.trim().toUpperCase();
       
       // Direct call to debug raw response
       // Use ApiService logic but maybe expose debug method or just copy minimal logic
       final token = await GetIt.I<SecureStorageService>().getAccessToken();
       final forceRefresh = context.read<MarketProvider>().forceRefresh;
       
+      final baseUrl = _useLocal 
+          ? 'http://localhost:${_portController.text.trim()}' 
+          : ApiService.baseUrl;
+          
       final response = await http.get(
-        Uri.parse('${ApiService.baseUrl}/v1/market-data/quotes?symbols=$symbol&provider=$_provider&isIndex=$_isIndex&refresh=$forceRefresh'),
+        Uri.parse('$baseUrl/v1/market-data/quotes?symbols=$symbol&provider=$_provider&isIndex=$_isIndex&refresh=$forceRefresh'),
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
@@ -165,28 +171,47 @@ class _PriceTestPageState extends State<PriceTestPage> {
                        ],
                      ),
                      const SizedBox(height: 16),
-                     Row(
-                       children: [
-                         Text("Is Index?", style: theme.textTheme.bodyMedium),
-                         Switch(
-                           value: _isIndex, 
-                           onChanged: (v) => setState(() => _isIndex = v),
-                           activeColor: theme.primaryColor,
-                         ),
-                         const Spacer(),
-                         ElevatedButton.icon(
-                           onPressed: _isLoading ? null : _fetchPrice,
-                           icon: const Icon(Icons.play_arrow),
-                           label: const Text("Fetch Price"),
-                           style: ElevatedButton.styleFrom(
-                             backgroundColor: theme.primaryColor,
-                             foregroundColor: theme.colorScheme.onPrimary, 
-                             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                           ),
-                         )
-                       ],
-                     )
+                      Row(
+                        children: [
+                          Text("Is Index?", style: theme.textTheme.bodyMedium),
+                          Switch(
+                            value: _isIndex, 
+                            onChanged: (v) => setState(() => _isIndex = v),
+                            activeColor: theme.primaryColor,
+                          ),
+                          const SizedBox(width: 24),
+                          Text("Local Host?", style: theme.textTheme.bodyMedium),
+                          Switch(
+                            value: _useLocal, 
+                            onChanged: (v) => setState(() => _useLocal = v),
+                            activeColor: Colors.orange,
+                          ),
+                          if (_useLocal) ...[
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 60,
+                              child: TextField(
+                                controller: _portController,
+                                decoration: const InputDecoration(labelText: 'Port', isDense: true),
+                                keyboardType: TextInputType.number,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                          const Spacer(),
+                          ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _fetchPrice,
+                            icon: const Icon(Icons.play_arrow),
+                            label: const Text("Fetch Price"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.primaryColor,
+                              foregroundColor: theme.colorScheme.onPrimary, 
+                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          )
+                        ],
+                      )
                    ],
                  ),
                ),
@@ -261,11 +286,17 @@ class _PriceTestPageState extends State<PriceTestPage> {
              runSpacing: 16,
              children: [
                _kv(context, "LTP", "${data['lastPrice'] ?? data['ltp'] ?? data['last_price'] ?? '-'}"),
-               _kv(context, "Change", "${data['change']}", color: (data['change']??0) >= 0 ? Colors.green : Colors.red),
-               _kv(context, "Open", "${data['openPrice']}"),
-               _kv(context, "High", "${data['highPrice']}"),
-               _kv(context, "Low", "${data['lowPrice']}"),
-               _kv(context, "Close", "${data['closePrice']}"),
+               _kv(
+                 context,
+                 "Change",
+                 "${data['change'] ?? '-'}",
+                 color: ((data['change'] as num?) ?? 0) >= 0 ? Colors.green : Colors.red,
+               ),
+               _kv(context, "Open", "${data['openPrice'] ?? data['open'] ?? '-'}"),
+               _kv(context, "High", "${data['highPrice'] ?? data['high'] ?? '-'}"),
+               _kv(context, "Low", "${data['lowPrice'] ?? data['low'] ?? '-'}"),
+               _kv(context, "Close", "${data['closePrice'] ?? data['close'] ?? '-'}"),
+               _kv(context, "Volume", "${data['volume'] ?? '-'}"),
              ],
            )
         ],
