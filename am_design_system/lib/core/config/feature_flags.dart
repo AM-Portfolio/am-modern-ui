@@ -4,7 +4,7 @@ class FeatureFlags {
   FeatureFlags._internal();
   // API Configuration
   bool useRealGoogleAuth = false;
-  bool useRealBackendAPI = true;
+  bool useRealBackendAPI = false;
   bool useRealEmailService = false;
 
   // Development Features

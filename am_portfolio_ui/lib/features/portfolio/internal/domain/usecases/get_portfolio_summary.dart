@@ -80,4 +80,3 @@ class GetPortfolioSummary {
     return _repository.watchPortfolioSummary(userId);
   }
 }
-

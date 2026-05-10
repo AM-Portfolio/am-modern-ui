@@ -30,11 +30,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
     final response = await apiClient.post(
       BasketEndpoints.opportunities,
       parser: (data) => data,
-      body: {
-        'userId': userId,
-        'portfolioId': portfolioId,
-        'etfQuery': query,
-      },
+      body: {'userId': userId, 'portfolioId': portfolioId, 'etfQuery': query},
     );
 
     return (response as List)
@@ -51,11 +47,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
     final response = await apiClient.post(
       BasketEndpoints.preview,
       parser: (data) => data, // Pass-through as we need raw map for fromJson
-      body: {
-        'etfIsin': etfIsin,
-        'userId': userId,
-        'portfolioId': portfolioId,
-      },
+      body: {'etfIsin': etfIsin, 'userId': userId, 'portfolioId': portfolioId},
     );
 
     return BasketOpportunity.fromJson(response as Map<String, dynamic>);

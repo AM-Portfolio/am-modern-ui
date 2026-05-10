@@ -11,7 +11,10 @@ class PortfolioCacheRepository {
   // Portfolio Summary
   // ============================================================================
 
-  Future<Map<String, dynamic>?> getSummary(String userId, String portfolioId) async {
+  Future<Map<String, dynamic>?> getSummary(
+    String userId,
+    String portfolioId,
+  ) async {
     final key = PortfolioCacheKeys.summary(userId, portfolioId);
     return await _cacheService.get<Map<String, dynamic>>(key);
   }
@@ -47,7 +50,10 @@ class PortfolioCacheRepository {
   // Portfolio Heatmap
   // ============================================================================
 
-  Future<Map<String, dynamic>?> getHeatmap(String userId, String portfolioId) async {
+  Future<Map<String, dynamic>?> getHeatmap(
+    String userId,
+    String portfolioId,
+  ) async {
     final key = PortfolioCacheKeys.heatmap(userId, portfolioId);
     return await _cacheService.get<Map<String, dynamic>>(key);
   }
@@ -65,7 +71,10 @@ class PortfolioCacheRepository {
   // Portfolio Analytics
   // ============================================================================
 
-  Future<Map<String, dynamic>?> getAnalytics(String userId, String portfolioId) async {
+  Future<Map<String, dynamic>?> getAnalytics(
+    String userId,
+    String portfolioId,
+  ) async {
     final key = PortfolioCacheKeys.analytics(userId, portfolioId);
     return await _cacheService.get<Map<String, dynamic>>(key);
   }
@@ -87,7 +96,9 @@ class PortfolioCacheRepository {
     await _cacheService.clear(PortfolioCacheKeys.summary(userId, portfolioId));
     await _cacheService.clear(PortfolioCacheKeys.holdings(userId, portfolioId));
     await _cacheService.clear(PortfolioCacheKeys.heatmap(userId, portfolioId));
-    await _cacheService.clear(PortfolioCacheKeys.analytics(userId, portfolioId));
+    await _cacheService.clear(
+      PortfolioCacheKeys.analytics(userId, portfolioId),
+    );
   }
 
   Future<void> clearAllPortfolios(String userId) async {

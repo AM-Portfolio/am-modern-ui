@@ -94,4 +94,3 @@ class GetPortfolioHoldings {
     return _repository.watchPortfolioHoldings(userId);
   }
 }
-

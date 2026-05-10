@@ -52,6 +52,7 @@ class PortfolioHoldingsMapper {
     return PortfolioHolding(
       id: apiHolding.isin,
       symbol: apiHolding.symbol,
+      name: _extractCompanyName(apiHolding.symbol),
       companyName: _extractCompanyName(apiHolding.symbol),
       sector: apiHolding.sector,
       industry: apiHolding.industry,

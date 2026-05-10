@@ -422,4 +422,3 @@ class AllocationData {
   bool get hasAnyData =>
       sectorAllocation != null || marketCapAllocation != null;
 }
-

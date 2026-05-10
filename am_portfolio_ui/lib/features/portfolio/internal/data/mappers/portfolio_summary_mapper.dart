@@ -3,64 +3,96 @@ import '../dtos/portfolio_summary_dto.dart';
 import '../../domain/entities/portfolio_summary.dart';
 import 'package:am_common/am_common.dart';
 
-/// Mapper to convert between API models and domain entities for portfolio summary
-/// This provides isolation between external API structure and internal business logic
+/// Mapper to convert between API models and domain entities for portfolio summary.
+/// Aligned with the Java backend PortfolioSummaryV1 + BasePortfolioSummay models.
 class PortfolioSummaryMapper {
-  /// Convert API response to domain entity
+  /// Convert API response DTO to domain entity
   static PortfolioSummary fromApiModel(
     PortfolioSummaryDto apiModel,
     String userId,
   ) {
     try {
-      // Map sector allocations
-      final sectorAllocations = apiModel.sectorAllocation.entries
+      // Build sector allocation from sectorialHoldings map
+      final sectorAllocations = <SectorAllocation>[];
+      apiModel.sectorialHoldings.forEach((sectorName, holdings) {
+        // Calculate total value for this sector
+        double sectorValue = 0.0;
+        double sectorWeight = 0.0;
+        for (final h in holdings) {
+          sectorValue += h.currentValue;
+          sectorWeight += h.weightInPortfolio;
+        }
+        sectorAllocations.add(
+          SectorAllocation(
+            sector: sectorName,
+            value: sectorValue,
+            percentage: sectorWeight,
+            holdings: holdings.length,
+          ),
+        );
+      });
+
+      // Sort sectors by value descending
+      sectorAllocations.sort((a, b) => b.value.compareTo(a.value));
+
+      // Build top performers from all holdings (sorted by gainLossPercentage desc)
+      final allHoldings = <SectorialEquityHoldingDto>[];
+      apiModel.sectorialHoldings.forEach((_, holdings) {
+        allHoldings.addAll(holdings);
+      });
+
+      // Deduplicate by ISIN (holdings appear in both marketCap and sectorial)
+      final seen = <String>{};
+      final uniqueHoldings = <SectorialEquityHoldingDto>[];
+      for (final h in allHoldings) {
+        if (h.isin.isNotEmpty && seen.add(h.isin)) {
+          uniqueHoldings.add(h);
+        }
+      }
+
+      // Top performers: highest positive gainLossPercentage
+      final sortedByGain = List<SectorialEquityHoldingDto>.from(uniqueHoldings)
+        ..sort((a, b) => b.gainLossPercentage.compareTo(a.gainLossPercentage));
+      final topPerformers = sortedByGain
+          .where((h) => h.gainLossPercentage > 0)
+          .take(5)
           .map(
-            (entry) => SectorAllocation(
-              sector: entry.key,
-              value: 0.0, // Would need actual value from API
-              percentage: entry.value,
-              holdings: 0, // Would need actual count from API
+            (h) => TopPerformer(
+              symbol: h.symbol,
+              companyName: h.name.isNotEmpty ? h.name : h.symbol,
+              gainLoss: h.gainLoss,
+              gainLossPercentage: h.gainLossPercentage,
+              currentValue: h.currentValue,
             ),
           )
           .toList();
 
-      // Map top performers
-      final topPerformers = apiModel.topPerformers
+      // Worst performers: lowest (most negative) gainLossPercentage
+      final worstPerformers = sortedByGain.reversed
+          .where((h) => h.gainLossPercentage < 0)
+          .take(5)
           .map(
-            (api) => TopPerformer(
-              symbol: api.symbol,
-              companyName: api.symbol, // Using symbol as company name
-              gainLoss: api.gainAmount,
-              gainLossPercentage: api.gainPercentage,
-              currentValue: 0.0, // Default value, would need from API
-            ),
-          )
-          .toList();
-
-      // Map worst performers (using top losers)
-      final worstPerformers = apiModel.topLosers
-          .map(
-            (api) => TopPerformer(
-              symbol: api.symbol,
-              companyName: api.symbol, // Using symbol as company name
-              gainLoss: -api.lossAmount, // Negative for losses
-              gainLossPercentage: -api.lossPercentage, // Negative for losses
-              currentValue: 0.0, // Default value, would need from API
+            (h) => TopPerformer(
+              symbol: h.symbol,
+              companyName: h.name.isNotEmpty ? h.name : h.symbol,
+              gainLoss: h.gainLoss,
+              gainLossPercentage: h.gainLossPercentage,
+              currentValue: h.currentValue,
             ),
           )
           .toList();
 
       return PortfolioSummary(
         userId: userId,
-        totalValue: apiModel.totalValue,
+        totalValue: apiModel.currentValue,
         totalInvested: apiModel.investmentValue,
         investmentValue: apiModel.investmentValue,
-        totalGainLoss: apiModel.totalGain,
-        totalGainLossPercentage: apiModel.totalGainPercentage,
-        todayChange: apiModel.todaysGain,
-        todayChangePercentage: apiModel.todaysGainPercentage,
+        totalGainLoss: apiModel.totalGainLoss,
+        totalGainLossPercentage: apiModel.totalGainLossPercentage,
+        todayChange: apiModel.todayGainLoss,
+        todayChangePercentage: apiModel.todayGainLossPercentage,
         todayGainLossPercentage: apiModel.todayGainLossPercentage,
-        totalHoldings: _calculateTotalHoldings(apiModel.marketCapHoldings),
+        totalHoldings: uniqueHoldings.length,
         totalAssets: apiModel.totalAssets,
         todayGainersCount: apiModel.todayGainersCount,
         todayLosersCount: apiModel.todayLosersCount,
@@ -84,70 +116,21 @@ class PortfolioSummaryMapper {
   /// Convert domain entity to API model (for updates/requests)
   static PortfolioSummaryDto toApiModel(PortfolioSummary domainModel) =>
       PortfolioSummaryDto(
-        totalValue: domainModel.totalValue,
+        currentValue: domainModel.totalValue,
         investmentValue: domainModel.investmentValue,
-        todaysGain: domainModel.todayChange,
-        totalGain: domainModel.totalGainLoss,
-        totalGainPercentage: domainModel.totalGainLossPercentage,
-        todaysGainPercentage: domainModel.todayChangePercentage,
+        totalGainLoss: domainModel.totalGainLoss,
+        totalGainLossPercentage: domainModel.totalGainLossPercentage,
+        todayGainLoss: domainModel.todayChange,
         todayGainLossPercentage: domainModel.todayGainLossPercentage,
         totalAssets: domainModel.totalAssets,
         todayGainersCount: domainModel.todayGainersCount,
         todayLosersCount: domainModel.todayLosersCount,
         gainersCount: domainModel.gainersCount,
         losersCount: domainModel.losersCount,
-        marketCapHoldings:
-            const {}, // Empty since not available in simplified model
-        sectorAllocation: _mapSectorAllocation(domainModel.sectorAllocation),
-        topPerformers: _mapTopPerformers(domainModel.topPerformers),
-        topLosers: _mapWorstPerformers(domainModel.worstPerformers),
+        marketCapHoldings: const {},
+        sectorialHoldings: const {},
+        brokerPortfolios: const {},
       );
-
-  /// Calculate total holdings across all market caps
-  static int _calculateTotalHoldings(
-    Map<String, List<MarketCapHoldingDto>> marketCapHoldings,
-  ) => marketCapHoldings.values.fold(
-    0,
-    (sum, holdings) => sum + holdings.length,
-  );
-
-  /// Map sector allocation from domain to API
-  static Map<String, double> _mapSectorAllocation(
-    List<SectorAllocation> sectorAllocation,
-  ) {
-    final result = <String, double>{};
-    for (final sector in sectorAllocation) {
-      result[sector.sector] = sector.percentage;
-    }
-    return result;
-  }
-
-  /// Map top performers from domain to API
-  static List<ApiTopPerformer> _mapTopPerformers(
-    List<TopPerformer> topPerformers,
-  ) => topPerformers
-      .map(
-        (performer) => ApiTopPerformer(
-          symbol: performer.symbol,
-          gainPercentage: performer.gainLossPercentage,
-          gainAmount: performer.gainLoss,
-        ),
-      )
-      .toList();
-
-  /// Map worst performers from domain to API
-  static List<ApiTopLoser> _mapWorstPerformers(
-    List<TopPerformer> worstPerformers,
-  ) => worstPerformers
-      .map(
-        (performer) => ApiTopLoser(
-          symbol: performer.symbol,
-          lossPercentage:
-              -performer.gainLossPercentage, // Convert to positive loss
-          lossAmount: -performer.gainLoss, // Convert to positive loss
-        ),
-      )
-      .toList();
 
   /// Create empty portfolio summary for error states
   static PortfolioSummary createEmpty(String userId) =>
@@ -177,7 +160,6 @@ class PortfolioSummaryMapper {
   /// Validation helper
   static bool isValidApiResponse(PortfolioSummaryDto? apiModel) =>
       apiModel != null &&
-      apiModel.totalValue >= 0 &&
+      apiModel.currentValue >= 0 &&
       apiModel.investmentValue >= 0;
 }
-

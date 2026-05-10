@@ -22,9 +22,6 @@ class PortfolioHoldingsWebPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PortfolioHoldingsWidget(
-      userId: userId,
-      portfolioId: portfolioId,
-    );
+    return PortfolioHoldingsWidget(userId: userId, portfolioId: portfolioId);
   }
 }

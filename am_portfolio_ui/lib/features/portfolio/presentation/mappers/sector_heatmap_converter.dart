@@ -59,11 +59,13 @@ class SectorHeatmapConverter {
       lastUpdated: DateTime.now(),
       additionalInfo: {},
     ),
-    configuration: _mapConfig(PortfolioHeatmapConfig.getHeatmapConfig(
-      title: title,
-      showSubCards: showSubCards,
-      accentColor: accentColor,
-    )),
+    configuration: _mapConfig(
+      PortfolioHeatmapConfig.getHeatmapConfig(
+        title: title,
+        showSubCards: showSubCards,
+        accentColor: accentColor,
+      ),
+    ),
   );
 
   /// Creates hierarchical tiles with sectors and their stocks as children
@@ -392,14 +394,18 @@ class SectorHeatmapConverter {
           (sum, tile) => sum + (tile.children?.length ?? 0),
         ),
         'hierarchicalData': true,
-        'hasChildren': tiles.any((tile) => tile.children != null && tile.children!.isNotEmpty),
+        'hasChildren': tiles.any(
+          (tile) => tile.children != null && tile.children!.isNotEmpty,
+        ),
       },
     ),
-    configuration: _mapConfig(PortfolioHeatmapConfig.getHeatmapConfig(
-      title: title,
-      showSubCards: showSubCards,
-      accentColor: accentColor,
-    )),
+    configuration: _mapConfig(
+      PortfolioHeatmapConfig.getHeatmapConfig(
+        title: title,
+        showSubCards: showSubCards,
+        accentColor: accentColor,
+      ),
+    ),
   );
 
   static HeatmapConfig _mapConfig(dynamic widgetConfig) {
@@ -507,4 +513,3 @@ class SectorHeatmapConverter {
             : sectorName);
   }
 }
-

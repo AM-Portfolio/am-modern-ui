@@ -165,7 +165,7 @@ class AuthCubit extends Cubit<AuthState> {
                     '🔄 Emitting Authenticated state with userId: "$userId"',
                     tag: 'AuthCubit',
                   );
-                  emit(Authenticated(authResult.user));
+                  emit(Authenticated(authResult.user, token: authResult.tokens.accessToken));
                   CommonLogger.info(
                     '✅ Authentication state emitted successfully',
                     tag: 'AuthCubit',
@@ -265,6 +265,15 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (e) {
       emit(AuthError(e.toString()));
     }
+  }
+
+  /// Get current user ID if authenticated
+  String get currentUserId {
+    final currentState = state;
+    if (currentState is Authenticated) {
+      return currentState.user.id;
+    }
+    return '';
   }
 }
 

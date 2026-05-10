@@ -502,18 +502,22 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
 
 
   Widget _buildStackedBar(bool isMobile) {
-    final barHeight = isMobile ? 50.0 : 60.0;
+    final barHeight = isMobile ? 32.0 : 36.0; // Thinner, more professional bar
     
     return Container(
       height: barHeight,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-        ),
+        borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+        borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
         child: Row(
           children: _items.asMap().entries.map((entry) {
             final index = entry.key;
@@ -521,8 +525,8 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
             final color = _getColorForIndex(context, index);
             final abbreviation = _getSectorAbbreviation(item.name);
             
-            // Only show label if segment is big enough (>= 5%)
-            final showLabel = item.percentage >= 0.05;
+            // Only show label if segment is big enough (>= 10%) for a cleaner look
+            final showLabel = item.percentage >= 0.10;
             
             return Expanded(
               flex: (item.percentage * 100).round(),
@@ -535,23 +539,38 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
                     message: '${item.name}\n₹${_formatNumber(item.value)}\n${item.percentage.toStringAsFixed(1)}%',
                     preferBelow: false,
                     child: Container(
-                      color: color.withValues(alpha: _hoveredIndex == index ? 1.0 : 0.9),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            color,
+                            color.withValues(alpha: _hoveredIndex == index ? 0.9 : 0.7),
+                          ],
+                        ),
+                      ),
                       child: Center(
                         child: showLabel
-                            ? Text(
-                                _hoveredIndex == index && !isMobile
-                                    ? '${item.percentage.toStringAsFixed(1)}%'
-                                    : abbreviation,
-                                style: TextStyle(
-                                  color: Theme.of(context).textTheme.bodyMedium?.color,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: isMobile ? 9 : (_hoveredIndex == index ? 12 : 10),
-                                  shadows: const [
-                                    Shadow(
-                                      color: Colors.black45,
-                                      blurRadius: 2,
+                            ? FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                  child: Text(
+                                    _hoveredIndex == index && !isMobile
+                                        ? '${item.percentage.toStringAsFixed(1)}%'
+                                        : abbreviation,
+                                    style: TextStyle(
+                                      color: Colors.white, // High contrast white text
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: isMobile ? 9 : 11,
+                                      shadows: const [
+                                        Shadow(
+                                          color: Colors.black45,
+                                          blurRadius: 2,
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
                               )
                             : const SizedBox.shrink(),
@@ -565,7 +584,6 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
         ),
       ),
     );
-
   }
 
 

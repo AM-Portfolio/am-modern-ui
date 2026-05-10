@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_analysis_ui/widgets/analysis_allocation_widget.dart';
@@ -11,16 +11,21 @@ import 'package:intl/intl.dart';
 
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
-
+import 'package:am_auth_ui/features/authentication/presentation/cubit/auth_cubit.dart';
 
 /// Portfolio overview widget showing summary and key metrics
 class PortfolioOverviewWidget extends StatefulWidget {
-  const PortfolioOverviewWidget({required this.userId, this.portfolioId, super.key});
+  const PortfolioOverviewWidget({
+    required this.userId,
+    this.portfolioId,
+    super.key,
+  });
   final String userId;
   final String? portfolioId;
 
   @override
-  State<PortfolioOverviewWidget> createState() => _PortfolioOverviewWidgetState();
+  State<PortfolioOverviewWidget> createState() =>
+      _PortfolioOverviewWidgetState();
 }
 
 class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
@@ -36,182 +41,261 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
   Widget build(BuildContext context) {
     final portfolioId = widget.portfolioId;
     final userId = widget.userId;
-    
+
     print('[PortfolioOverview] Building with portfolioId=$portfolioId');
 
     return BlocBuilder<PortfolioCubit, PortfolioState>(
       builder: (context, state) {
         print('[PortfolioOverview] Current State: ${state.runtimeType}');
-        if (state is PortfolioLoading) {
-          return _buildOverviewSkeleton(context);
+        if (state is PortfolioLoading ||
+            state is PortfolioListLoaded ||
+            state is PortfolioInitial) {
+          // If we have a portfolioId but are in these intermediate states, show loading
+          if (portfolioId != null) {
+            return _buildOverviewSkeleton(context);
+          }
+          return const Center(
+            child: Text('Please select a portfolio to view details'),
+          );
         } else if (state is PortfolioError) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 48,
-                    color: Colors.red.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text('Error: ${state.message}'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () =>
-                        context.read<PortfolioCubit>().loadPortfolio(userId),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          } else if (state is PortfolioLoaded) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16), // Reduced from 20
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (portfolioId != null) ...[
-                    // Header with Global Time Frame Selector
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        ds.TimeFrameSelector.portfolio(
-                          selectedTimeFrame: _selectedTimeFrame,
-                          onTimeFrameChanged: _onTimeFrameChanged,
-                          compact: true,
-                        ),
-                      ],
+                Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading portfolio',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    state.message,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey.shade600,
                     ),
-                    const SizedBox(height: 24),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    if (portfolioId != null) {
+                      context.read<PortfolioCubit>().loadPortfolioById(
+                        context.read<AuthCubit>().currentUserId,
+                        portfolioId!,
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try Again'),
+                ),
+              ],
+            ),
+          );
+        } else if (state is PortfolioLoaded) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16), // Reduced from 20
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (portfolioId != null) ...[
+                  // Header with Global Time Frame Selector
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ds.TimeFrameSelector.portfolio(
+                        selectedTimeFrame: _selectedTimeFrame,
+                        onTimeFrameChanged: _onTimeFrameChanged,
+                        compact: true,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
 
-                    // Row 1: 4 Metric Cards with staggered animations
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildMetricCard(
-                            context,
-                            'Total Balance',
-                            _formatCurrency(state.summary.totalValue),
-                            '${state.summary.todayChangePercentage >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}%',
-                            const Color(0xFF6C5DD3),
-                            Icons.account_balance_wallet,
-                            isPositive: state.summary.todayChangePercentage >= 0,
-                          ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildMetricCard(
-                            context,
-                            'Daily P&L',
-                            _formatCurrency(state.summary.todayChange),
-                            '${state.summary.todayChange >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}% today',
-                            state.summary.todayChange >= 0 
-                                ? const Color(0xFF00B894) 
-                                : const Color(0xFFFF7675),
-                            Icons.trending_up,
-                            isPositive: state.summary.todayChange >= 0,
-                          ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildMetricCard(
-                            context,
-                            'Total Return',
-                            _formatCurrency(state.summary.totalGainLoss),
-                            'All time',
-                            state.summary.totalGainLoss >= 0
-                                ? const Color(0xFF00B894)
-                                : const Color(0xFFFF7675),
-                            Icons.show_chart,
-                            isPositive: state.summary.totalGainLoss >= 0,
-                          ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildMetricCard(
-                            context,
-                            'Cash Available',
-                            _formatCurrency(12000.00),
-                            'Buying power',
-                            const Color(0xFF4A90E2),
-                            Icons.add_circle_outline,
-                            isHighlight: true,
-                          ).animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.2, end: 0),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Row 2: Performance Chart + Sector Allocation with animations
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Performance Chart (Left, 60%)
-                        Expanded(
-                          flex: 6,
-                          child: Container(
-                            height: 340,
-                            child: AnalysisPerformanceWidget(
-                              key: ValueKey('perf_${_selectedTimeFrame.code}'),
+                  // Row 1: 4 Metric Cards with staggered animations
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildMetricCard(
+                          context,
+                          'Total Balance',
+                          _formatCurrency(state.summary.totalValue),
+                          '${state.summary.todayChangePercentage >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}%',
+                          const Color(0xFF6C5DD3),
+                          Icons.account_balance_wallet,
+                          isPositive: state.summary.todayChangePercentage >= 0,
+                        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child:
+                            _buildMetricCard(
+                                  context,
+                                  'Daily P&L',
+                                  _formatCurrency(state.summary.todayChange),
+                                  '${state.summary.todayChange >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}% today',
+                                  state.summary.todayChange >= 0
+                                      ? const Color(0xFF00B894)
+                                      : const Color(0xFFFF7675),
+                                  Icons.trending_up,
+                                  isPositive: state.summary.todayChange >= 0,
+                                )
+                                .animate()
+                                .fadeIn(duration: 400.ms, delay: 100.ms)
+                                .slideY(begin: 0.2, end: 0),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child:
+                            _buildMetricCard(
+                                  context,
+                                  'Total Return',
+                                  _formatCurrency(state.summary.totalGainLoss),
+                                  'All time',
+                                  state.summary.totalGainLoss >= 0
+                                      ? const Color(0xFF00B894)
+                                      : const Color(0xFFFF7675),
+                                  Icons.show_chart,
+                                  isPositive: state.summary.totalGainLoss >= 0,
+                                )
+                                .animate()
+                                .fadeIn(duration: 400.ms, delay: 200.ms)
+                                .slideY(begin: 0.2, end: 0),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child:
+                            _buildMetricCard(
+                                  context,
+                                  'Cash Available',
+                                  _formatCurrency(12000.00),
+                                  'Buying power',
+                                  const Color(0xFF4A90E2),
+                                  Icons.add_circle_outline,
+                                  isHighlight: true,
+                                )
+                                .animate()
+                                .fadeIn(duration: 400.ms, delay: 300.ms)
+                                .slideY(begin: 0.2, end: 0),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Row 2: Performance Chart + Sector Allocation with animations
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Performance Chart (Left, 50%)
+                      Expanded(
+                        flex: 5,
+                        child:
+                            Container(
+                                  height: 340,
+                                  child: AnalysisPerformanceWidget(
+                                    key: ValueKey(
+                                      'perf_${_selectedTimeFrame.code}',
+                                    ),
+                                    portfolioId: portfolioId!,
+                                    initialTimeFrame: _selectedTimeFrame,
+                                    showTimeFrameSelector: false,
+                                    height: 340,
+                                  ),
+                                )
+                                .animate()
+                                .fadeIn(duration: 500.ms, delay: 400.ms)
+                                .slideX(begin: -0.1, end: 0),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Sector Allocation (Right, 50%)
+                      Expanded(
+                        flex: 5,
+                        child:
+                            Container(
+                                  height: 340,
+                                  child: AnalysisAllocationWidget(
+                                    key: ValueKey(
+                                      'alloc_${_selectedTimeFrame.code}',
+                                    ),
+                                    portfolioId: portfolioId!,
+                                    initialTimeFrame: _selectedTimeFrame,
+                                    groupBy: GroupBy.sector,
+                                  ),
+                                )
+                                .animate()
+                                .fadeIn(duration: 500.ms, delay: 500.ms)
+                                .slideX(begin: 0.1, end: 0),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Row 3: Top Gainers + Top Losers with animation
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                            child: AnalysisTopMoversWidget(
+                              key: ValueKey(
+                                'movers_${_selectedTimeFrame.code}',
+                              ),
                               portfolioId: portfolioId!,
                               initialTimeFrame: _selectedTimeFrame,
                               showTimeFrameSelector: false,
-                              height: 340,
+                              height: 300,
                             ),
-                          ).animate().fadeIn(duration: 500.ms, delay: 400.ms).slideX(begin: -0.1, end: 0),
-                        ),
-                        const SizedBox(width: 12),
-                        
-                        // Sector Allocation (Right, 40%)
-                        Expanded(
-                          flex: 4,
-                          child: Container(
-                            height: 340,
-                            child: AnalysisAllocationWidget(
-                              key: ValueKey('alloc_${_selectedTimeFrame.code}'),
-                              portfolioId: portfolioId!,
-                              initialTimeFrame: _selectedTimeFrame,
-                              groupBy: GroupBy.sector,
-                            ),
-                          ).animate().fadeIn(duration: 500.ms, delay: 500.ms).slideX(begin: 0.1, end: 0),
-                        ),
-                      ],
+                          )
+                          .animate()
+                          .fadeIn(duration: 500.ms, delay: 600.ms)
+                          .slideY(begin: 0.2, end: 0),
+                    ],
+                  ),
+                ] else ...[
+                  // Fallback for no portfolio ID
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: Text('Please select a portfolio to view details'),
                     ),
-                    const SizedBox(height: 16),
-                    
-                    // Row 3: Top Gainers + Top Losers with animation
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: AnalysisTopMoversWidget(
-                            key: ValueKey('movers_${_selectedTimeFrame.code}'),
-                            portfolioId: portfolioId!,
-                            initialTimeFrame: _selectedTimeFrame,
-                            showTimeFrameSelector: false,
-                            height: 300,
-                          ),
-                        ).animate().fadeIn(duration: 500.ms, delay: 600.ms).slideY(begin: 0.2, end: 0),
-                      ],
-                    ),
-                  ] else ...[ 
-                    // Fallback for no portfolio ID
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Text('Please select a portfolio to view details'),
-                      ),
-                    ),
-                  ],
+                  ),
                 ],
+              ],
+            ),
+          );
+        }
+        if (state is PortfolioListLoading) {
+          print('[PortfolioOverview] List is loading, showing skeleton');
+          return _buildOverviewSkeleton(context);
+        }
 
-              ),
-            );
-          }
-          return const SizedBox.shrink();
-        },
-      );
+        if (state is PortfolioListError) {
+          print('[PortfolioOverview] List error: ${state.message}');
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Failed to load portfolio list: ${state.message}'),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () =>
+                      context.read<PortfolioCubit>().loadPortfoliosList(userId),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        print('[PortfolioOverview] Unknown state, returning empty');
+        return const SizedBox.shrink();
+      },
+    );
   }
 
   // Helper method for building summary cards (old fallback - can be removed later)
@@ -234,14 +318,18 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
         'Today Change',
         '\$${summary.todayChange.toStringAsFixed(2)}',
         Icons.trending_up,
-        summary.todayChange >= 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675), // Green/Red
+        summary.todayChange >= 0
+            ? const Color(0xFF00B894)
+            : const Color(0xFFFF7675), // Green/Red
         isGlossy: true,
       ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
       _buildSummaryCard(
         'Total P&L',
         '\$${summary.totalGainLoss.toStringAsFixed(2)}',
         Icons.show_chart,
-        summary.totalGainLoss >= 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675),
+        summary.totalGainLoss >= 0
+            ? const Color(0xFF00B894)
+            : const Color(0xFFFF7675),
         isGlossy: true,
       ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
       _buildSummaryCard(
@@ -267,25 +355,41 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
   }) {
     // Use theme colors
     final cardColor = Theme.of(context).cardColor;
-    final primaryColor = Theme.of(context).primaryColor;
     final textTheme = Theme.of(context).textTheme;
-    
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 16,
+      ), // Increased vertical padding
       decoration: BoxDecoration(
-        color: isHighlight ? accentColor : cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: !isHighlight ? Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.15),
+        gradient: isHighlight
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [accentColor, accentColor.withValues(alpha: 0.85)],
+              )
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [cardColor, cardColor.withValues(alpha: 0.95)],
+              ),
+        borderRadius: BorderRadius.circular(16), // Softer corners
+        border: Border.all(
+          color: isHighlight
+              ? Colors.white.withValues(alpha: 0.2)
+              : Theme.of(context).dividerColor.withValues(alpha: 0.1),
           width: 1,
-        ) : null,
-        boxShadow: isHighlight ? [
+        ),
+        boxShadow: [
           BoxShadow(
-            color: accentColor.withValues(alpha: 0.3),
+            color: isHighlight
+                ? accentColor.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.03),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
-        ] : null,
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,10 +405,12 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                   title,
                   style: textTheme.bodySmall?.copyWith(
                     fontSize: 11,
-                    color: isHighlight 
-                        ? Colors.white.withValues(alpha: 0.85) 
-                        : Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
-                    fontWeight: FontWeight.w500,
+                    color: isHighlight
+                        ? Colors.white.withValues(alpha: 0.85)
+                        : Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w600, // Slightly bolder
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -325,21 +431,21 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          
+          const SizedBox(height: 12), // Increased spacing
           // Main Value
           Text(
             value,
             style: textTheme.headlineSmall?.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: isHighlight ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color,
+              fontSize: 22, // Slightly larger
+              fontWeight: FontWeight.bold, // Bolder
+              color: isHighlight
+                  ? Colors.white
+                  : Theme.of(context).textTheme.bodyLarge?.color,
               height: 1.1,
             ),
           ),
-          
-          const SizedBox(height: 4),
-          
+
+          const SizedBox(height: 6), // Increased spacing
           // Subtitle with change indicator
           Row(
             children: [
@@ -347,7 +453,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                 Icon(
                   Icons.arrow_upward_rounded,
                   size: 12,
-                  color: isHighlight 
+                  color: isHighlight
                       ? Colors.white.withValues(alpha: 0.9)
                       : accentColor,
                 ),
@@ -360,9 +466,10 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                     fontSize: 11,
                     color: isHighlight
                         ? Colors.white.withValues(alpha: 0.75)
-                        : (isPositive 
-                            ? accentColor 
-                            : Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.5)),
+                        : (isPositive
+                              ? accentColor
+                              : Theme.of(context).textTheme.bodySmall?.color
+                                    ?.withValues(alpha: 0.5)),
                     fontWeight: isPositive ? FontWeight.w600 : FontWeight.w400,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -385,7 +492,6 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
     return formatter.format(amount);
   }
 
-  
   // Compact horizontal summary cards
   Widget _buildCompactSummaryCards(BuildContext context, summary) => Row(
     children: [
@@ -403,7 +509,9 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           'Today',
           '\$${summary.todayChange.toStringAsFixed(2)}',
           Icons.trending_up,
-          summary.todayChange >= 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675),
+          summary.todayChange >= 0
+              ? const Color(0xFF00B894)
+              : const Color(0xFFFF7675),
         ).animate().fadeIn(delay: 150.ms).slideX(begin: -0.1, end: 0),
       ),
       const SizedBox(width: 8),
@@ -412,7 +520,9 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           'Total P&L',
           '\$${summary.totalGainLoss.toStringAsFixed(2)}',
           Icons.show_chart,
-          summary.totalGainLoss >= 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675),
+          summary.totalGainLoss >= 0
+              ? const Color(0xFF00B894)
+              : const Color(0xFFFF7675),
         ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1, end: 0),
       ),
     ],
@@ -429,10 +539,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
       decoration: BoxDecoration(
         color: const Color(0xFF2C2C3E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.1),
@@ -475,7 +582,6 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
       ),
     );
   }
-
 
   Widget _buildSummaryCard(
     String title,
@@ -604,7 +710,9 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
             child: _buildPerformanceCard(
               'Today',
               '${summary.todayChangePercentage.toStringAsFixed(2)}%',
-              summary.todayChangePercentage >= 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675),
+              summary.todayChangePercentage >= 0
+                  ? const Color(0xFF00B894)
+                  : const Color(0xFFFF7675),
             ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.1, end: 0),
           ),
           const SizedBox(width: 16),
@@ -612,7 +720,9 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
             child: _buildPerformanceCard(
               'Total',
               '${summary.totalGainLossPercentage.toStringAsFixed(2)}%',
-              summary.totalGainLossPercentage >= 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675),
+              summary.totalGainLossPercentage >= 0
+                  ? const Color(0xFF00B894)
+                  : const Color(0xFFFF7675),
             ).animate().fadeIn(delay: 600.ms).slideX(begin: 0.1, end: 0),
           ),
         ],
@@ -673,10 +783,15 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: color.withValues(alpha: 0.1),
-                border: Border.all(color: color.withValues(alpha: 0.2), width: 2),
+                border: Border.all(
+                  color: color.withValues(alpha: 0.2),
+                  width: 2,
+                ),
               ),
               child: Icon(
-                percentage.startsWith('-') ? Icons.arrow_downward : Icons.arrow_upward,
+                percentage.startsWith('-')
+                    ? Icons.arrow_downward
+                    : Icons.arrow_upward,
                 color: color,
                 size: 20,
               ),
@@ -692,13 +807,18 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 200,
-            height: 32,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C2C3E),
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ).animate(onPlay: (controller) => controller.repeat()).shimmer(duration: 1200.ms, color: Colors.white.withOpacity(0.05)),
+                width: 200,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2C2C3E),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              )
+              .animate(onPlay: (controller) => controller.repeat())
+              .shimmer(
+                duration: 1200.ms,
+                color: Colors.white.withOpacity(0.05),
+              ),
           const SizedBox(height: 24),
           GridView.count(
             shrinkWrap: true,
@@ -709,13 +829,18 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
             crossAxisSpacing: 16,
             children: List.generate(4, (index) {
               return Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2C2C3E),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
-                ),
-              ).animate(onPlay: (controller) => controller.repeat())
-               .shimmer(duration: 1200.ms, delay: (100 * index).ms, color: Colors.white.withOpacity(0.05));
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2C2C3E),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    ),
+                  )
+                  .animate(onPlay: (controller) => controller.repeat())
+                  .shimmer(
+                    duration: 1200.ms,
+                    delay: (100 * index).ms,
+                    color: Colors.white.withOpacity(0.05),
+                  );
             }),
           ),
           const SizedBox(height: 24),
@@ -723,34 +848,57 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 150,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2C2C3E),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ).animate(onPlay: (controller) => controller.repeat()).shimmer(duration: 1200.ms, color: Colors.white.withOpacity(0.05)),
+                    width: 150,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2C2C3E),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  )
+                  .animate(onPlay: (controller) => controller.repeat())
+                  .shimmer(
+                    duration: 1200.ms,
+                    color: Colors.white.withOpacity(0.05),
+                  ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2C2C3E),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ).animate(onPlay: (controller) => controller.repeat()).shimmer(duration: 1200.ms, delay: 400.ms, color: Colors.white.withOpacity(0.05)),
+                    child:
+                        Container(
+                              height: 100,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2C2C3E),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            )
+                            .animate(
+                              onPlay: (controller) => controller.repeat(),
+                            )
+                            .shimmer(
+                              duration: 1200.ms,
+                              delay: 400.ms,
+                              color: Colors.white.withOpacity(0.05),
+                            ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Container(
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2C2C3E),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ).animate(onPlay: (controller) => controller.repeat()).shimmer(duration: 1200.ms, delay: 500.ms, color: Colors.white.withOpacity(0.05)),
+                    child:
+                        Container(
+                              height: 100,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2C2C3E),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            )
+                            .animate(
+                              onPlay: (controller) => controller.repeat(),
+                            )
+                            .shimmer(
+                              duration: 1200.ms,
+                              delay: 500.ms,
+                              color: Colors.white.withOpacity(0.05),
+                            ),
                   ),
                 ],
               ),

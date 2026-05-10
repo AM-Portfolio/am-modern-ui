@@ -56,7 +56,9 @@ class PortfolioSummaryWidget extends StatelessWidget {
   /// Build the main portfolio value card with total value and percentage
   Widget _buildMainValueCard(BuildContext context) {
     final isPositive = summary.totalGainLoss >= 0;
-    final color = isPositive ? (Colors.green[700] ?? Colors.green) : (Colors.red[700] ?? Colors.red);
+    final color = isPositive
+        ? (Colors.green[700] ?? Colors.green)
+        : (Colors.red[700] ?? Colors.red);
 
     return Card(
       elevation: 3,
@@ -248,7 +250,9 @@ class PortfolioSummaryWidget extends StatelessWidget {
     bool isPositive,
     IconData icon,
   ) {
-    final color = isPositive ? (Colors.green[700] ?? Colors.green) : (Colors.red[700] ?? Colors.red);
+    final color = isPositive
+        ? (Colors.green[700] ?? Colors.green)
+        : (Colors.red[700] ?? Colors.red);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

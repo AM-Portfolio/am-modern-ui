@@ -26,19 +26,21 @@ class PortfolioTabContentWidget extends ConsumerWidget {
   final String userId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
-      BlocBuilder<PortfolioCubit, PortfolioState>(
-        builder: (context, state) => TabBarView(
-          controller: tabController,
-          children: [
-            _OverviewTab(currentPortfolioId: currentPortfolioId, userId: userId),
-            _HoldingsTab(currentPortfolioId: currentPortfolioId, userId: userId),
-            _AnalysisTab(currentPortfolioId: currentPortfolioId, userId: userId),
-            _HeatmapTab(currentPortfolioId: currentPortfolioId, userId: userId),
-            _TradeTab(userId: userId, ref: ref),
-          ],
-        ),
-      );
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) => BlocBuilder<PortfolioCubit, PortfolioState>(
+    builder: (context, state) => TabBarView(
+      controller: tabController,
+      children: [
+        _OverviewTab(currentPortfolioId: currentPortfolioId, userId: userId),
+        _HoldingsTab(currentPortfolioId: currentPortfolioId, userId: userId),
+        _AnalysisTab(currentPortfolioId: currentPortfolioId, userId: userId),
+        _HeatmapTab(currentPortfolioId: currentPortfolioId, userId: userId),
+        _TradeTab(userId: userId, ref: ref),
+      ],
+    ),
+  );
 }
 
 /// Overview tab widget
@@ -315,4 +317,3 @@ class PortfolioErrorWidget extends StatelessWidget {
     ),
   );
 }
-

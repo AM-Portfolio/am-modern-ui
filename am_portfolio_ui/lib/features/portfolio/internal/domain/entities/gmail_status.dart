@@ -2,11 +2,7 @@ import 'package:equatable/equatable.dart';
 
 /// Domain entity representing Gmail connection status
 class GmailStatus extends Equatable {
-  const GmailStatus({
-    required this.connected,
-    this.email,
-    this.name,
-  });
+  const GmailStatus({required this.connected, this.email, this.name});
 
   /// Whether Gmail is connected
   final bool connected;
