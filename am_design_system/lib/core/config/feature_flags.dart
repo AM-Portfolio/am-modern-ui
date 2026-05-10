@@ -4,7 +4,7 @@ class FeatureFlags {
   FeatureFlags._internal();
   // API Configuration
   bool useRealGoogleAuth = false;
-  bool useRealBackendAPI = false;
+  bool useRealBackendAPI = true;
   bool useRealEmailService = false;
 
   // Development Features
@@ -29,7 +29,7 @@ class FeatureFlags {
   /// Reset all flags to default values
   void resetToDefaults() {
     useRealGoogleAuth = false;
-    useRealBackendAPI = false;
+    useRealBackendAPI = true;
     useRealEmailService = false;
     enableMockDelays = true;
     enableErrorSimulation = false;
