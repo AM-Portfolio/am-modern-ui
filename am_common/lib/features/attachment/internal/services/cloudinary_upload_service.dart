@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:universal_io/io.dart';
 
 import 'package:am_library/am_library.dart';
 import '../domain/repositories/cloudinary_repository.dart';
