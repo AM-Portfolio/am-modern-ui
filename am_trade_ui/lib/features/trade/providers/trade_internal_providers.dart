@@ -10,6 +10,8 @@ import '../internal/domain/entities/trade_holding.dart';
 import '../internal/domain/entities/trade_portfolio.dart';
 import '../internal/domain/entities/trade_summary.dart';
 import '../internal/domain/repositories/trade_repository.dart';
+import 'package:am_common/core/di/network_providers.dart';
+import 'package:am_library/am_library.dart';
 import '../internal/domain/usecases/get_trade_calendar.dart';
 import '../internal/domain/usecases/get_trade_calendar_by_date_range.dart';
 import '../internal/domain/usecases/get_trade_calendar_by_day.dart';
@@ -20,7 +22,6 @@ import '../internal/domain/usecases/get_trade_summary.dart';
 import '../presentation/models/trade_calendar_view_model.dart';
 import '../presentation/models/trade_holding_view_model.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
-import 'package:am_common/core/di/network_providers.dart';
 
 /// Provider for trade remote data source
 final _tradeRemoteDataSourceProvider = FutureProvider<TradeRemoteDataSource>((ref) async {
@@ -33,8 +34,12 @@ final _tradeRemoteDataSourceProvider = FutureProvider<TradeRemoteDataSource>((re
 /// Provider for trade repository
 final _tradeRepositoryProvider = FutureProvider<TradeRepository>((ref) async {
   final remoteDataSource = await ref.watch(_tradeRemoteDataSourceProvider.future);
+  final stompClient = ref.watch(stompClientProvider);
 
-  return TradeRepositoryImpl(remoteDataSource: remoteDataSource);
+  return TradeRepositoryImpl(
+    remoteDataSource: remoteDataSource,
+    stompClient: stompClient,
+  );
 });
 
 /// Provider for GetTradePortfolios use case

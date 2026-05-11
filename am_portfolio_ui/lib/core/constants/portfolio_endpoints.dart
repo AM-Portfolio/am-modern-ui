@@ -1,13 +1,13 @@
 /// Portfolio Module API endpoint constants
 class PortfolioEndpoints {
   // Base URL
-  static const String baseUrl = 'https://am.asrax.in/portfolio';
+  static const String baseUrl = 'http://localhost:8080';
   
   // Resources
-  static const String list = '/v1/portfolios/list';
-  static const String holdings = '/v1/portfolios/holdings';
-  static const String summary = '/v1/portfolios/summary';
-  static const String transactions = '/v1/portfolios/transactions';
+  static const String list = '/v1/portfolio-summary/by-owner';
+  static const String holdings = '/v1/portfolio-summary';
+  static const String summary = '/v1/portfolio-summary';
+  static const String transactions = '/v1/trades/portfolio-details';
   
   /// Get advanced analytics for a portfolio
   static String advancedAnalytics(String portfolioId) => 

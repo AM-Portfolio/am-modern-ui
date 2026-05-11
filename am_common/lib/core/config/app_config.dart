@@ -11,6 +11,8 @@ class AppConfig {
     this.version = '1.0.0',
     this.debugMode = true,
     this.defaultPort = 8080,
+    this.devAuthToken,
+    this.devUserId,
   });
   final String appName;
   final String version;
@@ -19,6 +21,8 @@ class AppConfig {
   final ApiConfig api;
   final Environment environment;
   final GoogleConfig google;
+  final String? devAuthToken;
+  final String? devUserId;
 }
 
 /// Cloudinary API configuration

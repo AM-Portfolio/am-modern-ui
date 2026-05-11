@@ -13,9 +13,10 @@ import '../di/service_registry.dart';
 /// Base API client for handling HTTP requests
 class ApiClient {
   /// Constructor
-  ApiClient({String? baseUrl, http.Client? client, String? category})
+  ApiClient({String? baseUrl, http.Client? client, String? category, String? fallbackToken})
     : baseUrl = baseUrl ?? _defaultBaseUrl,
       category = category ?? 'API',
+      _fallbackToken = fallbackToken,
       _client = client ?? http.Client();
 
   /// Default base URL for API requests
@@ -30,6 +31,9 @@ class ApiClient {
   /// HTTP client for making requests
   final http.Client _client;
 
+  /// Fallback token for development
+  final String? _fallbackToken;
+
   /// Get authentication token from secure storage
   Future<String?> _getAuthToken() async {
     final secureStorage = SecureStorageService();
@@ -40,8 +44,8 @@ class ApiClient {
     if (token != null && token.isNotEmpty && !token.startsWith('mock_')) return token;
     
     // Fallback to debug token provided by user
-    AppLogger.debug('🔐 Using HARDCODED fallback token (Stored token was null or mock)', tag: 'ApiClient');
-    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Njc2MzU0MDUsImlhdCI6MTc2NzU0OTAwNSwic3ViIjoiZTFmZDI5MTgtNDg0Zi00NzE2LWFkNWItZDQ2MDkwODkxZTAxIiwidXNlcm5hbWUiOiJzc2QyNjU4QGdtYWlsLmNvbSIsImVtYWlsIjoic3NkMjY1OEBnbWFpbC5jb20iLCJzY29wZXMiOlsicmVhZCIsIndyaXRlIl19.RwnyRwlF_DMx4U28gTwhyEK-kW-OxTiqbe3MnQPI0-w';
+    AppLogger.debug('🔐 Using dynamic fallback token from system environment', tag: 'ApiClient');
+    return _fallbackToken;
   }
 
   /// Build URI from endpoint, handling both complete URLs and relative paths

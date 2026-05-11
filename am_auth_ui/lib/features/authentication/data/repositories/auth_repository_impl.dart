@@ -205,7 +205,9 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, AuthResultEntity>> demoLogin() async {
     try {
-      final result = await _dataSource.demoLogin();
+      // For Demo Version, we always use the mock data source to ensure
+      // users can test the UI features without needing a real backend.
+      final result = await _mockDataSource.demoLogin();
 
       // Save tokens to secure storage
       await _storageService.saveAccessToken(result.tokens.accessToken);
@@ -334,6 +336,35 @@ class AuthRepositoryImpl implements AuthRepository {
               : 'OK'}',
           tag: 'AuthRepository',
         );
+
+        // If stored data is missing, check for a development fallback in the configuration
+        // This allows for dynamic "mock" identity without hardcoding strings in the source code.
+        try {
+          final config = ConfigService.config;
+          if (config.debugMode && 
+              config.devAuthToken != null && 
+              config.devAuthToken!.isNotEmpty &&
+              config.devUserId != null &&
+              config.devUserId!.isNotEmpty) {
+            
+            CommonLogger.info('🔑 [DEV] Using environment-based identity fallback', tag: 'AuthRepository');
+            
+            return Right(AuthResultEntity(
+              user: UserEntity(
+                id: config.devUserId!,
+                email: 'dev-user@am-platform.local',
+                authMethod: 'environment',
+              ),
+              tokens: AuthTokensEntity(
+                accessToken: config.devAuthToken!,
+                expiresAt: DateTime.now().add(const Duration(hours: 24)),
+              ),
+            ));
+          }
+        } catch (configError) {
+          // Config might not be initialized yet in some edge cases
+          CommonLogger.warning('⚠️ ConfigService not ready for identity fallback', tag: 'AuthRepository');
+        }
 
         return const Right(null);
       }

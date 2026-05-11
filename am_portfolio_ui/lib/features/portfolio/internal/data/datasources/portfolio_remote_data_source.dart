@@ -155,9 +155,8 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         tag: 'PortfolioRemoteDataSource',
       );
 
-      // Construct full URI from portfolio config with userId and portfolioId query parameters
-      final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.holdings);
-      final fullUri = '$baseUri?userId=$userId&portfolioId=$portfolioId';
+      // Construct full URI as a path variable for the Trade Service's summary endpoint
+      final fullUri = '$_baseUrl${PortfolioEndpoints.holdings}/$portfolioId';
 
       // Use ApiClient for consistent error handling and logging
       final holdingsResponse = await _apiClient.get<PortfolioHoldingsDto>(
@@ -294,9 +293,8 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         tag: 'PortfolioRemoteDataSource',
       );
 
-      // Construct full URI from portfolio config with userId and portfolioId query parameters
-      final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.summary);
-      final fullUri = '$baseUri?userId=$userId&portfolioId=$portfolioId';
+      // Construct full URI as a path variable for the Trade Service's summary endpoint
+      final fullUri = '$_baseUrl${PortfolioEndpoints.summary}/$portfolioId';
 
       // Use ApiClient for consistent error handling and logging
       final summaryResponse = await _apiClient.get<PortfolioSummaryDto>(
@@ -486,9 +484,8 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         tag: 'PortfolioRemoteDataSource',
       );
 
-      // Construct full URI from portfolio config with userId query parameter
-      final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.list);
-      final fullUri = '$baseUri?userId=$userId';
+      // Construct full URI as a path variable for the Trade Service's by-owner endpoint
+      final fullUri = '$_baseUrl${PortfolioEndpoints.list}/$userId';
 
       // Use ApiClient for consistent error handling and logging
       final listResponse = await _apiClient.get<PortfolioListDto>(

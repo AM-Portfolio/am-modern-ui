@@ -10,7 +10,10 @@ final appConfigProvider = FutureProvider<AppConfig>((ref) async {
 
 final apiClientProvider = FutureProvider<ApiClient>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
-  return ApiClient(baseUrl: config.api.baseUrl);
+  return ApiClient(
+    baseUrl: config.api.baseUrl,
+    fallbackToken: config.devAuthToken,
+  );
 });
 
 final gmailApiConfigProvider = FutureProvider<GmailApiConfig>((ref) async {
@@ -34,5 +37,13 @@ final analysisApiClientProvider = FutureProvider<ApiClient>((ref) async {
   if (config.api.analysis == null) {
     throw Exception('Analysis API configuration is not available');
   }
-  return ApiClient(baseUrl: config.api.analysis!.baseUrl);
+  return ApiClient(
+    baseUrl: config.api.analysis!.baseUrl,
+    fallbackToken: config.devAuthToken,
+  );
 });
+
+final stompClientProvider = Provider<AmStompClient>((ref) {
+  return ServiceRegistry.stomp;
+});
+

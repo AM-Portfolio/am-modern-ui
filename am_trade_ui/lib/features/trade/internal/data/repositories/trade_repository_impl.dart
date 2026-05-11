@@ -12,12 +12,21 @@ import '../mappers/trade_calendar_mapper.dart';
 import '../mappers/trade_holding_mapper.dart';
 import '../mappers/trade_portfolio_mapper.dart';
 import '../mappers/trade_summary_mapper.dart';
+import '../dtos/trade_portfolio_dto.dart';
+import 'package:am_library/am_library.dart';
+import 'dart:convert';
 
 /// Repository implementation for trade data operations
 class TradeRepositoryImpl implements TradeRepository {
-  TradeRepositoryImpl({required TradeRemoteDataSource remoteDataSource}) : _remoteDataSource = remoteDataSource;
+  TradeRepositoryImpl({
+    required TradeRemoteDataSource remoteDataSource,
+    AmStompClient? stompClient,
+  }) : _remoteDataSource = remoteDataSource,
+       _stompClient = stompClient;
 
   final TradeRemoteDataSource _remoteDataSource;
+  final AmStompClient? _stompClient;
+  StreamSubscription? _stompSubscription;
 
   // Stream controllers for real-time updates
   final StreamController<TradePortfolioList> _portfoliosController = StreamController<TradePortfolioList>.broadcast();
@@ -378,6 +387,8 @@ class TradeRepositoryImpl implements TradeRepository {
   Stream<TradePortfolioList> watchTradePortfolios(String userId) {
     AppLogger.methodEntry('watchTradePortfolios', tag: 'TradeRepository', params: {'userId': userId});
 
+    _ensureWebSocketSubscribed(userId);
+
     if (_cachedPortfolioList != null) {
       Future.microtask(() => _portfoliosController.add(_cachedPortfolioList!));
     } else {
@@ -421,6 +432,8 @@ class TradeRepositoryImpl implements TradeRepository {
       params: {'userId': userId, 'portfolioId': portfolioId},
     );
 
+    _ensureWebSocketSubscribed(userId);
+
     // Check if cache exists AND contains data for the requested portfolio
     if (_cachedCalendar != null && _cachedCalendar!.portfolioTrades.containsKey(portfolioId)) {
       Future.microtask(() => _calendarController.add(_cachedCalendar!));
@@ -435,9 +448,49 @@ class TradeRepositoryImpl implements TradeRepository {
     return _calendarController.stream;
   }
 
+  void _ensureWebSocketSubscribed(String userId) {
+    if (_stompClient == null) {
+      AppLogger.warning('AmStompClient is null. WebSocket features disabled.', tag: 'TradeRepository');
+      return;
+    }
+
+    final destination = '/user/queue/portfolio';
+
+    if (_stompSubscription == null) {
+      AppLogger.info('📡 Subscribing to: $destination', tag: 'TradeRepository');
+      _stompClient!.subscribe(destination);
+
+      _stompSubscription = _stompClient!.messages
+          .where((frame) => frame.headers['destination'] == destination)
+          .listen(
+        (frame) {
+          if (frame.body == null) return;
+          try {
+            final json = jsonDecode(frame.body!);
+            AppLogger.info('Received real-time portfolio update via WebSocket', tag: 'TradeRepository');
+
+            // Map the update to our entity
+            final dto = TradePortfolioDto.fromJson(json);
+            final portfolioList = TradePortfolioMapper.fromArrayDto([dto], userId);
+            
+            // Merge with existing cache if necessary, or just replace for now
+            _cachedPortfolioList = portfolioList;
+            _portfoliosController.add(portfolioList);
+          } catch (e) {
+            AppLogger.error('Failed to parse portfolio STOMP message', error: e, tag: 'TradeRepository');
+          }
+        },
+        onError: (err) => AppLogger.error('STOMP Subscription error', error: err, tag: 'TradeRepository'),
+      );
+    }
+  }
+
   /// Dispose method to clean up resources
   void dispose() {
     AppLogger.methodEntry('dispose', tag: 'TradeRepository');
+
+    _stompSubscription?.cancel();
+    _stompClient?.unsubscribe('/user/queue/portfolio');
 
     _portfoliosController.close();
     _holdingsController.close();
