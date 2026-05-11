@@ -33,10 +33,10 @@ part 'portfolio_providers.g.dart';
 @riverpod
 Future<PortfolioRemoteDataSource> portfolioRemoteDataSource(Ref ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
-  final apiConfig = ref.watch(apiConfigProvider);
+  final appConfig = await ref.watch(appConfigProvider.future);
   return PortfolioRemoteDataSourceImpl(
     apiClient: apiClient,
-    useMockData: apiConfig.api.useMockData,
+    useMockData: appConfig.api.useMockData,
   );
 }
 
