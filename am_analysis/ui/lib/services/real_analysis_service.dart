@@ -36,6 +36,12 @@ class RealAnalysisService implements UiAnalysisService {
     try {
       _logger.i('Fetching allocation for $type:$id with groupBy=$groupBy');
       
+      final authState = _authCubit.state;
+      if (authState is! Authenticated) {
+        throw Exception('User is not authenticated');
+      }
+      final userId = authState.user.id;
+
       // Call SDK method - send groupBy only as header, not as query param
       final response = await _api.getAllocation(
         _auth,
