@@ -88,34 +88,20 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     AppLogger.methodEntry('getTradePortfolios', tag: 'TradeRemoteDataSource', params: {'userId': userId});
 
     try {
-      // Unified Portfolio API Spec: GET /v1/portfolios?userId={userId}
+      // Trade API Spec: GET /api/v1/portfolio-summary/by-owner/{ownerId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioListResource);
-      final fullUri = Uri.parse(baseUri).replace(queryParameters: {'userId': userId}).toString();
+      final fullUri = '$baseUri/$userId';
 
       final response = await _apiClient.get<TradePortfolioListDto>(
         fullUri,
         parser: (data) {
-          // Handle bridge to the backend response structure
-          List<dynamic> portfolioList = [];
           if (data is List) {
-            portfolioList = data;
-          } else if (data is Map && data.containsKey('content')) {
-            portfolioList = data['content'] as List;
+            return TradePortfolioListDto(
+              portfolios: data.map((item) => TradePortfolioDto.fromJson(item as Map<String, dynamic>)).toList(),
+              totalCount: data.length,
+            );
           }
-
-          final portfolios = portfolioList.map((item) {
-            final map = Map<String, dynamic>.from(item as Map<String, dynamic>);
-            // Adapter: Map backend 'id' to DTO 'portfolioId'
-            if (map.containsKey('id') && !map.containsKey('portfolioId')) {
-              map['portfolioId'] = map['id'].toString();
-            }
-            return TradePortfolioDto.fromJson(map);
-          }).toList();
-
-          return TradePortfolioListDto(
-            portfolios: portfolios,
-            totalCount: portfolios.length,
-          );
+          return TradePortfolioListDto.fromJson(data! as Map<String, dynamic>);
         },
       );
 
@@ -150,80 +136,36 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     );
 
     try {
-      // Unified Portfolio API Spec: GET /v1/portfolios/holdings?userId={userId}&portfolioId={portfolioId}
+      // Trade API Spec: GET /api/v1/trades/details/portfolio/{portfolioId} returns List<TradeDetails>
+      // The backend endpoint configured in ConfigService (holdingsResource) points to a List endpoint, not a Page endpoint.
       final baseUri = _buildUri(_tradeConfig.baseUrl, _tradeConfig.holdingsResource);
-      final uriObj = Uri.parse(baseUri);
-      
-      // Build new query params
-      final queryParams = Map<String, String>.from(uriObj.queryParameters);
-      queryParams['userId'] = userId;
-      queryParams['portfolioId'] = portfolioId;
-      
-      final fullUri = uriObj.replace(queryParameters: queryParams).toString();
+      final fullUri = '$baseUri/$portfolioId'; // Pagination params removed as backend ignores/doesn't support them for this endpoint
 
       final response = await _apiClient.get<TradeHoldingsDto>(
         fullUri,
         parser: (data) {
-          List<dynamic> sourceList = [];
-          
-          if (data is Map) {
-             final body = data as Map<String, dynamic>;
-             // PortfolioHoldings contains 'equityHoldings'
-             if (body.containsKey('equityHoldings')) {
-               sourceList = body['equityHoldings'] as List;
-             } else if (body.containsKey('content')) {
-               sourceList = body['content'] as List;
-             }
-          } else if (data is List) {
-            sourceList = data;
+          // Handle List response by wrapping it in TradeHoldingsDto
+          if (data is List) {
+             final list = data.map((item) => TradeDetailsDto.fromJson(item as Map<String, dynamic>)).toList();
+             return TradeHoldingsDto(
+               content: list,
+               totalElements: list.length,
+               totalPages: 1,
+               last: true,
+               first: true,
+               size: list.length > 0 ? list.length : 50,
+               numberOfElements: list.length,
+               empty: list.isEmpty,
+               pageable: const PageableDto(
+                  pageNumber: 0,
+                  pageSize: 50,
+                  paged: false,
+                  unpaged: true
+               )
+             );
           }
-
-          // Adapter: Map EquityHolding properties to TradeDetailsDto layout
-          final list = sourceList.map((item) {
-             final map = Map<String, dynamic>.from(item as Map<String, dynamic>);
-             
-             // Inject adapter values for compatibility
-             final adaptedMap = {
-               'tradeId': map['isin'] ?? map['symbol'] ?? DateTime.now().microsecondsSinceEpoch.toString(),
-               'portfolioId': portfolioId,
-               'status': 'OPEN', // Enforced enum value
-               'tradePositionType': 'LONG', // Enforced enum value
-               'symbol': map['symbol'],
-               'instrumentInfo': {
-                 'symbol': map['symbol'],
-                 'isin': map['isin'],
-                 'description': map['name'],
-               },
-               'entryInfo': {
-                 'quantity': (map['quantity'] ?? 0).toInt(),
-                 'price': map['averageBuyingPrice'] ?? map['currentPrice'] ?? 0.0,
-                 'totalValue': map['investmentCost'] ?? 0.0,
-               },
-               'metrics': {
-                 'profitLoss': map['gainLoss'],
-                 'profitLossPercentage': map['gainLossPercentage'],
-               }
-             };
-             
-             return TradeDetailsDto.fromJson(adaptedMap);
-          }).toList();
-
-          return TradeHoldingsDto(
-            content: list,
-            totalElements: list.length,
-            totalPages: 1,
-            last: true,
-            first: true,
-            size: list.isNotEmpty ? list.length : 50,
-            numberOfElements: list.length,
-            empty: list.isEmpty,
-            pageable: const PageableDto(
-               pageNumber: 0,
-               pageSize: 50,
-               paged: false,
-               unpaged: true
-            )
-          );
+          // Fallback if data is already a Map (e.g. if backend changes future)
+          return TradeHoldingsDto.fromJson(data! as Map<String, dynamic>);
         },
       );
 
@@ -258,42 +200,13 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     );
 
     try {
-      // Unified Portfolio API Spec: GET /v1/portfolios/summary?userId={userId}&portfolioId={portfolioId}
+      // Trade API Spec: GET /api/v1/portfolio-summary/{portfolioId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioSummaryResource);
-      final uriObj = Uri.parse(baseUri);
-      
-      // Build new query params
-      final queryParams = Map<String, String>.from(uriObj.queryParameters);
-      queryParams['userId'] = userId;
-      queryParams['portfolioId'] = portfolioId;
-      
-      final fullUri = uriObj.replace(queryParameters: queryParams).toString();
+      final fullUri = '$baseUri/$portfolioId';
 
       final response = await _apiClient.get<TradePortfolioSummaryDto>(
         fullUri,
-        parser: (data) {
-          final map = Map<String, dynamic>.from(data as Map<String, dynamic>);
-          
-          // Adapter: Synthesize TradePortfolioSummaryDto required structure
-          final adaptedMap = Map<String, dynamic>.from(map);
-          adaptedMap['portfolioId'] = portfolioId;
-          adaptedMap['name'] = 'Portfolio Summary';
-          
-          // Bridge properties
-          adaptedMap['initialCapital'] = map['investmentValue'];
-          adaptedMap['currentCapital'] = map['currentValue'];
-          
-          // Build nested metrics if available
-          if (!adaptedMap.containsKey('metrics')) {
-             adaptedMap['metrics'] = {
-               'totalValue': map['currentValue'],
-               'netProfitLoss': map['totalGainLoss'],
-               'netProfitLossPercentage': map['totalGainLossPercentage'],
-             };
-          }
-          
-          return TradePortfolioSummaryDto.fromJson(adaptedMap);
-        },
+        parser: (data) => TradePortfolioSummaryDto.fromJson(data! as Map<String, dynamic>),
       );
 
       AppLogger.info('Trade summary fetched successfully from API', tag: 'TradeRemoteDataSource');
