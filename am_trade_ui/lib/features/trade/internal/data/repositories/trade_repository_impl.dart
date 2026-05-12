@@ -476,7 +476,7 @@ class TradeRepositoryImpl implements TradeRepository {
             // Merge with existing cache
             if (_cachedPortfolioList != null) {
               final existingPortfolios = List<TradePortfolio>.from(_cachedPortfolioList!.portfolios);
-              final index = existingPortfolios.indexWhere((p) => p.portfolioId == updatedPortfolio.portfolioId);
+              final index = existingPortfolios.indexWhere((p) => p.id == updatedPortfolio.id);
               
               if (index != -1) {
                 existingPortfolios[index] = updatedPortfolio;
