@@ -1,0 +1,40 @@
+{
+  "portfolioId": "p-101",
+  "holdings": [
+    {
+      "symbol": "AAPL",
+      "companyName": "Apple Inc.",
+      "quantity": 50,
+      "averagePrice": 175.25,
+      "currentPrice": 192.42,
+      "totalValue": 9621.00,
+      "gainLoss": 858.50,
+      "gainLossPercentage": 9.8,
+      "allocationPercentage": 7.6
+    },
+    {
+      "symbol": "TSLA",
+      "companyName": "Tesla, Inc.",
+      "quantity": 25,
+      "averagePrice": 210.50,
+      "currentPrice": 185.30,
+      "totalValue": 4632.50,
+      "gainLoss": -630.00,
+      "gainLossPercentage": -11.9,
+      "allocationPercentage": 3.7
+    },
+    {
+      "symbol": "NVDA",
+      "companyName": "NVIDIA Corporation",
+      "quantity": 10,
+      "averagePrice": 450.00,
+      "currentPrice": 875.25,
+      "totalValue": 8752.50,
+      "gainLoss": 4252.50,
+      "gainLossPercentage": 94.5,
+      "allocationPercentage": 6.9
+    }
+  ],
+  "totalValue": 23006.00,
+  "lastUpdated": "2026-05-11T10:00:00Z"
+}

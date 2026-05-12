@@ -484,8 +484,8 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         tag: 'PortfolioRemoteDataSource',
       );
 
-      // Construct full URI as a path variable for the Trade Service's by-owner endpoint
-      final fullUri = '$_baseUrl${PortfolioEndpoints.list}/$userId';
+      // Construct full URI with userId query parameter for the Portfolio Service's /list endpoint
+      final fullUri = '$_baseUrl${PortfolioEndpoints.list}?userId=$userId';
 
       // Use ApiClient for consistent error handling and logging
       final listResponse = await _apiClient.get<PortfolioListDto>(

@@ -6,7 +6,7 @@ class PortfolioEndpoints {
   static String get baseUrl => ConfigService.config.api.portfolio.baseUrl;
   
   // Resources
-  static const String list = '/v1/portfolio-summary/by-owner';
+  static const String list = '/v1/portfolios/list';
   static const String holdings = '/v1/portfolio-summary';
   static const String summary = '/v1/portfolio-summary';
   static const String transactions = '/v1/trades/portfolio-details';

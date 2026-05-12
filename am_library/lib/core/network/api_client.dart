@@ -41,7 +41,7 @@ class ApiClient {
     AppLogger.debug('🔐 Auth Token Check: "${token ?? 'null'}"', tag: 'ApiClient');
     
     // If token exists and is NOT a mock token, use it. Otherwise fall back to hardcoded JWT.
-    if (token != null && token.isNotEmpty && !token.startsWith('mock_')) return token;
+    if (token != null && token.isNotEmpty) return token;
     
     // Fallback to debug token provided by user
     AppLogger.debug('🔐 Using dynamic fallback token from system environment', tag: 'ApiClient');
