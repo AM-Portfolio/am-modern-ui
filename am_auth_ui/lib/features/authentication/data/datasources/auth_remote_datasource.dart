@@ -26,8 +26,6 @@ class AuthRemoteDataSource implements AuthDataSource {
       );
 
       if (response.statusCode == 200) {
-        // Log the response for debugging
-        print('Login API Response: ${response.data}');
         final data = response.data;
 
         // robust ID parsing
