@@ -58,9 +58,12 @@ class AuthRemoteDataSource implements AuthDataSource {
         );
       }
     } on DioException catch (e) {
-      // More detailed error handling
-      print('Login API Error: ${e.response?.data}');
-      print('Status Code: ${e.response?.statusCode}');
+      // More detailed error handling using AppLogger
+      AppLogger.error(
+        'Login API Error',
+        tag: 'AuthRemoteDataSource',
+        error: e.response?.data,
+      );
 
       if (e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout) {
@@ -138,11 +141,11 @@ class AuthRemoteDataSource implements AuthDataSource {
         );
       }
     } on DioException catch (e) {
-      print('🔴 [BACKEND] DioException occurred');
-      print('🔴 [BACKEND] Type: ${e.type}');
-      print('🔴 [BACKEND] Message: ${e.message}');
-      print('🔴 [BACKEND] Response: ${e.response?.data}');
-      print('🔴 [BACKEND] Status Code: ${e.response?.statusCode}');
+      AppLogger.error(
+        '🔴 [BACKEND] DioException occurred',
+        tag: 'AuthRemoteDataSource',
+        error: e,
+      );
       
       AppLogger.error('🔴 [BACKEND] DioException occurred');
       AppLogger.error('🔴 [BACKEND] Type: ${e.type}');
@@ -183,7 +186,7 @@ class AuthRemoteDataSource implements AuthDataSource {
       await _dio.post(fullUrl);
     } on DioException catch (e) {
       // Log but don't throw - logout should always succeed locally
-      print('Logout API call failed: ${e.message}');
+      AppLogger.error('Logout API call failed', tag: 'AuthRemoteDataSource', error: e);
     }
   }
 

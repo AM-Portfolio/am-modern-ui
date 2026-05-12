@@ -100,8 +100,8 @@ class ConfigService {
         (e) => e.toString().split('.').last == const String.fromEnvironment('AM_ENVIRONMENT', defaultValue: 'production'),
         orElse: () => Environment.production,
       ),
-      devAuthToken: '',
-      devUserId: '',
+      devAuthToken: null,
+      devUserId: null,
     );
   }
 }
