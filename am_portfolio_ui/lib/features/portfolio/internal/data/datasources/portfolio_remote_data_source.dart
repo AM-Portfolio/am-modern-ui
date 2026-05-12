@@ -56,9 +56,6 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   final ApiClient _apiClient;
   final bool _useMockData;
 
-  /// The validated production user ID used for all backend communication
-  static const String _productionUserId =
-      'b75743c9-fe0e-4c54-8ee0-8da350cc27b3';
 
   // Use localized endpoints
   String get _baseUrl => PortfolioEndpoints.baseUrl;
@@ -79,7 +76,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   @override
   Future<PortfolioHoldingsDto> getPortfolioHoldings(String userId) async {
     // Standardize to production user ID
-    final effectiveUserId = _productionUserId;
+    final effectiveUserId = userId;
 
     CommonLogger.methodEntry(
       'getPortfolioHoldings',
@@ -156,7 +153,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     String portfolioId,
   ) async {
     // Standardize to production user ID
-    final effectiveUserId = _productionUserId;
+    final effectiveUserId = userId;
 
     CommonLogger.methodEntry(
       'getPortfolioHoldingsById',
@@ -252,7 +249,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   @override
   Future<PortfolioSummaryDto> getPortfolioSummary(String userId) async {
     // Standardize to production user ID
-    final effectiveUserId = _productionUserId;
+    final effectiveUserId = userId;
 
     CommonLogger.methodEntry(
       'getPortfolioSummary',
@@ -329,7 +326,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     String portfolioId,
   ) async {
     // Standardize to production user ID
-    final effectiveUserId = _productionUserId;
+    final effectiveUserId = userId;
 
     CommonLogger.methodEntry(
       'getPortfolioSummaryById',
@@ -538,7 +535,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   @override
   Future<PortfolioListDto> getPortfoliosList(String userId) async {
     // Standardize to production user ID
-    final effectiveUserId = _productionUserId;
+    final effectiveUserId = userId;
 
     CommonLogger.methodEntry(
       'getPortfoliosList',

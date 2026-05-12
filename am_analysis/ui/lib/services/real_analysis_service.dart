@@ -22,17 +22,9 @@ class RealAnalysisService implements UiAnalysisService {
           ),
         );
 
-  /// Get authorization header value.
-  /// Falls back to a valid dev JWT with the production user ID
-  /// so TokenExtractor can parse it even without a real login session.
   String get _auth {
     if (_authToken != null) return _authToken!;
-    // Dev fallback: create a valid 3-part JWT for local development
-    final header = base64Url.encode(utf8.encode('{"alg":"none"}')).replaceAll('=', '');
-    final payload = base64Url.encode(utf8.encode(
-      '{"sub":"b75743c9-fe0e-4c54-8ee0-8da350cc27b3","iat":${DateTime.now().millisecondsSinceEpoch ~/ 1000}}'
-    )).replaceAll('=', '');
-    return 'Bearer $header.$payload.dev_signature';
+    throw Exception('No authentication token available for Analysis Service');
   }
 
   @override
