@@ -25,9 +25,9 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
     required PortfolioRemoteDataSource remoteDataSource,
     required PortfolioLocalDataSource localDataSource,
     AmStompClient? stompClient,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource,
-        _stompClient = stompClient;
+  }) : _remoteDataSource = remoteDataSource,
+       _localDataSource = localDataSource,
+       _stompClient = stompClient;
 
   final PortfolioRemoteDataSource _remoteDataSource;
   final PortfolioLocalDataSource _localDataSource;
@@ -147,7 +147,11 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         _lastUserId = userId;
       }
     } catch (e) {
-      CommonLogger.warning('Failed to read local summary cache', error: e, tag: 'PortfolioRepository');
+      CommonLogger.warning(
+        'Failed to read local summary cache',
+        error: e,
+        tag: 'PortfolioRepository',
+      );
     }
 
     try {
@@ -282,7 +286,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
     if (_cachedHoldings != null && _lastUserId == userId) {
       Future.microtask(() => _holdingsController.add(_cachedHoldings!));
     }
-    
+
     // Always fetch fresh data via REST for the "First Frame"
     getPortfolioHoldings(userId).catchError((error) {
       CommonLogger.error(
@@ -379,7 +383,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
     if (_cachedSummary != null && _lastUserId == userId) {
       Future.microtask(() => _summaryController.add(_cachedSummary!));
     }
-    
+
     // Always fetch fresh data via REST for the "First Frame"
     getPortfolioSummary(userId).catchError((error) {
       CommonLogger.error(
@@ -413,7 +417,10 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
             .firstOrNull;
 
         if (holding != null) {
-          CommonLogger.info('Found holding in cache', tag: 'PortfolioRepository');
+          CommonLogger.info(
+            'Found holding in cache',
+            tag: 'PortfolioRepository',
+          );
           CommonLogger.methodExit(
             'getHoldingDetails',
             tag: 'PortfolioRepository',
@@ -597,7 +604,11 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         _lastUserId = userId;
       }
     } catch (e) {
-      CommonLogger.warning('Failed to read local portfolio list cache', error: e, tag: 'PortfolioRepository');
+      CommonLogger.warning(
+        'Failed to read local portfolio list cache',
+        error: e,
+        tag: 'PortfolioRepository',
+      );
     }
 
     try {
@@ -615,7 +626,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       // 3. Cache the result
       _cachedPortfolioList = portfolioList;
       _lastUserId = userId;
-      
+
       // 4. Persist to Local Cache
       await _localDataSource.cachePortfolioList(userId, portfolioList);
 
@@ -648,9 +659,9 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       }
 
       // If we found local data in step 1 but fetch failed, return it if we have it in memory
-       if (_cachedPortfolioList != null) {
-          return _cachedPortfolioList!;
-       }
+      if (_cachedPortfolioList != null) {
+        return _cachedPortfolioList!;
+      }
 
       rethrow;
     }
@@ -662,41 +673,64 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
   void _ensureWebSocketSubscribed(String userId) {
     if (_stompClient == null) {
-      CommonLogger.warning('AmStompClient is null. WebSocket features disabled.', tag: 'PortfolioRepository');
+      CommonLogger.warning(
+        'AmStompClient is null. WebSocket features disabled.',
+        tag: 'PortfolioRepository',
+      );
       return;
     }
-    
+
     final destination = '/user/queue/portfolio';
-    
+
     if (_stompSubscription == null) {
-      CommonLogger.info('📡 Subscribing to: $destination', tag: 'PortfolioRepository');
+      CommonLogger.info(
+        '📡 Subscribing to: $destination',
+        tag: 'PortfolioRepository',
+      );
       _stompClient!.subscribe(destination);
 
       _stompSubscription = _stompClient!.messages
           .where((frame) => frame.headers['destination'] == destination)
           .listen(
-        (frame) {
-          if (frame.body == null) return;
-          try {
-            final json = jsonDecode(frame.body!);
-            CommonLogger.info('Received real-time portfolio update via WebSocket', tag: 'PortfolioRepository');
+            (frame) {
+              if (frame.body == null) return;
+              try {
+                final json = jsonDecode(frame.body!);
+                CommonLogger.info(
+                  'Received real-time portfolio update via WebSocket',
+                  tag: 'PortfolioRepository',
+                );
 
-            if (json.containsKey('holdings')) {
-              final holdings = PortfolioHoldingsMapper.fromApiModel(json, userId);
-              _cachedHoldings = holdings;
-              _holdingsController.add(holdings);
-            }
-            if (json.containsKey('summary')) {
-              final summary = PortfolioSummaryMapper.fromApiModel(json['summary'], userId);
-              _cachedSummary = summary;
-              _summaryController.add(summary);
-            }
-          } catch (e) {
-            CommonLogger.error('Failed to parse portfolio STOMP message', error: e, tag: 'PortfolioRepository');
-          }
-        },
-        onError: (err) => CommonLogger.error('STOMP Subscription error', error: err, tag: 'PortfolioRepository'),
-      );
+                if (json.containsKey('holdings')) {
+                  final holdings = PortfolioHoldingsMapper.fromApiModel(
+                    json,
+                    userId,
+                  );
+                  _cachedHoldings = holdings;
+                  _holdingsController.add(holdings);
+                }
+                if (json.containsKey('summary')) {
+                  final summary = PortfolioSummaryMapper.fromApiModel(
+                    json['summary'],
+                    userId,
+                  );
+                  _cachedSummary = summary;
+                  _summaryController.add(summary);
+                }
+              } catch (e) {
+                CommonLogger.error(
+                  'Failed to parse portfolio STOMP message',
+                  error: e,
+                  tag: 'PortfolioRepository',
+                );
+              }
+            },
+            onError: (err) => CommonLogger.error(
+              'STOMP Subscription error',
+              error: err,
+              tag: 'PortfolioRepository',
+            ),
+          );
     }
   }
 
@@ -704,7 +738,10 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   void dispose() {
     CommonLogger.methodEntry('dispose', tag: 'PortfolioRepository');
 
-    CommonLogger.info('Unwatching /user/queue/portfolio', tag: 'PortfolioRepository');
+    CommonLogger.info(
+      'Unwatching /user/queue/portfolio',
+      tag: 'PortfolioRepository',
+    );
     _stompClient?.unsubscribe('/user/queue/portfolio');
     _stompSubscription?.cancel();
 
@@ -715,7 +752,10 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
     _cachedPortfolioList = null;
     _lastUserId = null;
 
-    CommonLogger.info('PortfolioRepository disposed', tag: 'PortfolioRepository');
+    CommonLogger.info(
+      'PortfolioRepository disposed',
+      tag: 'PortfolioRepository',
+    );
   }
 }
 
@@ -729,4 +769,3 @@ extension IterableExtensions<T> on Iterable<T> {
     return null;
   }
 }
-

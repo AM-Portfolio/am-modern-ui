@@ -5,8 +5,8 @@ import '../../domain/models/etf_search_result.dart';
 
 class EtfSearchService {
   final Dio _dio = Dio();
-  // Using the same URL as am_market_ui
-  static const String baseUrl = 'https://am.asrax.in/api/etf/v1';
+  // Using ConfigService for dynamic URL
+  static String get baseUrl => '${ConfigService.config.api.marketData?.baseUrl ?? 'https://am.asrax.in'}/api/etf/v1';
   final _storage = GetIt.I<SecureStorageService>();
 
   EtfSearchService() {
@@ -24,22 +24,22 @@ class EtfSearchService {
     };
   }
 
-  Future<List<EtfSearchResult>> searchEtfs(String query, {int limit = 20}) async {
+  Future<List<EtfSearchResult>> searchEtfs(
+    String query, {
+    int limit = 20,
+  }) async {
     try {
       final headers = await _getHeaders();
-      
+
       final response = await _dio.get(
         '/search',
-        queryParameters: {
-          'query': query,
-          'limit': limit,
-        },
+        queryParameters: {'query': query, 'limit': limit},
         options: Options(headers: headers),
       );
 
       if (response.statusCode == 200) {
         final data = response.data;
-        
+
         if (data is List) {
           return data.map((e) => EtfSearchResult.fromJson(e)).toList();
         } else if (data is Map) {
@@ -49,15 +49,25 @@ class EtfSearchService {
             return list.map((e) => EtfSearchResult.fromJson(e)).toList();
           }
         }
-        
-        AppLogger.warning("Unexpected response structure: $data", tag: "EtfSearchService");
+
+        AppLogger.warning(
+          "Unexpected response structure: $data",
+          tag: "EtfSearchService",
+        );
         return [];
       } else {
-        AppLogger.error("Failed search: ${response.statusCode}", tag: "EtfSearchService");
+        AppLogger.error(
+          "Failed search: ${response.statusCode}",
+          tag: "EtfSearchService",
+        );
         return [];
       }
     } catch (e) {
-      AppLogger.error("Error searching ETFs: $e", tag: "EtfSearchService", error: e);
+      AppLogger.error(
+        "Error searching ETFs: $e",
+        tag: "EtfSearchService",
+        error: e,
+      );
       return [];
     }
   }

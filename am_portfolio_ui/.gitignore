@@ -53,3 +53,11 @@ app.*.map.json
 # Coverage
 coverage/
 *.lcov
+
+# Environment files
+.env
+.env.*
+
+# Local/Temp files
+*.tmp
+*.bak

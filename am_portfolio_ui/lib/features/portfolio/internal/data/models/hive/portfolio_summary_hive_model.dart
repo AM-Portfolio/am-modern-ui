@@ -41,7 +41,8 @@ class SectorAllocationHiveModel extends HiveObject {
   }
 }
 
-class SectorAllocationHiveModelAdapter extends TypeAdapter<SectorAllocationHiveModel> {
+class SectorAllocationHiveModelAdapter
+    extends TypeAdapter<SectorAllocationHiveModel> {
   @override
   final int typeId = 3;
 
@@ -292,7 +293,8 @@ class PortfolioSummaryHiveModel extends HiveObject {
   }
 }
 
-class PortfolioSummaryHiveModelAdapter extends TypeAdapter<PortfolioSummaryHiveModel> {
+class PortfolioSummaryHiveModelAdapter
+    extends TypeAdapter<PortfolioSummaryHiveModel> {
   @override
   final int typeId = 5;
 

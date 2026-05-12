@@ -226,4 +226,3 @@ class SectorialAllocationWidget extends StatelessWidget {
     }
   }
 }
-

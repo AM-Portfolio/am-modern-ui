@@ -5,10 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_common/am_common.dart';
 
-
 import '../../internal/domain/entities/portfolio_list.dart';
 import '../../providers/portfolio_providers.dart';
-
 
 import 'package:am_design_system/am_design_system.dart';
 import 'pages/portfolio_overview_web_page.dart';
@@ -61,41 +59,49 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           title: 'Overview',
           subtitle: 'Portfolio summary',
           icon: Icons.dashboard_outlined,
-          page: _wrapPage(PortfolioOverviewWebPage(
-            userId: widget.userId,
-            portfolioId: _currentPortfolioId ?? widget.userId,
-          )),
+          page: _wrapPage(
+            PortfolioOverviewWebPage(
+              userId: widget.userId,
+              portfolioId: _currentPortfolioId ?? widget.userId,
+            ),
+          ),
           accentColor: ModuleColors.portfolio,
         ),
         NavigationItem(
           title: 'Holdings',
           subtitle: 'Asset breakdown',
           icon: Icons.pie_chart,
-          page: _wrapPage(PortfolioHoldingsWebPage(
-            userId: widget.userId,
-            portfolioId: _currentPortfolioId ?? widget.userId,
-          )),
+          page: _wrapPage(
+            PortfolioHoldingsWebPage(
+              userId: widget.userId,
+              portfolioId: _currentPortfolioId ?? widget.userId,
+            ),
+          ),
           accentColor: ModuleColors.portfolio,
         ),
         NavigationItem(
           title: 'Analysis',
           subtitle: 'Performance metrics',
           icon: Icons.analytics_outlined,
-          page: _wrapPage(PortfolioAnalysisWebPage(
-            userId: widget.userId,
-            portfolioId: _currentPortfolioId ?? widget.userId,
-          )),
+          page: _wrapPage(
+            PortfolioAnalysisWebPage(
+              userId: widget.userId,
+              portfolioId: _currentPortfolioId ?? widget.userId,
+            ),
+          ),
           accentColor: ModuleColors.portfolio,
         ),
         NavigationItem(
           title: 'Heatmap',
           subtitle: 'Visual analysis',
           icon: Icons.grid_on_outlined,
-          page: _wrapPage(PortfolioHeatmapWebPage(
-            userId: widget.userId,
-            portfolioId: _currentPortfolioId ?? widget.userId,
-            portfolioName: widget.selectedPortfolioName,
-          )),
+          page: _wrapPage(
+            PortfolioHeatmapWebPage(
+              userId: widget.userId,
+              portfolioId: _currentPortfolioId ?? widget.userId,
+              portfolioName: widget.selectedPortfolioName,
+            ),
+          ),
           accentColor: ModuleColors.portfolio,
         ),
       ],
@@ -137,82 +143,78 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     widget.onPortfolioChanged?.call(portfolioId, portfolioName);
   }
 
-
   @override
-  Widget build(BuildContext context) { 
-
-      return UnifiedSidebarScaffold(
-        module: ModuleType.portfolio,
-        // Removed title/subtitle as requested
-        title: null,
-        subtitle: null,
-        // CRITICAL: Pass an empty header to override default "Portfolio" header
-        header: const SizedBox(height: 16),
-        onBackToGlobal: widget.onBack,
-        onThemeToggle: () {
-          context.read<ThemeCubit>().toggleTheme();
-        },
-        onProfileTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProfileSettingsPage(userId: widget.userId),
-            ),
-          );
-        },
-        onLogout: () {
-          context.read<AuthCubit>().logout();
-          widget.onBack?.call();
-        },
-        body: SwipeablePageView(
-          controller: _swipeController,
-          showIndicator: true,
-          indicatorPosition: IndicatorPosition.bottom,
-        ),
-        footer: Padding(
-          padding: const EdgeInsets.all(16),
-          child: SidebarPrimaryAction(
-            title: 'New Trade',
-            icon: Icons.add,
-            accentColor: ModuleColors.portfolio,
-            onTap: () {
-              // Navigate to NEW TRADE
-            },
+  Widget build(BuildContext context) {
+    return UnifiedSidebarScaffold(
+      module: ModuleType.portfolio,
+      // Removed title/subtitle as requested
+      title: null,
+      subtitle: null,
+      // CRITICAL: Pass an empty header to override default "Portfolio" header
+      header: const SizedBox(height: 16),
+      onBackToGlobal: widget.onBack,
+      onThemeToggle: () {
+        context.read<ThemeCubit>().toggleTheme();
+      },
+      onProfileTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProfileSettingsPage(userId: widget.userId),
           ),
+        );
+      },
+      onLogout: () {
+        context.read<AuthCubit>().logout();
+        widget.onBack?.call();
+      },
+      body: SwipeablePageView(
+        controller: _swipeController,
+        showIndicator: true,
+        indicatorPosition: IndicatorPosition.bottom,
+      ),
+      footer: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SidebarPrimaryAction(
+          title: 'New Trade',
+          icon: Icons.add,
+          accentColor: ModuleColors.portfolio,
+          onTap: () {
+            // Navigate to NEW TRADE
+          },
         ),
-        sections: [
-            if (widget.portfolios != null && widget.portfolios!.isNotEmpty)
-            SecondarySidebarSection(
-              title: '', // No title as requested ("Institute of account") style
-              customWidget: SharedPortfolioSelector<PortfolioItem>(
-                currentPortfolioId: _currentPortfolioId,
-                currentPortfolioName: widget.selectedPortfolioName,
-                portfolios: widget.portfolios!,
-                onPortfolioSelected: _onPortfolioChanged,
-                idExtractor: (p) => p.portfolioId,
-                nameExtractor: (p) => p.portfolioName,
-                accentColor: ModuleColors.portfolio,
-              ),
-            ),
-          
-          // Navigation Section (No Title)
+      ),
+      sections: [
+        if (widget.portfolios != null && widget.portfolios!.isNotEmpty)
           SecondarySidebarSection(
-            title: '',
-            items: _swipeController.items.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              return SecondarySidebarItem(
-                title: item.title,
-                icon: item.icon,
-                isSelected: _swipeController.currentIndex == index,
-                onTap: () => _swipeController.navigateTo(index),
-                accentColor: item.accentColor,
-              );
-            }).toList(),
+            title: '', // No title as requested ("Institute of account") style
+            customWidget: SharedPortfolioSelector<PortfolioItem>(
+              currentPortfolioId: _currentPortfolioId,
+              currentPortfolioName: widget.selectedPortfolioName,
+              portfolios: widget.portfolios!,
+              onPortfolioSelected: _onPortfolioChanged,
+              idExtractor: (p) => p.portfolioId,
+              nameExtractor: (p) => p.portfolioName,
+              accentColor: ModuleColors.portfolio,
+            ),
           ),
-        ],
-      );
+
+        // Navigation Section (No Title)
+        SecondarySidebarSection(
+          title: '',
+          items: _swipeController.items.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            return SecondarySidebarItem(
+              title: item.title,
+              icon: item.icon,
+              isSelected: _swipeController.currentIndex == index,
+              onTap: () => _swipeController.navigateTo(index),
+              accentColor: item.accentColor,
+            );
+          }).toList(),
+        ),
+      ],
+    );
   }
-
-
 }

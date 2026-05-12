@@ -53,7 +53,8 @@ class BrokerHoldingHiveModel extends HiveObject {
   }
 }
 
-class BrokerHoldingHiveModelAdapter extends TypeAdapter<BrokerHoldingHiveModel> {
+class BrokerHoldingHiveModelAdapter
+    extends TypeAdapter<BrokerHoldingHiveModel> {
   @override
   final int typeId = 0;
 
@@ -188,6 +189,7 @@ class PortfolioHoldingHiveModel extends HiveObject {
     return PortfolioHolding(
       id: id,
       symbol: symbol,
+      name: companyName,
       companyName: companyName,
       sector: sector,
       industry: industry,
@@ -206,7 +208,8 @@ class PortfolioHoldingHiveModel extends HiveObject {
   }
 }
 
-class PortfolioHoldingHiveModelAdapter extends TypeAdapter<PortfolioHoldingHiveModel> {
+class PortfolioHoldingHiveModelAdapter
+    extends TypeAdapter<PortfolioHoldingHiveModel> {
   @override
   final int typeId = 1;
 
@@ -311,7 +314,8 @@ class PortfolioHoldingsHiveModel extends HiveObject {
   }
 }
 
-class PortfolioHoldingsHiveModelAdapter extends TypeAdapter<PortfolioHoldingsHiveModel> {
+class PortfolioHoldingsHiveModelAdapter
+    extends TypeAdapter<PortfolioHoldingsHiveModel> {
   @override
   final int typeId = 2;
 

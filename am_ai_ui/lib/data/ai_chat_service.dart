@@ -1,4 +1,3 @@
-import 'package:am_common/am_common.dart';
 import 'package:dio/dio.dart';
 import 'ai_intent_response.dart';
 
@@ -9,7 +8,7 @@ class AiChatService {
   /// Base URL for the am-fin-agent FastAPI service.
   /// Exposed as a public constant so providers can reference it without
   /// duplicating the string.
-  static String get baseUrl => ConfigService.config.api.ai?.baseUrl ?? 'https://am.asrax.in/ai';
+  static const String baseUrl = 'https://am.asrax.in/ai';
 
   final Dio _dio;
 

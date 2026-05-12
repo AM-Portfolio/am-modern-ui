@@ -195,7 +195,8 @@ class _PortfolioHoldingsWebCardState
                             columns: _buildColumns(),
                             initialSortColumnIndex:
                                 2, // Sort by current value initially
-                            onItemTap: (holding) => widget.onHoldingTap?.call(holding),
+                            onItemTap: (holding) =>
+                                widget.onHoldingTap?.call(holding),
                             rowHeight: rowHeight,
                           ),
                         ),
@@ -542,4 +543,3 @@ class _PortfolioHoldingsWebCardState
     ];
   }
 }
-

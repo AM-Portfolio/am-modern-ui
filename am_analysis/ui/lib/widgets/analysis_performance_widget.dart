@@ -294,7 +294,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
-            horizontalInterval: (maxY - minY) / 4,
+            horizontalInterval: maxY == minY ? 1.0 : (maxY - minY) / 4,
             getDrawingHorizontalLine: (value) => FlLine(
               color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
               strokeWidth: 1,
@@ -326,7 +326,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: (maxY - minY) / 4,
+          horizontalInterval: maxY == minY ? 1.0 : (maxY - minY) / 4,
           getDrawingHorizontalLine: (value) => FlLine(
             color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             strokeWidth: 1,

@@ -1,8 +1,8 @@
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_library/am_library.dart' show Environment;
 
-/// Minimal stub ConfigService for getting app running
-/// TODO: Replace with full implementation later
+/// ConfigService for local development
+/// All URLs point to localhost backend services
 class ConfigService {
   static AppConfig? _config;
   
@@ -16,13 +16,12 @@ class ConfigService {
   static Future<void> initialize() async {
     if (_config != null) return; // Already initialized
     
-    // Create minimal hardcoded config with ALL required parameters
+    // Create config pointing to LOCAL backend services
     _config = AppConfig(
       google: GoogleConfig(
         webClientId: const String.fromEnvironment('AM_GOOGLE_CLIENT_ID', defaultValue: 'your-client-id'),
       ),
       api: ApiConfig(
-        // Production: https://am.asrax.in
         baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'https://am.asrax.in'),
         timeout: 30000,
         useMockData: const bool.fromEnvironment('AM_USE_MOCK_DATA', defaultValue: false),

@@ -20,16 +20,15 @@ part 'gmail_sync_providers.g.dart';
 Future<GmailRemoteDataSource> gmailRemoteDataSource(Ref ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
   final gmailConfig = await ref.watch(gmailApiConfigProvider.future);
-  
-  return GmailRemoteDataSourceImpl(
-    apiClient: apiClient,
-    config: gmailConfig,
-  );
+
+  return GmailRemoteDataSourceImpl(apiClient: apiClient, config: gmailConfig);
 }
 
 @riverpod
 Future<GmailRepository> gmailRepository(Ref ref) async {
-  final remoteDataSource = await ref.watch(gmailRemoteDataSourceProvider.future);
+  final remoteDataSource = await ref.watch(
+    gmailRemoteDataSourceProvider.future,
+  );
   return GmailRepositoryImpl(remoteDataSource: remoteDataSource);
 }
 
@@ -84,7 +83,7 @@ class GmailPortfolioSync extends _$GmailPortfolioSync {
     try {
       final repository = await ref.read(gmailRepositoryProvider.future);
       final count = await repository.syncPortfolio(broker, pan);
-      
+
       state = const AsyncValue.data(null);
       return count;
     } catch (e, st) {
@@ -93,4 +92,3 @@ class GmailPortfolioSync extends _$GmailPortfolioSync {
     }
   }
 }
-

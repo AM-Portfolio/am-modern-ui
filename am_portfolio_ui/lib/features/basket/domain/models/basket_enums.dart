@@ -1,6 +1,1 @@
-
-enum BasketItemStatus {
-  held,
-  missing,
-  substitute,
-}
+enum BasketItemStatus { held, missing, substitute }

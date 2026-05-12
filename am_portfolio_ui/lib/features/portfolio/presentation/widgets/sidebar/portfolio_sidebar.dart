@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:am_design_system/shared/widgets/navigation/secondary_sidebar.dart';
 
@@ -16,7 +15,7 @@ class PortfolioSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Portfolio accent color (Amber/Orange)
-    const portfolioAccent = Color(0xFFFFA500); 
+    const portfolioAccent = Color(0xFFFFA500);
 
     // Navigation Items
     final overviewItems = [
@@ -49,16 +48,16 @@ class PortfolioSidebar extends StatelessWidget {
         onTap: () => onPageSelected('Heatmap'),
       ),
     ];
-    
+
     final historyItems = [
-       SecondarySidebarItem(
+      SecondarySidebarItem(
         title: 'Transactions',
         icon: Icons.receipt_long_rounded,
         accentColor: portfolioAccent,
         isSelected: currentPage == 'Transactions',
         onTap: () => onPageSelected('Transactions'),
       ),
-       SecondarySidebarItem(
+      SecondarySidebarItem(
         title: 'Dividends',
         icon: Icons.monetization_on_outlined,
         accentColor: portfolioAccent,
@@ -88,9 +87,7 @@ class PortfolioSidebar extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1F222B), // Dark background for contrast
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.1),
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),

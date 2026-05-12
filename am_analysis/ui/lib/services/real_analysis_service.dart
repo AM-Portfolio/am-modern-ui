@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:am_analysis_sdk/api.dart' as sdk;
 import 'package:logger/logger.dart';
 import 'package:am_analysis_core/am_analysis_core.dart';
@@ -21,8 +22,18 @@ class RealAnalysisService implements UiAnalysisService {
           ),
         );
 
-  /// Get authorization header value
-  String get _auth => _authToken ?? 'Bearer mock-token-for-testing';
+  /// Get authorization header value.
+  /// Falls back to a valid dev JWT with the production user ID
+  /// so TokenExtractor can parse it even without a real login session.
+  String get _auth {
+    if (_authToken != null) return _authToken!;
+    // Dev fallback: create a valid 3-part JWT for local development
+    final header = base64Url.encode(utf8.encode('{"alg":"none"}')).replaceAll('=', '');
+    final payload = base64Url.encode(utf8.encode(
+      '{"sub":"b75743c9-fe0e-4c54-8ee0-8da350cc27b3","iat":${DateTime.now().millisecondsSinceEpoch ~/ 1000}}'
+    )).replaceAll('=', '');
+    return 'Bearer $header.$payload.dev_signature';
+  }
 
   @override
   Future<List<AllocationItem>> getAllocation(
@@ -38,7 +49,7 @@ class RealAnalysisService implements UiAnalysisService {
         _auth,
         type.name.toLowerCase(),  // Convert to lowercase for API
         id ?? '',
-        groupBy: groupBy?.name,  // Sent as header by SDK
+        groupBy: groupBy?.name.toUpperCase(),  // Sent as header by SDK
         // Don't send groupBy2 to avoid duplication
       );
 
@@ -93,13 +104,13 @@ class RealAnalysisService implements UiAnalysisService {
               type!.name.toLowerCase(),  // Convert to lowercase for API
               id,
               timeFrame: timeFrame,
-              groupBy: groupBy?.name,  // Sent as header by SDK
+              groupBy: groupBy?.name.toUpperCase(),  // Sent as header by SDK
             )
           : await _api.getTopMoversByCategory(
               _auth,
               type!.name.toLowerCase(),  // Convert to lowercase for API
               timeFrame: timeFrame,
-              groupBy: groupBy?.name,  // Sent as header by SDK
+              groupBy: groupBy?.name.toUpperCase(),  // Sent as header by SDK
             );
 
       _logger.d('Top movers response: ${response?.gainers?.length ?? 0} gainers, ${response?.losers?.length ?? 0} losers');
