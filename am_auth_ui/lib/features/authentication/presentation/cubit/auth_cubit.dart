@@ -11,6 +11,7 @@ import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/google_login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
+import '../../domain/entities/user_entity.dart';
 import 'auth_state.dart';
 
 /// Authentication Cubit
