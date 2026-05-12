@@ -54,9 +54,9 @@ class ConfigService {
         ),
         trade: TradeApiConfig(
           baseUrl: const String.fromEnvironment('AM_TRADE_BASE_URL', defaultValue: 'https://am.asrax.in/trade'),
-          portfolioListResource: '/v1/portfolio-summary/by-owner',
-          portfolioSummaryResource: '/v1/portfolio-summary',
-          holdingsResource: '/v1/trades/details/portfolio',
+          portfolioListResource: '/v1/portfolios',
+          portfolioSummaryResource: '/v1/portfolios/summary',
+          holdingsResource: '/v1/portfolios/holdings',
           tradeDetailsResource: '/v1/trades/details',
           calendarMonthResource: '/v1/trades/calendar/month',
           calendarDayResource: '/v1/trades/calendar/day',
