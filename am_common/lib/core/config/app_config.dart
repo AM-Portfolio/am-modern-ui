@@ -56,6 +56,7 @@ class ApiConfig {
     this.user,
     this.gmail,
     this.analysis,
+    this.ai,
   });
   final String baseUrl;
   final int timeout;
@@ -69,6 +70,23 @@ class ApiConfig {
   final UserApiConfig? user;
   final GmailApiConfig? gmail;
   final AnalysisApiConfig? analysis;
+  final AiApiConfig? ai;
+}
+
+/// AI API configuration
+class AiApiConfig {
+  const AiApiConfig({
+    required this.baseUrl,
+    this.connectTimeout = 30000,
+    this.receiveTimeout = 30000,
+    this.sendTimeout = 30000,
+    this.enabled = true,
+  });
+  final String baseUrl;
+  final int connectTimeout;
+  final int receiveTimeout;
+  final int sendTimeout;
+  final bool enabled;
 }
 
 /// Analysis & Dashboard API configuration

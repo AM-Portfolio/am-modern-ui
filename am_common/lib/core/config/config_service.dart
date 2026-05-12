@@ -91,6 +91,10 @@ class ConfigService {
           // Production: https://am.asrax.in/analysis
           baseUrl: const String.fromEnvironment('AM_ANALYSIS_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'),
         ),
+        ai: AiApiConfig(
+          // Production: https://am.asrax.in/ai
+          baseUrl: const String.fromEnvironment('AM_AI_BASE_URL', defaultValue: 'https://am.asrax.in/ai'),
+        ),
       ),
       environment: Environment.development,
       devAuthToken: const String.fromEnvironment('AM_DEV_TOKEN'),

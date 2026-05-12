@@ -19,7 +19,13 @@ import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfo
 import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfolio_baskets_web_page.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfolio_heatmap_web_page.dart';
 
-void main() {
+void main() async {
+  // Ensure Flutter is initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize ConfigService
+  await common.ConfigService.initialize();
+
   // Service Locator (DI) Setup
   GetIt.instance.registerLazySingleton<common.SecureStorageService>(() => common.SecureStorageService());
   GetIt.instance.registerLazySingleton<common.AmStompClient>(() => common.AmStompClient());
@@ -27,12 +33,13 @@ void main() {
   // Initialize Logger
   common.AppLogger.initialize();
   // Override to INFO as requested
-  CommonLogger.configure(enabled: true, minLevel: LogLevel.info);
+  common.AppLogger.configure(enabled: true, minLevel: common.LogLevel.info);
 
   // Initialize WebSocket Client
   final stompClient = GetIt.instance<common.AmStompClient>();
-  // Use raw WebSocket endpoint (no SockJS) for better compatibility with stomp_dart_client
-  stompClient.configure(url: 'ws://localhost:8091/ws-gateway-raw');
+  // Use dynamic WebSocket endpoint from ConfigService
+  final wsUrl = common.ConfigService.config.api.marketData?.wsUrl ?? 'wss://am.asrax.in/ws';
+  stompClient.configure(url: wsUrl);
   // Connect will be handled by GlobalPortfolioWrapper after authentication
 
   runApp(
