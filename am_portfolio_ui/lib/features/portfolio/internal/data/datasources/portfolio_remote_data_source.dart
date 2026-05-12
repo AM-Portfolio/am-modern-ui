@@ -550,8 +550,11 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
 
       // Construct full URI from portfolio config with userId query parameter
-      final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.list);
-      final fullUri = '$baseUri?userId=$effectiveUserId';
+      // Use the trade configuration for this endpoint as it is hosted on the Trade service
+      // The Trade service expects a path parameter: /v1/portfolio-summary/by-owner/{userId}
+      final tradeBaseUrl = const String.fromEnvironment('AM_TRADE_BASE_URL', defaultValue: 'https://am.asrax.in/trade');
+      final resourcePath = '/v1/portfolio-summary/by-owner';
+      final fullUri = '${_buildUri(tradeBaseUrl, resourcePath)}/$effectiveUserId';
 
       // Use ApiClient for consistent error handling and logging
       final listResponse = await _apiClient.get<PortfolioListDto>(
