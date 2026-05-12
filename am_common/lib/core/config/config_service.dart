@@ -58,7 +58,7 @@ class ConfigService {
         ),
         trade: TradeApiConfig(
           baseUrl: const String.fromEnvironment('AM_TRADE_BASE_URL', defaultValue: 'https://am.asrax.in/trade'),
-          portfolioListResource: '/v1/portfolio-summary/by-owner',
+          portfolioListResource: '/v1/portfolios/list',
           portfolioSummaryResource: '/v1/portfolio-summary',
           holdingsResource: '/v1/trades/details/portfolio',
           tradeDetailsResource: '/v1/trades/details',
@@ -81,8 +81,8 @@ class ConfigService {
           enabled: true,
         ),
         marketData: MarketDataConfig(
-          // Production: wss://am.asrax.in/ws
-          wsUrl: const String.fromEnvironment('AM_MARKET_WS_URL', defaultValue: 'wss://am.asrax.in/ws'),
+          // Production: wss://am.asrax.in/v1/streams
+          wsUrl: const String.fromEnvironment('AM_MARKET_WS_URL', defaultValue: 'wss://am.asrax.in/v1/streams'),
           // Production: https://am.asrax.in/market
           baseUrl: const String.fromEnvironment('AM_MARKET_BASE_URL', defaultValue: 'https://am.asrax.in/market'),
           connectEndpoint: '/v1/market-data/stream/connect',
