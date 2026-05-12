@@ -48,6 +48,14 @@ services:
     build:
       context: ../../..
       dockerfile: AM-Repos/ui/am_modern_ui/am_portfolio_ui/live/Dockerfile
+      args:
+        AM_AUTH_BASE_URL: ${AM_AUTH_BASE_URL:-https://am.asrax.in/auth}
+        AM_PORTFOLIO_BASE_URL: ${AM_PORTFOLIO_BASE_URL:-https://am.asrax.in/portfolio}
+        AM_TRADE_BASE_URL: ${AM_TRADE_BASE_URL:-https://am.asrax.in/trade}
+        AM_MARKET_BASE_URL: ${AM_MARKET_BASE_URL:-https://am.asrax.in/market}
+        AM_ANALYSIS_BASE_URL: ${AM_ANALYSIS_BASE_URL:-https://am.asrax.in/analysis}
+        AM_DOC_PARSER_BASE_URL: ${AM_DOC_PARSER_BASE_URL:-https://am.asrax.in/doc-parser}
+        AM_WS_URL: ${AM_WS_URL:-wss://am.asrax.in/market/ws/market-data-stream}
     container_name: am-portfolio-ui-live
     ports:
       - "9005:80"

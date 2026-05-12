@@ -1,0 +1,17 @@
+{
+  "currentValue": 79000.0,
+  "investmentValue": 72500.0,
+  "totalGainLoss": 6500.0,
+  "totalGainLossPercentage": 8.96,
+  "todayGainLoss": 550.0,
+  "todayGainLossPercentage": 0.7,
+  "totalAssets": 5,
+  "gainersCount": 3,
+  "losersCount": 2,
+  "todayGainersCount": 3,
+  "todayLosersCount": 2,
+  "marketCapHoldings": {},
+  "sectorialHoldings": {},
+  "brokerPortfolios": {},
+  "lastUpdated": "2026-05-05T10:00:00"
+}

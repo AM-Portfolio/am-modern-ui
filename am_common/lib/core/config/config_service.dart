@@ -53,7 +53,7 @@ class ConfigService {
           transactionsResource: '/v1/portfolios/transactions',
         ),
         trade: TradeApiConfig(
-          baseUrl: const String.fromEnvironment('AM_TRADE_BASE_URL', defaultValue: 'http://localhost:8040'),
+          baseUrl: const String.fromEnvironment('AM_TRADE_BASE_URL', defaultValue: 'https://am.asrax.in/trade'),
           portfolioListResource: '/v1/portfolio-summary/by-owner',
           portfolioSummaryResource: '/v1/portfolio-summary',
           holdingsResource: '/v1/trades/details/portfolio',

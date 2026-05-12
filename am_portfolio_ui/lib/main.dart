@@ -42,13 +42,13 @@ void main() async {
   // Initialize WebSocket Client
   final stompClient = GetIt.instance<common.AmStompClient>();
   // Use raw WebSocket endpoint (no SockJS) for better compatibility with stomp_dart_client
-  final wsUrl = common.ConfigService.config.api.marketData?.wsUrl ?? 'ws://localhost:8091/ws-gateway-raw';
+  final wsUrl = common.ConfigService.config.api.marketData?.wsUrl ?? 'wss://am.asrax.in/market/ws/market-data-stream';
   stompClient.configure(url: wsUrl);
   // Connect will be handled by GlobalPortfolioWrapper after authentication
 
   // FORCE ANALYSIS CONFIG TO USE LOCAL DOCKER
   // Port 8061 is mapped to the analysis service in your docker-compose.yml
-  final analysisUrl = common.ConfigService.config.api.analysis?.baseUrl ?? 'http://localhost:8061';
+  final analysisUrl = common.ConfigService.config.api.analysis?.baseUrl ?? 'https://am.asrax.in/analysis';
   AnalysisConfig.instance.setBaseUrl(analysisUrl);
 
   runApp(const ProviderScope(child: AmPortfolioStandaloneApp()));
