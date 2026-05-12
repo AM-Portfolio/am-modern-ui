@@ -53,9 +53,6 @@ ARG AM_ANALYSIS_BASE_URL=https://am.asrax.in/analysis
 # Additional configuration
 ARG AM_GOOGLE_CLIENT_ID=your-client-id
 ARG AM_USE_MOCK_DATA=false
-ARG AM_DEV_TOKEN=""
-ARG AM_DEV_USER_ID=""
-
 # Build the web application
 RUN flutter build web --release \
     --dart-define=AM_API_BASE_URL=$AM_API_BASE_URL \
@@ -68,9 +65,7 @@ RUN flutter build web --release \
     --dart-define=AM_MARKET_BASE_URL=$AM_MARKET_BASE_URL \
     --dart-define=AM_ANALYSIS_BASE_URL=$AM_ANALYSIS_BASE_URL \
     --dart-define=AM_GOOGLE_CLIENT_ID=$AM_GOOGLE_CLIENT_ID \
-    --dart-define=AM_USE_MOCK_DATA=$AM_USE_MOCK_DATA \
-    --dart-define=AM_DEV_TOKEN=$AM_DEV_TOKEN \
-    --dart-define=AM_DEV_USER_ID=$AM_DEV_USER_ID
+    --dart-define=AM_USE_MOCK_DATA=$AM_USE_MOCK_DATA
 
 # Staging nginx config for runtime
 COPY am_app/nginx.conf /app/nginx.conf

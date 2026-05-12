@@ -79,14 +79,19 @@ class ApiClient {
         tag: 'ApiClient',
       );
     } else {
-      // For relative endpoints, combine with base URL
+      // For relative endpoints, combine with base URL using resolve for proper path handling
       final cleanEndpoint = finalEndpoint.startsWith('/')
           ? finalEndpoint.substring(1)
           : finalEndpoint;
-      final combinedUrl = '$finalBaseUrl/$cleanEndpoint';
-      finalUri = Uri.parse(combinedUrl).replace(queryParameters: queryParams);
+      
+      finalUri = Uri.parse(finalBaseUrl.endsWith('/') ? finalBaseUrl : '$finalBaseUrl/').resolve(cleanEndpoint);
+      
+      if (queryParams != null && queryParams.isNotEmpty) {
+        finalUri = finalUri.replace(queryParameters: queryParams);
+      }
+      
       AppLogger.debug(
-        '🌐 Relative endpoint - Combined URL: $combinedUrl, Final URI: $finalUri',
+        '🌐 Relative endpoint - Resolved URI: $finalUri',
         tag: 'ApiClient',
       );
     }

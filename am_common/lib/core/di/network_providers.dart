@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/core/config/config_service.dart';
@@ -12,7 +13,7 @@ final apiClientProvider = FutureProvider<ApiClient>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
   return ApiClient(
     baseUrl: config.api.baseUrl,
-    fallbackToken: config.devAuthToken,
+    fallbackToken: kDebugMode ? config.devAuthToken : null,
   );
 });
 
@@ -39,7 +40,7 @@ final analysisApiClientProvider = FutureProvider<ApiClient>((ref) async {
   }
   return ApiClient(
     baseUrl: config.api.analysis!.baseUrl,
-    fallbackToken: config.devAuthToken,
+    fallbackToken: kDebugMode ? config.devAuthToken : null,
   );
 });
 

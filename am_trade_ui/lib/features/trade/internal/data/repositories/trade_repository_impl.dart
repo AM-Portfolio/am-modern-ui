@@ -471,11 +471,25 @@ class TradeRepositoryImpl implements TradeRepository {
 
             // Map the update to our entity
             final dto = TradePortfolioDto.fromJson(json);
-            final portfolioList = TradePortfolioMapper.fromArrayDto([dto], userId);
+            final updatedPortfolio = TradePortfolioMapper.fromDto(dto);
             
-            // Merge with existing cache if necessary, or just replace for now
-            _cachedPortfolioList = portfolioList;
-            _portfoliosController.add(portfolioList);
+            // Merge with existing cache
+            if (_cachedPortfolioList != null) {
+              final existingPortfolios = List<TradePortfolio>.from(_cachedPortfolioList!.portfolios);
+              final index = existingPortfolios.indexWhere((p) => p.portfolioId == updatedPortfolio.portfolioId);
+              
+              if (index != -1) {
+                existingPortfolios[index] = updatedPortfolio;
+              } else {
+                existingPortfolios.add(updatedPortfolio);
+              }
+              
+              _cachedPortfolioList = _cachedPortfolioList!.copyWith(portfolios: existingPortfolios);
+            } else {
+              _cachedPortfolioList = TradePortfolioList(userId: userId, portfolios: [updatedPortfolio]);
+            }
+            
+            _portfoliosController.add(_cachedPortfolioList!);
           } catch (e) {
             AppLogger.error('Failed to parse portfolio STOMP message', error: e, tag: 'TradeRepository');
           }

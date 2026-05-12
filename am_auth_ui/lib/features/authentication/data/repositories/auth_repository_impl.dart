@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
 
@@ -341,7 +342,7 @@ class AuthRepositoryImpl implements AuthRepository {
         // This allows for dynamic "mock" identity without hardcoding strings in the source code.
         try {
           final config = ConfigService.config;
-          if (config.debugMode && 
+          if (kDebugMode && 
               config.devAuthToken != null && 
               config.devAuthToken!.isNotEmpty &&
               config.devUserId != null &&

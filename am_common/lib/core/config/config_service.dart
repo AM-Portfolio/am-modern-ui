@@ -96,9 +96,12 @@ class ConfigService {
           baseUrl: const String.fromEnvironment('AM_AI_BASE_URL', defaultValue: 'https://am.asrax.in/ai'),
         ),
       ),
-      environment: Environment.development,
-      devAuthToken: const String.fromEnvironment('AM_DEV_TOKEN'),
-      devUserId: const String.fromEnvironment('AM_DEV_USER_ID'),
+      environment: Environment.values.firstWhere(
+        (e) => e.toString().split('.').last == const String.fromEnvironment('AM_ENVIRONMENT', defaultValue: 'production'),
+        orElse: () => Environment.production,
+      ),
+      devAuthToken: '',
+      devUserId: '',
     );
   }
 }
