@@ -1,7 +1,9 @@
+import 'package:am_common/am_common.dart';
+
 /// Portfolio Module API endpoint constants
 class PortfolioEndpoints {
   // Base URL
-  static const String baseUrl = 'http://localhost:8080';
+  static String get baseUrl => ConfigService.config.api.portfolio.baseUrl;
   
   // Resources
   static const String list = '/v1/portfolio-summary/by-owner';
