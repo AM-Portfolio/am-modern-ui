@@ -39,8 +39,38 @@ RUN flutter pub get
 # Copy the rest of the application shell
 COPY am_app/ .
 
+# Build-time API configuration
+ARG AM_API_BASE_URL=https://am.asrax.in
+ARG AM_AUTH_BASE_URL=https://am.asrax.in/auth
+ARG AM_USER_BASE_URL=https://am.asrax.in/users
+ARG AM_PORTFOLIO_BASE_URL=https://am.asrax.in/portfolio
+ARG AM_TRADE_BASE_URL=https://am.asrax.in/trade
+ARG AM_GMAIL_BASE_URL=https://am.asrax.in/gmail
+ARG AM_MARKET_WS_URL=wss://am.asrax.in/ws
+ARG AM_MARKET_BASE_URL=https://am.asrax.in/market
+ARG AM_ANALYSIS_BASE_URL=https://am.asrax.in/analysis
+
+# Additional configuration
+ARG AM_GOOGLE_CLIENT_ID=your-client-id
+ARG AM_USE_MOCK_DATA=false
+ARG AM_DEV_TOKEN=""
+ARG AM_DEV_USER_ID=""
+
 # Build the web application
-RUN flutter build web --release
+RUN flutter build web --release \
+    --dart-define=AM_API_BASE_URL=$AM_API_BASE_URL \
+    --dart-define=AM_AUTH_BASE_URL=$AM_AUTH_BASE_URL \
+    --dart-define=AM_USER_BASE_URL=$AM_USER_BASE_URL \
+    --dart-define=AM_PORTFOLIO_BASE_URL=$AM_PORTFOLIO_BASE_URL \
+    --dart-define=AM_TRADE_BASE_URL=$AM_TRADE_BASE_URL \
+    --dart-define=AM_GMAIL_BASE_URL=$AM_GMAIL_BASE_URL \
+    --dart-define=AM_MARKET_WS_URL=$AM_MARKET_WS_URL \
+    --dart-define=AM_MARKET_BASE_URL=$AM_MARKET_BASE_URL \
+    --dart-define=AM_ANALYSIS_BASE_URL=$AM_ANALYSIS_BASE_URL \
+    --dart-define=AM_GOOGLE_CLIENT_ID=$AM_GOOGLE_CLIENT_ID \
+    --dart-define=AM_USE_MOCK_DATA=$AM_USE_MOCK_DATA \
+    --dart-define=AM_DEV_TOKEN=$AM_DEV_TOKEN \
+    --dart-define=AM_DEV_USER_ID=$AM_DEV_USER_ID
 
 # Staging nginx config for runtime
 COPY am_app/nginx.conf /app/nginx.conf
