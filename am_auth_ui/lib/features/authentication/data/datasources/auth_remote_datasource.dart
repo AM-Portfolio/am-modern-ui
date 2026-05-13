@@ -33,8 +33,8 @@ class AuthRemoteDataSource implements AuthDataSource {
 
         // Identity Guard: Detect and correct legacy hardcoded IDs from backend data
         if (userId.toString() == 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3') {
-          AppLogger.warning('🛡️ [IdentityGuard] Legacy dummy ID detected in login response. Correcting to production ID.', tag: 'AuthRemoteDataSource');
-          userId = '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec';
+          AppLogger.warning('🛡️ [IdentityGuard] Legacy dummy ID detected in login response. Correcting to user_gyaan.', tag: 'AuthRemoteDataSource');
+          userId = 'user_gyaan';
         }
 
         if (userId.toString().isEmpty) {
@@ -276,7 +276,7 @@ class AuthRemoteDataSource implements AuthDataSource {
 
         // Identity Guard: Detect and correct legacy hardcoded IDs during registration
         if (userId.toString() == 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3') {
-          userId = '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec';
+          userId = 'user_gyaan';
         }
 
         final user = UserModel(

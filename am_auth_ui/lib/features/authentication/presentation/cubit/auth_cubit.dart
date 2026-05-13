@@ -280,9 +280,13 @@ class AuthCubit extends Cubit<AuthState> {
 
   /// Global Identity Guard: Corrects legacy hardcoded IDs to production IDs
   UserEntity _guardUser(UserEntity user) {
+    if (user.id == 'user_gyaan') {
+      CommonLogger.info('🛡️ [GlobalIdentityGuard] Authorized test user session detected: user_gyaan.', tag: 'AuthCubit');
+      return user; // Allow user_gyaan to pass through
+    }
+    // Correct legacy UUID if it somehow leaks through
     if (user.id == 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3') {
-      CommonLogger.warning('🛡️ [GlobalIdentityGuard] Correcting legacy ID to production identity.', tag: 'AuthCubit');
-      return user.copyWith(id: '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec');
+       return user.copyWith(id: 'user_gyaan');
     }
     return user;
   }
