@@ -49,7 +49,7 @@ class ApiClient {
   }
 
   /// Legacy and Production IDs for Global Identity Proxy
-  static const String _legacyId = 'user_gyaan';
+  static const String _legacyId = 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3';
   static const String _prodId = '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec';
 
   /// Intercept and correct legacy IDs globally
