@@ -2,11 +2,11 @@
 REM AM Modern UI - Local Development Runner
 REM This script runs the Flutter app with all environment variables injected via --dart-define.
 
-set AM_API_BASE_URL=http://localhost:8001
+set AM_API_BASE_URL=https://am.asrax.in/analysis
 set AM_AUTH_BASE_URL=https://am.asrax.in/auth
 set AM_USER_BASE_URL=https://am.asrax.in/users
 set AM_PORTFOLIO_BASE_URL=https://am.asrax.in/portfolio
-set AM_TRADE_BASE_URL=http://localhost:8082
+set AM_TRADE_BASE_URL=https://am.asrax.in/trade
 set AM_MARKET_WS_URL=wss://am.asrax.in/market/ws/market-data-stream
 set AM_MARKET_BASE_URL=https://am.asrax.in/market
 set AM_ANALYSIS_BASE_URL=https://am.asrax.in/analysis
