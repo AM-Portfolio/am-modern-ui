@@ -206,9 +206,8 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, AuthResultEntity>> demoLogin() async {
     try {
-      // For Demo Version, we always use the mock data source to ensure
-      // users can test the UI features without needing a real backend.
-      final result = await _mockDataSource.demoLogin();
+      // Respect feature flags for demo login to ensure valid tokens in production
+      final result = await _dataSource.demoLogin();
 
       // Save tokens to secure storage
       await _storageService.saveAccessToken(result.tokens.accessToken);
