@@ -138,7 +138,7 @@ class PerformanceResponse {
         portfolioId: mapValueOfType<String>(json, r'portfolioId'),
         timeFrame: mapValueOfType<String>(json, r'timeFrame'),
         totalReturnPercentage: mapValueOfType<double>(json, r'totalReturnPercentage'),
-        totalReturnValue: num.parse('${json[r'totalReturnValue']}'),
+        totalReturnValue: json[r'totalReturnValue'] == null ? null : (json[r'totalReturnValue'] is num ? json[r'totalReturnValue'] : num.tryParse('${json[r'totalReturnValue']}')),
         chartData: DataPoint.listFromJson(json[r'chartData']),
         errorMessage: mapValueOfType<String>(json, r'errorMessage'),
       );

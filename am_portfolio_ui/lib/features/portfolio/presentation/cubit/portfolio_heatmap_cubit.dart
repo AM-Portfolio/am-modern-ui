@@ -34,6 +34,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
     );
 
     try {
+      if (isClosed) return;
       emit(
         const PortfolioHeatmapLoading(message: 'Loading portfolio heatmap...'),
       );
@@ -59,6 +60,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             'Analytics data not loaded or no heatmap data available',
             tag: 'PortfolioHeatmapCubit',
           );
+          if (isClosed) return;
           emit(
             const PortfolioHeatmapEmpty(
               message:
@@ -72,6 +74,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
           'No analytics cubit available',
           tag: 'PortfolioHeatmapCubit',
         );
+        if (isClosed) return;
         emit(
           const PortfolioHeatmapEmpty(
             message:
@@ -81,6 +84,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
         return;
       }
 
+      if (isClosed) return;
       emit(
         PortfolioHeatmapLoaded(
           heatmapData: heatmapData,
@@ -100,6 +104,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
         stackTrace: stackTrace,
       );
 
+      if (isClosed) return;
       emit(
         const PortfolioHeatmapError(
           message: 'Failed to load portfolio heatmap',

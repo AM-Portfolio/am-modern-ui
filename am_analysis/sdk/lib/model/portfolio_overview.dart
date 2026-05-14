@@ -236,11 +236,11 @@ class PortfolioOverview {
         type: mapValueOfType<String>(json, r'type'),
         portfolioCount: mapValueOfType<int>(json, r'portfolioCount'),
         holdingCount: mapValueOfType<int>(json, r'holdingCount'),
-        totalValue: num.parse('${json[r'totalValue']}'),
-        investedValue: num.parse('${json[r'investedValue']}'),
-        totalReturn: num.parse('${json[r'totalReturn']}'),
+        totalValue: json[r'totalValue'] == null ? null : (json[r'totalValue'] is num ? json[r'totalValue'] : num.tryParse('${json[r'totalValue']}')),
+        investedValue: json[r'investedValue'] == null ? null : (json[r'investedValue'] is num ? json[r'investedValue'] : num.tryParse('${json[r'investedValue']}')),
+        totalReturn: json[r'totalReturn'] == null ? null : (json[r'totalReturn'] is num ? json[r'totalReturn'] : num.tryParse('${json[r'totalReturn']}')),
         returnPercentage: mapValueOfType<double>(json, r'returnPercentage'),
-        dayChange: num.parse('${json[r'dayChange']}'),
+        dayChange: json[r'dayChange'] == null ? null : (json[r'dayChange'] is num ? json[r'dayChange'] : num.tryParse('${json[r'dayChange']}')),
         dayChangePercentage: mapValueOfType<double>(json, r'dayChangePercentage'),
         topSymbols: json[r'topSymbols'] is Iterable
             ? (json[r'topSymbols'] as Iterable).cast<String>().toList(growable: false)
