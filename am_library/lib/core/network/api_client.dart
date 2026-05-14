@@ -8,6 +8,7 @@ import '../errors/api_exception.dart';
 import '../services/secure_storage_service.dart';
 import '../utils/logger.dart';
 import '../telemetry/telemetry_service.dart';
+import '../telemetry/trace_context.dart';
 import '../di/service_registry.dart';
 
 /// Base API client for handling HTTP requests
@@ -39,10 +40,10 @@ class ApiClient {
     final secureStorage = SecureStorageService();
     final token = await secureStorage.getAccessToken();
     AppLogger.debug('🔐 Auth Token Check: "${token ?? 'null'}"', tag: 'ApiClient');
-    
+
     // If token exists and is NOT a mock token, use it. Otherwise fall back to hardcoded JWT.
     if (token != null && token.isNotEmpty) return token;
-    
+
     // Fallback to debug token provided by user
     AppLogger.debug('🔐 Using dynamic fallback token from system environment', tag: 'ApiClient');
     return _fallbackToken;
@@ -92,7 +93,7 @@ class ApiClient {
       final cleanEndpoint = finalEndpoint.startsWith('/')
           ? finalEndpoint.substring(1)
           : finalEndpoint;
-      
+
       finalUri = Uri.parse(finalBaseUrl.endsWith('/') ? finalBaseUrl : '$finalBaseUrl/').resolve(cleanEndpoint);
     }
 
@@ -143,6 +144,7 @@ class ApiClient {
     Map<String, String>? additionalHeaders,
   }) async {
     final token = await _getAuthToken();
+    final traceContext = TraceContext.generate();
 
     if (token != null) {
       AppLogger.debug('Attach token to header (length: ${token.length})');
@@ -153,6 +155,7 @@ class ApiClient {
     return {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
+      'traceparent': traceContext.traceparent,
       if (additionalHeaders != null) ...additionalHeaders,
     };
   }
@@ -182,7 +185,7 @@ class ApiClient {
       } catch (_) {
         message = 'Error ${response.statusCode}: ${response.reasonPhrase}';
       }
-      
+
       throw ApiException(message, statusCode: response.statusCode);
     }
   }
@@ -216,7 +219,7 @@ class ApiClient {
         }
 
         AppLogger.warning('⚠️ Request attempt $attempt failed (Status: ${e is ApiException ? e.statusCode : "Network"}). Retrying...', tag: 'ApiClient');
-        
+
         // Delay before retry - exponential backoff: 1s, 2s
         await Future.delayed(Duration(seconds: attempt));
       }
