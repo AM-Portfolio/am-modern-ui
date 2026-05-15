@@ -12,7 +12,7 @@ class AuthEndpoints {
   static String get login =>
       '$authBaseUrl/v1/tokens'; // Centralized Token Service (am-auth-tokens)
   static String get logout => '$authBaseUrl/logout';
-  static String get refreshToken => '$authBaseUrl/refresh';
+  static String get refreshToken => '$authBaseUrl/v1/refresh';
   static String get googleLogin => '$authBaseUrl/auth/google/token';
 
   // User Management endpoints

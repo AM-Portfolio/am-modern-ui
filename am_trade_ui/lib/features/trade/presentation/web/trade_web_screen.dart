@@ -20,6 +20,7 @@ import 'package:am_market_ui/shared/widgets/trading_view_chart_widget.dart';
 import 'package:am_market_ui/am_market_ui.dart';
 import '../pages/trade_market_page.dart';
 import '../pages/trade_unified_view_page.dart';
+import '../trade_navigation.dart';
 
 /// Trade view types for navigation
 enum TradeViewType { portfolios, holdings, calendar, analysis, report, trades, journal, marketAnalysis, unified }
@@ -273,13 +274,10 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             icon: Icons.add,
             accentColor: ModuleColors.trade,
             onTap: () {
-               Navigator.pushNamed(
+              openAddTradeWebPage(
                 context,
-                '/trade/add',
-                arguments: {
-                  'portfolioId': _currentPortfolioId,
-                  'portfolioName': _currentPortfolioName
-                },
+                portfolioId: _currentPortfolioId,
+                portfolioName: _currentPortfolioName,
               );
             },
           ),
