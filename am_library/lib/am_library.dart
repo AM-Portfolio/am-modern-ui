@@ -16,6 +16,7 @@ export 'core/errors/api_exception.dart';
 
 // Utils
 export 'core/utils/logger.dart';
+export 'core/utils/token_extractor.dart';
 export 'core/config/environment.dart';
 export 'core/telemetry/telemetry_service.dart';
 

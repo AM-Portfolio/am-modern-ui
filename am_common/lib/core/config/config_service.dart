@@ -22,7 +22,7 @@ class ConfigService {
         webClientId: const String.fromEnvironment('AM_GOOGLE_CLIENT_ID', defaultValue: 'your-client-id'),
       ),
       api: ApiConfig(
-        baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'http://localhost:8001'),
+        baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'),
         timeout: 30000,
         useMockData: const bool.fromEnvironment('AM_USE_MOCK_DATA', defaultValue: false),
         auth: AuthApiConfig(
@@ -53,7 +53,7 @@ class ConfigService {
           transactionsResource: '/v1/portfolios/transactions',
         ),
         trade: TradeApiConfig(
-          baseUrl: const String.fromEnvironment('AM_TRADE_BASE_URL', defaultValue: 'http://localhost:8082'),
+          baseUrl: const String.fromEnvironment('AM_TRADE_BASE_URL', defaultValue: 'https://am.asrax.in/trade'),
           portfolioListResource: '/v1/portfolio-summary/by-owner',
           portfolioSummaryResource: '/v1/portfolio-summary',
           holdingsResource: '/v1/trades/details/portfolio',

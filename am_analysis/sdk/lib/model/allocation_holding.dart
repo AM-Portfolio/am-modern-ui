@@ -195,13 +195,13 @@ class AllocationHolding {
       return AllocationHolding(
         symbol: mapValueOfType<String>(json, r'symbol'),
         name: mapValueOfType<String>(json, r'name'),
-        value: num.parse('${json[r'value']}'),
+        value: json[r'value'] == null ? null : (json[r'value'] is num ? json[r'value'] : num.tryParse('${json[r'value']}')),
         percentage: mapValueOfType<double>(json, r'percentage'),
         portfolioPercentage: mapValueOfType<double>(json, r'portfolioPercentage'),
         dayChangePercentage: mapValueOfType<double>(json, r'dayChangePercentage'),
-        dayChangeAmount: num.parse('${json[r'dayChangeAmount']}'),
+        dayChangeAmount: json[r'dayChangeAmount'] == null ? null : (json[r'dayChangeAmount'] is num ? json[r'dayChangeAmount'] : num.tryParse('${json[r'dayChangeAmount']}')),
         totalChangePercentage: mapValueOfType<double>(json, r'totalChangePercentage'),
-        totalChangeAmount: num.parse('${json[r'totalChangeAmount']}'),
+        totalChangeAmount: json[r'totalChangeAmount'] == null ? null : (json[r'totalChangeAmount'] is num ? json[r'totalChangeAmount'] : num.tryParse('${json[r'totalChangeAmount']}')),
       );
     }
     return null;

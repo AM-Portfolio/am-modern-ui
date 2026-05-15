@@ -57,6 +57,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         tag: 'PortfolioAnalyticsCubit',
       );
 
+      if (isClosed) return;
       emit(
         PortfolioAnalyticsLoaded(
           sectorAllocation: analytics.analytics.sectorAllocation,
@@ -79,6 +80,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         stackTrace: StackTrace.current,
       );
 
+      if (isClosed) return;
       emit(PortfolioAnalyticsError(error.toString()));
       CommonLogger.methodExit(
         'loadAnalytics',
@@ -113,6 +115,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
                   ..remove(AnalyticsDataType.sectorAllocation)
                   ..remove(AnalyticsDataType.marketCapAllocation);
 
+            if (isClosed) return;
             emit(
               currentState.copyWith(
                 sectorAllocation: allocations.sectorAllocation,
@@ -126,6 +129,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
             final heatmap = await _analyticsService.getPortfolioHeatmap(
               portfolioId,
             );
+            if (isClosed) return;
             emit(
               currentState.copyWith(
                 heatmap: heatmap,
@@ -140,6 +144,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
             final movers = await _analyticsService.getPortfolioMovers(
               portfolioId,
             );
+            if (isClosed) return;
             emit(
               currentState.copyWith(
                 movers: movers,
@@ -166,6 +171,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
           currentState.loadingTypes,
         )..remove(type);
 
+        if (isClosed) return;
         emit(
           currentState.copyWith(
             errors: newErrors,
@@ -195,6 +201,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         final analytics = await _analyticsService
             .getPortfolioAnalyticsWithDefaults(portfolioId);
 
+        if (isClosed) return;
         emit(
           currentState.copyWith(
             sectorAllocation: analytics.analytics.sectorAllocation,
@@ -217,6 +224,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
           error: error,
         );
 
+        if (isClosed) return;
         emit(currentState.copyWith(isRefreshing: false));
       }
     } else {

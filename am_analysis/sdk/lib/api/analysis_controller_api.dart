@@ -107,9 +107,9 @@ class AnalysisControllerApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'arg0', arg0));
+      queryParams.addAll(_queryParams('', 'userId', arg0));
     if (arg1 != null) {
-      queryParams.addAll(_queryParams('', 'arg1', arg1));
+      queryParams.addAll(_queryParams('', 'timeFrame', arg1));
     }
 
     const contentTypes = <String>[];
@@ -128,11 +128,11 @@ class AnalysisControllerApi {
 
   /// Parameters:
   ///
-  /// * [String] arg0 (required):
+  /// * [String] userId (required):
   ///
-  /// * [String] arg1:
-  Future<PerformanceResponse?> getDashboardPerformance(String arg0, { String? arg1, }) async {
-    final response = await getDashboardPerformanceWithHttpInfo(arg0,  arg1: arg1, );
+  /// * [String] timeFrame:
+  Future<PerformanceResponse?> getDashboardPerformance(String userId, { String? timeFrame, }) async {
+    final response = await getDashboardPerformanceWithHttpInfo(userId,  arg1: timeFrame, );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
@@ -161,7 +161,7 @@ class AnalysisControllerApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'arg0', arg0));
+      queryParams.addAll(_queryParams('', 'userId', arg0));
 
     const contentTypes = <String>[];
 

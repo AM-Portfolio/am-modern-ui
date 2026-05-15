@@ -82,7 +82,7 @@ class DataPoint {
 
       return DataPoint(
         date: mapDateTime(json, r'date', r''),
-        value: num.parse('${json[r'value']}'),
+        value: json[r'value'] == null ? null : (json[r'value'] is num ? json[r'value'] : num.tryParse('${json[r'value']}')),
       );
     }
     return null;

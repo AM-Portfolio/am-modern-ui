@@ -53,6 +53,13 @@ class _AppShellState extends State<AppShell> {
 
       final secureStorage = GetIt.instance<common.SecureStorageService>();
       final token = await secureStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        if (mounted) {
+          common.AppLogger.warning('AppShell: Authenticated state but no token in storage. Forcing logout.');
+          authCubit.logout();
+        }
+        return;
+      }
       if (mounted) {
         stompCubit.updateToken(token, userId: authState.user.id);
       }
@@ -102,6 +109,13 @@ class _AppShellState extends State<AppShell> {
 
                final secureStorage = GetIt.instance<common.SecureStorageService>();
                final token = await secureStorage.getAccessToken();
+               if (token == null || token.isEmpty) {
+                 if (context.mounted) {
+                   common.AppLogger.warning('AppShell: Authenticated state but no token. Forcing logout.');
+                   context.read<AuthCubit>().logout();
+                 }
+                 return;
+               }
                if (context.mounted) {
                  stompCubit.updateToken(token, userId: state.user.id);
                }

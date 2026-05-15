@@ -4,6 +4,7 @@ import 'package:am_analysis_core/am_analysis_core.dart';
 import '../services/analysis_service.dart';
 import '../config/analysis_config.dart';
 import '../mappers/analysis_mapper.dart';
+import 'package:am_common/am_common.dart';
 
 /// Real implementation of UiAnalysisService using the generated SDK
 class RealAnalysisService implements UiAnalysisService {
@@ -22,7 +23,24 @@ class RealAnalysisService implements UiAnalysisService {
         );
 
   /// Get authorization header value
-  String get _auth => _authToken ?? 'Bearer mock-token-for-testing';
+  Future<String> get _auth async {
+    if (_authToken != null) return _authToken!;
+    
+    final token = await SecureStorageService().getAccessToken();
+    if (token == null || token.isEmpty) {
+      _logger.w('No auth token found.');
+      // Token missing, user should be routed to login
+      throw Exception('Authentication required. Token is missing.');
+    }
+    return 'Bearer $token';
+  }
+
+  /// Extract userId from token
+  Future<String> get _userId async {
+    final token = await SecureStorageService().getAccessToken();
+    if (token == null) return '';
+    return TokenExtractor.extractUserId(token);
+  }
 
   @override
   Future<List<AllocationItem>> getAllocation(
@@ -33,11 +51,14 @@ class RealAnalysisService implements UiAnalysisService {
     try {
       _logger.i('Fetching allocation for $type:$id with groupBy=$groupBy');
       
+      final authHeader = await _auth;
+      final userId = await _userId;
+      
       // Call SDK method - send groupBy only as header, not as query param
       final response = await _api.getAllocation(
-        _auth,
+        authHeader,
         type.name.toLowerCase(),  // Convert to lowercase for API
-        id ?? '',
+        id ?? userId,
         groupBy: groupBy?.name,  // Sent as header by SDK
         // Don't send groupBy2 to avoid duplication
       );
@@ -61,10 +82,13 @@ class RealAnalysisService implements UiAnalysisService {
     try {
       _logger.i('Fetching performance for $type:$id with timeFrame=$timeFrame');
       
+      final authHeader = await _auth;
+      final userId = await _userId;
+      
       final response = await _api.getPerformance(
-        _auth,
+        authHeader,
         type.name.toLowerCase(),  // Convert to lowercase for API
-        id ?? '',
+        id ?? userId,
         timeFrame: timeFrame,
       );
 
@@ -87,16 +111,20 @@ class RealAnalysisService implements UiAnalysisService {
     try {
       _logger.i('Fetching top movers for ${type?.name}:$id with timeFrame=$timeFrame, groupBy=$groupBy');
       
-      final response = id != null
+      final authHeader = await _auth;
+      final userId = await _userId;
+      final entityId = id ?? userId;
+      
+      final response = entityId.isNotEmpty
           ? await _api.getTopMoversByEntity(
-              _auth,
+              authHeader,
               type!.name.toLowerCase(),  // Convert to lowercase for API
-              id,
+              entityId,
               timeFrame: timeFrame,
               groupBy: groupBy?.name,  // Sent as header by SDK
             )
           : await _api.getTopMoversByCategory(
-              _auth,
+              authHeader,
               type!.name.toLowerCase(),  // Convert to lowercase for API
               timeFrame: timeFrame,
               groupBy: groupBy?.name,  // Sent as header by SDK
