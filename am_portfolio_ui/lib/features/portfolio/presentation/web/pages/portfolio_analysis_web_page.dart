@@ -32,13 +32,13 @@ class _PortfolioAnalysisWebPageState
   @override
   Widget build(BuildContext context) {
     final summaryAsync = ref.watch(
-      portfolioSummaryProvider(widget.portfolioId),
+      portfolioSummaryByIdProvider(widget.userId, widget.portfolioId),
     );
     final analyticsAsync = ref.watch(
       portfolioAnalyticsWithDefaultsProvider(widget.portfolioId),
     );
     final holdingsAsync = ref.watch(
-      portfolioHoldingsProvider(widget.portfolioId),
+      portfolioHoldingsByIdProvider(widget.userId, widget.portfolioId),
     );
 
     return Scaffold(

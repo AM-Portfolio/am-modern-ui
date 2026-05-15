@@ -181,6 +181,16 @@ Future<PortfolioSummary> portfolioSummary(Ref ref, String userId) async {
 }
 
 @riverpod
+Future<PortfolioSummary> portfolioSummaryById(
+  Ref ref,
+  String userId,
+  String portfolioId,
+) async {
+  final useCase = await ref.watch(getPortfolioSummaryProvider.future);
+  return useCase.call(userId, portfolioId);
+}
+
+@riverpod
 Stream<PortfolioHoldings> portfolioHoldingsStream(
   Ref ref,
   String userId,

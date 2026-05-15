@@ -247,11 +247,11 @@ class DashboardSummary {
       }());
 
       return DashboardSummary(
-        totalValue: num.parse('${json[r'totalValue']}'),
-        totalInvested: num.parse('${json[r'totalInvested']}'),
-        totalGainLoss: num.parse('${json[r'totalGainLoss']}'),
+        totalValue: json[r'totalValue'] == null ? null : (json[r'totalValue'] is num ? json[r'totalValue'] : num.tryParse('${json[r'totalValue']}')),
+        totalInvested: json[r'totalInvested'] == null ? null : (json[r'totalInvested'] is num ? json[r'totalInvested'] : num.tryParse('${json[r'totalInvested']}')),
+        totalGainLoss: json[r'totalGainLoss'] == null ? null : (json[r'totalGainLoss'] is num ? json[r'totalGainLoss'] : num.tryParse('${json[r'totalGainLoss']}')),
         totalGainLossPercentage: mapValueOfType<double>(json, r'totalGainLossPercentage'),
-        dayChange: num.parse('${json[r'dayChange']}'),
+        dayChange: json[r'dayChange'] == null ? null : (json[r'dayChange'] is num ? json[r'dayChange'] : num.tryParse('${json[r'dayChange']}')),
         dayChangePercentage: mapValueOfType<double>(json, r'dayChangePercentage'),
         totalPortfolios: mapValueOfType<int>(json, r'totalPortfolios'),
         totalHoldings: mapValueOfType<int>(json, r'totalHoldings'),
