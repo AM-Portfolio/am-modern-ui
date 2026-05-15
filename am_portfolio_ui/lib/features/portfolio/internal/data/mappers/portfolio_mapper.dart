@@ -51,10 +51,34 @@ class PortfolioMapper {
     }
   }
 
-  /// Parse portfolio list from API response JSON
-  static PortfolioListDto portfolioListFromJson(List<dynamic> json) {
+  /// Parse portfolio list from API response.
+  ///
+  /// The backend returns `List<PortfolioBasicInfo>` as a raw JSON array.
+  /// This method handles:
+  /// - `List<dynamic>`: Direct array from backend
+  /// - `Map<String, dynamic>`: Wrapper with "value" key (defensive)
+  static PortfolioListDto portfolioListFromJson(dynamic json) {
     try {
-      return PortfolioListDto.fromJson(json);
+      if (json is List) {
+        return PortfolioListDto.fromJson(json);
+      }
+      // Defensive: if response is wrapped in a map (e.g. {"value": [...]})
+      if (json is Map<String, dynamic>) {
+        if (json.containsKey('value') && json['value'] is List) {
+          return PortfolioListDto.fromJson(json['value'] as List<dynamic>);
+        }
+        // Single item wrapped in a map
+        CommonLogger.warning(
+          'Portfolio list returned as Map instead of List. Keys: ${json.keys}',
+          tag: 'PortfolioMapper',
+        );
+        return PortfolioListDto(portfolios: []);
+      }
+      CommonLogger.warning(
+        'Unexpected portfolio list response type: ${json.runtimeType}',
+        tag: 'PortfolioMapper',
+      );
+      return PortfolioListDto(portfolios: []);
     } catch (e) {
       CommonLogger.error(
         'Failed to parse portfolio list response',
@@ -67,4 +91,3 @@ class PortfolioMapper {
 
   // Note: Error parsing is now handled by ApiClient's built-in exception system
 }
-

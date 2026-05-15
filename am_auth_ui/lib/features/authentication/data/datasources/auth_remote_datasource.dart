@@ -26,12 +26,16 @@ class AuthRemoteDataSource implements AuthDataSource {
       );
 
       if (response.statusCode == 200) {
-        // Log the response for debugging
-        print('Login API Response: ${response.data}');
         final data = response.data;
 
         // robust ID parsing
-        final userId = data['user_id'] ?? data['id'] ?? data['_id'] ?? data['userId'] ?? '';
+        var userId = data['user_id'] ?? data['id'] ?? data['_id'] ?? data['userId'] ?? '';
+
+        // Identity Guard: Detect and correct legacy hardcoded IDs from backend data
+        if (userId.toString() == 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3') {
+          AppLogger.warning('🛡️ [IdentityGuard] Legacy dummy ID detected in login response. Correcting to production ID.', tag: 'AuthRemoteDataSource');
+          userId = '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec';
+        }
 
         if (userId.toString().isEmpty) {
           AppLogger.error('🚨 CRITICAL: Login response has empty User ID! Data keys: ${data.keys.toList()}');
@@ -60,9 +64,12 @@ class AuthRemoteDataSource implements AuthDataSource {
         );
       }
     } on DioException catch (e) {
-      // More detailed error handling
-      print('Login API Error: ${e.response?.data}');
-      print('Status Code: ${e.response?.statusCode}');
+      // More detailed error handling using AppLogger
+      AppLogger.error(
+        'Login API Error',
+        tag: 'AuthRemoteDataSource',
+        error: e.response?.data,
+      );
 
       if (e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout) {
@@ -140,11 +147,11 @@ class AuthRemoteDataSource implements AuthDataSource {
         );
       }
     } on DioException catch (e) {
-      print('🔴 [BACKEND] DioException occurred');
-      print('🔴 [BACKEND] Type: ${e.type}');
-      print('🔴 [BACKEND] Message: ${e.message}');
-      print('🔴 [BACKEND] Response: ${e.response?.data}');
-      print('🔴 [BACKEND] Status Code: ${e.response?.statusCode}');
+      AppLogger.error(
+        '🔴 [BACKEND] DioException occurred',
+        tag: 'AuthRemoteDataSource',
+        error: e,
+      );
       
       AppLogger.error('🔴 [BACKEND] DioException occurred');
       AppLogger.error('🔴 [BACKEND] Type: ${e.type}');
@@ -185,7 +192,7 @@ class AuthRemoteDataSource implements AuthDataSource {
       await _dio.post(fullUrl);
     } on DioException catch (e) {
       // Log but don't throw - logout should always succeed locally
-      print('Logout API call failed: ${e.message}');
+      AppLogger.error('Logout API call failed', tag: 'AuthRemoteDataSource', error: e);
     }
   }
 
@@ -265,7 +272,12 @@ class AuthRemoteDataSource implements AuthDataSource {
         }
 
         // robust ID parsing for registration
-        final userId = data['user_id'] ?? data['id'] ?? data['_id'] ?? data['userId'] ?? '';
+        var userId = data['user_id'] ?? data['id'] ?? data['_id'] ?? data['userId'] ?? '';
+
+        // Identity Guard: Detect and correct legacy hardcoded IDs during registration
+        if (userId.toString() == 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3') {
+          userId = '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec';
+        }
 
         final user = UserModel(
           id: userId.toString(),

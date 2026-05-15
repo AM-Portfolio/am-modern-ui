@@ -29,10 +29,7 @@ class PortfolioBasketsWebPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: BasketExplorer(
-              userId: userId,
-              portfolioId: portfolioId!,
-            ),
+            child: BasketExplorer(userId: userId, portfolioId: portfolioId!),
           ),
         ],
       ),

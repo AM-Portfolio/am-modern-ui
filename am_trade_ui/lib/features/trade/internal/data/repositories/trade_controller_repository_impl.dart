@@ -7,14 +7,21 @@ import '../datasources/trade_controller_remote_data_source.dart';
 import '../dtos/metrics_filter_config_dto.dart';
 import '../dtos/trade_controller_dtos.dart';
 import '../mappers/trade_controller_mapper.dart';
+import 'package:am_library/am_library.dart';
+import 'dart:convert';
 
 /// Implementation of TradeControllerRepository
 /// Handles caching, data transformation, and stream management for trade data
 class TradeControllerRepositoryImpl implements TradeControllerRepository {
-  TradeControllerRepositoryImpl({required TradeControllerRemoteDataSource remoteDataSource})
-    : _remoteDataSource = remoteDataSource;
+  TradeControllerRepositoryImpl({
+    required TradeControllerRemoteDataSource remoteDataSource,
+    AmStompClient? stompClient,
+  }) : _remoteDataSource = remoteDataSource,
+       _stompClient = stompClient;
 
   final TradeControllerRemoteDataSource _remoteDataSource;
+  final AmStompClient? _stompClient;
+  StreamSubscription? _stompSubscription;
 
   // Cache for portfolio trades
   final Map<String, List<TradeDetails>> _portfolioTradesCache = {};
@@ -69,6 +76,11 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
       params: {'portfolioId': portfolioId},
     );
 
+    // We don't have userId here easily, but usually it's better to subscribe by userId
+    // However, if we're in the context of a portfolio, we might want to filter
+    // For now, let's assume we use the global userId from AuthCubit (handled in providers)
+    // Or we can implement a generic subscription.
+    
     // Create a stream controller for this specific portfolio
     final controller = StreamController<List<TradeDetails>>();
 
@@ -336,8 +348,46 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
     }
   }
 
+  void _ensureWebSocketSubscribed(String userId) {
+    if (_stompClient == null) {
+      AppLogger.warning('AmStompClient is null. WebSocket features disabled.', tag: 'TradeControllerRepository');
+      return;
+    }
+
+    final destination = '/user/queue/trade';
+
+    if (_stompSubscription == null) {
+      AppLogger.info('📡 Subscribing to: $destination', tag: 'TradeControllerRepository');
+      _stompClient!.subscribe(destination);
+
+      _stompSubscription = _stompClient!.messages
+          .where((frame) => frame.headers['destination'] == destination)
+          .listen(
+        (frame) {
+          if (frame.body == null) return;
+          try {
+            final json = jsonDecode(frame.body!);
+            AppLogger.info('Received real-time trade update via WebSocket', tag: 'TradeControllerRepository');
+
+            // Handle the trade update
+            // If it's a single trade, we might need to refresh the whole list or update the cache
+            final trade = TradeControllerMapper.toTradeDetailsEntity(TradeControllerMapper.toTradeDetailsDtoFromJson(json));
+            
+            // For now, let's just trigger a full refresh of the portfolio to be safe
+            refreshPortfolioTrades(trade.portfolioId);
+          } catch (e) {
+            AppLogger.error('Failed to parse trade STOMP message', error: e, tag: 'TradeControllerRepository');
+          }
+        },
+        onError: (err) => AppLogger.error('STOMP Subscription error', error: err, tag: 'TradeControllerRepository'),
+      );
+    }
+  }
+
   /// Dispose resources
   void dispose() {
+    _stompSubscription?.cancel();
+    _stompClient?.unsubscribe('/user/queue/trade');
     _tradeUpdatesController.close();
   }
 }

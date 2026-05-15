@@ -7,6 +7,7 @@ import 'package:am_common/am_common.dart' as common;
 
 import 'features/shell/app_shell.dart';
 import 'core/di/injection.dart';
+import 'package:am_trade_ui/am_trade_ui.dart';
 
 /// Main Application Widget
 class AMApp extends ConsumerWidget {
@@ -44,7 +45,32 @@ class AMApp extends ConsumerWidget {
             home: const AppShell(),
             routes: {
               '/home': (context) => const AppShell(),
+            },
+            onGenerateRoute: (settings) {
+              if (settings.name == '/trade/add') {
+                final args = settings.arguments as Map<String, dynamic>?;
+                final portfolioId = args?['portfolioId'] as String?;
+                final portfolioName = args?['portfolioName'] as String?;
 
+                if (portfolioId == null) {
+                   return MaterialPageRoute(
+                    builder: (context) => const Scaffold(
+                      body: Center(child: Text('Error: Portfolio ID is required')),
+                    ),
+                  );
+                }
+
+                return MaterialPageRoute(
+                  builder: (context) => BlocProvider<TradeControllerCubit>(
+                    create: (context) => getIt<TradeControllerCubit>(),
+                    child: AddTradeWebPage(
+                      portfolioId: portfolioId,
+                      portfolioName: portfolioName,
+                    ),
+                  ),
+                );
+              }
+              return null;
             },
           );
         },

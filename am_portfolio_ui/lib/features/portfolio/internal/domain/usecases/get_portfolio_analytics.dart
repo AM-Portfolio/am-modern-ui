@@ -271,7 +271,9 @@ class GetPortfolioAnalytics {
       throw ArgumentError('Movers limit must be between 1 and 100');
     }
 
-    CommonLogger.info('Request validation passed', tag: 'GetPortfolioAnalytics');
+    CommonLogger.info(
+      'Request validation passed',
+      tag: 'GetPortfolioAnalytics',
+    );
   }
 }
-

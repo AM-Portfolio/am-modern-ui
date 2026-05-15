@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:am_analysis_sdk/api.dart' as sdk;
 import 'package:logger/logger.dart';
 import 'package:am_analysis_core/am_analysis_core.dart';
@@ -21,8 +22,10 @@ class RealAnalysisService implements UiAnalysisService {
           ),
         );
 
-  /// Get authorization header value
-  String get _auth => _authToken ?? 'Bearer mock-token-for-testing';
+  String get _auth {
+    if (_authToken != null) return _authToken!;
+    throw Exception('No authentication token available for Analysis Service');
+  }
 
   @override
   Future<List<AllocationItem>> getAllocation(
@@ -33,12 +36,14 @@ class RealAnalysisService implements UiAnalysisService {
     try {
       _logger.i('Fetching allocation for $type:$id with groupBy=$groupBy');
       
+      // Fetch allocation data using the SDK controller
+
       // Call SDK method - send groupBy only as header, not as query param
       final response = await _api.getAllocation(
         _auth,
         type.name.toLowerCase(),  // Convert to lowercase for API
         id ?? '',
-        groupBy: groupBy?.name,  // Sent as header by SDK
+        groupBy: groupBy?.name.toUpperCase(),  // Sent as header by SDK
         // Don't send groupBy2 to avoid duplication
       );
 
@@ -93,13 +98,13 @@ class RealAnalysisService implements UiAnalysisService {
               type!.name.toLowerCase(),  // Convert to lowercase for API
               id,
               timeFrame: timeFrame,
-              groupBy: groupBy?.name,  // Sent as header by SDK
+              groupBy: groupBy?.name.toUpperCase(),  // Sent as header by SDK
             )
           : await _api.getTopMoversByCategory(
               _auth,
               type!.name.toLowerCase(),  // Convert to lowercase for API
               timeFrame: timeFrame,
-              groupBy: groupBy?.name,  // Sent as header by SDK
+              groupBy: groupBy?.name.toUpperCase(),  // Sent as header by SDK
             );
 
       _logger.d('Top movers response: ${response?.gainers?.length ?? 0} gainers, ${response?.losers?.length ?? 0} losers');

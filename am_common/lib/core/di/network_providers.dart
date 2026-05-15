@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/core/config/config_service.dart';
@@ -10,7 +11,10 @@ final appConfigProvider = FutureProvider<AppConfig>((ref) async {
 
 final apiClientProvider = FutureProvider<ApiClient>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
-  return ApiClient(baseUrl: config.api.baseUrl);
+  return ApiClient(
+    baseUrl: config.api.baseUrl,
+    fallbackToken: kDebugMode ? config.devAuthToken : null,
+  );
 });
 
 final gmailApiConfigProvider = FutureProvider<GmailApiConfig>((ref) async {
@@ -34,5 +38,13 @@ final analysisApiClientProvider = FutureProvider<ApiClient>((ref) async {
   if (config.api.analysis == null) {
     throw Exception('Analysis API configuration is not available');
   }
-  return ApiClient(baseUrl: config.api.analysis!.baseUrl);
+  return ApiClient(
+    baseUrl: config.api.analysis!.baseUrl,
+    fallbackToken: kDebugMode ? config.devAuthToken : null,
+  );
 });
+
+final stompClientProvider = Provider<AmStompClient>((ref) {
+  return ServiceRegistry.stomp;
+});
+

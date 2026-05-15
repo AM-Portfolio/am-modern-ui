@@ -172,4 +172,3 @@ class _PortfolioAnalysisWidgetState extends State<PortfolioAnalysisWidget> {
         },
       );
 }
-

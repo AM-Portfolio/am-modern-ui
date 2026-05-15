@@ -15,9 +15,9 @@ class GmailSyncModal extends ConsumerStatefulWidget {
 class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
   final _formKey = GlobalKey<FormState>();
   final _panController = TextEditingController();
-  
+
   String _selectedBroker = 'zerodha';
-  
+
   // Broker options mapping: value -> display label
   final Map<String, String> _brokers = {
     'zerodha': 'Zerodha',
@@ -53,14 +53,17 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
                 style: TextStyle(fontSize: 13, color: Colors.grey),
               ),
               const SizedBox(height: 20),
-              
+
               // Broker Dropdown
               DropdownButtonFormField<String>(
                 value: _selectedBroker,
                 decoration: const InputDecoration(
                   labelText: 'Select Broker',
                   border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                 ),
                 items: _brokers.entries.map((entry) {
                   return DropdownMenuItem(
@@ -68,16 +71,18 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
                     child: Text(entry.value),
                   );
                 }).toList(),
-                onChanged: isLoading ? null : (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedBroker = value;
-                    });
-                  }
-                },
+                onChanged: isLoading
+                    ? null
+                    : (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedBroker = value;
+                          });
+                        }
+                      },
               ),
               const SizedBox(height: 16),
-              
+
               // PAN Input
               TextFormField(
                 controller: _panController,
@@ -102,7 +107,7 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
                 },
                 enabled: !isLoading,
               ),
-              
+
               if (syncState.hasError) ...[
                 const SizedBox(height: 16),
                 Container(
@@ -113,12 +118,19 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, size: 20, color: Colors.red.shade700),
+                      Icon(
+                        Icons.error_outline,
+                        size: 20,
+                        color: Colors.red.shade700,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _getErrorMessage(syncState.error),
-                          style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ],
@@ -140,7 +152,10 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : const Text('Scan & Sync'),
         ),
@@ -157,16 +172,20 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      final count = await ref.read(gmailPortfolioSyncProvider.notifier).syncPortfolio(
-        broker: _selectedBroker,
-        pan: _panController.text.toUpperCase(),
-      );
+      final count = await ref
+          .read(gmailPortfolioSyncProvider.notifier)
+          .syncPortfolio(
+            broker: _selectedBroker,
+            pan: _panController.text.toUpperCase(),
+          );
 
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Successfully synced $count holdings from $_selectedBroker'),
+            content: Text(
+              'Successfully synced $count holdings from $_selectedBroker',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -178,4 +197,3 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
     }
   }
 }
-

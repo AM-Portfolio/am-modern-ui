@@ -25,14 +25,19 @@ class PortfolioOverviewWebPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (portfolioId != null) {
-      final analyticsServiceAsync = ref.watch(portfolioAnalyticsServiceProvider);
-      
+      final analyticsServiceAsync = ref.watch(
+        portfolioAnalyticsServiceProvider,
+      );
+
       return analyticsServiceAsync.when(
         data: (analyticsService) {
           return BlocProvider<PortfolioAnalyticsCubit>(
             create: (context) {
               final cubit = PortfolioAnalyticsCubit(analyticsService);
-              cubit.loadSpecificAnalytics(portfolioId!, AnalyticsDataType.sectorAllocation);
+              cubit.loadSpecificAnalytics(
+                portfolioId!,
+                AnalyticsDataType.sectorAllocation,
+              );
               return cubit;
             },
             child: _PortfolioOverviewView(
@@ -43,7 +48,8 @@ class PortfolioOverviewWebPage extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error loading analytics service: $error')),
+        error: (error, stack) =>
+            Center(child: Text('Error loading analytics service: $error')),
       );
     }
 
@@ -68,9 +74,6 @@ class _PortfolioOverviewView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PortfolioOverviewWidget(
-      userId: userId,
-      portfolioId: portfolioId,
-    );
+    return PortfolioOverviewWidget(userId: userId, portfolioId: portfolioId);
   }
 }

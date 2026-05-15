@@ -9,6 +9,7 @@
 .history
 .svn/
 migrate_working_dir/
+.env
 
 # IntelliJ related
 *.iml
@@ -73,3 +74,10 @@ Thumbs.db
 # Runtime logs
 logs/
 *.log
+
+# Local development scripts (contain localhost - intentional)
+scripts/run_local.bat
+scripts/run_local.sh
+
+# OpenAPI spec files (contain localhost server URLs)
+analysis_openapi.json

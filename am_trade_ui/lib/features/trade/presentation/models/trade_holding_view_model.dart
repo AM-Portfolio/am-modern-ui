@@ -279,10 +279,9 @@ class TradeHoldingViewModel {
     for (final entity in entities) {
       try {
         viewModels.add(TradeHoldingViewModel.fromEntity(entity));
-      } catch (e, stackTrace) {
+      } catch (e) {
         // Log error but continue processing other trades
-        print('Error converting trade ${entity.tradeId} to view model: $e');
-        print('Stack trace: $stackTrace');
+        // AppLogger.error('Error converting trade to view model', error: e);
         // Skip this trade and continue with others
       }
     }

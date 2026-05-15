@@ -1,0 +1,13 @@
+{
+  "portfolioId": "default",
+  "analytics": {
+    "sectorAllocation": {
+      "sectorWeights": {
+        "Energy": 45.0,
+        "Technology": 30.0,
+        "Financials": 25.0
+      }
+    },
+    "performanceHistory": []
+  }
+}

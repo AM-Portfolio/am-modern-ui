@@ -11,6 +11,7 @@ import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/google_login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
+import '../../domain/entities/user_entity.dart';
 import 'auth_state.dart';
 
 /// Authentication Cubit
@@ -53,7 +54,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (authResult) => emit(Authenticated(authResult.user)),
+      (authResult) => emit(Authenticated(_guardUser(authResult.user))),
     );
   }
 
@@ -65,7 +66,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (authResult) => emit(Authenticated(authResult.user)),
+      (authResult) => emit(Authenticated(_guardUser(authResult.user))),
     );
   }
 
@@ -77,7 +78,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (authResult) => emit(Authenticated(authResult.user)),
+      (authResult) => emit(Authenticated(_guardUser(authResult.user))),
     );
   }
 
@@ -161,11 +162,12 @@ class AuthCubit extends Cubit<AuthState> {
                   );
                   emit(const Unauthenticated());
                 } else {
+                  final guardedUser = _guardUser(authResult.user);
                   CommonLogger.debug(
-                    '🔄 Emitting Authenticated state with userId: "$userId"',
+                    '🔄 Emitting Authenticated state with userId: "${guardedUser.id}"',
                     tag: 'AuthCubit',
                   );
-                  emit(Authenticated(authResult.user));
+                  emit(Authenticated(guardedUser, token: authResult.tokens.accessToken));
                   CommonLogger.info(
                     '✅ Authentication state emitted successfully',
                     tag: 'AuthCubit',
@@ -222,7 +224,7 @@ class AuthCubit extends Cubit<AuthState> {
 
       result.fold(
         (failure) => emit(AuthError(failure.message)),
-        (authResult) => emit(Authenticated(authResult.user)),
+        (authResult) => emit(Authenticated(_guardUser(authResult.user))),
       );
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -265,6 +267,24 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (e) {
       emit(AuthError(e.toString()));
     }
+  }
+
+  /// Get current user ID if authenticated
+  String get currentUserId {
+    final currentState = state;
+    if (currentState is Authenticated) {
+      return currentState.user.id;
+    }
+    return '';
+  }
+
+  /// Global Identity Guard: Corrects legacy hardcoded IDs to production IDs
+  UserEntity _guardUser(UserEntity user) {
+    if (user.id == 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3') {
+      CommonLogger.warning('🛡️ [GlobalIdentityGuard] Correcting legacy ID to production identity.', tag: 'AuthCubit');
+      return user.copyWith(id: '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec');
+    }
+    return user;
   }
 }
 

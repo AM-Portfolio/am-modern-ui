@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
@@ -160,12 +160,9 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
   void _onUrlChanged() {
     final text = _urlController.text.trim();
-    print('URL Changed: $text'); // Debug
     if (text.isNotEmpty && (text.startsWith('http://') || text.startsWith('https://'))) {
-      print('Setting preview for: $text'); // Debug
       setState(() => _urlPreview = text);
     } else {
-      print('Clearing preview'); // Debug
       setState(() => _urlPreview = null);
     }
   }
@@ -223,9 +220,9 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       setState(() {
         _availableTrades = TradeHoldingViewModel.fromEntityList(trades);
       });
-    } catch (e, stackTrace) {
-      print('Error loading trades for period: $e');
-      print('Stack trace: $stackTrace');
+    } catch (e) {
+      // Log error silently for debugging if needed but don't leak to console
+      // AppLogger.error('Error loading trades for period', error: e);
       setState(() {
         _availableTrades = [];
       });

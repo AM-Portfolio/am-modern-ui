@@ -6,14 +6,24 @@ import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard_ui;
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_library/am_library.dart';
 
+// Trade Module Imports
+import 'package:am_trade_ui/features/trade/internal/data/datasources/trade_controller_remote_data_source.dart' as trade_remote;
+import 'package:am_trade_ui/features/trade/internal/data/repositories/trade_controller_repository_impl.dart' as trade_repo_impl;
+import 'package:am_trade_ui/features/trade/internal/domain/repositories/trade_controller_repository.dart' as trade_repo;
+import 'package:am_trade_ui/features/trade/internal/domain/usecases/add_trade.dart';
+import 'package:am_trade_ui/features/trade/internal/domain/usecases/update_trade.dart';
+import 'package:am_trade_ui/features/trade/internal/domain/usecases/delete_trade.dart';
+import 'package:am_trade_ui/features/trade/internal/domain/usecases/get_trades_by_portfolio.dart';
+import 'package:am_trade_ui/features/trade/presentation/cubit/trade_controller_cubit.dart';
+
 final getIt = GetIt.instance;
 
 /// Configure all dependencies for the application
 Future<void> configureDependencies() async {
   // 1. Initialize Technical Infrastructure (One Source of Truth)
   ServiceRegistry.initialize(
-    analysisBaseUrl: 'https://am.asrax.in/analysis', // Standard Analysis Port
-    wsUrl: 'wss://am.asrax.in/v1/streams',
+    analysisBaseUrl: common.ConfigService.config.api.analysis?.baseUrl,
+    wsUrl: common.ConfigService.config.api.marketData?.wsUrl,
   );
 
   // Register Theme Repository (required by ThemeCubit)
@@ -164,8 +174,44 @@ void _registerPortfolioDependencies() {
 
 // ── TRADE (re-enable with am_trade_ui) ───────────────────────────────────────
 void _registerTradeDependencies() {
-  // Trade UI uses Riverpod providers for its internal dependencies
-  // Only shared/common dependencies need to be registered in GetIt
+  // Data sources
+  getIt.registerLazySingleton<trade_remote.TradeControllerRemoteDataSource>(
+    () => trade_remote.TradeControllerRemoteDataSourceImpl(
+      apiClient: getIt<common.ApiClient>(),
+    ),
+  );
+
+  // Repository
+  getIt.registerLazySingleton<trade_repo.TradeControllerRepository>(
+    () => trade_repo_impl.TradeControllerRepositoryImpl(
+      remoteDataSource: getIt<trade_remote.TradeControllerRemoteDataSource>(),
+      stompClient: getIt<common.AmStompClient>(),
+    ),
+  );
+
+  // Use cases
+  getIt.registerLazySingleton<AddTrade>(
+    () => AddTrade(getIt<trade_repo.TradeControllerRepository>()),
+  );
+  getIt.registerLazySingleton<UpdateTrade>(
+    () => UpdateTrade(getIt<trade_repo.TradeControllerRepository>()),
+  );
+  getIt.registerLazySingleton<DeleteTrade>(
+    () => DeleteTrade(getIt<trade_repo.TradeControllerRepository>()),
+  );
+  getIt.registerLazySingleton<GetTradesByPortfolio>(
+    () => GetTradesByPortfolio(getIt<trade_repo.TradeControllerRepository>()),
+  );
+
+  // Cubit
+  getIt.registerFactory<TradeControllerCubit>(
+    () => TradeControllerCubit(
+      addTrade: getIt<AddTrade>(),
+      updateTrade: getIt<UpdateTrade>(),
+      deleteTrade: getIt<DeleteTrade>(),
+      getTradesByPortfolio: getIt<GetTradesByPortfolio>(),
+    ),
+  );
 }
 
 void _registerUserDependencies() {

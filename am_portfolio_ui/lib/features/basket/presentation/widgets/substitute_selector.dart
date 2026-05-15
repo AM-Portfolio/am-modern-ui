@@ -29,7 +29,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
   String? _error;
 
   String? _detectedMarketCap;
-  
+
   @override
   void initState() {
     super.initState();
@@ -132,7 +132,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _detectedMarketCap != null 
+                    _detectedMarketCap != null
                         ? 'Recommendation: Select a $_detectedMarketCap stock.'
                         : 'Fetching original stock details...',
                     style: const TextStyle(color: Colors.blueBytes),
@@ -156,9 +156,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
             onChanged: _onSearchChanged,
           ),
           const SizedBox(height: 16),
-          Expanded(
-            child: _buildResultList(),
-          ),
+          Expanded(child: _buildResultList()),
         ],
       ),
     );
@@ -170,7 +168,9 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
     }
 
     if (_error != null) {
-      return Center(child: Text(_error!, style: const TextStyle(color: Colors.red)));
+      return Center(
+        child: Text(_error!, style: const TextStyle(color: Colors.red)),
+      );
     }
 
     if (_results.isEmpty && _searchController.text.isNotEmpty) {
@@ -181,9 +181,12 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
       itemCount: _results.length,
       itemBuilder: (context, index) {
         final stock = _results[index];
-        final isMatch = _detectedMarketCap != null && stock.marketCapCategory == _detectedMarketCap;
-        final unknownCap = _detectedMarketCap == null || stock.marketCapCategory == null;
-        
+        final isMatch =
+            _detectedMarketCap != null &&
+            stock.marketCapCategory == _detectedMarketCap;
+        final unknownCap =
+            _detectedMarketCap == null || stock.marketCapCategory == null;
+
         return ListTile(
           title: Text(stock.symbol),
           subtitle: Text(stock.name),
@@ -194,12 +197,17 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
               Text(
                 stock.marketCapCategory ?? 'Unknown',
                 style: TextStyle(
-                  color: unknownCap ? Colors.grey : (isMatch ? Colors.green : Colors.orange),
+                  color: unknownCap
+                      ? Colors.grey
+                      : (isMatch ? Colors.green : Colors.orange),
                   fontWeight: FontWeight.bold,
                 ),
               ),
               if (!unknownCap && !isMatch)
-                const Text('Mismatch', style: TextStyle(fontSize: 10, color: Colors.orange)),
+                const Text(
+                  'Mismatch',
+                  style: TextStyle(fontSize: 10, color: Colors.orange),
+                ),
             ],
           ),
           onTap: () {

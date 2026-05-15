@@ -1,0 +1,34 @@
+{
+  "portfolioId": "p-101",
+  "name": "Main Growth Portfolio",
+  "description": "Primary long-term growth portfolio focused on tech and energy.",
+  "ownerId": "demo-user",
+  "active": true,
+  "currency": "USD",
+  "initialCapital": 100000.00,
+  "currentCapital": 125400.50,
+  "createdDate": "2025-01-15T08:00:00Z",
+  "lastUpdatedDate": "2026-05-10T14:30:00Z",
+  "metrics": {
+    "totalValue": 125400.50,
+    "totalGainLoss": 25400.50,
+    "totalGainLossPercentage": 25.4,
+    "unrealizedGainLoss": 15400.50,
+    "realizedGainLoss": 10000.00,
+    "tradesCount": 45,
+    "winRate": 65.0,
+    "profitFactor": 1.85,
+    "sharpeRatio": 1.42,
+    "maxDrawdown": -12.5,
+    "averageWin": 1200.00,
+    "averageLoss": -650.00
+  },
+  "tradeIds": ["t-001", "t-002", "t-003", "t-004", "t-005"],
+  "winningTradeIds": ["t-001", "t-002", "t-004"],
+  "losingTradeIds": ["t-003", "t-005"],
+  "assetAllocations": {
+    "Equity": 75.0,
+    "Cash": 15.0,
+    "Crypto": 10.0
+  }
+}

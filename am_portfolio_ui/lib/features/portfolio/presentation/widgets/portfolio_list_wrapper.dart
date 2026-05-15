@@ -104,7 +104,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   /// Handles portfolio state changes
   void _handlePortfolioStateChange(BuildContext context, PortfolioState state) {
     if (state is PortfolioListLoaded) {
-      _autoSelectFirstPortfolio(state.portfolioList.portfolios);
+      _autoSelectFirstPortfolio(state.portfolioList!.portfolios);
     } else if (state is PortfolioListError) {
       _handlePortfolioError(context, state.message);
     }
@@ -136,7 +136,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     }
 
     if (state is PortfolioListLoaded) {
-      return _buildLoadedContent(state.portfolioList.portfolios);
+      return _buildLoadedContent(state.portfolioList!.portfolios);
     }
 
     return _buildLoadingScreen();
@@ -266,4 +266,3 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     context.read<PortfolioCubit>().loadPortfoliosList(widget.userId);
   }
 }
-

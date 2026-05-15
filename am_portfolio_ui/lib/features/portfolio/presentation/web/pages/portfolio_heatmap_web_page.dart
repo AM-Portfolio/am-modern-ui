@@ -37,9 +37,7 @@ class PortfolioHeatmapWebPage extends ConsumerWidget {
             BlocProvider(
               create: (context) => PortfolioAnalyticsCubit(analyticsService),
             ),
-            BlocProvider(
-              create: (context) => PortfolioHeatmapCubit(),
-            ),
+            BlocProvider(create: (context) => PortfolioHeatmapCubit()),
           ],
           child: _PortfolioHeatmapView(
             userId: userId,

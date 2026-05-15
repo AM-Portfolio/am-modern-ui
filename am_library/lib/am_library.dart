@@ -18,4 +18,4 @@ export 'core/errors/api_exception.dart';
 export 'core/utils/logger.dart';
 export 'core/config/environment.dart';
 export 'core/telemetry/telemetry_service.dart';
-
+export 'core/telemetry/trace_context.dart';
