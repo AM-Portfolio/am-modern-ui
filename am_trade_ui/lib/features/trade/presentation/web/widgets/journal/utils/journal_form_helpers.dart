@@ -1,4 +1,4 @@
-﻿import '../../../../../internal/domain/entities/journal_entry.dart';
+import '../../../../../internal/domain/entities/journal_entry.dart';
 
 /// Helper functions for journal form operations
 class JournalFormHelpers {

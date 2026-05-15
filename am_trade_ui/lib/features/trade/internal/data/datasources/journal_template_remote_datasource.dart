@@ -72,7 +72,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
     );
 
     try {
-      final fullUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/journal-templates');
+      final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal-templates');
 
       final response = await _apiClient.post<JournalTemplateResponseDto>(
         fullUri,
@@ -121,7 +121,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
         if (search != null) 'search': search,
       };
 
-      final fullUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/journal-templates');
+      final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal-templates');
 
       final response = await _apiClient.get<List<JournalTemplateResponseDto>>(
         fullUri,
@@ -168,7 +168,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
     );
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/journal-templates');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal-templates');
       final fullUri = '$baseUri/$templateId';
 
       final response = await _apiClient.get<JournalTemplateResponseDto>(
@@ -211,7 +211,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
     );
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/journal-templates');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal-templates');
       final fullUri = '$baseUri/$templateId';
 
       final response = await _apiClient.put<JournalTemplateResponseDto>(
@@ -251,7 +251,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
     );
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/journal-templates');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal-templates');
       final fullUri = '$baseUri/$templateId';
 
       await _apiClient.delete<void>(
@@ -291,7 +291,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
     );
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/journal-templates');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal-templates');
       final fullUri = '$baseUri/favorites';
 
       final response = await _apiClient.get<List<JournalTemplateResponseDto>>(
@@ -338,7 +338,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
     );
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/journal-templates');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal-templates');
       final fullUri = '$baseUri/recommended';
 
       final response = await _apiClient.get<List<JournalTemplateResponseDto>>(
@@ -383,7 +383,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
     );
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/journal-templates');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal-templates');
       final fullUri = '$baseUri/my-templates';
 
       final response = await _apiClient.get<List<JournalTemplateResponseDto>>(
@@ -431,7 +431,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
     );
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/journal-templates');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal-templates');
       final fullUri = '$baseUri/$templateId/favorite';
 
       final response = await _apiClient.post<JournalTemplateResponseDto>(
@@ -474,7 +474,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
     );
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/journal-templates');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal-templates');
       final fullUri = '$baseUri/$templateId/use';
 
       final response = await _apiClient.post<TradeJournalEntryResponseDto>(
