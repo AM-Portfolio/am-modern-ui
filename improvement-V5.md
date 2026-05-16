@@ -110,7 +110,7 @@ We moved the app away from hardcoded IP addresses to a dynamic configuration.
 ```diff
 // FIXED: Base URL logic
 - baseUrl: 'http://192.168.1.10:8061', // Hardcoded local IP
-+ baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'), // Dynamic
++ baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'https://am.munish.org/analysis'), // Dynamic
 ```
 
 #### File: `.gitignore`

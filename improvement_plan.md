@@ -68,8 +68,8 @@ This approach involves passing the correct URLs during the Docker build process 
 #### Steps:
 1.  **Modify `Dockerfile`**: Update `am_portfolio_ui/live/Dockerfile` to accept build arguments and pass them to Flutter.
     ```dockerfile
-    ARG AM_TRADE_BASE_URL=https://am.asrax.in/trade
-    ARG AM_ANALYSIS_BASE_URL=https://am.asrax.in/analysis
+    ARG AM_TRADE_BASE_URL=https://am.munish.org/trade
+    ARG AM_ANALYSIS_BASE_URL=https://am.munish.org/analysis
     ...
     RUN flutter build web --release \
       --dart-define=AM_TRADE_BASE_URL=$AM_TRADE_BASE_URL \
@@ -84,8 +84,8 @@ To avoid rebuilding the image for different environments, load the configuration
 1.  **Create Config File**: Create `assets/config.json` in `am_portfolio_ui/web` (or `assets/`).
     ```json
     {
-      "AM_TRADE_BASE_URL": "https://am.asrax.in/trade",
-      "AM_ANALYSIS_BASE_URL": "https://am.asrax.in/analysis"
+      "AM_TRADE_BASE_URL": "https://am.munish.org/trade",
+      "AM_ANALYSIS_BASE_URL": "https://am.munish.org/analysis"
     }
     ```
 2.  **Modify `ConfigService`**: Update it to fetch this JSON file before rendering the app.

@@ -16,7 +16,7 @@ class StockSearchService {
   final SecureStorageService _storage;
   
   // Using ConfigService for dynamic URL
-  static String get _baseUrl => common.ConfigService.config.api.marketData?.baseUrl ?? 'https://am.asrax.in';
+  static String get _baseUrl => common.ConfigService.config.api.marketData?.baseUrl ?? 'https://am.munish.org';
 
   StockSearchService({required Dio dio, required SecureStorageService storage})
     : _dio = dio,

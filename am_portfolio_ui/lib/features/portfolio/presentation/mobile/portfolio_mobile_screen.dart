@@ -58,15 +58,8 @@ class PortfolioMobileScreen extends ConsumerWidget {
         );
 
         return analyticsServiceAsync.when(
-          data: (analyticsService) => MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create: (context) => PortfolioCubit(portfolioService),
-              ),
-              BlocProvider(
-                create: (context) => PortfolioAnalyticsCubit(analyticsService),
-              ),
-            ],
+          data: (analyticsService) => BlocProvider(
+            create: (context) => PortfolioAnalyticsCubit(analyticsService),
             child: PortfolioMobileView(
               userId: userId,
               selectedPortfolioId: selectedPortfolioId,
@@ -171,7 +164,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    _currentPortfolioId = widget.selectedPortfolioId ?? widget.userId;
+    _currentPortfolioId = widget.selectedPortfolioId;
 
     // Load portfolio data
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -191,6 +184,19 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         );
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant PortfolioMobileView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedPortfolioId != null &&
+        widget.selectedPortfolioId != _currentPortfolioId) {
+      setState(() => _currentPortfolioId = widget.selectedPortfolioId);
+      context.read<PortfolioCubit>().loadPortfolioById(
+        widget.userId,
+        widget.selectedPortfolioId!,
+      );
+    }
   }
 
   @override
@@ -222,6 +228,12 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       tag: 'PortfolioMobileView',
     );
 
+    if (_currentPortfolioId == null) {
+      return const Scaffold(
+        body: Center(child: Text('Select a portfolio to continue')),
+      );
+    }
+
     return BlocListener<PortfolioCubit, PortfolioState>(
       listener: (context, state) {
         if (state is PortfolioError) {
@@ -237,7 +249,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         body: SafeArea(
           child: Column(
             children: [
-              // Content Area
               Expanded(
                 child: PortfolioTabContentWidget(
                   tabController: _tabController,

@@ -4,9 +4,9 @@ import 'package:am_common/am_common.dart';
 class AuthEndpoints {
   // Base URLs (Standardized via Traefik rewriters)
   static String get authBaseUrl =>
-      ConfigService.config.api.auth?.baseUrl ?? 'https://am.asrax.in/auth';
+      ConfigService.config.api.auth?.baseUrl ?? 'https://am.munish.org/auth';
   static String get userBaseUrl =>
-      ConfigService.config.api.user?.baseUrl ?? 'https://am.asrax.in/users';
+      ConfigService.config.api.user?.baseUrl ?? 'https://am.munish.org/users';
 
   // Authentication endpoints
   static String get login =>

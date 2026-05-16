@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
 import '../services/real_analysis_service.dart';
@@ -12,7 +11,7 @@ class AnalysisTopMoversWidget extends StatefulWidget {
     this.initialTimeFrame = ds.TimeFrame.oneDay,
     this.height,
     this.showTimeFrameSelector = true,
-    this.authToken,
+    this.fallbackMovers,
     super.key,
   });
 
@@ -20,7 +19,8 @@ class AnalysisTopMoversWidget extends StatefulWidget {
   final ds.TimeFrame initialTimeFrame;
   final double? height;
   final bool showTimeFrameSelector;
-  final String? authToken;
+  /// When analysis API fails (e.g. 500), show these movers from portfolio holdings.
+  final List<MoverItem>? fallbackMovers;
 
   @override
   State<AnalysisTopMoversWidget> createState() => _AnalysisTopMoversWidgetState();
@@ -32,6 +32,7 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
   bool _isLoading = true;
   String? _error;
   List<MoverItem> _movers = [];
+  bool _usingHoldingsFallback = false;
 
   @override
   void initState() {
@@ -41,13 +42,9 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
   }
 
   Future<void> _initService() async {
-    if (widget.authToken != null) {
-      _service = RealAnalysisService(authToken: widget.authToken);
-    } else {
-      final storage = SecureStorageService();
-      final token = await storage.getAccessToken();
-      _service = RealAnalysisService(authToken: token != null ? 'Bearer $token' : null);
-    }
+    final storage = SecureStorageService();
+    final token = await storage.getAccessToken();
+    _service = RealAnalysisService(authToken: token != null ? 'Bearer $token' : null);
     _loadData();
   }
 
@@ -69,25 +66,32 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
       if (mounted) {
         setState(() {
           _movers = movers;
+          _usingHoldingsFallback = false;
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('[TopMovers] Error loading data: $e');
+      print('[TopMovers] Stack trace: $stackTrace');
       if (mounted) {
-        String errorMessage = 'Error loading data';
-        if (e is ApiException) {
-          try {
-            final body = jsonDecode(e.message ?? '{}');
-            errorMessage = body['message'] ?? 'Server error (500)';
-          } catch (_) {
-            errorMessage = e.message ?? 'API Error';
-          }
-        } else {
-          errorMessage = e.toString();
+        final fallback = widget.fallbackMovers;
+        if (fallback != null && fallback.isNotEmpty) {
+          setState(() {
+            _movers = fallback;
+            _error = null;
+            _usingHoldingsFallback = true;
+            _isLoading = false;
+          });
+          return;
         }
-        
+        final message = e.toString();
+        final isServerError = message.contains('500') ||
+            message.contains('currentPrice');
         setState(() {
-          _error = errorMessage;
+          _error = isServerError
+              ? 'Top movers temporarily unavailable'
+              : 'Failed to load top movers';
+          _usingHoldingsFallback = false;
           _isLoading = false;
         });
       }
@@ -108,82 +112,70 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
         final isMobile = constraints.maxWidth < 600;
         final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1024;
         final height = widget.height ?? (isMobile ? 380 : isTablet ? 340 : 300);
-        final padding = isMobile ? 12.0 : 16.0;
+        final padding = isMobile ? 16.0 : 20.0;
 
-        // Header and filter row
-        final header = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.auto_graph,
-                      size: isMobile ? 20 : 24,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Top Movers',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: isMobile ? 16 : 18,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                if (_isLoading)
-                  SizedBox(
-                    width: isMobile ? 16 : 20,
-                    height: isMobile ? 16 : 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Theme.of(context).primaryColor.withValues(alpha: 0.5),
-                      ),
+        return Container(
+          height: height,
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(isMobile ? 16 : 20),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+            ),
+          ),
+          padding: EdgeInsets.all(padding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Top Movers',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: isMobile ? 16 : 18,
+                          ),
+                        ),
+                        if (_usingHoldingsFallback)
+                          Text(
+                            'From portfolio holdings',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontSize: 11,
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.color
+                                  ?.withValues(alpha: 0.6),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-              ],
-            ),
-            SizedBox(height: isMobile ? 12 : 16),
-            if (widget.showTimeFrameSelector) ...[
-              ds.TimeFrameSelector.trading(
-                selectedTimeFrame: _selectedTimeFrame,
-                onTimeFrameChanged: _onTimeFrameChanged,
-                compact: true,
+                  if (_isLoading)
+                    SizedBox(
+                      width: isMobile ? 16 : 20,
+                      height: isMobile ? 16 : 20,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                ],
               ),
-              SizedBox(height: isMobile ? 12 : 16),
-            ],
-          ],
-        );
-
-        final content = _buildContent(isMobile, isTablet);
-
-        return SizedBox(
-          height: height,
-          child: ds.AppCard(
-            margin: EdgeInsets.zero,
-            padding: EdgeInsets.all(padding),
-            borderRadius: BorderRadius.circular(isMobile ? 16 : 24),
-            child: isMobile 
-              ? Column(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    header,
-                    content,
-                  ],
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    header,
-                    Expanded(child: content),
-                  ],
+              SizedBox(height: isMobile ? 10 : 12),
+              if (widget.showTimeFrameSelector)
+                ds.TimeFrameSelector.trading(
+                  selectedTimeFrame: _selectedTimeFrame,
+                  onTimeFrameChanged: _onTimeFrameChanged,
+                  compact: true,
                 ),
+              SizedBox(height: isMobile ? 12 : 16),
+              Expanded(
+                child: _buildContent(isMobile, isTablet),
+              ),
+            ],
           ),
         );
       },
@@ -200,17 +192,24 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Opacity(
-              opacity: 0.1,
-              child: Icon(Icons.swap_vert, size: isMobile ? 64 : 80),
+            Icon(Icons.error_outline, 
+              color: Theme.of(context).colorScheme.error, 
+              size: isMobile ? 40 : 48,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Error loading top movers',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: isMobile ? 13 : 14,
+              ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'Market movers temporarily unavailable',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                fontSize: isMobile ? 12 : 13,
-                letterSpacing: 0.2,
+            SizedBox(
+              height: 44,
+              child: ElevatedButton(
+                onPressed: _loadData,
+                child: const Text('Retry'),
               ),
             ),
           ],
@@ -230,29 +229,19 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
       );
     }
 
-    final gainers = _movers.where((m) => m.isGainer).toList();
-    final losers = _movers.where((m) => !m.isGainer).toList();
+    final gainers = _movers.where((m) => m.changePercentage >= 0).toList();
+    final losers = _movers.where((m) => m.changePercentage < 0).toList();
 
-    if (gainers.isEmpty && losers.isEmpty) {
-      return Center(
-        child: Text(
-          'No significant movers for this period',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-      );
-    }
-
-    // Mobile: Stack naturally (parent provides scrolling)
+    // Mobile: Single column with horizontal scroll OR vertical stack
     if (isMobile) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (gainers.isNotEmpty) _buildMoversList('Gainers', gainers, true, isMobile),
-          if (gainers.isNotEmpty && losers.isNotEmpty) const SizedBox(height: 16),
-          if (losers.isNotEmpty) _buildMoversList('Losers', losers, false, isMobile),
-        ],
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            if (gainers.isNotEmpty) _buildMoversList('Gainers', gainers, true, isMobile),
+            if (gainers.isNotEmpty && losers.isNotEmpty) const SizedBox(height: 16),
+            if (losers.isNotEmpty) _buildMoversList('Losers', losers, false, isMobile),
+          ],
+        ),
       );
     }
 
@@ -304,15 +293,13 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
         ),
         SizedBox(height: isMobile ? 10 : 12),
         isMobile
-            ? SingleChildScrollView(
-                child: Column(
-                  children: items.take(10).map((mover) => _buildMoverItem(mover, color, isMobile)).toList(),
-                ),
+            ? Column(
+                children: items.take(5).map((mover) => _buildMoverItem(mover, color, isMobile)).toList(),
               )
             : Expanded(
                 child: ListView.builder(
                   padding: EdgeInsets.zero,
-                  itemCount: items.take(10).length,
+                  itemCount: items.take(5).length,
                   itemBuilder: (context, index) => _buildMoverItem(items[index], color, isMobile),
                 ),
               ),
@@ -322,90 +309,66 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
 
   Widget _buildMoverItem(MoverItem mover, Color color, bool isMobile) {
     return Container(
-      margin: EdgeInsets.only(bottom: isMobile ? 8 : 10),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: isMobile ? 6 : 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: color.withValues(alpha: 0.15),
+          color: color.withValues(alpha: 0.2),
           width: 1,
-        ),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color.withValues(alpha: 0.08),
-            Colors.transparent,
-          ],
         ),
       ),
       child: Row(
         children: [
           // Symbol with colored indicator
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            width: 4,
+            height: 28,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              mover.symbol,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: isMobile ? 12 : 13,
-              ),
+              color: color,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  mover.name,
+                  mover.symbol,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     fontSize: isMobile ? 13 : 14,
                     color: Theme.of(context).textTheme.bodyLarge?.color,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   '₹${mover.price.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: isMobile ? 11 : 12,
-                    color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                    fontSize: isMobile ? 10 : 11,
+                    color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                   ),
                 ),
               ],
             ),
           ),
-          // Percentage change
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${mover.changePercentage >= 0 ? '+' : ''}${mover.changePercentage.toStringAsFixed(2)}%',
-                style: TextStyle(
-                  color: color,
-                  fontSize: isMobile ? 14 : 15,
-                  fontWeight: FontWeight.w800,
-                ),
+          // Percentage badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              '${mover.changePercentage >= 0 ? '+' : ''}${mover.changePercentage.toStringAsFixed(2)}%',
+              style: TextStyle(
+                color: color,
+                fontSize: isMobile ? 11 : 12,
+                fontWeight: FontWeight.w700,
               ),
-              Text(
-                '₹${mover.changeAmount.abs().toStringAsFixed(2)}',
-                style: TextStyle(
-                  color: color.withValues(alpha: 0.6),
-                  fontSize: isMobile ? 10 : 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),

@@ -45,13 +45,13 @@ void main() async {
   // Initialize WebSocket Client
   final stompClient = GetIt.instance<common.AmStompClient>();
   // Use raw WebSocket endpoint (no SockJS) for better compatibility with stomp_dart_client
-  final wsUrl = common.ConfigService.config.api.marketData?.wsUrl ?? 'wss://am.asrax.in/market/ws/market-data-stream';
+  final wsUrl = common.ConfigService.config.api.marketData?.wsUrl ?? 'wss://am.munish.org/market/ws/market-data-stream';
   stompClient.configure(url: wsUrl);
   // Connect will be handled by GlobalPortfolioWrapper after authentication
 
   // FORCE ANALYSIS CONFIG TO USE LOCAL DOCKER
   // Port 8061 is mapped to the analysis service in your docker-compose.yml
-  final analysisUrl = common.ConfigService.config.api.analysis?.baseUrl ?? 'https://am.asrax.in/analysis';
+  final analysisUrl = common.ConfigService.config.api.analysis?.baseUrl ?? 'https://am.munish.org/analysis';
   AnalysisConfig.instance.setBaseUrl(analysisUrl);
 
   runApp(const ProviderScope(child: AmPortfolioStandaloneApp()));
@@ -150,7 +150,7 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
 
                       return PortfolioOverviewWebPage(
                         userId: userId,
-                        portfolioId: context.selectedPortfolioId ?? userId,
+                        portfolioId: context.selectedPortfolioId,
                       );
                     },
                   ),
@@ -163,7 +163,7 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                               .id;
                       return PortfolioHoldingsWebPage(
                         userId: userId,
-                        portfolioId: context.selectedPortfolioId ?? userId,
+                        portfolioId: context.selectedPortfolioId,
                       );
                     },
                   ),
@@ -176,7 +176,7 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                               .id;
                       return PortfolioAnalysisWebPage(
                         userId: userId,
-                        portfolioId: context.selectedPortfolioId ?? userId,
+                        portfolioId: context.selectedPortfolioId,
                       );
                     },
                   ),
@@ -189,7 +189,7 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                               .id;
                       return PortfolioHeatmapWebPage(
                         userId: userId,
-                        portfolioId: context.selectedPortfolioId ?? userId,
+                        portfolioId: context.selectedPortfolioId,
                       );
                     },
                   ),
@@ -203,7 +203,7 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                               .id;
                       return PortfolioBasketsWebPage(
                         userId: userId,
-                        portfolioId: context.selectedPortfolioId ?? userId,
+                        portfolioId: context.selectedPortfolioId,
                       );
                     },
                   ),

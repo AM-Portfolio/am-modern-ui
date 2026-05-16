@@ -9,11 +9,11 @@ import 'package:am_library/am_library.dart' show Environment;
 ///       Portfolio  → http://localhost:8072
 ///       Gateway    → http://localhost:8091  (WebSocket / STOMP)
 ///   - PRODUCTION services (not running locally):
-///       Auth       → https://am.asrax.in/auth
-///       User       → https://am.asrax.in/users
-///       Trade      → https://am.asrax.in/trade
-///       Gmail      → https://am.asrax.in/gmail
-///       MarketData → https://am.asrax.in/market
+///       Auth       → https://am.munish.org/auth
+///       User       → https://am.munish.org/users
+///       Trade      → https://am.munish.org/trade
+///       Gmail      → https://am.munish.org/gmail
+///       MarketData → https://am.munish.org/market
 class ConfigService {
   static AppConfig? _config;
 
@@ -33,13 +33,13 @@ class ConfigService {
       ),
       api: ApiConfig(
         // Default base URL used by ApiClient when no specific service URL is provided
-        baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'),
+        baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'https://am.munish.org/analysis'),
         timeout: 30000,
         useMockData: const bool.fromEnvironment('AM_USE_MOCK_DATA', defaultValue: false),
 
         // ── Auth (PRODUCTION — not running locally) ──
         auth: AuthApiConfig(
-          baseUrl: const String.fromEnvironment('AM_AUTH_BASE_URL', defaultValue: 'https://am.asrax.in/auth'),
+          baseUrl: const String.fromEnvironment('AM_AUTH_BASE_URL', defaultValue: 'https://am.munish.org/auth'),
           loginEndpoint: '/v1/auth/login',
           logoutEndpoint: '/v1/auth/logout',
           refreshTokenEndpoint: '/v1/auth/refresh',
@@ -52,7 +52,7 @@ class ConfigService {
 
         // ── User Management (PRODUCTION — not running locally) ──
         user: UserApiConfig(
-          baseUrl: const String.fromEnvironment('AM_USER_BASE_URL', defaultValue: 'https://am.asrax.in/users'),
+          baseUrl: const String.fromEnvironment('AM_USER_BASE_URL', defaultValue: 'https://am.munish.org/users'),
           registerEndpoint: '/v1/user/register',
           forgotPasswordEndpoint: '/v1/user/forgot-password',
           resetPasswordEndpoint: '/v1/user/reset-password',
@@ -64,7 +64,7 @@ class ConfigService {
 
         // ── Portfolio (PRODUCTION — local 8072 has MappingException bug) ──
         portfolio: PortfolioApiConfig(
-          baseUrl: const String.fromEnvironment('AM_PORTFOLIO_BASE_URL', defaultValue: 'https://am.asrax.in/portfolio'),
+          baseUrl: const String.fromEnvironment('AM_PORTFOLIO_BASE_URL', defaultValue: 'https://am.munish.org/portfolio'),
           holdingsResource: '/v1/portfolios/holdings',
           summaryResource: '/v1/portfolios/summary',
           transactionsResource: '/v1/portfolios/transactions',
@@ -73,7 +73,7 @@ class ConfigService {
 
         // ── Trade (PRODUCTION — not running locally) ──
         trade: TradeApiConfig(
-          baseUrl: const String.fromEnvironment('AM_TRADE_BASE_URL', defaultValue: 'https://am.asrax.in/trade'),
+          baseUrl: const String.fromEnvironment('AM_TRADE_BASE_URL', defaultValue: 'https://am.munish.org/trade'),
           portfolioListResource: '/v1/portfolio-summary/by-owner',
           portfolioSummaryResource: '/v1/portfolio-summary',
           holdingsResource: '/v1/trades/details/portfolio',
@@ -91,7 +91,7 @@ class ConfigService {
 
         // ── Gmail (PRODUCTION — not running locally) ──
         gmail: GmailApiConfig(
-          baseUrl: const String.fromEnvironment('AM_GMAIL_BASE_URL', defaultValue: 'https://am.asrax.in/gmail'),
+          baseUrl: const String.fromEnvironment('AM_GMAIL_BASE_URL', defaultValue: 'https://am.munish.org/gmail'),
           statusEndpoint: '/v1/gmail/status',
           connectEndpoint: '/v1/gmail/connect',
           extractEndpoint: '/v1/gmail/extract',
@@ -100,14 +100,14 @@ class ConfigService {
 
         // ── Market Data & WebSocket (PRODUCTION — Gateway WS not stable locally) ──
         marketData: MarketDataConfig(
-          wsUrl: const String.fromEnvironment('AM_MARKET_WS_URL', defaultValue: 'wss://am.asrax.in/market/ws/market-data-stream'),
-          baseUrl: const String.fromEnvironment('AM_MARKET_BASE_URL', defaultValue: 'https://am.asrax.in/market'),
+          wsUrl: const String.fromEnvironment('AM_MARKET_WS_URL', defaultValue: 'wss://am.munish.org/market/ws/market-data-stream'),
+          baseUrl: const String.fromEnvironment('AM_MARKET_BASE_URL', defaultValue: 'https://am.munish.org/market'),
           connectEndpoint: '/v1/market-data/stream/connect',
         ),
 
         // ── Analysis (PRODUCTION — fallback from localhost) ──
         analysis: AnalysisApiConfig(
-          baseUrl: const String.fromEnvironment('AM_ANALYSIS_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'),
+          baseUrl: const String.fromEnvironment('AM_ANALYSIS_BASE_URL', defaultValue: 'https://am.munish.org/analysis'),
         ),
       ),
       environment: Environment.development,

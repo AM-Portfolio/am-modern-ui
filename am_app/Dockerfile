@@ -40,15 +40,15 @@ RUN flutter pub get
 COPY am_app/ .
 
 # Build-time API configuration
-ARG AM_API_BASE_URL=https://am.asrax.in
-ARG AM_AUTH_BASE_URL=https://am.asrax.in/auth
-ARG AM_USER_BASE_URL=https://am.asrax.in/users
-ARG AM_PORTFOLIO_BASE_URL=https://am.asrax.in/portfolio
-ARG AM_TRADE_BASE_URL=https://am.asrax.in/trade
-ARG AM_GMAIL_BASE_URL=https://am.asrax.in/gmail
-ARG AM_MARKET_WS_URL=wss://am.asrax.in/v1/streams
-ARG AM_MARKET_BASE_URL=https://am.asrax.in/market
-ARG AM_ANALYSIS_BASE_URL=https://am.asrax.in/analysis
+ARG AM_API_BASE_URL=https://am.munish.org
+ARG AM_AUTH_BASE_URL=https://am.munish.org/auth
+ARG AM_USER_BASE_URL=https://am.munish.org/users
+ARG AM_PORTFOLIO_BASE_URL=https://am.munish.org/portfolio
+ARG AM_TRADE_BASE_URL=https://am.munish.org/trade
+ARG AM_GMAIL_BASE_URL=https://am.munish.org/gmail
+ARG AM_MARKET_WS_URL=wss://am.munish.org/v1/streams
+ARG AM_MARKET_BASE_URL=https://am.munish.org/market
+ARG AM_ANALYSIS_BASE_URL=https://am.munish.org/analysis
 
 # Additional configuration
 ARG AM_GOOGLE_CLIENT_ID=your-client-id

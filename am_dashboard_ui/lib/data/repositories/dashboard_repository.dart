@@ -62,7 +62,8 @@ class DashboardRepository {
       );
     } catch (e) {
       AppLogger.error('Failed to fetch top movers', error: e);
-      rethrow;
+      // Server may return 500 when price data is missing; keep dashboard usable.
+      return const TopMoversResponse();
     }
   }
 

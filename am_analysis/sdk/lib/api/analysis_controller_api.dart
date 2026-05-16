@@ -41,14 +41,14 @@ class AnalysisControllerApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
+    if (groupBy != null) {
+      queryParams.addAll(_queryParams('', 'groupBy', groupBy));
+    }
     if (groupBy2 != null) {
       queryParams.addAll(_queryParams('', 'groupBy', groupBy2));
     }
 
     headerParams[r'Authorization'] = parameterToString(authorization);
-    if (groupBy != null) {
-      headerParams[r'groupBy'] = parameterToString(groupBy);
-    }
 
     const contentTypes = <String>[];
 

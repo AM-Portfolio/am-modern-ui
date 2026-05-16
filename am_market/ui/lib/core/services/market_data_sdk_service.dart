@@ -5,7 +5,7 @@ import 'package:am_market_sdk/market/api.dart' show ApiClient, MarketDataApi, In
 
 /// Service class to configure and provide Market Data SDK API clients
 class MarketDataSdkService {
-  static String get baseUrl => ConfigService.config.api.marketData?.baseUrl ?? 'https://am.asrax.in/market';
+  static String get baseUrl => ConfigService.config.api.marketData?.baseUrl ?? 'https://am.munish.org/market';
   
   late final ApiClient _apiClient;
   late final MarketDataApi marketDataApi;

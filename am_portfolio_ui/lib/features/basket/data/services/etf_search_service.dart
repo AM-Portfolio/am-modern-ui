@@ -6,7 +6,7 @@ import '../../domain/models/etf_search_result.dart';
 class EtfSearchService {
   final Dio _dio = Dio();
   // Using ConfigService for dynamic URL
-  static String get baseUrl => '${ConfigService.config.api.marketData?.baseUrl ?? 'https://am.asrax.in'}/api/etf/v1';
+  static String get baseUrl => '${ConfigService.config.api.marketData?.baseUrl ?? 'https://am.munish.org'}/api/etf/v1';
   final _storage = GetIt.I<SecureStorageService>();
 
   EtfSearchService() {

@@ -3,6 +3,11 @@ import 'package:am_analysis_core/am_analysis_core.dart';
 
 /// Mapper to convert SDK models to UI models
 class AnalysisMapper {
+  /// Backend sends allocation percentages on a 0–100 scale; guard non-finite values.
+  static double _sanitizePercent(double value) {
+    if (!value.isFinite) return 0.0;
+    return value;
+  }
   /// Convert SDK AllocationResponse to UI AllocationItem list based on groupBy
   static List<AllocationItem> toAllocationItems(
     sdk.AllocationResponse? sdkResponse,
@@ -52,8 +57,8 @@ class AnalysisMapper {
             symbol: h.symbol ?? '',
             name: h.name ?? '',
             value: (h.value ?? 0).toDouble(),
-            percentage: (h.percentage ?? 0).toDouble(),
-            portfolioPercentage: (h.portfolioPercentage ?? 0).toDouble(),
+            percentage: _sanitizePercent((h.percentage ?? 0).toDouble()),
+            portfolioPercentage: _sanitizePercent((h.portfolioPercentage ?? 0).toDouble()),
           )).toList();
         }
       } catch (e) {
@@ -63,7 +68,7 @@ class AnalysisMapper {
 
       return AllocationItem(
         name: item.name ?? 'Unknown',
-        percentage: item.percentage ?? 0.0,
+        percentage: _sanitizePercent(item.percentage ?? 0.0),
         value: (item.value ?? 0).toDouble(),
         holdings: holdings,
       );

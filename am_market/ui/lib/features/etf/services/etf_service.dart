@@ -10,7 +10,7 @@ import 'package:am_market_common/models/etf.dart';
 class EtfService {
   // Use relative path which goes through Nginx proxy
   // Local development fallback could be configured if needed, but assuming Docker setup
-  static const String baseUrl = 'https://am.asrax.in/api/etf/v1';
+  static const String baseUrl = 'https://am.munish.org/api/etf/v1';
   final _storage = GetIt.I<SecureStorageService>();
 
   Future<Map<String, String>> _getHeaders() async {

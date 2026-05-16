@@ -7,6 +7,7 @@ import 'package:am_common/am_common.dart';
 
 import '../../internal/domain/entities/portfolio_list.dart';
 import '../../providers/portfolio_providers.dart';
+import '../cubit/portfolio_cubit.dart';
 
 import 'package:am_design_system/am_design_system.dart';
 import 'pages/portfolio_overview_web_page.dart';
@@ -49,20 +50,36 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   @override
   void initState() {
     super.initState();
-    _currentPortfolioId = widget.selectedPortfolioId ?? widget.userId;
-    _currentPortfolioName = widget.selectedPortfolioName;
+    _syncPortfolioSelection();
     _initializeSwipeController();
+  }
+
+  void _syncPortfolioSelection() {
+    _currentPortfolioId = widget.selectedPortfolioId ??
+        widget.portfolios?.firstOrNull?.portfolioId;
+    _currentPortfolioName = widget.selectedPortfolioName ??
+        widget.portfolios?.firstOrNull?.portfolioName;
   }
 
   @override
   void didUpdateWidget(PortfolioWebScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.selectedPortfolioId != oldWidget.selectedPortfolioId ||
-        widget.selectedPortfolioName != oldWidget.selectedPortfolioName) {
-      _currentPortfolioId = widget.selectedPortfolioId;
-      _currentPortfolioName = widget.selectedPortfolioName;
+        widget.selectedPortfolioName != oldWidget.selectedPortfolioName ||
+        widget.portfolios != oldWidget.portfolios) {
+      _syncPortfolioSelection();
       _initializeSwipeController();
     }
+  }
+
+  String? get _resolvedPortfolioId {
+    if (_currentPortfolioId != null) return _currentPortfolioId;
+    if (widget.selectedPortfolioId != null) return widget.selectedPortfolioId;
+    final portfolios = widget.portfolios;
+    if (portfolios != null && portfolios.isNotEmpty) {
+      return portfolios.first.portfolioId;
+    }
+    return null;
   }
 
   void _initializeSwipeController() {
@@ -75,6 +92,21 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   }
 
   List<NavigationItem> _buildNavigationItems() {
+    final portfolioId = _resolvedPortfolioId;
+    if (portfolioId == null) {
+      return [
+        NavigationItem(
+          title: 'Overview',
+          subtitle: 'Dashboard',
+          icon: Icons.dashboard_outlined,
+          accentColor: Colors.blue,
+          page: _wrapPage(
+            const Center(child: CircularProgressIndicator()),
+          ),
+        ),
+      ];
+    }
+
     return [
       NavigationItem(
         title: 'Overview',
@@ -84,7 +116,8 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         page: _wrapPage(
           PortfolioOverviewWebPage(
             userId: widget.userId,
-            portfolioId: _currentPortfolioId ?? widget.userId,
+            portfolioId: portfolioId,
+            portfolioName: _currentPortfolioName ?? widget.selectedPortfolioName,
           ),
         ),
       ),
@@ -96,7 +129,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         page: _wrapPage(
           PortfolioHoldingsWebPage(
             userId: widget.userId,
-            portfolioId: _currentPortfolioId ?? widget.userId,
+            portfolioId: portfolioId,
           ),
         ),
       ),
@@ -108,7 +141,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         page: _wrapPage(
           PortfolioAnalysisWebPage(
             userId: widget.userId,
-            portfolioId: _currentPortfolioId ?? widget.userId,
+            portfolioId: portfolioId,
           ),
         ),
       ),
@@ -120,8 +153,8 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         page: _wrapPage(
           PortfolioHeatmapWebPage(
             userId: widget.userId,
-            portfolioId: _currentPortfolioId ?? widget.userId,
-            portfolioName: _currentPortfolioName,
+            portfolioId: portfolioId,
+            portfolioName: _currentPortfolioName ?? widget.selectedPortfolioName,
           ),
         ),
       ),
@@ -153,13 +186,15 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   void _onPortfolioChanged(String portfolioId, String portfolioName) {
     setState(() {
       _currentPortfolioId = portfolioId;
+      _currentPortfolioName = portfolioName;
+      _initializeSwipeController();
     });
 
-    // Invalidate providers to refresh data - use userId for API calls
+    context.read<PortfolioCubit>().loadPortfolioById(widget.userId, portfolioId);
+
     ref.invalidate(portfolioSummaryProvider(widget.userId));
     ref.invalidate(portfolioHoldingsProvider(widget.userId));
 
-    // Notify parent if callback is provided
     widget.onPortfolioChanged?.call(portfolioId, portfolioName);
   }
 
@@ -212,7 +247,8 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
             title: '', // No title as requested ("Institute of account") style
             customWidget: SharedPortfolioSelector<PortfolioItem>(
               currentPortfolioId: _currentPortfolioId,
-              currentPortfolioName: widget.selectedPortfolioName,
+              currentPortfolioName:
+                  _currentPortfolioName ?? widget.selectedPortfolioName,
               portfolios: widget.portfolios!,
               onPortfolioSelected: _onPortfolioChanged,
               idExtractor: (p) => p.portfolioId,

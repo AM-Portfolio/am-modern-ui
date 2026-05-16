@@ -7,7 +7,7 @@ import 'package:am_common/am_common.dart';
 import '../../cubit/portfolio_cubit.dart';
 import '../../cubit/portfolio_heatmap_cubit.dart';
 import '../../cubit/portfolio_state.dart';
-import '../../widgets/portfolio_summary_widget.dart';
+import '../../widgets/portfolio_overview_widget.dart';
 import 'package:am_analysis_ui/am_analysis_ui.dart' hide TimeFrame;
 import '../pages/portfolio_heatmap_mobile_page.dart';
 import '../portfolio_analysis_widget.dart';
@@ -45,14 +45,24 @@ class PortfolioTabContentWidget extends ConsumerWidget {
 }
 
 /// Overview tab widget
-class _OverviewTab extends StatelessWidget {
+class _OverviewTab extends StatefulWidget {
   const _OverviewTab({required this.currentPortfolioId, required this.userId});
   final String currentPortfolioId;
   final String userId;
 
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<PortfolioCubit, PortfolioState>(
+  State<_OverviewTab> createState() => _OverviewTabState();
+}
+
+class _OverviewTabState extends State<_OverviewTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return BlocBuilder<PortfolioCubit, PortfolioState>(
         builder: (context, state) {
           if (state is PortfolioLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -67,63 +77,21 @@ class _OverviewTab extends StatelessWidget {
           }
 
           if (state is PortfolioLoaded) {
-            return _buildOverviewContent(context, state);
+            return _buildOverviewContent(context);
           }
 
           return _buildLoadingWithRefresh(context, 'Pull to Refresh Portfolio');
         },
       );
+  }
 
-  Widget _buildOverviewContent(BuildContext context, PortfolioLoaded state) {
-    final summary = state.summary;
-
+  Widget _buildOverviewContent(BuildContext context) {
     return RefreshIndicator(
       onRefresh: () => _refreshPortfolio(context, 'Pull to Refresh Overview'),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          children: [
-            PortfolioSummaryWidget(
-              summary: summary,
-              onViewHoldings: () => _navigateToTab(1, context),
-              onViewAnalysis: () => _navigateToTab(2, context),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: SizedBox(
-                height: 280,
-                child: AnalysisPerformanceWidget(
-                  key: ValueKey('perf_mobile_$currentPortfolioId'),
-                  portfolioId: currentPortfolioId,
-                  initialTimeFrame: TimeFrame.oneMonth,
-                  showTimeFrameSelector: true,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: AnalysisAllocationWidget(
-                key: ValueKey('alloc_mobile_$currentPortfolioId'),
-                portfolioId: currentPortfolioId,
-                initialTimeFrame: TimeFrame.oneMonth,
-                groupBy: GroupBy.sector,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: AnalysisTopMoversWidget(
-                key: ValueKey('movers_mobile_$currentPortfolioId'),
-                portfolioId: currentPortfolioId,
-                initialTimeFrame: TimeFrame.oneMonth,
-                showTimeFrameSelector: false,
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
+      child: PortfolioOverviewWidget(
+        key: ValueKey('overview_mobile_${widget.currentPortfolioId}'),
+        userId: widget.userId,
+        portfolioId: widget.currentPortfolioId,
       ),
     );
   }
@@ -162,18 +130,15 @@ class _OverviewTab extends StatelessWidget {
     CommonLogger.userAction(
       action,
       tag: 'PortfolioOverviewTab',
-      metadata: {'portfolioId': currentPortfolioId, 'userId': userId},
+      metadata: {
+        'portfolioId': widget.currentPortfolioId,
+        'userId': widget.userId,
+      },
     );
     context.read<PortfolioCubit>().refreshPortfolioById(
-      userId,
-      currentPortfolioId,
+      widget.userId,
+      widget.currentPortfolioId,
     );
-  }
-
-  void _navigateToTab(int index, BuildContext context) {
-    // Find the tab controller from the widget tree
-    final tabController = DefaultTabController.of(context);
-    tabController.animateTo(index);
   }
 }
 

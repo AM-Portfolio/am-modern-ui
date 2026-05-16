@@ -5,7 +5,7 @@ This document outlines the specific changes made to the `am_trade_ui` (Frontend)
 All other changes made to the global UI modules (`am_app`, `am_auth_ui`, `am_library`, etc.) have been reverted to their original state as requested.
 
 ## 🔴 The Problem
-1. **API Routing Mismatch:** The Trade UI was hardcoded to send requests to production servers (`https://am.asrax.in`).
+1. **API Routing Mismatch:** The Trade UI was hardcoded to send requests to production servers (`https://am.munish.org`).
 2. **CORS Blocking:** The Java backend was strictly configured to only accept requests from port `8083`, blocking the local Flutter development server running on `8080`.
 3. **UI Rendering Crashes:** The "Add Trade" form had "Unbounded Height" layout exceptions when rendered on Flutter Web.
 4. **"Ghost" Trades:** The "Add Trade" button was silently failing to show new trades on the dashboard because it was sending an incorrect User ID (`demo_user_id` instead of `user_gyaan`) and missing the `portfolioId`.

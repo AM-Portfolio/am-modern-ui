@@ -14,7 +14,6 @@ class AnalysisPerformanceWidget extends StatefulWidget {
     this.initialTimeFrame = ds.TimeFrame.oneMonth,
     this.height,
     this.showTimeFrameSelector = true,
-    this.authToken,
     super.key,
   });
 
@@ -22,7 +21,6 @@ class AnalysisPerformanceWidget extends StatefulWidget {
   final ds.TimeFrame initialTimeFrame;
   final double? height;
   final bool showTimeFrameSelector;
-  final String? authToken;
 
   @override
   State<AnalysisPerformanceWidget> createState() => _AnalysisPerformanceWidgetState();
@@ -46,13 +44,9 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
   }
 
   Future<void> _initService() async {
-    if (widget.authToken != null) {
-      _service = RealAnalysisService(authToken: widget.authToken);
-    } else {
-      final storage = SecureStorageService();
-      final token = await storage.getAccessToken();
-      _service = RealAnalysisService(authToken: token != null ? 'Bearer $token' : null);
-    }
+    final storage = SecureStorageService();
+    final token = await storage.getAccessToken();
+    _service = RealAnalysisService(authToken: token != null ? 'Bearer $token' : null);
     _loadData();
   }
 
@@ -69,6 +63,8 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         AnalysisEntityType.PORTFOLIO,
         _selectedTimeFrame.code,
       );
+      print('[Performance] Successfully loaded ${points.length} data points');
+      
       if (mounted) {
         setState(() {
           _dataPoints = points;
@@ -100,74 +96,161 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
         final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1024;
-        final height = widget.height ?? (isMobile ? 320 : isTablet ? 300 : 280);
+        final height = widget.height ?? (isMobile ? 280 : isTablet ? 260 : 250);
         final padding = isMobile ? 16.0 : 20.0;
 
-        return SizedBox(
+        return Container(
           height: height,
-          child: ds.AppCard(
-            margin: EdgeInsets.zero,
-            padding: EdgeInsets.all(padding),
-            borderRadius: BorderRadius.circular(isMobile ? 16 : 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(isMobile ? 16 : 20),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+            ),
+          ),
+          padding: EdgeInsets.all(padding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
                       'Performance',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: isMobile ? 15 : 16,
+                        fontWeight: FontWeight.bold,
+                        fontSize: isMobile ? 16 : 18,
                       ),
                     ),
-                    if (widget.showTimeFrameSelector)
-                      ds.TimeFrameSelector.portfolio(
-                        selectedTimeFrame: _selectedTimeFrame,
-                        onTimeFrameChanged: _onTimeFrameChanged,
-                        compact: true,
+                  ),
+                  if (_isLoading)
+                    SizedBox(
+                      width: isMobile ? 16 : 20,
+                      height: isMobile ? 16 : 20,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                ],
+              ),
+              SizedBox(height: isMobile ? 10 : 12),
+              
+              // Only show full selector controls if enabled
+              if (widget.showTimeFrameSelector) ...[
+                isMobile
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ds.TimeFrameSelector.portfolio(
+                            selectedTimeFrame: _selectedTimeFrame,
+                            onTimeFrameChanged: _onTimeFrameChanged,
+                            compact: true,
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: ds.TimeFrameSelector.portfolio(
+                              selectedTimeFrame: _selectedTimeFrame,
+                              onTimeFrameChanged: _onTimeFrameChanged,
+                              compact: true,
+                            ),
+                          ),
+                        ],
                       ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Expanded(child: _buildContent(isMobile, isTablet)),
+                 SizedBox(height: isMobile ? 12 : 16),
               ],
-            ),
+              
+              Expanded(
+                child: _buildContent(isMobile),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  Widget _buildContent(bool isMobile, bool isTablet) {
+  Widget _buildChartTypeSelector(bool isMobile) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      constraints: const BoxConstraints(minHeight: 36), 
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: ChartType.values.map((type) {
+          final isSelected = type == _chartType;
+          final iconSize = isMobile ? 16.0 : 18.0;
+          
+          return GestureDetector(
+            onTap: () => setState(() => _chartType = type),
+            child: Container(
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 28),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 8 : 10, 
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Theme.of(context).primaryColor
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                type == ChartType.line
+                    ? Icons.show_chart
+                    : type == ChartType.area
+                        ? Icons.area_chart_outlined
+                        : Icons.bar_chart,
+                size: iconSize,
+                color: isSelected
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildContent(bool isMobile) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.7),
-                size: 32,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, 
+              color: Theme.of(context).colorScheme.error, 
+              size: isMobile ? 40 : 48,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Error loading performance',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: isMobile ? 13 : 14,
               ),
-              const SizedBox(height: 8),
-              Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 44,
+              child: ElevatedButton(
+                onPressed: _loadData,
+                child: const Text('Retry'),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
@@ -178,27 +261,8 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
           'No performance data available',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+            fontSize: isMobile ? 13 : 14,
           ),
-        ),
-      );
-    }
-
-    // Check if all data points are zero
-    final allZero = _dataPoints.every((p) => p.value == 0);
-    if (allZero) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.query_stats, size: 48, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)),
-            const SizedBox(height: 12),
-            Text(
-              'Performance data pending calculation',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-              ),
-            ),
-          ],
         ),
       );
     }
@@ -230,7 +294,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
-            horizontalInterval: (maxY - minY).abs() < 0.001 ? 1.0 : (maxY - minY).abs() / 4,
+            horizontalInterval: (maxY - minY) / 4,
             getDrawingHorizontalLine: (value) => FlLine(
               color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
               strokeWidth: 1,
@@ -238,8 +302,8 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
           ),
           titlesData: const FlTitlesData(show: false),
           borderData: FlBorderData(show: false),
-          minY: minY - ((maxY - minY).abs() * 0.1).clamp(0.1, 1000000),
-          maxY: maxY + ((maxY - minY).abs() * 0.1).clamp(0.1, 1000000),
+          minY: minY * 0.98,
+          maxY: maxY * 1.02,
           barGroups: spots.asMap().entries.map((entry) {
             return BarChartGroupData(
               x: entry.key,
@@ -262,7 +326,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: (maxY - minY).abs() < 0.001 ? 1.0 : (maxY - minY).abs() / 4,
+          horizontalInterval: (maxY - minY) / 4,
           getDrawingHorizontalLine: (value) => FlLine(
             color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             strokeWidth: 1,
@@ -278,7 +342,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
               showTitles: true,
               reservedSize: 22,
               interval: xInterval > 0 ? xInterval : 1,
-              getTitlesWidget: (double value, TitleMeta meta) {
+              getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 if (index < 0 || index >= _dataPoints.length) {
                   return const SizedBox.shrink();
@@ -298,13 +362,13 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
                 } else {
                   text = DateFormat('MMM yy').format(date);
                 }
-                
-                return SideTitleWidget(
-                  meta: meta,
+
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
                   child: Text(
                     text,
                     style: TextStyle(
-                      color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                      color: Theme.of(context).textTheme.bodySmall?.color,
                       fontSize: 10,
                     ),
                   ),
@@ -314,8 +378,8 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
           ),
         ),
         borderData: FlBorderData(show: false),
-        minY: minY - ((maxY - minY).abs() * 0.1).clamp(0.1, 1000000),
-        maxY: maxY + ((maxY - minY).abs() * 0.1).clamp(0.1, 1000000),
+        minY: minY * 0.98,
+        maxY: maxY * 1.02,
         lineBarsData: [
           LineChartBarData(
             spots: spots,

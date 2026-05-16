@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_analysis_ui/widgets/analysis_allocation_widget.dart';
-import 'package:am_analysis_ui/widgets/analysis_top_movers_widget.dart';
+import 'portfolio_top_movers_panel.dart';
 import 'package:am_analysis_ui/widgets/analysis_performance_widget.dart';
 import 'package:am_analysis_core/am_analysis_core.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
@@ -46,6 +46,14 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
     _triggerLoad();
   }
 
+  @override
+  void didUpdateWidget(covariant PortfolioOverviewWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.portfolioId != oldWidget.portfolioId && widget.portfolioId != null) {
+      _triggerLoad();
+    }
+  }
+
   Future<void> _loadAuthToken() async {
     try {
       final storage = SecureStorageService();
@@ -60,21 +68,13 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
     }
   }
 
-  @override
-  void didUpdateWidget(PortfolioOverviewWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.portfolioId != oldWidget.portfolioId) {
-      _triggerLoad();
-    }
-  }
-
   void _triggerLoad() {
+    final cubit = context.read<PortfolioCubit>();
+    final currentState = cubit.state;
+    
     if (widget.portfolioId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          final cubit = context.read<PortfolioCubit>();
-          final currentState = cubit.state;
-          
           if (currentState is PortfolioLoaded && 
               currentState.portfolioId == widget.portfolioId) {
             // Data is already loaded for this portfolio, skip reloading
@@ -87,6 +87,16 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           );
         }
       });
+    } else {
+      // Load GLOBAL overview if no portfolioId provided
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          if (currentState is PortfolioLoaded && currentState.portfolioId == 'GLOBAL') {
+            return;
+          }
+          cubit.loadPortfolio(widget.userId);
+        }
+      });
     }
   }
 
@@ -97,20 +107,37 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
 
     ds.CommonLogger.debug('[PortfolioOverview] Building with portfolioId=$portfolioId', tag: 'PortfolioUI');
 
-    return BlocBuilder<PortfolioCubit, PortfolioState>(
+    return BlocConsumer<PortfolioCubit, PortfolioState>(
+      listenWhen: (previous, current) {
+        if (portfolioId == null) return false;
+        if (current is PortfolioLoaded && current.portfolioId == portfolioId) {
+          return false;
+        }
+        return current is PortfolioListLoaded ||
+            current is PortfolioInitial ||
+            (current is PortfolioLoading && previous is! PortfolioLoading);
+      },
+      listener: (context, state) {
+        if (portfolioId == null) return;
+        final cubit = context.read<PortfolioCubit>();
+        final current = cubit.state;
+        if (current is PortfolioLoaded && current.portfolioId == portfolioId) {
+          return;
+        }
+        cubit.loadPortfolioById(widget.userId, portfolioId);
+      },
+      buildWhen: (previous, current) {
+        if (previous is PortfolioLoaded && current is PortfolioLoaded) {
+          return previous.portfolioId != current.portfolioId ||
+              previous.summary != current.summary ||
+              previous.isRefreshing != current.isRefreshing;
+        }
+        return previous.runtimeType != current.runtimeType;
+      },
       builder: (context, state) {
         ds.CommonLogger.info('[PortfolioOverview] State change: ${state.runtimeType}', tag: 'PortfolioUI');
 
-        // 1. Initial / Loading / Transition States
-        if (state is PortfolioInitial || 
-            state is PortfolioLoading || 
-            state is PortfolioListLoading ||
-            state is PortfolioListLoaded) {
-          
-          if (portfolioId != null) {
-            return _buildOverviewSkeleton(context);
-          }
-          
+        if (portfolioId == null) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -118,7 +145,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                 Icon(Icons.account_balance_wallet_outlined, size: 64, color: Theme.of(context).disabledColor),
                 const SizedBox(height: 16),
                 Text(
-                  'Select a portfolio to view details',
+                  'Select a portfolio to view overview',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
@@ -126,7 +153,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           );
         }
 
-        // 2. Error States
+        // 1. Error States (check before loading so errors are visible)
         if (state is PortfolioError || state is PortfolioListError) {
           final message = state is PortfolioError ? state.message : (state as PortfolioListError).message;
           return Center(
@@ -170,8 +197,19 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           );
         }
 
-        // 3. Loaded State
+        // 2. Loaded State (show when cubit has data for this portfolio)
         if (state is PortfolioLoaded) {
+          if (state.portfolioId != portfolioId) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                context.read<PortfolioCubit>().loadPortfolioById(
+                      userId,
+                      portfolioId,
+                    );
+              }
+            });
+            return _buildOverviewSkeleton(context);
+          }
           return LayoutBuilder(
             builder: (context, constraints) {
               final isMobile = constraints.maxWidth < 800;
@@ -211,7 +249,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                               context,
                               'Total Balance',
                               _formatCurrency(state.summary.totalValue),
-                              '${state.summary.todayChangePercentage >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}%',
+                              '${state.summary.todayChangePercentage.isFinite ? (state.summary.todayChangePercentage >= 0 ? "+" : "") : ""}${state.summary.todayChangePercentage.isFinite ? state.summary.todayChangePercentage.toStringAsFixed(2) : "0.00"}%',
                               const Color(0xFF6C5DD3),
                               Icons.account_balance_wallet,
                               isPositive: state.summary.todayChangePercentage >= 0,
@@ -221,7 +259,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                               context,
                               'Daily P&L',
                               _formatCurrency(state.summary.todayChange),
-                              '${state.summary.todayChange >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}% today',
+                              '${state.summary.todayChange.isFinite ? (state.summary.todayChange >= 0 ? "+" : "") : ""}${state.summary.todayChangePercentage.isFinite ? state.summary.todayChangePercentage.toStringAsFixed(2) : "0.00"}% today',
                               state.summary.todayChange >= 0
                                   ? const Color(0xFF00B894)
                                   : const Color(0xFFFF7675),
@@ -233,7 +271,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                               context,
                               'Total Return',
                               _formatCurrency(state.summary.totalGainLoss),
-                              'All time',
+                              '${state.summary.totalGainLossPercentage.isFinite ? (state.summary.totalGainLossPercentage >= 0 ? "+" : "") : ""}${state.summary.totalGainLossPercentage.isFinite ? state.summary.totalGainLossPercentage.toStringAsFixed(2) : "0.00"}% total',
                               state.summary.totalGainLoss >= 0
                                   ? const Color(0xFF00B894)
                                   : const Color(0xFFFF7675),
@@ -261,7 +299,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                                 context,
                                 'Total Balance',
                                 _formatCurrency(state.summary.totalValue),
-                                '${state.summary.todayChangePercentage >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}%',
+                                '${state.summary.todayChangePercentage.isFinite ? (state.summary.todayChangePercentage >= 0 ? "+" : "") : ""}${state.summary.todayChangePercentage.isFinite ? state.summary.todayChangePercentage.toStringAsFixed(2) : "0.00"}%',
                                 const Color(0xFF6C5DD3),
                                 Icons.account_balance_wallet,
                                 isPositive: state.summary.todayChangePercentage >= 0,
@@ -273,7 +311,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                                 context,
                                 'Daily P&L',
                                 _formatCurrency(state.summary.todayChange),
-                                '${state.summary.todayChange >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}% today',
+                                '${state.summary.todayChange.isFinite ? (state.summary.todayChange >= 0 ? "+" : "") : ""}${state.summary.todayChangePercentage.isFinite ? state.summary.todayChangePercentage.toStringAsFixed(2) : "0.00"}% today',
                                 state.summary.todayChange >= 0
                                     ? const Color(0xFF00B894)
                                     : const Color(0xFFFF7675),
@@ -287,7 +325,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                                 context,
                                 'Total Return',
                                 _formatCurrency(state.summary.totalGainLoss),
-                                'All time',
+                                '${state.summary.totalGainLossPercentage.isFinite ? (state.summary.totalGainLossPercentage >= 0 ? "+" : "") : ""}${state.summary.totalGainLossPercentage.isFinite ? state.summary.totalGainLossPercentage.toStringAsFixed(2) : "0.00"}% total',
                                 state.summary.totalGainLoss >= 0
                                     ? const Color(0xFF00B894)
                                     : const Color(0xFFFF7675),
@@ -311,87 +349,74 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                         ),
                       const SizedBox(height: 16),
 
-                      // Section 2: Charts (Performance + Allocation)
-                      if (isMobile)
-                        Column(
-                          children: [
-                            Container(
-                              height: isSmallMobile ? 280 : 340,
-                              child: _AnalysisErrorHandler(
-                                title: 'Performance',
-                                child: AnalysisPerformanceWidget(
-                                  key: ValueKey('perf_${_selectedTimeFrame.code}'),
-                                  portfolioId: portfolioId!,
-                                  initialTimeFrame: _selectedTimeFrame,
-                                  showTimeFrameSelector: false,
-                                  height: isSmallMobile ? 280 : 340,
-                                ),
-                              ),
-                            ).animate().fadeIn(duration: 500.ms, delay: 400.ms).slideY(begin: 0.1, end: 0),
-                            const SizedBox(height: 16),
-                            Container(
-                              height: isSmallMobile ? 280 : 340,
-                              child: _AnalysisErrorHandler(
-                                title: 'Allocation',
-                                child: AnalysisAllocationWidget(
-                                  key: ValueKey('alloc_${_selectedTimeFrame.code}'),
-                                  portfolioId: portfolioId!,
-                                  initialTimeFrame: _selectedTimeFrame,
-                                  groupBy: GroupBy.sector,
-                                ),
-                              ),
-                            ).animate().fadeIn(duration: 500.ms, delay: 500.ms).slideY(begin: 0.1, end: 0),
-                          ],
-                        )
-                      else
+                      // Section 2+3: Charts — develop uses fixed-height Container (not AppCard)
+                      // so Expanded inside analysis widgets gets bounded height.
+                      if (isMobile) ...[
+                        SizedBox(
+                          height: isSmallMobile ? 280 : 340,
+                          child: AnalysisPerformanceWidget(
+                            key: ValueKey('perf_${_selectedTimeFrame.code}'),
+                            portfolioId: portfolioId!,
+                            initialTimeFrame: _selectedTimeFrame,
+                            showTimeFrameSelector: false,
+                            height: isSmallMobile ? 280 : 340,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: isSmallMobile ? 280 : 340,
+                          child: AnalysisAllocationWidget(
+                            key: ValueKey('alloc_${_selectedTimeFrame.code}'),
+                            portfolioId: portfolioId!,
+                            initialTimeFrame: _selectedTimeFrame,
+                            groupBy: GroupBy.sector,
+                            height: isSmallMobile ? 280 : 340,
+                          ),
+                        ),
+                      ] else ...[
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
                               flex: 7,
-                              child: _AnalysisErrorHandler(
-                                title: 'Performance',
+                              child: SizedBox(
+                                height: 420,
                                 child: AnalysisPerformanceWidget(
                                   key: ValueKey('perf_${_selectedTimeFrame.code}'),
                                   portfolioId: portfolioId!,
                                   initialTimeFrame: _selectedTimeFrame,
                                   showTimeFrameSelector: false,
-                                  authToken: _authToken,
                                   height: 420,
                                 ),
                               ),
-                            ).animate().fadeIn(duration: 500.ms, delay: 400.ms).slideX(begin: -0.1, end: 0),
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               flex: 5,
-                              child: _AnalysisErrorHandler(
-                                title: 'Allocation',
+                              child: SizedBox(
+                                height: 420,
                                 child: AnalysisAllocationWidget(
                                   key: ValueKey('alloc_${_selectedTimeFrame.code}'),
                                   portfolioId: portfolioId!,
                                   initialTimeFrame: _selectedTimeFrame,
                                   groupBy: GroupBy.sector,
-                                  authToken: _authToken,
                                   height: 420,
                                 ),
                               ),
-                            ).animate().fadeIn(duration: 500.ms, delay: 500.ms).slideX(begin: 0.1, end: 0),
+                            ),
                           ],
                         ),
+                      ],
                       const SizedBox(height: 16),
-
-                      // Section 3: Top Movers
-                      _AnalysisErrorHandler(
-                        title: 'Top Movers',
-                        child: AnalysisTopMoversWidget(
-                          key: ValueKey('movers_${_selectedTimeFrame.code}'),
+                      SizedBox(
+                        height: isSmallMobile ? 260 : 300,
+                        child: PortfolioTopMoversPanel(
                           portfolioId: portfolioId!,
-                          initialTimeFrame: _selectedTimeFrame,
+                          timeFrame: _selectedTimeFrame,
                           showTimeFrameSelector: false,
-                          authToken: _authToken,
                           height: isSmallMobile ? 260 : 300,
                         ),
-                      ).animate().fadeIn(duration: 500.ms, delay: 600.ms).slideY(begin: 0.2, end: 0),
+                      ),
                     ] else ...[
                       const Center(
                         child: Padding(
@@ -406,10 +431,9 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
             },
           );
         }
-        
-        // 4. Default / Fallback
-        debugPrint('[PortfolioOverview] Reached end of BlocBuilder without exhaustive match. State: ${state.runtimeType}');
-        return const Center(child: CircularProgressIndicator());
+
+        // 3. Loading portfolio details (list ready or fetch in progress)
+        return _buildOverviewSkeleton(context);
       },
     );
   }
@@ -568,7 +592,9 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
   }
 
   // Helper to format currency
+  // Helper to format currency
   String _formatCurrency(double amount) {
+    if (!amount.isFinite) return '₹0';
     final formatter = NumberFormat.currency(
       locale: 'en_IN',
       symbol: '₹',
@@ -727,76 +753,4 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
     );
   }
 
-}
-
-class _AnalysisErrorHandler extends StatefulWidget {
-  final Widget child;
-  final String title;
-
-  const _AnalysisErrorHandler({
-    required this.child,
-    required this.title,
-  });
-
-  @override
-  State<_AnalysisErrorHandler> createState() => _AnalysisErrorHandlerState();
-}
-
-class _AnalysisErrorHandlerState extends State<_AnalysisErrorHandler> {
-  Object? _error;
-
-  @override
-  Widget build(BuildContext context) {
-    if (_error != null) {
-      return ds.AppCard(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 32),
-            const SizedBox(height: 12),
-            Text(
-              '${widget.title} Error',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error.toString(),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => setState(() => _error = null),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return _SafeWrapper(
-      onError: (error) => setState(() => _error = error),
-      child: widget.child,
-    );
-  }
-}
-
-class _SafeWrapper extends StatefulWidget {
-  final Widget child;
-  final Function(Object) onError;
-
-  const _SafeWrapper({required this.child, required this.onError});
-
-  @override
-  State<_SafeWrapper> createState() => _SafeWrapperState();
-}
-
-class _SafeWrapperState extends State<_SafeWrapper> {
-  @override
-  Widget build(BuildContext context) {
-    return widget.child;
-  }
 }
