@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
-import '../package:am_design_system/am_design_system.dart';
+import 'package:am_design_system/am_design_system.dart';
 import '../../../providers/portfolio_providers.dart';
 import 'package:am_common/am_common.dart';
 
@@ -147,7 +147,7 @@ class _PortfolioHoldingsWebCardState
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
-                  color: theme.colorScheme.outline.withOpacity(0.2),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.2),
                 ),
               ),
               child: LayoutBuilder(
@@ -213,7 +213,7 @@ class _PortfolioHoldingsWebCardState
                                     : '${startIndex + 1}-$endIndex of ${_sortedHoldings.length}',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurface
-                                      .withOpacity(0.6),
+                                      .withValues(alpha: 0.6),
                                   fontSize: cardConstraints.maxWidth * 0.015,
                                 ),
                               ),
@@ -234,7 +234,7 @@ class _PortfolioHoldingsWebCardState
                                     tooltip: 'Previous page',
                                     color: theme.colorScheme.primary,
                                     disabledColor: theme.colorScheme.onSurface
-                                        .withOpacity(0.3),
+                                        .withValues(alpha: 0.3),
                                     padding: EdgeInsets.zero,
                                     visualDensity: VisualDensity.compact,
                                     constraints:
@@ -262,7 +262,7 @@ class _PortfolioHoldingsWebCardState
                                     tooltip: 'Next page',
                                     color: theme.colorScheme.primary,
                                     disabledColor: theme.colorScheme.onSurface
-                                        .withOpacity(0.3),
+                                        .withValues(alpha: 0.3),
                                     padding: EdgeInsets.zero,
                                     visualDensity: VisualDensity.compact,
                                     constraints:
@@ -355,7 +355,7 @@ class _PortfolioHoldingsWebCardState
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
@@ -369,7 +369,7 @@ class _PortfolioHoldingsWebCardState
                   'Total Investment',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 Text(
@@ -392,7 +392,7 @@ class _PortfolioHoldingsWebCardState
                   'Current Value',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 Text(
@@ -415,7 +415,7 @@ class _PortfolioHoldingsWebCardState
                   'Gain/Loss',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 Row(
@@ -473,7 +473,7 @@ class _PortfolioHoldingsWebCardState
               Text(
                 holding.sector,
                 style: TextStyle(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   fontSize: 11,
                 ),
                 overflow: TextOverflow.ellipsis,

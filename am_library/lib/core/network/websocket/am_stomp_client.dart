@@ -4,6 +4,7 @@ import '../../utils/logger.dart';
 import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
+export 'package:stomp_dart_client/stomp_frame.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Status of the STOMP connection

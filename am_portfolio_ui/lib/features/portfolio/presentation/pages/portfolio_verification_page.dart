@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart';
-import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 class PortfolioVerificationPage extends StatefulWidget {
   final String userId;
@@ -80,7 +79,7 @@ class _PortfolioVerificationPageState extends State<PortfolioVerificationPage> {
               }
               return Container(
                 padding: const EdgeInsets.all(16),
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 child: Row(
                   children: [
                     Icon(Icons.circle, color: color, size: 12),

@@ -87,10 +87,10 @@ class PortfolioSidebar extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1F222B), // Dark background for contrast
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

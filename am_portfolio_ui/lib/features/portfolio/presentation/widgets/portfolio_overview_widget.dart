@@ -582,8 +582,8 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
         ? const Color(0xFF2C2C3E) 
         : Colors.grey.shade200;
     final highlightColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.white.withOpacity(0.05)
-        : Colors.white.withOpacity(0.5);
+        ? Colors.white.withValues(alpha: 0.05)
+        : Colors.white.withValues(alpha: 0.5);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -621,7 +621,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                     decoration: BoxDecoration(
                       color: baseColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: highlightColor.withOpacity(0.1)),
+                      border: Border.all(color: highlightColor.withValues(alpha: 0.1)),
                     ),
                   )
                       .animate(onPlay: (controller) => controller.repeat())
