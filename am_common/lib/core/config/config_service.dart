@@ -10,13 +10,44 @@ class ConfigService {
     if (_config == null) {
       // Return a default config instead of throwing to prevent crashes
       // during early initialization race conditions.
-      return const AppConfig(
-        environment: 'development',
+      return AppConfig(
+        environment: Environment.development,
+        google: const GoogleConfig(webClientId: ''),
         api: ApiConfig(
-          auth: AuthApiConfig(baseUrl: 'https://am.asrax.in/auth'),
-          user: UserApiConfig(baseUrl: 'https://am.asrax.in/users'),
-          trade: TradeApiConfig(baseUrl: 'https://am.asrax.in/trades'),
-          portfolio: PortfolioApiConfig(baseUrl: 'https://am.asrax.in/portfolio'),
+          baseUrl: 'https://am.asrax.in/analysis',
+          timeout: 30000,
+          useMockData: false,
+          auth: const AuthApiConfig(
+            baseUrl: 'https://am.asrax.in/auth',
+            loginEndpoint: '/v1/auth/login',
+            logoutEndpoint: '/v1/auth/logout',
+            refreshTokenEndpoint: '/v1/auth/refresh',
+            googleLoginEndpoint: '/v1/auth/google',
+          ),
+          user: const UserApiConfig(
+            baseUrl: 'https://am.asrax.in/users',
+            registerEndpoint: '/v1/auth/register',
+            forgotPasswordEndpoint: '/v1/auth/request-reset',
+            resetPasswordEndpoint: '/v1/auth/confirm-reset',
+          ),
+          portfolio: const PortfolioApiConfig(
+            baseUrl: 'https://am.asrax.in/portfolio',
+            holdingsResource: '/v1/portfolios/holdings',
+            summaryResource: '/v1/portfolios/summary',
+            transactionsResource: '/v1/portfolios/transactions',
+          ),
+          trade: const TradeApiConfig(
+            baseUrl: 'https://am.asrax.in/trade',
+            portfolioListResource: '/v1/portfolio-summary/by-owner',
+            portfolioSummaryResource: '/v1/portfolio-summary',
+            holdingsResource: '/v1/trades/details/portfolio',
+            tradeDetailsResource: '/v1/trades/details',
+            calendarMonthResource: '/v1/trades/calendar/month',
+            calendarDayResource: '/v1/trades/calendar/day',
+            calendarQuarterResource: '/v1/trades/calendar/quarter',
+            calendarFinancialYearResource: '/v1/trades/calendar/financial-year',
+            searchResource: '/v1/trades/search',
+          ),
         ),
       );
     }
