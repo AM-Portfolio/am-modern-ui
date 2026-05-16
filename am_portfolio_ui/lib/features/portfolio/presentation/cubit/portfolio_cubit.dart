@@ -31,6 +31,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   StreamSubscription? _socketSubscription;
   String? _subUserId;
   String? _subPortfolioId;
+  DateTime? _lastStatusErrorTime;
 
   /// Subscribe to portfolio updates via WebSocket
   void subscribeToPortfolioUpdates(String userId, {String? portfolioId}) {
@@ -51,10 +52,24 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
     // Listen to connection status to subscribe when ready
     _stompClient.status.listen((status) {
-      CommonLogger.info(
-        '[$_debugId] PortfolioCubit: Status changed to $status',
-        tag: 'PortfolioCubit',
-      );
+      if (status == StompStatus.error) {
+        // Throttle error logs to once every 30 seconds
+        final now = DateTime.now();
+        if (_lastStatusErrorTime == null || 
+            now.difference(_lastStatusErrorTime!) > const Duration(seconds: 30)) {
+          CommonLogger.info(
+            '[$_debugId] PortfolioCubit: Status changed to $status (Throttled)',
+            tag: 'PortfolioCubit',
+          );
+          _lastStatusErrorTime = now;
+        }
+      } else {
+        CommonLogger.info(
+          '[$_debugId] PortfolioCubit: Status changed to $status',
+          tag: 'PortfolioCubit',
+        );
+      }
+      
       if (status == StompStatus.connected && !_isSubscribed) {
         CommonLogger.info(
           '[$_debugId] PortfolioCubit: Connected event received, calling _performSubscription',

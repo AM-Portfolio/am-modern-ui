@@ -128,7 +128,7 @@ class MockDataService {
     // Find demo user or fallback to first user
     UserModel user;
     final demoUserJson = testUsers.cast<Map<String, dynamic>?>().firstWhere(
-      (u) => u!['email'] == 'ssd2658@gmail.com' || u['username'] == '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec',
+      (u) => u!['email'] == 'ssd2658@gmail.com' || u['id'] == 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3',
       orElse: () => null,
     );
     

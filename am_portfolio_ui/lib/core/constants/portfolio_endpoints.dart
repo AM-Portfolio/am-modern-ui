@@ -5,11 +5,11 @@ class PortfolioEndpoints {
   // Base URL - Loaded from ConfigService
   static String get baseUrl => common.ConfigService.config.api.portfolio.baseUrl;
 
-  // Resources
-  static const String list = '/v1/portfolios/list';
-  static const String holdings = '/v1/portfolios/holdings';
-  static const String summary = '/v1/portfolios/summary';
-  static const String transactions = '/v1/portfolios/transactions';
+  // Resources - Loaded from ConfigService
+  static String get list => common.ConfigService.config.api.portfolio.listResource;
+  static String get holdings => common.ConfigService.config.api.portfolio.holdingsResource;
+  static String get summary => common.ConfigService.config.api.portfolio.summaryResource;
+  static String get transactions => common.ConfigService.config.api.portfolio.transactionsResource;
 
   /// Get advanced analytics for a portfolio
   static String advancedAnalytics(String portfolioId) =>

@@ -175,8 +175,17 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
 
     // Load portfolio data
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_currentPortfolioId != null) {
-        context.read<PortfolioCubit>().loadPortfolioById(
+      if (_currentPortfolioId != null && mounted) {
+        final cubit = context.read<PortfolioCubit>();
+        final currentState = cubit.state;
+        
+        if (currentState is PortfolioLoaded && 
+            currentState.portfolioId == _currentPortfolioId) {
+          // Data is already loaded for this portfolio, skip reloading
+          return;
+        }
+        
+        cubit.loadPortfolioById(
           widget.userId,
           _currentPortfolioId!,
         );

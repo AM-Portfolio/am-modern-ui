@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../internal/domain/entities/portfolio_summary.dart';
 
 /// Reusable portfolio summary widget that displays comprehensive portfolio metrics
+/// with a premium, modern aesthetic
 class PortfolioSummaryWidget extends StatelessWidget {
   const PortfolioSummaryWidget({
     required this.summary,
@@ -14,357 +15,332 @@ class PortfolioSummaryWidget extends StatelessWidget {
   final VoidCallback? onViewAnalysis;
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-    padding: const EdgeInsets.all(12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Main Portfolio Value Card with fixed values
-        _buildMainValueCard(context),
-        const SizedBox(height: 12),
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Main Portfolio Value Card
+          _buildPremiumValueCard(context),
+          const SizedBox(height: 16),
 
-        // Dynamic Market Data Card
-        _buildDynamicMarketCard(context),
-        const SizedBox(height: 16),
+          // Market Data Cards Row
+          Row(
+            children: [
+              Expanded(child: _buildMetricCard(context, "Today's Return", summary.formattedTodayChange, summary.todayChangePercentage, summary.isTodayPositive, Icons.today)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildMetricCard(context, "Total Return", summary.formattedGainLoss, summary.totalGainLossPercentage, summary.isProfitable, Icons.trending_up)),
+            ],
+          ),
+          const SizedBox(height: 16),
 
-        // Quick Actions
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                context,
-                'View Holdings',
-                Icons.list_alt,
-                onViewHoldings,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                context,
-                'Analysis',
-                Icons.analytics,
-                onViewAnalysis,
-              ),
-            ),
+          // Quick Actions Row
+          Row(
+            children: [
+              Expanded(child: _buildPremiumActionCard(context, 'View Holdings', Icons.list_alt, onViewHoldings)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildPremiumActionCard(context, 'Analysis', Icons.analytics_outlined, onViewAnalysis)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumValueCard(BuildContext context) {
+    final isPositive = summary.totalGainLoss >= 0;
+    final color = isPositive ? const Color(0xFF00B894) : const Color(0xFFFF7675);
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF6C5DD3),
+            const Color(0xFF6C5DD3).withValues(alpha: 0.8),
           ],
         ),
-      ],
-    ),
-  );
-
-  /// Build the main portfolio value card with total value and percentage
-  Widget _buildMainValueCard(BuildContext context) {
-    final isPositive = summary.totalGainLoss >= 0;
-    final color = isPositive
-        ? (Colors.green[700] ?? Colors.green)
-        : (Colors.red[700] ?? Colors.red);
-
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with last updated
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6C5DD3).withValues(alpha: 0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Subtle glow effect inside the card
+          Positioned(
+            top: -40,
+            right: -40,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.1),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Portfolio Value',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.access_time, size: 12, color: Colors.grey[500]),
-                    const SizedBox(width: 4),
                     Text(
-                      _formatDateTime(summary.lastUpdated),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[500],
-                        fontSize: 11,
+                      'Total Portfolio Value',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.sync, size: 12, color: Colors.white.withValues(alpha: 0.9)),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatDateTime(summary.lastUpdated),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Total value and percentage together
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  summary.formattedTotalValue,
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
+                const SizedBox(height: 8),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    summary.formattedTotalValue,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
+                    color: Colors.black.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isPositive ? Icons.trending_up : Icons.trending_down,
+                        isPositive ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
                         color: color,
-                        size: 14,
+                        size: 16,
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '(${summary.totalGainLossPercentage.toStringAsFixed(2)}%)',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        '${isPositive ? "+" : ""}${summary.totalGainLossPercentage.toStringAsFixed(2)}%',
+                        style: TextStyle(
                           color: color,
                           fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        ' All time',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 12,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Compact Investment Overview
-            Row(
-              children: [
-                Expanded(
-                  child: _buildCompactOverviewItem(
-                    context,
-                    'Invested',
-                    '₹${summary.totalInvested.toStringAsFixed(0)}',
-                    Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildCompactOverviewItem(
-                    context,
-                    'Current',
-                    '₹${summary.totalValue.toStringAsFixed(0)}',
-                    Colors.orange,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildCompactOverviewItem(
-                    context,
-                    'Holdings',
-                    summary.totalHoldings.toString(),
-                    Colors.purple,
-                  ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildValueLabel('Invested', '₹${summary.totalInvested.toStringAsFixed(0)}'),
+                    Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.2)),
+                    _buildValueLabel('Holdings', summary.totalHoldings.toString()),
+                    Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.2)),
+                    _buildValueLabel('Gainers/Losers', '${summary.gainersCount}/${summary.losersCount}'),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Build dynamic market data card that changes frequently
-  Widget _buildDynamicMarketCard(BuildContext context) => Card(
-    elevation: 3,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Performance Row
-          Row(
-            children: [
-              Expanded(
-                child: _buildCompactPerformanceItem(
-                  context,
-                  "Today's Change",
-                  summary.formattedTodayChange,
-                  '${summary.todayChangePercentage.toStringAsFixed(2)}%',
-                  summary.isTodayPositive,
-                  Icons.today,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildCompactPerformanceItem(
-                  context,
-                  'Total Returns',
-                  summary.formattedGainLoss,
-                  '${summary.totalGainLossPercentage.toStringAsFixed(2)}%',
-                  summary.isProfitable,
-                  Icons.trending_up,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Gainers/Losers Row
-          Row(
-            children: [
-              Expanded(
-                child: _buildCompactGainerLoserItem(
-                  context,
-                  'Today',
-                  summary.todayGainersCount,
-                  summary.todayLosersCount,
-                  Icons.today,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildCompactGainerLoserItem(
-                  context,
-                  'Overall',
-                  summary.gainersCount,
-                  summary.losersCount,
-                  Icons.analytics,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ),
-  );
-
-  /// Build compact performance item
-  Widget _buildCompactPerformanceItem(
-    BuildContext context,
-    String title,
-    String value,
-    String percentage,
-    bool isPositive,
-    IconData icon,
-  ) {
-    final color = isPositive
-        ? (Colors.green[700] ?? Colors.green)
-        : (Colors.red[700] ?? Colors.red);
-
+  Widget _buildValueLabel(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(icon, color: color, size: 16),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                title,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
         Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: color,
-            fontWeight: FontWeight.bold,
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
           ),
         ),
+        const SizedBox(height: 4),
         Text(
-          percentage,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: color,
-            fontWeight: FontWeight.bold,
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
     );
   }
 
-  /// Build compact overview item
-  Widget _buildCompactOverviewItem(
-    BuildContext context,
-    String label,
-    String value,
-    Color color,
-  ) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        label,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-      ),
-      const SizedBox(height: 4),
-      Text(
-        value,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          color: color,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ],
-  );
+  Widget _buildMetricCard(BuildContext context, String title, String value, double percentage, bool isPositive, IconData icon) {
+    final color = isPositive ? const Color(0xFF00B894) : const Color(0xFFFF7675);
+    final cardColor = Theme.of(context).cardColor;
 
-  /// Build compact gainer/loser item
-  Widget _buildCompactGainerLoserItem(
-    BuildContext context,
-    String label,
-    int gainersCount,
-    int losersCount,
-    IconData icon,
-  ) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          Icon(icon, size: 16, color: Colors.grey[600]),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      const SizedBox(height: 4),
-      RichText(
-        text: TextSpan(
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          children: [
-            TextSpan(
-              text: gainersCount.toString(),
-              style: const TextStyle(color: Colors.green),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 14, color: color),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            TextSpan(
-              text: '/',
-              style: TextStyle(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(
+                isPositive ? Icons.trending_up : Icons.trending_down,
+                size: 12,
+                color: color,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${isPositive ? "+" : ""}${percentage.toStringAsFixed(2)}%',
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumActionCard(BuildContext context, String title, IconData icon, VoidCallback? onTap) {
+    final cardColor = Theme.of(context).cardColor;
+    final primaryColor = Theme.of(context).primaryColor;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: primaryColor.withValues(alpha: 0.1),
             ),
-            TextSpan(
-              text: losersCount.toString(),
-              style: const TextStyle(color: Colors.red),
-            ),
-          ],
+            boxShadow: [
+              BoxShadow(
+                color: primaryColor.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: primaryColor, size: 24),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ],
-  );
+    );
+  }
 
-  /// Format datetime for display
   String _formatDateTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
@@ -376,36 +352,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
     } else if (difference.inHours < 24) {
       return '${difference.inHours}h ago';
     } else {
-      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+      return '${dateTime.day}/${dateTime.month}';
     }
   }
-
-  Widget _buildActionCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    VoidCallback? onTap,
-  ) => Card(
-    elevation: 2,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Icon(icon, size: 28, color: Theme.of(context).primaryColor),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }

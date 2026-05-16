@@ -12,6 +12,10 @@ class RealAnalysisService implements UiAnalysisService {
   final Logger _logger = Logger();
   final String? _authToken;
 
+  // Static cache to share across instances
+  static String? _cachedAuthToken;
+  static String? _cachedUserId;
+
   RealAnalysisService({
     String? baseUrl,
     String? authToken,
@@ -24,22 +28,49 @@ class RealAnalysisService implements UiAnalysisService {
 
   /// Get authorization header value
   Future<String> get _auth async {
+    // 1. Check instance override
     if (_authToken != null) return _authToken!;
     
     final token = await SecureStorageService().getAccessToken();
     if (token == null || token.isEmpty) {
+      _cachedAuthToken = null;
       _logger.w('No auth token found.');
-      // Token missing, user should be routed to login
       throw Exception('Authentication required. Token is missing.');
     }
-    return 'Bearer $token';
+
+    final bearerToken = 'Bearer $token';
+    
+    // 2. Check static cache and update if changed
+    if (_cachedAuthToken != bearerToken) {
+      _logger.d('Auth token changed or cache stale. Updating cached token.');
+      _cachedAuthToken = bearerToken;
+    }
+
+    return _cachedAuthToken!;
   }
 
   /// Extract userId from token
   Future<String> get _userId async {
     final token = await SecureStorageService().getAccessToken();
-    if (token == null) return '';
-    return TokenExtractor.extractUserId(token);
+    if (token == null) {
+      _cachedUserId = null;
+      return '';
+    }
+    
+    // Safety check: if token changed, invalidating cached userId
+    final derivedUserId = TokenExtractor.extractUserId(token);
+    if (_cachedUserId != derivedUserId) {
+      _logger.d('User ID changed or cache stale. Updating cached userId.');
+      _cachedUserId = derivedUserId;
+    }
+    
+    return _cachedUserId!;
+  }
+
+  /// Clear the static cache (useful for logout)
+  static void clearCache() {
+    _cachedAuthToken = null;
+    _cachedUserId = null;
   }
 
   @override
@@ -54,13 +85,12 @@ class RealAnalysisService implements UiAnalysisService {
       final authHeader = await _auth;
       final userId = await _userId;
       
-      // Call SDK method - send groupBy only as header, not as query param
+      // Call SDK method - maintain original parameter mapping
       final response = await _api.getAllocation(
         authHeader,
-        type.name.toLowerCase(),  // Convert to lowercase for API
+        type.name.toLowerCase(),
         id ?? userId,
-        groupBy: groupBy?.name,  // Sent as header by SDK
-        // Don't send groupBy2 to avoid duplication
+        groupBy: groupBy?.name,
       );
 
       _logger.d('Allocation response: ${response?.sectors?.length ?? 0} items');
@@ -68,6 +98,9 @@ class RealAnalysisService implements UiAnalysisService {
       // Map response to UI models based on groupBy
       return AnalysisMapper.toAllocationItems(response, groupBy ?? GroupBy.sector);
     } catch (e, stackTrace) {
+      if (e is sdk.ApiException) {
+        _logger.e('Allocation Error [${e.code}]: ${e.message}');
+      }
       _logger.e('Error fetching allocation', error: e, stackTrace: stackTrace);
       rethrow;
     }
@@ -87,7 +120,7 @@ class RealAnalysisService implements UiAnalysisService {
       
       final response = await _api.getPerformance(
         authHeader,
-        type.name.toLowerCase(),  // Convert to lowercase for API
+        type.name.toLowerCase(),
         id ?? userId,
         timeFrame: timeFrame,
       );
@@ -96,7 +129,10 @@ class RealAnalysisService implements UiAnalysisService {
       
       return AnalysisMapper.toPerformanceDataPoints(response);
     } catch (e, stackTrace) {
-      _logger.e('Error fetching performance', error: e, stackTrace: stackTrace);
+      _logger.e('Error fetching performance: $e', error: e, stackTrace: stackTrace);
+      if (e is sdk.ApiException) {
+        _logger.e('API Error: ${e.code} - ${e.message}');
+      }
       rethrow;
     }
   }
@@ -118,23 +154,25 @@ class RealAnalysisService implements UiAnalysisService {
       final response = entityId.isNotEmpty
           ? await _api.getTopMoversByEntity(
               authHeader,
-              type!.name.toLowerCase(),  // Convert to lowercase for API
+              type!.name.toLowerCase(),
               entityId,
               timeFrame: timeFrame,
-              groupBy: groupBy?.name,  // Sent as header by SDK
+              groupBy: groupBy?.name,
             )
           : await _api.getTopMoversByCategory(
               authHeader,
-              type!.name.toLowerCase(),  // Convert to lowercase for API
+              type!.name.toLowerCase(),
               timeFrame: timeFrame,
-              groupBy: groupBy?.name,  // Sent as header by SDK
+              groupBy: groupBy?.name,
             );
 
-      _logger.d('Top movers response: ${response?.gainers?.length ?? 0} gainers, ${response?.losers?.length ?? 0} losers');
-      
+      _logger.d('Top movers response: ${response?.gainers?.length ?? 0} gainers');
       return AnalysisMapper.toMoverItems(response);
     } catch (e, stackTrace) {
-      _logger.e('Error fetching top movers', error: e, stackTrace: stackTrace);
+      _logger.e('Error fetching top movers: $e', error: e, stackTrace: stackTrace);
+      if (e is sdk.ApiException) {
+        _logger.e('API Error: ${e.code} - ${e.message}');
+      }
       rethrow;
     }
   }

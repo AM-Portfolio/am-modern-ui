@@ -1,5 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_library/am_library.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -54,7 +55,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (authResult) => emit(Authenticated(_guardUser(authResult.user))),
+      (authResult) => _emitAuthenticated(authResult.user, token: authResult.tokens.accessToken),
     );
   }
 
@@ -66,7 +67,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (authResult) => emit(Authenticated(_guardUser(authResult.user))),
+      (authResult) => _emitAuthenticated(authResult.user, token: authResult.tokens.accessToken),
     );
   }
 
@@ -78,7 +79,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (authResult) => emit(Authenticated(_guardUser(authResult.user))),
+      (authResult) => _emitAuthenticated(authResult.user, token: authResult.tokens.accessToken),
     );
   }
 
@@ -162,12 +163,7 @@ class AuthCubit extends Cubit<AuthState> {
                   );
                   emit(const Unauthenticated());
                 } else {
-                  final guardedUser = _guardUser(authResult.user);
-                  CommonLogger.debug(
-                    '🔄 Emitting Authenticated state with userId: "${guardedUser.id}"',
-                    tag: 'AuthCubit',
-                  );
-                  emit(Authenticated(guardedUser, token: authResult.tokens.accessToken));
+                  _emitAuthenticated(authResult.user, token: authResult.tokens.accessToken);
                   CommonLogger.info(
                     '✅ Authentication state emitted successfully',
                     tag: 'AuthCubit',
@@ -224,7 +220,7 @@ class AuthCubit extends Cubit<AuthState> {
 
       result.fold(
         (failure) => emit(AuthError(failure.message)),
-        (authResult) => emit(Authenticated(_guardUser(authResult.user))),
+        (authResult) => _emitAuthenticated(authResult.user, token: authResult.tokens.accessToken),
       );
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -278,13 +274,13 @@ class AuthCubit extends Cubit<AuthState> {
     return '';
   }
 
-  /// Global Identity Guard: Corrects legacy hardcoded IDs to production IDs
-  UserEntity _guardUser(UserEntity user) {
-    if (user.id == 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3') {
-      CommonLogger.warning('🛡️ [GlobalIdentityGuard] Correcting legacy ID to production identity.', tag: 'AuthCubit');
-      return user.copyWith(id: '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec');
+  /// Emits authenticated state with the provided user
+  void _emitAuthenticated(UserEntity user, {String? token}) {
+    // Shared Auth Token: Push token to global API client for instant sharing across widgets
+    if (token != null) {
+      ServiceRegistry.api.setAccessToken(token);
     }
-    return user;
+    emit(Authenticated(user, token: token));
   }
 }
 

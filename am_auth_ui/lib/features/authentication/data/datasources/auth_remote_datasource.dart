@@ -28,14 +28,8 @@ class AuthRemoteDataSource implements AuthDataSource {
       if (response.statusCode == 200) {
         final data = response.data;
 
-        // robust ID parsing
         var userId = data['user_id'] ?? data['id'] ?? data['_id'] ?? data['userId'] ?? '';
 
-        // Identity Guard: Detect and correct legacy hardcoded IDs from backend data
-        if (userId.toString() == 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3') {
-          AppLogger.warning('🛡️ [IdentityGuard] Legacy dummy ID detected in login response. Correcting to production ID.', tag: 'AuthRemoteDataSource');
-          userId = '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec';
-        }
 
         if (userId.toString().isEmpty) {
           AppLogger.error('🚨 CRITICAL: Login response has empty User ID! Data keys: ${data.keys.toList()}');
@@ -273,11 +267,6 @@ class AuthRemoteDataSource implements AuthDataSource {
 
         // robust ID parsing for registration
         var userId = data['user_id'] ?? data['id'] ?? data['_id'] ?? data['userId'] ?? '';
-
-        // Identity Guard: Detect and correct legacy hardcoded IDs during registration
-        if (userId.toString() == 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3') {
-          userId = '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec';
-        }
 
         final user = UserModel(
           id: userId.toString(),

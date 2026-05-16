@@ -144,11 +144,13 @@ class PortfolioApiConfig {
     required this.holdingsResource,
     required this.summaryResource,
     required this.transactionsResource,
+    required this.listResource,
   });
   final String baseUrl;
   final String holdingsResource;
   final String summaryResource;
   final String transactionsResource;
+  final String listResource;
 }
 
 /// Trade API configuration

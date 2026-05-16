@@ -42,83 +42,103 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
 }
 
 class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
-  late SwipeNavigationController _swipeController;
+  SwipeNavigationController? _swipeController;
   String? _currentPortfolioId;
+  String? _currentPortfolioName;
 
   @override
   void initState() {
     super.initState();
     _currentPortfolioId = widget.selectedPortfolioId ?? widget.userId;
+    _currentPortfolioName = widget.selectedPortfolioName;
     _initializeSwipeController();
   }
 
+  @override
+  void didUpdateWidget(PortfolioWebScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedPortfolioId != oldWidget.selectedPortfolioId ||
+        widget.selectedPortfolioName != oldWidget.selectedPortfolioName) {
+      _currentPortfolioId = widget.selectedPortfolioId;
+      _currentPortfolioName = widget.selectedPortfolioName;
+      _initializeSwipeController();
+    }
+  }
+
   void _initializeSwipeController() {
-    _swipeController = SwipeNavigationController(
-      items: [
-        NavigationItem(
-          title: 'Overview',
-          subtitle: 'Portfolio summary',
-          icon: Icons.dashboard_outlined,
-          page: _wrapPage(
-            PortfolioOverviewWebPage(
-              userId: widget.userId,
-              portfolioId: _currentPortfolioId ?? widget.userId,
-            ),
+    final items = _buildNavigationItems();
+    if (_swipeController == null) {
+      _swipeController = SwipeNavigationController(items: items);
+    } else {
+      _swipeController!.updateItems(items);
+    }
+  }
+
+  List<NavigationItem> _buildNavigationItems() {
+    return [
+      NavigationItem(
+        title: 'Overview',
+        subtitle: 'Dashboard',
+        icon: Icons.dashboard_outlined,
+        accentColor: Colors.blue,
+        page: _wrapPage(
+          PortfolioOverviewWebPage(
+            userId: widget.userId,
+            portfolioId: _currentPortfolioId ?? widget.userId,
           ),
-          accentColor: ModuleColors.portfolio,
         ),
-        NavigationItem(
-          title: 'Holdings',
-          subtitle: 'Asset breakdown',
-          icon: Icons.pie_chart,
-          page: _wrapPage(
-            PortfolioHoldingsWebPage(
-              userId: widget.userId,
-              portfolioId: _currentPortfolioId ?? widget.userId,
-            ),
+      ),
+      NavigationItem(
+        title: 'Holdings',
+        subtitle: 'Assets',
+        icon: Icons.account_balance_wallet_outlined,
+        accentColor: Colors.green,
+        page: _wrapPage(
+          PortfolioHoldingsWebPage(
+            userId: widget.userId,
+            portfolioId: _currentPortfolioId ?? widget.userId,
           ),
-          accentColor: ModuleColors.portfolio,
         ),
-        NavigationItem(
-          title: 'Analysis',
-          subtitle: 'Performance metrics',
-          icon: Icons.analytics_outlined,
-          page: _wrapPage(
-            PortfolioAnalysisWebPage(
-              userId: widget.userId,
-              portfolioId: _currentPortfolioId ?? widget.userId,
-            ),
+      ),
+      NavigationItem(
+        title: 'Analysis',
+        subtitle: 'Insights',
+        icon: Icons.analytics_outlined,
+        accentColor: Colors.purple,
+        page: _wrapPage(
+          PortfolioAnalysisWebPage(
+            userId: widget.userId,
+            portfolioId: _currentPortfolioId ?? widget.userId,
           ),
-          accentColor: ModuleColors.portfolio,
         ),
-        NavigationItem(
-          title: 'Heatmap',
-          subtitle: 'Visual analysis',
-          icon: Icons.grid_on_outlined,
-          page: _wrapPage(
-            PortfolioHeatmapWebPage(
-              userId: widget.userId,
-              portfolioId: _currentPortfolioId ?? widget.userId,
-              portfolioName: widget.selectedPortfolioName,
-            ),
+      ),
+      NavigationItem(
+        title: 'Heatmap',
+        subtitle: 'Performance',
+        icon: Icons.grid_view_outlined,
+        accentColor: Colors.orange,
+        page: _wrapPage(
+          PortfolioHeatmapWebPage(
+            userId: widget.userId,
+            portfolioId: _currentPortfolioId ?? widget.userId,
+            portfolioName: _currentPortfolioName,
           ),
-          accentColor: ModuleColors.portfolio,
         ),
-      ],
-    );
+      ),
+    ];
   }
 
   void _navigateToNext() {
     // Only navigate if not at the last item
-    if (_swipeController.currentIndex < _swipeController.items.length - 1) {
-      _swipeController.navigateTo(_swipeController.currentIndex + 1);
+    if (_swipeController != null && _swipeController!.currentIndex < _swipeController!.items.length - 1) {
+      _swipeController!.navigateTo(_swipeController!.currentIndex + 1);
     }
   }
 
   void _navigateToPrev() {
     // Only navigate if not at the first item
-    if (_swipeController.currentIndex > 0) {
-      _swipeController.navigateTo(_swipeController.currentIndex - 1);
+    if (_swipeController != null && _swipeController!.currentIndex > 0) {
+      _swipeController!.navigateTo(_swipeController!.currentIndex - 1);
     }
   }
 
@@ -168,11 +188,13 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         context.read<AuthCubit>().logout();
         widget.onBack?.call();
       },
-      body: SwipeablePageView(
-        controller: _swipeController,
-        showIndicator: true,
-        indicatorPosition: IndicatorPosition.bottom,
-      ),
+      body: _swipeController == null 
+        ? const Center(child: CircularProgressIndicator())
+        : SwipeablePageView(
+            controller: _swipeController!,
+            showIndicator: true,
+            indicatorPosition: IndicatorPosition.bottom,
+          ),
       footer: Padding(
         padding: const EdgeInsets.all(16),
         child: SidebarPrimaryAction(
@@ -202,14 +224,14 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         // Navigation Section (No Title)
         SecondarySidebarSection(
           title: '',
-          items: _swipeController.items.asMap().entries.map((entry) {
+          items: _swipeController == null ? [] : _swipeController!.items.asMap().entries.map((entry) {
             final index = entry.key;
             final item = entry.value;
             return SecondarySidebarItem(
               title: item.title,
               icon: item.icon,
-              isSelected: _swipeController.currentIndex == index,
-              onTap: () => _swipeController.navigateTo(index),
+              isSelected: _swipeController!.currentIndex == index,
+              onTap: () => _swipeController!.navigateTo(index),
               accentColor: item.accentColor,
             );
           }).toList(),

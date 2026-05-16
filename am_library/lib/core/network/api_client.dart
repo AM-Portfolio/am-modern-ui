@@ -19,6 +19,18 @@ class ApiClient {
       _fallbackToken = fallbackToken,
       _client = client ?? http.Client();
 
+  /// In-memory token cache for performance and sharing across widgets
+  static String? _cachedToken;
+
+  /// Update the global access token across all API requests
+  void setAccessToken(String? token) {
+    _cachedToken = token;
+    AppLogger.info('🔐 ApiClient: Access token updated in memory cache.', tag: 'ApiClient');
+  }
+
+  /// Get the current access token (synchronous)
+  String? getAccessToken() => _cachedToken;
+
   /// Default base URL for API requests
   static const String _defaultBaseUrl = 'https://am.asrax.in';
 
@@ -34,45 +46,40 @@ class ApiClient {
   /// Fallback token for development
   final String? _fallbackToken;
 
-  /// Get authentication token from secure storage
+  /// Get authentication token from cache or secure storage
   Future<String?> _getAuthToken() async {
+    // 1. Check memory cache first (Fastest, shared across all widgets)
+    if (_cachedToken != null && _cachedToken!.isNotEmpty) {
+      return _cachedToken;
+    }
+
+    // 2. Fallback to Secure Storage (Session restoration)
     final secureStorage = SecureStorageService();
     final token = await secureStorage.getAccessToken();
-    AppLogger.debug('🔐 Auth Token Check: "${token ?? 'null'}"', tag: 'ApiClient');
     
-    // If token exists and is NOT a mock token, use it. Otherwise fall back to hardcoded JWT.
-    if (token != null && token.isNotEmpty) return token;
-    
-    // Fallback to debug token provided by user
-    AppLogger.debug('🔐 Using dynamic fallback token from system environment', tag: 'ApiClient');
-    return _fallbackToken;
-  }
-
-  /// Legacy and Production IDs for Global Identity Proxy
-  static const String _legacyId = 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3';
-  static const String _prodId = '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec';
-
-  /// Intercept and correct legacy IDs globally
-  String _proxyId(String input) {
-    if (input.contains(_legacyId)) {
-      AppLogger.warning(
-        '🛡️ [ApiClient] Global Identity Proxy: Intercepted and corrected legacy ID in request.',
-        tag: 'ApiClient',
-      );
-      return input.replaceAll(_legacyId, _prodId);
+    if (token != null && token.isNotEmpty) {
+      _cachedToken = token; // Cache it for future requests
+      AppLogger.debug('🔐 Auth Token retrieved from storage and cached.', tag: 'ApiClient');
+      return token;
     }
-    return input;
+    
+    // 3. Fallback to dynamic debug token
+    if (_fallbackToken != null) {
+      AppLogger.debug('🔐 Using dynamic fallback token', tag: 'ApiClient');
+      return _fallbackToken;
+    }
+
+    return null;
   }
 
   /// Build URI from endpoint, handling both complete URLs and relative paths
   /// Automatically replaces localhost with 10.0.2.2 for Android emulator compatibility
   Uri _buildUri(String endpoint, {Map<String, dynamic>? queryParams}) {
-    // APPLY GLOBAL IDENTITY PROXY TO ENDPOINT
-    var finalEndpoint = _proxyId(endpoint);
+    var finalEndpoint = endpoint;
     var finalBaseUrl = baseUrl;
 
     AppLogger.debug(
-      '🌐 URI Building - Original endpoint: $endpoint, Proxy corrected: $finalEndpoint',
+      '🌐 URI Building - endpoint: $endpoint',
       tag: 'ApiClient',
     );
 
@@ -96,41 +103,16 @@ class ApiClient {
       finalUri = Uri.parse(finalBaseUrl.endsWith('/') ? finalBaseUrl : '$finalBaseUrl/').resolve(cleanEndpoint);
     }
 
-    // APPLY GLOBAL IDENTITY PROXY TO QUERY PARAMS
+    // Build query params
     if (queryParams != null && queryParams.isNotEmpty) {
-      final proxyParams = <String, dynamic>{};
-      queryParams.forEach((key, value) {
-        if (value is String) {
-          proxyParams[key] = _proxyId(value);
-        } else {
-          proxyParams[key] = value;
-        }
-      });
-      finalUri = finalUri.replace(queryParameters: proxyParams);
+      finalUri = finalUri.replace(queryParameters: queryParams.map((key, value) => MapEntry(key, value.toString())));
     }
 
     return finalUri;
   }
 
-  /// Sanitize request bodies globally
+  /// Body remains unchanged
   dynamic _proxyBody(dynamic body) {
-    if (body == null) return null;
-    if (body is String) return _proxyId(body);
-    if (body is Map<String, dynamic>) {
-      final sanitized = <String, dynamic>{};
-      body.forEach((key, value) {
-        if (value is String) {
-          sanitized[key] = _proxyId(value);
-        } else if (value is Map<String, dynamic>) {
-          sanitized[key] = _proxyBody(value);
-        } else if (value is List) {
-          sanitized[key] = value.map((e) => e is String ? _proxyId(e) : (e is Map<String, dynamic> ? _proxyBody(e) : e)).toList();
-        } else {
-          sanitized[key] = value;
-        }
-      });
-      return sanitized;
-    }
     return body;
   }
 

@@ -1,30 +1,43 @@
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_library/am_library.dart' show Environment;
 
-/// Minimal stub ConfigService for getting app running
-/// TODO: Replace with full implementation later
+/// Application Configuration Service
+///
+/// Routing Strategy:
+///   - LOCAL services (running on this machine):
+///       Analysis  → http://localhost:8061
+///       Portfolio  → http://localhost:8072
+///       Gateway    → http://localhost:8091  (WebSocket / STOMP)
+///   - PRODUCTION services (not running locally):
+///       Auth       → https://am.asrax.in/auth
+///       User       → https://am.asrax.in/users
+///       Trade      → https://am.asrax.in/trade
+///       Gmail      → https://am.asrax.in/gmail
+///       MarketData → https://am.asrax.in/market
 class ConfigService {
   static AppConfig? _config;
-  
+
   static AppConfig get config {
     if (_config == null) {
       throw StateError('ConfigService not initialized. Call initialize() first.');
     }
     return _config!;
   }
-  
+
   static Future<void> initialize() async {
     if (_config != null) return; // Already initialized
-    
-    // Create minimal hardcoded config with ALL required parameters
+
     _config = AppConfig(
       google: GoogleConfig(
         webClientId: const String.fromEnvironment('AM_GOOGLE_CLIENT_ID', defaultValue: 'your-client-id'),
       ),
       api: ApiConfig(
-        baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'),
+        // Default base URL used by ApiClient when no specific service URL is provided
+        baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'http://localhost:8061'),
         timeout: 30000,
         useMockData: const bool.fromEnvironment('AM_USE_MOCK_DATA', defaultValue: false),
+
+        // ── Auth (PRODUCTION — not running locally) ──
         auth: AuthApiConfig(
           baseUrl: const String.fromEnvironment('AM_AUTH_BASE_URL', defaultValue: 'https://am.asrax.in/auth'),
           loginEndpoint: '/v1/auth/login',
@@ -36,6 +49,8 @@ class ConfigService {
           sendTimeout: 30000,
           enabled: true,
         ),
+
+        // ── User Management (PRODUCTION — not running locally) ──
         user: UserApiConfig(
           baseUrl: const String.fromEnvironment('AM_USER_BASE_URL', defaultValue: 'https://am.asrax.in/users'),
           registerEndpoint: '/v1/user/register',
@@ -46,12 +61,17 @@ class ConfigService {
           sendTimeout: 30000,
           enabled: true,
         ),
+
+        // ── Portfolio (PRODUCTION — local 8072 has MappingException bug) ──
         portfolio: PortfolioApiConfig(
           baseUrl: const String.fromEnvironment('AM_PORTFOLIO_BASE_URL', defaultValue: 'https://am.asrax.in/portfolio'),
           holdingsResource: '/v1/portfolios/holdings',
           summaryResource: '/v1/portfolios/summary',
           transactionsResource: '/v1/portfolios/transactions',
+          listResource: '/v1/portfolios/list',
         ),
+
+        // ── Trade (PRODUCTION — not running locally) ──
         trade: TradeApiConfig(
           baseUrl: const String.fromEnvironment('AM_TRADE_BASE_URL', defaultValue: 'https://am.asrax.in/trade'),
           portfolioListResource: '/v1/portfolio-summary/by-owner',
@@ -68,6 +88,8 @@ class ConfigService {
           sendTimeout: 30000,
           enabled: true,
         ),
+
+        // ── Gmail (PRODUCTION — not running locally) ──
         gmail: GmailApiConfig(
           baseUrl: const String.fromEnvironment('AM_GMAIL_BASE_URL', defaultValue: 'https://am.asrax.in/gmail'),
           statusEndpoint: '/v1/gmail/status',
@@ -75,13 +97,17 @@ class ConfigService {
           extractEndpoint: '/v1/gmail/extract',
           enabled: true,
         ),
+
+        // ── Market Data & WebSocket (PRODUCTION — Gateway WS not stable locally) ──
         marketData: MarketDataConfig(
           wsUrl: const String.fromEnvironment('AM_MARKET_WS_URL', defaultValue: 'wss://am.asrax.in/market/ws/market-data-stream'),
           baseUrl: const String.fromEnvironment('AM_MARKET_BASE_URL', defaultValue: 'https://am.asrax.in/market'),
           connectEndpoint: '/v1/market-data/stream/connect',
         ),
+
+        // ── Analysis (LOCAL — running on port 8061) ──
         analysis: AnalysisApiConfig(
-          baseUrl: const String.fromEnvironment('AM_ANALYSIS_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'),
+          baseUrl: const String.fromEnvironment('AM_ANALYSIS_BASE_URL', defaultValue: 'http://localhost:8061'),
         ),
       ),
       environment: Environment.development,

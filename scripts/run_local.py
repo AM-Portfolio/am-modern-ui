@@ -79,8 +79,22 @@ def run_flutter_cmd(package, command):
         port = os.getenv("FLUTTER_WEB_PORT")
         if port:
             command += f" --web-port={port}"
+            
+        # Inject environment variables from .env as --dart-define
+        env_vars = {}
+        env_path = os.path.join(workspace_root, ".env")
+        if os.path.exists(env_path):
+            with open(env_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if "=" in line and not line.startswith("#"):
+                        k, v = line.split("=", 1)
+                        env_vars[k.strip()] = v.strip()
+        
+        for k, v in env_vars.items():
+            command += f' --dart-define={k}={v}'
 
-    print(f"🚀 Running 'flutter {command}' in {package}...")
+    print(f"[RUN] Running 'flutter {command}' in {package}...")
     is_windows = os.name == "nt"
     env = dict(os.environ)
 

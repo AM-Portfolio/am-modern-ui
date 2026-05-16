@@ -30,6 +30,9 @@ void main() async {
   GetIt.instance.registerLazySingleton<common.SecureStorageService>(
     () => common.SecureStorageService(),
   );
+  GetIt.instance.registerLazySingleton<common.TelemetryService>(
+    () => common.TelemetryService(),
+  );
   GetIt.instance.registerLazySingleton<common.AmStompClient>(
     () => common.AmStompClient(),
   );

@@ -19,8 +19,15 @@ class AnalysisApiClient {
   /// Expose the underlying generated APIs
   sdk.ApiClient get client => _apiClient;
 
-  /// Get authentication token from secure storage (syncing logic with ApiClient)
+  /// Get authentication token from shared cache (syncing logic with ApiClient)
   Future<String?> _getAuthToken() async {
+    // Shared Auth Token: Check the global ApiClient cache first
+    final sharedToken = ServiceRegistry.api.getAccessToken();
+    if (sharedToken != null && sharedToken.isNotEmpty) {
+      return sharedToken;
+    }
+
+    // Fallback to Secure Storage if cache is empty
     final secureStorage = SecureStorageService();
     final token = await secureStorage.getAccessToken();
     if (token != null && token.isNotEmpty && !token.startsWith('mock_')) return token;

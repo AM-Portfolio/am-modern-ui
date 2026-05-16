@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart'
@@ -119,30 +120,39 @@ class AppCard extends StatelessWidget {
       ],
     );
 
-    if (defaultTargetPlatform == TargetPlatform.iOS && !kIsWeb) {
-      return Container(
-        width: fullWidth ? double.infinity : null,
-        margin: margin ?? const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: backgroundColor ?? CupertinoColors.systemBackground,
-          borderRadius: borderRadius ?? defaultBorderRadius,
-          border: Border.all(color: CupertinoColors.systemGrey5),
+    final cardDecoration = BoxDecoration(
+      color: backgroundColor ?? (theme.brightness == Brightness.dark 
+          ? Colors.black.withValues(alpha: 0.3) 
+          : Colors.white.withValues(alpha: 0.3)),
+      borderRadius: borderRadius ?? defaultBorderRadius,
+      border: Border.all(
+        color: (backgroundColor ?? theme.dividerColor).withValues(alpha: 0.1),
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
         ),
-        child: cardContent,
-      );
-    } else {
-      return Card(
-        margin: margin ?? const EdgeInsets.symmetric(vertical: 8),
-        elevation: elevation ?? defaultElevation,
-        shape: RoundedRectangleBorder(
-          borderRadius: borderRadius ?? defaultBorderRadius,
+      ],
+    );
+
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      margin: margin ?? const EdgeInsets.symmetric(vertical: 8),
+      child: ClipRRect(
+        borderRadius: borderRadius ?? defaultBorderRadius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            decoration: cardDecoration,
+            child: Material(
+              color: Colors.transparent,
+              child: cardContent,
+            ),
+          ),
         ),
-        color: backgroundColor,
-        child: SizedBox(
-          width: fullWidth ? double.infinity : null,
-          child: cardContent,
-        ),
-      );
-    }
+      ),
+    );
   }
 }

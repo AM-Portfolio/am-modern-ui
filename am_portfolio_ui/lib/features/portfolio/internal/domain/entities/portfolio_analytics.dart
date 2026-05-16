@@ -110,6 +110,35 @@ class Stock {
 
   /// Helper getter to check if stock is gaining
   bool get isGainer => changePercent > 0;
+
+  /// Create a copy of this Stock with the given fields replaced
+  Stock copyWith({
+    String? symbol,
+    String? companyName,
+    double? lastPrice,
+    double? changeAmount,
+    double? changePercent,
+    String? sector,
+    double? quantity,
+    double? avgPrice,
+    double? marketValue,
+    double? totalReturn,
+    double? weight,
+  }) {
+    return Stock(
+      symbol: symbol ?? this.symbol,
+      companyName: companyName ?? this.companyName,
+      lastPrice: lastPrice ?? this.lastPrice,
+      changeAmount: changeAmount ?? this.changeAmount,
+      changePercent: changePercent ?? this.changePercent,
+      sector: sector ?? this.sector,
+      quantity: quantity ?? this.quantity,
+      avgPrice: avgPrice ?? this.avgPrice,
+      marketValue: marketValue ?? this.marketValue,
+      totalReturn: totalReturn ?? this.totalReturn,
+      weight: weight ?? this.weight,
+    );
+  }
 }
 
 /// Top movers (gainers and losers)
