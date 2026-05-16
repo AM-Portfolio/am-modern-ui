@@ -227,10 +227,9 @@ class _HistoricalSyncPageState extends State<HistoricalSyncPage> with WidgetsBin
         final job = await _adminService.getJobDetails(jobId);
         Navigator.pop(context); // Close loading
         
-        if (job != null) {
-                                final logs = job.logs ?? [];
-                                
-                                showDialog(
+        final logs = job.message != null ? [job.message!] : <String>[];
+        
+        showDialog(
                                     context: context,
                                     builder: (context) => Dialog(
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -300,7 +299,6 @@ class _HistoricalSyncPageState extends State<HistoricalSyncPage> with WidgetsBin
                     ),
                 ),
             );
-        }
     } catch (e) {
         Navigator.pop(context); // Close loading
         CommonLogger.error("Error fetching job details: $e", tag: "Admin");

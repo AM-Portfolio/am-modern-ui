@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:am_common/am_common.dart';
 
 class DeveloperMarketDataService {
-  static const String baseUrl = 'https://am.asrax.in/market/v1/market-data';
+  static String get baseUrl => '${EnvDomains.market}/v1/market-data';
   final Dio _dio = Dio();
 
   Future<Map<String, dynamic>> getQuotes(String symbols, {bool refresh = false}) async {

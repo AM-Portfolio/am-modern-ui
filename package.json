@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "AM Investment Platform - Modern UI Task Runner",
   "scripts": {
+    "─── CONFIG ───": "echo",
+    "config:local": "powershell -Command \"(Get-Content am_app/web/config.local.json) -replace '(\\\"useOverrides\\\": )false', '$1true' | Set-Content am_app/web/config.local.json\"",
+    "config:dev": "powershell -Command \"(Get-Content am_app/web/config.local.json) -replace '(\\\"useOverrides\\\": )true', '$1false' -replace '(\\\"domain\\\": \\\").*\\\"', '$1am-dev.asrax.in\\\"' | Set-Content am_app/web/config.local.json\"",
+    "config:preprod": "powershell -Command \"(Get-Content am_app/web/config.local.json) -replace '(\\\"useOverrides\\\": )true', '$1false' -replace '(\\\"domain\\\": \\\").*\\\"', '$1am.asrax.in\\\"' | Set-Content am_app/web/config.local.json\"",
     "─── CORE ───": "echo",
     "clean:core": "npm run clean:common && npm run clean:design && npm run clean:lib",
     "clean:common": "cd am_common && flutter clean",

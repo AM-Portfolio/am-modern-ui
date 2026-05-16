@@ -1,100 +1,140 @@
-import 'package:am_common/core/config/app_config.dart';
-import 'package:am_library/am_library.dart' show Environment;
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:am_library/am_library.dart';
+import 'app_config.dart';
 
-/// Minimal stub ConfigService for getting app running
-/// TODO: Replace with full implementation later
+/// Service responsible for loading and managing application configuration.
+/// Supports a 3-layer resolution:
+/// 1. config.local.json (Local developer overrides)
+/// 2. config.json (Kubernetes ConfigMap domain)
+/// 3. Built-in fallback (am.asrax.in)
 class ConfigService {
   static AppConfig? _config;
-  
+  static String _domain = 'am-dev.asrax.in';       // Layer 3 fallback: Default to DEV
+  static Map<String, String> _overrides = {};       // Layer 1 local overrides
+
+  // ─── Public API ─────────────────────────────────────────────────────────
+
+  /// The root domain (from config.json or fallback)
+  static String get domain => _domain;
+
+  /// Per-service override, e.g. override('market') → 'http://localhost:8092'
+  /// Returns null if no override exists for this key.
+  static String? override(String key) => _overrides[key];
+
+  /// Get the current application configuration.
   static AppConfig get config {
     if (_config == null) {
       // Return a default config instead of throwing to prevent crashes
-      // during early initialization race conditions.
-      return AppConfig(
-        environment: Environment.development,
-        google: const GoogleConfig(webClientId: ''),
-        api: ApiConfig(
-          baseUrl: 'https://am.asrax.in/analysis',
-          timeout: 30000,
-          useMockData: false,
-          auth: const AuthApiConfig(
-            baseUrl: 'https://am.asrax.in/auth',
-            loginEndpoint: '/v1/auth/login',
-            logoutEndpoint: '/v1/auth/logout',
-            refreshTokenEndpoint: '/v1/auth/refresh',
-            googleLoginEndpoint: '/v1/auth/google',
-          ),
-          user: const UserApiConfig(
-            baseUrl: 'https://am.asrax.in/users',
-            registerEndpoint: '/v1/auth/register',
-            forgotPasswordEndpoint: '/v1/auth/request-reset',
-            resetPasswordEndpoint: '/v1/auth/confirm-reset',
-          ),
-          portfolio: const PortfolioApiConfig(
-            baseUrl: 'https://am.asrax.in/portfolio',
-            holdingsResource: '/v1/portfolios/holdings',
-            summaryResource: '/v1/portfolios/summary',
-            transactionsResource: '/v1/portfolios/transactions',
-          ),
-          trade: const TradeApiConfig(
-            baseUrl: 'https://am.asrax.in/trade',
-            portfolioListResource: '/v1/portfolio-summary/by-owner',
-            portfolioSummaryResource: '/v1/portfolio-summary',
-            holdingsResource: '/v1/trades/details/portfolio',
-            tradeDetailsResource: '/v1/trades/details',
-            calendarMonthResource: '/v1/trades/calendar/month',
-            calendarDayResource: '/v1/trades/calendar/day',
-            calendarQuarterResource: '/v1/trades/calendar/quarter',
-            calendarFinancialYearResource: '/v1/trades/calendar/financial-year',
-            searchResource: '/v1/trades/search',
-          ),
-        ),
-      );
+      return _buildConfig();
     }
     return _config!;
   }
-  
+
+  /// Initialize application configuration.
+  /// Typically called during app startup.
   static Future<void> initialize() async {
-    if (_config != null) return; // Already initialized
+    if (_config != null) return;
+
+    // Layer 1: load local developer overrides (gitignored file)
+    await _loadLocalOverrides();
+
+    // Layer 2: load environment domain from Kubernetes ConfigMap
+    await _loadRemoteConfig();
+
+    // Build and cache AppConfig
+    _config = _buildConfig();
+  }
+
+  // ─── Private ─────────────────────────────────────────────────────────────
+
+  /// Tries to fetch /config.local.json — gitignored, only on dev machines.
+  static Future<void> _loadLocalOverrides() async {
+    try {
+      final res = await http.get(Uri.parse('/config.local.json'))
+                    .timeout(const Duration(seconds: 2));
+      if (res.statusCode == 200) {
+        final json = jsonDecode(res.body) as Map<String, dynamic>;
+        
+        // 1. Domain can be overridden locally (e.g. switch between dev/preprod cluster)
+        _domain = json['domain'] as String? ?? _domain;
+
+        // 2. Service overrides (e.g. localhost)
+        final bool useOverrides = json['useOverrides'] as bool? ?? false;
+        
+        if (useOverrides) {
+          final raw = json['overrides'] as Map<String, dynamic>? ?? {};
+          _overrides = raw.map((k, v) => MapEntry(k, v.toString()));
+          AppLogger.info('🔧 Local service overrides ENABLED (domain: $_domain)',
+                         tag: 'ConfigService');
+        } else {
+          AppLogger.info('ℹ️ Using cluster domain: $_domain (local overrides disabled)',
+                         tag: 'ConfigService');
+        }
+      }
+    } catch (_) {
+      // Not present — normal in staging/prod/CI
+    }
+  }
+
+  /// Fetches /config.json mounted by Kubernetes ConfigMap.
+  static Future<void> _loadRemoteConfig() async {
+    try {
+      final res = await http.get(Uri.parse('/config.json'))
+                    .timeout(const Duration(seconds: 3));
+      if (res.statusCode == 200) {
+        final json = jsonDecode(res.body) as Map<String, dynamic>;
+        _domain = (json['domain'] as String?) ?? _domain;
+        AppLogger.info('🌐 Domain loaded from config.json: $_domain', tag: 'ConfigService');
+      }
+    } catch (_) {
+      AppLogger.warning('⚠️ config.json not found — using fallback: $_domain',
+                        tag: 'ConfigService');
+    }
+  }
+
+  static AppConfig _buildConfig() {
+    final api = 'https://$_domain';
+    final ws  = 'wss://$_domain';
     
-    // Create minimal hardcoded config with ALL required parameters
-    _config = AppConfig(
-      google: GoogleConfig(
-        webClientId: const String.fromEnvironment('AM_GOOGLE_CLIENT_ID', defaultValue: 'your-client-id'),
-      ),
+    // Base URLs respect overrides
+    final authUrl      = _overrides['auth']      ?? '$api/auth';
+    final usersUrl     = _overrides['users']     ?? '$api/users';
+    final portfolioUrl = _overrides['portfolio'] ?? '$api/portfolio';
+    final marketUrl    = _overrides['market']    ?? '$api/market';
+    final tradesUrl    = _overrides['trades']    ?? '$api/trades';
+    final analysisUrl  = _overrides['analysis']  ?? '$api/analysis';
+    final gmailUrl     = _overrides['gmail']     ?? '$api/gmail';
+    final marketWsUrl  = _overrides['marketWs']  ?? '$ws/market/ws/market-data-stream';
+
+    return AppConfig(
+      google: const GoogleConfig(webClientId: ''),
+      environment: Environment.production,
       api: ApiConfig(
-        baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'),
+        baseUrl: analysisUrl,
         timeout: 30000,
-        useMockData: const bool.fromEnvironment('AM_USE_MOCK_DATA', defaultValue: false),
+        useMockData: false,
         auth: AuthApiConfig(
-          baseUrl: const String.fromEnvironment('AM_AUTH_BASE_URL', defaultValue: 'https://am.asrax.in/auth'),
-          loginEndpoint: '/v1/auth/login',
+          baseUrl: authUrl,
+          loginEndpoint: '/v1/tokens',
           logoutEndpoint: '/v1/auth/logout',
           refreshTokenEndpoint: '/v1/auth/refresh',
-          googleLoginEndpoint: '/v1/auth/google',
-          connectTimeout: 30000,
-          receiveTimeout: 30000,
-          sendTimeout: 30000,
-          enabled: true,
+          googleLoginEndpoint: '/v1/auth/google/token',
         ),
         user: UserApiConfig(
-          baseUrl: const String.fromEnvironment('AM_USER_BASE_URL', defaultValue: 'https://am.asrax.in/users'),
-          registerEndpoint: '/v1/user/register',
-          forgotPasswordEndpoint: '/v1/user/forgot-password',
-          resetPasswordEndpoint: '/v1/user/reset-password',
-          connectTimeout: 30000,
-          receiveTimeout: 30000,
-          sendTimeout: 30000,
-          enabled: true,
+          baseUrl: usersUrl,
+          registerEndpoint: '/v1/auth/register',
+          forgotPasswordEndpoint: '/v1/auth/request-reset',
+          resetPasswordEndpoint: '/v1/auth/confirm-reset',
         ),
         portfolio: PortfolioApiConfig(
-          baseUrl: const String.fromEnvironment('AM_PORTFOLIO_BASE_URL', defaultValue: 'https://am.asrax.in/portfolio'),
+          baseUrl: portfolioUrl,
           holdingsResource: '/v1/portfolios/holdings',
           summaryResource: '/v1/portfolios/summary',
           transactionsResource: '/v1/portfolios/transactions',
         ),
         trade: TradeApiConfig(
-          baseUrl: const String.fromEnvironment('AM_TRADE_BASE_URL', defaultValue: 'https://am.asrax.in/trade'),
+          baseUrl: tradesUrl,
           portfolioListResource: '/v1/portfolio-summary/by-owner',
           portfolioSummaryResource: '/v1/portfolio-summary',
           holdingsResource: '/v1/trades/details/portfolio',
@@ -104,28 +144,20 @@ class ConfigService {
           calendarQuarterResource: '/v1/trades/calendar/quarter',
           calendarFinancialYearResource: '/v1/trades/calendar/financial-year',
           searchResource: '/v1/trades/search',
-          connectTimeout: 30000,
-          receiveTimeout: 30000,
-          sendTimeout: 30000,
-          enabled: true,
         ),
+        marketData: MarketDataConfig(
+          baseUrl: marketUrl,
+          wsUrl: marketWsUrl,
+          connectEndpoint: '/v1/market-data/stream/connect',
+        ),
+        analysis: AnalysisApiConfig(baseUrl: analysisUrl),
         gmail: GmailApiConfig(
-          baseUrl: const String.fromEnvironment('AM_GMAIL_BASE_URL', defaultValue: 'https://am.asrax.in/gmail'),
+          baseUrl: gmailUrl,
           statusEndpoint: '/v1/gmail/status',
           connectEndpoint: '/v1/gmail/connect',
           extractEndpoint: '/v1/gmail/extract',
-          enabled: true,
-        ),
-        marketData: MarketDataConfig(
-          wsUrl: const String.fromEnvironment('AM_MARKET_WS_URL', defaultValue: 'wss://am.asrax.in/market/ws/market-data-stream'),
-          baseUrl: const String.fromEnvironment('AM_MARKET_BASE_URL', defaultValue: 'https://am.asrax.in/market'),
-          connectEndpoint: '/v1/market-data/stream/connect',
-        ),
-        analysis: AnalysisApiConfig(
-          baseUrl: const String.fromEnvironment('AM_ANALYSIS_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'),
         ),
       ),
-      environment: Environment.development,
     );
   }
 }

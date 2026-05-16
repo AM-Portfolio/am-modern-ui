@@ -1,0 +1,42 @@
+# Dev Environment — am-modern-ui
+environment: dev
+replicaCount: 1
+
+appConfig:
+  domain: "am-dev.asrax.in"
+
+service:
+  port: 80
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Standard probes for Nginx
+probes:
+  port: 80
+  startup:
+    path: "/"
+    failureThreshold: 30
+    periodSeconds: 10
+  liveness:
+    path: "/"
+  readiness:
+    path: "/"
+
+ingress:
+  enabled: true
+  className: "traefik"
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.middlewares: am-apps-dev-dev-global-cors@kubernetescrd
+  hosts:
+    - host: am-dev.asrax.in
+      paths:
+        - path: /
+          pathType: Prefix

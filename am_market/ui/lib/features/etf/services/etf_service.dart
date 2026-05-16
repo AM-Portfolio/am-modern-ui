@@ -6,11 +6,12 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_market_common/models/etf.dart';
 
+import 'package:am_common/am_common.dart';
 
 class EtfService {
   // Use relative path which goes through Nginx proxy
   // Local development fallback could be configured if needed, but assuming Docker setup
-  static const String baseUrl = 'https://am.asrax.in/api/etf/v1';
+  static String get baseUrl => '${EnvDomains.etf}/v1';
   final _storage = GetIt.I<SecureStorageService>();
 
   Future<Map<String, String>> _getHeaders() async {

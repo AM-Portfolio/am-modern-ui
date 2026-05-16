@@ -1,7 +1,9 @@
+import 'package:am_common/am_common.dart';
+
 /// Market Module API endpoint constants
 class MarketEndpoints {
   // Base URL
-  static const String baseUrl = 'https://am.asrax.in/market';
+  static String get baseUrl => EnvDomains.market;
   
   // Indices
   static const String availableIndices = '/v1/indices/available';
