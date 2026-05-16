@@ -5,8 +5,7 @@ replicaCount: 1
 appConfig:
   domain: "am-dev.asrax.in"
 
-service:
-  port: 80
+port: 8080
 
 resources:
   limits:
@@ -18,7 +17,7 @@ resources:
 
 # Standard probes for Nginx
 probes:
-  port: 80
+  port: 8080
   startup:
     path: "/"
     failureThreshold: 30
