@@ -33,7 +33,7 @@ class ConfigService {
       ),
       api: ApiConfig(
         // Default base URL used by ApiClient when no specific service URL is provided
-        baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'http://localhost:8061'),
+        baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'),
         timeout: 30000,
         useMockData: const bool.fromEnvironment('AM_USE_MOCK_DATA', defaultValue: false),
 
@@ -105,9 +105,9 @@ class ConfigService {
           connectEndpoint: '/v1/market-data/stream/connect',
         ),
 
-        // ── Analysis (LOCAL — running on port 8061) ──
+        // ── Analysis (PRODUCTION — fallback from localhost) ──
         analysis: AnalysisApiConfig(
-          baseUrl: const String.fromEnvironment('AM_ANALYSIS_BASE_URL', defaultValue: 'http://localhost:8061'),
+          baseUrl: const String.fromEnvironment('AM_ANALYSIS_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'),
         ),
       ),
       environment: Environment.development,
