@@ -274,9 +274,15 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             icon: Icons.add,
             accentColor: ModuleColors.trade,
             onTap: () {
+              if (_currentPortfolioId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please select a portfolio first')),
+                );
+                return;
+              }
               openAddTradeWebPage(
                 context,
-                portfolioId: _currentPortfolioId,
+                portfolioId: _currentPortfolioId!,
                 portfolioName: _currentPortfolioName,
               );
             },

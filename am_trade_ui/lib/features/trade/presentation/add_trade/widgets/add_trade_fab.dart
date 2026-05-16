@@ -15,7 +15,7 @@ class AddTradeFab extends StatelessWidget {
 
     return FloatingActionButton.extended(
       onPressed: () {
-        openAddTradeWebPage(context, portfolioId: portfolioId);
+        openAddTradeWebPage(context, portfolioId: portfolioId!);
       },
       icon: const Icon(Icons.add),
       label: const Text('Add Trade'),

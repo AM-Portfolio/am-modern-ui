@@ -8,7 +8,17 @@ class ConfigService {
   
   static AppConfig get config {
     if (_config == null) {
-      throw StateError('ConfigService not initialized. Call initialize() first.');
+      // Return a default config instead of throwing to prevent crashes
+      // during early initialization race conditions.
+      return const AppConfig(
+        environment: 'development',
+        api: ApiConfig(
+          auth: AuthApiConfig(baseUrl: 'https://am.asrax.in/auth'),
+          user: UserApiConfig(baseUrl: 'https://am.asrax.in/users'),
+          trade: TradeApiConfig(baseUrl: 'https://am.asrax.in/trades'),
+          portfolio: PortfolioApiConfig(baseUrl: 'https://am.asrax.in/portfolio'),
+        ),
+      );
     }
     return _config!;
   }
