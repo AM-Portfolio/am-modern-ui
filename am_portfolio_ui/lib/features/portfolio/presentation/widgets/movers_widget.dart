@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart' as ds;
 import '../../internal/domain/entities/portfolio_analytics.dart';
 
 /// Widget displaying top movers (gainers and losers) in the portfolio
@@ -35,34 +36,34 @@ class _MoversWidgetState extends State<MoversWidget>
   }
 
   @override
-  Widget build(BuildContext context) => Card(
-    elevation: 4,
+  Widget build(BuildContext context) => ds.AppCard(
     margin: const EdgeInsets.all(8.0),
-    child: Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.trending_up,
-                color: Theme.of(context).primaryColor,
-                size: 24,
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.auto_graph,
+              color: Theme.of(context).primaryColor,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Top Movers',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Top Movers',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(height: 350, child: _buildContent(context)),
-        ],
-      ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(height: 380, child: _buildContent(context)),
+      ],
     ),
   );
 
@@ -208,89 +209,92 @@ class _MoversWidgetState extends State<MoversWidget>
   }
 
   Widget _buildMoverTile(BuildContext context, Stock stock, bool isGainer) {
-    final changeColor = isGainer ? Colors.green : Colors.red;
-    final changeIcon = isGainer ? Icons.trending_up : Icons.trending_down;
+    final color = isGainer ? Colors.green : Colors.red;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
+        color: Theme.of(context).cardColor.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: color.withValues(alpha: 0.15),
+          width: 1,
+        ),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withValues(alpha: 0.08),
+            Colors.transparent,
+          ],
         ),
       ),
       child: Row(
         children: [
-          // Stock Info
+          // Symbol with colored indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              stock.symbol,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  stock.symbol,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  stock.companyName,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ],
-            ),
-          ),
-          // Price Info
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '₹${stock.lastPrice.toStringAsFixed(2)}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '₹${stock.changeAmount >= 0 ? '+' : ''}${stock.changeAmount.toStringAsFixed(2)}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: changeColor),
-                ),
-              ],
-            ),
-          ),
-          // Change Percentage
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: changeColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(changeIcon, size: 14, color: changeColor),
-                const SizedBox(width: 2),
                 Text(
-                  '${stock.changePercent.toStringAsFixed(2)}%',
-                  style: TextStyle(
+                  stock.companyName,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '₹${stock.lastPrice.toStringAsFixed(2)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: changeColor,
+                    color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
                   ),
                 ),
               ],
             ),
+          ),
+          // Percentage change
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent.toStringAsFixed(2)}%',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                '₹${stock.changeAmount.abs().toStringAsFixed(2)}',
+                style: TextStyle(
+                  color: color.withValues(alpha: 0.6),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ],
       ),

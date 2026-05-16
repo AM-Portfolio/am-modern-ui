@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
@@ -19,7 +18,7 @@ class BasketGaugePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2 - strokeWidth;
-    
+
     // Background arc
     final backgroundPaint = Paint()
       ..color = backgroundColor
@@ -34,10 +33,7 @@ class BasketGaugePainter extends CustomPainter {
     final gradient = SweepGradient(
       startAngle: -math.pi / 2,
       endAngle: -math.pi / 2 + (2 * math.pi * percentage / 100),
-      colors: [
-        fillColor.withOpacity(0.5),
-        fillColor,
-      ],
+      colors: [fillColor.withOpacity(0.5), fillColor],
     );
 
     final progressPaint = Paint()
@@ -49,13 +45,7 @@ class BasketGaugePainter extends CustomPainter {
     const startAngle = -math.pi / 2;
     final sweepAngle = 2 * math.pi * percentage / 100;
 
-    canvas.drawArc(
-      rect,
-      startAngle,
-      sweepAngle,
-      false,
-      progressPaint,
-    );
+    canvas.drawArc(rect, startAngle, sweepAngle, false, progressPaint);
   }
 
   @override
@@ -96,10 +86,7 @@ class _AnimatedRadialGaugeState extends State<AnimatedRadialGauge>
     _animation = Tween<double>(
       begin: 0,
       end: widget.percentage,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     _controller.forward();
   }
@@ -134,15 +121,15 @@ class _AnimatedRadialGaugeState extends State<AnimatedRadialGauge>
                   Text(
                     '${_animation.value.toInt()}%',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                   Text(
                     'Match',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white70,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.white70),
                   ),
                 ],
               ),

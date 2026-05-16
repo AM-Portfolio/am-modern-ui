@@ -20,11 +20,35 @@ COPY AM-Repos/backend/am-market/am_market_sdk_flutter ./backend/am-market/am_mar
 COPY AM-Repos/ui/am_modern_ui/am_trade_ui ./ui/am_modern_ui/am_trade_ui
 WORKDIR /app/ui/am_modern_ui/am_trade_ui/live
 
+# Environment variables for API endpoints
+ARG AM_API_BASE_URL=https://am.asrax.in
+ARG AM_AUTH_BASE_URL=https://am.asrax.in/auth
+ARG AM_USER_BASE_URL=https://am.asrax.in/users
+ARG AM_PORTFOLIO_BASE_URL=https://am.asrax.in/portfolio
+ARG AM_TRADE_BASE_URL=https://am.asrax.in/trade
+ARG AM_GMAIL_BASE_URL=https://am.asrax.in/gmail
+ARG AM_MARKET_WS_URL=wss://am.asrax.in/ws
+ARG AM_MARKET_BASE_URL=https://am.asrax.in/market
+ARG AM_ANALYSIS_BASE_URL=https://am.asrax.in/analysis
+ARG AM_ENVIRONMENT=production
+ARG AM_USE_MOCK_DATA=false
+
 # Get dependencies
 RUN flutter pub get
 
-# Build web app
-RUN flutter build web --release
+# Build web app with environment configuration
+RUN flutter build web --release \
+    --dart-define=AM_API_BASE_URL=$AM_API_BASE_URL \
+    --dart-define=AM_AUTH_BASE_URL=$AM_AUTH_BASE_URL \
+    --dart-define=AM_USER_BASE_URL=$AM_USER_BASE_URL \
+    --dart-define=AM_PORTFOLIO_BASE_URL=$AM_PORTFOLIO_BASE_URL \
+    --dart-define=AM_TRADE_BASE_URL=$AM_TRADE_BASE_URL \
+    --dart-define=AM_GMAIL_BASE_URL=$AM_GMAIL_BASE_URL \
+    --dart-define=AM_MARKET_WS_URL=$AM_MARKET_WS_URL \
+    --dart-define=AM_MARKET_BASE_URL=$AM_MARKET_BASE_URL \
+    --dart-define=AM_ANALYSIS_BASE_URL=$AM_ANALYSIS_BASE_URL \
+    --dart-define=AM_ENVIRONMENT=$AM_ENVIRONMENT \
+    --dart-define=AM_USE_MOCK_DATA=$AM_USE_MOCK_DATA
 
 # Runtime stage
 FROM nginx:alpine

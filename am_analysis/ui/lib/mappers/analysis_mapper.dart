@@ -77,25 +77,45 @@ class AnalysisMapper {
   static List<MoverItem> toMoverItems(sdk.TopMoversResponse? sdkResponse) {
     if (sdkResponse == null) return [];
     
-    // Combine gainers and losers
-    final allMovers = <sdk.MoverItem>[];
+    final allMovers = <MoverItem>[];
+    
+    // Convert SDK gainers to UI MoverItems
     if (sdkResponse.gainers != null) {
-      allMovers.addAll(sdkResponse.gainers!);
-    }
-    if (sdkResponse.losers != null) {
-      allMovers.addAll(sdkResponse.losers!);
+      allMovers.addAll(sdkResponse.gainers!.map((item) {
+        // Ensure gainer percentage is positive
+        final percentage = (item.changePercentage ?? 0.0).abs();
+        final amount = (item.changeAmount ?? 0.0).toDouble().abs();
+        
+        return MoverItem(
+          symbol: item.symbol ?? '',
+          name: item.name ?? '',
+          price: (item.price ?? 0.0).toDouble(),
+          changePercentage: percentage,
+          changeAmount: amount,
+          isGainer: true,
+        );
+      }));
     }
     
-    // Convert SDK MoverItem to UI MoverItem
-    return allMovers.map((item) {
-      return MoverItem(
-        symbol: item.symbol ?? '',
-        name: item.name ?? '',
-        price: (item.price ?? 0).toDouble(),
-        changePercentage: item.changePercentage ?? 0.0,
-        changeAmount: (item.changeAmount ?? 0).toDouble(),
-      );
-    }).toList();
+    // Convert SDK losers to UI MoverItems
+    if (sdkResponse.losers != null) {
+      allMovers.addAll(sdkResponse.losers!.map((item) {
+        // Ensure loser percentage is negative
+        final percentage = -(item.changePercentage ?? 0.0).abs();
+        final amount = -(item.changeAmount ?? 0.0).toDouble().abs();
+        
+        return MoverItem(
+          symbol: item.symbol ?? '',
+          name: item.name ?? '',
+          price: (item.price ?? 0.0).toDouble(),
+          changePercentage: percentage,
+          changeAmount: amount,
+          isGainer: false,
+        );
+      }));
+    }
+    
+    return allMovers;
   }
 
   /// Convert SDK PerformanceResponse to UI PerformanceDataPoint list

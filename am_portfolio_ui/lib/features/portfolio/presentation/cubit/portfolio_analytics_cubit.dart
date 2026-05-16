@@ -256,4 +256,3 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     }
   }
 }
-

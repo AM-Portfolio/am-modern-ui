@@ -76,7 +76,7 @@ class MockDataService {
         authMethod: AuthConstants.authMethodEmail,
         isDemo: false,
       );
-      final tokens = _generateMockTokens();
+      final tokens = _generateMockTokens(user.id);
       return AuthResultModel(user: user, tokens: tokens);
     }
 
@@ -90,7 +90,7 @@ class MockDataService {
     if (user != null) {
       // In a real implementation, verify password hash
       // For mock, we'll use simple comparison
-      final tokens = _generateMockTokens();
+      final tokens = _generateMockTokens(user.id);
       return AuthResultModel(user: user, tokens: tokens);
     }
 
@@ -108,7 +108,7 @@ class MockDataService {
 
     final googleUsers = await loadMockGoogleUsers();
     final user = googleUsers.first; // Use first Google user for mock
-    final tokens = _generateMockTokens();
+    final tokens = _generateMockTokens(user.id);
 
     return AuthResultModel(user: user, tokens: tokens);
   }
@@ -128,7 +128,7 @@ class MockDataService {
     // Find demo user or fallback to first user
     UserModel user;
     final demoUserJson = testUsers.cast<Map<String, dynamic>?>().firstWhere(
-      (u) => u!['email'] == 'ssd2658@gmail.com' || u['username'] == '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec',
+      (u) => u!['email'] == 'ssd2658@gmail.com' || u['id'] == 'b75743c9-fe0e-4c54-8ee0-8da350cc27b3',
       orElse: () => null,
     );
     
@@ -153,27 +153,31 @@ class MockDataService {
       );
     }
 
-    final tokens = _generateMockTokens();
+    final tokens = _generateMockTokens(user.id);
 
     return AuthResultModel(user: user, tokens: tokens);
   }
 
   /// Generate mock authentication tokens
-  AuthTokensModel _generateMockTokens() {
+  AuthTokensModel _generateMockTokens(String userId) {
     final now = DateTime.now();
     final expiresAt = now.add(AuthConstants.tokenExpiryDuration);
 
     return AuthTokensModel(
-      accessToken: _generateMockToken('access'),
-      refreshToken: _generateMockToken('refresh'),
+      accessToken: _generateMockToken('access', userId),
+      refreshToken: _generateMockToken('refresh', userId),
       expiresAt: expiresAt,
     );
   }
 
   /// Generate a mock token string
-  String _generateMockToken(String type) {
+  String _generateMockToken(String type, String userId) {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    return 'mock_${type}_token_$timestamp';
+    // Dummy JWT format: header.payload.signature
+    final header = 'eyJhbGciOiJub25lIn0=';
+    final payloadJson = '{"sub":"$userId","iat":$timestamp,"type":"$type"}';
+    final payload = base64Url.encode(utf8.encode(payloadJson)).replaceAll('=', '');
+    return '$header.$payload.dummy_signature';
   }
 
   /// Simulate error based on error rate

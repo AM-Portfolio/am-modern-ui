@@ -269,4 +269,3 @@ class PortfolioFilterCubit extends Cubit<PortfolioFilterState> {
     }
   }
 }
-

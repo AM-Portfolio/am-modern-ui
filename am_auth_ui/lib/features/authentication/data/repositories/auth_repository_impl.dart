@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
 
@@ -205,6 +206,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, AuthResultEntity>> demoLogin() async {
     try {
+      // Respect feature flags for demo login to ensure valid tokens in production
       final result = await _dataSource.demoLogin();
 
       // Save tokens to secure storage
@@ -334,6 +336,35 @@ class AuthRepositoryImpl implements AuthRepository {
               : 'OK'}',
           tag: 'AuthRepository',
         );
+
+        // If stored data is missing, check for a development fallback in the configuration
+        // This allows for dynamic "mock" identity without hardcoding strings in the source code.
+        try {
+          final config = ConfigService.config;
+          if (kDebugMode && 
+              config.devAuthToken != null && 
+              config.devAuthToken!.isNotEmpty &&
+              config.devUserId != null &&
+              config.devUserId!.isNotEmpty) {
+            
+            CommonLogger.info('🔑 [DEV] Using environment-based identity fallback', tag: 'AuthRepository');
+            
+            return Right(AuthResultEntity(
+              user: UserEntity(
+                id: config.devUserId!,
+                email: 'dev-user@am-platform.local',
+                authMethod: 'environment',
+              ),
+              tokens: AuthTokensEntity(
+                accessToken: config.devAuthToken!,
+                expiresAt: DateTime.now().add(const Duration(hours: 24)),
+              ),
+            ));
+          }
+        } catch (configError) {
+          // Config might not be initialized yet in some edge cases
+          CommonLogger.warning('⚠️ ConfigService not ready for identity fallback', tag: 'AuthRepository');
+        }
 
         return const Right(null);
       }

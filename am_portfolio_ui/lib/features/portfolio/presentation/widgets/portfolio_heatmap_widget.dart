@@ -3,7 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:am_common/am_common.dart';
-import 'package:am_design_system/am_design_system.dart' hide MarketCapType, MetricType, TimeFrame, SectorType;
+import 'package:am_design_system/am_design_system.dart'
+    hide MarketCapType, MetricType, TimeFrame, SectorType;
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
 import '../cubit/portfolio_heatmap_cubit.dart';
@@ -457,4 +458,3 @@ class _PortfolioHeatmapWidgetState
     */
   }
 }
-

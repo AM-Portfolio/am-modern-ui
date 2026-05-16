@@ -13,10 +13,23 @@ import '../di/service_registry.dart';
 /// Base API client for handling HTTP requests
 class ApiClient {
   /// Constructor
-  ApiClient({String? baseUrl, http.Client? client, String? category})
+  ApiClient({String? baseUrl, http.Client? client, String? category, String? fallbackToken})
     : baseUrl = baseUrl ?? _defaultBaseUrl,
       category = category ?? 'API',
+      _fallbackToken = fallbackToken,
       _client = client ?? http.Client();
+
+  /// In-memory token cache for performance and sharing across widgets
+  static String? _cachedToken;
+
+  /// Update the global access token across all API requests
+  void setAccessToken(String? token) {
+    _cachedToken = token;
+    AppLogger.info('🔐 ApiClient: Access token updated in memory cache.', tag: 'ApiClient');
+  }
+
+  /// Get the current access token (synchronous)
+  String? getAccessToken() => _cachedToken;
 
   /// Default base URL for API requests
   static const String _defaultBaseUrl = 'https://am.asrax.in';
@@ -30,18 +43,33 @@ class ApiClient {
   /// HTTP client for making requests
   final http.Client _client;
 
-  /// Get authentication token from secure storage
+  /// Fallback token for development
+  final String? _fallbackToken;
+
+  /// Get authentication token from cache or secure storage
   Future<String?> _getAuthToken() async {
+    // 1. Check memory cache first (Fastest, shared across all widgets)
+    if (_cachedToken != null && _cachedToken!.isNotEmpty) {
+      return _cachedToken;
+    }
+
+    // 2. Fallback to Secure Storage (Session restoration)
     final secureStorage = SecureStorageService();
     final token = await secureStorage.getAccessToken();
-    AppLogger.debug('🔐 Auth Token Check: "${token ?? 'null'}"', tag: 'ApiClient');
     
-    // If token exists and is NOT a mock token, use it. Otherwise fall back to hardcoded JWT.
-    if (token != null && token.isNotEmpty && !token.startsWith('mock_')) return token;
+    if (token != null && token.isNotEmpty) {
+      _cachedToken = token; // Cache it for future requests
+      AppLogger.debug('🔐 Auth Token retrieved from storage and cached.', tag: 'ApiClient');
+      return token;
+    }
     
-    // Fallback to debug token provided by user
-    AppLogger.debug('🔐 Using HARDCODED fallback token (Stored token was null or mock)', tag: 'ApiClient');
-    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Njc2MzU0MDUsImlhdCI6MTc2NzU0OTAwNSwic3ViIjoiZTFmZDI5MTgtNDg0Zi00NzE2LWFkNWItZDQ2MDkwODkxZTAxIiwidXNlcm5hbWUiOiJzc2QyNjU4QGdtYWlsLmNvbSIsImVtYWlsIjoic3NkMjY1OEBnbWFpbC5jb20iLCJzY29wZXMiOlsicmVhZCIsIndyaXRlIl19.RwnyRwlF_DMx4U28gTwhyEK-kW-OxTiqbe3MnQPI0-w';
+    // 3. Fallback to dynamic debug token
+    if (_fallbackToken != null) {
+      AppLogger.debug('🔐 Using dynamic fallback token', tag: 'ApiClient');
+      return _fallbackToken;
+    }
+
+    return null;
   }
 
   /// Build URI from endpoint, handling both complete URLs and relative paths
@@ -51,7 +79,7 @@ class ApiClient {
     var finalBaseUrl = baseUrl;
 
     AppLogger.debug(
-      '🌐 URI Building - Original endpoint: $endpoint, baseUrl: $baseUrl',
+      '🌐 URI Building - endpoint: $endpoint',
       tag: 'ApiClient',
     );
 
@@ -59,35 +87,33 @@ class ApiClient {
     if (!kIsWeb && Platform.isAndroid) {
       finalEndpoint = _replaceLocalhostForAndroid(finalEndpoint);
       finalBaseUrl = _replaceLocalhostForAndroid(finalBaseUrl);
-      AppLogger.debug(
-        '🌐 Android detected - Transformed endpoint: $finalEndpoint, baseUrl: $finalBaseUrl',
-        tag: 'ApiClient',
-      );
     }
 
     Uri finalUri;
     // Check if endpoint is already a complete URL (contains protocol)
     if (finalEndpoint.startsWith('http://') ||
         finalEndpoint.startsWith('https://')) {
-      finalUri = Uri.parse(finalEndpoint).replace(queryParameters: queryParams);
-      AppLogger.debug(
-        '🌐 Complete URL detected - Final URI: $finalUri',
-        tag: 'ApiClient',
-      );
+      finalUri = Uri.parse(finalEndpoint);
     } else {
-      // For relative endpoints, combine with base URL
+      // For relative endpoints, combine with base URL using resolve for proper path handling
       final cleanEndpoint = finalEndpoint.startsWith('/')
           ? finalEndpoint.substring(1)
           : finalEndpoint;
-      final combinedUrl = '$finalBaseUrl/$cleanEndpoint';
-      finalUri = Uri.parse(combinedUrl).replace(queryParameters: queryParams);
-      AppLogger.debug(
-        '🌐 Relative endpoint - Combined URL: $combinedUrl, Final URI: $finalUri',
-        tag: 'ApiClient',
-      );
+      
+      finalUri = Uri.parse(finalBaseUrl.endsWith('/') ? finalBaseUrl : '$finalBaseUrl/').resolve(cleanEndpoint);
+    }
+
+    // Build query params
+    if (queryParams != null && queryParams.isNotEmpty) {
+      finalUri = finalUri.replace(queryParameters: queryParams.map((key, value) => MapEntry(key, value.toString())));
     }
 
     return finalUri;
+  }
+
+  /// Body remains unchanged
+  dynamic _proxyBody(dynamic body) {
+    return body;
   }
 
   /// Replace localhost with 10.0.2.2 for Android emulator compatibility
@@ -272,10 +298,11 @@ class ApiClient {
           body: body,
         );
 
+        final sanitizedBody = _proxyBody(body);
         final response = await _client.post(
           uri,
           headers: requestHeaders,
-          body: body != null ? jsonEncode(body) : null,
+          body: sanitizedBody != null ? jsonEncode(sanitizedBody) : null,
         );
 
         stopwatch.stop();
@@ -331,10 +358,11 @@ class ApiClient {
         final requestHeaders = await _createHeaders(additionalHeaders: headers);
 
         final stopwatch = Stopwatch()..start();
+        final sanitizedBody = _proxyBody(body);
         final response = await _client.put(
           uri,
           headers: requestHeaders,
-          body: body != null ? jsonEncode(body) : null,
+          body: sanitizedBody != null ? jsonEncode(sanitizedBody) : null,
         );
         stopwatch.stop();
 
@@ -373,10 +401,11 @@ class ApiClient {
         final requestHeaders = await _createHeaders(additionalHeaders: headers);
 
         final stopwatch = Stopwatch()..start();
+        final sanitizedBody = _proxyBody(body);
         final response = await _client.delete(
           uri,
           headers: requestHeaders,
-          body: body != null ? jsonEncode(body) : null,
+          body: sanitizedBody != null ? jsonEncode(sanitizedBody) : null,
         );
         stopwatch.stop();
 

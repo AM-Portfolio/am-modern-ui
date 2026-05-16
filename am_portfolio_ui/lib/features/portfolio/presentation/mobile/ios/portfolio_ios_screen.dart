@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/app_logic/domain/entities/portfolio/portfolio_summary.dart';
+import '../../../internal/domain/entities/portfolio_summary.dart';
 
 class PortfolioIOSScreen extends StatelessWidget {
   const PortfolioIOSScreen({

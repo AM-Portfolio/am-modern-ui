@@ -4,6 +4,7 @@ import '../../utils/logger.dart';
 import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
+export 'package:stomp_dart_client/stomp_frame.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Status of the STOMP connection
@@ -18,6 +19,7 @@ enum StompStatus {
 class AmStompClient {
   String? _url;
   StompClient? _client;
+  String? _lastError; // Track last error to avoid log spam
   
   // Maps subscription paths to their unsubscribe callbacks
   final Map<String, dynamic> _subscriptions = {};
@@ -66,6 +68,7 @@ class AmStompClient {
         webSocketConnectHeaders: headers,
         onConnect: (StompFrame frame) {
           _statusSubject.add(StompStatus.connected);
+          _lastError = null; // Clear last error on successful connection
           AppLogger.info('AmStompClient: ✅ Connected to STOMP broker.');
           
           // Process queued operations
@@ -75,7 +78,11 @@ class AmStompClient {
         },
         onWebSocketError: (dynamic error) {
           _statusSubject.add(StompStatus.error);
-          AppLogger.error('AmStompClient: WebSocket Error', error: error);
+          final errorStr = error.toString();
+          if (_lastError != errorStr) {
+            _lastError = errorStr;
+            AppLogger.error('AmStompClient: WebSocket Connection Failure', error: error);
+          }
           onWebSocketError?.call(error);
         },
         onDisconnect: (StompFrame frame) {

@@ -1,4 +1,3 @@
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/models/custom_basket.dart';
 
@@ -30,7 +29,9 @@ class CustomBasketNotifier extends _$CustomBasketNotifier {
   }
 
   void removeStock(String symbol) {
-    final updatedStocks = state.stocks.where((s) => s.symbol != symbol).toList();
+    final updatedStocks = state.stocks
+        .where((s) => s.symbol != symbol)
+        .toList();
     state = state.copyWith(stocks: updatedStocks);
     _recalculateWeights();
   }
@@ -48,12 +49,12 @@ class CustomBasketNotifier extends _$CustomBasketNotifier {
   void _recalculateWeights() {
     // Auto-distribute weights equally
     if (state.stocks.isEmpty) return;
-    
+
     final equalWeight = 100.0 / state.stocks.length;
     final updatedStocks = state.stocks.map((stock) {
       return stock.copyWith(weight: equalWeight);
     }).toList();
-    
+
     state = state.copyWith(stocks: updatedStocks);
   }
 
@@ -76,29 +77,91 @@ class StockSearchNotifier extends _$StockSearchNotifier {
 
   List<CustomBasketStock> search(String query) {
     if (query.isEmpty) return _getMockStocks();
-    
+
     final lowercaseQuery = query.toLowerCase();
     return _getMockStocks()
-        .where((stock) =>
-            stock.symbol.toLowerCase().contains(lowercaseQuery) ||
-            stock.name.toLowerCase().contains(lowercaseQuery))
+        .where(
+          (stock) =>
+              stock.symbol.toLowerCase().contains(lowercaseQuery) ||
+              stock.name.toLowerCase().contains(lowercaseQuery),
+        )
         .toList();
   }
 
   List<CustomBasketStock> _getMockStocks() {
     return const [
-      CustomBasketStock(symbol: 'RELIANCE', name: 'Reliance Industries', weight: 0, sector: 'Oil & Gas'),
-      CustomBasketStock(symbol: 'TCS', name: 'Tata Consultancy Services', weight: 0, sector: 'IT'),
-      CustomBasketStock(symbol: 'HDFCBANK', name: 'HDFC Bank', weight: 0, sector: 'Finance'),
-      CustomBasketStock(symbol: 'INFY', name: 'Infosys', weight: 0, sector: 'IT'),
-      CustomBasketStock(symbol: 'ICICIBANK', name: 'ICICI Bank', weight: 0, sector: 'Finance'),
-      CustomBasketStock(symbol: 'HINDUNILVR', name: 'Hindustan Unilever', weight: 0, sector: 'FMCG'),
-      CustomBasketStock(symbol: 'ITC', name: 'ITC Ltd', weight: 0, sector: 'FMCG'),
-      CustomBasketStock(symbol: 'SBIN', name: 'State Bank of India', weight: 0, sector: 'Finance'),
-      CustomBasketStock(symbol: 'BHARTIARTL', name: 'Bharti Airtel', weight: 0, sector: 'Telecom'),
-      CustomBasketStock(symbol: 'KOTAKBANK', name: 'Kotak Mahindra Bank', weight: 0, sector: 'Finance'),
-      CustomBasketStock(symbol: 'LT', name: 'Larsen & Toubro', weight: 0, sector: 'Construction'),
-      CustomBasketStock(symbol: 'AXISBANK', name: 'Axis Bank', weight: 0, sector: 'Finance'),
+      CustomBasketStock(
+        symbol: 'RELIANCE',
+        name: 'Reliance Industries',
+        weight: 0,
+        sector: 'Oil & Gas',
+      ),
+      CustomBasketStock(
+        symbol: 'TCS',
+        name: 'Tata Consultancy Services',
+        weight: 0,
+        sector: 'IT',
+      ),
+      CustomBasketStock(
+        symbol: 'HDFCBANK',
+        name: 'HDFC Bank',
+        weight: 0,
+        sector: 'Finance',
+      ),
+      CustomBasketStock(
+        symbol: 'INFY',
+        name: 'Infosys',
+        weight: 0,
+        sector: 'IT',
+      ),
+      CustomBasketStock(
+        symbol: 'ICICIBANK',
+        name: 'ICICI Bank',
+        weight: 0,
+        sector: 'Finance',
+      ),
+      CustomBasketStock(
+        symbol: 'HINDUNILVR',
+        name: 'Hindustan Unilever',
+        weight: 0,
+        sector: 'FMCG',
+      ),
+      CustomBasketStock(
+        symbol: 'ITC',
+        name: 'ITC Ltd',
+        weight: 0,
+        sector: 'FMCG',
+      ),
+      CustomBasketStock(
+        symbol: 'SBIN',
+        name: 'State Bank of India',
+        weight: 0,
+        sector: 'Finance',
+      ),
+      CustomBasketStock(
+        symbol: 'BHARTIARTL',
+        name: 'Bharti Airtel',
+        weight: 0,
+        sector: 'Telecom',
+      ),
+      CustomBasketStock(
+        symbol: 'KOTAKBANK',
+        name: 'Kotak Mahindra Bank',
+        weight: 0,
+        sector: 'Finance',
+      ),
+      CustomBasketStock(
+        symbol: 'LT',
+        name: 'Larsen & Toubro',
+        weight: 0,
+        sector: 'Construction',
+      ),
+      CustomBasketStock(
+        symbol: 'AXISBANK',
+        name: 'Axis Bank',
+        weight: 0,
+        sector: 'Finance',
+      ),
     ];
   }
 }

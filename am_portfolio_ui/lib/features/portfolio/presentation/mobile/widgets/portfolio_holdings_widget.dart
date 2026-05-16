@@ -77,7 +77,8 @@ class _PortfolioHoldingsWidgetState
                     final changeValue = _changeType == HoldingsChangeType.daily
                         ? holding.todayChange
                         : holding.totalGainLoss;
-                    final changePercent = _changeType == HoldingsChangeType.daily
+                    final changePercent =
+                        _changeType == HoldingsChangeType.daily
                         ? holding.todayChangePercentage
                         : holding.totalGainLossPercentage;
                     final isPositive = changeValue >= 0;
@@ -349,4 +350,3 @@ class _PortfolioHoldingsWidgetState
     return sortedList;
   }
 }
-

@@ -29,7 +29,8 @@ class PortfolioItemHiveModel extends HiveObject {
   }
 }
 
-class PortfolioItemHiveModelAdapter extends TypeAdapter<PortfolioItemHiveModel> {
+class PortfolioItemHiveModelAdapter
+    extends TypeAdapter<PortfolioItemHiveModel> {
   @override
   final int typeId = 6;
 
@@ -92,7 +93,8 @@ class PortfolioListHiveModel extends HiveObject {
   }
 }
 
-class PortfolioListHiveModelAdapter extends TypeAdapter<PortfolioListHiveModel> {
+class PortfolioListHiveModelAdapter
+    extends TypeAdapter<PortfolioListHiveModel> {
   @override
   final int typeId = 7;
 

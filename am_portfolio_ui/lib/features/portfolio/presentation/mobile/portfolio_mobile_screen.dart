@@ -175,8 +175,17 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
 
     // Load portfolio data
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_currentPortfolioId != null) {
-        context.read<PortfolioCubit>().loadPortfolioById(
+      if (_currentPortfolioId != null && mounted) {
+        final cubit = context.read<PortfolioCubit>();
+        final currentState = cubit.state;
+        
+        if (currentState is PortfolioLoaded && 
+            currentState.portfolioId == _currentPortfolioId) {
+          // Data is already loaded for this portfolio, skip reloading
+          return;
+        }
+        
+        cubit.loadPortfolioById(
           widget.userId,
           _currentPortfolioId!,
         );
@@ -247,12 +256,27 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   Widget _buildBottomNavigationBar(BuildContext context) {
     // Standard Portfolio Tabs
     final tabs = [
-      const BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Overview'),
-      const BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'Holdings'),
-      const BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), label: 'Analysis'),
-      const BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: 'Heatmap'),
-      const BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: 'Trade'),
-       // We add 'Menu' as the last functional item
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.dashboard_outlined),
+        label: 'Overview',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.wallet),
+        label: 'Holdings',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.analytics_outlined),
+        label: 'Analysis',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.grid_view),
+        label: 'Heatmap',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.show_chart),
+        label: 'Trade',
+      ),
+      // We add 'Menu' as the last functional item
       const BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
     ];
 
@@ -268,8 +292,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             _tabController.animateTo(index);
           });
         } else {
-           // Menu
-           _showMenuBottomSheet(context);
+          // Menu
+          _showMenuBottomSheet(context);
         }
       },
       // Using generic styling, no special FAB here strictly needed unless we want 'Trade' to be FAB?
@@ -293,9 +317,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 'Portfolio Menu',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 24),
@@ -313,26 +337,36 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             ),
             const SizedBox(height: 8),
             if (widget.portfolios != null)
-              ...widget.portfolios!.map((p) => ListTile(
-                leading: Icon(
-                  Icons.account_balance_wallet, 
-                  color: p.portfolioId == _currentPortfolioId ? Theme.of(context).primaryColor : Colors.grey,
-                ),
-                title: Text(
-                  p.portfolioName,
-                  style: TextStyle(
-                    fontWeight: p.portfolioId == _currentPortfolioId ? FontWeight.bold : FontWeight.normal,
-                    color: p.portfolioId == _currentPortfolioId ? Theme.of(context).primaryColor : null,
+              ...widget.portfolios!.map(
+                (p) => ListTile(
+                  leading: Icon(
+                    Icons.account_balance_wallet,
+                    color: p.portfolioId == _currentPortfolioId
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey,
                   ),
+                  title: Text(
+                    p.portfolioName,
+                    style: TextStyle(
+                      fontWeight: p.portfolioId == _currentPortfolioId
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: p.portfolioId == _currentPortfolioId
+                          ? Theme.of(context).primaryColor
+                          : null,
+                    ),
+                  ),
+                  trailing: p.portfolioId == _currentPortfolioId
+                      ? Icon(Icons.check, color: Theme.of(context).primaryColor)
+                      : null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _onPortfolioChanged(p.portfolioId, p.portfolioName);
+                  },
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                  dense: true,
                 ),
-                trailing: p.portfolioId == _currentPortfolioId ? Icon(Icons.check, color: Theme.of(context).primaryColor) : null,
-                onTap: () {
-                  Navigator.pop(context);
-                  _onPortfolioChanged(p.portfolioId, p.portfolioName);
-                },
-                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                dense: true,
-              )),
+              ),
 
             const Divider(height: 32),
 
@@ -346,12 +380,14 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                 if (widget.onBack != null) {
                   widget.onBack!();
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Use system back to return')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Use system back to return')),
+                  );
                 }
               },
             ),
 
-             ListTile(
+            ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text('Logout', style: TextStyle(color: Colors.red)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 24),
@@ -367,4 +403,3 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     );
   }
 }
-

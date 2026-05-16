@@ -8,6 +8,7 @@ import '../../cubit/portfolio_cubit.dart';
 import '../../cubit/portfolio_heatmap_cubit.dart';
 import '../../cubit/portfolio_state.dart';
 import '../../widgets/portfolio_summary_widget.dart';
+import 'package:am_analysis_ui/am_analysis_ui.dart' hide TimeFrame;
 import '../pages/portfolio_heatmap_mobile_page.dart';
 import '../portfolio_analysis_widget.dart';
 import 'portfolio_holdings_widget.dart';
@@ -26,19 +27,21 @@ class PortfolioTabContentWidget extends ConsumerWidget {
   final String userId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
-      BlocBuilder<PortfolioCubit, PortfolioState>(
-        builder: (context, state) => TabBarView(
-          controller: tabController,
-          children: [
-            _OverviewTab(currentPortfolioId: currentPortfolioId, userId: userId),
-            _HoldingsTab(currentPortfolioId: currentPortfolioId, userId: userId),
-            _AnalysisTab(currentPortfolioId: currentPortfolioId, userId: userId),
-            _HeatmapTab(currentPortfolioId: currentPortfolioId, userId: userId),
-            _TradeTab(userId: userId, ref: ref),
-          ],
-        ),
-      );
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) => BlocBuilder<PortfolioCubit, PortfolioState>(
+    builder: (context, state) => TabBarView(
+      controller: tabController,
+      children: [
+        _OverviewTab(currentPortfolioId: currentPortfolioId, userId: userId),
+        _HoldingsTab(currentPortfolioId: currentPortfolioId, userId: userId),
+        _AnalysisTab(currentPortfolioId: currentPortfolioId, userId: userId),
+        _HeatmapTab(currentPortfolioId: currentPortfolioId, userId: userId),
+        _TradeTab(userId: userId, ref: ref),
+      ],
+    ),
+  );
 }
 
 /// Overview tab widget
@@ -74,19 +77,52 @@ class _OverviewTab extends StatelessWidget {
   Widget _buildOverviewContent(BuildContext context, PortfolioLoaded state) {
     final summary = state.summary;
 
-    CommonLogger.debug(
-      'Building overview with summary - totalValue: ${summary.totalValue}, todayChange: ${summary.todayChange}, totalGainLoss: ${summary.totalGainLoss}',
-      tag: 'PortfolioOverviewTab',
-    );
-
     return RefreshIndicator(
       onRefresh: () => _refreshPortfolio(context, 'Pull to Refresh Overview'),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        child: PortfolioSummaryWidget(
-          summary: summary,
-          onViewHoldings: () => _navigateToTab(1, context),
-          onViewAnalysis: () => _navigateToTab(2, context),
+        child: Column(
+          children: [
+            PortfolioSummaryWidget(
+              summary: summary,
+              onViewHoldings: () => _navigateToTab(1, context),
+              onViewAnalysis: () => _navigateToTab(2, context),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: SizedBox(
+                height: 280,
+                child: AnalysisPerformanceWidget(
+                  key: ValueKey('perf_mobile_$currentPortfolioId'),
+                  portfolioId: currentPortfolioId,
+                  initialTimeFrame: TimeFrame.oneMonth,
+                  showTimeFrameSelector: true,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: AnalysisAllocationWidget(
+                key: ValueKey('alloc_mobile_$currentPortfolioId'),
+                portfolioId: currentPortfolioId,
+                initialTimeFrame: TimeFrame.oneMonth,
+                groupBy: GroupBy.sector,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: AnalysisTopMoversWidget(
+                key: ValueKey('movers_mobile_$currentPortfolioId'),
+                portfolioId: currentPortfolioId,
+                initialTimeFrame: TimeFrame.oneMonth,
+                showTimeFrameSelector: false,
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
         ),
       ),
     );
@@ -160,6 +196,7 @@ class _HoldingsTab extends StatelessWidget {
           }
 
           return PortfolioHoldingsWidget(
+            key: ValueKey('holdings_$currentPortfolioId'),
             userId: userId,
             portfolioId: currentPortfolioId,
           );
@@ -216,7 +253,10 @@ class _AnalysisTab extends StatelessWidget {
             onRefresh: () => _refreshPortfolio(context),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              child: PortfolioAnalysisWidget(portfolioId: currentPortfolioId),
+              child: PortfolioAnalysisWidget(
+                key: ValueKey('analysis_$currentPortfolioId'),
+                portfolioId: currentPortfolioId,
+              ),
             ),
           );
         },
@@ -315,4 +355,3 @@ class PortfolioErrorWidget extends StatelessWidget {
     ),
   );
 }
-

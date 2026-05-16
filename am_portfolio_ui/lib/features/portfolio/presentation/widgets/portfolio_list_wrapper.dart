@@ -104,7 +104,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   /// Handles portfolio state changes
   void _handlePortfolioStateChange(BuildContext context, PortfolioState state) {
     if (state is PortfolioListLoaded) {
-      _autoSelectFirstPortfolio(state.portfolioList.portfolios);
+      _autoSelectFirstPortfolio(state.portfolioList!.portfolios);
     } else if (state is PortfolioListError) {
       _handlePortfolioError(context, state.message);
     }
@@ -127,18 +127,23 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
 
   /// Builds content based on portfolio state
   Widget _buildPortfolioContent(BuildContext context, PortfolioState state) {
-    if (state is PortfolioListLoading) {
-      return _buildLoadingScreen();
-    }
-
-    if (state is PortfolioListError) {
+    // If we have a list error and NO list available, show the retry error screen
+    if (state is PortfolioListError && state.portfolioList == null) {
       return _buildRetryErrorScreen(context, state.message);
     }
 
-    if (state is PortfolioListLoaded) {
-      return _buildLoadedContent(state.portfolioList.portfolios);
+    // If we are loading the list for the first time
+    if (state is PortfolioListLoading && state.portfolioList == null) {
+      return _buildLoadingScreen();
     }
 
+    // Once we have a portfolio list, we can show the main content
+    // This includes PortfolioListLoaded, PortfolioLoaded, PortfolioLoading, and PortfolioError
+    if (state.portfolioList != null) {
+      return _buildLoadedContent(state.portfolioList!.portfolios);
+    }
+
+    // Fallback for initial or any other unexpected state without a list
     return _buildLoadingScreen();
   }
 
@@ -266,4 +271,3 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     context.read<PortfolioCubit>().loadPortfoliosList(widget.userId);
   }
 }
-

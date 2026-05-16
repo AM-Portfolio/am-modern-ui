@@ -29,6 +29,7 @@ class EquityHoldingDto {
   const EquityHoldingDto({
     required this.isin,
     required this.symbol,
+    this.name = '',
     required this.sector,
     required this.industry,
     required this.marketCap,
@@ -50,6 +51,7 @@ class EquityHoldingDto {
       EquityHoldingDto(
         isin: json['isin'] as String? ?? '',
         symbol: json['symbol'] as String? ?? '',
+        name: json['name'] as String? ?? '',
         sector: json['sector'] as String? ?? '',
         industry: json['industry'] as String? ?? '',
         marketCap: json['marketCap'] as String? ?? '',
@@ -63,14 +65,19 @@ class EquityHoldingDto {
         todayGainLossPercentage: _parseDouble(json['todayGainLossPercentage']),
         currentPrice: _parseDouble(json['currentPrice']),
         percentageChange: _parseDouble(json['percentageChange']),
-        brokerPortfolios: (json['brokerPortfolios'] as List? ?? [])
-            .map((e) => BrokerHoldingDto.fromJson(e))
-            .toList(),
+        brokerPortfolios: json['brokerPortfolios'] is List
+            ? (json['brokerPortfolios'] as List)
+                  .map(
+                    (e) => BrokerHoldingDto.fromJson(e as Map<String, dynamic>),
+                  )
+                  .toList()
+            : [],
       );
 
   /// Raw API fields - exact mapping to backend response
   final String isin;
   final String symbol;
+  final String name;
   final String sector;
   final String industry;
   final String marketCap;
@@ -87,16 +94,11 @@ class EquityHoldingDto {
   final List<BrokerHoldingDto> brokerPortfolios;
 
   /// Helper method to safely parse double values from API
-  static double _parseDouble(value) {
+  static double _parseDouble(dynamic value) {
     if (value == null) return 0.0;
-    if (value is int) return value.toDouble();
-    if (value is double) return value;
+    if (value is num) return value.toDouble();
     if (value is String) {
-      try {
-        return double.parse(value);
-      } catch (_) {
-        return 0.0;
-      }
+      return double.tryParse(value) ?? 0.0;
     }
     return 0.0;
   }

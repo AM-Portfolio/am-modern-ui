@@ -1,5 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_library/am_library.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -11,6 +12,7 @@ import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/google_login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
+import '../../domain/entities/user_entity.dart';
 import 'auth_state.dart';
 
 /// Authentication Cubit
@@ -53,7 +55,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (authResult) => emit(Authenticated(authResult.user)),
+      (authResult) => _emitAuthenticated(authResult.user, token: authResult.tokens.accessToken),
     );
   }
 
@@ -65,7 +67,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (authResult) => emit(Authenticated(authResult.user)),
+      (authResult) => _emitAuthenticated(authResult.user, token: authResult.tokens.accessToken),
     );
   }
 
@@ -77,7 +79,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (authResult) => emit(Authenticated(authResult.user)),
+      (authResult) => _emitAuthenticated(authResult.user, token: authResult.tokens.accessToken),
     );
   }
 
@@ -161,11 +163,7 @@ class AuthCubit extends Cubit<AuthState> {
                   );
                   emit(const Unauthenticated());
                 } else {
-                  CommonLogger.debug(
-                    '🔄 Emitting Authenticated state with userId: "$userId"',
-                    tag: 'AuthCubit',
-                  );
-                  emit(Authenticated(authResult.user));
+                  _emitAuthenticated(authResult.user, token: authResult.tokens.accessToken);
                   CommonLogger.info(
                     '✅ Authentication state emitted successfully',
                     tag: 'AuthCubit',
@@ -222,7 +220,7 @@ class AuthCubit extends Cubit<AuthState> {
 
       result.fold(
         (failure) => emit(AuthError(failure.message)),
-        (authResult) => emit(Authenticated(authResult.user)),
+        (authResult) => _emitAuthenticated(authResult.user, token: authResult.tokens.accessToken),
       );
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -265,6 +263,24 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (e) {
       emit(AuthError(e.toString()));
     }
+  }
+
+  /// Get current user ID if authenticated
+  String get currentUserId {
+    final currentState = state;
+    if (currentState is Authenticated) {
+      return currentState.user.id;
+    }
+    return '';
+  }
+
+  /// Emits authenticated state with the provided user
+  void _emitAuthenticated(UserEntity user, {String? token}) {
+    // Shared Auth Token: Push token to global API client for instant sharing across widgets
+    if (token != null) {
+      ServiceRegistry.api.setAccessToken(token);
+    }
+    emit(Authenticated(user, token: token));
   }
 }
 

@@ -206,4 +206,3 @@ class PortfolioAnalyticsRepositoryImpl implements PortfolioAnalyticsRepository {
     clearCache();
   }
 }
-

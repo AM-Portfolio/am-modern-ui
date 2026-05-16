@@ -22,7 +22,7 @@ class AnalysisConfig {
   
   factory AnalysisConfig.development() {
     final config = AnalysisConfig._instance;
-    config.setBaseUrl('http://localhost:8090');
+    config.setBaseUrl('https://am.asrax.in/analysis');
     return config;
   }
   

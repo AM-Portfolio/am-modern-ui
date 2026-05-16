@@ -10,6 +10,7 @@ abstract class PortfolioHolding with _$PortfolioHolding implements Holding {
   const factory PortfolioHolding({
     required String id,
     required String symbol,
+    required String name,
     required String companyName,
     required String sector,
     required String industry,
