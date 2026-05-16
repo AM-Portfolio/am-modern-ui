@@ -38,10 +38,10 @@ class TradeMetricsRemoteDataSourceImpl implements TradeMetricsRemoteDataSource {
     );
 
     try {
-      // Assuming endpoint is /api/v1/metrics/analyze 
-      // or /api/v1/trades/metrics based on common patterns. 
+      // Assuming endpoint is /v1/metrics/analyze 
+      // or /v1/trades/metrics based on common patterns. 
       // I will use a hypothetical endpoint consistent with Trade API.
-      final fullUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/metrics');
+      final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/metrics');
 
       final response = await _apiClient.post<TradeMetricsResponseDto>(
         fullUri,
@@ -70,7 +70,7 @@ class TradeMetricsRemoteDataSourceImpl implements TradeMetricsRemoteDataSource {
     AppLogger.methodEntry('getMetricTypes', tag: 'TradeMetricsRemoteDataSource');
 
     try {
-      final fullUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/metrics/types');
+      final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/metrics/types');
 
       final response = await _apiClient.get<List<String>>(
         fullUri,

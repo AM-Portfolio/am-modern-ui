@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+
+import '../../trade_navigation.dart';
 
 /// Floating Action Button for adding new trades
 class AddTradeFab extends StatelessWidget {
@@ -14,7 +15,7 @@ class AddTradeFab extends StatelessWidget {
 
     return FloatingActionButton.extended(
       onPressed: () {
-        context.go('/trade/add', extra: <String, dynamic>{'portfolioId': portfolioId});
+        openAddTradeWebPage(context, portfolioId: portfolioId!);
       },
       icon: const Icon(Icons.add),
       label: const Text('Add Trade'),

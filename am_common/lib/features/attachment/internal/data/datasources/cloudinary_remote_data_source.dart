@@ -55,7 +55,7 @@ class CloudinaryRemoteDataSource {
 
       AppLogger.debug('📤 Sending POST request...', tag: 'CloudinaryAPI');
       final response = await _client.post(
-        Uri.parse('${_apiConfig.baseUrl}/cloudinary/api/v1/cloudinary/upload'),
+        Uri.parse('${_apiConfig.baseUrl}/cloudinary/v1/cloudinary/upload'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(requestBody),
       );
@@ -106,7 +106,7 @@ class CloudinaryRemoteDataSource {
     try {
       final response = await _client.get(
         Uri.parse(
-          '${_apiConfig.baseUrl}/cloudinary/api/v1/cloudinary/resources/$publicId?resourceType=$resourceType',
+          '${_apiConfig.baseUrl}/cloudinary/v1/cloudinary/resources/$publicId?resourceType=$resourceType',
         ),
         headers: {'Content-Type': 'application/json'},
       );
@@ -141,7 +141,7 @@ class CloudinaryRemoteDataSource {
       };
 
       final uri = Uri.parse(
-        '${_apiConfig.baseUrl}/cloudinary/api/v1/cloudinary/resources',
+        '${_apiConfig.baseUrl}/cloudinary/v1/cloudinary/resources',
       ).replace(queryParameters: queryParams);
 
       final response = await _client.get(
@@ -174,7 +174,7 @@ class CloudinaryRemoteDataSource {
     try {
       final response = await _client.delete(
         Uri.parse(
-          '${_apiConfig.baseUrl}/cloudinary/api/v1/cloudinary/resources/$publicId?resourceType=$resourceType',
+          '${_apiConfig.baseUrl}/cloudinary/v1/cloudinary/resources/$publicId?resourceType=$resourceType',
         ),
         headers: {'Content-Type': 'application/json'},
       );
@@ -206,7 +206,7 @@ class CloudinaryRemoteDataSource {
     try {
       final response = await _client.post(
         Uri.parse(
-          '${_apiConfig.baseUrl}/cloudinary/api/v1/cloudinary/signature',
+          '${_apiConfig.baseUrl}/cloudinary/v1/cloudinary/signature',
         ),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
