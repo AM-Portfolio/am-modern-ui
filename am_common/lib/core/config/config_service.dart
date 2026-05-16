@@ -80,8 +80,15 @@ class ConfigService {
   /// Fetches /config.json mounted by Kubernetes ConfigMap.
   static Future<void> _loadRemoteConfig() async {
     try {
-      final res = await http.get(Uri.parse('/config.json'))
-                    .timeout(const Duration(seconds: 3));
+      // Resolve /config.json relative to the browser's base URL and add a timestamp
+      // cache-buster to prevent aggressive Service Worker or browser caching.
+      final uri = Uri.base.resolve('/config.json').replace(
+        queryParameters: {
+          'cb': DateTime.now().millisecondsSinceEpoch.toString(),
+        },
+      );
+      
+      final res = await http.get(uri).timeout(const Duration(seconds: 3));
       if (res.statusCode == 200) {
         final json = jsonDecode(res.body) as Map<String, dynamic>;
         _domain = (json['domain'] as String?) ?? _domain;
