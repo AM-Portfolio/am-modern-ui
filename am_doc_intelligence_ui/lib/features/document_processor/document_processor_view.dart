@@ -229,9 +229,9 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             ),
             const SizedBox(height: 24),
             AppButton(
-              label: 'Retry Connection',
+              text: 'Retry Connection',
               onPressed: _checkHealthAndLoad,
-              variant: AppButtonVariant.primary,
+              type: AppButtonType.primary,
             ),
           ],
         ),
@@ -263,13 +263,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       const Text('Document Type', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       _loadingTypes 
-                        ? const ShimmerLoading(height: 45, width: double.infinity)
+                        ? const ShimmerLoading(child: SkeletonBox(height: 45, width: double.infinity))
                         : CustomDropdown<String>(
                             value: _selectedDocType,
-                            items: _docTypes,
+                            items: _docTypes.map((e) => e.toSimpleDropdownItem(text: e)).toList(),
                             hint: 'Select Doc Type',
                             onChanged: (v) => setState(() => _selectedDocType = v),
-                            itemLabel: (item) => item,
                           ),
                     ],
                   ),
@@ -283,10 +282,9 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       const SizedBox(height: 8),
                       CustomDropdown<String>(
                         value: _selectedBrokerType,
-                        items: apiProvider.brokerTypes,
+                        items: apiProvider.brokerTypes.map((e) => e.toSimpleDropdownItem(text: e)).toList(),
                         hint: 'Select Broker',
                         onChanged: (v) => setState(() => _selectedBrokerType = v),
-                        itemLabel: (item) => item,
                       ),
                     ],
                   ),
@@ -420,14 +418,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   width: double.infinity,
-                  maxHeight: 300,
+                  constraints: const BoxConstraints(maxHeight: 300),
                   decoration: BoxDecoration(
                     color: Colors.black87,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: SingleChildScrollView(
                     child: Text(
-                      const JsonEncoder.withIndent('  ').convert(_lastResult),
+                      JsonEncoder.withIndent('  ').convert(_lastResult),
                       style: const TextStyle(
                         color: Colors.greenAccent, 
                         fontFamily: 'monospace',
