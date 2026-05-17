@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'document_processor/document_processor_view.dart';
-import 'email_extractor/email_extractor_view.dart';
-import '../../services/api_service.dart';
+import 'package:am_doc_intelligence_ui/features/document_processor/document_processor_view.dart';
+import 'package:am_doc_intelligence_ui/features/email_extractor/email_extractor_view.dart';
+import 'package:am_doc_intelligence_ui/services/api_service.dart';
 
 class DocIntelligenceScreen extends StatefulWidget {
   final String userId;
@@ -34,7 +34,6 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
           onTap: () => setState(() => _activeNavItem = 'Email Extractor'),
           isSelected: _activeNavItem == 'Email Extractor',
         ),
-        const SidebarDivider(),
         SecondarySidebarItem(
           title: 'Environment: ${apiProvider.environment == AppEnvironment.local ? "Local" : "Preprod"}',
           icon: apiProvider.environment == AppEnvironment.local ? Icons.lan_outlined : Icons.cloud_outlined,
