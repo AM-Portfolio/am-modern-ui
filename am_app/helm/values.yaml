@@ -1,16 +1,37 @@
 replicaCount: 1
-service:
-  port: 8080
+port: 8080
 language: flutter
+environment: dev
+
+global:
+  image:
+    registry: ghcr.io/am-portfolio
+    pullPolicy: Always
+    imagePullSecrets:
+      - name: regcred
 
 image:
   repository: am-modern-ui
   pullPolicy: Always
   tag: "latest"
 
+imagePullSecrets:
+  - name: github-registry-secret
+
 ingress:
   enabled: true
   className: "nginx"
+
+probes:
+  port: 8080
+  liveness:
+    path: /
+    initialDelaySeconds: 10
+    periodSeconds: 15
+  readiness:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 10
 
 resources:
   limits:
