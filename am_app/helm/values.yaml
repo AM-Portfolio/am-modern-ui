@@ -21,7 +21,15 @@ imagePullSecrets:
 
 ingress:
   enabled: true
-  className: "nginx"
+  className: "traefik"
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+  hosts:
+    - host: am-dev.asrax.in
+      paths:
+        - path: /
+          pathType: Prefix
 
 probes:
   port: 8080
