@@ -4,6 +4,7 @@ import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/am_common.dart';
 import '../dtos/journal_entry_dto.dart';
 import '../dtos/journal_template_dto.dart';
+import 'trade_api_request_util.dart';
 
 /// Abstract interface for journal template remote data source
 abstract class JournalTemplateRemoteDataSource {
@@ -116,7 +117,6 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
 
     try {
       final queryParams = <String, dynamic>{
-        'userId': userId,
         if (category != null) 'category': category,
         if (search != null) 'search': search,
       };
@@ -173,7 +173,6 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
 
       final response = await _apiClient.get<JournalTemplateResponseDto>(
         fullUri,
-        queryParams: {'userId': userId},
         parser: (data) => JournalTemplateResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
@@ -256,7 +255,6 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
 
       await _apiClient.delete<void>(
         fullUri,
-        queryParams: {'userId': userId},
         parser: (_) {},
       );
 
@@ -296,7 +294,6 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
 
       final response = await _apiClient.get<List<JournalTemplateResponseDto>>(
         fullUri,
-        queryParams: {'userId': userId},
         parser: (data) {
           if (data is List) {
             return data.map((item) => JournalTemplateResponseDto.fromJson(item as Map<String, dynamic>)).toList();
@@ -343,7 +340,6 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
 
       final response = await _apiClient.get<List<JournalTemplateResponseDto>>(
         fullUri,
-        queryParams: {'userId': userId},
         parser: (data) {
           if (data is List) {
             return data.map((item) => JournalTemplateResponseDto.fromJson(item as Map<String, dynamic>)).toList();
@@ -388,7 +384,6 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
 
       final response = await _apiClient.get<List<JournalTemplateResponseDto>>(
         fullUri,
-        queryParams: {'userId': userId},
         parser: (data) {
           if (data is List) {
             return data.map((item) => JournalTemplateResponseDto.fromJson(item as Map<String, dynamic>)).toList();
@@ -436,7 +431,6 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
 
       final response = await _apiClient.post<JournalTemplateResponseDto>(
         fullUri,
-        queryParams: {'userId': userId},
         parser: (data) => JournalTemplateResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
@@ -479,7 +473,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
 
       final response = await _apiClient.post<TradeJournalEntryResponseDto>(
         fullUri,
-        body: request.toJson(),
+        body: tradeRequestBodyWithoutUserId(request.toJson()),
         parser: (data) => TradeJournalEntryResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 

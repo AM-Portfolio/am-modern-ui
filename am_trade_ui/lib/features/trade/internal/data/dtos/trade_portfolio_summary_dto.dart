@@ -21,7 +21,7 @@ abstract class TradePortfolioSummaryDto with _$TradePortfolioSummaryDto {
     @Default([]) List<String> tradeIds,
     List<String>? winningTradeIds,
     List<String>? losingTradeIds,
-    Map<String, dynamic>? assetAllocations,
+    List<dynamic>? assetAllocations,
   }) = _TradePortfolioSummaryDto;
 
   factory TradePortfolioSummaryDto.fromJson(Map<String, dynamic> json) =>

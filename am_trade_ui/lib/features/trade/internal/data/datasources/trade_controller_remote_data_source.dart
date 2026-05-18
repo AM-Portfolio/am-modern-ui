@@ -7,6 +7,7 @@ import 'package:am_library/am_library.dart';
 import 'package:am_common/am_common.dart';
 import '../dtos/metrics_filter_config_dto.dart';
 import '../dtos/trade_controller_dtos.dart';
+import 'trade_api_request_util.dart';
 
 /// Remote data source for Trade Controller API
 /// Handles all HTTP requests related to trade details management
@@ -402,14 +403,14 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
       final fullUri = '$baseUri?${queryParams.join('&')}';
 
       final requestData = FilterTradeDetailsRequestDto(
-        userId: userId,
+        userId: '',
         favoriteFilterId: favoriteFilterId,
         metricsConfig: metricsConfig,
       );
 
       final response = await _apiClient.post<FilterTradeDetailsResponseDto>(
         fullUri,
-        body: requestData.toJson(),
+        body: tradeRequestBodyWithoutUserId(requestData.toJson()),
         parser: (data) => FilterTradeDetailsResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 

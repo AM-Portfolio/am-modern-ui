@@ -33,7 +33,7 @@ class TradeSummaryMapper {
 
   /// Convert TradeAssetAllocationDto to TradeAssetAllocation domain entity
   /// (To be implemented when asset allocation data becomes available)
-  static List<TradeAssetAllocation>? fromAssetAllocationsDto(Map<String, dynamic>? dto) {
+  static List<TradeAssetAllocation>? fromAssetAllocationsDto(List<dynamic>? dto) {
     // This will be implemented when the API provides proper asset allocation structure
     return null;
   }
