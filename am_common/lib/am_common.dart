@@ -63,6 +63,7 @@ export 'package:am_library/am_library.dart';
 // Remaining local core components
 export 'core/config/app_config.dart';
 export 'core/config/config_service.dart';
+export 'core/config/env_domains.dart';
 export 'core/config/upload_config.dart';
 export 'core/config/user_currency_config.dart';
 export 'core/di/network_providers.dart';

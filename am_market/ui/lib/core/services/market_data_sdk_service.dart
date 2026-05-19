@@ -1,11 +1,8 @@
-import 'package:am_auth_ui/core/services/secure_storage_service.dart';
-
+import 'package:am_common/am_common.dart';
 import 'package:am_market_sdk/market/api.dart' show ApiClient;
 
 /// Service class to configure and provide Market Data SDK API clients
 class MarketDataSdkService {
-  static const String baseUrl = 'https://am.asrax.in/market';
-  
   late final ApiClient _apiClient;
   late final MarketDataApi marketDataApi;
   late final IndicesApi marketIndexApi;
@@ -16,7 +13,7 @@ class MarketDataSdkService {
   late final MarginCalculatorApi marginApi;
 
   MarketDataSdkService() {
-    _apiClient = ApiClient(basePath: baseUrl);
+    _apiClient = ApiClient(basePath: EnvDomains.market);
     
     // Initialize all API clients
     marketDataApi = MarketDataApi(_apiClient);

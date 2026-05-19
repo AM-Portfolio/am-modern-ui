@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:am_common/am_common.dart';
 
 class DeveloperSchedulerService {
-  static const String baseUrl = 'https://am.asrax.in/market/v1/scheduler';
+  static String get baseUrl => '${EnvDomains.market}/v1/scheduler';
   final Dio _dio = Dio();
 
   Future<List<String>> getSchedulers() async {

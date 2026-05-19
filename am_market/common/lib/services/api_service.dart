@@ -14,7 +14,7 @@ import 'package:am_market_sdk/market/api.dart' as sdk;
 import 'package:am_market_common/core/constants/market_endpoints.dart';
 
 class ApiService {
-  static const String baseUrl = MarketEndpoints.baseUrl; 
+  static String get baseUrl => MarketEndpoints.baseUrl; 
  
   
   final _storage = GetIt.I<SecureStorageService>();

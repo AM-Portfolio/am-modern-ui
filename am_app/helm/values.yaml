@@ -1,7 +1,20 @@
+global:
+  image:
+    imagePullSecrets:
+      - name: github-registry-secret
+
 replicaCount: 1
 service:
   port: 8080
 language: flutter
+
+appConfig:
+  domain: "am.munish.org"
+
+configMap:
+  enabled: true
+  mountPath: /usr/share/nginx/html/config.json
+  subPath: config.json
 
 image:
   repository: am-modern-ui

@@ -15,6 +15,7 @@ import 'pages/portfolio_overview_web_page.dart';
 import 'pages/portfolio_holdings_web_page.dart';
 import 'pages/portfolio_analysis_web_page.dart';
 import 'pages/portfolio_heatmap_web_page.dart';
+import 'pages/portfolio_baskets_web_page.dart';
 import 'package:am_user_ui/am_user_ui.dart';
 
 /// Web-specific portfolio screen implementation
@@ -97,6 +98,18 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
             portfolioName: widget.selectedPortfolioName,
           )),
           accentColor: ModuleColors.portfolio,
+        ),
+        NavigationItem(
+          title: 'Baskets',
+          subtitle: 'Basket replication',
+          icon: Icons.shopping_basket_outlined,
+          accentColor: ModuleColors.portfolio,
+          page: _wrapPage(
+            PortfolioBasketsWebPage(
+              userId: widget.userId,
+              portfolioId: _currentPortfolioId ?? widget.userId,
+            ),
+          ),
         ),
       ],
     );

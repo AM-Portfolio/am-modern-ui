@@ -1,0 +1,16 @@
+{
+  "_comment": "Local development configuration. Toggle 'useOverrides' to hit local services instead of the cluster.",
+  "domain": "am-dev.asrax.in",
+  "useOverrides": false,
+  "overrides": {
+    "auth":      "http://localhost:8001",
+    "users":     "http://localhost:8002",
+    "portfolio": "http://localhost:8003",
+    "market":    "http://localhost:8092",
+    "marketWs":  "ws://localhost:8092",
+    "trades":    "http://localhost:8082",
+    "analysis":  "http://localhost:8090",
+    "docs":      "http://localhost:8085",
+    "gmail":     "http://localhost:8086"
+  }
+}

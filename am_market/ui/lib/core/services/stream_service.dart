@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import 'package:am_common/am_common.dart';
 
 class StreamService {
   WebSocketChannel? _channel;
@@ -16,7 +17,7 @@ class StreamService {
   bool _isConnected = false;
   bool get isConnected => _isConnected;
 
-  final String _wsUrl = 'wss://am.asrax.in/api/market/ws/market-data-stream';
+  String get _wsUrl => EnvDomains.marketWs;
 
   void connect() {
     if (_isConnected) return;
