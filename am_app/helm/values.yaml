@@ -19,7 +19,12 @@ image:
 
 ingress:
   enabled: true
-  className: "nginx"
+  className: "traefik"
+  hosts:
+    - host: am-dev.asrax.in
+      paths:
+        - path: /
+          pathType: Prefix
 
 resources:
   limits:
