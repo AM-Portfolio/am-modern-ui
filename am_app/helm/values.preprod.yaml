@@ -3,7 +3,7 @@ environment: preprod
 global:
   image:
     imagePullSecrets:
-      - name: regcred
+      - name: github-registry-secret
 
 config:
   env: "preprod"
