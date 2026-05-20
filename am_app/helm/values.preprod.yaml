@@ -1,7 +1,23 @@
+environment: preprod
+
+global:
+  image:
+    imagePullSecrets:
+      - name: regcred
+
 config:
   env: "preprod"
 
 security:
+  hosts:
+    - host: modern-ui.preprod.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+ingress:
+  enabled: true
+  className: "nginx"
   hosts:
     - host: modern-ui.preprod.local
       paths:

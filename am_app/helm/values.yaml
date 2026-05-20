@@ -9,7 +9,7 @@ global:
     registry: ghcr.io/am-portfolio
     pullPolicy: Always
     imagePullSecrets:
-      - name: github-registry-secret
+      - name: regcred
 
 image:
   repository: am-modern-ui
