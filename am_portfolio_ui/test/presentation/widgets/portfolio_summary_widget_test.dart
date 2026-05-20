@@ -7,7 +7,6 @@ void main() {
   group('PortfolioSummaryWidget Widget Tests', () {
     testWidgets('renders positive portfolio summary correctly with green colors', (WidgetTester tester) async {
       final positiveSummary = PortfolioSummary(
-        userId: 'user_123',
         totalValue: 1250000.0, // ₹12.50L
         totalInvested: 1000000.0, // ₹1000000
         investmentValue: 1000000.0,
@@ -65,7 +64,6 @@ void main() {
 
     testWidgets('renders negative portfolio summary correctly with red colors', (WidgetTester tester) async {
       final negativeSummary = PortfolioSummary(
-        userId: 'user_123',
         totalValue: 80000.0, // ₹80.00K
         totalInvested: 100000.0, // ₹100000
         investmentValue: 100000.0,

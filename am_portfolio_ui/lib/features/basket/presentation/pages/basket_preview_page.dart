@@ -7,13 +7,11 @@ import '../../domain/models/basket_opportunity.dart';
 
 class BasketPreviewPage extends ConsumerWidget {
   final String etfIsin;
-  final String userId;
   final String portfolioId;
 
   const BasketPreviewPage({
     super.key,
     required this.etfIsin,
-    required this.userId,
     required this.portfolioId,
   });
 
@@ -22,7 +20,6 @@ class BasketPreviewPage extends ConsumerWidget {
     final opportunityAsync = ref.watch(
       basketPreviewProvider(
         etfIsin: etfIsin,
-        userId: userId,
         portfolioId: portfolioId,
       ),
     );
@@ -32,7 +29,6 @@ class BasketPreviewPage extends ConsumerWidget {
       body: opportunityAsync.when(
         data: (opportunity) => _BasketContent(
           opportunity: opportunity,
-          userId: userId,
           portfolioId: portfolioId,
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -44,12 +40,10 @@ class BasketPreviewPage extends ConsumerWidget {
 
 class _BasketContent extends StatelessWidget {
   final BasketOpportunity opportunity;
-  final String userId;
   final String portfolioId;
 
   const _BasketContent({
     required this.opportunity,
-    required this.userId,
     required this.portfolioId,
   });
 
@@ -101,10 +95,7 @@ class _BasketContent extends StatelessWidget {
               context.push(
                 '/portfolio/basket/creator',
                 extra: {
-                  'opportunity': opportunity,
-                  'userId': userId,
-                  'portfolioId': portfolioId,
-                },
+                  'opportunity': opportunity,                },
               );
             },
           ),

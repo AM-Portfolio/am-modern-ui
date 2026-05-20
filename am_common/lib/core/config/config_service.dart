@@ -111,6 +111,12 @@ class ConfigService {
         ),
       ),
       environment: Environment.development,
+      // ── Dev Auth Bypass (kDebugMode only) ──────────────────────────────
+      // Set these via: flutter run --dart-define=AM_DEV_AUTH_TOKEN=<token>
+      //                              --dart-define=AM_DEV_USER_ID=<userId>
+      // When both are non-empty, the app skips the login screen in debug mode.
+      devAuthToken: const String.fromEnvironment('AM_DEV_AUTH_TOKEN', defaultValue: ''),
+      devUserId: const String.fromEnvironment('AM_DEV_USER_ID', defaultValue: ''),
     );
   }
 }

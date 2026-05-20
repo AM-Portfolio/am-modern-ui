@@ -8,7 +8,7 @@ import 'package:am_common/am_common.dart';
 /// Handles conversion between DTO and domain entities for portfolio list operations
 class PortfolioListMapper {
   /// Convert PortfolioListDto to PortfolioList domain entity
-  static PortfolioList fromApiModel(PortfolioListDto dto, String userId) {
+  static PortfolioList fromApiModel(PortfolioListDto dto, ) {
     CommonLogger.debug(
       'Mapping PortfolioListDto to PortfolioList domain entity',
       tag: 'PortfolioListMapper',
@@ -27,7 +27,6 @@ class PortfolioListMapper {
 
       // Create domain entity
       final portfolioList = PortfolioList(
-        userId: userId,
         portfolios: portfolioItems,
         lastUpdated: DateTime.now(),
       );
@@ -86,8 +85,8 @@ class PortfolioListMapper {
   }
 
   /// Create empty PortfolioList for error scenarios
-  static PortfolioList createEmpty(String userId) => PortfolioList(
-    userId: userId,
+  static PortfolioList createEmpty() => PortfolioList(
+    
     portfolios: [],
     lastUpdated: DateTime.now(),
   );

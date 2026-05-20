@@ -16,14 +16,12 @@ import 'gmail_sync/gmail_connect_button.dart';
 /// Provides portfolio selection functionality for both mobile and web screens
 class PortfolioListWrapper extends ConsumerStatefulWidget {
   const PortfolioListWrapper({
-    required this.userId,
     required this.isMobile,
     super.key,
     this.isSidebarVisible = true,
     this.onToggleSidebar,
     this.onBack,
   });
-  final String userId;
   final bool isMobile;
   final bool isSidebarVisible;
   final VoidCallback? onToggleSidebar;
@@ -47,7 +45,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   /// Logs the initialization of the wrapper
   void _logInitialization() {
     CommonLogger.info(
-      'PortfolioListWrapper initialized for userId: ${widget.userId}',
+      'PortfolioListWrapper initialized',
       tag: 'PortfolioListWrapper',
     );
   }
@@ -109,7 +107,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
       } catch (_) {
         return BlocProvider(
           create: (context) =>
-              PortfolioCubit(portfolioService)..loadPortfoliosList(widget.userId),
+              PortfolioCubit(portfolioService)..loadPortfoliosList(),
           child: listContent,
         );
       }
@@ -252,7 +250,6 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     if (widget.isMobile) {
       return PortfolioMobileScreen(
         key: ValueKey('portfolio_mobile_$portfolioId'),
-        userId: widget.userId,
         selectedPortfolioId: portfolioId,
         selectedPortfolioName: portfolioName,
         portfolios: portfolios,
@@ -262,7 +259,6 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     } else {
       return PortfolioWebScreen(
         key: ValueKey('portfolio_web_$portfolioId'),
-        userId: widget.userId,
         selectedPortfolioId: portfolioId,
         selectedPortfolioName: portfolioName,
         portfolios: portfolios,
@@ -357,6 +353,6 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
 
   /// Retries loading portfolios
   void _retryLoadPortfolios(BuildContext context) {
-    context.read<PortfolioCubit>().loadPortfoliosList(widget.userId);
+    context.read<PortfolioCubit>().loadPortfoliosList();
   }
 }

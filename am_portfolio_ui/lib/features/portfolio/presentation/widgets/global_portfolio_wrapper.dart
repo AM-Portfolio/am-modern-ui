@@ -10,12 +10,10 @@ import '../../providers/portfolio_providers.dart';
 /// initial portfolio selection. Sync is now handled at the root level.
 class GlobalPortfolioWrapper extends ConsumerStatefulWidget {
   final Widget child;
-  final String userId;
   final Function(String, String)? onPortfolioChanged;
 
   const GlobalPortfolioWrapper({
     required this.child,
-    required this.userId,
     this.onPortfolioChanged,
     super.key,
   });
@@ -39,7 +37,7 @@ class _GlobalPortfolioWrapperState
         return BlocProvider<PortfolioCubit>(
           create: (context) {
             final cubit = PortfolioCubit(service);
-            cubit.loadPortfoliosList(widget.userId);
+            cubit.loadPortfoliosList();
             return cubit;
           },
           child: BlocListener<PortfolioCubit, PortfolioState>(
@@ -54,16 +52,10 @@ class _GlobalPortfolioWrapperState
                   });
 
                   // Trigger real-time subscription
-                  context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
-                    widget.userId,
-                    portfolioId: first.portfolioId,
-                  );
+                  context.read<PortfolioCubit>().subscribeToPortfolioUpdates();
 
                   // Trigger initial REST load for details
-                  context.read<PortfolioCubit>().loadPortfolioById(
-                    widget.userId,
-                    first.portfolioId,
-                  );
+                  context.read<PortfolioCubit>().loadPortfolioById(first.portfolioId);
 
                   widget.onPortfolioChanged?.call(
                     first.portfolioId,
@@ -81,16 +73,10 @@ class _GlobalPortfolioWrapperState
                   _selectedPortfolioName = name;
                 });
                 // Trigger real-time subscription on manual selection
-                context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
-                  widget.userId,
-                  portfolioId: id,
-                );
+                context.read<PortfolioCubit>().subscribeToPortfolioUpdates();
 
                 // Trigger REST load for details on manual selection
-                context.read<PortfolioCubit>().loadPortfolioById(
-                  widget.userId,
-                  id,
-                );
+                context.read<PortfolioCubit>().loadPortfolioById(id);
 
                 widget.onPortfolioChanged?.call(id, name);
               },

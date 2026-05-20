@@ -160,8 +160,6 @@ class TopPerformerHiveModelAdapter extends TypeAdapter<TopPerformerHiveModel> {
 @HiveType(typeId: 5)
 class PortfolioSummaryHiveModel extends HiveObject {
   @HiveField(0)
-  final String userId;
-
   @HiveField(1)
   final double totalValue;
 
@@ -217,7 +215,6 @@ class PortfolioSummaryHiveModel extends HiveObject {
   final List<TopPerformerHiveModel> worstPerformers;
 
   PortfolioSummaryHiveModel({
-    required this.userId,
     required this.totalValue,
     required this.totalInvested,
     required this.investmentValue,
@@ -240,7 +237,6 @@ class PortfolioSummaryHiveModel extends HiveObject {
 
   factory PortfolioSummaryHiveModel.fromDomain(PortfolioSummary entity) {
     return PortfolioSummaryHiveModel(
-      userId: entity.userId,
       totalValue: entity.totalValue,
       totalInvested: entity.totalInvested,
       investmentValue: entity.investmentValue,
@@ -270,7 +266,6 @@ class PortfolioSummaryHiveModel extends HiveObject {
 
   PortfolioSummary toDomain() {
     return PortfolioSummary(
-      userId: userId,
       totalValue: totalValue,
       totalInvested: totalInvested,
       investmentValue: investmentValue,
@@ -304,9 +299,7 @@ class PortfolioSummaryHiveModelAdapter
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return PortfolioSummaryHiveModel(
-      userId: fields[0] as String,
-      totalValue: fields[1] as double,
+    return PortfolioSummaryHiveModel(      totalValue: fields[1] as double,
       totalInvested: fields[2] as double,
       investmentValue: fields[3] as double,
       totalGainLoss: fields[4] as double,
@@ -332,7 +325,7 @@ class PortfolioSummaryHiveModelAdapter
     writer
       ..writeByte(19)
       ..writeByte(0)
-      ..write(obj.userId)
+      
       ..writeByte(1)
       ..write(obj.totalValue)
       ..writeByte(2)

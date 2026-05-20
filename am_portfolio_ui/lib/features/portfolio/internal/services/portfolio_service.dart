@@ -28,16 +28,16 @@ class PortfolioService {
 
   /// Retrieves portfolio holdings for the specified user
   /// Returns holdings data or throws an exception if retrieval fails
-  Future<PortfolioHoldings> getPortfolioHoldings(String userId) async {
+  Future<PortfolioHoldings> getPortfolioHoldings() async {
     CommonLogger.methodEntry(
       'getPortfolioHoldings',
       tag: 'PortfolioService',
-      metadata: {'userId': userId},
+      metadata: {},
     );
 
     try {
       CommonLogger.info('Getting portfolio holdings', tag: 'PortfolioService');
-      final holdings = await _getPortfolioHoldings(userId);
+      final holdings = await _getPortfolioHoldings.call('');
 
       CommonLogger.info(
         'Portfolio holdings retrieved successfully',
@@ -69,13 +69,12 @@ class PortfolioService {
   /// Retrieves portfolio holdings for the specified user and portfolio
   /// Returns holdings data or throws an exception if retrieval fails
   Future<PortfolioHoldings> getPortfolioHoldingsById(
-    String userId,
     String portfolioId,
   ) async {
     CommonLogger.methodEntry(
       'getPortfolioHoldingsById',
       tag: 'PortfolioService',
-      metadata: {'userId': userId, 'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId},
     );
 
     try {
@@ -83,7 +82,7 @@ class PortfolioService {
         'Getting portfolio holdings by ID',
         tag: 'PortfolioService',
       );
-      final holdings = await _getPortfolioHoldings(userId, portfolioId);
+      final holdings = await _getPortfolioHoldings.call(portfolioId);
 
       CommonLogger.info(
         'Portfolio holdings retrieved successfully by ID',
@@ -114,16 +113,16 @@ class PortfolioService {
 
   /// Retrieves portfolio summary for the specified user
   /// Returns summary data or throws an exception if retrieval fails
-  Future<PortfolioSummary> getPortfolioSummary(String userId) async {
+  Future<PortfolioSummary> getPortfolioSummary() async {
     CommonLogger.methodEntry(
       'getPortfolioSummary',
       tag: 'PortfolioService',
-      metadata: {'userId': userId},
+      metadata: {},
     );
 
     try {
       CommonLogger.info('Getting portfolio summary', tag: 'PortfolioService');
-      final summary = await _getPortfolioSummary(userId);
+      final summary = await _getPortfolioSummary.call('');
 
       CommonLogger.info(
         'Portfolio summary retrieved successfully',
@@ -155,13 +154,12 @@ class PortfolioService {
   /// Retrieves portfolio summary for the specified user and portfolio
   /// Returns summary data or throws an exception if retrieval fails
   Future<PortfolioSummary> getPortfolioSummaryById(
-    String userId,
     String portfolioId,
   ) async {
     CommonLogger.methodEntry(
       'getPortfolioSummaryById',
       tag: 'PortfolioService',
-      metadata: {'userId': userId, 'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId},
     );
 
     try {
@@ -169,7 +167,7 @@ class PortfolioService {
         'Getting portfolio summary by ID',
         tag: 'PortfolioService',
       );
-      final summary = await _getPortfolioSummary(userId, portfolioId);
+      final summary = await _getPortfolioSummary.call(portfolioId);
 
       CommonLogger.info(
         'Portfolio summary retrieved successfully by ID',
@@ -200,16 +198,16 @@ class PortfolioService {
 
   /// Retrieves portfolios list for the specified user
   /// Returns portfolio list data or throws an exception if retrieval fails
-  Future<PortfolioList> getPortfoliosList(String userId) async {
+  Future<PortfolioList> getPortfoliosList() async {
     CommonLogger.methodEntry(
       'getPortfoliosList',
       tag: 'PortfolioService',
-      metadata: {'userId': userId},
+      metadata: {},
     );
 
     try {
       CommonLogger.info('Getting portfolios list', tag: 'PortfolioService');
-      final portfolioList = await _getPortfoliosList(userId);
+      final portfolioList = await _getPortfoliosList.call();
 
       CommonLogger.info(
         'Portfolios list retrieved successfully',
@@ -240,11 +238,11 @@ class PortfolioService {
 
   /// Validates basic portfolio data consistency
   /// Returns true if portfolio data appears consistent
-  Future<bool> validatePortfolioConsistency(String userId) async {
+  Future<bool> validatePortfolioConsistency() async {
     try {
       final results = await Future.wait([
-        _getPortfolioHoldings(userId),
-        _getPortfolioSummary(userId),
+        _getPortfolioHoldings.call(''),
+        _getPortfolioSummary.call(''),
       ]);
 
       // Basic validation - can be expanded when freezed code is generated

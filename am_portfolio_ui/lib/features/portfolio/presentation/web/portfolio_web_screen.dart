@@ -19,7 +19,6 @@ import 'package:am_user_ui/am_user_ui.dart';
 /// Web-specific portfolio screen implementation
 class PortfolioWebScreen extends ConsumerStatefulWidget {
   const PortfolioWebScreen({
-    required this.userId,
     super.key,
     this.selectedPortfolioId,
     this.selectedPortfolioName,
@@ -29,7 +28,6 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
     this.onToggleSidebar,
     this.onBack,
   });
-  final String userId;
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final List<PortfolioItem>? portfolios;
@@ -115,7 +113,6 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         accentColor: Colors.blue,
         page: _wrapPage(
           PortfolioOverviewWebPage(
-            userId: widget.userId,
             portfolioId: portfolioId,
             portfolioName: _currentPortfolioName ?? widget.selectedPortfolioName,
           ),
@@ -128,7 +125,6 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         accentColor: Colors.green,
         page: _wrapPage(
           PortfolioHoldingsWebPage(
-            userId: widget.userId,
             portfolioId: portfolioId,
           ),
         ),
@@ -140,7 +136,6 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         accentColor: Colors.purple,
         page: _wrapPage(
           PortfolioAnalysisWebPage(
-            userId: widget.userId,
             portfolioId: portfolioId,
           ),
         ),
@@ -152,7 +147,6 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         accentColor: Colors.orange,
         page: _wrapPage(
           PortfolioHeatmapWebPage(
-            userId: widget.userId,
             portfolioId: portfolioId,
             portfolioName: _currentPortfolioName ?? widget.selectedPortfolioName,
           ),
@@ -190,12 +184,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
       _initializeSwipeController();
     });
 
-    context.read<PortfolioCubit>().loadPortfolioById(widget.userId, portfolioId);
-
-    ref.invalidate(portfolioSummaryProvider(widget.userId));
-    ref.invalidate(portfolioHoldingsProvider(widget.userId));
-
-    widget.onPortfolioChanged?.call(portfolioId, portfolioName);
+    context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
   }
 
   @override
@@ -215,7 +204,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProfileSettingsPage(userId: widget.userId),
+            builder: (_) => ProfileSettingsPage(userId: 'user'),
           ),
         );
       },

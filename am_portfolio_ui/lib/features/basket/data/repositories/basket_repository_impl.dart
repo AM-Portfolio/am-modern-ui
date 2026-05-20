@@ -9,12 +9,10 @@ class BasketRepositoryImpl implements BasketRepository {
 
   @override
   Future<List<BasketOpportunity>> getOpportunities({
-    required String userId,
     required String portfolioId,
     String? query,
   }) async {
     return remoteDataSource.getOpportunities(
-      userId: userId,
       portfolioId: portfolioId,
       query: query,
     );
@@ -23,12 +21,10 @@ class BasketRepositoryImpl implements BasketRepository {
   @override
   Future<BasketOpportunity> getBasketPreview({
     required String etfIsin,
-    required String userId,
     required String portfolioId,
   }) async {
     return remoteDataSource.getPreview(
       etfIsin: etfIsin,
-      userId: userId,
       portfolioId: portfolioId,
     );
   }

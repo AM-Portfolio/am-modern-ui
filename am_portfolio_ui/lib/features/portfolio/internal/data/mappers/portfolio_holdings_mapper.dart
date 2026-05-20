@@ -8,12 +8,10 @@ class PortfolioHoldingsMapper {
   /// Convert API response to domain entity
   static PortfolioHoldings fromApiModel(
     PortfolioHoldingsDto apiModel,
-    String userId,
   ) {
     final holdings = apiModel.equityHoldings.map(_mapEquityHolding).toList();
 
     return PortfolioHoldings(
-      userId: userId,
       holdings: holdings,
       lastUpdated: DateTime.now(),
     );
@@ -136,8 +134,7 @@ class PortfolioHoldingsMapper {
   }
 
   /// Create empty portfolio for error states
-  static PortfolioHoldings createEmpty(String userId) =>
-      PortfolioHoldings.empty(userId);
+  static PortfolioHoldings createEmpty() => PortfolioHoldings.empty();
 
   /// Validation helper
   static bool isValidApiResponse(PortfolioHoldingsDto? apiModel) =>

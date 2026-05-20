@@ -9,7 +9,6 @@ class PortfolioSummaryMapper {
   /// Convert API response DTO to domain entity
   static PortfolioSummary fromApiModel(
     PortfolioSummaryDto apiModel,
-    String userId,
   ) {
     try {
       // Build sector allocation from sectorialHoldings map
@@ -83,7 +82,6 @@ class PortfolioSummaryMapper {
           .toList();
 
       return PortfolioSummary(
-        userId: userId,
         totalValue: apiModel.currentValue,
         totalInvested: apiModel.investmentValue,
         investmentValue: apiModel.investmentValue,
@@ -133,13 +131,12 @@ class PortfolioSummaryMapper {
       );
 
   /// Create empty portfolio summary for error states
-  static PortfolioSummary createEmpty(String userId) =>
-      PortfolioSummary.empty(userId);
+  static PortfolioSummary createEmpty() =>
+      PortfolioSummary.empty();
 
   /// Create mock portfolio summary with sample data
-  static PortfolioSummary createMock({String userId = 'mock-user'}) =>
+  static PortfolioSummary createMock() =>
       PortfolioSummary(
-        userId: userId,
         totalValue: 125000.0,
         totalInvested: 100000.0,
         investmentValue: 100000.0,

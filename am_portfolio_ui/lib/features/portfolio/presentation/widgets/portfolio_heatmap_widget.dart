@@ -66,14 +66,12 @@ class PortfolioHeatmapConfig {
 /// Shared implementation between web and mobile with configurable behavior
 class PortfolioHeatmapWidget extends ConsumerStatefulWidget {
   const PortfolioHeatmapWidget({
-    required this.userId,
     required this.portfolioId,
     required this.config,
     super.key,
     this.portfolioName,
   });
 
-  final String userId;
   final String portfolioId;
   final String? portfolioName;
   final PortfolioHeatmapConfig config;
@@ -106,7 +104,7 @@ class _PortfolioHeatmapWidgetState
       tag: '${widget.config.logTag}.Init',
     );
     CommonLogger.debug(
-      'Parameters: userId=${widget.userId}, portfolioId=${widget.portfolioId}, portfolioName=${widget.portfolioName ?? 'null'}',
+      'Parameters: portfolioId=${widget.portfolioId}, portfolioName=${widget.portfolioName ?? 'null'}',
       tag: '${widget.config.logTag}.Init',
     );
     _loadHeatmapData();

@@ -18,7 +18,6 @@ class MockPortfolioService implements PortfolioService {
 
   PortfolioSummary _createDummySummary() {
     return PortfolioSummary(
-      userId: 'user_123',
       totalValue: 1250000.0,
       totalInvested: 1000000.0,
       investmentValue: 1000000.0,
@@ -38,37 +37,37 @@ class MockPortfolioService implements PortfolioService {
   }
 
   @override
-  Future<PortfolioHoldings> getPortfolioHoldings(String userId) async {
+  Future<PortfolioHoldings> getPortfolioHoldings() async {
     if (errorToThrow != null) throw errorToThrow!;
-    return mockHoldings ?? PortfolioHoldings.empty(userId);
+    return mockHoldings ?? PortfolioHoldings.empty();
   }
 
   @override
-  Future<PortfolioHoldings> getPortfolioHoldingsById(String userId, String portfolioId) async {
+  Future<PortfolioHoldings> getPortfolioHoldingsById(String portfolioId) async {
     if (errorToThrow != null) throw errorToThrow!;
-    return mockHoldings ?? PortfolioHoldings.empty(userId);
+    return mockHoldings ?? PortfolioHoldings.empty();
   }
 
   @override
-  Future<PortfolioSummary> getPortfolioSummary(String userId) async {
-    if (errorToThrow != null) throw errorToThrow!;
-    return mockSummary ?? _createDummySummary();
-  }
-
-  @override
-  Future<PortfolioSummary> getPortfolioSummaryById(String userId, String portfolioId) async {
+  Future<PortfolioSummary> getPortfolioSummary() async {
     if (errorToThrow != null) throw errorToThrow!;
     return mockSummary ?? _createDummySummary();
   }
 
   @override
-  Future<PortfolioList> getPortfoliosList(String userId) async {
+  Future<PortfolioSummary> getPortfolioSummaryById(String portfolioId) async {
     if (errorToThrow != null) throw errorToThrow!;
-    return mockPortfolioList ?? PortfolioList(userId: userId, lastUpdated: DateTime.now(), portfolios: const []);
+    return mockSummary ?? _createDummySummary();
   }
 
   @override
-  Future<bool> validatePortfolioConsistency(String userId) async {
+  Future<PortfolioList> getPortfoliosList() async {
+    if (errorToThrow != null) throw errorToThrow!;
+    return mockPortfolioList ?? PortfolioList(lastUpdated: DateTime.now(), portfolios: const []);
+  }
+
+  @override
+  Future<bool> validatePortfolioConsistency() async {
     return errorToThrow == null;
   }
 }
@@ -162,7 +161,6 @@ void main() {
     test('loadPortfolio emits PortfolioLoading and PortfolioLoaded on success', () async {
       final summary = mockService._createDummySummary();
       final holdings = PortfolioHoldings(
-        userId: 'user_123',
         holdings: const [],
         lastUpdated: DateTime.now(),
       );
@@ -179,7 +177,7 @@ void main() {
         ]),
       );
 
-      await cubit.loadPortfolio('user_123');
+      await cubit.loadPortfolio();
       await expectFuture;
     });
 
@@ -194,14 +192,13 @@ void main() {
         ]),
       );
 
-      await cubit.loadPortfolio('user_123');
+      await cubit.loadPortfolio();
       await expectFuture;
     });
 
     test('loadPortfolioById emits PortfolioLoading and PortfolioLoaded on success', () async {
       final summary = mockService._createDummySummary();
       final holdings = PortfolioHoldings(
-        userId: 'user_123',
         holdings: const [],
         lastUpdated: DateTime.now(),
       );
@@ -218,14 +215,13 @@ void main() {
         ]),
       );
 
-      await cubit.loadPortfolioById('user_123', 'custom_id');
+      await cubit.loadPortfolioById('custom_id');
       await expectFuture;
     });
 
     test('updateSummaryFromSocket merges WebSocket price updates directly', () async {
       final initialSummary = mockService._createDummySummary();
       final initialHoldings = PortfolioHoldings(
-        userId: 'user_123',
         holdings: [
           PortfolioHolding(
             id: 'isin_1',
@@ -253,7 +249,7 @@ void main() {
       mockService.mockHoldings = initialHoldings;
 
       // 1. Move to PortfolioLoaded state
-      await cubit.loadPortfolio('user_123');
+      await cubit.loadPortfolio();
       expect(cubit.state, isA<PortfolioLoaded>());
 
       // 2. Mock state change expectation
@@ -269,7 +265,6 @@ void main() {
 
       // 3. Call updateSummaryFromSocket directly to avoid any async stream race conditions
       cubit.updateSummaryFromSocket({
-        "userId": "user_123",
         "portfolioId": "GLOBAL",
         "currentValue": 1300000.0,
         "investmentValue": 1000000.0,

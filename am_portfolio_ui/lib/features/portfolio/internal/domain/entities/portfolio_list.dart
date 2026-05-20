@@ -30,7 +30,6 @@ abstract class PortfolioItem with _$PortfolioItem {
 @freezed
 abstract class PortfolioList with _$PortfolioList {
   const factory PortfolioList({
-    required String userId,
     required DateTime lastUpdated,
     @Default([]) List<PortfolioItem> portfolios,
   }) = _PortfolioList;

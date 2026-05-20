@@ -12,7 +12,6 @@ import 'package:am_common/am_common.dart';
 class PortfolioHoldingsWebCard extends ConsumerStatefulWidget {
   /// Constructor
   const PortfolioHoldingsWebCard({
-    required this.userId,
     super.key,
     this.portfolioId,
     this.showDetails = false,
@@ -23,8 +22,6 @@ class PortfolioHoldingsWebCard extends ConsumerStatefulWidget {
   });
 
   /// User ID for fetching portfolio data
-  final String userId;
-
   /// Portfolio ID - if null, uses default portfolio for user
   final String? portfolioId;
 
@@ -56,7 +53,7 @@ class _PortfolioHoldingsWebCardState
 
   void _sortHoldingsByAllocation(PortfolioHoldings holdings) {
     CommonLogger.debug(
-      'Sorting ${holdings.holdings.length} holdings by allocation for userId: ${widget.userId}, portfolioId: ${widget.portfolioId}',
+      'Sorting ${holdings.holdings.length} holdings by allocation for portfolioId: ${widget.portfolioId}',
       tag: 'PortfolioHoldingsWebCard',
     );
 
@@ -105,16 +102,16 @@ class _PortfolioHoldingsWebCardState
     final theme = Theme.of(context);
 
     CommonLogger.debug(
-      'Building PortfolioHoldingsWebCard for userId: ${widget.userId}, portfolioId: ${widget.portfolioId}',
+      'Building PortfolioHoldingsWebCard for portfolioId: ${widget.portfolioId}',
       tag: 'PortfolioHoldingsWebCard',
     );
 
     // Use the appropriate provider based on whether portfolioId is provided
     final portfolioHoldingsAsync = widget.portfolioId != null
         ? ref.watch(
-            portfolioHoldingsByIdProvider(widget.userId, widget.portfolioId!),
+            portfolioHoldingsByIdProvider(widget.portfolioId!),
           )
-        : ref.watch(portfolioHoldingsProvider(widget.userId));
+        : ref.watch(portfolioHoldingsProvider());
 
     return portfolioHoldingsAsync.when(
       data: (holdings) {
@@ -311,12 +308,11 @@ class _PortfolioHoldingsWebCardState
                   if (widget.portfolioId != null) {
                     ref.invalidate(
                       portfolioHoldingsByIdProvider(
-                        widget.userId,
                         widget.portfolioId!,
                       ),
                     );
                   } else {
-                    ref.invalidate(portfolioHoldingsProvider(widget.userId));
+                    ref.invalidate(portfolioHoldingsProvider());
                   }
                 },
                 child: const Text('Retry'),

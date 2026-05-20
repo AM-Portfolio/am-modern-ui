@@ -12,13 +12,11 @@ import '../../../portfolio/internal/domain/entities/portfolio_holding.dart';
 
 class ManualBasketCreatorPage extends ConsumerStatefulWidget {
   final BasketOpportunity opportunity;
-  final String userId;
   final String portfolioId;
 
   const ManualBasketCreatorPage({
     super.key,
     required this.opportunity,
-    required this.userId,
     required this.portfolioId,
   });
 
@@ -127,7 +125,7 @@ class _ManualBasketCreatorPageState
       // Cost Basis Adjustment Logic
       if (_includeHeld) {
         final holdingsAsync = ref.read(
-          portfolioHoldingsProvider(widget.userId),
+          portfolioHoldingsProvider(widget.portfolioId),
         );
         final localHoldings = holdingsAsync.asData?.value;
 
@@ -187,7 +185,7 @@ class _ManualBasketCreatorPageState
   Widget build(BuildContext context) {
     // Watch local holdings
     final portfolioHoldingsAsync = ref.watch(
-      portfolioHoldingsProvider(widget.userId),
+      portfolioHoldingsProvider(widget.portfolioId),
     );
     final localHoldings = portfolioHoldingsAsync.asData?.value;
 

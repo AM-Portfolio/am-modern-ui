@@ -36,10 +36,10 @@ class PortfolioLocalDataSource {
   }
 
   /// Get cached holdings
-  Future<PortfolioHoldings?> getLastHoldings(String userId) async {
+  Future<PortfolioHoldings?> getLastHoldings() async {
     try {
       final box = Hive.box<PortfolioHoldingsHiveModel>(_holdingsBoxName);
-      final hiveModel = box.get(userId);
+      final hiveModel = box.get('current_user');
       return hiveModel?.toDomain();
     } catch (e) {
       CommonLogger.error(
@@ -52,12 +52,12 @@ class PortfolioLocalDataSource {
   }
 
   /// Cache holdings
-  Future<void> cacheHoldings(String userId, PortfolioHoldings data) async {
+  Future<void> cacheHoldings(PortfolioHoldings data) async {
     try {
       final box = Hive.box<PortfolioHoldingsHiveModel>(_holdingsBoxName);
-      await box.put(userId, PortfolioHoldingsHiveModel.fromDomain(data));
+      await box.put('current_user', PortfolioHoldingsHiveModel.fromDomain(data));
       CommonLogger.info(
-        'Cached holdings for user: $userId',
+        'Cached holdings for current_user',
         tag: 'PortfolioLocalDataSource',
       );
     } catch (e) {
@@ -70,10 +70,10 @@ class PortfolioLocalDataSource {
   }
 
   /// Get cached summary
-  Future<PortfolioSummary?> getLastSummary(String userId) async {
+  Future<PortfolioSummary?> getLastSummary() async {
     try {
       final box = Hive.box<PortfolioSummaryHiveModel>(_summaryBoxName);
-      final hiveModel = box.get(userId);
+      final hiveModel = box.get('current_user');
       return hiveModel?.toDomain();
     } catch (e) {
       CommonLogger.error(
@@ -86,12 +86,12 @@ class PortfolioLocalDataSource {
   }
 
   /// Cache summary
-  Future<void> cacheSummary(String userId, PortfolioSummary data) async {
+  Future<void> cacheSummary(PortfolioSummary data) async {
     try {
       final box = Hive.box<PortfolioSummaryHiveModel>(_summaryBoxName);
-      await box.put(userId, PortfolioSummaryHiveModel.fromDomain(data));
+      await box.put('current_user', PortfolioSummaryHiveModel.fromDomain(data));
       CommonLogger.info(
-        'Cached summary for user: $userId',
+        'Cached summary for current_user',
         tag: 'PortfolioLocalDataSource',
       );
     } catch (e) {
@@ -104,10 +104,10 @@ class PortfolioLocalDataSource {
   }
 
   /// Get cached portfolio list
-  Future<PortfolioList?> getLastPortfolioList(String userId) async {
+  Future<PortfolioList?> getLastPortfolioList() async {
     try {
       final box = Hive.box<PortfolioListHiveModel>(_listBoxName);
-      final hiveModel = box.get(userId);
+      final hiveModel = box.get('current_user');
       return hiveModel?.toDomain();
     } catch (e) {
       CommonLogger.error(
@@ -120,12 +120,12 @@ class PortfolioLocalDataSource {
   }
 
   /// Cache portfolio list
-  Future<void> cachePortfolioList(String userId, PortfolioList data) async {
+  Future<void> cachePortfolioList(PortfolioList data) async {
     try {
       final box = Hive.box<PortfolioListHiveModel>(_listBoxName);
-      await box.put(userId, PortfolioListHiveModel.fromDomain(data));
+      await box.put('current_user', PortfolioListHiveModel.fromDomain(data));
       CommonLogger.info(
-        'Cached portfolio list for user: $userId',
+        'Cached portfolio list for current_user',
         tag: 'PortfolioLocalDataSource',
       );
     } catch (e) {

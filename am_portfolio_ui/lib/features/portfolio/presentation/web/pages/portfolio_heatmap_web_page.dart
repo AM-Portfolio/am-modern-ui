@@ -12,13 +12,11 @@ import '../../widgets/portfolio_heatmap_widget.dart';
 /// Self-contained with its own providers to support direct linking.
 class PortfolioHeatmapWebPage extends ConsumerWidget {
   const PortfolioHeatmapWebPage({
-    required this.userId,
     super.key,
     this.portfolioId,
     this.portfolioName,
   });
 
-  final String userId;
   final String? portfolioId;
   final String? portfolioName;
 
@@ -40,7 +38,6 @@ class PortfolioHeatmapWebPage extends ConsumerWidget {
             BlocProvider(create: (context) => PortfolioHeatmapCubit()),
           ],
           child: _PortfolioHeatmapView(
-            userId: userId,
             portfolioId: portfolioId!,
             portfolioName: portfolioName,
           ),
@@ -62,19 +59,16 @@ class PortfolioHeatmapWebPage extends ConsumerWidget {
 
 class _PortfolioHeatmapView extends StatelessWidget {
   const _PortfolioHeatmapView({
-    required this.userId,
     required this.portfolioId,
     this.portfolioName,
   });
 
-  final String userId;
   final String portfolioId;
   final String? portfolioName;
 
   @override
   Widget build(BuildContext context) {
     return PortfolioHeatmapWidget(
-      userId: userId,
       portfolioId: portfolioId,
       portfolioName: portfolioName,
       config: PortfolioHeatmapConfig.web,

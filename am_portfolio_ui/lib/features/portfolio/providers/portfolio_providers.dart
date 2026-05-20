@@ -159,50 +159,27 @@ Future<PortfolioAnalyticsService> portfolioAnalyticsService(Ref ref) async {
 
 /// Data providers - Auto-dispose (can be recreated when needed)
 @riverpod
-Future<PortfolioHoldings> portfolioHoldings(Ref ref, String userId) async {
+Future<PortfolioHoldings> portfolioHoldings(Ref ref, String portfolioId) async {
   final useCase = await ref.watch(getPortfolioHoldingsProvider.future);
-  return useCase.call(userId);
+  return useCase.call(portfolioId);
 }
 
 @riverpod
-Future<PortfolioHoldings> portfolioHoldingsById(
-  Ref ref,
-  String userId,
-  String portfolioId,
-) async {
+Future<PortfolioSummary> portfolioSummary(Ref ref, String portfolioId) async {
+  final useCase = await ref.watch(getPortfolioSummaryProvider.future);
+  return useCase.call(portfolioId);
+}
+
+@riverpod
+Stream<PortfolioHoldings> portfolioHoldingsStream(Ref ref) async* {
   final useCase = await ref.watch(getPortfolioHoldingsProvider.future);
-  return useCase.call(userId, portfolioId);
+  yield* useCase.watchHoldings();
 }
 
 @riverpod
-Future<PortfolioSummary> portfolioSummary(Ref ref, String userId) async {
+Stream<PortfolioSummary> portfolioSummaryStream(Ref ref) async* {
   final useCase = await ref.watch(getPortfolioSummaryProvider.future);
-  return useCase.call(userId);
-}
-
-@riverpod
-Future<PortfolioSummary> portfolioSummaryById(
-  Ref ref,
-  String userId,
-  String portfolioId,
-) async {
-  final useCase = await ref.watch(getPortfolioSummaryProvider.future);
-  return useCase.call(userId, portfolioId);
-}
-
-@riverpod
-Stream<PortfolioHoldings> portfolioHoldingsStream(
-  Ref ref,
-  String userId,
-) async* {
-  final useCase = await ref.watch(getPortfolioHoldingsProvider.future);
-  yield* useCase.watchHoldings(userId);
-}
-
-@riverpod
-Stream<PortfolioSummary> portfolioSummaryStream(Ref ref, String userId) async* {
-  final useCase = await ref.watch(getPortfolioSummaryProvider.future);
-  yield* useCase.watchSummary(userId);
+  yield* useCase.watchSummary();
 }
 
 /// Analytics data providers - Auto-dispose (can be recreated when needed)
@@ -213,15 +190,6 @@ Future<PortfolioAnalytics> portfolioAnalytics(
 ) async {
   final useCase = await ref.watch(getPortfolioAnalyticsProvider.future);
   return useCase.call(request);
-}
-
-@riverpod
-Future<PortfolioAnalytics> portfolioAnalyticsWithDefaults(
-  Ref ref,
-  String portfolioId,
-) async {
-  final service = await ref.watch(portfolioAnalyticsServiceProvider.future);
-  return service.getPortfolioAnalyticsWithDefaults(portfolioId);
 }
 
 @riverpod

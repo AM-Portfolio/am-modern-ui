@@ -19,13 +19,11 @@ Future<BasketRepository> basketRepository(Ref ref) async {
 @riverpod
 Future<List<BasketOpportunity>> basketOpportunities(
   Ref ref, {
-  required String userId,
   required String portfolioId,
   String? query,
 }) async {
   final repository = await ref.watch(basketRepositoryProvider.future);
   return repository.getOpportunities(
-    userId: userId,
     portfolioId: portfolioId,
     query: query,
   );
@@ -35,13 +33,11 @@ Future<List<BasketOpportunity>> basketOpportunities(
 Future<BasketOpportunity> basketPreview(
   Ref ref, {
   required String etfIsin,
-  required String userId,
   required String portfolioId,
 }) async {
   final repository = await ref.watch(basketRepositoryProvider.future);
   return repository.getBasketPreview(
     etfIsin: etfIsin,
-    userId: userId,
     portfolioId: portfolioId,
   );
 }

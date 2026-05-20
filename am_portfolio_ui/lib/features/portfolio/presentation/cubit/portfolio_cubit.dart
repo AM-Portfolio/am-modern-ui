@@ -29,14 +29,13 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   // Subscription management
   bool _isSubscribed = false;
   StreamSubscription? _socketSubscription;
-  String? _subUserId;
+  
   String? _subPortfolioId;
   DateTime? _lastStatusErrorTime;
 
   /// Subscribe to portfolio updates via WebSocket
-  void subscribeToPortfolioUpdates(String userId, {String? portfolioId}) {
-    _subUserId = userId;
-    _subPortfolioId = portfolioId;
+  void subscribeToPortfolioUpdates({String? portfolioId}) {
+        _subPortfolioId = portfolioId;
     if (_isSubscribed) {
       CommonLogger.debug(
         'Already subscribed (flag is true)',
@@ -46,7 +45,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     }
 
     CommonLogger.info(
-      'PortfolioCubit: Initiating subscription for user $userId',
+      'PortfolioCubit: Initiating subscription',
       tag: 'PortfolioCubit',
     );
 
@@ -116,10 +115,10 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     _stompClient.subscribe(destination);
 
     // Trigger the backend to start calculating using the /app/portfolio/subscribe endpoint
-    if (_subUserId != null && _subPortfolioId != null) {
+    if (_subPortfolioId != null) {
       final traceId = Uuid().v4();
       final body =
-          '{"userId": "$_subUserId", "portfolioId": "$_subPortfolioId"}';
+          '{"portfolioId": "$_subPortfolioId"}';
 
       CommonLogger.info(
         'Triggering calculation for portfolio: $_subPortfolioId',
@@ -233,11 +232,11 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     return super.close();
   }
 
-  Future<void> loadPortfolio(String userId) async {
+  Future<void> loadPortfolio() async {
     CommonLogger.methodEntry(
       'loadPortfolio',
       tag: 'PortfolioCubit',
-      metadata: {'userId': userId},
+      metadata: {},
     );
     CommonLogger.stateChange(
       '${state.runtimeType}',
@@ -255,8 +254,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
       // Use portfolio service to fetch data concurrently
       final results = await Future.wait([
-        _portfolioService.getPortfolioHoldings(userId),
-        _portfolioService.getPortfolioSummary(userId),
+        _portfolioService.getPortfolioHoldings(),
+        _portfolioService.getPortfolioSummary(),
       ]);
 
       final holdings = results[0] as PortfolioHoldings;
@@ -317,11 +316,11 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   }
 
   /// Load portfolio data for a specific portfolio ID
-  Future<void> loadPortfolioById(String userId, String portfolioId) async {
+  Future<void> loadPortfolioById(String portfolioId) async {
     CommonLogger.methodEntry(
       'loadPortfolioById',
       tag: 'PortfolioCubit',
-      metadata: {'userId': userId, 'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId},
     );
     CommonLogger.stateChange(
       '${state.runtimeType}',
@@ -339,8 +338,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
       // Use portfolio service to fetch data concurrently by portfolio ID
       final results = await Future.wait([
-        _portfolioService.getPortfolioHoldingsById(userId, portfolioId),
-        _portfolioService.getPortfolioSummaryById(userId, portfolioId),
+        _portfolioService.getPortfolioHoldingsById(portfolioId),
+        _portfolioService.getPortfolioSummaryById(portfolioId),
       ]);
 
       final holdings = results[0] as PortfolioHoldings;
@@ -402,13 +401,12 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
   /// Load only portfolio summary (without holdings) for overview page
   Future<void> loadPortfolioSummaryOnly(
-    String userId,
     String portfolioId,
   ) async {
     CommonLogger.methodEntry(
       'loadPortfolioSummaryOnly',
       tag: 'PortfolioCubit',
-      metadata: {'userId': userId, 'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId},
     );
     CommonLogger.stateChange(
       '${state.runtimeType}',
@@ -426,7 +424,6 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
       // Only fetch summary, not holdings
       final summary = await _portfolioService.getPortfolioSummaryById(
-        userId,
         portfolioId,
       );
 
@@ -492,7 +489,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     }
   }
 
-  Future<void> refreshPortfolio(String userId) async {
+  Future<void> refreshPortfolio() async {
     final currentState = state;
     if (currentState is PortfolioLoaded) {
       try {
@@ -508,8 +505,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
         // Use portfolio service to refresh data
         final results = await Future.wait([
-          _portfolioService.getPortfolioHoldings(userId),
-          _portfolioService.getPortfolioSummary(userId),
+          _portfolioService.getPortfolioHoldings(),
+          _portfolioService.getPortfolioSummary(),
         ]);
 
         final holdings = results[0] as PortfolioHoldings;
@@ -542,12 +539,12 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         }
       }
     } else {
-      loadPortfolio(userId);
+      loadPortfolio();
     }
   }
 
   /// Refresh portfolio data for a specific portfolio ID
-  Future<void> refreshPortfolioById(String userId, String portfolioId) async {
+  Future<void> refreshPortfolioById(String portfolioId) async {
     final currentState = state;
     if (currentState is PortfolioLoaded) {
       try {
@@ -563,8 +560,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
         // Use portfolio service to refresh data by portfolio ID
         final results = await Future.wait([
-          _portfolioService.getPortfolioHoldingsById(userId, portfolioId),
-          _portfolioService.getPortfolioSummaryById(userId, portfolioId),
+          _portfolioService.getPortfolioHoldingsById(portfolioId),
+          _portfolioService.getPortfolioSummaryById(portfolioId),
         ]);
 
         final holdings = results[0] as PortfolioHoldings;
@@ -599,16 +596,16 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         }
       }
     } else {
-      loadPortfolioById(userId, portfolioId);
+      loadPortfolioById(portfolioId);
     }
   }
 
   /// Load portfolios list for the specified user
-  Future<void> loadPortfoliosList(String userId) async {
+  Future<void> loadPortfoliosList() async {
     CommonLogger.methodEntry(
       'loadPortfoliosList',
       tag: 'PortfolioCubit',
-      metadata: {'userId': userId},
+      metadata: {},
     );
     CommonLogger.stateChange(
       '${state.runtimeType}',
@@ -624,7 +621,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         tag: 'PortfolioCubit',
       );
 
-      final portfolioList = await _portfolioService.getPortfoliosList(userId);
+      final portfolioList = await _portfolioService.getPortfoliosList();
 
       CommonLogger.stateChange(
         'PortfolioListLoading',
@@ -677,7 +674,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   }
 
   /// Refresh portfolios list
-  Future<void> refreshPortfoliosList(String userId) async {
+  Future<void> refreshPortfoliosList() async {
     final currentState = state;
     if (currentState is PortfolioListLoaded) {
       try {
@@ -691,7 +688,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
           emit(currentState.copyWith(isRefreshing: true));
         }
 
-        final portfolioList = await _portfolioService.getPortfoliosList(userId);
+        final portfolioList = await _portfolioService.getPortfoliosList();
 
         if (!isClosed) {
           emit(
@@ -722,7 +719,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         }
       }
     } else {
-      loadPortfoliosList(userId);
+      loadPortfoliosList();
     }
   }
 

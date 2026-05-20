@@ -281,8 +281,6 @@ class PortfolioHoldingHiveModelAdapter
 @HiveType(typeId: 2)
 class PortfolioHoldingsHiveModel extends HiveObject {
   @HiveField(0)
-  final String userId;
-
   @HiveField(1)
   final List<PortfolioHoldingHiveModel> holdings;
 
@@ -290,14 +288,12 @@ class PortfolioHoldingsHiveModel extends HiveObject {
   final DateTime lastUpdated;
 
   PortfolioHoldingsHiveModel({
-    required this.userId,
     required this.holdings,
     required this.lastUpdated,
   });
 
   factory PortfolioHoldingsHiveModel.fromDomain(PortfolioHoldings entity) {
     return PortfolioHoldingsHiveModel(
-      userId: entity.userId,
       holdings: entity.holdings
           .map((e) => PortfolioHoldingHiveModel.fromDomain(e))
           .toList(),
@@ -307,7 +303,6 @@ class PortfolioHoldingsHiveModel extends HiveObject {
 
   PortfolioHoldings toDomain() {
     return PortfolioHoldings(
-      userId: userId,
       holdings: holdings.map((e) => e.toDomain()).toList(),
       lastUpdated: lastUpdated,
     );
@@ -326,7 +321,6 @@ class PortfolioHoldingsHiveModelAdapter
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return PortfolioHoldingsHiveModel(
-      userId: fields[0] as String,
       holdings: (fields[1] as List).cast<PortfolioHoldingHiveModel>(),
       lastUpdated: fields[2] as DateTime,
     );
@@ -337,7 +331,7 @@ class PortfolioHoldingsHiveModelAdapter
     writer
       ..writeByte(3)
       ..writeByte(0)
-      ..write(obj.userId)
+      ..write(<dynamic>[])
       ..writeByte(1)
       ..write(obj.holdings)
       ..writeByte(2)

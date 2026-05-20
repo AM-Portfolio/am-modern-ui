@@ -17,11 +17,9 @@ import 'package:am_common/am_common.dart';
 /// Portfolio overview widget showing summary and key metrics
 class PortfolioOverviewWidget extends StatefulWidget {
   const PortfolioOverviewWidget({
-    required this.userId,
     this.portfolioId,
     super.key,
   });
-  final String userId;
   final String? portfolioId;
 
   @override
@@ -81,10 +79,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
             return;
           }
           
-          cubit.loadPortfolioById(
-            widget.userId,
-            widget.portfolioId!,
-          );
+          cubit.loadPortfolioById(widget.portfolioId!);
         }
       });
     } else {
@@ -94,7 +89,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           if (currentState is PortfolioLoaded && currentState.portfolioId == 'GLOBAL') {
             return;
           }
-          cubit.loadPortfolio(widget.userId);
+          cubit.loadPortfolio();
         }
       });
     }
@@ -103,8 +98,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
   @override
   Widget build(BuildContext context) {
     final portfolioId = widget.portfolioId;
-    final userId = widget.userId;
-
+    
     ds.CommonLogger.debug('[PortfolioOverview] Building with portfolioId=$portfolioId', tag: 'PortfolioUI');
 
     return BlocConsumer<PortfolioCubit, PortfolioState>(
@@ -124,7 +118,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
         if (current is PortfolioLoaded && current.portfolioId == portfolioId) {
           return;
         }
-        cubit.loadPortfolioById(widget.userId, portfolioId);
+        cubit.loadPortfolioById(portfolioId);
       },
       buildWhen: (previous, current) {
         if (previous is PortfolioLoaded && current is PortfolioLoaded) {
@@ -180,9 +174,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                   ElevatedButton.icon(
                     onPressed: () {
                       if (portfolioId != null) {
-                        context.read<PortfolioCubit>().loadPortfolioById(userId, portfolioId);
-                      } else {
-                        context.read<PortfolioCubit>().loadPortfoliosList(userId);
+                        context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
                       }
                     },
                     icon: const Icon(Icons.refresh),
@@ -202,10 +194,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           if (state.portfolioId != portfolioId) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
-                context.read<PortfolioCubit>().loadPortfolioById(
-                      userId,
-                      portfolioId,
-                    );
+                context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
               }
             });
             return _buildOverviewSkeleton(context);

@@ -4,18 +4,17 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:am_design_system/am_design_system.dart';
+import '../../../internal/domain/entities/portfolio_analytics_request.dart';
 import '../../../internal/domain/entities/portfolio_summary.dart';
 import '../../../providers/portfolio_providers.dart';
 
 /// Web-specific portfolio analysis page with comprehensive analytics
 class PortfolioAnalysisWebPage extends ConsumerStatefulWidget {
   const PortfolioAnalysisWebPage({
-    required this.userId,
     required this.portfolioId,
     super.key,
     this.portfolioName,
   });
-  final String userId;
   final String portfolioId;
   final String? portfolioName;
 
@@ -32,13 +31,31 @@ class _PortfolioAnalysisWebPageState
   @override
   Widget build(BuildContext context) {
     final summaryAsync = ref.watch(
-      portfolioSummaryByIdProvider(widget.userId, widget.portfolioId),
+      portfolioSummaryProvider(widget.portfolioId),
     );
     final analyticsAsync = ref.watch(
-      portfolioAnalyticsWithDefaultsProvider(widget.portfolioId),
+      portfolioAnalyticsProvider(
+        PortfolioAnalyticsRequest(
+          coreIdentifiers: CoreIdentifiers(portfolioId: widget.portfolioId),
+          featureToggles: const FeatureToggles(
+            includeHeatmap: true,
+            includeMovers: true,
+            includeSectorAllocation: true,
+            includeMarketCapAllocation: true,
+          ),
+          featureConfiguration: const FeatureConfiguration(moversLimit: 10),
+          pagination: const Pagination(
+            page: 0,
+            size: 100,
+            sortBy: 'currentValue',
+            sortDirection: 'DESC',
+            returnAllData: true,
+          ),
+        ),
+      ),
     );
     final holdingsAsync = ref.watch(
-      portfolioHoldingsByIdProvider(widget.userId, widget.portfolioId),
+      portfolioHoldingsProvider(widget.portfolioId),
     );
 
     return Scaffold(

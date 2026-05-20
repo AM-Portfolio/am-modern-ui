@@ -10,14 +10,12 @@ import 'package:am_common/am_common.dart';
 /// Now uses PortfolioListWrapper for portfolio selection functionality
 class PortfolioScreen extends StatelessWidget {
   const PortfolioScreen({
-    required this.userId,
     super.key,
     this.isSidebarVisible = true,
     this.onToggleSidebar,
     this.onBack,
   });
 
-  final String userId;
   final bool isSidebarVisible;
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
@@ -25,7 +23,7 @@ class PortfolioScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     CommonLogger.info(
-      'Routing to portfolio screen with selection for userId: $userId',
+      'Routing to portfolio screen with selection',
       tag: 'PortfolioScreen',
     );
 
@@ -41,7 +39,6 @@ class PortfolioScreen extends StatelessWidget {
 
         // Usage of PortfolioListWrapper handles platform-specific screen selection
         return PortfolioListWrapper(
-          userId: userId,
           isMobile: isMobileView, // Dynamic switch based on width
           isSidebarVisible: isSidebarVisible,
           onToggleSidebar: onToggleSidebar,

@@ -1,5 +1,4 @@
 class PortfolioSocketUpdateDto {
-  final String userId;
   final String? portfolioId;
   final double currentValue;
   final double investmentValue;
@@ -10,7 +9,6 @@ class PortfolioSocketUpdateDto {
   final List<SocketEquityHoldingDto> equities;
 
   PortfolioSocketUpdateDto({
-    required this.userId,
     this.portfolioId,
     required this.currentValue,
     required this.investmentValue,
@@ -22,9 +20,7 @@ class PortfolioSocketUpdateDto {
   });
 
   factory PortfolioSocketUpdateDto.fromJson(Map<String, dynamic> json) {
-    return PortfolioSocketUpdateDto(
-      userId: json['userId'] as String? ?? '',
-      portfolioId: json['portfolioId'] as String?,
+    return PortfolioSocketUpdateDto(      portfolioId: json['portfolioId'] as String?,
       currentValue: _parseDouble(json['currentValue']),
       investmentValue: _parseDouble(json['investmentValue']),
       totalGainLoss: _parseDouble(json['totalGainLoss']),

@@ -10,12 +10,10 @@ import '../../internal/domain/entities/portfolio_list.dart';
 
 class AppShell extends StatelessWidget {
   final Widget child;
-  final String userId;
   final VoidCallback onLogout;
 
   const AppShell({
     required this.child,
-    required this.userId,
     required this.onLogout,
     super.key,
   });

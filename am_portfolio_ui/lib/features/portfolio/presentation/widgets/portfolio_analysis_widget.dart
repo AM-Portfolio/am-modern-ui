@@ -6,9 +6,7 @@ import '../cubit/portfolio_state.dart';
 
 /// Portfolio analysis widget showing analytics and insights
 class PortfolioAnalysisWidget extends StatelessWidget {
-  const PortfolioAnalysisWidget({required this.userId, super.key});
-  final String userId;
-
+  const PortfolioAnalysisWidget({super.key});
   @override
   Widget build(BuildContext context) =>
       BlocBuilder<PortfolioCubit, PortfolioState>(
@@ -30,7 +28,7 @@ class PortfolioAnalysisWidget extends StatelessWidget {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () =>
-                        context.read<PortfolioCubit>().loadPortfolio(userId),
+                        context.read<PortfolioCubit>().loadPortfolio(),
                     child: const Text('Retry'),
                   ),
                 ],

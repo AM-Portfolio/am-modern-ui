@@ -16,8 +16,8 @@ class PortfolioEndpoints {
       '/v1/analytics/portfolio/$portfolioId/advanced';
 
   /// Get user portfolio holdings
-  static String userHoldings(String userId) => '$holdings?userId=$userId';
+  static String userHoldings() => holdings;
 
   /// Get user portfolio summary
-  static String userSummary(String userId) => '$summary?userId=$userId';
+  static String userSummary() => summary;
 }

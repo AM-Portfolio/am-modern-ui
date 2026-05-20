@@ -16,7 +16,6 @@ import 'package:am_common/am_common.dart';
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
 class PortfolioMobileScreen extends ConsumerWidget {
   const PortfolioMobileScreen({
-    required this.userId,
     super.key,
     this.selectedPortfolioId,
     this.selectedPortfolioName,
@@ -24,7 +23,6 @@ class PortfolioMobileScreen extends ConsumerWidget {
     this.onPortfolioChanged,
     this.onBack,
   });
-  final String userId;
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final List<PortfolioItem>? portfolios;
@@ -34,13 +32,12 @@ class PortfolioMobileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     CommonLogger.info(
-      'Building PortfolioMobileScreen for userId: $userId',
+      'Building PortfolioMobileScreen',
       tag: 'PortfolioMobileScreen',
     );
     CommonLogger.userAction(
       'Navigate to Mobile Portfolio',
       tag: 'PortfolioMobileScreen',
-      metadata: {'userId': userId},
     );
 
     // Watch the portfolio service provider
@@ -61,7 +58,6 @@ class PortfolioMobileScreen extends ConsumerWidget {
           data: (analyticsService) => BlocProvider(
             create: (context) => PortfolioAnalyticsCubit(analyticsService),
             child: PortfolioMobileView(
-              userId: userId,
               selectedPortfolioId: selectedPortfolioId,
               selectedPortfolioName: selectedPortfolioName,
               portfolios: portfolios,
@@ -136,7 +132,6 @@ class PortfolioMobileScreen extends ConsumerWidget {
 /// Internal mobile portfolio view with tab-based navigation and portfolio selection
 class PortfolioMobileView extends StatefulWidget {
   const PortfolioMobileView({
-    required this.userId,
     super.key,
     this.selectedPortfolioId,
     this.selectedPortfolioName,
@@ -144,7 +139,6 @@ class PortfolioMobileView extends StatefulWidget {
     this.onPortfolioChanged,
     this.onBack,
   });
-  final String userId;
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final List<PortfolioItem>? portfolios;
@@ -178,10 +172,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           return;
         }
         
-        cubit.loadPortfolioById(
-          widget.userId,
-          _currentPortfolioId!,
-        );
+        cubit.loadPortfolioById(_currentPortfolioId!);
       }
     });
   }
@@ -192,10 +183,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     if (widget.selectedPortfolioId != null &&
         widget.selectedPortfolioId != _currentPortfolioId) {
       setState(() => _currentPortfolioId = widget.selectedPortfolioId);
-      context.read<PortfolioCubit>().loadPortfolioById(
-        widget.userId,
-        widget.selectedPortfolioId!,
-      );
+      context.read<PortfolioCubit>().loadPortfolioById(widget.selectedPortfolioId!);
     }
   }
 
@@ -212,10 +200,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     });
 
     // Load new portfolio data
-    context.read<PortfolioCubit>().loadPortfolioById(
-      widget.userId,
-      portfolioId,
-    );
+    context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
 
     // Notify parent if callback is provided
     widget.onPortfolioChanged?.call(portfolioId, portfolioName);
@@ -224,7 +209,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   @override
   Widget build(BuildContext context) {
     CommonLogger.debug(
-      'Building PortfolioMobileView - userId: ${widget.userId}',
+      'Building PortfolioMobileView - portfolioId: $_currentPortfolioId',
       tag: 'PortfolioMobileView',
     );
 
@@ -253,8 +238,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                 child: PortfolioTabContentWidget(
                   tabController: _tabController,
                   currentPortfolioId: _currentPortfolioId!,
-                  userId: widget.userId,
-                ),
+                  ),
               ),
             ],
           ),

@@ -12,19 +12,17 @@ class PortfolioCacheRepository {
   // ============================================================================
 
   Future<Map<String, dynamic>?> getSummary(
-    String userId,
     String portfolioId,
   ) async {
-    final key = PortfolioCacheKeys.summary(userId, portfolioId);
+    final key = PortfolioCacheKeys.summary(portfolioId);
     return await _cacheService.get<Map<String, dynamic>>(key);
   }
 
   Future<void> cacheSummary(
-    String userId,
     String portfolioId,
     Map<String, dynamic> summary,
   ) async {
-    final key = PortfolioCacheKeys.summary(userId, portfolioId);
+    final key = PortfolioCacheKeys.summary(portfolioId);
     await _cacheService.set(key, summary, ttl: CacheTTL.medium);
   }
 
@@ -32,17 +30,16 @@ class PortfolioCacheRepository {
   // Portfolio Holdings
   // ============================================================================
 
-  Future<List<dynamic>?> getHoldings(String userId, String portfolioId) async {
-    final key = PortfolioCacheKeys.holdings(userId, portfolioId);
+  Future<List<dynamic>?> getHoldings(String portfolioId) async {
+    final key = PortfolioCacheKeys.holdings(portfolioId);
     return await _cacheService.get<List<dynamic>>(key);
   }
 
   Future<void> cacheHoldings(
-    String userId,
     String portfolioId,
     List<dynamic> holdings,
   ) async {
-    final key = PortfolioCacheKeys.holdings(userId, portfolioId);
+    final key = PortfolioCacheKeys.holdings(portfolioId);
     await _cacheService.set(key, holdings, ttl: CacheTTL.medium);
   }
 
@@ -51,19 +48,17 @@ class PortfolioCacheRepository {
   // ============================================================================
 
   Future<Map<String, dynamic>?> getHeatmap(
-    String userId,
     String portfolioId,
   ) async {
-    final key = PortfolioCacheKeys.heatmap(userId, portfolioId);
+    final key = PortfolioCacheKeys.heatmap(portfolioId);
     return await _cacheService.get<Map<String, dynamic>>(key);
   }
 
   Future<void> cacheHeatmap(
-    String userId,
     String portfolioId,
     Map<String, dynamic> heatmap,
   ) async {
-    final key = PortfolioCacheKeys.heatmap(userId, portfolioId);
+    final key = PortfolioCacheKeys.heatmap(portfolioId);
     await _cacheService.set(key, heatmap, ttl: CacheTTL.medium);
   }
 
@@ -72,19 +67,17 @@ class PortfolioCacheRepository {
   // ============================================================================
 
   Future<Map<String, dynamic>?> getAnalytics(
-    String userId,
     String portfolioId,
   ) async {
-    final key = PortfolioCacheKeys.analytics(userId, portfolioId);
+    final key = PortfolioCacheKeys.analytics(portfolioId);
     return await _cacheService.get<Map<String, dynamic>>(key);
   }
 
   Future<void> cacheAnalytics(
-    String userId,
     String portfolioId,
     Map<String, dynamic> analytics,
   ) async {
-    final key = PortfolioCacheKeys.analytics(userId, portfolioId);
+    final key = PortfolioCacheKeys.analytics(portfolioId);
     await _cacheService.set(key, analytics, ttl: CacheTTL.long);
   }
 
@@ -92,16 +85,16 @@ class PortfolioCacheRepository {
   // Clear Portfolio Cache
   // ============================================================================
 
-  Future<void> clearPortfolioCache(String userId, String portfolioId) async {
-    await _cacheService.clear(PortfolioCacheKeys.summary(userId, portfolioId));
-    await _cacheService.clear(PortfolioCacheKeys.holdings(userId, portfolioId));
-    await _cacheService.clear(PortfolioCacheKeys.heatmap(userId, portfolioId));
+  Future<void> clearPortfolioCache(String portfolioId) async {
+    await _cacheService.clear(PortfolioCacheKeys.summary(portfolioId));
+    await _cacheService.clear(PortfolioCacheKeys.holdings(portfolioId));
+    await _cacheService.clear(PortfolioCacheKeys.heatmap(portfolioId));
     await _cacheService.clear(
-      PortfolioCacheKeys.analytics(userId, portfolioId),
+      PortfolioCacheKeys.analytics(portfolioId),
     );
   }
 
-  Future<void> clearAllPortfolios(String userId) async {
+  Future<void> clearAllPortfolios() async {
     // This would require iterating through all keys
     // For now, individual clear is preferred
   }

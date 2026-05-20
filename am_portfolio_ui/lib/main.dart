@@ -26,32 +26,47 @@ void main() async {
   // Initialize ConfigService (required by many downstream services)
   await common.ConfigService.initialize();
 
-  // Service Locator (DI) Setup
-  GetIt.instance.registerLazySingleton<common.SecureStorageService>(
-    () => common.SecureStorageService(),
+  // Service Locator (DI) Setup — registers ApiClient, AnalysisApiClient,
+  // AmStompClient, SecureStorageService, TelemetryService into GetIt.
+  final analysisUrl = common.ConfigService.config.api.analysis?.baseUrl
+      ?? 'https://am.munish.org/analysis';
+  final wsUrl = common.ConfigService.config.api.marketData?.wsUrl
+      ?? 'wss://am.munish.org/market/ws/market-data-stream';
+
+  common.ServiceRegistry.initialize(
+    analysisBaseUrl: analysisUrl,
+    wsUrl: wsUrl,
   );
-  GetIt.instance.registerLazySingleton<common.TelemetryService>(
-    () => common.TelemetryService(),
-  );
-  GetIt.instance.registerLazySingleton<common.AmStompClient>(
-    () => common.AmStompClient(),
-  );
+
+  // Also register am_common-namespaced types that are used directly via
+  // GetIt.instance<common.X>() elsewhere in the codebase.
+  if (!GetIt.instance.isRegistered<common.SecureStorageService>()) {
+    GetIt.instance.registerLazySingleton<common.SecureStorageService>(
+      () => common.SecureStorageService(),
+    );
+  }
+  if (!GetIt.instance.isRegistered<common.TelemetryService>()) {
+    GetIt.instance.registerLazySingleton<common.TelemetryService>(
+      () => common.TelemetryService(),
+    );
+  }
+  if (!GetIt.instance.isRegistered<common.AmStompClient>()) {
+    GetIt.instance.registerLazySingleton<common.AmStompClient>(
+      () => common.AmStompClient(),
+    );
+  }
 
   // Initialize Logger
   common.AppLogger.initialize();
   // Override to INFO as requested
   CommonLogger.configure(enabled: true, minLevel: LogLevel.info);
 
-  // Initialize WebSocket Client
+  // Configure WebSocket client URL
   final stompClient = GetIt.instance<common.AmStompClient>();
-  // Use raw WebSocket endpoint (no SockJS) for better compatibility with stomp_dart_client
-  final wsUrl = common.ConfigService.config.api.marketData?.wsUrl ?? 'wss://am.munish.org/market/ws/market-data-stream';
   stompClient.configure(url: wsUrl);
   // Connect will be handled by GlobalPortfolioWrapper after authentication
 
-  // FORCE ANALYSIS CONFIG TO USE LOCAL DOCKER
-  // Port 8061 is mapped to the analysis service in your docker-compose.yml
-  final analysisUrl = common.ConfigService.config.api.analysis?.baseUrl ?? 'https://am.munish.org/analysis';
+  // Configure Analysis SDK
   AnalysisConfig.instance.setBaseUrl(analysisUrl);
 
   runApp(const ProviderScope(child: AmPortfolioStandaloneApp()));
@@ -111,13 +126,10 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                             .token; // Assume token exists in Authenticated state
                         context.read<common.StompConnectionCubit>().updateToken(
                           token,
-                          userId: authState.user.id,
-                        );
+                          );
 
                         return GlobalPortfolioWrapper(
-                          userId: authState.user.id,
                           child: AppShell(
-                            userId: authState.user.id,
                             onLogout: () {
                               context.read<AuthCubit>().logout();
                               context
@@ -144,12 +156,10 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                     builder: (context, state) {
                       final authState = context.read<AuthCubit>().state;
                       // We can assume authState is Authenticated because of Shell logic, but safe to check or cast if needed.
-                      // Actually cleaner to get userId passed down or from context if available.
+                      
                       // ShellRoute builder verifies auth.
-                      final userId = (authState as Authenticated).user.id;
-
+                      
                       return PortfolioOverviewWebPage(
-                        userId: userId,
                         portfolioId: context.selectedPortfolioId,
                       );
                     },
@@ -157,39 +167,27 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                   GoRoute(
                     path: '/portfolio/holdings',
                     builder: (context, state) {
-                      final userId =
-                          (context.read<AuthCubit>().state as Authenticated)
-                              .user
-                              .id;
+                      
                       return PortfolioHoldingsWebPage(
-                        userId: userId,
-                        portfolioId: context.selectedPortfolioId,
+                        portfolioId: context.selectedPortfolioId ?? '',
                       );
                     },
                   ),
                   GoRoute(
                     path: '/portfolio/analysis',
                     builder: (context, state) {
-                      final userId =
-                          (context.read<AuthCubit>().state as Authenticated)
-                              .user
-                              .id;
+                      
                       return PortfolioAnalysisWebPage(
-                        userId: userId,
-                        portfolioId: context.selectedPortfolioId,
+                        portfolioId: context.selectedPortfolioId ?? '',
                       );
                     },
                   ),
                   GoRoute(
                     path: '/portfolio/heatmap',
                     builder: (context, state) {
-                      final userId =
-                          (context.read<AuthCubit>().state as Authenticated)
-                              .user
-                              .id;
+                      
                       return PortfolioHeatmapWebPage(
-                        userId: userId,
-                        portfolioId: context.selectedPortfolioId,
+                        portfolioId: context.selectedPortfolioId ?? '',
                       );
                     },
                   ),
@@ -197,12 +195,8 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                   GoRoute(
                     path: '/portfolio/baskets',
                     builder: (context, state) {
-                      final userId =
-                          (context.read<AuthCubit>().state as Authenticated)
-                              .user
-                              .id;
+                      
                       return PortfolioBasketsWebPage(
-                        userId: userId,
                         portfolioId: context.selectedPortfolioId,
                       );
                     },
@@ -214,7 +208,6 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                       final extras = state.extra as Map<String, dynamic>;
                       return BasketPreviewPage(
                         etfIsin: extras['etfIsin'] as String,
-                        userId: extras['userId'] as String,
                         portfolioId: extras['portfolioId'] as String,
                       );
                     },
@@ -228,7 +221,6 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                         return ManualBasketCreatorPage(
                           opportunity:
                               extras['opportunity'] as BasketOpportunity,
-                          userId: extras['userId'] as String,
                           portfolioId: extras['portfolioId'] as String,
                         );
                       }
