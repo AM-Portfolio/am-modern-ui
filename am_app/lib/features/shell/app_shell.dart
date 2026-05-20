@@ -191,7 +191,6 @@ class _AppShellState extends State<AppShell> {
                       ),
                     Expanded(
                       child: GlobalPortfolioWrapper(
-                        userId: userId,
                         child: _buildPage(userId, isDesktop),
                       ),
                     ),
@@ -245,7 +244,7 @@ class _AppShellState extends State<AppShell> {
       case 0:
         return dashboard.DashboardPage(userId: userId);
       case 1:
-        return PortfolioScreen(userId: userId);
+        return const PortfolioScreen();
       case 2:
         return TradeWebScreen(userId: userId);
       case 3:
