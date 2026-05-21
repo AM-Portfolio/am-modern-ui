@@ -28,10 +28,8 @@ void main() async {
 
   // Service Locator (DI) Setup — registers ApiClient, AnalysisApiClient,
   // AmStompClient, SecureStorageService, TelemetryService into GetIt.
-  final analysisUrl = common.ConfigService.config.api.analysis?.baseUrl
-      ?? 'https://am.munish.org/analysis';
-  final wsUrl = common.ConfigService.config.api.marketData?.wsUrl
-      ?? 'wss://am.munish.org/market/ws/market-data-stream';
+  final analysisUrl = common.ConfigService.config.api.analysis?.baseUrl ?? '';
+  final wsUrl = common.ConfigService.config.api.marketData?.wsUrl ?? '';
 
   common.ServiceRegistry.initialize(
     analysisBaseUrl: analysisUrl,
