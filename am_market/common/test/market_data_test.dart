@@ -38,5 +38,24 @@ void main() {
       expect(parsed.change, equals(50.0));
       expect(parsed.pChange, equals(0.20));
     });
+
+    test('Should dynamically calculate lastPrice from prevClose and change when direct lastPrice is absent', () {
+      final jsonInput = {
+        "indexSymbol": "NIFTY OIL AND GAS",
+        "metadata": {
+          "previousClose": 12050.7,
+          "change": -91.3,
+          "percChange": -0.76
+        },
+        "data": []
+      };
+
+      final parsed = StockIndicesMarketData.fromJson(jsonInput);
+
+      expect(parsed.indexSymbol, equals('NIFTY OIL AND GAS'));
+      expect(parsed.lastPrice, equals(11959.4)); // 12050.7 - 91.3
+      expect(parsed.change, equals(-91.3));
+      expect(parsed.pChange, equals(-0.76));
+    });
   });
 }

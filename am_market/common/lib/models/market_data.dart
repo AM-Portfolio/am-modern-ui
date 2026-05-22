@@ -24,22 +24,26 @@ class StockIndicesMarketData {
         : null;
 
     double parseLastPrice() {
-      if (json['lastPrice'] != null && json['lastPrice'] != 0 && json['lastPrice'] != 0.0) {
-        return (json['lastPrice'] as num).toDouble();
+      // 1. Direct last price check (top level or metadata)
+      final directLast = json['lastPrice'] ?? json['last_price'] ?? json['last'] ?? 
+                         metadata?['lastPrice'] ?? metadata?['last_price'] ?? metadata?['last'] ?? metadata?['close'] ?? json['close'];
+      if (directLast != null && directLast != 0 && directLast != 0.0) {
+        return (directLast as num).toDouble();
       }
-      if (json['last'] != null && json['last'] != 0 && json['last'] != 0.0) {
-        return (json['last'] as num).toDouble();
+      
+      // 2. Fallback to prevClose + change (top level or metadata)
+      final prevClose = json['previousClose'] ?? json['previous_close'] ?? json['prevClose'] ?? json['prev_close'] ??
+                        metadata?['previousClose'] ?? metadata?['previous_close'] ?? metadata?['prevClose'] ?? metadata?['prev_close'] ?? 0;
+                        
+      final change = json['change'] ?? metadata?['change'] ?? 0;
+      
+      final double prevCloseDouble = (prevClose as num).toDouble();
+      final double changeDouble = (change as num).toDouble();
+      
+      if (prevCloseDouble != 0 && prevCloseDouble != 0.0) {
+        return prevCloseDouble + changeDouble;
       }
-      if (metadata != null) {
-        if (metadata['last'] != null && metadata['last'] != 0 && metadata['last'] != 0.0) {
-          return (metadata['last'] as num).toDouble();
-        }
-        final double prevClose = (metadata['previousClose'] ?? 0).toDouble();
-        final double change = (metadata['change'] ?? 0).toDouble();
-        if (prevClose != 0 && prevClose != 0.0) {
-          return prevClose + change;
-        }
-      }
+      
       return 0.0;
     }
 
