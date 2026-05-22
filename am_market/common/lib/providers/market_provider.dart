@@ -74,9 +74,6 @@ class MarketProvider with ChangeNotifier {
 
   // Legacy Store Support
   Map<String, Map<String, dynamic>> get livePrices {
-      if (_priceService != null) {
-          return {}; // UI should use QuoteChange, ignoring legacy map for PriceService path
-      }
       return _internalLivePrices; 
   }
 

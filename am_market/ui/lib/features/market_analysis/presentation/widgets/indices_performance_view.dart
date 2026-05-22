@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../providers/market_provider.dart';
-import '../models/market_data.dart';
-import '../services/api_service.dart';
-import '../services/stream_service.dart';
+import 'package:am_market_common/providers/market_provider.dart';
+import 'package:am_market_common/models/market_data.dart';
+import 'package:am_market_common/services/api_service.dart';
+import 'package:am_market_ui/core/services/stream_service.dart';
 import '../widgets/multi_index_chart.dart';
 
 

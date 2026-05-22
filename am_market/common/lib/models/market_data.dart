@@ -19,11 +19,15 @@ class StockIndicesMarketData {
     var list = json['data'] as List? ?? json['stocks'] as List? ?? [];
     List<StockData> stocksList = list.map((i) => StockData.fromJson(i)).toList();
 
+    final metadata = json['metadata'] is Map
+        ? Map<String, dynamic>.from(json['metadata'] as Map)
+        : null;
+
     return StockIndicesMarketData(
       indexSymbol: json['indexSymbol'] ?? 'Unknown',
-      lastPrice: (json['lastPrice'] ?? json['last'] ?? 0).toDouble(),
-      change: (json['change'] ?? 0).toDouble(),
-      pChange: (json['pChange'] ?? json['percentChange'] ?? 0).toDouble(),
+      lastPrice: (json['lastPrice'] ?? json['last'] ?? metadata?['last'] ?? 0).toDouble(),
+      change: (json['change'] ?? metadata?['change'] ?? 0).toDouble(),
+      pChange: (json['pChange'] ?? json['percentChange'] ?? metadata?['percChange'] ?? 0).toDouble(),
       stocks: stocksList,
     );
   }
