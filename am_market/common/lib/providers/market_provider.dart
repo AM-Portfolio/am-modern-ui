@@ -182,12 +182,24 @@ class MarketProvider with ChangeNotifier {
       for (int i = 0; i < _allIndicesData.length; i++) {
         if (_allIndicesData[i].indexSymbol.toUpperCase() == updateSymbolBase.toUpperCase()) {
              final current = _allIndicesData[i];
-             final double? newLtp = data['lastPrice']?.toDouble();
+             double? newLtp = data['lastPrice']?.toDouble();
+             final double? newChange = data['change']?.toDouble();
              final double? newPChange = data['changePercent']?.toDouble(); 
              
-             if (newLtp != null) {
+             // Fallback calculation for newLtp if it's null or 0.0
+             if (newLtp == null || newLtp == 0.0) {
+                 final double prevClose = (data['previousClose'] ?? 0).toDouble();
+                 final double change = (data['change'] ?? 0).toDouble();
+                 if (prevClose != 0 && prevClose != 0.0) {
+                     newLtp = prevClose + change;
+                 }
+             }
+
+             // Only update if we have a valid non-zero price
+             if (newLtp != null && newLtp != 0.0) {
                  _allIndicesData[i] = current.copyWith(
                      lastPrice: newLtp,
+                     change: newChange ?? current.change,
                      pChange: newPChange ?? current.pChange 
                  );
                  notifyListeners();

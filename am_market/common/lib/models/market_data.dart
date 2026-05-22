@@ -23,9 +23,29 @@ class StockIndicesMarketData {
         ? Map<String, dynamic>.from(json['metadata'] as Map)
         : null;
 
+    double parseLastPrice() {
+      if (json['lastPrice'] != null && json['lastPrice'] != 0 && json['lastPrice'] != 0.0) {
+        return (json['lastPrice'] as num).toDouble();
+      }
+      if (json['last'] != null && json['last'] != 0 && json['last'] != 0.0) {
+        return (json['last'] as num).toDouble();
+      }
+      if (metadata != null) {
+        if (metadata['last'] != null && metadata['last'] != 0 && metadata['last'] != 0.0) {
+          return (metadata['last'] as num).toDouble();
+        }
+        final double prevClose = (metadata['previousClose'] ?? 0).toDouble();
+        final double change = (metadata['change'] ?? 0).toDouble();
+        if (prevClose != 0 && prevClose != 0.0) {
+          return prevClose + change;
+        }
+      }
+      return 0.0;
+    }
+
     return StockIndicesMarketData(
       indexSymbol: json['indexSymbol'] ?? 'Unknown',
-      lastPrice: (json['lastPrice'] ?? json['last'] ?? metadata?['last'] ?? 0).toDouble(),
+      lastPrice: parseLastPrice(),
       change: (json['change'] ?? metadata?['change'] ?? 0).toDouble(),
       pChange: (json['pChange'] ?? json['percentChange'] ?? metadata?['percChange'] ?? 0).toDouble(),
       stocks: stocksList,
