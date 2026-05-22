@@ -34,7 +34,7 @@
 
 ### api_client.dart (426 lines)
 - HTTP client using `http` package (NOT Dio)
-- Default base URL: https://am.munish.org
+- Default base URL: https://am-dev.asrax.in
 - Methods: get, post, put, delete
 - Auth: reads JWT from SecureStorageService on every request
 - Fallback: HARDCODED JWT if stored token is null or starts with 'mock_'
@@ -126,7 +126,7 @@
 - EnvironmentConfig class — static, no instance needed
 - Environment enum: development / preprod / production
 - Default: production
-- All 3 envs currently use same API URL: https://am.munish.org
+- All 3 envs currently use same API URL: https://am-dev.asrax.in
 - Settings per env
   - development: [DEV] title, refreshInterval 30s, enableDebugFeatures true
   - preprod: [PREPROD] title, refreshInterval 60s, enableDebugFeatures true
@@ -185,7 +185,7 @@
 - Looks like real-time but is actually REST polling on mutation
 
 ## STOMP Flow (Portfolio)
-- main() → ServiceRegistry.initialize(wsUrl: wss://am.munish.org/ws-gateway)
+- main() → ServiceRegistry.initialize(wsUrl: wss://am-dev.asrax.in/ws-gateway)
 - GlobalPortfolioWrapper.initState() → stompClient.connect(headers: JWT)
 - onConnect fires → first portfolio auto-selected
 - stompClient.send(/app/portfolio/calculate, {userId, portfolioId})

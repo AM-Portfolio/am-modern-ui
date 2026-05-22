@@ -32,7 +32,7 @@ class ApiClient {
   String? getAccessToken() => _cachedToken;
 
   /// Default base URL for API requests
-  static const String _defaultBaseUrl = 'https://am.munish.org';
+  static const String _defaultBaseUrl = 'https://am-dev.asrax.in';
 
   /// Base URL for API requests
   final String baseUrl;

@@ -4,7 +4,7 @@
 - Flutter package for the Trade Management module
 - Handles: Trade entry, Holdings, Calendar, Journal, Metrics, Reports, Notebook
 - Runs standalone on port 8083 or embedded inside am_app
-- Backend: https://am.munish.org/trades
+- Backend: https://am-dev.asrax.in/trades
 
 ## Sibling Dependencies (local packages)
 - am_design_system — all UI components, theme, navigation
@@ -28,8 +28,8 @@
 - intl — date and number formatting
 
 ## Configuration
-- API Base URL (TradeEndpoints): https://am.munish.org/trades
-- API Base URL (ConfigService): https://am.munish.org/api/trade
+- API Base URL (TradeEndpoints): https://am-dev.asrax.in/trades
+- API Base URL (ConfigService): https://am-dev.asrax.in/api/trade
 - Application Properties: assets/application.properties
 - useMockData: true (hardcoded in ConfigService — change to false for real API)
 - Dev port: 8083 (npm run run:trade)

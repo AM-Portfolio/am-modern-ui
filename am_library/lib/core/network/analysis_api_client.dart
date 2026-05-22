@@ -11,7 +11,7 @@ class AnalysisApiClient {
 
   AnalysisApiClient({String? baseUrl}) {
     _apiClient = sdk.ApiClient(
-      basePath: baseUrl ?? 'https://am.munish.org/analysis',
+      basePath: baseUrl ?? 'https://am-dev.asrax.in/analysis',
     );
     _apiClient.client = _AuthClient(_getAuthToken);
   }

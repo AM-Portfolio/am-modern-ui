@@ -7,7 +7,7 @@
 part of openapi.api;
 
 class ApiClient {
-  ApiClient({this.basePath = 'https://am.munish.org/market', this.authentication,});
+  ApiClient({this.basePath = 'https://am-dev.asrax.in/market', this.authentication,});
 
   final String basePath;
   final Authentication? authentication;
