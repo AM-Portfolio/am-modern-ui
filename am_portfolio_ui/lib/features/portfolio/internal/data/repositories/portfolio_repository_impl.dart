@@ -119,12 +119,9 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       );
 
       // Return cached data if available (Double fallback: In-memory or Local)
-      if (_cachedHoldings != null) {
-        return _cachedHoldings!;
-      }
-
-      // If we had local cache earlier but no in-memory, try to return that (conceptually covered by step 1 & 3 update)
-      // But if standard return is expected:
+      // Note: Removed silent fallback to stale cache. The UI needs to know
+      // when network fetch fails so it can show appropriate error state.
+      // Stream has already emitted cached data if it existed.
       rethrow;
     }
   }
@@ -192,10 +189,8 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         metadata: {'status': 'error'},
       );
 
-      if (_cachedSummary != null) {
-        return _cachedSummary!;
-      }
-
+      // Note: Removed silent fallback to stale cache. The UI needs to know
+      // when network fetch fails so it can show appropriate error state.
       rethrow;
     }
   }
@@ -256,14 +251,8 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       );
 
       // Return cached data if available, otherwise rethrow
-      if (_cachedHoldings != null) {
-        CommonLogger.info(
-          'Returning cached portfolio holdings due to error',
-          tag: 'PortfolioRepository',
-        );
-        return _cachedHoldings!;
-      }
-
+      // Note: Removed silent fallback to stale cache. The UI needs to know
+      // when network fetch fails so it can show appropriate error state.
       rethrow;
     }
   }
@@ -351,14 +340,8 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       );
 
       // Return cached data if available, otherwise rethrow
-      if (_cachedSummary != null) {
-        CommonLogger.info(
-          'Returning cached portfolio summary due to error',
-          tag: 'PortfolioRepository',
-        );
-        return _cachedSummary!;
-      }
-
+      // Note: Removed silent fallback to stale cache. The UI needs to know
+      // when network fetch fails so it can show appropriate error state.
       rethrow;
     }
   }
@@ -642,15 +625,8 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         metadata: {'status': 'error'},
       );
 
-      if (_cachedPortfolioList != null) {
-        return _cachedPortfolioList!;
-      }
-
-      // If we found local data in step 1 but fetch failed, return it if we have it in memory
-      if (_cachedPortfolioList != null) {
-        return _cachedPortfolioList!;
-      }
-
+      // Note: Removed silent fallback to stale cache. The UI needs to know
+      // when network fetch fails so it can show appropriate error state.
       rethrow;
     }
   }

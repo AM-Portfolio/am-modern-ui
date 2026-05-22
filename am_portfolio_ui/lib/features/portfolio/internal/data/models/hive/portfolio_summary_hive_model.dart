@@ -159,7 +159,6 @@ class TopPerformerHiveModelAdapter extends TypeAdapter<TopPerformerHiveModel> {
 
 @HiveType(typeId: 5)
 class PortfolioSummaryHiveModel extends HiveObject {
-  @HiveField(0)
   @HiveField(1)
   final double totalValue;
 
