@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -26,6 +25,9 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   // Health check
   bool? _isServiceConnected;
   bool _checkingHealth = true;
+  bool _showRawJson = false;
+
+  final currencyFormatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
   
   @override
   void initState() {
@@ -71,8 +73,6 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   void _downloadSample() {
-    // Import utility
-    // ignore: avoid_web_libraries_in_flutter
     FileDownloader.downloadCSV(FileDownloader.getDummyPortfolioCSV(), 'sample_portfolio.csv');
     setState(() => _status = 'Sample file downloaded!');
   }
@@ -118,25 +118,53 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
           
           if (_checkingHealth)
-            const LinearProgressIndicator()
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Checking service connectivity...', style: TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ),
+            )
           else if (_isServiceConnected == false)
              _buildConnectionError()
           else ...[
-            _buildConfigurationSection(),
-            const SizedBox(height: 24),
-            _buildUploadSection(),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    children: [
+                      _buildConfigurationSection(),
+                      const SizedBox(height: 24),
+                      _buildUploadSection(),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  flex: 2,
+                  child: _buildDetailsPanel(),
+                )
+              ],
+            ),
             const SizedBox(height: 24),
             if (_status.isNotEmpty || _processing) _buildStatusLog(),
             if (_lastResult != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               _buildResultSection(),
             ],
           ],
@@ -159,9 +187,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               'Document Intelligence',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+                letterSpacing: -0.5,
               ),
             ),
+            const SizedBox(height: 4),
             Text(
               'Automated parser for financial statements',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -173,35 +202,36 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
+            color: statusColor.withOpacity(0.08),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: statusColor.withOpacity(0.5)),
+            border: Border.all(color: statusColor.withOpacity(0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 10,
-                height: 10,
+                width: 8,
+                height: 8,
                 decoration: BoxDecoration(
                   color: statusColor,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: statusColor.withOpacity(0.5),
-                      blurRadius: 4,
+                      color: statusColor.withOpacity(0.6),
+                      blurRadius: 6,
                       spreadRadius: 2,
                     )
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Text(
-                statusText,
+                statusText.toUpperCase(),
                 style: TextStyle(
                   color: statusColor,
                   fontWeight: FontWeight.bold,
-                  fontSize: 13,
+                  fontSize: 11,
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
@@ -213,22 +243,25 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
   Widget _buildConnectionError() {
     return GlassCard(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(40.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off_outlined, size: 48, color: Theme.of(context).colorScheme.error),
-            const SizedBox(height: 16),
+            Icon(Icons.cloud_off_outlined, size: 64, color: Theme.of(context).colorScheme.error),
+            const SizedBox(height: 20),
             Text(
               'Backend service is unreachable',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'Current Environment: ${apiProvider.environment == AppEnvironment.local ? "Local" : "Preprod"}',
-              style: Theme.of(context).textTheme.bodyMedium,
+              'The Document Processor service in the "${apiProvider.environment == AppEnvironment.local ? "Local" : "Dev"}" cluster is currently offline.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             AppButton(
               text: 'Retry Connection',
               onPressed: _checkHealthAndLoad,
@@ -240,18 +273,75 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     );
   }
 
+  Widget _buildDetailsPanel() {
+    return GlassCard(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Supported Capabilities',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildCapabilityTile(Icons.assignment_outlined, 'Equity Portfolios', 'Extract direct stock holdings from Zerodha, Angel One, and others.'),
+            const SizedBox(height: 16),
+            _buildCapabilityTile(Icons.pie_chart_outline, 'Mutual Funds', 'Parse CAS statements, AMFI scheme holdings, and asset breakdowns.'),
+            const SizedBox(height: 16),
+            _buildCapabilityTile(Icons.trending_up_outlined, 'F&O Trade Books', 'Track derivative trades, profit distributions, and executions.'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCapabilityTile(IconData icon, String title, String desc) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(height: 2),
+              Text(desc, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ],
+          ),
+        )
+      ],
+    );
+  }
+
   Widget _buildConfigurationSection() {
     return GlassCard(
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.primary),
+                Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
                 const SizedBox(width: 12),
-                Text('Parser Configuration', style: Theme.of(context).textTheme.titleMedium),
+                const Text(
+                  'Parser Configuration', 
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)
+                ),
               ],
             ),
             const SizedBox(height: 20),
@@ -261,10 +351,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Document Type', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      const Text('DOCUMENT TYPE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.grey)),
                       const SizedBox(height: 8),
                       _loadingTypes 
-                        ? const ShimmerLoading(child: SkeletonBox(height: 45, width: double.infinity))
+                        ? const ShimmerLoading(child: SkeletonBox(height: 42, width: double.infinity))
                         : CustomDropdown<String>(
                             value: _selectedDocType,
                             items: _docTypes.map((e) => e.toSimpleDropdownItem(text: e)).toList(),
@@ -279,7 +369,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Broker / Institution', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      const Text('BROKER / INSTITUTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.grey)),
                       const SizedBox(height: 8),
                       CustomDropdown<String>(
                         value: _selectedBrokerType,
@@ -299,48 +389,53 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   Widget _buildUploadSection() {
+    final bool isInteractable = !_processing && _selectedDocType != null;
     return GlassCard(
       child: InkWell(
-        onTap: (_processing || _selectedDocType == null) ? null : _pickAndUpload,
+        onTap: isInteractable ? _pickAndUpload : null,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
           decoration: BoxDecoration(
             border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+              color: Theme.of(context).colorScheme.primary.withOpacity(isInteractable ? 0.3 : 0.1),
               style: BorderStyle.solid,
-              width: 2,
+              width: 1.5,
             ),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             children: [
               _processing 
-                ? const CircularProgressIndicator()
+                ? const SizedBox(
+                    height: 52,
+                    width: 52,
+                    child: CircularProgressIndicator(strokeWidth: 3),
+                  )
                 : Icon(
-                    Icons.upload_file_outlined, 
-                    size: 64, 
-                    color: Theme.of(context).colorScheme.primary
+                    Icons.cloud_upload_outlined, 
+                    size: 52, 
+                    color: isInteractable ? Theme.of(context).colorScheme.primary : Colors.grey
                   ),
               const SizedBox(height: 16),
               Text(
-                _processing ? 'Processing Document...' : 'Click to select or Drop files here',
+                _processing ? 'Parsing Statement Data...' : 'Click to Upload Document',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: isInteractable ? Theme.of(context).colorScheme.primary : Colors.grey,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text('Supports PDF, Excel (XLSX, XLS), and CSV'),
-              const SizedBox(height: 24),
+              const SizedBox(height: 6),
+              const Text('Supports PDF, Excel (XLSX, XLS), and CSV formats', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   TextButton.icon(
                     onPressed: _downloadSample, 
-                    icon: const Icon(Icons.download, size: 18),
-                    label: const Text('Download Sample Portfolio'),
+                    icon: const Icon(Icons.download, size: 16),
+                    label: const Text('Download Sample Portfolio CSV', style: TextStyle(fontSize: 12)),
                   ),
                 ],
               )
@@ -353,13 +448,13 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
   Widget _buildStatusLog() {
     bool isError = _status.toLowerCase().contains('error');
-    Color statusColor = isError ? Colors.red : Colors.blue;
+    Color statusColor = isError ? Colors.red : Theme.of(context).colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.all(16),
       width: double.infinity,
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.05),
+        color: statusColor.withOpacity(0.04),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: statusColor.withOpacity(0.2)),
       ),
@@ -369,14 +464,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              _status.isEmpty ? 'Ready for next upload' : _status,
-              style: TextStyle(color: statusColor, fontWeight: FontWeight.w500),
+              _status.isEmpty ? 'Ready' : _status,
+              style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 13),
             ),
           ),
           if (_processing)
             const SizedBox(
-              width: 16,
-              height: 16,
+              width: 14,
+              height: 14,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
         ],
@@ -387,88 +482,206 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   Widget _buildResultSection() {
     if (_lastResult == null) return const SizedBox.shrink();
 
+    final List<dynamic> parsedDataList = _lastResult!['data'] ?? [];
+    double totalValuation = 0.0;
+    
+    // Sum total assets dynamically
+    for (var item in parsedDataList) {
+      if (item is Map) {
+        final double qty = (item['quantity'] ?? item['qty'] ?? 0).toDouble();
+        final double price = (item['currentPrice'] ?? item['nav'] ?? item['averagePrice'] ?? item['price'] ?? 0.0).toDouble();
+        totalValuation += (qty * price);
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 12),
-            Text('Processing Result', style: Theme.of(context).textTheme.titleLarge),
-          ],
-        ),
-        const SizedBox(height: 16),
-        GlassCard(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
               children: [
-                Row(
-                  children: [
-                    _buildStatTile('Status', _lastResult!['status'] ?? 'N/A', Icons.check_circle_outline, Colors.green),
-                    const SizedBox(width: 12),
-                    _buildStatTile('Process ID', _lastResult!['processId']?.toString().substring(0, 8) ?? 'N/A', Icons.tag, Colors.blue),
-                    const SizedBox(width: 12),
-                    _buildStatTile('Items', _lastResult!['count']?.toString() ?? '0', Icons.list, Colors.orange),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text('Response Data (Raw)', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  width: double.infinity,
-                  constraints: const BoxConstraints(maxHeight: 300),
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      JsonEncoder.withIndent('  ').convert(_lastResult),
-                      style: const TextStyle(
-                        color: Colors.greenAccent, 
-                        fontFamily: 'monospace',
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
+                Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary, size: 22),
+                const SizedBox(width: 12),
+                Text(
+                  'Extracted Holdings Details', 
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)
                 ),
               ],
             ),
+            Row(
+              children: [
+                IconButton(
+                  icon: Icon(_showRawJson ? Icons.visibility_off_outlined : Icons.code_outlined),
+                  onPressed: () => setState(() => _showRawJson = !_showRawJson),
+                  tooltip: 'View Raw JSON Data',
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        
+        Row(
+          children: [
+            _buildResultStatCard('TOTAL VALUATION', currencyFormatter.format(totalValuation), Icons.account_balance_wallet_outlined, Colors.green),
+            const SizedBox(width: 16),
+            _buildResultStatCard('PARSED RECORDS', '${parsedDataList.length} Items', Icons.format_list_bulleted_outlined, Colors.blue),
+            const SizedBox(width: 16),
+            _buildResultStatCard('PROCESS CODE', _lastResult!['processId']?.toString().substring(0, 8).toUpperCase() ?? 'N/A', Icons.vpn_key_outlined, Colors.purple),
+          ],
+        ),
+        
+        const SizedBox(height: 24),
+        
+        if (_showRawJson) ...[
+          const Text('Raw JSON Payload', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5)),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(16),
+            width: double.infinity,
+            constraints: const BoxConstraints(maxHeight: 280),
+            decoration: BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            ),
+            child: SingleChildScrollView(
+              child: Text(
+                JsonEncoder.withIndent('  ').convert(_lastResult),
+                style: const TextStyle(
+                  color: Colors.greenAccent, 
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+
+        // Beautiful Interactive holdings datatable
+        GlassCard(
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            child: parsedDataList.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: Text('No holding assets found in this statement file.')),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0, bottom: 12.0),
+                        child: Text(
+                          'HOLDING ASSETS BREAKDOWN',
+                          style: TextStyle(
+                            fontSize: 11, 
+                            fontWeight: FontWeight.bold, 
+                            letterSpacing: 0.8,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columnSpacing: 38.0,
+                          horizontalMargin: 8.0,
+                          columns: const [
+                            DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('IDENTIFIER', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(numeric: true, label: Text('BUY PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(numeric: true, label: Text('CURRENT PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(numeric: true, label: Text('TOTAL VALUATION', style: TextStyle(fontWeight: FontWeight.bold))),
+                          ],
+                          rows: parsedDataList.map((item) {
+                            final map = item is Map ? item : {};
+                            
+                            final String assetName = map['securityName'] ?? map['schemeName'] ?? map['symbol'] ?? map['name'] ?? 'Unknown Asset';
+                            final String identifier = map['isin'] ?? map['amfiCode'] ?? map['symbol'] ?? 'N/A';
+                            final double quantity = (map['quantity'] ?? map['qty'] ?? 0.0).toDouble();
+                            final double buyPrice = (map['averagePrice'] ?? map['buyPrice'] ?? map['price'] ?? 0.0).toDouble();
+                            final double currentPrice = (map['currentPrice'] ?? map['nav'] ?? map['price'] ?? 0.0).toDouble();
+                            final double totalValue = quantity * currentPrice;
+
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  Container(
+                                    constraints: const BoxConstraints(maxWidth: 220),
+                                    child: Text(
+                                      assetName, 
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(Text(identifier, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
+                                DataCell(Text(quantity.toStringAsFixed(2))),
+                                DataCell(Text(currencyFormatter.format(buyPrice))),
+                                DataCell(Text(currencyFormatter.format(currentPrice), style: const TextStyle(fontWeight: FontWeight.bold))),
+                                DataCell(
+                                  Text(
+                                    currencyFormatter.format(totalValue),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStatTile(String label, String value, IconData icon, Color color) {
+  Widget _buildResultStatCard(String label, String value, IconData icon, Color color) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.1)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 16, color: color),
-                const SizedBox(width: 8),
-                Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+      child: GlassCard(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label, 
+                      style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 0.5)
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      value,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

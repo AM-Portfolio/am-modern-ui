@@ -23,9 +23,14 @@ class ApiService {
     return http.Client();
   }
 
-  // Base URLs resolved dynamically from central registry
-  String get _docBase => '${EnvDomains.docs}/v1';
-  String get _emailBase => '${EnvDomains.gmail}/api/v1';
+  // Base URLs resolved dynamically based on environment switcher selection
+  String get _docBase => environment == AppEnvironment.local
+      ? 'http://localhost:8081/v1'
+      : '${EnvDomains.docs}/v1';
+
+  String get _emailBase => environment == AppEnvironment.local
+      ? 'http://localhost:8080/api/v1'
+      : '${EnvDomains.gmail}/api/v1';
 
   // Credentials — fallback values for demo login sessions
   static const String _authToken =
@@ -204,6 +209,36 @@ class ApiService {
         
     final headers = await _getHeaders();
     return apiClient.get<Map<String, dynamic>>(
+      url,
+      headers: headers,
+      parser: (data) => Map<String, dynamic>.from(data),
+    );
+  }
+
+  Future<Map<String, dynamic>> connectGmail() async {
+    final url = '$_emailBase/gmail/connect';
+    debugPrint('[ApiService] GET $url');
+    final apiClient = GetIt.I.isRegistered<ApiClient>() 
+        ? GetIt.I<ApiClient>() 
+        : ApiClient();
+        
+    final headers = await _getHeaders();
+    return apiClient.get<Map<String, dynamic>>(
+      url,
+      headers: headers,
+      parser: (data) => Map<String, dynamic>.from(data),
+    );
+  }
+
+  Future<Map<String, dynamic>> disconnectGmail() async {
+    final url = '$_emailBase/gmail/disconnect';
+    debugPrint('[ApiService] DELETE $url');
+    final apiClient = GetIt.I.isRegistered<ApiClient>() 
+        ? GetIt.I<ApiClient>() 
+        : ApiClient();
+        
+    final headers = await _getHeaders();
+    return apiClient.delete<Map<String, dynamic>>(
       url,
       headers: headers,
       parser: (data) => Map<String, dynamic>.from(data),
