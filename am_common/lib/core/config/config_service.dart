@@ -105,8 +105,8 @@ class ConfigService {
         ),
 
         // ── Portfolio (PRODUCTION — local 8072 has MappingException bug) ──
-        portfolio: const PortfolioApiConfig(
-          baseUrl: 'https://am.munish.org/portfolio',
+        portfolio: PortfolioApiConfig(
+          baseUrl: const String.fromEnvironment('AM_PORTFOLIO_BASE_URL', defaultValue: 'https://am-dev.asrax.in/portfolio'),
           holdingsResource: '/v1/portfolios/holdings',
           summaryResource: '/v1/portfolios/summary',
           transactionsResource: '/v1/portfolios/transactions',
