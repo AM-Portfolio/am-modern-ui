@@ -1,0 +1,5 @@
+{
+  "_comment": "Defaults for all environments. config.{env}.json and config.json override matching keys.",
+  "domain": "am-dev.asrax.in",
+  "services": {}
+}

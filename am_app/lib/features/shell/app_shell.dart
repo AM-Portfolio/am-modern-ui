@@ -26,14 +26,37 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0; // Default to Dashboard
+  bool _sessionRestored = false;
 
   @override
   void initState() {
     super.initState();
-    // Trigger initial connection check
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialAuthAndConnect();
+      _restoreSessionNav();
     });
+  }
+
+  Future<void> _restoreSessionNav() async {
+    if (_sessionRestored) return;
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! Authenticated) return;
+    _sessionRestored = true;
+
+    final session =
+        await common.SessionPersistenceService.instance.load(authState.user.id);
+    if (session != null && mounted && _navMap.containsKey(session.globalNav)) {
+      setState(() => _selectedIndex = _navMap[session.globalNav]!);
+    }
+  }
+
+  void _onGlobalNavigate(String title, String userId) {
+    if (!_navMap.containsKey(title)) return;
+    setState(() => _selectedIndex = _navMap[title]!);
+    common.SessionPersistenceService.instance.patch(
+      userId,
+      (s) => s.copyWith(globalNav: title, clearBasket: title != 'Portfolio'),
+    );
   }
 
   Future<void> _checkInitialAuthAndConnect() async {
@@ -164,11 +187,7 @@ class _AppShellState extends State<AppShell> {
                         onLogout: () => context.read<AuthCubit>().logout(),
                         onProfileTap: () =>
                             setState(() => _selectedIndex = 8),
-                        onNavigate: (title) {
-                          if (_navMap.containsKey(title)) {
-                            setState(() => _selectedIndex = _navMap[title]!);
-                          }
-                        },
+                        onNavigate: (title) => _onGlobalNavigate(title, userId),
                         items: const [
                           SidebarItem(
                               title: 'Dashboard',
@@ -208,11 +227,7 @@ class _AppShellState extends State<AppShell> {
                         userName: authState.user.displayName,
                         onProfileTap: () =>
                             setState(() => _selectedIndex = 8),
-                        onNavigate: (title) {
-                          if (_navMap.containsKey(title)) {
-                            setState(() => _selectedIndex = _navMap[title]!);
-                          }
-                        },
+                        onNavigate: (title) => _onGlobalNavigate(title, userId),
                         items: const [
                           SidebarItem(
                               title: 'Dashboard',

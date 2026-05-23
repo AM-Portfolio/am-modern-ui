@@ -6,7 +6,7 @@ import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../../providers/portfolio_providers.dart';
 
-/// A wrapper that provides a global [PortfolioCubit] and handles 
+/// A wrapper that provides a global [PortfolioCubit] and handles
 /// initial portfolio selection. Sync is now handled at the root level.
 class GlobalPortfolioWrapper extends ConsumerStatefulWidget {
   final Widget child;
@@ -21,17 +21,48 @@ class GlobalPortfolioWrapper extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<GlobalPortfolioWrapper> createState() => _GlobalPortfolioWrapperState();
+  ConsumerState<GlobalPortfolioWrapper> createState() =>
+      _GlobalPortfolioWrapperState();
 }
 
 class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper> {
   String? _selectedPortfolioId;
   String? _selectedPortfolioName;
+  bool _sessionLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSessionPortfolio();
+  }
+
+  Future<void> _loadSessionPortfolio() async {
+    final session =
+        await SessionPersistenceService.instance.load(widget.userId);
+    _sessionLoaded = true;
+    if (session?.portfolioId != null && mounted) {
+      setState(() {
+        _selectedPortfolioId = session!.portfolioId;
+        _selectedPortfolioName = session.portfolioName;
+      });
+    }
+  }
+
+  void _persistPortfolio(String id, String name) {
+    SessionPersistenceService.instance.patch(
+      widget.userId,
+      (s) => s.copyWith(
+        globalNav: 'Portfolio',
+        portfolioId: id,
+        portfolioName: name,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final portfolioServiceAsync = ref.watch(portfolioServiceProvider);
-    
+
     return portfolioServiceAsync.when(
       data: (service) {
         return BlocProvider<PortfolioCubit>(
@@ -42,14 +73,40 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
           },
           child: BlocListener<PortfolioCubit, PortfolioState>(
             listener: (context, state) {
-              if (state is PortfolioListLoaded && _selectedPortfolioId == null) {
-                if (state.portfolioList.portfolios.isNotEmpty) {
-                   final first = state.portfolioList.portfolios.first;
-                   setState(() {
-                     _selectedPortfolioId = first.portfolioId;
-                     _selectedPortfolioName = first.portfolioName;
-                   });
-                   widget.onPortfolioChanged?.call(first.portfolioId, first.portfolioName);
+              if (state is PortfolioListLoaded) {
+                final portfolios = state.portfolioList.portfolios;
+                if (portfolios.isEmpty) return;
+
+                if (_selectedPortfolioId != null) {
+                  final stillValid = portfolios.any(
+                    (p) => p.portfolioId == _selectedPortfolioId,
+                  );
+                  if (!stillValid) {
+                    final first = portfolios.first;
+                    setState(() {
+                      _selectedPortfolioId = first.portfolioId;
+                      _selectedPortfolioName = first.portfolioName;
+                    });
+                    _persistPortfolio(first.portfolioId, first.portfolioName);
+                    widget.onPortfolioChanged?.call(
+                      first.portfolioId,
+                      first.portfolioName,
+                    );
+                  }
+                  return;
+                }
+
+                if (_sessionLoaded) {
+                  final first = portfolios.first;
+                  setState(() {
+                    _selectedPortfolioId = first.portfolioId;
+                    _selectedPortfolioName = first.portfolioName;
+                  });
+                  _persistPortfolio(first.portfolioId, first.portfolioName);
+                  widget.onPortfolioChanged?.call(
+                    first.portfolioId,
+                    first.portfolioName,
+                  );
                 }
               }
             },
@@ -57,19 +114,22 @@ class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper>
               selectedId: _selectedPortfolioId,
               selectedName: _selectedPortfolioName,
               onSelect: (id, name) {
-                 setState(() {
-                   _selectedPortfolioId = id;
-                   _selectedPortfolioName = name;
-                 });
-                 widget.onPortfolioChanged?.call(id, name);
+                setState(() {
+                  _selectedPortfolioId = id;
+                  _selectedPortfolioName = name;
+                });
+                _persistPortfolio(id, name);
+                widget.onPortfolioChanged?.call(id, name);
               },
               child: widget.child,
             ),
           ),
         );
       },
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (err, stack) =>
+          Scaffold(body: Center(child: Text('Error: $err'))),
     );
   }
 }
@@ -92,12 +152,16 @@ class _SelectedPortfolioProvider extends InheritedWidget {
 
   @override
   bool updateShouldNotify(_SelectedPortfolioProvider oldWidget) {
-    return oldWidget.selectedId != selectedId || oldWidget.selectedName != selectedName;
+    return oldWidget.selectedId != selectedId ||
+        oldWidget.selectedName != selectedName;
   }
 }
 
 extension PortfolioSelectionExtension on BuildContext {
-  String? get selectedPortfolioId => _SelectedPortfolioProvider.of(this)?.selectedId;
-  String? get selectedPortfolioName => _SelectedPortfolioProvider.of(this)?.selectedName;
-  void selectPortfolio(String id, String name) => _SelectedPortfolioProvider.of(this)?.onSelect(id, name);
+  String? get selectedPortfolioId =>
+      _SelectedPortfolioProvider.of(this)?.selectedId;
+  String? get selectedPortfolioName =>
+      _SelectedPortfolioProvider.of(this)?.selectedName;
+  void selectPortfolio(String id, String name) =>
+      _SelectedPortfolioProvider.of(this)?.onSelect(id, name);
 }

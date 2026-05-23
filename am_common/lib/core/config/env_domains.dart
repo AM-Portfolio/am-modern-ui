@@ -1,10 +1,9 @@
 import 'config_service.dart';
 
 /// Central domain registry.
-/// 
-/// Cluster URLs include the gateway/path prefix (e.g., /market, /auth).
-/// Local Overrides (localhost) typically do NOT have the prefix, 
-/// as they hit the service port directly.
+///
+/// Cluster URLs use the gateway path prefix (e.g. /market, /auth).
+/// Local [config.*.json] `services` entries are full base URLs (no prefix).
 /// 
 /// All module paths should start with '/v1' or the relative resource path.
 class EnvDomains {

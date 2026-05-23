@@ -1,0 +1,5 @@
+{
+  "_comment": "Cluster dev — empty services uses https://{domain}/<service> paths.",
+  "domain": "am-dev.asrax.in",
+  "services": {}
+}

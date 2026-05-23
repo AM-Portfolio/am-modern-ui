@@ -3,116 +3,131 @@ import 'package:http/http.dart' as http;
 import 'package:am_library/am_library.dart';
 import 'app_config.dart';
 
-/// Service responsible for loading and managing application configuration.
-/// Supports a 3-layer resolution:
-/// 1. config.local.json (Local developer overrides)
-/// 2. config.json (Kubernetes ConfigMap domain)
-/// 3. Built-in fallback (am.asrax.in)
+/// Loads web config: [config.template.json] defaults, then [config.{env}.json],
+/// then [config.json] (env selector locally, domain override in Kubernetes).
 class ConfigService {
   static AppConfig? _config;
-  static String _domain = 'am-dev.asrax.in';       // Layer 3 fallback: Default to DEV
-  static Map<String, String> _overrides = {};       // Layer 1 local overrides
+  static String _domain = 'am-dev.asrax.in';
+  static Map<String, String> _services = {};
 
-  // ─── Public API ─────────────────────────────────────────────────────────
-
-  /// The root domain (from config.json or fallback)
   static String get domain => _domain;
 
-  /// Per-service override, e.g. override('market') → 'http://localhost:8092'
-  /// Returns null if no override exists for this key.
-  static String? override(String key) => _overrides[key];
+  /// Per-service URL override (localhost or full gateway path).
+  static String? override(String key) => _services[key];
 
-  /// Get the current application configuration.
   static AppConfig get config {
     if (_config == null) {
-      // Return a default config instead of throwing to prevent crashes
       return _buildConfig();
     }
     return _config!;
   }
 
-  /// Initialize application configuration.
-  /// Typically called during app startup.
   static Future<void> initialize() async {
     if (_config != null) return;
 
-    // Layer 1: load local developer overrides (gitignored file)
-    await _loadLocalOverrides();
-
-    // Layer 2: load environment domain from Kubernetes ConfigMap
-    await _loadRemoteConfig();
-
-    // Build and cache AppConfig
+    final merged = await _loadMergedConfig();
+    _applyMergedConfig(merged);
     _config = _buildConfig();
   }
 
-  // ─── Private ─────────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> _loadMergedConfig() async {
+    var merged = await _fetchJson('/config.template.json') ?? <String, dynamic>{
+      'domain': _domain,
+      'services': <String, dynamic>{},
+    };
 
-  /// Tries to fetch /config.local.json — gitignored, only on dev machines.
-  static Future<void> _loadLocalOverrides() async {
-    try {
-      final res = await http.get(Uri.parse('/config.local.json'))
-                    .timeout(const Duration(seconds: 2));
-      if (res.statusCode == 200) {
-        final json = jsonDecode(res.body) as Map<String, dynamic>;
-        
-        // 1. Domain can be overridden locally (e.g. switch between dev/preprod cluster)
-        _domain = json['domain'] as String? ?? _domain;
-
-        // 2. Service overrides (e.g. localhost)
-        final bool useOverrides = json['useOverrides'] as bool? ?? false;
-        
-        if (useOverrides) {
-          final raw = json['overrides'] as Map<String, dynamic>? ?? {};
-          _overrides = raw.map((k, v) => MapEntry(k, v.toString()));
-          AppLogger.info('🔧 Local service overrides ENABLED (domain: $_domain)',
-                         tag: 'ConfigService');
+    final bootstrap = await _fetchJson('/config.json');
+    if (bootstrap != null) {
+      final env = bootstrap['env'] as String?;
+      if (env != null && env.isNotEmpty) {
+        final envConfig = await _fetchJson('/config.$env.json');
+        if (envConfig != null) {
+          merged = _deepMerge(merged, envConfig);
         } else {
-          AppLogger.info('ℹ️ Using cluster domain: $_domain (local overrides disabled)',
-                         tag: 'ConfigService');
+          AppLogger.warning(
+            'config.$env.json not found — using template only',
+            tag: 'ConfigService',
+          );
         }
       }
-    } catch (_) {
-      // Not present — normal in staging/prod/CI
+      merged = _deepMerge(merged, bootstrap);
+    }
+
+    return merged;
+  }
+
+  static void _applyMergedConfig(Map<String, dynamic> json) {
+    _domain = json['domain'] as String? ?? _domain;
+
+    final raw = json['services'] as Map<String, dynamic>? ??
+        json['overrides'] as Map<String, dynamic>? ??
+        {};
+    _services = raw.map(
+      (k, v) => MapEntry(k, v?.toString() ?? ''),
+    )..removeWhere((_, v) => v.isEmpty);
+
+    if (_services.isEmpty) {
+      AppLogger.info(
+        'Config resolved: cluster domain $_domain (gateway paths)',
+        tag: 'ConfigService',
+      );
+    } else {
+      AppLogger.info(
+        'Config resolved: domain $_domain, ${_services.length} local service URL(s)',
+        tag: 'ConfigService',
+      );
     }
   }
 
-  /// Fetches /config.json mounted by Kubernetes ConfigMap.
-  static Future<void> _loadRemoteConfig() async {
+  static Future<Map<String, dynamic>?> _fetchJson(String path) async {
     try {
-      // Resolve /config.json relative to the browser's base URL and add a timestamp
-      // cache-buster to prevent aggressive Service Worker or browser caching.
-      final uri = Uri.base.resolve('/config.json').replace(
+      final uri = Uri.base.resolve(path).replace(
         queryParameters: {
           'cb': DateTime.now().millisecondsSinceEpoch.toString(),
         },
       );
-      
       final res = await http.get(uri).timeout(const Duration(seconds: 3));
       if (res.statusCode == 200) {
-        final json = jsonDecode(res.body) as Map<String, dynamic>;
-        _domain = (json['domain'] as String?) ?? _domain;
-        AppLogger.info('🌐 Domain loaded from config.json: $_domain', tag: 'ConfigService');
+        return jsonDecode(res.body) as Map<String, dynamic>;
       }
     } catch (_) {
-      AppLogger.warning('⚠️ config.json not found — using fallback: $_domain',
-                        tag: 'ConfigService');
+      // Optional file — normal in CI or when template is bundled only
     }
+    return null;
+  }
+
+  static Map<String, dynamic> _deepMerge(
+    Map<String, dynamic> base,
+    Map<String, dynamic> overlay,
+  ) {
+    final result = Map<String, dynamic>.from(base);
+    for (final entry in overlay.entries) {
+      if (entry.key.startsWith('_')) continue;
+      final value = entry.value;
+      final existing = result[entry.key];
+      if (value is Map<String, dynamic> &&
+          existing is Map<String, dynamic>) {
+        result[entry.key] = _deepMerge(existing, value);
+      } else {
+        result[entry.key] = value;
+      }
+    }
+    return result;
   }
 
   static AppConfig _buildConfig() {
     final api = 'https://$_domain';
-    final ws  = 'wss://$_domain';
-    
-    // Base URLs respect overrides
-    final authUrl      = _overrides['auth']      ?? '$api/auth';
-    final usersUrl     = _overrides['users']     ?? '$api/users';
-    final portfolioUrl = _overrides['portfolio'] ?? '$api/portfolio';
-    final marketUrl    = _overrides['market']    ?? '$api/market';
-    final tradesUrl    = _overrides['trades']    ?? '$api/trades';
-    final analysisUrl  = _overrides['analysis']  ?? '$api/analysis';
-    final gmailUrl     = _overrides['gmail']     ?? '$api/gmail';
-    final marketWsUrl  = _overrides['marketWs']  ?? '$ws/market/ws/market-data-stream';
+    final ws = 'wss://$_domain';
+
+    final authUrl = _services['auth'] ?? '$api/auth';
+    final usersUrl = _services['users'] ?? '$api/users';
+    final portfolioUrl = _services['portfolio'] ?? '$api/portfolio';
+    final marketUrl = _services['market'] ?? '$api/market';
+    final tradesUrl = _services['trades'] ?? '$api/trades';
+    final analysisUrl = _services['analysis'] ?? '$api/analysis';
+    final gmailUrl = _services['gmail'] ?? '$api/gmail';
+    final marketWsUrl =
+        _services['marketWs'] ?? '$ws/market/ws/market-data-stream';
 
     return AppConfig(
       google: const GoogleConfig(webClientId: ''),
