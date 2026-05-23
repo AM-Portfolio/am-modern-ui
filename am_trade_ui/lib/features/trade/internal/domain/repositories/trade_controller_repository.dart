@@ -49,7 +49,6 @@ abstract class TradeControllerRepository {
   /// Filter trade details using favorite filter configuration
   /// Returns filtered trades with summary information
   Future<FilterTradeDetailsResponse> filterTradeDetails({
-    required String userId,
     String? favoriteFilterId,
     MetricsFilterConfigDto? metricsConfig,
     int page = 0,

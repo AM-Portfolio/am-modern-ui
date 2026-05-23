@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../../models/trade_holding_view_model.dart';
 import '../widgets/trade_overview_selector.dart';

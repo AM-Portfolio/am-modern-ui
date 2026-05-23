@@ -47,7 +47,7 @@ abstract class TradePortfolioSummary with _$TradePortfolioSummary {
     @Default([]) List<String> tradeIds,
     List<String>? winningTradeIds,
     List<String>? losingTradeIds,
-    Map<String, dynamic>? assetAllocations,
+    List<dynamic>? assetAllocations,
   }) = _TradePortfolioSummary;
 }
 

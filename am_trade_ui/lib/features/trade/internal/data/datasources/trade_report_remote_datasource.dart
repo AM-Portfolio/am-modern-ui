@@ -36,7 +36,7 @@ class TradeReportRemoteDataSource {
       'endDate': filter.dateRange.endDate.toIso8601String().split('T')[0], 
     };
 
-    final fullUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/performance/summary');
+    final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/performance/summary');
 
     return _client.get(
       fullUri,
@@ -52,7 +52,7 @@ class TradeReportRemoteDataSource {
       'limit': '1000', 
     };
 
-    final fullUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/performance/daily');
+    final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/performance/daily');
 
     return _client.get(
       fullUri,
@@ -68,7 +68,7 @@ class TradeReportRemoteDataSource {
       if (filter.portfolioIds != null && filter.portfolioIds!.isNotEmpty) 'portfolioId': filter.portfolioIds!.first,
     };
 
-    final fullUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/performance/timing');
+    final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/performance/timing');
 
     return _client.get(
       fullUri,

@@ -13,8 +13,7 @@ import 'journal_navigation_sidebar.dart';
 class JournalThreeColumnLayout extends StatefulWidget {
   const JournalThreeColumnLayout({
     required this.entries,
-    required this.userId,
-    required this.journalCubit,
+        required this.journalCubit,
     required this.notebookCubit,
     this.onAddFolder,
     this.onEntryDropped,
@@ -22,8 +21,7 @@ class JournalThreeColumnLayout extends StatefulWidget {
   });
 
   final List<JournalEntry> entries;
-  final String userId;
-  final JournalCubit journalCubit;
+    final JournalCubit journalCubit;
   final NotebookCubit notebookCubit;
   final VoidCallback? onAddFolder;
   final Function(JournalEntry entry, String folderId)? onEntryDropped;
@@ -108,7 +106,6 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
           Expanded(
             child: JournalEntryDetailView(
               entry: selectedEntry,
-              userId: widget.userId,
               cubit: widget.journalCubit,
             ),
           ),

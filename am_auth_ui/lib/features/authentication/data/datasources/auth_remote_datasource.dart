@@ -196,7 +196,7 @@ class AuthRemoteDataSource implements AuthDataSource {
       final fullUrl = AuthEndpoints.refreshToken;
       final response = await _dio.post(
         fullUrl,
-        data: {'refreshToken': refreshToken},
+        data: {'refresh_token': refreshToken},
       );
 
       if (response.statusCode == 200) {

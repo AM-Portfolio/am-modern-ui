@@ -10,14 +10,12 @@ import 'simple_template_dialog.dart';
 class JournalEntryDetailView extends StatefulWidget {
   const JournalEntryDetailView({
     required this.entry,
-    required this.userId,
-    required this.cubit,
+        required this.cubit,
     super.key,
   });
 
   final JournalEntry? entry;
-  final String userId;
-  final JournalCubit cubit;
+    final JournalCubit cubit;
 
   @override
   State<JournalEntryDetailView> createState() => _JournalEntryDetailViewState();
@@ -110,7 +108,6 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: JournalEntryForm(
-                userId: widget.userId,
                 cubit: widget.cubit,
                 portfolioId: '8a57024c-05c2-475b-a2c4-0545865efa4a', // TODO: Pass from parent
                 entry: widget.entry,

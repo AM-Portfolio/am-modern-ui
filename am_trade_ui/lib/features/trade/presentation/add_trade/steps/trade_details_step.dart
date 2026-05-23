@@ -218,7 +218,6 @@ class TradeDetailsStep extends StatelessWidget {
           TradeAttachmentSection(
             imageUrls: attachments,
             onAttachmentsChanged: onAttachmentsChanged,
-            userId: userId ?? '',
             isEditMode: true,
           ),
         ],

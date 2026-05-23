@@ -27,15 +27,20 @@ class TradePortfolioMapper {
   );
 
   /// Convert TradePortfolioListDto to TradePortfolioList domain entity
-  static TradePortfolioList fromListDto(TradePortfolioListDto dto, String userId) => TradePortfolioList(
-    userId: userId,
-    portfolios: dto.portfolios.map(fromDto).toList(),
-    totalCount: dto.totalCount ?? dto.portfolios.length,
-  );
+  static TradePortfolioList fromListDto(TradePortfolioListDto dto) {
+    final resolvedUserId = dto.portfolios.isNotEmpty ? (dto.portfolios.first.ownerId ?? '') : '';
+    return TradePortfolioList(
+      userId: resolvedUserId,
+      portfolios: dto.portfolios.map(fromDto).toList(),
+      totalCount: dto.totalCount ?? dto.portfolios.length,
+    );
+  }
 
   /// Convert array response to TradePortfolioList (API returns array directly)
-  static TradePortfolioList fromArrayDto(List<TradePortfolioDto> dtos, String userId) =>
-      TradePortfolioList(userId: userId, portfolios: dtos.map(fromDto).toList(), totalCount: dtos.length);
+  static TradePortfolioList fromArrayDto(List<TradePortfolioDto> dtos) {
+    final resolvedUserId = dtos.isNotEmpty ? (dtos.first.ownerId ?? '') : '';
+    return TradePortfolioList(userId: resolvedUserId, portfolios: dtos.map(fromDto).toList(), totalCount: dtos.length);
+  }
 
   /// Convert TradePortfolioSummaryDto to TradePortfolioSummary entity
   static TradePortfolioSummary fromSummaryDto(TradePortfolioSummaryDto dto) => TradePortfolioSummary(

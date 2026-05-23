@@ -35,17 +35,7 @@ class TradeExampleApp extends StatelessWidget {
       title: 'Trade UI Example',
       theme: AppTheme.darkTheme,
       home: AuthWrapper(
-        child: BlocBuilder<AuthCubit, AuthState>(
-          builder: (context, state) {
-            String userId = '';
-            if (state is Authenticated) {
-              userId = state.user.id;
-            }
-            return TradeWebScreen(
-              userId: userId,
-            );
-          },
-        ),
+        child: const TradeWebScreen(),
       ),
       debugShowCheckedModeBanner: false,
     );

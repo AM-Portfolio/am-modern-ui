@@ -2,7 +2,7 @@ import '../enums/notebook_item_type.dart';
 
 class NotebookItem {
   final String? id;
-  final String userId;
+  final String? userId;
   final NotebookItemType type;
   final String? parentId;
   final String title;
@@ -15,7 +15,7 @@ class NotebookItem {
 
   NotebookItem({
     this.id,
-    required this.userId,
+    this.userId,
     required this.type,
     this.parentId,
     required this.title,

@@ -91,75 +91,75 @@ final getTradeCalendarByDateRangeProvider = FutureProvider<GetTradeCalendarByDat
 });
 
 /// Provider for trade portfolios list
-final tradePortfoliosProvider = FutureProvider.family<TradePortfolioList, String>((ref, userId) async {
+final tradePortfoliosProvider = FutureProvider<TradePortfolioList>((ref) async {
   final useCase = await ref.watch(_getTradePortfoliosProvider.future);
-  return useCase(userId);
+  return useCase();
 });
 
 /// Provider for trade holdings
-final tradeHoldingsProvider = FutureProvider.family<TradeHoldings, ({String userId, String portfolioId})>((
+final tradeHoldingsProvider = FutureProvider.family<TradeHoldings, String>((
   ref,
   params,
 ) async {
   final useCase = await ref.watch(_getTradeHoldingsProvider.future);
-  return useCase(params.userId, params.portfolioId);
+  return useCase(params);
 });
 
 /// Provider for trade summary
-final tradeSummaryProvider = FutureProvider.family<TradeSummary, ({String userId, String portfolioId})>((
+final tradeSummaryProvider = FutureProvider.family<TradeSummary, String>((
   ref,
   params,
 ) async {
   final useCase = await ref.watch(_getTradeSummaryProvider.future);
-  return useCase(params.userId, params.portfolioId);
+  return useCase(params);
 });
 
 /// Provider for trade calendar
-final tradeCalendarProvider = FutureProvider.family<TradeCalendar, ({String userId, String portfolioId})>((
+final tradeCalendarProvider = FutureProvider.family<TradeCalendar, String>((
   ref,
   params,
 ) async {
   final useCase = await ref.watch(_getTradeCalendarProvider.future);
-  final result = await useCase(params.userId, params.portfolioId);
+  final result = await useCase(params);
   return result;
 });
 
 /// Provider for watching trade holdings (stream) - returns view models
 final tradeHoldingsStreamProvider =
-    StreamProvider.family<TradeHoldingsViewModel, ({String userId, String portfolioId})>((ref, params) async* {
+    StreamProvider.family<TradeHoldingsViewModel, String>((ref, portfolioId) async* {
       final useCase = await ref.watch(_getTradeHoldingsProvider.future);
-      yield* useCase.watch(params.userId, params.portfolioId).map(TradeHoldingsViewModel.fromEntity);
+      yield* useCase.watch(portfolioId).map(TradeHoldingsViewModel.fromEntity);
     });
 
 /// Provider for watching trade summary (stream)
-final tradeSummaryStreamProvider = StreamProvider.family<TradeSummary, ({String userId, String portfolioId})>((
+final tradeSummaryStreamProvider = StreamProvider.family<TradeSummary, String>((
   ref,
-  params,
+  portfolioId,
 ) async* {
   final useCase = await ref.watch(_getTradeSummaryProvider.future);
-  yield* useCase.watch(params.userId, params.portfolioId);
+  yield* useCase.watch(portfolioId);
 });
 
 /// Provider for watching trade portfolios (stream) - returns view models
-final tradePortfoliosStreamProvider = StreamProvider.family<List<TradePortfolioViewModel>, String>((ref, userId) async* {
+final tradePortfoliosStreamProvider = StreamProvider<List<TradePortfolioViewModel>>((ref) async* {
   final useCase = await ref.watch(_getTradePortfoliosProvider.future);
-  yield* useCase.watch(userId).map((list) => TradePortfolioViewModel.fromEntityList(list.portfolios));
+  yield* useCase.watch().map((list) => TradePortfolioViewModel.fromEntityList(list.portfolios));
 });
 
 /// Provider for watching trade calendar (stream) - returns view models
 final tradeCalendarStreamProvider =
-    StreamProvider.family<TradeCalendarViewModel, ({String userId, String portfolioId})>((ref, params) async* {
+    StreamProvider.family<TradeCalendarViewModel, String>((ref, portfolioId) async* {
       final useCase = await ref.watch(_getTradeCalendarProvider.future);
-      yield* useCase.watch(params.userId, params.portfolioId).map(TradeCalendarViewModel.fromEntity);
+      yield* useCase.watch(portfolioId).map(TradeCalendarViewModel.fromEntity);
     });
 
 /// Provider for trade calendar by month - returns view model
 final tradeCalendarByMonthProvider =
-    FutureProvider.family<TradeCalendarViewModel, ({String userId, String portfolioId, int year, int month})>((
+    FutureProvider.family<TradeCalendarViewModel, ({String portfolioId, int year, int month})>((
       ref,
       params,
     ) async {
       final useCase = await ref.watch(getTradeCalendarByMonthProvider.future);
-      final result = await useCase(params.userId, params.portfolioId, year: params.year, month: params.month);
+      final result = await useCase(params.portfolioId, year: params.year, month: params.month);
       return TradeCalendarViewModel.fromEntity(result);
     });

@@ -44,12 +44,12 @@
 ### Tab 0: Portfolios
 - Widget: TradePortfolioDiscoveryTemplate
 - Data: tradePortfoliosStreamProvider(userId)
-- API: GET /api/v1/portfolio-summary/by-owner/{userId}
+- API: GET /v1/portfolio-summary/by-owner/{userId}
 
 ### Tab 1: Holdings (needs portfolio selected)
 - Widget: TradeHoldingsDashboardWebPage → TradeHoldingsAdvancedTemplate
 - Data: tradeHoldingsStreamProvider({userId, portfolioId})
-- API: GET /api/v1/trades/details/portfolio/{portfolioId}
+- API: GET /v1/trades/details/portfolio/{portfolioId}
 - Features: filter panel, detail drill-down, symbol tap → Market chart
 
 ### Tab 2: Calendar (needs portfolio selected)
@@ -221,9 +221,9 @@
 ## API Endpoints
 
 ### Portfolios & Holdings
-- GET /api/v1/portfolio-summary/by-owner/{userId}
-- GET /api/v1/portfolio-summary/{portfolioId}
-- GET /api/v1/trades/details/portfolio/{portfolioId}
+- GET /v1/portfolio-summary/by-owner/{userId}
+- GET /v1/portfolio-summary/{portfolioId}
+- GET /v1/trades/details/portfolio/{portfolioId}
 
 ### Trade CRUD
 - GET /v1/trades/details/portfolio/{portfolioId}?symbols=

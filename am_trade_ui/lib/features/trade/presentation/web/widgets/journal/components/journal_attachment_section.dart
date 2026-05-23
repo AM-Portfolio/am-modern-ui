@@ -13,8 +13,7 @@ class JournalAttachmentSection extends StatelessWidget {
     required this.imageUrls,
     required this.onAttachmentsChanged,
     required this.featureName,
-    required this.userId,
-    required this.isEditMode,
+        required this.isEditMode,
     super.key,
     this.label,
     this.maxAttachments = 10,
@@ -23,8 +22,7 @@ class JournalAttachmentSection extends StatelessWidget {
   final List<String> imageUrls;
   final ValueChanged<List<String>> onAttachmentsChanged;
   final String featureName;
-  final String userId;
-  final bool isEditMode;
+    final bool isEditMode;
   final String? label;
   final int maxAttachments;
 
@@ -33,7 +31,6 @@ class JournalAttachmentSection extends StatelessWidget {
     imageUrls: imageUrls,
     onAttachmentsChanged: onAttachmentsChanged,
     featureName: featureName,
-    userId: userId,
     isEditMode: isEditMode,
     label: label ?? 'Supporting Evidence',
     maxAttachments: maxAttachments,

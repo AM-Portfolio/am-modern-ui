@@ -7,5 +7,5 @@ class SetDefaultFilterUseCase {
 
   final FavoriteFilterRepository _repository;
 
-  Future<FavoriteFilter> call(String userId, String filterId) async => _repository.setDefaultFilter(userId, filterId);
+  Future<FavoriteFilter> call(String filterId) async => _repository.setDefaultFilter(filterId);
 }

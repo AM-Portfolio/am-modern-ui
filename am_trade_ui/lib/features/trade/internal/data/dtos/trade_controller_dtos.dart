@@ -432,12 +432,11 @@ class FilterSummaryDto {
 /// DTO for filter trade details request
 @JsonSerializable(explicitToJson: true)
 class FilterTradeDetailsRequestDto {
-  const FilterTradeDetailsRequestDto({required this.userId, this.favoriteFilterId, this.metricsConfig});
+  const FilterTradeDetailsRequestDto({this.favoriteFilterId, this.metricsConfig});
 
   factory FilterTradeDetailsRequestDto.fromJson(Map<String, dynamic> json) =>
       _$FilterTradeDetailsRequestDtoFromJson(json);
 
-  final String userId;
   final String? favoriteFilterId;
   final MetricsFilterConfigDto? metricsConfig;
 
@@ -475,7 +474,7 @@ class FilterTradeDetailsResponseDto {
   Map<String, dynamic> toJson() => _$FilterTradeDetailsResponseDtoToJson(this);
 }
 
-/// DTO for paginated trade response (GET /api/v1/trades/filter)
+/// DTO for paginated trade response (GET /v1/trades/filter)
 @JsonSerializable(explicitToJson: true)
 class PaginatedTradeResponseDto {
   const PaginatedTradeResponseDto({this.content, this.totalElements, this.totalPages, this.size, this.number});

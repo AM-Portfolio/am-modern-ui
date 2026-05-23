@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -18,10 +18,9 @@ import '../widgets/journal_three_column_layout.dart';
 import '../widgets/add_folder_dialog.dart';
 
 class JournalWebPage extends ConsumerStatefulWidget {
-  const JournalWebPage({required this.userId, this.portfolioId, super.key});
+  const JournalWebPage({ this.portfolioId, super.key});
 
-  final String userId;
-  final String? portfolioId;
+    final String? portfolioId;
 
   @override
   ConsumerState<JournalWebPage> createState() => _JournalWebPageState();
@@ -52,15 +51,15 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final journalCubit = await ref.read(journalCubitProvider.future);
       final notebookCubit = await ref.read(notebookCubitProvider.future);
-      journalCubit.loadJournalEntries(widget.userId);
-      notebookCubit.loadNotebook(widget.userId);
+      journalCubit.loadJournalEntries();
+      notebookCubit.loadNotebook();
     });
   }
 
   Future<void> _handleAddFolder() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => AddFolderDialog(userId: widget.userId),
+      builder: (context) => AddFolderDialog(),
     );
 
     if (result != null && mounted) {
@@ -76,7 +75,6 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
 
       // Create NotebookItem for the folder
       final folder = NotebookItem(
-        userId: widget.userId,
         type: NotebookItemType.FOLDER,
         title: folderName,
         metadata: metadata,
@@ -103,7 +101,6 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   Future<void> _handleEntryDropped(JournalEntry entry, String folderId, NotebookCubit notebookCubit) async {
     // Create a NOTE item in the folder that references the journal entry
     final note = NotebookItem(
-      userId: widget.userId,
       type: NotebookItemType.FOLDER, // Should this be folder or note? The original was NOTE but uses type FOLDER? 
       // Wait, original line 79 said type: NotebookItemType.FOLDER for _handleAddFolder
       // Line 105 said type: NotebookItemType.NOTE.
@@ -125,7 +122,7 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
     await notebookCubit.createItem(noteCorrected);
     
     // Refresh notebook to show updated folder structure
-    await notebookCubit.loadNotebook(widget.userId);
+    await notebookCubit.loadNotebook();
 
     // Show success message
     if (mounted) {
@@ -197,7 +194,6 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                         success: (message) => const Center(child: CircularProgressIndicator()),
                         loaded: (entries) => JournalThreeColumnLayout(
                             entries: entries,
-                            userId: widget.userId,
                             journalCubit: journalCubit,
                             notebookCubit: notebookCubit,
                             onAddFolder: _handleAddFolder,
