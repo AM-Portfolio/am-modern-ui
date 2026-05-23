@@ -370,7 +370,7 @@ class TradeRepositoryImpl implements TradeRepository {
   Stream<TradePortfolioList> watchTradePortfolios() {
     AppLogger.methodEntry('watchTradePortfolios', tag: 'TradeRepository', params: {});
 
-    _ensureWebSocketSubscribed(userId);
+    _ensureWebSocketSubscribed('');
 
     if (_cachedPortfolioList != null) {
       Future.microtask(() => _portfoliosController.add(_cachedPortfolioList!));
@@ -415,7 +415,7 @@ class TradeRepositoryImpl implements TradeRepository {
       params: {},
     );
 
-    _ensureWebSocketSubscribed(userId);
+    _ensureWebSocketSubscribed('');
 
     // Check if cache exists AND contains data for the requested portfolio
     if (_cachedCalendar != null && _cachedCalendar!.portfolioTrades.containsKey(portfolioId)) {
@@ -431,7 +431,7 @@ class TradeRepositoryImpl implements TradeRepository {
     return _calendarController.stream;
   }
 
-  void _ensureWebSocketSubscribed(String userId) {
+  void _ensureWebSocketSubscribed(String defaultUserId) {
     if (_stompClient == null) {
       AppLogger.warning('AmStompClient is null. WebSocket features disabled.', tag: 'TradeRepository');
       return;
@@ -469,7 +469,7 @@ class TradeRepositoryImpl implements TradeRepository {
               
               _cachedPortfolioList = _cachedPortfolioList!.copyWith(portfolios: existingPortfolios);
             } else {
-              _cachedPortfolioList = TradePortfolioList(userId: userId, portfolios: [updatedPortfolio]);
+              _cachedPortfolioList = TradePortfolioList(userId: defaultUserId, portfolios: [updatedPortfolio]);
             }
             
             _portfoliosController.add(_cachedPortfolioList!);

@@ -102,7 +102,7 @@ void main() {
     });
 
     testWidgets('triggers onViewHoldings and onViewAnalysis callbacks on tap', (WidgetTester tester) async {
-      final summary = PortfolioSummary.empty('user_123');
+      final summary = PortfolioSummary.empty();
       bool holdingsTapped = false;
       bool analysisTapped = false;
 

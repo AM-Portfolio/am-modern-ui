@@ -16,7 +16,7 @@ List<MoverItem> moversFromHoldings(
     final amt = useDaily ? h.todayChange : h.totalGainLoss;
     return MoverItem(
       symbol: h.symbol,
-      name: h.name.isNotEmpty ? h.name : h.companyName,
+      name: h.companyName,
       price: h.currentPrice,
       changePercentage: pct,
       changeAmount: amt,

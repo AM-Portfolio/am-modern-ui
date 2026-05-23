@@ -109,9 +109,9 @@ class _PortfolioHoldingsWebCardState
     // Use the appropriate provider based on whether portfolioId is provided
     final portfolioHoldingsAsync = widget.portfolioId != null
         ? ref.watch(
-            portfolioHoldingsByIdProvider(widget.portfolioId!),
+            portfolioHoldingsProvider(widget.portfolioId!),
           )
-        : ref.watch(portfolioHoldingsProvider());
+        : ref.watch(portfolioHoldingsProvider(''));
 
     return portfolioHoldingsAsync.when(
       data: (holdings) {
@@ -307,12 +307,12 @@ class _PortfolioHoldingsWebCardState
                   // Invalidate the appropriate provider based on portfolioId
                   if (widget.portfolioId != null) {
                     ref.invalidate(
-                      portfolioHoldingsByIdProvider(
+                      portfolioHoldingsProvider(
                         widget.portfolioId!,
                       ),
                     );
                   } else {
-                    ref.invalidate(portfolioHoldingsProvider());
+                    ref.invalidate(portfolioHoldingsProvider(''));
                   }
                 },
                 child: const Text('Retry'),
