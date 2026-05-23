@@ -53,7 +53,9 @@ class AMApp extends ConsumerWidget {
             ),
             routes: {
               '/home': (context) => const AppShell(),
-
+              '/register': (context) => const RegisterPage(),
+              '/forgot-password': (context) => const ForgotPasswordPage(),
+              '/reset-password': (context) => const ResetPasswordPage(),
             },
           );
         },
