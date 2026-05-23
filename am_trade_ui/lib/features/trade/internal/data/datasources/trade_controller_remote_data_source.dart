@@ -156,7 +156,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
 
       final response = await _apiClient.post<TradeDetailsDto>(
         fullUri,
-        body: jsonPayload,
+        body: tradeRequestBodyWithoutUserId(jsonPayload),
         parser: (data) => TradeDetailsDto.fromJson(data! as Map<String, dynamic>),
       );
 
@@ -183,7 +183,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
 
       final response = await _apiClient.put<TradeDetailsDto>(
         fullUri,
-        body: tradeDetails.toJson(),
+        body: tradeRequestBodyWithoutUserId(tradeDetails.toJson()),
         parser: (data) => TradeDetailsDto.fromJson(data! as Map<String, dynamic>),
       );
 
@@ -298,7 +298,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
 
       final response = await _apiClient.post<List<TradeDetailsDto>>(
         fullUri,
-        body: trades.map((trade) => trade.toJson()).toList(),
+        body: trades.map((trade) => tradeRequestBodyWithoutUserId(trade.toJson())).toList(),
         parser: (data) {
           if (data is List) {
             return data.map((json) => TradeDetailsDto.fromJson(json as Map<String, dynamic>)).toList();

@@ -449,11 +449,26 @@ class TradeRepositoryImpl implements TradeRepository {
         (frame) {
           if (frame.body == null) return;
           try {
-            final json = jsonDecode(frame.body!);
+            final json = jsonDecode(frame.body!) as Map<String, dynamic>;
             AppLogger.info('Received real-time portfolio update via WebSocket', tag: 'TradeRepository');
 
-            // Map the update to our entity
-            final dto = TradePortfolioDto.fromJson(json);
+            // Flatten nested metrics to the root level since TradePortfolioDto expects flat metrics
+            final enriched = Map<String, dynamic>.from(json);
+            final metrics = json['metrics'];
+            if (metrics is Map<String, dynamic>) {
+              metrics.forEach((key, value) {
+                if (value != null) {
+                  enriched[key] = value;
+                }
+              });
+            }
+            // Fallback for totalValue if missing
+            if (enriched['totalValue'] == null && enriched['currentCapital'] != null) {
+              enriched['totalValue'] = enriched['currentCapital'];
+            }
+
+            // Map the update to our entity using enriched flat map
+            final dto = TradePortfolioDto.fromJson(enriched);
             final updatedPortfolio = TradePortfolioMapper.fromDto(dto);
             
             // Merge with existing cache
