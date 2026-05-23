@@ -5,7 +5,8 @@ import 'package:dio/dio.dart'; // Import Dio for API calls
 import '../../domain/models/basket_opportunity.dart';
 import '../../../../core/constants/basket_endpoints.dart';
 import '../../domain/models/basket_opportunity.dart'; // Ensure this path is correct
-import '../widgets/allocation_bar.dart'; // Import AllocationBar
+import '../widgets/allocation_bar.dart';
+import '../widgets/basket_section_header.dart';
 import '../../../portfolio/providers/portfolio_providers.dart';
 import '../../../portfolio/internal/domain/entities/portfolio_holding.dart';
 // import '../../../portfolio/internal/domain/entities/portfolio_holding.dart'; // Already imported implicitly or explicitly if needed
@@ -14,12 +15,14 @@ class ManualBasketCreatorPage extends ConsumerStatefulWidget {
   final BasketOpportunity opportunity;
   final String userId;
   final String portfolioId;
+  final bool embedded;
 
   const ManualBasketCreatorPage({
     super.key,
     required this.opportunity,
     required this.userId,
     required this.portfolioId,
+    this.embedded = false,
   });
 
   @override
@@ -202,17 +205,7 @@ class _ManualBasketCreatorPageState
       }
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Customize Basket'),
-        actions: [
-          TextButton(
-            onPressed: _savePortfolio,
-            child: const Text('Save Portfolio'),
-          ),
-        ],
-      ),
-      body: Column(
+    final content = Column(
         children: [
           _SummaryHeader(
             itemCount: _items.length,
@@ -504,12 +497,41 @@ class _ManualBasketCreatorPageState
             ),
           ),
         ],
+      );
+
+    final footer = _InvestmentSummaryFooter(
+      items: _items,
+      includeHeld: _includeHeld,
+      onInvest: _savePortfolio,
+    );
+
+    final saveAction = TextButton(
+      onPressed: _savePortfolio,
+      child: const Text('Save Portfolio'),
+    );
+
+    if (widget.embedded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          BasketSectionHeader(
+            title: 'Customize Basket',
+            onBack: () => Navigator.of(context).pop(),
+            trailing: saveAction,
+          ),
+          Expanded(child: content),
+          footer,
+        ],
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Customize Basket'),
+        actions: [saveAction],
       ),
-      bottomNavigationBar: _InvestmentSummaryFooter(
-        items: _items,
-        includeHeld: _includeHeld,
-        onInvest: _savePortfolio,
-      ),
+      body: content,
+      bottomNavigationBar: footer,
     );
   }
 

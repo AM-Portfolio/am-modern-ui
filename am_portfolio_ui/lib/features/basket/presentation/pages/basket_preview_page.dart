@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:go_router/go_router.dart';
 import '../providers/basket_providers.dart';
+import '../basket_navigation.dart';
+import '../widgets/basket_section_header.dart';
 import '../../domain/models/basket_opportunity.dart';
 
 class BasketPreviewPage extends ConsumerWidget {
   final String etfIsin;
   final String userId;
   final String portfolioId;
+  final bool embedded;
 
   const BasketPreviewPage({
     super.key,
     required this.etfIsin,
     required this.userId,
     required this.portfolioId,
+    this.embedded = false,
   });
 
   @override
@@ -25,20 +28,35 @@ class BasketPreviewPage extends ConsumerWidget {
       portfolioId: portfolioId,
     ));
 
+    final body = opportunityAsync.when(
+      data: (opportunity) => _BasketContent(
+        opportunity: opportunity,
+        userId: userId,
+        portfolioId: portfolioId,
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
+    );
+
+    if (embedded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          BasketSectionHeader(
+            title: 'Basket Preview',
+            onBack: () => Navigator.of(context).pop(),
+          ),
+          Expanded(child: body),
+        ],
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Basket Preview'),
         centerTitle: false,
       ),
-      body: opportunityAsync.when(
-        data: (opportunity) => _BasketContent(
-          opportunity: opportunity,
-          userId: userId,
-          portfolioId: portfolioId,
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-      ),
+      body: body,
     );
   }
 }
@@ -96,12 +114,12 @@ class _BasketContent extends StatelessWidget {
           ),
           _BottomActionBar(
             onPressed: () {
-              // Navigate to Manual Creator
-               context.push('/portfolio/basket/creator', extra: {
-                  'opportunity': opportunity,
-                  'userId': userId,
-                  'portfolioId': portfolioId,
-                });
+              BasketNavigation.openCreator(
+                context,
+                opportunity: opportunity,
+                userId: userId,
+                portfolioId: portfolioId,
+              );
             },
           ),
         ],

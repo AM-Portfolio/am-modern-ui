@@ -1,4 +1,3 @@
 {
-  "_comment": "Used when running locally with flutter run. Overridden by Kubernetes ConfigMap in cluster.",
-  "domain": "am-dev.asrax.in"
+  "env": "preprod"
 }

@@ -1,5 +1,5 @@
 {
-  "_comment": "Local backends (npm run config:local). Align ports with .env.preprod on each service.",
+  "_comment": "Copy to config.local.json and run: npm run config:local",
   "domain": "am.asrax.in",
   "services": {
     "auth": "http://localhost:8001",

@@ -53,6 +53,39 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     super.initState();
     _currentPortfolioId = widget.selectedPortfolioId ?? widget.userId;
     _initializeSwipeController();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreTabFromSession());
+  }
+
+  Future<void> _restoreTabFromSession() async {
+    final session = SessionPersistenceService.instance.cached ??
+        await SessionPersistenceService.instance.load(widget.userId);
+    if (session == null || !mounted) return;
+    final idx = session.portfolioTabIndex.clamp(
+      0,
+      _swipeController.items.length - 1,
+    );
+    if (idx != _swipeController.currentIndex) {
+      _swipeController.navigateTo(idx, animate: false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _swipeController.removeListener(_persistTabIndex);
+    _swipeController.dispose();
+    super.dispose();
+  }
+
+  void _persistTabIndex() {
+    SessionPersistenceService.instance.patch(
+      widget.userId,
+      (s) => s.copyWith(
+        globalNav: 'Portfolio',
+        portfolioTabIndex: _swipeController.currentIndex,
+        portfolioId: _currentPortfolioId,
+        portfolioName: widget.selectedPortfolioName,
+      ),
+    );
   }
 
   void _initializeSwipeController() {
@@ -113,6 +146,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         ),
       ],
     );
+    _swipeController.addListener(_persistTabIndex);
   }
 
   void _navigateToNext() {
@@ -218,7 +252,10 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                 title: item.title,
                 icon: item.icon,
                 isSelected: _swipeController.currentIndex == index,
-                onTap: () => _swipeController.navigateTo(index),
+                onTap: () {
+                  _swipeController.navigateTo(index);
+                  _persistTabIndex();
+                },
                 accentColor: item.accentColor,
               );
             }).toList(),

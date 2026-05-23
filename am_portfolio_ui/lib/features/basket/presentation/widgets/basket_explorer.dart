@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:go_router/go_router.dart';
 import '../providers/basket_providers.dart';
+import '../basket_navigation.dart';
 import '../../domain/models/basket_opportunity.dart';
 import 'etf_search_bar.dart';
 
@@ -86,12 +86,12 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                      _query = selection.isin!;
                    });
                 } else {
-                  // If single ISIN, navigate to preview
-                  context.push('/portfolio/basket/preview', extra: {
-                    'etfIsin': selection.isin,
-                    'userId': widget.userId,
-                    'portfolioId': widget.portfolioId,
-                  });
+                  BasketNavigation.openPreview(
+                    context,
+                    etfIsin: selection.isin!,
+                    userId: widget.userId,
+                    portfolioId: widget.portfolioId,
+                  );
                 }
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -169,11 +169,13 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                   return _BasketOpportunityCard(
                     opportunity: opportunities[index],
                     onTap: () {
-                      context.push('/portfolio/basket/preview', extra: {
-                        'etfIsin': opportunities[index].etfIsin,
-                        'userId': widget.userId,
-                        'portfolioId': widget.portfolioId,
-                      });
+                      final opp = opportunities[index];
+                      BasketNavigation.openPreview(
+                        context,
+                        etfIsin: opp.etfIsin,
+                        userId: widget.userId,
+                        portfolioId: widget.portfolioId,
+                      );
                     },
                   );
                 },

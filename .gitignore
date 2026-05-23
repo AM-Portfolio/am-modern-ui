@@ -73,3 +73,6 @@ Thumbs.db
 # Runtime logs
 logs/
 *.log
+
+# Machine-specific UI config (copy from config.local.json and edit ports)
+am_app/web/config.local.json
