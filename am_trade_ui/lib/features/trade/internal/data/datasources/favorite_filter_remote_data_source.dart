@@ -8,29 +8,25 @@ import 'trade_api_request_util.dart';
 /// Abstract data source for favorite filter operations
 abstract class FavoriteFilterRemoteDataSource {
   /// Get all favorite filters for a user
-  Future<List<FavoriteFilterResponseDto>> getFavoriteFilters(String userId);
+  Future<List<FavoriteFilterResponseDto>> getFavoriteFilters();
 
   /// Get a specific favorite filter by ID
-  Future<FavoriteFilterResponseDto> getFavoriteFilterById(String userId, String filterId);
+  Future<FavoriteFilterResponseDto> getFavoriteFilterById(String filterId);
 
   /// Create a new favorite filter
-  Future<FavoriteFilterResponseDto> createFavoriteFilter(String userId, FavoriteFilterRequestDto request);
+  Future<FavoriteFilterResponseDto> createFavoriteFilter(FavoriteFilterRequestDto request);
 
   /// Update an existing favorite filter
-  Future<FavoriteFilterResponseDto> updateFavoriteFilter(
-    String userId,
-    String filterId,
-    FavoriteFilterRequestDto request,
-  );
+  Future<FavoriteFilterResponseDto> updateFavoriteFilter(String filterId, FavoriteFilterRequestDto request);
 
   /// Delete a favorite filter
-  Future<void> deleteFavoriteFilter(String userId, String filterId);
+  Future<void> deleteFavoriteFilter(String filterId);
 
   /// Bulk delete favorite filters
   Future<BulkDeleteResponseDto> bulkDeleteFavoriteFilters(BulkDeleteRequestDto request);
 
   /// Set a filter as default
-  Future<FavoriteFilterResponseDto> setDefaultFilter(String userId, String filterId);
+  Future<FavoriteFilterResponseDto> setDefaultFilter(String filterId);
 }
 
 /// Concrete implementation of favorite filter remote data source
@@ -56,8 +52,8 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<List<FavoriteFilterResponseDto>> getFavoriteFilters(String userId) async {
-    AppLogger.methodEntry('getFavoriteFilters', tag: 'FavoriteFilterRemoteDataSource', params: {'userId': userId});
+  Future<List<FavoriteFilterResponseDto>> getFavoriteFilters() async {
+    AppLogger.methodEntry('getFavoriteFilters', tag: 'FavoriteFilterRemoteDataSource', params: {});
 
     try {
      
@@ -90,11 +86,11 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<FavoriteFilterResponseDto> getFavoriteFilterById(String userId, String filterId) async {
+  Future<FavoriteFilterResponseDto> getFavoriteFilterById(String filterId) async {
     AppLogger.methodEntry(
       'getFavoriteFilterById',
       tag: 'FavoriteFilterRemoteDataSource',
-      params: {'userId': userId, 'filterId': filterId},
+      params: {},
     );
 
     try {
@@ -122,11 +118,11 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<FavoriteFilterResponseDto> createFavoriteFilter(String userId, FavoriteFilterRequestDto request) async {
+  Future<FavoriteFilterResponseDto> createFavoriteFilter(FavoriteFilterRequestDto request) async {
     AppLogger.methodEntry(
       'createFavoriteFilter',
       tag: 'FavoriteFilterRemoteDataSource',
-      params: {'userId': userId, 'name': request.name},
+      params: {},
     );
 
     try {
@@ -157,14 +153,13 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
 
   @override
   Future<FavoriteFilterResponseDto> updateFavoriteFilter(
-    String userId,
     String filterId,
     FavoriteFilterRequestDto request,
   ) async {
     AppLogger.methodEntry(
       'updateFavoriteFilter',
       tag: 'FavoriteFilterRemoteDataSource',
-      params: {'userId': userId, 'filterId': filterId},
+      params: {},
     );
 
     try {
@@ -194,11 +189,11 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<void> deleteFavoriteFilter(String userId, String filterId) async {
+  Future<void> deleteFavoriteFilter(String filterId) async {
     AppLogger.methodEntry(
       'deleteFavoriteFilter',
       tag: 'FavoriteFilterRemoteDataSource',
-      params: {'userId': userId, 'filterId': filterId},
+      params: {},
     );
 
     try {
@@ -255,11 +250,11 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<FavoriteFilterResponseDto> setDefaultFilter(String userId, String filterId) async {
+  Future<FavoriteFilterResponseDto> setDefaultFilter(String filterId) async {
     AppLogger.methodEntry(
       'setDefaultFilter',
       tag: 'FavoriteFilterRemoteDataSource',
-      params: {'userId': userId, 'filterId': filterId},
+      params: {},
     );
 
     try {

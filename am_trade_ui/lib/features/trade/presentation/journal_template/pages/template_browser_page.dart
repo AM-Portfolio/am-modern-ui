@@ -14,13 +14,11 @@ import '../widgets/create_template_dialog.dart';
 /// Modern template browser page with glassmorphism design
 class TemplateBrowserPage extends ConsumerStatefulWidget {
   const TemplateBrowserPage({
-    required this.userId,
-    this.onTemplateSelected,
+        this.onTemplateSelected,
     super.key,
   });
 
-  final String userId;
-  final Function(JournalTemplate)? onTemplateSelected;
+    final Function(JournalTemplate)? onTemplateSelected;
 
   @override
   ConsumerState<TemplateBrowserPage> createState() =>
@@ -52,7 +50,7 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     // Load templates
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final cubit = ref.read(journalTemplateCubitProvider);
-      cubit.loadTemplates(userId: widget.userId);
+      cubit.loadTemplates();
     });
   }
 
@@ -92,7 +90,6 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
                       onCategorySelected: (category) {
                         setState(() => _selectedCategory = category);
                         cubit.loadTemplates(
-                          userId: widget.userId,
                           category: category,
                           search: _searchQuery.isEmpty ? null : _searchQuery,
                         );
@@ -121,7 +118,7 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
                                   backgroundColor: Theme.of(context).colorScheme.primary,
                                 ),
                               );
-                              cubit.loadTemplates(userId: widget.userId);
+                              cubit.loadTemplates();
                             }
                           },
                           builder: (context, state) {
@@ -219,7 +216,6 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
           setState(() => _searchQuery = value);
           final cubit = ref.read(journalTemplateCubitProvider);
           cubit.loadTemplates(
-            userId: widget.userId,
             category: _selectedCategory,
             search: value.isEmpty ? null : value,
           );
@@ -372,7 +368,7 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
           ElevatedButton.icon(
             onPressed: () {
               final cubit = ref.read(journalTemplateCubitProvider);
-              cubit.loadTemplates(userId: widget.userId);
+              cubit.loadTemplates();
             },
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
@@ -395,7 +391,6 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
       context: context,
       builder: (context) => TemplateDetailDialog(
         template: template,
-        userId: widget.userId,
         onUseTemplate: widget.onTemplateSelected,
       ),
     );
@@ -405,7 +400,6 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     showDialog(
       context: context,
       builder: (context) => CreateTemplateDialog(
-        userId: widget.userId,
       ),
     );
   }
@@ -414,7 +408,6 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     final cubit = ref.read(journalTemplateCubitProvider);
     cubit.toggleFavorite(
       templateId: template.id,
-      userId: widget.userId,
     );
   }
 }

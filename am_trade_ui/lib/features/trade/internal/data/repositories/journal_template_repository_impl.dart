@@ -76,19 +76,17 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
 
   @override
   Future<List<JournalTemplate>> getTemplates({
-    required String userId,
     JournalTemplateCategory? category,
     String? search,
   }) async {
     AppLogger.methodEntry(
       'getTemplates',
       tag: 'JournalTemplateRepository',
-      params: {'userId': userId, 'category': category?.value, 'search': search},
+      params: {},
     );
 
     try {
       final dtos = await _remoteDataSource.getTemplates(
-        userId: userId,
         category: category?.value,
         search: search,
       );
@@ -119,8 +117,7 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
   @override
   Future<JournalTemplate> getTemplate({
     required String templateId,
-    required String userId,
-  }) async {
+    }) async {
     AppLogger.methodEntry(
       'getTemplate',
       tag: 'JournalTemplateRepository',
@@ -128,7 +125,7 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
     );
 
     try {
-      final dto = await _remoteDataSource.getTemplate(templateId, userId);
+      final dto = await _remoteDataSource.getTemplate(templateId);
       final template = JournalTemplateMapper.fromResponseDto(dto);
 
       AppLogger.info(
@@ -215,8 +212,7 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
   @override
   Future<void> deleteTemplate({
     required String templateId,
-    required String userId,
-  }) async {
+    }) async {
     AppLogger.methodEntry(
       'deleteTemplate',
       tag: 'JournalTemplateRepository',
@@ -224,7 +220,7 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
     );
 
     try {
-      await _remoteDataSource.deleteTemplate(templateId, userId);
+      await _remoteDataSource.deleteTemplate(templateId);
 
       AppLogger.info(
         'Template deleted successfully',
@@ -247,15 +243,15 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
   }
 
   @override
-  Future<List<JournalTemplate>> getFavoriteTemplates(String userId) async {
+  Future<List<JournalTemplate>> getFavoriteTemplates() async {
     AppLogger.methodEntry(
       'getFavoriteTemplates',
       tag: 'JournalTemplateRepository',
-      params: {'userId': userId},
+      params: {},
     );
 
     try {
-      final dtos = await _remoteDataSource.getFavoriteTemplates(userId);
+      final dtos = await _remoteDataSource.getFavoriteTemplates();
       final templates = dtos.map(JournalTemplateMapper.fromResponseDto).toList();
 
       AppLogger.info(
@@ -281,15 +277,15 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
   }
 
   @override
-  Future<List<JournalTemplate>> getRecommendedTemplates(String userId) async {
+  Future<List<JournalTemplate>> getRecommendedTemplates() async {
     AppLogger.methodEntry(
       'getRecommendedTemplates',
       tag: 'JournalTemplateRepository',
-      params: {'userId': userId},
+      params: {},
     );
 
     try {
-      final dtos = await _remoteDataSource.getRecommendedTemplates(userId);
+      final dtos = await _remoteDataSource.getRecommendedTemplates();
       final templates = dtos.map(JournalTemplateMapper.fromResponseDto).toList();
 
       AppLogger.info(
@@ -315,15 +311,15 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
   }
 
   @override
-  Future<List<JournalTemplate>> getMyTemplates(String userId) async {
+  Future<List<JournalTemplate>> getMyTemplates() async {
     AppLogger.methodEntry(
       'getMyTemplates',
       tag: 'JournalTemplateRepository',
-      params: {'userId': userId},
+      params: {},
     );
 
     try {
-      final dtos = await _remoteDataSource.getMyTemplates(userId);
+      final dtos = await _remoteDataSource.getMyTemplates();
       final templates = dtos.map(JournalTemplateMapper.fromResponseDto).toList();
 
       AppLogger.info(
@@ -351,8 +347,7 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
   @override
   Future<JournalTemplate> toggleFavorite({
     required String templateId,
-    required String userId,
-  }) async {
+    }) async {
     AppLogger.methodEntry(
       'toggleFavorite',
       tag: 'JournalTemplateRepository',
@@ -360,7 +355,7 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
     );
 
     try {
-      final dto = await _remoteDataSource.toggleFavorite(templateId, userId);
+      final dto = await _remoteDataSource.toggleFavorite(templateId);
       final template = JournalTemplateMapper.fromResponseDto(dto);
 
       AppLogger.info(
@@ -387,7 +382,6 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
 
   @override
   Future<JournalEntry> useTemplate({
-    required String userId,
     required String templateId,
     required Map<String, dynamic> fieldValues,
     String? tradeId,
@@ -396,12 +390,11 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
     AppLogger.methodEntry(
       'useTemplate',
       tag: 'JournalTemplateRepository',
-      params: {'templateId': templateId, 'userId': userId},
+      params: {'templateId': templateId},
     );
 
     try {
       final request = UseTemplateRequestDto(
-        userId: userId,
         templateId: templateId,
         fieldValues: fieldValues,
         tradeId: tradeId,

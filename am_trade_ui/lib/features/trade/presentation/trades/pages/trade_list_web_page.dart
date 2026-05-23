@@ -10,10 +10,9 @@ import '../widgets/mobile_trade_list_view.dart';
 
 /// Web page for displaying all trades in a list view
 class TradeListWebPage extends ConsumerStatefulWidget {
-  const TradeListWebPage({required this.userId, required this.portfolioId, this.onNavigateToChart, super.key});
+  const TradeListWebPage({ required this.portfolioId, this.onNavigateToChart, super.key});
 
-  final String userId;
-  final String portfolioId;
+    final String portfolioId;
   final Function(String symbol)? onNavigateToChart;
 
   @override
@@ -26,7 +25,7 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
 
   @override
   Widget build(BuildContext context) {
-    final params = (userId: widget.userId, portfolioId: widget.portfolioId);
+    final portfolioId = widget.portfolioId;
     final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(params));
 
     return Scaffold(
@@ -369,7 +368,6 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
 
     return TradeDetailViewPage(
       trade: _selectedTrade!,
-      userId: widget.userId,
       portfolioId: widget.portfolioId,
       onNavigateToChart: widget.onNavigateToChart,
       onClose: () {

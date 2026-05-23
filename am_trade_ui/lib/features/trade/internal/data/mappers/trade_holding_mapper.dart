@@ -31,8 +31,10 @@ class TradeHoldingMapper {
   static List<TradeDetails> fromDtoList(List<TradeHoldingDto> dtos) => dtos.map(fromDto).toList();
 
   /// Convert TradeHoldingsDto to TradeHoldings domain entity
-  static TradeHoldings fromListDto(TradeHoldingsDto dto, String userId, String portfolioId) => TradeHoldings(
-    userId: userId,
+  static TradeHoldings fromListDto(TradeHoldingsDto dto, String portfolioId) {
+    final resolvedUserId = dto.content.isNotEmpty ? (dto.content.first.userId ?? '') : '';
+    return TradeHoldings(
+    userId: resolvedUserId,
     portfolioId: portfolioId,
     content: fromDtoList(dto.content),
     totalPages: dto.totalPages,
@@ -44,5 +46,6 @@ class TradeHoldingMapper {
     numberOfElements: dto.numberOfElements,
     empty: dto.empty,
   );
+  }
 }
 

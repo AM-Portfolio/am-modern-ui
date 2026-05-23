@@ -294,8 +294,7 @@ class TradeHoldingViewModel {
 /// View model for holdings collection
 class TradeHoldingsViewModel {
   const TradeHoldingsViewModel({
-    required this.userId,
-    required this.portfolioId,
+        required this.portfolioId,
     required this.holdings,
     required this.totalElements,
     this.totalPages = 0,
@@ -316,10 +315,9 @@ class TradeHoldingsViewModel {
 
   /// Empty state
   factory TradeHoldingsViewModel.empty(String userId, String portfolioId) =>
-      TradeHoldingsViewModel(userId: userId, portfolioId: portfolioId, holdings: [], totalElements: 0);
+      TradeHoldingsViewModel(portfolioId: portfolioId, holdings: [], totalElements: 0);
 
-  final String userId;
-  final String portfolioId;
+    final String portfolioId;
   final List<TradeHoldingViewModel> holdings;
   final int totalElements;
   final int totalPages;

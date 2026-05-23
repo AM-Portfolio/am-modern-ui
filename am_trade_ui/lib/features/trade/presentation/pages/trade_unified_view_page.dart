@@ -5,9 +5,7 @@ import 'package:am_market_ui/am_market_ui.dart';
 import '../journal/pages/journal_web_page.dart';
 
 class TradeUnifiedViewPage extends ConsumerStatefulWidget {
-  final String userId;
-
-  const TradeUnifiedViewPage({required this.userId, super.key});
+    const const TradeUnifiedViewPage({ super.key});
 
   @override
   ConsumerState<TradeUnifiedViewPage> createState() => _TradeUnifiedViewPageState();
@@ -150,7 +148,7 @@ class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage> wit
                       ),
 
                       // Tab 3: Journal
-                      JournalWebPage(userId: widget.userId),
+                      JournalWebPage(),
                     ],
                   ),
                 ),

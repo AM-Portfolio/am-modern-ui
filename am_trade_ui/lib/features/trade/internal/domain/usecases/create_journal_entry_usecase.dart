@@ -7,7 +7,6 @@ class CreateJournalEntryUseCase {
   final JournalRepository _repository;
 
   Future<JournalEntry> call({
-    required String userId,
     required String title,
     required String content,
     required DateTime entryDate,
@@ -19,7 +18,6 @@ class CreateJournalEntryUseCase {
     List<String>? relatedTradeIds,
     List<String>? tagIds,
   }) => _repository.createJournalEntry(
-    userId: userId,
     title: title,
     content: content,
     entryDate: entryDate,

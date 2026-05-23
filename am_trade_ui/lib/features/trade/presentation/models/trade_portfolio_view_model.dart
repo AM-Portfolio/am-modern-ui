@@ -95,10 +95,9 @@ class TradePortfolioListViewModel {
   );
 
   factory TradePortfolioListViewModel.empty(String userId) =>
-      TradePortfolioListViewModel(userId: userId, portfolios: []);
+      TradePortfolioListViewModel(portfolios: []);
 
-  final String userId;
-  final List<TradePortfolioViewModel> portfolios;
+    final List<TradePortfolioViewModel> portfolios;
   final int totalCount;
 
   /// Computed properties

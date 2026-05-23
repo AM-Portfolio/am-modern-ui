@@ -269,18 +269,16 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
 
   @override
   Future<FilterTradeDetailsResponse> filterTradeDetails({
-    required String userId,
     String? favoriteFilterId,
     MetricsFilterConfigDto? metricsConfig,
     int page = 0,
     int size = 20,
     String? sort,
   }) async {
-    AppLogger.methodEntry('filterTradeDetails', tag: 'TradeControllerRepository', params: {'userId': userId});
+    AppLogger.methodEntry('filterTradeDetails', tag: 'TradeControllerRepository', params: {});
 
     try {
       final responseDto = await _remoteDataSource.filterTradeDetails(
-        userId: userId,
         favoriteFilterId: favoriteFilterId,
         metricsConfig: metricsConfig,
         page: page,

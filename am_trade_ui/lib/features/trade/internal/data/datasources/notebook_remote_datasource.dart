@@ -9,18 +9,14 @@ import 'trade_api_request_util.dart';
 abstract class NotebookRemoteDataSource {
   // Notebook Items
   Future<NotebookItemDto> createNotebookItem(NotebookItemDto request);
-  Future<List<NotebookItemDto>> getNotebookItems({
-    required String userId,
-    String? parentId,
-    NotebookItemType? type,
-  });
+  Future<List<NotebookItemDto>> getNotebookItems({String? parentId, NotebookItemType? type});
   Future<NotebookItemDto> getNotebookItem(String itemId);
   Future<NotebookItemDto> updateNotebookItem(String itemId, NotebookItemDto request);
   Future<void> deleteNotebookItem(String itemId);
 
   // Notebook Tags
   Future<NotebookTagDto> createNotebookTag(NotebookTagDto request);
-  Future<List<NotebookTagDto>> getNotebookTags(String userId);
+  Future<List<NotebookTagDto>> getNotebookTags();
   Future<NotebookTagDto> updateNotebookTag(String tagId, NotebookTagDto request);
   Future<void> deleteNotebookTag(String tagId);
 }
@@ -78,15 +74,11 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
   }
 
   @override
-  Future<List<NotebookItemDto>> getNotebookItems({
-    required String userId,
-    String? parentId,
-    NotebookItemType? type,
-  }) async {
+  Future<List<NotebookItemDto>> getNotebookItems({String? parentId, NotebookItemType? type}) async {
     AppLogger.methodEntry(
       'getNotebookItems',
       tag: 'NotebookRemoteDataSource',
-      params: {'userId': userId, 'parentId': parentId, 'type': type},
+      params: {'parentId': parentId, 'type': type},
     );
 
     try {
@@ -227,8 +219,8 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
   }
 
   @override
-  Future<List<NotebookTagDto>> getNotebookTags(String userId) async {
-    AppLogger.methodEntry('getNotebookTags', tag: 'NotebookRemoteDataSource', params: {'userId': userId});
+  Future<List<NotebookTagDto>> getNotebookTags() async {
+    AppLogger.methodEntry('getNotebookTags', tag: 'NotebookRemoteDataSource', params: {});
 
     try {
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/tags');

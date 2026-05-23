@@ -30,14 +30,14 @@ class FavoriteFilterCubit extends Cubit<FavoriteFilterState> {
   final DeleteFavoriteFilterUseCase _deleteFavoriteFilter;
   final SetDefaultFilterUseCase _setDefaultFilter;
 
-  /// Load favorite filters for a user
-  Future<void> loadFilters(String userId) async {
-    AppLogger.methodEntry('loadFilters', tag: 'FavoriteFilterCubit', params: {'userId': userId});
+  /// Load favorite filters for the current user (JWT)
+  Future<void> loadFilters() async {
+    AppLogger.methodEntry('loadFilters', tag: 'FavoriteFilterCubit');
 
     emit(const FavoriteFilterState.loading());
 
     try {
-      final filterList = await _getFavoriteFilters(userId);
+      final filterList = await _getFavoriteFilters();
       emit(FavoriteFilterState.loaded(filterList));
 
       AppLogger.info('Filters loaded successfully: ${filterList.totalCount} filters', tag: 'FavoriteFilterCubit');
@@ -51,25 +51,22 @@ class FavoriteFilterCubit extends Cubit<FavoriteFilterState> {
 
   /// Create a new favorite filter
   Future<void> createFilter({
-    required String userId,
     required String name,
     required MetricsFilterConfig filterConfig,
     String? description,
     bool? isDefault,
   }) async {
-    AppLogger.methodEntry('createFilter', tag: 'FavoriteFilterCubit', params: {'userId': userId, 'name': name});
+    AppLogger.methodEntry('createFilter', tag: 'FavoriteFilterCubit', params: {'name': name});
 
     try {
       await _createFavoriteFilter(
-        userId: userId,
         name: name,
         filterConfig: filterConfig,
         description: description,
         isDefault: isDefault,
       );
 
-      // Reload filters
-      await loadFilters(userId);
+      await loadFilters();
 
       AppLogger.info('Filter created successfully', tag: 'FavoriteFilterCubit');
       AppLogger.methodExit('createFilter', tag: 'FavoriteFilterCubit', result: 'success');
@@ -81,14 +78,12 @@ class FavoriteFilterCubit extends Cubit<FavoriteFilterState> {
   }
 
   /// Delete a favorite filter
-  Future<void> deleteFilter(String userId, String filterId) async {
+  Future<void> deleteFilter(String filterId) async {
     AppLogger.methodEntry('deleteFilter', tag: 'FavoriteFilterCubit', params: {'filterId': filterId});
 
     try {
-      await _deleteFavoriteFilter(userId, filterId);
-
-      // Reload filters
-      await loadFilters(userId);
+      await _deleteFavoriteFilter(filterId);
+      await loadFilters();
 
       AppLogger.info('Filter deleted successfully', tag: 'FavoriteFilterCubit');
       AppLogger.methodExit('deleteFilter', tag: 'FavoriteFilterCubit', result: 'success');
@@ -100,14 +95,12 @@ class FavoriteFilterCubit extends Cubit<FavoriteFilterState> {
   }
 
   /// Set a filter as default
-  Future<void> setAsDefault(String userId, String filterId) async {
+  Future<void> setAsDefault(String filterId) async {
     AppLogger.methodEntry('setAsDefault', tag: 'FavoriteFilterCubit', params: {'filterId': filterId});
 
     try {
-      await _setDefaultFilter(userId, filterId);
-
-      // Reload filters
-      await loadFilters(userId);
+      await _setDefaultFilter(filterId);
+      await loadFilters();
 
       AppLogger.info('Filter set as default successfully', tag: 'FavoriteFilterCubit');
       AppLogger.methodExit('setAsDefault', tag: 'FavoriteFilterCubit', result: 'success');
@@ -128,4 +121,3 @@ class FavoriteFilterCubit extends Cubit<FavoriteFilterState> {
     );
   }
 }
-

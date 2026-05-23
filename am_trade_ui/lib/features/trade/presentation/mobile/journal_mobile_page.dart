@@ -8,10 +8,9 @@ import '../cubit/journal/journal_state.dart';
 import '../widgets/journal/journal_entry_form.dart';
 
 class JournalMobilePage extends ConsumerStatefulWidget {
-  const JournalMobilePage({required this.userId, super.key, this.portfolioId});
+  const JournalMobilePage({super.key, this.portfolioId});
 
-  final String userId;
-  final String? portfolioId;
+    final String? portfolioId;
 
   @override
   ConsumerState<JournalMobilePage> createState() => _JournalMobilePageState();
@@ -24,7 +23,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
   void initState() {
     super.initState();
     _cubit = ref.read(journalCubitProvider);
-    _cubit.loadJournalEntries(widget.userId);
+    _cubit.loadJournalEntries();
   }
 
   @override
@@ -37,7 +36,6 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => JournalEntryForm(
-                userId: widget.userId,
                 cubit: _cubit,
                 portfolioId: widget.portfolioId ?? '8a57024c-05c2-475b-a2c4-0545865efa4a',
               ),
@@ -92,7 +90,6 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => JournalEntryForm(
-                            userId: widget.userId,
                             cubit: _cubit,
                             portfolioId: widget.portfolioId ?? '8a57024c-05c2-475b-a2c4-0545865efa4a',
                             entry: entry,
@@ -119,7 +116,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
                                 onPressed: () {
-                                  _cubit.removeJournalEntry(widget.userId, entry.id);
+                                  _cubit.removeJournalEntry( entry.id);
                                 },
                               ),
                             ],

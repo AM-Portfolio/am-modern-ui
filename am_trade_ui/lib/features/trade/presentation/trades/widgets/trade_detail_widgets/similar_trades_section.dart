@@ -8,20 +8,18 @@ import '../../../models/trade_holding_view_model.dart';
 class SimilarTradesSection extends ConsumerWidget {
   const SimilarTradesSection({
     required this.trade,
-    required this.userId,
-    required this.portfolioId,
+        required this.portfolioId,
     this.symbolFilter,
     super.key,
   });
 
   final TradeHoldingViewModel trade;
-  final String userId;
-  final String portfolioId;
+    final String portfolioId;
   final String? symbolFilter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final params = (userId: userId, portfolioId: portfolioId);
+    final portfolioId = portfolioId;
     final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(params));
 
     return holdingsAsync.when(

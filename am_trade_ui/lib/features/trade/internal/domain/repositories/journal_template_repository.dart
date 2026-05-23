@@ -19,7 +19,6 @@ abstract class JournalTemplateRepository {
 
   /// Get all templates with optional filters
   Future<List<JournalTemplate>> getTemplates({
-    required String userId,
     JournalTemplateCategory? category,
     String? search,
   });
@@ -27,8 +26,7 @@ abstract class JournalTemplateRepository {
   /// Get a specific template by ID
   Future<JournalTemplate> getTemplate({
     required String templateId,
-    required String userId,
-  });
+    });
 
   /// Update a template
   Future<JournalTemplate> updateTemplate({
@@ -47,27 +45,24 @@ abstract class JournalTemplateRepository {
   /// Delete a template
   Future<void> deleteTemplate({
     required String templateId,
-    required String userId,
-  });
+    });
 
   /// Get favorite templates
-  Future<List<JournalTemplate>> getFavoriteTemplates(String userId);
+  Future<List<JournalTemplate>> getFavoriteTemplates();
 
   /// Get recommended templates
-  Future<List<JournalTemplate>> getRecommendedTemplates(String userId);
+  Future<List<JournalTemplate>> getRecommendedTemplates();
 
   /// Get user's custom templates
-  Future<List<JournalTemplate>> getMyTemplates(String userId);
+  Future<List<JournalTemplate>> getMyTemplates();
 
   /// Toggle favorite status of a template
   Future<JournalTemplate> toggleFavorite({
     required String templateId,
-    required String userId,
-  });
+    });
 
   /// Use a template to create a journal entry
   Future<JournalEntry> useTemplate({
-    required String userId,
     required String templateId,
     required Map<String, dynamic> fieldValues,
     String? tradeId,

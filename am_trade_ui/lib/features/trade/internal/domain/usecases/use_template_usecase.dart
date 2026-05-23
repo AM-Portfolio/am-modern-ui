@@ -8,14 +8,12 @@ class UseTemplateUseCase {
   final JournalTemplateRepository _repository;
 
   Future<JournalEntry> call({
-    required String userId,
     required String templateId,
     required Map<String, dynamic> fieldValues,
     String? tradeId,
     String? customTitle,
   }) {
     return _repository.useTemplate(
-      userId: userId,
       templateId: templateId,
       fieldValues: fieldValues,
       tradeId: tradeId,

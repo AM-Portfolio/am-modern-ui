@@ -7,5 +7,5 @@ class DeleteFavoriteFilterUseCase {
 
   final FavoriteFilterRepository _repository;
 
-  Future<void> call(String userId, String filterId) async => _repository.deleteFavoriteFilter(userId, filterId);
+  Future<void> call(String filterId) async => _repository.deleteFavoriteFilter(filterId);
 }

@@ -4,7 +4,6 @@ import '../entities/journal_entry.dart';
 abstract class JournalRepository {
   /// Create a new journal entry
   Future<JournalEntry> createJournalEntry({
-    required String userId,
     required String title,
     required String content,
     required DateTime entryDate,
@@ -23,7 +22,6 @@ abstract class JournalRepository {
   /// Update a journal entry
   Future<JournalEntry> updateJournalEntry({
     required String entryId,
-    required String userId,
     required String title,
     required String content,
     required DateTime entryDate,
@@ -40,11 +38,11 @@ abstract class JournalRepository {
   Future<void> deleteJournalEntry(String entryId);
 
   /// Get journal entries for a user
-  Future<List<JournalEntry>> getJournalEntriesByUser(String userId);
+  Future<List<JournalEntry>> getJournalEntriesByUser();
 
   /// Get journal entries for a specific trade
   Future<List<JournalEntry>> getJournalEntriesByTrade(String tradeId);
 
   /// Get journal entries by date range
-  Future<List<JournalEntry>> getJournalEntriesByDateRange(String userId, DateTime startDate, DateTime endDate);
+  Future<List<JournalEntry>> getJournalEntriesByDateRange(DateTime startDate, DateTime endDate);
 }

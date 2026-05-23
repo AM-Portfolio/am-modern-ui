@@ -9,11 +9,10 @@ class GetNotebookItemsUseCase {
   GetNotebookItemsUseCase(this.repository);
 
   Future<List<NotebookItem>> call({
-    required String userId,
     String? parentId,
     NotebookItemType? type,
   }) {
-    return repository.getNotebookItems(userId: userId, parentId: parentId, type: type);
+    return repository.getNotebookItems(parentId: parentId, type: type);
   }
 }
 
@@ -52,8 +51,8 @@ class GetNotebookTagsUseCase {
 
   GetNotebookTagsUseCase(this.repository);
 
-  Future<List<NotebookTag>> call(String userId) {
-    return repository.getNotebookTags(userId);
+  Future<List<NotebookTag>> call() {
+    return repository.getNotebookTags();
   }
 }
 

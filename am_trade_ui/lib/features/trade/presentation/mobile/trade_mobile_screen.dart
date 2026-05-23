@@ -18,16 +18,14 @@ enum TradeViewType { portfolios, holdings, calendar, addTrade }
 /// Mobile-specific trade screen with bottom tab navigation
 class TradeMobileScreen extends ConsumerStatefulWidget {
   const TradeMobileScreen({
-    required this.userId,
-    super.key,
+        super.key,
     this.selectedPortfolioId,
     this.selectedPortfolioName,
     this.initialView = TradeViewType.portfolios,
     this.onBack,
   });
 
-  final String userId;
-  final String? selectedPortfolioId;
+    final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final TradeViewType initialView;
   final VoidCallback? onBack;
@@ -107,7 +105,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
             onPressed: () {
-              ref.invalidate(tradePortfoliosStreamProvider(widget.userId));
+              ref.invalidate(tradePortfoliosStreamProvider);
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text('Refreshing portfolios...'), duration: Duration(seconds: 1)));
@@ -125,7 +123,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
             tooltip: 'Refresh',
             onPressed: () {
               if (_currentPortfolioId != null) {
-                final params = (userId: widget.userId, portfolioId: _currentPortfolioId!);
+                final portfolioId = _currentPortfolioId!;
                 ref.invalidate(tradeHoldingsStreamProvider(params));
                 ref.invalidate(tradeSummaryStreamProvider(params));
                 ScaffoldMessenger.of(
@@ -146,7 +144,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
             tooltip: 'Refresh',
             onPressed: () {
               if (_currentPortfolioId != null) {
-                final params = (userId: widget.userId, portfolioId: _currentPortfolioId!);
+                final portfolioId = _currentPortfolioId!;
                 ref.invalidate(tradeCalendarStreamProvider(params));
                 ScaffoldMessenger.of(
                   context,
@@ -247,13 +245,13 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         if (_currentPortfolioId == null) {
           return _buildSelectPortfolioPrompt(TradeViewType.holdings);
         }
-        return TradeHoldingsDashboardMobilePage(userId: widget.userId, portfolioId: _currentPortfolioId!);
+        return TradeHoldingsDashboardMobilePage( portfolioId: _currentPortfolioId!);
 
       case TradeViewType.calendar:
         if (_currentPortfolioId == null) {
           return _buildSelectPortfolioPrompt(TradeViewType.calendar);
         }
-        return TradeCalendarAnalyticsMobilePage(userId: widget.userId, portfolioId: _currentPortfolioId!);
+        return TradeCalendarAnalyticsMobilePage( portfolioId: _currentPortfolioId!);
 
       case TradeViewType.addTrade:
         if (_currentPortfolioId == null) {
@@ -271,7 +269,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
               onTradeAdded: () {
                 // Refresh holdings when trade is added
                 if (_currentPortfolioId != null) {
-                  ref.invalidate(tradeHoldingsStreamProvider((userId: widget.userId, portfolioId: _currentPortfolioId!)));
+                  ref.invalidate(tradeHoldingsStreamProvider(_currentPortfolioId!));
                 }
                 // Switch back to holdings view after adding trade
                 setState(() => _selectedView = TradeViewType.holdings);
@@ -287,7 +285,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
   /// Build portfolios view
   Widget _buildPortfoliosView() => Consumer(
     builder: (context, ref, child) {
-      final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider(widget.userId));
+      final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider);
 
       return portfoliosAsync.when(
         data: (portfolios) => TradePortfolioDiscoveryTemplate(
@@ -297,7 +295,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
             _onPortfolioSelected(portfolio.id, portfolio.name);
           },
           onRefresh: () {
-            ref.invalidate(tradePortfoliosStreamProvider(widget.userId));
+            ref.invalidate(tradePortfoliosStreamProvider);
           },
           isWebView: false,
         ),
@@ -308,7 +306,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
           errorMessage: error.toString(),
           onPortfolioSelected: (_) {},
           onRefresh: () {
-            ref.invalidate(tradePortfoliosStreamProvider(widget.userId));
+            ref.invalidate(tradePortfoliosStreamProvider);
           },
           isWebView: false,
         ),

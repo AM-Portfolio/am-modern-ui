@@ -7,13 +7,10 @@ import '../../../journal_template_providers.dart';
 /// Dialog for creating custom templates
 class CreateTemplateDialog extends ConsumerStatefulWidget {
   const CreateTemplateDialog({
-    required this.userId,
-    super.key,
+        super.key,
   });
 
-  final String userId;
-
-  @override
+    @override
   ConsumerState<CreateTemplateDialog> createState() =>
       _CreateTemplateDialogState();
 }
@@ -289,7 +286,7 @@ class _CreateTemplateDialogState extends ConsumerState<CreateTemplateDialog> {
       cubit.createTemplate(
         name: _nameController.text,
         category: _selectedCategory,
-        createdBy: widget.userId,
+        createdBy: 
         description: _descriptionController.text.isEmpty
             ? null
             : _descriptionController.text,

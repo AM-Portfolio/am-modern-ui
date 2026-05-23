@@ -8,13 +8,11 @@ import '../journal_template/pages/template_browser_page.dart';
 /// Example: Add this button to your journal entry creation UI
 class UseTemplateButton extends ConsumerWidget {
   const UseTemplateButton({
-    required this.userId,
-    this.onTemplateSelected,
+        this.onTemplateSelected,
     super.key,
   });
 
-  final String userId;
-  final Function(dynamic template)? onTemplateSelected;
+    final Function(dynamic template)? onTemplateSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,7 +21,6 @@ class UseTemplateButton extends ConsumerWidget {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => TemplateBrowserPage(
-              userId: userId,
               onTemplateSelected: (template) {
                 // Handle template selection
                 onTemplateSelected?.call(template);

@@ -51,7 +51,7 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
     AppLogger.info('✅ UserId validated: $userId', tag: 'AddTradeMobilePage');
 
     // CRITICAL: Set userId since it's not included in the form
-    final tradeToSave = tradeDetails.copyWith(userId: userId);
+    final tradeToSave = tradeDetails.copyWith();
 
     AppLogger.debug('📋 Trade Details (with userId): ${tradeToSave.toString()}', tag: 'AddTradeMobilePage');
     AppLogger.info('🚀 Calling TradeControllerCubit.addNewTrade() with userId: $userId', tag: 'AddTradeMobilePage');

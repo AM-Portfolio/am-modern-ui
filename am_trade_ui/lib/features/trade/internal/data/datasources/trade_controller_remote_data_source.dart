@@ -56,7 +56,6 @@ abstract class TradeControllerRemoteDataSource {
   /// POST /v1/trades/details/filter
   /// Filter trade details using favorite filter configuration
   Future<FilterTradeDetailsResponseDto> filterTradeDetails({
-    required String userId,
     String? favoriteFilterId,
     MetricsFilterConfigDto? metricsConfig,
     int page = 0,
@@ -382,14 +381,13 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
 
   @override
   Future<FilterTradeDetailsResponseDto> filterTradeDetails({
-    required String userId,
     String? favoriteFilterId,
     MetricsFilterConfigDto? metricsConfig,
     int page = 0,
     int size = 20,
     String? sort,
   }) async {
-    AppLogger.methodEntry('filterTradeDetails', tag: 'TradeControllerRemoteDataSource', params: {'userId': userId});
+    AppLogger.methodEntry('filterTradeDetails', tag: 'TradeControllerRemoteDataSource', params: {});
 
     try {
       final queryParams = <String>[];
@@ -403,7 +401,6 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
       final fullUri = '$baseUri?${queryParams.join('&')}';
 
       final requestData = FilterTradeDetailsRequestDto(
-        userId: '',
         favoriteFilterId: favoriteFilterId,
         metricsConfig: metricsConfig,
       );

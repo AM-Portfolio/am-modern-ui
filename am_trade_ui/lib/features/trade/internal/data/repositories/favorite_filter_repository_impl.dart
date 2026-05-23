@@ -22,12 +22,12 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
   FavoriteFilterList? _cachedFilterList;
 
   @override
-  Future<FavoriteFilterList> getFavoriteFilters(String userId) async {
-    AppLogger.methodEntry('getFavoriteFilters', tag: 'FavoriteFilterRepository', params: {'userId': userId});
+  Future<FavoriteFilterList> getFavoriteFilters() async {
+    AppLogger.methodEntry('getFavoriteFilters', tag: 'FavoriteFilterRepository', params: {});
 
     try {
-      final dtos = await _remoteDataSource.getFavoriteFilters(userId);
-      final filterList = FavoriteFilterMapper.fromListDto(dtos, userId);
+      final dtos = await _remoteDataSource.getFavoriteFilters();
+      final filterList = FavoriteFilterMapper.fromListDto(dtos);
 
       _cachedFilterList = filterList;
       _filtersController.add(filterList);
@@ -55,15 +55,15 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
   }
 
   @override
-  Future<FavoriteFilter> getFavoriteFilterById(String userId, String filterId) async {
+  Future<FavoriteFilter> getFavoriteFilterById(String filterId) async {
     AppLogger.methodEntry(
       'getFavoriteFilterById',
       tag: 'FavoriteFilterRepository',
-      params: {'userId': userId, 'filterId': filterId},
+      params: {},
     );
 
     try {
-      final dto = await _remoteDataSource.getFavoriteFilterById(userId, filterId);
+      final dto = await _remoteDataSource.getFavoriteFilterById(filterId);
       final filter = FavoriteFilterMapper.fromResponseDto(dto);
 
       AppLogger.info('Favorite filter fetched successfully', tag: 'FavoriteFilterRepository');
@@ -84,9 +84,7 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
   }
 
   @override
-  Future<FavoriteFilter> createFavoriteFilter(
-    String userId,
-    String name,
+  Future<FavoriteFilter> createFavoriteFilter(String name,
     MetricsFilterConfig filterConfig, {
     String? description,
     bool? isDefault,
@@ -94,7 +92,7 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
     AppLogger.methodEntry(
       'createFavoriteFilter',
       tag: 'FavoriteFilterRepository',
-      params: {'userId': userId, 'name': name},
+      params: {},
     );
 
     try {
@@ -105,11 +103,11 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
         filterConfig: MetricsFilterConfigMapper.toDto(filterConfig),
       );
 
-      final dto = await _remoteDataSource.createFavoriteFilter(userId, request);
+      final dto = await _remoteDataSource.createFavoriteFilter(request);
       final filter = FavoriteFilterMapper.fromResponseDto(dto);
 
       // Refresh the list
-      await getFavoriteFilters(userId);
+      await getFavoriteFilters();
 
       AppLogger.info('Favorite filter created successfully', tag: 'FavoriteFilterRepository');
       AppLogger.methodExit('createFavoriteFilter', tag: 'FavoriteFilterRepository', result: 'success');
@@ -129,9 +127,7 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
   }
 
   @override
-  Future<FavoriteFilter> updateFavoriteFilter(
-    String userId,
-    String filterId,
+  Future<FavoriteFilter> updateFavoriteFilter(String filterId,
     String name,
     MetricsFilterConfig filterConfig, {
     String? description,
@@ -140,7 +136,7 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
     AppLogger.methodEntry(
       'updateFavoriteFilter',
       tag: 'FavoriteFilterRepository',
-      params: {'userId': userId, 'filterId': filterId},
+      params: {},
     );
 
     try {
@@ -151,11 +147,11 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
         filterConfig: MetricsFilterConfigMapper.toDto(filterConfig),
       );
 
-      final dto = await _remoteDataSource.updateFavoriteFilter(userId, filterId, request);
+      final dto = await _remoteDataSource.updateFavoriteFilter(filterId, request);
       final filter = FavoriteFilterMapper.fromResponseDto(dto);
 
       // Refresh the list
-      await getFavoriteFilters(userId);
+      await getFavoriteFilters();
 
       AppLogger.info('Favorite filter updated successfully', tag: 'FavoriteFilterRepository');
       AppLogger.methodExit('updateFavoriteFilter', tag: 'FavoriteFilterRepository', result: 'success');
@@ -175,18 +171,18 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
   }
 
   @override
-  Future<void> deleteFavoriteFilter(String userId, String filterId) async {
+  Future<void> deleteFavoriteFilter(String filterId) async {
     AppLogger.methodEntry(
       'deleteFavoriteFilter',
       tag: 'FavoriteFilterRepository',
-      params: {'userId': userId, 'filterId': filterId},
+      params: {},
     );
 
     try {
-      await _remoteDataSource.deleteFavoriteFilter(userId, filterId);
+      await _remoteDataSource.deleteFavoriteFilter(filterId);
 
       // Refresh the list
-      await getFavoriteFilters(userId);
+      await getFavoriteFilters();
 
       AppLogger.info('Favorite filter deleted successfully', tag: 'FavoriteFilterRepository');
       AppLogger.methodExit('deleteFavoriteFilter', tag: 'FavoriteFilterRepository', result: 'success');
@@ -204,20 +200,20 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
   }
 
   @override
-  Future<BulkDeleteResult> bulkDeleteFavoriteFilters(String userId, List<String> filterIds) async {
+  Future<BulkDeleteResult> bulkDeleteFavoriteFilters(List<String> filterIds) async {
     AppLogger.methodEntry(
       'bulkDeleteFavoriteFilters',
       tag: 'FavoriteFilterRepository',
-      params: {'userId': userId, 'filterCount': filterIds.length},
+      params: {},
     );
 
     try {
-      final request = BulkDeleteRequestDto(userId: userId, filterIds: filterIds);
+      final request = BulkDeleteRequestDto(userId: '', filterIds: filterIds);
       final dto = await _remoteDataSource.bulkDeleteFavoriteFilters(request);
       final result = FavoriteFilterMapper.fromBulkDeleteDto(dto);
 
       // Refresh the list
-      await getFavoriteFilters(userId);
+      await getFavoriteFilters();
 
       AppLogger.info('Bulk delete completed successfully', tag: 'FavoriteFilterRepository');
       AppLogger.methodExit('bulkDeleteFavoriteFilters', tag: 'FavoriteFilterRepository', result: 'success');
@@ -237,19 +233,19 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
   }
 
   @override
-  Future<FavoriteFilter> setDefaultFilter(String userId, String filterId) async {
+  Future<FavoriteFilter> setDefaultFilter(String filterId) async {
     AppLogger.methodEntry(
       'setDefaultFilter',
       tag: 'FavoriteFilterRepository',
-      params: {'userId': userId, 'filterId': filterId},
+      params: {},
     );
 
     try {
-      final dto = await _remoteDataSource.setDefaultFilter(userId, filterId);
+      final dto = await _remoteDataSource.setDefaultFilter(filterId);
       final filter = FavoriteFilterMapper.fromResponseDto(dto);
 
       // Refresh the list
-      await getFavoriteFilters(userId);
+      await getFavoriteFilters();
 
       AppLogger.info('Filter set as default successfully', tag: 'FavoriteFilterRepository');
       AppLogger.methodExit('setDefaultFilter', tag: 'FavoriteFilterRepository', result: 'success');
@@ -269,10 +265,10 @@ class FavoriteFilterRepositoryImpl implements FavoriteFilterRepository {
   }
 
   @override
-  Stream<FavoriteFilterList> watchFavoriteFilters(String userId) {
+  Stream<FavoriteFilterList> watchFavoriteFilters() {
     // Trigger initial fetch if not already cached
-    if (_cachedFilterList == null || _cachedFilterList!.userId != userId) {
-      getFavoriteFilters(userId);
+    if (_cachedFilterList == null) {
+      getFavoriteFilters();
     }
 
     return _filtersController.stream;

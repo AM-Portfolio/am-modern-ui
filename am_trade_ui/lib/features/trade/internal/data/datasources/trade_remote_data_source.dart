@@ -12,53 +12,44 @@ import 'trade_mock_data_helper.dart';
 /// Abstract data source for trade data
 abstract class TradeRemoteDataSource {
   /// Get trade portfolios from remote API
-  Future<TradePortfolioListDto> getTradePortfolios(String userId);
+  Future<TradePortfolioListDto> getTradePortfolios();
 
   /// Get trade holdings from remote API
-  Future<TradeHoldingsDto> getTradeHoldings(String userId, String portfolioId);
+  Future<TradeHoldingsDto> getTradeHoldings(String portfolioId);
 
   /// Get trade summary from remote API
-  Future<TradePortfolioSummaryDto> getTradeSummary(String userId, String portfolioId);
+  Future<TradePortfolioSummaryDto> getTradeSummary(String portfolioId);
 
   /// Get trade calendar by month from remote API
-  Future<TradeCalendarDto> getTradeCalendarByMonth(
-    String userId,
-    String portfolioId, {
+  Future<TradeCalendarDto> getTradeCalendarByMonth(String portfolioId, {
     required int year,
     required int month,
   });
 
   /// Get trade calendar by day from remote API
-  Future<TradeCalendarDto> getTradeCalendarByDay(String userId, String portfolioId, {required DateTime date});
+  Future<TradeCalendarDto> getTradeCalendarByDay(String portfolioId, {required DateTime date});
 
   /// Get trade calendar by date range from remote API
-  Future<TradeCalendarDto> getTradeCalendarByDateRange(
-    String userId,
-    String portfolioId, {
+  Future<TradeCalendarDto> getTradeCalendarByDateRange(String portfolioId, {
     required DateTime startDate,
     required DateTime endDate,
   });
 
   /// Get trade calendar by quarter from remote API
-  Future<TradeCalendarDto> getTradeCalendarByQuarter(
-    String userId,
-    String portfolioId, {
+  Future<TradeCalendarDto> getTradeCalendarByQuarter(String portfolioId, {
     required int year,
     required int quarter,
   });
 
   /// Get trade calendar by financial year from remote API
-  Future<TradeCalendarDto>
-  
-   getTradeCalendarByFinancialYear(
-    String userId,
+  Future<TradeCalendarDto> getTradeCalendarByFinancialYear(
     String portfolioId, {
     required int financialYear,
   });
 
   /// Get trade calendar from remote API (legacy - delegates to getTradeCalendarByMonth)
   @Deprecated('Use getTradeCalendarByMonth instead')
-  Future<TradeCalendarDto> getTradeCalendar(String userId, String portfolioId, {int? year, int? month});
+  Future<TradeCalendarDto> getTradeCalendar(String portfolioId, {int? year, int? month});
 }
 
 /// Concrete implementation of trade remote data source
@@ -84,20 +75,38 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   }
 
   @override
-  Future<TradePortfolioListDto> getTradePortfolios(String userId) async {
-    AppLogger.methodEntry('getTradePortfolios', tag: 'TradeRemoteDataSource', params: {'userId': userId});
+  Future<TradePortfolioListDto> getTradePortfolios() async {
+    AppLogger.methodEntry('getTradePortfolios', tag: 'TradeRemoteDataSource', params: {});
 
     try {
       // Trade API Spec: GET /v1/portfolio-summary/by-owner/{ownerId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioListResource);
-      final fullUri = '$baseUri/$userId';
+      final fullUri = baseUri;
 
       final response = await _apiClient.get<TradePortfolioListDto>(
         fullUri,
         parser: (data) {
           if (data is List) {
             return TradePortfolioListDto(
-              portfolios: data.map((item) => TradePortfolioDto.fromJson(item as Map<String, dynamic>)).toList(),
+              portfolios: data.map((item) {
+                final json = item as Map<String, dynamic>;
+                final enriched = Map<String, dynamic>.from(json);
+                final metrics = json['metrics'];
+                if (metrics is Map<String, dynamic>) {
+                  // Only copy non-null values from metrics to avoid overwriting
+                  // top-level fields (e.g., totalValue) with explicit nulls.
+                  metrics.forEach((key, value) {
+                    if (value != null) {
+                      enriched[key] = value;
+                    }
+                  });
+                }
+                // Map currentCapital → totalValue as a fallback when metrics.totalValue was null
+                if (enriched['totalValue'] == null && enriched['currentCapital'] != null) {
+                  enriched['totalValue'] = enriched['currentCapital'];
+                }
+                return TradePortfolioDto.fromJson(enriched);
+              }).toList(),
               totalCount: data.length,
             );
           }
@@ -128,11 +137,11 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   }
 
   @override
-  Future<TradeHoldingsDto> getTradeHoldings(String userId, String portfolioId) async {
+  Future<TradeHoldingsDto> getTradeHoldings(String portfolioId) async {
     AppLogger.methodEntry(
       'getTradeHoldings',
       tag: 'TradeRemoteDataSource',
-      params: {'userId': userId, 'portfolioId': portfolioId},
+      params: {'portfolioId': portfolioId},
     );
 
     try {
@@ -192,11 +201,11 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   }
 
   @override
-  Future<TradePortfolioSummaryDto> getTradeSummary(String userId, String portfolioId) async {
+  Future<TradePortfolioSummaryDto> getTradeSummary(String portfolioId) async {
     AppLogger.methodEntry(
       'getTradeSummary',
       tag: 'TradeRemoteDataSource',
-      params: {'userId': userId, 'portfolioId': portfolioId},
+      params: {'portfolioId': portfolioId},
     );
 
     try {
@@ -232,16 +241,14 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   }
 
   @override
-  Future<TradeCalendarDto> getTradeCalendarByMonth(
-    String userId,
-    String portfolioId, {
+  Future<TradeCalendarDto> getTradeCalendarByMonth(String portfolioId, {
     required int year,
     required int month,
   }) async {
     AppLogger.methodEntry(
       'getTradeCalendarByMonth',
       tag: 'TradeRemoteDataSource',
-      params: {'userId': userId, 'portfolioId': portfolioId, 'year': year, 'month': month},
+      params: {'portfolioId': portfolioId, 'year': year, 'month': month},
     );
 
     try {
@@ -304,11 +311,11 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   }
 
   @override
-  Future<TradeCalendarDto> getTradeCalendarByDay(String userId, String portfolioId, {required DateTime date}) async {
+  Future<TradeCalendarDto> getTradeCalendarByDay(String portfolioId, {required DateTime date}) async {
     AppLogger.methodEntry(
       'getTradeCalendarByDay',
       tag: 'TradeRemoteDataSource',
-      params: {'userId': userId, 'portfolioId': portfolioId, 'date': date.toIso8601String()},
+      params: {'portfolioId': portfolioId, 'date': date.toIso8601String()},
     );
 
     try {
@@ -374,9 +381,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   }
 
   @override
-  Future<TradeCalendarDto> getTradeCalendarByDateRange(
-    String userId,
-    String portfolioId, {
+  Future<TradeCalendarDto> getTradeCalendarByDateRange(String portfolioId, {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
@@ -384,7 +389,6 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
       'getTradeCalendarByDateRange',
       tag: 'TradeRemoteDataSource',
       params: {
-        'userId': userId,
         'portfolioId': portfolioId,
         'startDate': startDate.toIso8601String(),
         'endDate': endDate.toIso8601String(),
@@ -461,16 +465,14 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   }
 
   @override
-  Future<TradeCalendarDto> getTradeCalendarByQuarter(
-    String userId,
-    String portfolioId, {
+  Future<TradeCalendarDto> getTradeCalendarByQuarter(String portfolioId, {
     required int year,
     required int quarter,
   }) async {
     AppLogger.methodEntry(
       'getTradeCalendarByQuarter',
       tag: 'TradeRemoteDataSource',
-      params: {'userId': userId, 'portfolioId': portfolioId, 'year': year, 'quarter': quarter},
+      params: {'portfolioId': portfolioId, 'year': year, 'quarter': quarter},
     );
 
     try {
@@ -533,15 +535,13 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   }
 
   @override
-  Future<TradeCalendarDto> getTradeCalendarByFinancialYear(
-    String userId,
-    String portfolioId, {
+  Future<TradeCalendarDto> getTradeCalendarByFinancialYear(String portfolioId, {
     required int financialYear,
   }) async {
     AppLogger.methodEntry(
       'getTradeCalendarByFinancialYear',
       tag: 'TradeRemoteDataSource',
-      params: {'userId': userId, 'portfolioId': portfolioId, 'financialYear': financialYear},
+      params: {'portfolioId': portfolioId, 'financialYear': financialYear},
     );
 
     try {
@@ -604,13 +604,13 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   }
 
   @override
-  Future<TradeCalendarDto> getTradeCalendar(String userId, String portfolioId, {int? year, int? month}) async {
+  Future<TradeCalendarDto> getTradeCalendar(String portfolioId, {int? year, int? month}) async {
     // Legacy method - delegates to getTradeCalendarByMonth
     final now = DateTime.now();
     final targetYear = year ?? now.year;
     final targetMonth = month ?? now.month;
 
-    return getTradeCalendarByMonth(userId, portfolioId, year: targetYear, month: targetMonth);
+    return getTradeCalendarByMonth(portfolioId, year: targetYear, month: targetMonth);
   }
 }
 

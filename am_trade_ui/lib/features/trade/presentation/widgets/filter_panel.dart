@@ -18,15 +18,13 @@ enum FilterGroupType { dateRange, instrument, tradeCharacteristics, profitLoss }
 /// Clean filter panel for trade holdings - without favorite filter logic
 class FilterPanel extends ConsumerStatefulWidget {
   const FilterPanel({
-    required this.userId,
-    required this.initialConfig,
+        required this.initialConfig,
     required this.onApplyFilter,
     super.key,
     this.onReset,
   });
 
-  final String userId;
-  final MetricsFilterConfig initialConfig;
+    final MetricsFilterConfig initialConfig;
   final Function(MetricsFilterConfig) onApplyFilter;
   final VoidCallback? onReset;
 
@@ -303,7 +301,6 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
                 );
 
                 cubit.createFilter(
-                  userId: widget.userId,
                   name: name,
                   filterConfig: config,
                   description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
@@ -340,7 +337,6 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
       headerActions: [
         // Favorite Filter Dropdown
         FavoriteFilterPanel(
-          userId: widget.userId,
           onFilterSelected: (filter) => _applyFavoriteFilter(filter.filterConfig),
         ),
         const SizedBox(width: 12),

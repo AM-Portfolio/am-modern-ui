@@ -11,27 +11,26 @@ abstract class JournalTemplateRemoteDataSource {
   Future<JournalTemplateResponseDto> createTemplate(JournalTemplateRequestDto request);
   
   Future<List<JournalTemplateResponseDto>> getTemplates({
-    required String userId,
     String? category,
     String? search,
   });
   
-  Future<JournalTemplateResponseDto> getTemplate(String templateId, String userId);
+  Future<JournalTemplateResponseDto> getTemplate(String templateId);
   
   Future<JournalTemplateResponseDto> updateTemplate(
     String templateId,
     JournalTemplateRequestDto request,
   );
   
-  Future<void> deleteTemplate(String templateId, String userId);
+  Future<void> deleteTemplate(String templateId);
   
-  Future<List<JournalTemplateResponseDto>> getFavoriteTemplates(String userId);
+  Future<List<JournalTemplateResponseDto>> getFavoriteTemplates();
   
-  Future<List<JournalTemplateResponseDto>> getRecommendedTemplates(String userId);
+  Future<List<JournalTemplateResponseDto>> getRecommendedTemplates();
   
-  Future<List<JournalTemplateResponseDto>> getMyTemplates(String userId);
+  Future<List<JournalTemplateResponseDto>> getMyTemplates();
   
-  Future<JournalTemplateResponseDto> toggleFavorite(String templateId, String userId);
+  Future<JournalTemplateResponseDto> toggleFavorite(String templateId);
   
   Future<TradeJournalEntryResponseDto> useTemplate(
     String templateId,
@@ -105,14 +104,13 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
 
   @override
   Future<List<JournalTemplateResponseDto>> getTemplates({
-    required String userId,
     String? category,
     String? search,
   }) async {
     AppLogger.methodEntry(
       'getTemplates',
       tag: 'JournalTemplateRemoteDataSource',
-      params: {'userId': userId, 'category': category, 'search': search},
+      params: {'category': category, 'search': search},
     );
 
     try {
@@ -159,7 +157,6 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
   @override
   Future<JournalTemplateResponseDto> getTemplate(
     String templateId,
-    String userId,
   ) async {
     AppLogger.methodEntry(
       'getTemplate',
@@ -242,7 +239,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
   }
 
   @override
-  Future<void> deleteTemplate(String templateId, String userId) async {
+  Future<void> deleteTemplate(String templateId) async {
     AppLogger.methodEntry(
       'deleteTemplate',
       tag: 'JournalTemplateRemoteDataSource',
@@ -279,13 +276,11 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
   }
 
   @override
-  Future<List<JournalTemplateResponseDto>> getFavoriteTemplates(
-    String userId,
-  ) async {
+  Future<List<JournalTemplateResponseDto>> getFavoriteTemplates() async {
     AppLogger.methodEntry(
       'getFavoriteTemplates',
       tag: 'JournalTemplateRemoteDataSource',
-      params: {'userId': userId},
+      params: {},
     );
 
     try {
@@ -325,13 +320,11 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
   }
 
   @override
-  Future<List<JournalTemplateResponseDto>> getRecommendedTemplates(
-    String userId,
-  ) async {
+  Future<List<JournalTemplateResponseDto>> getRecommendedTemplates() async {
     AppLogger.methodEntry(
       'getRecommendedTemplates',
       tag: 'JournalTemplateRemoteDataSource',
-      params: {'userId': userId},
+      params: {},
     );
 
     try {
@@ -371,11 +364,11 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
   }
 
   @override
-  Future<List<JournalTemplateResponseDto>> getMyTemplates(String userId) async {
+  Future<List<JournalTemplateResponseDto>> getMyTemplates() async {
     AppLogger.methodEntry(
       'getMyTemplates',
       tag: 'JournalTemplateRemoteDataSource',
-      params: {'userId': userId},
+      params: {},
     );
 
     try {
@@ -417,7 +410,6 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
   @override
   Future<JournalTemplateResponseDto> toggleFavorite(
     String templateId,
-    String userId,
   ) async {
     AppLogger.methodEntry(
       'toggleFavorite',

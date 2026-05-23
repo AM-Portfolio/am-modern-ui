@@ -20,17 +20,13 @@ abstract class JournalRemoteDataSource {
   Future<void> deleteJournalEntry(String entryId);
 
   /// Get journal entries for a user
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByUser(String userId);
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByUser();
 
   /// Get journal entries for a specific trade
   Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByTrade(String tradeId);
 
   /// Get journal entries by date range
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByDateRange(
-    String userId,
-    String startDate,
-    String endDate,
-  );
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByDateRange(String startDate, String endDate);
 }
 
 /// Concrete implementation of journal remote data source
@@ -175,12 +171,12 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   }
 
   @override
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByUser(String userId) async {
-    AppLogger.methodEntry('getJournalEntriesByUser', tag: 'JournalRemoteDataSource', params: {'userId': userId});
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByUser() async {
+    AppLogger.methodEntry('getJournalEntriesByUser', tag: 'JournalRemoteDataSource', params: {});
 
     try {
-      // API Spec: GET /v1/journal (user from JWT)
-      final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal');
+      // API Spec: GET /v1/journal/user (user from JWT)
+      final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal/user');
 
       final response = await _apiClient.get<List<TradeJournalEntryResponseDto>>(
         fullUri,
@@ -246,15 +242,11 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   }
 
   @override
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByDateRange(
-    String userId,
-    String startDate,
-    String endDate,
-  ) async {
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByDateRange(startDate, endDate) async {
     AppLogger.methodEntry(
       'getJournalEntriesByDateRange',
       tag: 'JournalRemoteDataSource',
-      params: {'userId': userId, 'startDate': startDate, 'endDate': endDate},
+      params: {'startDate': startDate, 'endDate': endDate},
     );
 
     try {

@@ -30,16 +30,16 @@ void main() async {
               create: (context) => cubit,
               child: MaterialApp(
                 debugShowCheckedModeBanner: false,
-                home: const TradeWebScreen(userId: ''), // Should be provided by Auth state
+                home: const TradeWebScreen(), // Use user_gyaan to load real portfolio data locally
                 onGenerateRoute: (settings) {
                   if (settings.name == '/trade/add') {
-                    final args = settings.arguments as Map<String, dynamic>?;
+                    final args = settings.arguments as Map?;
                     return MaterialPageRoute(
                       builder: (context) => BlocProvider.value(
                         value: cubit,
                         child: AddTradeWebPage(
-                          portfolioId: args?['portfolioId'] as String?,
-                          portfolioName: args?['portfolioName'] as String?,
+                          portfolioId: args?['portfolioId']?.toString() ?? '',
+                          portfolioName: args?['portfolioName']?.toString() ?? '',
                         ),
                       ),
                     );

@@ -8,14 +8,12 @@ import '../../../journal_template_providers.dart';
 class TemplateFormBuilder extends ConsumerStatefulWidget {
   const TemplateFormBuilder({
     required this.template,
-    required this.userId,
-    required this.onSubmit,
+        required this.onSubmit,
     super.key,
   });
 
   final JournalTemplate template;
-  final String userId;
-  final Function(Map<String, dynamic>) onSubmit;
+    final Function(Map<String, dynamic>) onSubmit;
 
   @override
   ConsumerState<TemplateFormBuilder> createState() =>
@@ -326,7 +324,6 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
       // Use the template
       final cubit = ref.read(journalTemplateCubitProvider);
       cubit.useTemplate(
-        userId: widget.userId,
         templateId: widget.template.id,
         fieldValues: _fieldValues,
       );
