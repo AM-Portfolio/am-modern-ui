@@ -602,12 +602,18 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                           rows: parsedDataList.map((item) {
                             final map = item is Map ? item : {};
                             
-                            final String assetName = map['securityName'] ?? map['schemeName'] ?? map['symbol'] ?? map['name'] ?? 'Unknown Asset';
+                            final String assetName = map['name'] ?? map['securityName'] ?? map['schemeName'] ?? map['symbol'] ?? 'Unknown Asset';
                             final String identifier = map['isin'] ?? map['amfiCode'] ?? map['symbol'] ?? 'N/A';
                             final double quantity = (map['quantity'] ?? map['qty'] ?? 0.0).toDouble();
-                            final double buyPrice = (map['averagePrice'] ?? map['buyPrice'] ?? map['price'] ?? 0.0).toDouble();
-                            final double currentPrice = (map['currentPrice'] ?? map['nav'] ?? map['price'] ?? 0.0).toDouble();
-                            final double totalValue = quantity * currentPrice;
+                            final double buyPrice = (map['avgBuyingPrice'] ?? map['averagePrice'] ?? map['buyPrice'] ?? map['price'] ?? 0.0).toDouble();
+                            final double currentPrice = (map['currentPrice'] ?? 
+                                                        (map['marketData'] != null ? map['marketData']['marketPrice'] : null) ?? 
+                                                        (map['currentValue'] != null && quantity > 0 ? (map['currentValue'] / quantity) : null) ?? 
+                                                        map['avgBuyingPrice'] ?? 
+                                                        map['nav'] ?? 
+                                                        map['price'] ?? 
+                                                        0.0).toDouble();
+                            final double totalValue = map['currentValue'] != null ? (map['currentValue'] as num).toDouble() : quantity * currentPrice;
 
                             return DataRow(
                               cells: [

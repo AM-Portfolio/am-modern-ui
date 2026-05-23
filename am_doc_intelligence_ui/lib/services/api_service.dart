@@ -122,20 +122,17 @@ class ApiService {
   // --- Health Checks ---
 
   Future<bool> checkDocProcessorHealth() async {
+    // /documents/types is a public endpoint — no auth header needed.
+    // Using a plain http.get avoids false-offline status caused by expired JWT tokens.
     final url = '$_docBase/documents/types';
     debugPrint('[ApiService] Health -> GET $url');
     try {
-      final apiClient = GetIt.I.isRegistered<ApiClient>() 
-          ? GetIt.I<ApiClient>() 
-          : ApiClient();
-          
-      final headers = await _getHeaders();
-      await apiClient.get<dynamic>(
-        url,
-        headers: headers,
-        parser: (data) => data,
-      );
-      return true;
+      final client = _makeClient();
+      final response = await client.get(Uri.parse(url))
+          .timeout(const Duration(seconds: 5));
+      client.close();
+      debugPrint('[ApiService] Health status: ${response.statusCode}');
+      return response.statusCode >= 200 && response.statusCode < 300;
     } catch (e) {
       debugPrint('[ApiService] Health failed: $e');
       return false;
