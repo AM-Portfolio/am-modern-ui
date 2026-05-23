@@ -46,6 +46,7 @@ class ConfigService {
             holdingsResource: '/v1/portfolios/holdings',
             summaryResource: '/v1/portfolios/summary',
             transactionsResource: '/v1/portfolios/transactions',
+            listResource: '/v1/portfolios/list',
           ),
           trade: const TradeApiConfig(
             baseUrl: 'https://am.asrax.in/trade',
