@@ -432,12 +432,11 @@ class FilterSummaryDto {
 /// DTO for filter trade details request
 @JsonSerializable(explicitToJson: true)
 class FilterTradeDetailsRequestDto {
-  const FilterTradeDetailsRequestDto({required this.userId, this.favoriteFilterId, this.metricsConfig});
+  const FilterTradeDetailsRequestDto({this.favoriteFilterId, this.metricsConfig});
 
   factory FilterTradeDetailsRequestDto.fromJson(Map<String, dynamic> json) =>
       _$FilterTradeDetailsRequestDtoFromJson(json);
 
-  final String userId;
   final String? favoriteFilterId;
   final MetricsFilterConfigDto? metricsConfig;
 

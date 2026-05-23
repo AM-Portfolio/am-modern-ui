@@ -5,7 +5,7 @@ import 'package:am_market_ui/am_market_ui.dart';
 import '../journal/pages/journal_web_page.dart';
 
 class TradeUnifiedViewPage extends ConsumerStatefulWidget {
-    const const TradeUnifiedViewPage({ super.key});
+  const TradeUnifiedViewPage({super.key});
 
   @override
   ConsumerState<TradeUnifiedViewPage> createState() => _TradeUnifiedViewPageState();

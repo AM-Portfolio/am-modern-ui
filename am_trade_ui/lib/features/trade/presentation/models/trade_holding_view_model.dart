@@ -304,7 +304,6 @@ class TradeHoldingsViewModel {
 
   /// Factory from domain entity
   factory TradeHoldingsViewModel.fromEntity(TradeHoldings entity) => TradeHoldingsViewModel(
-    userId: entity.userId,
     portfolioId: entity.portfolioId,
     holdings: TradeHoldingViewModel.fromEntityList(entity.content),
     totalElements: entity.totalElements,
@@ -314,10 +313,10 @@ class TradeHoldingsViewModel {
   );
 
   /// Empty state
-  factory TradeHoldingsViewModel.empty(String userId, String portfolioId) =>
+  factory TradeHoldingsViewModel.empty(String portfolioId) =>
       TradeHoldingsViewModel(portfolioId: portfolioId, holdings: [], totalElements: 0);
 
-    final String portfolioId;
+  final String portfolioId;
   final List<TradeHoldingViewModel> holdings;
   final int totalElements;
   final int totalPages;

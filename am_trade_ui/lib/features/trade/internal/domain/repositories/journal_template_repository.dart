@@ -8,7 +8,6 @@ abstract class JournalTemplateRepository {
   Future<JournalTemplate> createTemplate({
     required String name,
     required JournalTemplateCategory category,
-    required String createdBy,
     String? description,
     List<Map<String, dynamic>>? fields,
     bool isSystemTemplate = false,
@@ -33,7 +32,6 @@ abstract class JournalTemplateRepository {
     required String templateId,
     required String name,
     required JournalTemplateCategory category,
-    required String createdBy,
     String? description,
     List<Map<String, dynamic>>? fields,
     bool isSystemTemplate = false,

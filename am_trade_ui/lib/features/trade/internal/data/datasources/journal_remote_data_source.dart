@@ -56,7 +56,7 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
     AppLogger.methodEntry(
       'createJournalEntry',
       tag: 'JournalRemoteDataSource',
-      params: {'userId': request.userId, 'title': request.title},
+      params: {'title': request.title},
     );
 
     try {

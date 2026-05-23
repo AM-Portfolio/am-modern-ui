@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../internal/domain/entities/journal_template.dart';
-import '../../../../internal/domain/enums/journal_template_category.dart';
-import '../../../cubit/journal_template/journal_template_cubit.dart';
-import '../../../cubit/journal_template/journal_template_state.dart';
+import '../../../internal/domain/entities/journal_template.dart';
+import '../../../internal/domain/enums/journal_template_category.dart';
+import '../../cubit/journal_template/journal_template_cubit.dart';
+import '../../cubit/journal_template/journal_template_state.dart';
 import '../../../journal_template_providers.dart';
 import '../widgets/template_card.dart';
 import '../widgets/template_category_filter.dart';
@@ -48,8 +48,8 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     _animationController.forward();
     
     // Load templates
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final cubit = ref.read(journalTemplateCubitProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final cubit = await ref.read(journalTemplateCubitProvider.future);
       cubit.loadTemplates();
     });
   }
@@ -62,10 +62,13 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
 
   @override
   Widget build(BuildContext context) {
-    final cubit = ref.watch(journalTemplateCubitProvider);
+    final cubitAsync = ref.watch(journalTemplateCubitProvider);
     
-    return Scaffold(
-      body: Container(
+    return cubitAsync.when(
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stack) => Scaffold(body: Center(child: Text('Error: $error'))),
+      data: (cubit) => Scaffold(
+        body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -142,6 +145,7 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
         ),
       ),
       floatingActionButton: _buildFloatingActionButton(context),
+    ),
     );
   }
 
@@ -212,9 +216,9 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
         ),
       ),
       child: TextField(
-        onChanged: (value) {
+        onChanged: (value) async {
           setState(() => _searchQuery = value);
-          final cubit = ref.read(journalTemplateCubitProvider);
+          final cubit = await ref.read(journalTemplateCubitProvider.future);
           cubit.loadTemplates(
             category: _selectedCategory,
             search: value.isEmpty ? null : value,
@@ -366,8 +370,8 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () {
-              final cubit = ref.read(journalTemplateCubitProvider);
+            onPressed: () async {
+              final cubit = await ref.read(journalTemplateCubitProvider.future);
               cubit.loadTemplates();
             },
             icon: const Icon(Icons.refresh),
@@ -404,8 +408,8 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     );
   }
 
-  void _toggleFavorite(JournalTemplate template) {
-    final cubit = ref.read(journalTemplateCubitProvider);
+  void _toggleFavorite(JournalTemplate template) async {
+    final cubit = await ref.read(journalTemplateCubitProvider.future);
     cubit.toggleFavorite(
       templateId: template.id,
     );

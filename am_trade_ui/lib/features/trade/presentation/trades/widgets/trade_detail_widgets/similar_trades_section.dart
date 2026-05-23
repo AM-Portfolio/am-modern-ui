@@ -19,8 +19,7 @@ class SimilarTradesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final portfolioId = portfolioId;
-    final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(params));
+    final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(portfolioId));
 
     return holdingsAsync.when(
       data: (tradeHoldings) {

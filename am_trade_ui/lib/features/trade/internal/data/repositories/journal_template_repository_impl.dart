@@ -20,7 +20,6 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
   Future<JournalTemplate> createTemplate({
     required String name,
     required JournalTemplateCategory category,
-    required String createdBy,
     String? description,
     List<Map<String, dynamic>>? fields,
     bool isSystemTemplate = false,
@@ -38,7 +37,6 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
       final request = JournalTemplateRequestDto(
         name: name,
         category: category.value,
-        createdBy: createdBy,
         description: description,
         fields: fields
             ?.map((f) => TemplateFieldRequestDto.fromJson(f))
@@ -155,7 +153,6 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
     required String templateId,
     required String name,
     required JournalTemplateCategory category,
-    required String createdBy,
     String? description,
     List<Map<String, dynamic>>? fields,
     bool isSystemTemplate = false,
@@ -173,7 +170,6 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
       final request = JournalTemplateRequestDto(
         name: name,
         category: category.value,
-        createdBy: createdBy,
         description: description,
         fields: fields
             ?.map((f) => TemplateFieldRequestDto.fromJson(f))

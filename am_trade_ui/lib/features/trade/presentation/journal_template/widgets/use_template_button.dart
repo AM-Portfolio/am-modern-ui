@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../journal_template/pages/template_browser_page.dart';
+import '../pages/template_browser_page.dart';
 
 /// Example: Add this button to your journal entry creation UI
 class UseTemplateButton extends ConsumerWidget {

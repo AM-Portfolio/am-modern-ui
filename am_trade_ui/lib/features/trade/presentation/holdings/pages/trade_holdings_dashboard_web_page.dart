@@ -42,7 +42,7 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
 
   Widget _buildHoldingsTab() {
     final portfolioId = widget.portfolioId;
-    final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(params));
+    final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(portfolioId));
 
     return Column(
       children: [
@@ -92,7 +92,7 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
                 onHoldingSelected: (holding) => _showHoldingDetails(context, holding),
                 onSymbolTap: widget.onNavigateToChart,
                 onRefresh: () {
-                  ref.invalidate(tradeHoldingsStreamProvider(params));
+                  ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
                 },
               );
             },
@@ -102,7 +102,7 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
               isLoading: false,
               errorMessage: error.toString(),
               onRefresh: () {
-                ref.invalidate(tradeHoldingsStreamProvider(params));
+                ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
               },
             ),
           ),

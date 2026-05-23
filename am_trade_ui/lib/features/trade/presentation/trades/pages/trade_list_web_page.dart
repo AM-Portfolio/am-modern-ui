@@ -26,7 +26,7 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
   @override
   Widget build(BuildContext context) {
     final portfolioId = widget.portfolioId;
-    final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(params));
+    final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(portfolioId));
 
     return Scaffold(
       body: holdingsAsync.when(
@@ -88,7 +88,7 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () {
-                  ref.invalidate(tradeHoldingsStreamProvider(params));
+                  ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
                 },
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),

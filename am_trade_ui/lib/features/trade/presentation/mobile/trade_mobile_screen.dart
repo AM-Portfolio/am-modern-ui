@@ -124,8 +124,8 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
             onPressed: () {
               if (_currentPortfolioId != null) {
                 final portfolioId = _currentPortfolioId!;
-                ref.invalidate(tradeHoldingsStreamProvider(params));
-                ref.invalidate(tradeSummaryStreamProvider(params));
+                ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
+                ref.invalidate(tradeSummaryStreamProvider(portfolioId));
                 ScaffoldMessenger.of(
                   context,
                 ).showSnackBar(const SnackBar(content: Text('Refreshing holdings...'), duration: Duration(seconds: 1)));
@@ -145,7 +145,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
             onPressed: () {
               if (_currentPortfolioId != null) {
                 final portfolioId = _currentPortfolioId!;
-                ref.invalidate(tradeCalendarStreamProvider(params));
+                ref.invalidate(tradeCalendarStreamProvider(portfolioId));
                 ScaffoldMessenger.of(
                   context,
                 ).showSnackBar(const SnackBar(content: Text('Refreshing calendar...'), duration: Duration(seconds: 1)));

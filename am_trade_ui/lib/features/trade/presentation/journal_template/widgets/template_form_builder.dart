@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../internal/domain/entities/journal_template.dart';
+import '../../../internal/domain/entities/journal_template.dart';
 import '../../../journal_template_providers.dart';
 
 /// Dynamic form builder for template fields
@@ -314,7 +314,7 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
     );
   }
 
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       // Collect all field values
       for (final entry in _controllers.entries) {
@@ -322,7 +322,7 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
       }
       
       // Use the template
-      final cubit = ref.read(journalTemplateCubitProvider);
+      final cubit = await ref.read(journalTemplateCubitProvider.future);
       cubit.useTemplate(
         templateId: widget.template.id,
         fieldValues: _fieldValues,

@@ -82,7 +82,6 @@ class JournalTemplateRequestDto {
   const JournalTemplateRequestDto({
     required this.name,
     required this.category,
-    required this.createdBy,
     this.description,
     this.fields,
     this.isSystemTemplate,
@@ -100,7 +99,6 @@ class JournalTemplateRequestDto {
   final List<TemplateFieldRequestDto>? fields;
   final bool? isSystemTemplate;
   final bool? isRecommended;
-  final String createdBy;
   final List<String>? tags;
   final String? thumbnailUrl;
 
@@ -152,7 +150,6 @@ class JournalTemplateResponseDto {
 @JsonSerializable(explicitToJson: true)
 class UseTemplateRequestDto {
   const UseTemplateRequestDto({
-    required this.userId,
     required this.templateId,
     required this.fieldValues,
     this.tradeId,
@@ -162,7 +159,6 @@ class UseTemplateRequestDto {
   factory UseTemplateRequestDto.fromJson(Map<String, dynamic> json) =>
       _$UseTemplateRequestDtoFromJson(json);
 
-  final String userId;
   final String templateId;
   final Map<String, dynamic> fieldValues;
   final String? tradeId;

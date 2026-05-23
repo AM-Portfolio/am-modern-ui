@@ -38,7 +38,7 @@ class SharedAttachmentSection extends StatelessWidget {
     required this.imageUrls,
     required this.onAttachmentsChanged,
     required this.featureName,
-    required this.userId,
+    this.userId,
     required this.isEditMode,
     super.key,
     this.label,
@@ -51,7 +51,7 @@ class SharedAttachmentSection extends StatelessWidget {
   final List<String> imageUrls;
   final ValueChanged<List<String>> onAttachmentsChanged;
   final String featureName;
-  final String userId;
+  final String? userId;
   final bool isEditMode;
   final String? label;
   final int? maxAttachments;

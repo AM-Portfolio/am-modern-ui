@@ -94,7 +94,6 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
   Future<void> createTemplate({
     required String name,
     required JournalTemplateCategory category,
-    required String createdBy,
     String? description,
     List<Map<String, dynamic>>? fields,
     List<String>? tags,
@@ -112,7 +111,6 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
       final template = await _createTemplateUseCase(
         name: name,
         category: category,
-        createdBy: createdBy,
         description: description,
         fields: fields,
         tags: tags,

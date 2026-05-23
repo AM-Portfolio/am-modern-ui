@@ -57,7 +57,7 @@ class TradePortfolioListMobilePage extends ConsumerWidget {
     Navigator.pushNamed(
       context,
       '/trade/holdings/${portfolio.id}',
-      arguments: {'userId': userId, 'portfolioName': portfolio.name},
+      arguments: {'portfolioName': portfolio.name},
     );
   }
 }

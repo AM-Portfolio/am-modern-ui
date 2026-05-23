@@ -6,7 +6,7 @@ import '../../components/templates/trade_portfolio_discovery_template.dart';
 import '../../models/trade_portfolio_view_model.dart';
 
 class TradePortfolioListWebPage extends ConsumerWidget {
-    const TradePortfolioListWebPage({super.key});
+  const TradePortfolioListWebPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,7 +53,7 @@ class TradePortfolioListWebPage extends ConsumerWidget {
     Navigator.pushNamed(
       context,
       '/trade/holdings/${portfolio.id}',
-      arguments: {'userId': userId, 'portfolioId': portfolio.id},
+      arguments: {'portfolioId': portfolio.id},
     );
   }
 }
