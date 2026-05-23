@@ -1,7 +1,9 @@
+import 'package:am_common/am_common.dart';
+
 /// Portfolio Module API endpoint constants
 class PortfolioEndpoints {
   // Base URL
-  static const String baseUrl = 'https://am.asrax.in/portfolio';
+  static String get baseUrl => EnvDomains.portfolio;
   
   // Resources
   static const String list = '/v1/portfolios/list';

@@ -3,7 +3,13 @@ import 'package:am_common/am_common.dart';
 /// Trade Module API endpoint constants
 class TradeEndpoints {
   // Base URLs
-  static String get tradeBaseUrl => ConfigService.config.api.trade!.baseUrl;
+  static String get tradeBaseUrl {
+    try {
+      return ConfigService.config.api.trade.baseUrl;
+    } catch (_) {
+      return '/v1/trades'; // Safe fallback
+    }
+  }
   
   // Trade Details
   static const String details = '/v1/trades/details';

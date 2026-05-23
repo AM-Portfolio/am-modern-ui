@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../basket/presentation/widgets/basket_explorer.dart';
+import '../../../../basket/presentation/basket_navigation.dart';
 
-/// Web-specific baskets page
+/// Web baskets tab — nested navigator keeps module + global sidebars visible.
 class PortfolioBasketsWebPage extends StatelessWidget {
   const PortfolioBasketsWebPage({
     required this.userId,
@@ -18,24 +18,9 @@ class PortfolioBasketsWebPage extends StatelessWidget {
       return const Center(child: Text('Please select a portfolio'));
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Basket Opportunities',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: BasketExplorer(
-              userId: userId,
-              portfolioId: portfolioId!,
-            ),
-          ),
-        ],
-      ),
+    return BasketSectionNavigator(
+      userId: userId,
+      portfolioId: portfolioId!,
     );
   }
 }

@@ -88,7 +88,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     AppLogger.methodEntry('getTradePortfolios', tag: 'TradeRemoteDataSource', params: {'userId': userId});
 
     try {
-      // Trade API Spec: GET /api/v1/portfolio-summary/by-owner/{ownerId}
+      // Trade API Spec: GET /v1/portfolio-summary/by-owner/{ownerId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioListResource);
       final fullUri = '$baseUri/$userId';
 
@@ -136,7 +136,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     );
 
     try {
-      // Trade API Spec: GET /api/v1/trades/details/portfolio/{portfolioId} returns List<TradeDetails>
+      // Trade API Spec: GET /v1/trades/details/portfolio/{portfolioId} returns List<TradeDetails>
       // The backend endpoint configured in ConfigService (holdingsResource) points to a List endpoint, not a Page endpoint.
       final baseUri = _buildUri(_tradeConfig.baseUrl, _tradeConfig.holdingsResource);
       final fullUri = '$baseUri/$portfolioId'; // Pagination params removed as backend ignores/doesn't support them for this endpoint
@@ -200,7 +200,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     );
 
     try {
-      // Trade API Spec: GET /api/v1/portfolio-summary/{portfolioId}
+      // Trade API Spec: GET /v1/portfolio-summary/{portfolioId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioSummaryResource);
       final fullUri = '$baseUri/$portfolioId';
 
@@ -312,7 +312,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     );
 
     try {
-      // Trade API Spec: GET /api/v1/trades/calendar/day?date={date}&portfolioId={id}
+      // Trade API Spec: GET /v1/trades/calendar/day?date={date}&portfolioId={id}
       final formattedDate =
           '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       
@@ -392,7 +392,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     );
 
     try {
-      // Trade API Spec: GET /api/v1/trades/calendar/custom?portfolioId={id}&startDate={start}&endDate={end}&page=0&size=50
+      // Trade API Spec: GET /v1/trades/calendar/custom?portfolioId={id}&startDate={start}&endDate={end}&page=0&size=50
       final formattedStartDate =
           '${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
       final formattedEndDate =
@@ -474,7 +474,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     );
 
     try {
-      // Trade API Spec: GET /api/v1/trades/calendar/quarter?portfolioId={id}&year={year}&quarter={quarter}
+      // Trade API Spec: GET /v1/trades/calendar/quarter?portfolioId={id}&year={year}&quarter={quarter}
       var resource = _tradeConfig.calendarQuarterResource;
       String fullUri;
       if (resource.contains('{portfolioId}')) {
@@ -545,7 +545,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     );
 
     try {
-      // Trade API Spec: GET /api/v1/trades/calendar/financial-year?portfolioId={id}&financialYear={year}
+      // Trade API Spec: GET /v1/trades/calendar/financial-year?portfolioId={id}&financialYear={year}
       var resource = _tradeConfig.calendarFinancialYearResource;
       String fullUri;
       if (resource.contains('{portfolioId}')) {

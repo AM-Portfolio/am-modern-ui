@@ -44,6 +44,9 @@ dependencies:
   # Logging
   logger: ^2.0.2
 
+  # Local session (navigation / workspace per user)
+  shared_preferences: ^2.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

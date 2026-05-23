@@ -226,13 +226,20 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, void>> logout() async {
+    final userId = await _storageService.getUserId();
     try {
       await _dataSource.logout();
       await _storageService.clearAuthData();
+      if (userId != null && userId.isNotEmpty) {
+        await SessionPersistenceService.instance.clear(userId);
+      }
       return const Right(null);
     } catch (e) {
       // Even if API call fails, clear local data
       await _storageService.clearAuthData();
+      if (userId != null && userId.isNotEmpty) {
+        await SessionPersistenceService.instance.clear(userId);
+      }
       return const Right(null);
     }
   }

@@ -12,8 +12,8 @@ final getIt = GetIt.instance;
 Future<void> configureDependencies() async {
   // 1. Initialize Technical Infrastructure (One Source of Truth)
   ServiceRegistry.initialize(
-    analysisBaseUrl: 'https://am.asrax.in/analysis', // Standard Analysis Port
-    wsUrl: 'wss://am.asrax.in/v1/streams',
+    analysisBaseUrl: common.EnvDomains.analysis, // Standard Analysis Port
+    wsUrl: common.EnvDomains.wsStream,
   );
 
   // Register Theme Repository (required by ThemeCubit)

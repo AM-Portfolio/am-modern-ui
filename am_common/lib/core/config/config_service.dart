@@ -1,59 +1,162 @@
-import 'package:am_common/core/config/app_config.dart';
-import 'package:am_library/am_library.dart' show Environment;
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:am_library/am_library.dart';
+import 'app_config.dart';
 
-/// Minimal stub ConfigService for getting app running
-/// TODO: Replace with full implementation later
+/// Loads web config: [config.template.json] defaults, then [config.{env}.json],
+/// then [config.json] (env selector locally, domain override in Kubernetes).
 class ConfigService {
   static AppConfig? _config;
-  
+  static String _domain = 'am-dev.asrax.in';
+  static Map<String, String> _services = {};
+
+  static String get domain => _domain;
+
+  /// Per-service URL override (localhost or full gateway path).
+  static String? override(String key) => _services[key];
+
   static AppConfig get config {
     if (_config == null) {
-      throw StateError('ConfigService not initialized. Call initialize() first.');
+      return _buildConfig();
     }
     return _config!;
   }
-  
+
   static Future<void> initialize() async {
-    if (_config != null) return; // Already initialized
-    
-    // Create minimal hardcoded config with ALL required parameters
-    _config = AppConfig(
-      google: GoogleConfig(
-        webClientId: const String.fromEnvironment('AM_GOOGLE_CLIENT_ID', defaultValue: 'your-client-id'),
-      ),
+    if (_config != null) return;
+
+    final merged = await _loadMergedConfig();
+    _applyMergedConfig(merged);
+    _config = _buildConfig();
+  }
+
+  static Future<Map<String, dynamic>> _loadMergedConfig() async {
+    var merged = await _fetchJson('/config.template.json') ?? <String, dynamic>{
+      'domain': _domain,
+      'services': <String, dynamic>{},
+    };
+
+    final bootstrap = await _fetchJson('/config.json');
+    if (bootstrap != null) {
+      final env = bootstrap['env'] as String?;
+      if (env != null && env.isNotEmpty) {
+        final envConfig = await _fetchJson('/config.$env.json');
+        if (envConfig != null) {
+          merged = _deepMerge(merged, envConfig);
+        } else {
+          AppLogger.warning(
+            'config.$env.json not found — using template only',
+            tag: 'ConfigService',
+          );
+        }
+      }
+      merged = _deepMerge(merged, bootstrap);
+    }
+
+    return merged;
+  }
+
+  static void _applyMergedConfig(Map<String, dynamic> json) {
+    _domain = json['domain'] as String? ?? _domain;
+
+    final raw = json['services'] as Map<String, dynamic>? ??
+        json['overrides'] as Map<String, dynamic>? ??
+        {};
+    _services = raw.map(
+      (k, v) => MapEntry(k, v?.toString() ?? ''),
+    )..removeWhere((_, v) => v.isEmpty);
+
+    if (_services.isEmpty) {
+      AppLogger.info(
+        'Config resolved: cluster domain $_domain (gateway paths)',
+        tag: 'ConfigService',
+      );
+    } else {
+      AppLogger.info(
+        'Config resolved: domain $_domain, ${_services.length} local service URL(s)',
+        tag: 'ConfigService',
+      );
+    }
+  }
+
+  static Future<Map<String, dynamic>?> _fetchJson(String path) async {
+    try {
+      final uri = Uri.base.resolve(path).replace(
+        queryParameters: {
+          'cb': DateTime.now().millisecondsSinceEpoch.toString(),
+        },
+      );
+      final res = await http.get(uri).timeout(const Duration(seconds: 3));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+    } catch (_) {
+      // Optional file — normal in CI or when template is bundled only
+    }
+    return null;
+  }
+
+  static Map<String, dynamic> _deepMerge(
+    Map<String, dynamic> base,
+    Map<String, dynamic> overlay,
+  ) {
+    final result = Map<String, dynamic>.from(base);
+    for (final entry in overlay.entries) {
+      if (entry.key.startsWith('_')) continue;
+      final value = entry.value;
+      final existing = result[entry.key];
+      if (value is Map<String, dynamic> &&
+          existing is Map<String, dynamic>) {
+        result[entry.key] = _deepMerge(existing, value);
+      } else {
+        result[entry.key] = value;
+      }
+    }
+    return result;
+  }
+
+  static AppConfig _buildConfig() {
+    final api = 'https://$_domain';
+    final ws = 'wss://$_domain';
+
+    final authUrl = _services['auth'] ?? '$api/auth';
+    final usersUrl = _services['users'] ?? '$api/users';
+    final portfolioUrl = _services['portfolio'] ?? '$api/portfolio';
+    final marketUrl = _services['market'] ?? '$api/market';
+    final tradesUrl = _services['trades'] ?? '$api/trades';
+    final analysisUrl = _services['analysis'] ?? '$api/analysis';
+    final gmailUrl = _services['gmail'] ?? '$api/gmail';
+    final marketWsUrl =
+        _services['marketWs'] ?? '$ws/market/ws/market-data-stream';
+
+    return AppConfig(
+      google: const GoogleConfig(webClientId: ''),
+      environment: Environment.production,
       api: ApiConfig(
-        baseUrl: const String.fromEnvironment('AM_API_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'),
+        baseUrl: analysisUrl,
         timeout: 30000,
-        useMockData: const bool.fromEnvironment('AM_USE_MOCK_DATA', defaultValue: false),
+        useMockData: false,
         auth: AuthApiConfig(
-          baseUrl: const String.fromEnvironment('AM_AUTH_BASE_URL', defaultValue: 'https://am.asrax.in/auth'),
-          loginEndpoint: '/v1/auth/login',
+          baseUrl: authUrl,
+          loginEndpoint: '/v1/tokens',
           logoutEndpoint: '/v1/auth/logout',
           refreshTokenEndpoint: '/v1/auth/refresh',
-          googleLoginEndpoint: '/v1/auth/google',
-          connectTimeout: 30000,
-          receiveTimeout: 30000,
-          sendTimeout: 30000,
-          enabled: true,
+          googleLoginEndpoint: '/v1/auth/google/token',
         ),
         user: UserApiConfig(
-          baseUrl: const String.fromEnvironment('AM_USER_BASE_URL', defaultValue: 'https://am.asrax.in/users'),
-          registerEndpoint: '/v1/user/register',
-          forgotPasswordEndpoint: '/v1/user/forgot-password',
-          resetPasswordEndpoint: '/v1/user/reset-password',
-          connectTimeout: 30000,
-          receiveTimeout: 30000,
-          sendTimeout: 30000,
-          enabled: true,
+          baseUrl: usersUrl,
+          registerEndpoint: '/v1/auth/register',
+          forgotPasswordEndpoint: '/v1/auth/request-reset',
+          resetPasswordEndpoint: '/v1/auth/confirm-reset',
         ),
         portfolio: PortfolioApiConfig(
-          baseUrl: const String.fromEnvironment('AM_PORTFOLIO_BASE_URL', defaultValue: 'https://am.asrax.in/portfolio'),
+          baseUrl: portfolioUrl,
           holdingsResource: '/v1/portfolios/holdings',
           summaryResource: '/v1/portfolios/summary',
           transactionsResource: '/v1/portfolios/transactions',
         ),
         trade: TradeApiConfig(
-          baseUrl: const String.fromEnvironment('AM_TRADE_BASE_URL', defaultValue: 'https://am.asrax.in/trade'),
+          baseUrl: tradesUrl,
           portfolioListResource: '/v1/portfolio-summary/by-owner',
           portfolioSummaryResource: '/v1/portfolio-summary',
           holdingsResource: '/v1/trades/details/portfolio',
@@ -63,28 +166,20 @@ class ConfigService {
           calendarQuarterResource: '/v1/trades/calendar/quarter',
           calendarFinancialYearResource: '/v1/trades/calendar/financial-year',
           searchResource: '/v1/trades/search',
-          connectTimeout: 30000,
-          receiveTimeout: 30000,
-          sendTimeout: 30000,
-          enabled: true,
         ),
+        marketData: MarketDataConfig(
+          baseUrl: marketUrl,
+          wsUrl: marketWsUrl,
+          connectEndpoint: '/v1/market-data/stream/connect',
+        ),
+        analysis: AnalysisApiConfig(baseUrl: analysisUrl),
         gmail: GmailApiConfig(
-          baseUrl: const String.fromEnvironment('AM_GMAIL_BASE_URL', defaultValue: 'https://am.asrax.in/gmail'),
+          baseUrl: gmailUrl,
           statusEndpoint: '/v1/gmail/status',
           connectEndpoint: '/v1/gmail/connect',
           extractEndpoint: '/v1/gmail/extract',
-          enabled: true,
-        ),
-        marketData: MarketDataConfig(
-          wsUrl: const String.fromEnvironment('AM_MARKET_WS_URL', defaultValue: 'wss://am.asrax.in/market/ws/market-data-stream'),
-          baseUrl: const String.fromEnvironment('AM_MARKET_BASE_URL', defaultValue: 'https://am.asrax.in/market'),
-          connectEndpoint: '/v1/market-data/stream/connect',
-        ),
-        analysis: AnalysisApiConfig(
-          baseUrl: const String.fromEnvironment('AM_ANALYSIS_BASE_URL', defaultValue: 'https://am.asrax.in/analysis'),
         ),
       ),
-      environment: Environment.development,
     );
   }
 }

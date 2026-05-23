@@ -6,14 +6,16 @@ import '../../domain/models/etf_search_result.dart';
 class EtfSearchService {
   final Dio _dio = Dio();
   // Using the same URL as am_market_ui
-  static const String baseUrl = 'https://am.asrax.in/api/etf/v1';
+  static String get baseUrl => '${EnvDomains.etf}/v1';
   final _storage = GetIt.I<SecureStorageService>();
 
   EtfSearchService() {
-    _dio.options.baseUrl = baseUrl;
     _dio.options.connectTimeout = const Duration(seconds: 10);
     _dio.options.receiveTimeout = const Duration(seconds: 10);
   }
+
+  // Update base path dynamically in requests since baseUrl is now a getter
+  String _getFullUrl(String path) => '$baseUrl$path';
 
   Future<Map<String, dynamic>> _getHeaders() async {
     final token = await _storage.getAccessToken();
@@ -29,7 +31,7 @@ class EtfSearchService {
       final headers = await _getHeaders();
       
       final response = await _dio.get(
-        '/search',
+        _getFullUrl('/search'),
         queryParameters: {
           'query': query,
           'limit': limit,

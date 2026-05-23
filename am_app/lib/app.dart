@@ -41,7 +41,16 @@ class AMApp extends ConsumerWidget {
             theme: themeState.lightTheme,
             darkTheme: themeState.darkTheme,
             themeMode: themeState.themeMode,
-            home: const AppShell(),
+            home: BlocListener<AuthCubit, AuthState>(
+              listenWhen: (prev, curr) => curr is Authenticated,
+              listener: (context, state) {
+                if (state is Authenticated) {
+                  common.SessionPersistenceService.instance
+                      .load(state.user.id);
+                }
+              },
+              child: const AppShell(),
+            ),
             routes: {
               '/home': (context) => const AppShell(),
 

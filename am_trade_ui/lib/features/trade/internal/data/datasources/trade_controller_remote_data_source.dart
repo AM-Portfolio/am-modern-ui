@@ -11,26 +11,26 @@ import '../dtos/trade_controller_dtos.dart';
 /// Remote data source for Trade Controller API
 /// Handles all HTTP requests related to trade details management
 abstract class TradeControllerRemoteDataSource {
-  /// GET /api/v1/trades/details/portfolio/{portfolioId}
+  /// GET /v1/trades/details/portfolio/{portfolioId}
   /// Get trade details by portfolio ID and optional symbols
   Future<List<TradeDetailsDto>> getTradeDetailsByPortfolioAndSymbols({
     required String portfolioId,
     List<String>? symbols,
   });
 
-  /// POST /api/v1/trades/details
+  /// POST /v1/trades/details
   /// Add a new trade
   Future<TradeDetailsDto> addTrade(TradeDetailsDto tradeDetails);
 
-  /// PUT /api/v1/trades/details/{tradeId}
+  /// PUT /v1/trades/details/{tradeId}
   /// Update an existing trade
   Future<TradeDetailsDto> updateTrade({required String tradeId, required TradeDetailsDto tradeDetails});
 
-  /// DELETE /api/v1/trades/details/{tradeId}
+  /// DELETE /v1/trades/details/{tradeId}
   /// Delete a trade by ID
   Future<void> deleteTrade(String tradeId);
 
-  /// GET /api/v1/trades/filter
+  /// GET /v1/trades/filter
   /// Filter trades by multiple criteria with pagination
   Future<PaginatedTradeResponseDto> getTradesByFilters({
     List<String>? portfolioIds,
@@ -44,15 +44,15 @@ abstract class TradeControllerRemoteDataSource {
     String? sort,
   });
 
-  /// POST /api/v1/trades/details/batch
+  /// POST /v1/trades/details/batch
   /// Add or update multiple trades in batch
   Future<List<TradeDetailsDto>> addOrUpdateTrades(List<TradeDetailsDto> trades);
 
-  /// POST /api/v1/trades/details/by-ids
+  /// POST /v1/trades/details/by-ids
   /// Get trade details by trade IDs
   Future<List<TradeDetailsDto>> getTradeDetailsByTradeIds(List<String> tradeIds);
 
-  /// POST /api/v1/trades/details/filter
+  /// POST /v1/trades/details/filter
   /// Filter trade details using favorite filter configuration
   Future<FilterTradeDetailsResponseDto> filterTradeDetails({
     required String userId,

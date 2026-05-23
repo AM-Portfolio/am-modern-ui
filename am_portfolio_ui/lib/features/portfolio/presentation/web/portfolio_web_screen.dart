@@ -15,6 +15,7 @@ import 'pages/portfolio_overview_web_page.dart';
 import 'pages/portfolio_holdings_web_page.dart';
 import 'pages/portfolio_analysis_web_page.dart';
 import 'pages/portfolio_heatmap_web_page.dart';
+import 'pages/portfolio_baskets_web_page.dart';
 import 'package:am_user_ui/am_user_ui.dart';
 
 /// Web-specific portfolio screen implementation
@@ -52,6 +53,39 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     super.initState();
     _currentPortfolioId = widget.selectedPortfolioId ?? widget.userId;
     _initializeSwipeController();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreTabFromSession());
+  }
+
+  Future<void> _restoreTabFromSession() async {
+    final session = SessionPersistenceService.instance.cached ??
+        await SessionPersistenceService.instance.load(widget.userId);
+    if (session == null || !mounted) return;
+    final idx = session.portfolioTabIndex.clamp(
+      0,
+      _swipeController.items.length - 1,
+    );
+    if (idx != _swipeController.currentIndex) {
+      _swipeController.navigateTo(idx, animate: false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _swipeController.removeListener(_persistTabIndex);
+    _swipeController.dispose();
+    super.dispose();
+  }
+
+  void _persistTabIndex() {
+    SessionPersistenceService.instance.patch(
+      widget.userId,
+      (s) => s.copyWith(
+        globalNav: 'Portfolio',
+        portfolioTabIndex: _swipeController.currentIndex,
+        portfolioId: _currentPortfolioId,
+        portfolioName: widget.selectedPortfolioName,
+      ),
+    );
   }
 
   void _initializeSwipeController() {
@@ -98,8 +132,21 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           )),
           accentColor: ModuleColors.portfolio,
         ),
+        NavigationItem(
+          title: 'Baskets',
+          subtitle: 'Basket replication',
+          icon: Icons.shopping_basket_outlined,
+          accentColor: ModuleColors.portfolio,
+          page: _wrapPage(
+            PortfolioBasketsWebPage(
+              userId: widget.userId,
+              portfolioId: _currentPortfolioId ?? widget.userId,
+            ),
+          ),
+        ),
       ],
     );
+    _swipeController.addListener(_persistTabIndex);
   }
 
   void _navigateToNext() {
@@ -205,7 +252,10 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                 title: item.title,
                 icon: item.icon,
                 isSelected: _swipeController.currentIndex == index,
-                onTap: () => _swipeController.navigateTo(index),
+                onTap: () {
+                  _swipeController.navigateTo(index);
+                  _persistTabIndex();
+                },
                 accentColor: item.accentColor,
               );
             }).toList(),

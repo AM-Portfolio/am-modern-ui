@@ -6,10 +6,11 @@ import 'package:http/http.dart' as http;
 import 'package:get_it/get_it.dart';
 
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_common/am_common.dart';
 
 class MarketAnalysisService {
   // Matches backend AnalysisController
-  final String baseUrl = 'https://am.asrax.in/analysis/v1/analysis';
+  final String baseUrl = '${EnvDomains.analysis}/v1/analysis';
 
   final _storage = GetIt.I<SecureStorageService>();
 

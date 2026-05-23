@@ -475,7 +475,7 @@ class FilterTradeDetailsResponseDto {
   Map<String, dynamic> toJson() => _$FilterTradeDetailsResponseDtoToJson(this);
 }
 
-/// DTO for paginated trade response (GET /api/v1/trades/filter)
+/// DTO for paginated trade response (GET /v1/trades/filter)
 @JsonSerializable(explicitToJson: true)
 class PaginatedTradeResponseDto {
   const PaginatedTradeResponseDto({this.content, this.totalElements, this.totalPages, this.size, this.number});

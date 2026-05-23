@@ -14,6 +14,7 @@ import 'package:am_ai_ui/am_ai_ui.dart';
 import 'package:am_diagnostic_ui/am_diagnostic_ui.dart';
 import 'package:am_user_ui/am_user_ui.dart';
 import 'package:am_analysis_ui/am_analysis_ui.dart';
+import 'package:am_doc_intelligence_ui/am_doc_intelligence_ui.dart';
 
 /// Main application shell with navigation
 class AppShell extends StatefulWidget {
@@ -25,14 +26,37 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0; // Default to Dashboard
+  bool _sessionRestored = false;
 
   @override
   void initState() {
     super.initState();
-    // Trigger initial connection check
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialAuthAndConnect();
+      _restoreSessionNav();
     });
+  }
+
+  Future<void> _restoreSessionNav() async {
+    if (_sessionRestored) return;
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! Authenticated) return;
+    _sessionRestored = true;
+
+    final session =
+        await common.SessionPersistenceService.instance.load(authState.user.id);
+    if (session != null && mounted && _navMap.containsKey(session.globalNav)) {
+      setState(() => _selectedIndex = _navMap[session.globalNav]!);
+    }
+  }
+
+  void _onGlobalNavigate(String title, String userId) {
+    if (!_navMap.containsKey(title)) return;
+    setState(() => _selectedIndex = _navMap[title]!);
+    common.SessionPersistenceService.instance.patch(
+      userId,
+      (s) => s.copyWith(globalNav: title, clearBasket: title != 'Portfolio'),
+    );
   }
 
   Future<void> _checkInitialAuthAndConnect() async {
@@ -75,11 +99,12 @@ class _AppShellState extends State<AppShell> {
     'AI Chat': 4,
     'Lab': 5,
     'Analysis': 6,
-    'Profile': 7,
+    'Doc Intel': 7,
+    'Profile': 8,
   };
 
   String get _activeNavItem {
-    if (_selectedIndex == 7) return ''; // Profile is separate
+    if (_selectedIndex == 8) return ''; // Profile is separate
     return _navMap.entries
         .firstWhere((e) => e.value == _selectedIndex,
             orElse: () => const MapEntry('Dashboard', 0))
@@ -161,12 +186,8 @@ class _AppShellState extends State<AppShell> {
                         },
                         onLogout: () => context.read<AuthCubit>().logout(),
                         onProfileTap: () =>
-                            setState(() => _selectedIndex = 7),
-                        onNavigate: (title) {
-                          if (_navMap.containsKey(title)) {
-                            setState(() => _selectedIndex = _navMap[title]!);
-                          }
-                        },
+                            setState(() => _selectedIndex = 8),
+                        onNavigate: (title) => _onGlobalNavigate(title, userId),
                         items: const [
                           SidebarItem(
                               title: 'Dashboard',
@@ -187,6 +208,8 @@ class _AppShellState extends State<AppShell> {
                               title: 'Lab', icon: Icons.science_rounded),
                           SidebarItem(
                               title: 'Analysis', icon: Icons.analytics_outlined),
+                          SidebarItem(
+                              title: 'Doc Intel', icon: Icons.psychology_outlined),
                         ],
                       ),
                     Expanded(
@@ -203,12 +226,8 @@ class _AppShellState extends State<AppShell> {
                         isDarkMode: isDark,
                         userName: authState.user.displayName,
                         onProfileTap: () =>
-                            setState(() => _selectedIndex = 7),
-                        onNavigate: (title) {
-                          if (_navMap.containsKey(title)) {
-                            setState(() => _selectedIndex = _navMap[title]!);
-                          }
-                        },
+                            setState(() => _selectedIndex = 8),
+                        onNavigate: (title) => _onGlobalNavigate(title, userId),
                         items: const [
                           SidebarItem(
                               title: 'Dashboard',
@@ -229,6 +248,8 @@ class _AppShellState extends State<AppShell> {
                               title: 'Lab', icon: Icons.science_rounded),
                           SidebarItem(
                               title: 'Analysis', icon: Icons.analytics_outlined),
+                          SidebarItem(
+                              title: 'Doc Intel', icon: Icons.psychology_outlined),
                         ],
                       )
                     : null,
@@ -261,6 +282,8 @@ class _AppShellState extends State<AppShell> {
           analysisService: RealAnalysisService(),
         );
       case 7:
+        return DocIntelligenceScreen(userId: userId);
+      case 8:
         return ProfileSettingsPage(userId: userId);
       default:
         return dashboard.DashboardPage(userId: userId);

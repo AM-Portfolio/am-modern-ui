@@ -56,7 +56,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
     );
 
     try {
-      final fullUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/notebook/items');
+      final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/items');
       final response = await _apiClient.post<NotebookItemDto>(
         fullUri,
         body: request.toJson(),
@@ -93,7 +93,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
       if (parentId != null) queryParams += '&parentId=$parentId';
       if (type != null) queryParams += '&type=${type.toString().split('.').last}';
 
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/notebook/items');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/items');
       final fullUri = '$baseUri?$queryParams';
 
       final response = await _apiClient.get<List<NotebookItemDto>>(
@@ -124,7 +124,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
     AppLogger.methodEntry('getNotebookItem', tag: 'NotebookRemoteDataSource', params: {'itemId': itemId});
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/notebook/items');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/items');
       final fullUri = '$baseUri/$itemId';
 
       final response = await _apiClient.get<NotebookItemDto>(
@@ -150,7 +150,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
     AppLogger.methodEntry('updateNotebookItem', tag: 'NotebookRemoteDataSource', params: {'itemId': itemId});
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/notebook/items');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/items');
       final fullUri = '$baseUri/$itemId';
 
       final response = await _apiClient.put<NotebookItemDto>(
@@ -177,7 +177,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
     AppLogger.methodEntry('deleteNotebookItem', tag: 'NotebookRemoteDataSource', params: {'itemId': itemId});
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/notebook/items');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/items');
       final fullUri = '$baseUri/$itemId';
 
       await _apiClient.delete<void>(fullUri, parser: (_) {});
@@ -205,7 +205,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
     );
 
     try {
-      final fullUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/notebook/tags');
+      final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/tags');
       final response = await _apiClient.post<NotebookTagDto>(
         fullUri,
         body: request.toJson(),
@@ -230,7 +230,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
     AppLogger.methodEntry('getNotebookTags', tag: 'NotebookRemoteDataSource', params: {'userId': userId});
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/notebook/tags');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/tags');
       final fullUri = '$baseUri?userId=$userId';
 
       final response = await _apiClient.get<List<NotebookTagDto>>(
@@ -261,7 +261,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
     AppLogger.methodEntry('updateNotebookTag', tag: 'NotebookRemoteDataSource', params: {'tagId': tagId});
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/notebook/tags');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/tags');
       final fullUri = '$baseUri/$tagId';
 
       final response = await _apiClient.put<NotebookTagDto>(
@@ -288,7 +288,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
     AppLogger.methodEntry('deleteNotebookTag', tag: 'NotebookRemoteDataSource', params: {'tagId': tagId});
 
     try {
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'api/v1/notebook/tags');
+      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/tags');
       final fullUri = '$baseUri/$tagId';
 
       await _apiClient.delete<void>(fullUri, parser: (_) {});

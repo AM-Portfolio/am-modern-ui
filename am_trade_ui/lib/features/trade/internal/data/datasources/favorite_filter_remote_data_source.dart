@@ -129,7 +129,7 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
     );
 
     try {
-      // API Spec: POST /api/v1/filters?userId={userId}
+      // API Spec: POST /v1/filters?userId={userId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/filters');
       final fullUri = '$baseUri?userId=$userId';
 
@@ -167,7 +167,7 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
     );
 
     try {
-      // API Spec: PUT /api/v1/filters/{filterId}?userId={userId}
+      // API Spec: PUT /v1/filters/{filterId}?userId={userId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/filters');
       final fullUri = '$baseUri/$filterId?userId=$userId';
 
@@ -201,7 +201,7 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
     );
 
     try {
-      // API Spec: DELETE /api/v1/filters/{filterId}?userId={userId}
+      // API Spec: DELETE /v1/filters/{filterId}?userId={userId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/filters');
       final fullUri = '$baseUri/$filterId?userId=$userId';
 
@@ -229,7 +229,7 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
     );
 
     try {
-      // API Spec: DELETE /api/v1/filters/bulk
+      // API Spec: DELETE /v1/filters/bulk
       final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/filters/bulk');
 
       final response = await _apiClient.delete<BulkDeleteResponseDto>(
@@ -262,7 +262,7 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
     );
 
     try {
-      // API Spec: PUT /api/v1/filters/{filterId}/set-default?userId={userId}
+      // API Spec: PUT /v1/filters/{filterId}/set-default?userId={userId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/filters');
       final fullUri = '$baseUri/$filterId/set-default?userId=$userId';
 
