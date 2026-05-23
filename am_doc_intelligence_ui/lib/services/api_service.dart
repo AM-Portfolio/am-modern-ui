@@ -68,6 +68,8 @@ class ApiService {
     'ZERODHA',
     'UPSTOX',
     'GROWW',
+    'DHAN',
+    'MSTOCK',
     'ICICI_DIRECT',
     'HDFC_SECURITIES',
     'ANGEL_ONE',
