@@ -182,9 +182,17 @@ class MarketProvider with ChangeNotifier {
       for (int i = 0; i < _allIndicesData.length; i++) {
         if (_allIndicesData[i].indexSymbol.toUpperCase() == updateSymbolBase.toUpperCase()) {
              final current = _allIndicesData[i];
+             double cleanDouble(double val) {
+               try {
+                 return double.parse(val.toStringAsFixed(4));
+               } catch (_) {
+                 return val;
+               }
+             }
+
              double? newLtp = data['lastPrice']?.toDouble();
-             final double? newChange = data['change']?.toDouble();
-             final double? newPChange = data['changePercent']?.toDouble(); 
+             double? newChange = data['change']?.toDouble();
+             double? newPChange = data['changePercent']?.toDouble(); 
              
              // Fallback calculation for newLtp if it's null or 0.0
              if (newLtp == null || newLtp == 0.0) {
@@ -192,17 +200,24 @@ class MarketProvider with ChangeNotifier {
                  final double change = (data['change'] ?? 0).toDouble();
                  if (prevClose != 0 && prevClose != 0.0) {
                      newLtp = prevClose + change;
+                 } else {
+                     // Leverage existing loaded values to calculate previousClose dynamically
+                     final double currentPrevClose = current.lastPrice - current.change;
+                     final double updateChange = newChange ?? current.change;
+                     if (currentPrevClose != 0 && currentPrevClose != 0.0) {
+                         newLtp = currentPrevClose + updateChange;
+                     }
                  }
              }
 
              // Only update if we have a valid non-zero price
              if (newLtp != null && newLtp != 0.0) {
-                 _allIndicesData[i] = current.copyWith(
-                     lastPrice: newLtp,
-                     change: newChange ?? current.change,
-                     pChange: newPChange ?? current.pChange 
-                 );
-                 notifyListeners();
+                  _allIndicesData[i] = current.copyWith(
+                      lastPrice: cleanDouble(newLtp),
+                      change: newChange != null ? cleanDouble(newChange) : current.change,
+                      pChange: newPChange != null ? cleanDouble(newPChange) : current.pChange 
+                  );
+                  notifyListeners();
              }
              break; 
         }

@@ -23,6 +23,14 @@ class StockIndicesMarketData {
         ? Map<String, dynamic>.from(json['metadata'] as Map)
         : null;
 
+    double cleanDouble(double val) {
+      try {
+        return double.parse(val.toStringAsFixed(4));
+      } catch (_) {
+        return val;
+      }
+    }
+
     double parseLastPrice() {
       // 1. Direct last price check (top level or metadata)
       final directLast = json['lastPrice'] ?? json['last_price'] ?? json['last'] ?? 
@@ -47,11 +55,14 @@ class StockIndicesMarketData {
       return 0.0;
     }
 
+    final double rawChange = (json['change'] ?? metadata?['change'] ?? 0).toDouble();
+    final double rawPChange = (json['pChange'] ?? json['percentChange'] ?? metadata?['percChange'] ?? 0).toDouble();
+
     return StockIndicesMarketData(
       indexSymbol: json['indexSymbol'] ?? 'Unknown',
-      lastPrice: parseLastPrice(),
-      change: (json['change'] ?? metadata?['change'] ?? 0).toDouble(),
-      pChange: (json['pChange'] ?? json['percentChange'] ?? metadata?['percChange'] ?? 0).toDouble(),
+      lastPrice: cleanDouble(parseLastPrice()),
+      change: cleanDouble(rawChange),
+      pChange: cleanDouble(rawPChange),
       stocks: stocksList,
     );
   }

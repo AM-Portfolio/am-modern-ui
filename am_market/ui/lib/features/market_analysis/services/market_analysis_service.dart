@@ -9,8 +9,8 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
 
 class MarketAnalysisService {
-  // Matches backend AnalysisController
-  final String baseUrl = '${EnvDomains.analysis}/v1/analysis';
+  // Matches backend AnalysisController inside the market microservice
+  final String baseUrl = '${EnvDomains.market}/v1/analysis';
 
   final _storage = GetIt.I<SecureStorageService>();
 

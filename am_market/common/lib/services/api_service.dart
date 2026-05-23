@@ -413,10 +413,10 @@ class ApiService {
     try {
       String url = '$baseUrl${MarketEndpoints.movers}?type=all&limit=$limit'; // type=all triggers unified response
       if (indexSymbol != null && indexSymbol.isNotEmpty) {
-        url += '&indexSymbol=$indexSymbol';
+        url += '&indexSymbol=${Uri.encodeComponent(indexSymbol)}';
       }
       if (timeFrame != null && timeFrame.isNotEmpty) {
-        url += '&timeFrame=$timeFrame';
+        url += '&timeFrame=${Uri.encodeComponent(timeFrame)}';
       }
 
       final headers = await _getHeaders();
