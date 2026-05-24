@@ -102,7 +102,14 @@ class ApiService {
     final headers = await _getHeaders();
     request.headers.addAll(headers);
     request.fields['brokerType'] = brokerType;
-    request.fields['documentType'] = docType;
+    
+    // Map custom UI document types to backend-supported document types
+    String apiDocType = docType;
+    if (docType == 'PORTFOLIO_EQUITY' || docType == 'PORTFOLIO_ETF') {
+      apiDocType = 'STOCK_PORTFOLIO';
+    }
+    request.fields['documentType'] = apiDocType;
+    
     request.files
         .add(http.MultipartFile.fromBytes('file', fileBytes, filename: filename));
 
