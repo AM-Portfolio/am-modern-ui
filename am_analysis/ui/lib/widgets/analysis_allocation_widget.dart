@@ -574,8 +574,8 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
             final color = _getColorForIndex(context, index);
             final abbreviation = _getSectorAbbreviation(item.name);
             
-            // Only show label if segment is big enough (>= 5%)
-            final showLabel = item.percentage >= 5.0;
+            // Only show label if segment is big enough (>= 8%)
+            final showLabel = item.percentage >= 8.0;
             
             return Expanded(
               flex: item.percentage.round() > 0 ? item.percentage.round() : 1,
@@ -591,20 +591,26 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
                       color: color.withValues(alpha: _hoveredIndex == index ? 1.0 : 0.9),
                       child: Center(
                         child: showLabel
-                            ? Text(
-                                _hoveredIndex == index && !isMobile
-                                    ? '${item.percentage.toStringAsFixed(1)}%'
-                                    : abbreviation,
-                                style: TextStyle(
-                                  color: Theme.of(context).textTheme.bodyMedium?.color,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: isMobile ? 9 : (_hoveredIndex == index ? 12 : 10),
-                                  shadows: const [
-                                    Shadow(
-                                      color: Colors.black45,
-                                      blurRadius: 2,
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    _hoveredIndex == index && !isMobile
+                                        ? '${item.percentage.toStringAsFixed(1)}%'
+                                        : abbreviation,
+                                    style: TextStyle(
+                                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: isMobile ? 9 : (_hoveredIndex == index ? 12 : 10),
+                                      shadows: const [
+                                        Shadow(
+                                          color: Colors.black45,
+                                          blurRadius: 2,
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
                               )
                             : const SizedBox.shrink(),

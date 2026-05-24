@@ -34,14 +34,9 @@ class PortfolioTopMoversPanel extends StatelessWidget {
         return false;
       },
       builder: (context, state) {
-        List<MoverItem>? fallback;
         var holdingsCount = 0;
         if (state is PortfolioLoaded && state.portfolioId == portfolioId) {
           holdingsCount = state.holdings.length;
-          fallback = moversFromHoldings(
-            state.holdings,
-            timeFrame: timeFrame,
-          );
         }
 
         return AnalysisTopMoversWidget(
@@ -50,7 +45,6 @@ class PortfolioTopMoversPanel extends StatelessWidget {
           initialTimeFrame: timeFrame,
           showTimeFrameSelector: showTimeFrameSelector,
           height: height,
-          fallbackMovers: fallback,
         );
       },
     );

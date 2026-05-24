@@ -1,7 +1,4 @@
 import 'package:am_analysis_core/am_analysis_core.dart' as core;
-import 'package:am_analysis_core/am_analysis_core.dart' as ui;
-import 'package:am_analysis_core/models/enums.dart' as core_enums;
-import '../config/analysis_config.dart';
 import './real_analysis_service.dart';
 
 /// Adapter that converts am_analysis_ui's RealAnalysisService to implement
@@ -74,7 +71,7 @@ class AnalysisServiceAdapter implements core.AnalysisService {
     );
     
     // Convert UI models to core models
-    return uiItems.map((item) => core.PerformanceDataPoint(
+    return uiItems.dataPoints.map((item) => core.PerformanceDataPoint(
       date: item.date,
       value: item.value,
     )).toList();

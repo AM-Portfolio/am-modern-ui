@@ -11,7 +11,6 @@ class AnalysisTopMoversWidget extends StatefulWidget {
     this.initialTimeFrame = ds.TimeFrame.oneDay,
     this.height,
     this.showTimeFrameSelector = true,
-    this.fallbackMovers,
     super.key,
   });
 
@@ -19,8 +18,6 @@ class AnalysisTopMoversWidget extends StatefulWidget {
   final ds.TimeFrame initialTimeFrame;
   final double? height;
   final bool showTimeFrameSelector;
-  /// When analysis API fails (e.g. 500), show these movers from portfolio holdings.
-  final List<MoverItem>? fallbackMovers;
 
   @override
   State<AnalysisTopMoversWidget> createState() => _AnalysisTopMoversWidgetState();
@@ -32,7 +29,6 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
   bool _isLoading = true;
   String? _error;
   List<MoverItem> _movers = [];
-  bool _usingHoldingsFallback = false;
 
   @override
   void initState() {
@@ -55,6 +51,7 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
     });
 
     try {
+
       print('[TopMovers] Loading data for portfolio=${widget.portfolioId}, timeFrame=${_selectedTimeFrame.code}');
       final movers = await _service.getTopMovers(
         id: widget.portfolioId,
@@ -66,7 +63,6 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
       if (mounted) {
         setState(() {
           _movers = movers;
-          _usingHoldingsFallback = false;
           _isLoading = false;
         });
       }
@@ -74,24 +70,8 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
       print('[TopMovers] Error loading data: $e');
       print('[TopMovers] Stack trace: $stackTrace');
       if (mounted) {
-        final fallback = widget.fallbackMovers;
-        if (fallback != null && fallback.isNotEmpty) {
-          setState(() {
-            _movers = fallback;
-            _error = null;
-            _usingHoldingsFallback = true;
-            _isLoading = false;
-          });
-          return;
-        }
-        final message = e.toString();
-        final isServerError = message.contains('500') ||
-            message.contains('currentPrice');
         setState(() {
-          _error = isServerError
-              ? 'Top movers temporarily unavailable'
-              : 'Failed to load top movers';
-          _usingHoldingsFallback = false;
+          _error = 'Failed to load top movers';
           _isLoading = false;
         });
       }
@@ -141,18 +121,6 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
                             fontSize: isMobile ? 16 : 18,
                           ),
                         ),
-                        if (_usingHoldingsFallback)
-                          Text(
-                            'From portfolio holdings',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 11,
-                              color: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.color
-                                  ?.withValues(alpha: 0.6),
-                            ),
-                          ),
                       ],
                     ),
                   ),

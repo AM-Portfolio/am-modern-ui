@@ -45,7 +45,7 @@
     "─── ANALYSIS ───": "echo",
     "clean:analysis": "cd am_analysis/sdk && flutter clean && cd ../common && flutter clean && cd ../ui && flutter clean",
     "get:analysis": "cd am_analysis/sdk && flutter pub get && cd ../common && flutter pub get && cd ../ui && flutter pub get",
-    "gen:analysis": "cd am_analysis/ui && dart run build_runner build --delete-conflicting-outputs",
+    "gen:analysis": "cd am_analysis/common && dart run build_runner build --delete-conflicting-outputs",
     "─── DASHBOARD ───": "echo",
     "clean:dashboard": "cd am_dashboard_ui && flutter clean",
     "get:dashboard": "cd am_dashboard_ui && flutter pub get",

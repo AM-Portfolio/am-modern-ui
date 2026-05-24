@@ -94,7 +94,23 @@ void _registerAuthDependencies() {
     () => auth_ui.GoogleSignInService(),
   );
 
-  getIt.registerLazySingleton<Dio>(() => Dio());
+  getIt.registerLazySingleton<Dio>(() {
+    final dio = Dio();
+    dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final path = options.path;
+        if (!path.contains('/v1/tokens') && !path.contains('/register')) {
+          final storage = getIt<common.SecureStorageService>();
+          final token = await storage.getAccessToken();
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+        }
+        handler.next(options);
+      },
+    ));
+    return dio;
+  });
 
   // ApiClient now from ServiceRegistry
   // ApiClient is handled by ServiceRegistry.initialize()

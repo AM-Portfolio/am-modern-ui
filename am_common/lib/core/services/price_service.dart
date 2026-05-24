@@ -7,6 +7,7 @@ import 'package:am_common/core/models/price_update_model.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_common/core/network/websocket/am_websocket_client.dart';
 import 'package:http/http.dart' as http;
+import 'package:am_library/am_library.dart';
 
 /// Singleton service to manage global WebSocket connection for real-time prices.
 class PriceService {
@@ -80,9 +81,13 @@ class PriceService {
        final url = Uri.parse('$baseUrl$endpoint');
        AppLogger.info('PriceService: Subscribing to $symbols via $url');
        
+       final token = await ServiceRegistry.storage.getAccessToken();
        final response = await http.post(
          url,
-         headers: {'Content-Type': 'application/json'},
+         headers: {
+           'Content-Type': 'application/json',
+           if (token != null) 'Authorization': 'Bearer $token',
+         },
          body: jsonEncode({
            'instrumentKeys': symbols,
            'provider': provider,

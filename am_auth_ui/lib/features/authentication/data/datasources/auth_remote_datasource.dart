@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:am_auth_ui/core/constants/auth_endpoints.dart';
 import 'package:am_design_system/core/constants/auth_constants.dart';
 import 'package:am_design_system/core/errors/exceptions.dart';
-import 'package:am_design_system/core/errors/exceptions.dart';
 import '../models/auth_result_model.dart';
 import '../models/auth_tokens_model.dart';
 import '../models/user_model.dart';
@@ -128,7 +127,6 @@ class AuthRemoteDataSource implements AuthDataSource {
         
         final model = AuthResultModel(user: user, tokens: tokens);
         
-        print('✅ [BACKEND] Parsed user: ${model.user.email}, ID: ${model.user.id}');
         AppLogger.info('🔵 [BACKEND] Parsed user: ${model.user.email}');
         return model;
       } else {

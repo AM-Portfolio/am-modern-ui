@@ -46,7 +46,7 @@ ARG AM_USER_BASE_URL=https://am-dev.asrax.in/users
 ARG AM_PORTFOLIO_BASE_URL=https://am-dev.asrax.in/portfolio
 ARG AM_TRADE_BASE_URL=https://am-dev.asrax.in/trade
 ARG AM_GMAIL_BASE_URL=https://am-dev.asrax.in/gmail
-ARG AM_MARKET_WS_URL=wss://am-dev.asrax.in/v1/streams
+ARG AM_MARKET_WS_URL=wss://am-dev.asrax.in/market/ws/market-data-stream
 ARG AM_MARKET_BASE_URL=https://am-dev.asrax.in/market
 ARG AM_ANALYSIS_BASE_URL=https://am-dev.asrax.in/analysis
 

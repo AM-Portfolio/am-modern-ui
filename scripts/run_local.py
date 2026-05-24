@@ -39,7 +39,7 @@ def run_with_logging(cmd, cwd, env, log_name):
     os.makedirs(logs_dir, exist_ok=True)
     log_file = os.path.join(logs_dir, f"{log_name}.log")
     
-    print(f"📖 Logging output to {log_file}")
+    print(f"[LOG] Logging output to {log_file}")
     with open(log_file, "a") as f:
         f.write("\n\n--- NEW EXECUTION ---\n")
         is_windows = os.name == "nt"
@@ -198,11 +198,11 @@ def all_pub_get():
             if os.path.exists(os.path.join(live_path, "pubspec.yaml")):
                 run_flutter_cmd(os.path.join(item, "live"), "pub get")
                 print("-" * 40)
-    print("✅ Finished resolving all packages.")
+    print("Finished resolving all packages.")
 
 def all_build_runner():
     """Run flutter pub run build_runner build on all subdirectories containing pubspec.yaml"""
-    print("🚀 Running 'flutter pub run build_runner build' on all modules...")
+    print("Running 'flutter pub run build_runner build' on all modules...")
     for item in os.listdir(workspace_root):
         item_path = os.path.join(workspace_root, item)
         if os.path.isdir(item_path):
@@ -215,7 +215,7 @@ def all_build_runner():
             if os.path.exists(os.path.join(live_path, "pubspec.yaml")):
                 run_flutter_cmd(os.path.join(item, "live"), "pub run build_runner build --delete-conflicting-outputs")
                 print("-" * 40)
-    print("✅ Finished building all packages.")
+    print("Finished building all packages.")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
