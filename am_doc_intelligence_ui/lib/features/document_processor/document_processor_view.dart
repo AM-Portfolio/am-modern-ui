@@ -519,12 +519,21 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     final List<dynamic> parsedDataList = _lastResult!['data'] ?? [];
     double totalValuation = 0.0;
     
-    // Sum total assets dynamically
+    // Sum total assets dynamically using same fallback logic as datatable rows
     for (var item in parsedDataList) {
       if (item is Map) {
-        final double qty = (item['quantity'] ?? item['qty'] ?? 0).toDouble();
-        final double price = (item['currentPrice'] ?? item['nav'] ?? item['averagePrice'] ?? item['price'] ?? 0.0).toDouble();
-        totalValuation += (qty * price);
+        final double quantity = (item['quantity'] ?? item['qty'] ?? 0.0).toDouble();
+        final double currentPrice = (item['currentPrice'] ?? 
+                                     (item['marketData'] != null ? item['marketData']['marketPrice'] : null) ?? 
+                                     (item['currentValue'] != null && quantity > 0 ? (item['currentValue'] / quantity) : null) ?? 
+                                     item['avgBuyingPrice'] ?? 
+                                     item['averagePrice'] ??
+                                     item['buyPrice'] ??
+                                     item['nav'] ?? 
+                                     item['price'] ?? 
+                                     0.0).toDouble();
+        final double totalValue = item['currentValue'] != null ? (item['currentValue'] as num).toDouble() : quantity * currentPrice;
+        totalValuation += totalValue;
       }
     }
 
