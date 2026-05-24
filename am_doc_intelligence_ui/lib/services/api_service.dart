@@ -101,7 +101,12 @@ class ApiService {
     var request = http.MultipartRequest('POST', Uri.parse(url));
     final headers = await _getHeaders();
     request.headers.addAll(headers);
-    request.fields['brokerType'] = brokerType;
+    // Map custom UI broker types to backend enum values
+    String apiBrokerType = brokerType;
+    if (brokerType == 'GROWW') {
+      apiBrokerType = 'GROW';
+    }
+    request.fields['brokerType'] = apiBrokerType;
     
     // Map custom UI document types to backend-supported document types
     String apiDocType = docType;
