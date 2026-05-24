@@ -9,6 +9,7 @@ class ConfigService {
   static AppConfig? _config;
   static String _domain = 'am-dev.asrax.in';
   static Map<String, String> _services = {};
+  static String _googleClientId = '';
 
   static String get domain => _domain;
 
@@ -65,6 +66,14 @@ class ConfigService {
     _services = raw.map(
       (k, v) => MapEntry(k, v?.toString() ?? ''),
     )..removeWhere((_, v) => v.isEmpty);
+
+    // Extract Google Sign-In Web Client ID dynamically
+    final google = json['google'] as Map<String, dynamic>?;
+    if (google != null) {
+      _googleClientId = google['webClientId']?.toString() ?? google['clientId']?.toString() ?? '';
+    } else if (json['googleWebClientId'] != null) {
+      _googleClientId = json['googleWebClientId'].toString();
+    }
 
     if (_services.isEmpty) {
       AppLogger.info(
@@ -130,7 +139,7 @@ class ConfigService {
         _services['marketWs'] ?? '$ws/market/ws/market-data-stream';
 
     return AppConfig(
-      google: const GoogleConfig(webClientId: ''),
+      google: GoogleConfig(webClientId: _googleClientId),
       environment: Environment.production,
       api: ApiConfig(
         baseUrl: analysisUrl,

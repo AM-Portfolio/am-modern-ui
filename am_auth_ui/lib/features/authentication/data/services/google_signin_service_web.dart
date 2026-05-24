@@ -62,13 +62,16 @@ class GoogleSignInService {
         throw AuthException('Google ID API not available');
       }
 
+      final configClientId = ConfigService.config.google.webClientId;
+      final clientId = configClientId.isNotEmpty ? configClientId : AuthConstants.googleClientId;
+
       // Initialize Google Sign-In (once)
       if (!_initialized) {
         CommonLogger.info('🔵 Initializing Google Identity Services...');
 
         id.callMethod('initialize', [
           js.JsObject.jsify({
-            'client_id': AuthConstants.googleClientId,
+            'client_id': clientId,
             'callback': js.allowInterop(_handleCredentialResponse),
             'use_fedcm_for_prompt': false,
           }),
@@ -81,8 +84,7 @@ class GoogleSignInService {
       print('🔵 Opening Google Sign-In popup window...');
       CommonLogger.info('🔵 Opening Google Sign-In popup window...');
       
-      final clientId = AuthConstants.googleClientId;
-      print('🔵 Using client ID: ${clientId.substring(0, 20)}...');
+      print('🔵 Using client ID: ${clientId.substring(0, clientId.length > 20 ? 20 : clientId.length)}...');
       
       // Dynamically determine redirect URI based on current origin
       final currentOrigin = html.window.location.origin;
