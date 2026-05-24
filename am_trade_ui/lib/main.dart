@@ -45,16 +45,8 @@ void main() async {
                       theme: themeState.lightTheme,
                       darkTheme: themeState.darkTheme,
                       themeMode: themeState.themeMode,
-                      home: BlocBuilder<AuthCubit, AuthState>(
-                        builder: (context, authState) {
-                          if (authState is AuthInitial || authState is AuthLoading) {
-                            return const Scaffold(body: Center(child: CircularProgressIndicator()));
-                          }
-                          if (authState is Authenticated) {
-                            return TradeWebScreen(userId: authState.user.id);
-                          }
-                          return const LoginPage();
-                        },
+                      home: const AuthWrapper(
+                        child: TradeWebScreen(),
                       ),
                       onGenerateRoute: (settings) {
                         if (settings.name == '/trade/add') {
