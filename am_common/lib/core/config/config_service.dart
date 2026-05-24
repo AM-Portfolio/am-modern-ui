@@ -157,8 +157,8 @@ class ConfigService {
       // Set these via: flutter run --dart-define=AM_DEV_AUTH_TOKEN=<token>
       //                              --dart-define=AM_DEV_USER_ID=<userId>
       // When both are non-empty, the app skips the login screen in debug mode.
-      devAuthToken: const String.fromEnvironment('AM_DEV_AUTH_TOKEN', defaultValue: 'mock_dev_token_for_local_testing'),
-      devUserId: const String.fromEnvironment('AM_DEV_USER_ID', defaultValue: 'local-dev-user'),
+      devAuthToken: const String.fromEnvironment('AM_DEV_AUTH_TOKEN', defaultValue: ''),
+      devUserId: const String.fromEnvironment('AM_DEV_USER_ID', defaultValue: ''),
     );
   }
 }
