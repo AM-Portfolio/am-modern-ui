@@ -7,7 +7,7 @@ abstract class UiAnalysisService {
     GroupBy? groupBy,
   });
 
-  Future<List<PerformanceDataPoint>> getPerformance(
+  Future<PerformanceData> getPerformance(
     String? id,
     AnalysisEntityType type,
     String timeFrame,
@@ -39,19 +39,24 @@ class MockAnalysisService implements UiAnalysisService {
   }
 
   @override
-  Future<List<PerformanceDataPoint>> getPerformance(
+  Future<PerformanceData> getPerformance(
     String? id,
     AnalysisEntityType type,
     String timeFrame,
   ) async {
     await Future.delayed(const Duration(milliseconds: 600));
     final now = DateTime.now();
-    return List.generate(30, (index) {
+    final dataPoints = List.generate(30, (index) {
       return PerformanceDataPoint(
         date: now.subtract(Duration(days: 30 - index)),
         value: 10000 + (index * 100) + (index % 2 == 0 ? 50 : -50),
       );
     });
+    return PerformanceData(
+      dataPoints: dataPoints,
+      totalReturnPercentage: 15.5,
+      totalReturnValue: 1550.0,
+    );
   }
 
   @override

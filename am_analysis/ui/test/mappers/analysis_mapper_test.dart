@@ -1,8 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:am_analysis_ui/mappers/analysis_mapper.dart';
-import 'package:am_analysis_ui/models/analysis_enums.dart';
+import 'package:am_analysis_core/am_analysis_core.dart';
 import 'package:am_analysis_sdk/api.dart' as sdk;
-
 void main() {
   group('AnalysisMapper', () {
     group('toAllocationItems', () {
@@ -112,7 +111,7 @@ void main() {
       });
     });
 
-    group('toPerformanceDataPoints', () {
+    group('toPerformanceData', () {
       test('should convert SDK PerformanceResponse to DataPoints', () {
         final sdkResponse = sdk.PerformanceResponse(
           chartData: [
@@ -121,22 +120,22 @@ void main() {
           ],
         );
 
-        final result = AnalysisMapper.toPerformanceDataPoints(sdkResponse);
+        final result = AnalysisMapper.toPerformanceData(sdkResponse);
 
-        expect(result.length, 2);
-        expect(result[0].date, DateTime.parse('2024-01-01T00:00:00Z'));
-        expect(result[0].value, 10000.0);
+        expect(result.dataPoints.length, 2);
+        expect(result.dataPoints[0].date, DateTime.parse('2024-01-01T00:00:00Z'));
+        expect(result.dataPoints[0].value, 10000.0);
       });
 
       test('should handle null response', () {
-        final result = AnalysisMapper.toPerformanceDataPoints(null);
-        expect(result, isEmpty);
+        final result = AnalysisMapper.toPerformanceData(null);
+        expect(result.dataPoints, isEmpty);
       });
 
       test('should handle null chartData', () {
         final sdkResponse = sdk.PerformanceResponse();
-        final result = AnalysisMapper.toPerformanceDataPoints(sdkResponse);
-        expect(result, isEmpty);
+        final result = AnalysisMapper.toPerformanceData(sdkResponse);
+        expect(result.dataPoints, isEmpty);
       });
     });
   });

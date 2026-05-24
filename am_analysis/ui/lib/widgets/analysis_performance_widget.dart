@@ -34,7 +34,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
   ChartType _chartType = ChartType.area;
   bool _isLoading = true;
   String? _error;
-  List<PerformanceDataPoint> _dataPoints = [];
+  PerformanceData? _performanceData;
 
   @override
   void initState() {
@@ -58,16 +58,16 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
 
     try {
       print('[Performance] Loading data for portfolio=${widget.portfolioId}, timeFrame=${_selectedTimeFrame.code}');
-      final points = await _service.getPerformance(
+      final data = await _service.getPerformance(
         widget.portfolioId,
         AnalysisEntityType.PORTFOLIO,
         _selectedTimeFrame.code,
       );
-      print('[Performance] Successfully loaded ${points.length} data points');
+      print('[Performance] Successfully loaded ${data.dataPoints.length} data points');
       
       if (mounted) {
         setState(() {
-          _dataPoints = points;
+          _performanceData = data;
           _isLoading = false;
         });
       }
@@ -116,12 +116,46 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Flexible(
-                    child: Text(
-                      'Performance',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: isMobile ? 16 : 18,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Performance',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: isMobile ? 16 : 18,
+                          ),
+                        ),
+                        if (_performanceData != null && _performanceData!.totalReturnPercentage != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _performanceData!.totalReturnPercentage! >= 0 
+                                    ? Icons.arrow_upward 
+                                    : Icons.arrow_downward,
+                                  size: isMobile ? 12 : 14,
+                                  color: _performanceData!.totalReturnPercentage! >= 0 
+                                    ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF00B894) : const Color(0xFF009975))
+                                    : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFF7675) : const Color(0xFFE85656)),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${_performanceData!.totalReturnPercentage!.abs().toStringAsFixed(2)}% '
+                                  '(${_formatCurrency(_performanceData!.totalReturnValue?.abs() ?? 0)})',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: isMobile ? 13 : 15,
+                                    color: _performanceData!.totalReturnPercentage! >= 0 
+                                      ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF00B894) : const Color(0xFF009975))
+                                      : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFF7675) : const Color(0xFFE85656)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   if (_isLoading)
@@ -255,7 +289,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
       );
     }
 
-    if (_dataPoints.isEmpty) {
+    if (_performanceData?.dataPoints.isEmpty ?? true) {
       return Center(
         child: Text(
           'No performance data available',
@@ -271,13 +305,14 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
   }
 
   Widget _buildChart() {
-    final spots = _dataPoints.asMap().entries.map((entry) {
+    final points = _performanceData!.dataPoints;
+    final spots = points.asMap().entries.map((entry) {
       return FlSpot(entry.key.toDouble(), entry.value.value);
     }).toList();
 
-    final minY = _dataPoints.map((p) => p.value).reduce((a, b) => a < b ? a : b);
-    final maxY = _dataPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
-    final isPositive = _dataPoints.last.value >= _dataPoints.first.value;
+    final minY = points.map((p) => p.value).reduce((a, b) => a < b ? a : b);
+    final maxY = points.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    final isPositive = points.last.value >= points.first.value;
     
     final gainColor = Theme.of(context).brightness == Brightness.dark 
         ? const Color(0xFF00B894) : const Color(0xFF009975);
@@ -286,7 +321,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
     final chartColor = isPositive ? gainColor : lossColor;
     
     // Interval calculation for X axis
-    final xInterval = (_dataPoints.length / 5).ceil().toDouble();
+    final xInterval = (points.length / 5).ceil().toDouble();
 
     if (_chartType == ChartType.bar) {
       return BarChart(
@@ -344,11 +379,11 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
               interval: xInterval > 0 ? xInterval : 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                if (index < 0 || index >= _dataPoints.length) {
+                if (index < 0 || index >= points.length) {
                   return const SizedBox.shrink();
                 }
                 
-                final date = _dataPoints[index].date;
+                final date = points[index].date;
                 String text;
                 
                 if (_selectedTimeFrame == ds.TimeFrame.oneDay) {
@@ -409,7 +444,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
             getTooltipColor: (_) => Theme.of(context).cardColor.withValues(alpha: 0.9),
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
-                final date = _dataPoints[spot.x.toInt()].date;
+                final date = points[spot.x.toInt()].date;
                 final formattedDate = DateFormat('MMM d, yyyy').format(date);
                 
                 return LineTooltipItem(

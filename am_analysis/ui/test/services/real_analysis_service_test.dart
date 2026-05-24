@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:am_analysis_ui/services/real_analysis_service.dart';
-import 'package:am_analysis_ui/models/analysis_enums.dart';
-
+import 'package:am_analysis_core/am_analysis_core.dart';
 void main() {
   group('RealAnalysisService', () {
     late RealAnalysisService service;
@@ -69,7 +68,7 @@ void main() {
           );
           
           expect(result, isNotNull);
-          expect(result, isA<List>());
+          expect(result, isA<PerformanceData>());
         } catch (e) {
           print('Backend not available for testing: $e');
         }

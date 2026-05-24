@@ -87,7 +87,7 @@ class RealAnalysisService implements UiAnalysisService {
   }
 
   @override
-  Future<List<PerformanceDataPoint>> getPerformance(
+  Future<PerformanceData> getPerformance(
     String? id,
     AnalysisEntityType type,
     String timeFrame,
@@ -107,7 +107,7 @@ class RealAnalysisService implements UiAnalysisService {
 
       _logger.d('Performance response: ${response?.chartData?.length ?? 0} data points');
       
-      return AnalysisMapper.toPerformanceDataPoints(response);
+      return AnalysisMapper.toPerformanceData(response);
     } catch (e, stackTrace) {
       _logger.e('Error fetching performance', error: e, stackTrace: stackTrace);
       rethrow;
