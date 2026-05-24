@@ -61,9 +61,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     switch (_selectedBrokerType) {
       case 'ZERODHA':
         return _docTypes.where((t) => t == 'STOCK_PORTFOLIO').toList();
+      case 'GROWW':
+        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'MUTUAL_FUND').toList();
       case 'DHAN':
       case 'MSTOCK':
-      case 'GROWW':
       case 'ANGEL_ONE':
       case 'UPSTOX':
       case 'ICICI_DIRECT':
