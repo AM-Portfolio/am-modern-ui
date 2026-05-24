@@ -16,11 +16,12 @@ class PortfolioSummaryMapper {
       apiModel.sectorialHoldings.forEach((sectorName, holdings) {
         // Calculate total value for this sector
         double sectorValue = 0.0;
-        double sectorWeight = 0.0;
         for (final h in holdings) {
           sectorValue += h.currentValue;
-          sectorWeight += h.weightInPortfolio;
         }
+        double sectorWeight = apiModel.currentValue > 0
+            ? (sectorValue / apiModel.currentValue) * 100
+            : 0.0;
         sectorAllocations.add(
           SectorAllocation(
             sector: sectorName,

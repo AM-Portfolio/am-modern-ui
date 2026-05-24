@@ -7,3 +7,15 @@ class PerformanceDataPoint {
     required this.value,
   });
 }
+
+class PerformanceData {
+  final List<PerformanceDataPoint> dataPoints;
+  final double? totalReturnPercentage;
+  final double? totalReturnValue;
+
+  PerformanceData({
+    required this.dataPoints,
+    this.totalReturnPercentage,
+    this.totalReturnValue,
+  });
+}

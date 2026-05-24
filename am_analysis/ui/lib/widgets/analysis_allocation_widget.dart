@@ -423,6 +423,50 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
                               ],
                             ),
                             const Divider(height: 12),
+                            // Metrics Row
+                            if (item.dayChangePercentage != null || item.totalChangePercentage != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    if (item.dayChangePercentage != null)
+                                      Row(
+                                        children: [
+                                          Text('Day: ', style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
+                                          Text(
+                                            '${item.dayChangePercentage! >= 0 ? '+' : ''}${item.dayChangePercentage!.toStringAsFixed(2)}%',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: item.dayChangePercentage! >= 0 
+                                                ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF00B894) : const Color(0xFF009975))
+                                                : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFF7675) : const Color(0xFFE85656)),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    if (item.totalChangePercentage != null)
+                                      Row(
+                                        children: [
+                                          Text('Total: ', style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
+                                          Text(
+                                            '${item.totalChangePercentage! >= 0 ? '+' : ''}${item.totalChangePercentage!.toStringAsFixed(2)}%',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: item.totalChangePercentage! >= 0 
+                                                ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF00B894) : const Color(0xFF009975))
+                                                : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFF7675) : const Color(0xFFE85656)),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            if (item.dayChangePercentage != null || item.totalChangePercentage != null)
+                              const Divider(height: 12),
                             // Holdings List
                             if (item.holdings != null && item.holdings!.isNotEmpty)
                               ...item.holdings!.take(7).map((h) => Padding(
@@ -531,10 +575,10 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
             final abbreviation = _getSectorAbbreviation(item.name);
             
             // Only show label if segment is big enough (>= 5%)
-            final showLabel = item.percentage >= 0.05;
+            final showLabel = item.percentage >= 5.0;
             
             return Expanded(
-              flex: (item.percentage * 100).round(),
+              flex: item.percentage.round() > 0 ? item.percentage.round() : 1,
               child: MouseRegion(
                 onEnter: (_) => setState(() => _hoveredIndex = index),
                 onExit: (_) => setState(() => _hoveredIndex = null),

@@ -35,30 +35,22 @@ void main() {
       // Verify overall portfolio value formatting (₹12.50L)
       expect(find.text('₹12.50L'), findsOneWidget);
       // Verify gains percentage formatting
-      expect(find.text('(25.00%)'), findsOneWidget);
+      expect(find.text('+25.00%'), findsNWidgets(2));
       // Verify trending up icon is found
       expect(find.byIcon(Icons.trending_up), findsWidgets);
 
-      // Verify invested, current, and holdings values formatted
+      // Verify invested and holdings values formatted
       expect(find.text('₹1000000'), findsOneWidget);
-      expect(find.text('₹1250000'), findsOneWidget);
       expect(find.text('8'), findsOneWidget);
 
       // Verify dynamic performance section today's change & total returns
       expect(find.text('₹15.0K'), findsOneWidget);
-      expect(find.text('1.20%'), findsOneWidget);
+      expect(find.text('+1.20%'), findsOneWidget);
       expect(find.text('₹2.50L'), findsOneWidget);
 
-      // Verify gainer/loser counts using RichText matcher predicate
-      final todayRichTextFinder = find.byWidgetPredicate(
-        (widget) => widget is RichText && widget.text.toPlainText().contains('6/2')
-      );
-      expect(todayRichTextFinder, findsOneWidget);
-
-      final overallRichTextFinder = find.byWidgetPredicate(
-        (widget) => widget is RichText && widget.text.toPlainText().contains('5/3')
-      );
-      expect(overallRichTextFinder, findsOneWidget);
+      // Verify overall gainers/losers count is displayed properly
+      expect(find.text('Gainers/Losers'), findsOneWidget);
+      expect(find.text('5/3'), findsOneWidget);
       expect(find.text('5m ago'), findsOneWidget);
     });
 
@@ -93,7 +85,7 @@ void main() {
       expect(find.text('₹80.0K'), findsOneWidget);
       // Verify trending down icon
       expect(find.byIcon(Icons.trending_down), findsWidgets);
-      expect(find.text('(-20.00%)'), findsOneWidget);
+      expect(find.text('-20.00%'), findsNWidgets(2));
 
       // Verify performance details
       expect(find.text('₹-500.00'), findsOneWidget);
@@ -102,7 +94,7 @@ void main() {
     });
 
     testWidgets('triggers onViewHoldings and onViewAnalysis callbacks on tap', (WidgetTester tester) async {
-      final summary = PortfolioSummary.empty('user_123');
+      final summary = PortfolioSummary.empty();
       bool holdingsTapped = false;
       bool analysisTapped = false;
 

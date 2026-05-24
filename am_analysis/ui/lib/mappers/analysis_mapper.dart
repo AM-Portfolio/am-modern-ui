@@ -71,6 +71,10 @@ class AnalysisMapper {
         percentage: _sanitizePercent(item.percentage ?? 0.0),
         value: (item.value ?? 0).toDouble(),
         holdings: holdings,
+        dayChangePercentage: item.dayChangePercentage?.toDouble(),
+        dayChangeAmount: item.dayChangeAmount?.toDouble(),
+        totalChangePercentage: item.totalChangePercentage?.toDouble(),
+        totalChangeAmount: item.totalChangeAmount?.toDouble(),
       );
     }).toList();
     
@@ -123,18 +127,26 @@ class AnalysisMapper {
     return allMovers;
   }
 
-  /// Convert SDK PerformanceResponse to UI PerformanceDataPoint list
-  static List<PerformanceDataPoint> toPerformanceDataPoints(
+  /// Convert SDK PerformanceResponse to UI PerformanceData
+  static PerformanceData toPerformanceData(
     sdk.PerformanceResponse? sdkResponse,
   ) {
-    if (sdkResponse == null || sdkResponse.chartData == null) return [];
+    if (sdkResponse == null || sdkResponse.chartData == null) {
+      return PerformanceData(dataPoints: []);
+    }
     
     // Convert SDK DataPoint to UI PerformanceDataPoint
-    return sdkResponse.chartData!.map((dataPoint) {
+    final dataPoints = sdkResponse.chartData!.map((dataPoint) {
       return PerformanceDataPoint(
         date: dataPoint.date ?? DateTime.now(),
         value: (dataPoint.value ?? 0).toDouble(),
       );
     }).toList();
+
+    return PerformanceData(
+      dataPoints: dataPoints,
+      totalReturnPercentage: sdkResponse.totalReturnPercentage?.toDouble(),
+      totalReturnValue: sdkResponse.totalReturnValue?.toDouble(),
+    );
   }
 }

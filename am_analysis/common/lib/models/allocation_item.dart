@@ -19,11 +19,19 @@ class AllocationItem {
   final double percentage;
   final double value;
   final List<AllocationHolding>? holdings;
+  final double? dayChangePercentage;
+  final double? dayChangeAmount;
+  final double? totalChangePercentage;
+  final double? totalChangeAmount;
 
   AllocationItem({
     required this.name,
     required this.percentage,
     required this.value,
     this.holdings,
+    this.dayChangePercentage,
+    this.dayChangeAmount,
+    this.totalChangePercentage,
+    this.totalChangeAmount,
   });
 }
