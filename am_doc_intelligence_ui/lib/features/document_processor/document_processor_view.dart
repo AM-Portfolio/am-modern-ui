@@ -54,13 +54,35 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     }
   }
 
+  List<String> _getFilteredDocTypes() {
+    if (_selectedBrokerType == null) {
+      return _docTypes;
+    }
+    switch (_selectedBrokerType) {
+      case 'ZERODHA':
+        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO').toList();
+      case 'DHAN':
+      case 'MSTOCK':
+      case 'GROWW':
+      case 'ANGEL_ONE':
+      case 'UPSTOX':
+      case 'ICICI_DIRECT':
+      case 'HDFC_SECURITIES':
+        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO').toList();
+      case 'OTHER':
+      default:
+        return _docTypes;
+    }
+  }
+
   Future<void> _loadDocTypes() async {
     try {
       final types = await apiProvider.getSupportedDocumentTypes();
       setState(() {
         _docTypes = types;
-        if (types.isNotEmpty) {
-          _selectedDocType = types.first;
+        final filtered = _getFilteredDocTypes();
+        if (filtered.isNotEmpty) {
+          _selectedDocType = filtered.first;
         }
         _loadingTypes = false;
       });
@@ -351,16 +373,26 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('DOCUMENT TYPE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.grey)),
+                      const Text('BROKER / INSTITUTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.grey)),
                       const SizedBox(height: 8),
-                      _loadingTypes 
-                        ? const ShimmerLoading(child: SkeletonBox(height: 42, width: double.infinity))
-                        : CustomDropdown<String>(
-                            value: _selectedDocType,
-                            items: _docTypes.map((e) => e.toSimpleDropdownItem(text: e)).toList(),
-                            hint: 'Select Doc Type',
-                            onChanged: (v) => setState(() => _selectedDocType = v),
-                          ),
+                      CustomDropdown<String>(
+                        value: _selectedBrokerType,
+                        items: apiProvider.brokerTypes.map((e) => e.toSimpleDropdownItem(text: e)).toList(),
+                        hint: 'Select Broker',
+                        onChanged: (v) {
+                          setState(() {
+                            _selectedBrokerType = v;
+                            final filtered = _getFilteredDocTypes();
+                            if (filtered.isNotEmpty) {
+                              if (!filtered.contains(_selectedDocType)) {
+                                _selectedDocType = filtered.first;
+                              }
+                            } else {
+                              _selectedDocType = null;
+                            }
+                          });
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -369,14 +401,16 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('BROKER / INSTITUTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.grey)),
+                      const Text('DOCUMENT TYPE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.grey)),
                       const SizedBox(height: 8),
-                      CustomDropdown<String>(
-                        value: _selectedBrokerType,
-                        items: apiProvider.brokerTypes.map((e) => e.toSimpleDropdownItem(text: e)).toList(),
-                        hint: 'Select Broker',
-                        onChanged: (v) => setState(() => _selectedBrokerType = v),
-                      ),
+                      _loadingTypes 
+                        ? const ShimmerLoading(child: SkeletonBox(height: 42, width: double.infinity))
+                        : CustomDropdown<String>(
+                            value: _selectedDocType,
+                            items: _getFilteredDocTypes().map((e) => e.toSimpleDropdownItem(text: e)).toList(),
+                            hint: 'Select Doc Type',
+                            onChanged: (v) => setState(() => _selectedDocType = v),
+                          ),
                     ],
                   ),
                 ),
