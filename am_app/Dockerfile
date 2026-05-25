@@ -1,6 +1,6 @@
 # Multi-stage Flutter web build
-# Use official Flutter image from Docker Hub to prevent GHCR blob mount errors
-FROM cirruslabs/flutter:stable AS build-env
+# Use official Flutter image
+FROM ghcr.io/cirruslabs/flutter:stable AS build-env
 
 # Create app directory
 WORKDIR /app
@@ -71,7 +71,7 @@ RUN flutter build web --release \
 COPY am_app/nginx.conf /app/nginx.conf
 
 # ── RUNTIME STAGE ────────────────────────────────────────────────────────
-FROM nginx:alpine
+FROM nginx:1.25-alpine
 
 # Copy built web files from build stage
 COPY --from=build-env /app/am_app/build/web /usr/share/nginx/html
