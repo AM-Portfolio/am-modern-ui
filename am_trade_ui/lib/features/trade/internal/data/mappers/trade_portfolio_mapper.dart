@@ -8,7 +8,7 @@ class TradePortfolioMapper {
   /// Convert TradePortfolioDto to TradePortfolio domain entity
   static TradePortfolio fromDto(TradePortfolioDto dto) => TradePortfolio(
     id: dto.portfolioId,
-    name: dto.name,
+    name: dto.name ?? 'Unnamed Portfolio',
     ownerId: dto.ownerId,
     totalValue: dto.totalValue,
     totalGainLoss: dto.totalGainLoss,
@@ -45,7 +45,7 @@ class TradePortfolioMapper {
   /// Convert TradePortfolioSummaryDto to TradePortfolioSummary entity
   static TradePortfolioSummary fromSummaryDto(TradePortfolioSummaryDto dto) => TradePortfolioSummary(
     portfolioId: dto.portfolioId,
-    name: dto.name,
+    name: dto.name ?? 'Unnamed Portfolio',
     description: dto.description,
     ownerId: dto.ownerId,
     active: dto.active,

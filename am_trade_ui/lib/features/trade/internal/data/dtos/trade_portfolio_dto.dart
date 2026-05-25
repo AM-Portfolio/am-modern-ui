@@ -8,7 +8,7 @@ part 'trade_portfolio_dto.g.dart';
 class TradePortfolioDto {
   const TradePortfolioDto({
     required this.portfolioId,
-    required this.name,
+    this.name,
     this.ownerId,
     this.totalValue,
     this.totalGainLoss,
@@ -29,7 +29,7 @@ class TradePortfolioDto {
   factory TradePortfolioDto.fromJson(Map<String, dynamic> json) => _$TradePortfolioDtoFromJson(json);
 
   final String portfolioId;
-  final String name;
+  final String? name;
   final String? ownerId;
   final double? totalValue;
   final double? totalGainLoss;

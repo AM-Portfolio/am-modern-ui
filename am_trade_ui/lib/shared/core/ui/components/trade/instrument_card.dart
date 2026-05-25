@@ -189,7 +189,7 @@ class _InstrumentCardState extends State<InstrumentCard> {
                           return ListTile(
                             dense: true,
                             title: Text(instrument['displayName'] ?? instrument['description'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text('${instrument['symbol']} | ${instrument['exchange']}'),
+                            subtitle: Text('${instrument['symbol'] ?? instrument['tradingSymbol'] ?? instrument['tradingsymbol'] ?? ''} | ${instrument['exchange'] ?? ''}'),
                             onTap: () {
                               widget.onInstrumentSelected?.call(instrument);
                               setState(() => _searchResults = []);
