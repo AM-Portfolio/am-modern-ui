@@ -1,6 +1,6 @@
 # Multi-stage Flutter web build
-# Use official Flutter image
-FROM ghcr.io/cirruslabs/flutter:stable AS build-env
+# Use official Flutter image from Docker Hub to prevent GHCR blob mount errors
+FROM cirruslabs/flutter:stable AS build-env
 
 # Create app directory
 WORKDIR /app
