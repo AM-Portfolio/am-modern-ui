@@ -269,7 +269,20 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, bool>> checkAuthStatus() async {
     try {
       final accessToken = await _storageService.getAccessToken();
-      if (accessToken == null) return const Right(false);
+      if (accessToken == null) {
+        // If stored token is missing, check for a development fallback
+        try {
+          final config = ConfigService.config;
+          if (kDebugMode && 
+              config.devAuthToken != null && 
+              config.devAuthToken!.isNotEmpty &&
+              config.devUserId != null &&
+              config.devUserId!.isNotEmpty) {
+            return const Right(true);
+          }
+        } catch (_) {}
+        return const Right(false);
+      }
 
       final isExpired = await _storageService.isTokenExpired();
       if (isExpired) {

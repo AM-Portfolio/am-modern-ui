@@ -50,7 +50,7 @@ class TradeSummaryMapper {
   /// Convert TradePortfolioSummaryDto to TradeSummary domain entity
   static TradeSummary fromPortfolioSummaryDto(TradePortfolioSummaryDto dto) => TradeSummary(
     portfolioId: dto.portfolioId,
-    name: dto.name,
+    name: dto.name ?? 'Unnamed Portfolio',
     ownerId: dto.ownerId ?? '',
     description: dto.description,
     active: dto.active,

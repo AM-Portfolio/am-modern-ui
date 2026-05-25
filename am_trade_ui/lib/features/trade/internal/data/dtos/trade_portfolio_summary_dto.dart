@@ -8,7 +8,7 @@ part 'trade_portfolio_summary_dto.g.dart';
 abstract class TradePortfolioSummaryDto with _$TradePortfolioSummaryDto {
   const factory TradePortfolioSummaryDto({
     required String portfolioId,
-    required String name,
+    String? name,
     String? description,
     String? ownerId,
     @Default(true) bool active,
