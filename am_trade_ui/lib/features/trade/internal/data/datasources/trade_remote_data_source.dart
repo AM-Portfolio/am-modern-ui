@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:am_library/am_library.dart';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
@@ -126,11 +127,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      try {
-        AppLogger.info('Loading mock trade portfolios', tag: 'TradeRemoteDataSource');
-        return await TradeMockDataHelper.getMockTradePortfolios();
-      } catch (mockError) {
-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+      if (kDebugMode) {
+        try {
+          AppLogger.info('Loading mock trade portfolios', tag: 'TradeRemoteDataSource');
+          return await TradeMockDataHelper.getMockTradePortfolios();
+        } catch (mockError) {
+          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+          rethrow;
+        }
+      } else {
         rethrow;
       }
     }
@@ -190,11 +195,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      try {
-        AppLogger.info('Loading mock trade holdings', tag: 'TradeRemoteDataSource');
-        return await TradeMockDataHelper.getMockTradeHoldings();
-      } catch (mockError) {
-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+      if (kDebugMode) {
+        try {
+          AppLogger.info('Loading mock trade holdings', tag: 'TradeRemoteDataSource');
+          return await TradeMockDataHelper.getMockTradeHoldings();
+        } catch (mockError) {
+          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+          rethrow;
+        }
+      } else {
         rethrow;
       }
     }
@@ -230,11 +239,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      try {
-        AppLogger.info('Loading mock trade summary', tag: 'TradeRemoteDataSource');
-        return await TradeMockDataHelper.getMockTradeSummary();
-      } catch (mockError) {
-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+      if (kDebugMode) {
+        try {
+          AppLogger.info('Loading mock trade summary', tag: 'TradeRemoteDataSource');
+          return await TradeMockDataHelper.getMockTradeSummary();
+        } catch (mockError) {
+          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+          rethrow;
+        }
+      } else {
         rethrow;
       }
     }
@@ -300,11 +313,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      try {
-        AppLogger.info('Loading mock trade calendar', tag: 'TradeRemoteDataSource');
-        return await TradeMockDataHelper.getMockTradeCalendar();
-      } catch (mockError) {
-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+      if (kDebugMode) {
+        try {
+          AppLogger.info('Loading mock trade calendar', tag: 'TradeRemoteDataSource');
+          return await TradeMockDataHelper.getMockTradeCalendar();
+        } catch (mockError) {
+          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+          rethrow;
+        }
+      } else {
         rethrow;
       }
     }
@@ -370,11 +387,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      try {
-        AppLogger.info('Loading mock trade calendar by day', tag: 'TradeRemoteDataSource');
-        return await TradeMockDataHelper.getMockTradeCalendarByDay();
-      } catch (mockError) {
-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+      if (kDebugMode) {
+        try {
+          AppLogger.info('Loading mock trade calendar by day', tag: 'TradeRemoteDataSource');
+          return await TradeMockDataHelper.getMockTradeCalendarByDay();
+        } catch (mockError) {
+          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+          rethrow;
+        }
+      } else {
         rethrow;
       }
     }
@@ -454,11 +475,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      try {
-        AppLogger.info('Loading mock trade calendar by date range', tag: 'TradeRemoteDataSource');
-        return await TradeMockDataHelper.getMockTradeCalendarByDateRange();
-      } catch (mockError) {
-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+      if (kDebugMode) {
+        try {
+          AppLogger.info('Loading mock trade calendar by date range', tag: 'TradeRemoteDataSource');
+          return await TradeMockDataHelper.getMockTradeCalendarByDateRange();
+        } catch (mockError) {
+          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+          rethrow;
+        }
+      } else {
         rethrow;
       }
     }
@@ -524,11 +549,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      try {
-        AppLogger.info('Loading mock trade calendar', tag: 'TradeRemoteDataSource');
-        return await TradeMockDataHelper.getMockTradeCalendar();
-      } catch (mockError) {
-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+      if (kDebugMode) {
+        try {
+          AppLogger.info('Loading mock trade calendar', tag: 'TradeRemoteDataSource');
+          return await TradeMockDataHelper.getMockTradeCalendar();
+        } catch (mockError) {
+          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+          rethrow;
+        }
+      } else {
         rethrow;
       }
     }
@@ -593,11 +622,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      try {
-        AppLogger.info('Loading mock trade calendar', tag: 'TradeRemoteDataSource');
-        return await TradeMockDataHelper.getMockTradeCalendar();
-      } catch (mockError) {
-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+      if (kDebugMode) {
+        try {
+          AppLogger.info('Loading mock trade calendar', tag: 'TradeRemoteDataSource');
+          return await TradeMockDataHelper.getMockTradeCalendar();
+        } catch (mockError) {
+          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
+          rethrow;
+        }
+      } else {
         rethrow;
       }
     }
