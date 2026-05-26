@@ -14,25 +14,44 @@ class PortfolioLocalDataSource {
   static const String _summaryBoxName = 'portfolio_summary';
   static const String _listBoxName = 'user_portfolios';
 
-  /// Initialize Hive and open boxes
+  /// Initialize Hive and open boxes with dynamic recovery from corruption
   Future<void> init() async {
     await Hive.initFlutter();
     
-    // Only register adapters if not already registered to avoid errors during hot restart
-    if (!Hive.isAdapterRegistered(0)) {
-       Hive.registerAdapter(BrokerHoldingHiveModelAdapter());
-       Hive.registerAdapter(PortfolioHoldingHiveModelAdapter());
-       Hive.registerAdapter(PortfolioHoldingsHiveModelAdapter());
-       Hive.registerAdapter(SectorAllocationHiveModelAdapter());
-       Hive.registerAdapter(TopPerformerHiveModelAdapter());
-       Hive.registerAdapter(PortfolioSummaryHiveModelAdapter());
-       Hive.registerAdapter(PortfolioItemHiveModelAdapter());
-       Hive.registerAdapter(PortfolioListHiveModelAdapter());
+    // Register adapters individually to ensure they are all registered safely
+    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(BrokerHoldingHiveModelAdapter());
+    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(PortfolioHoldingHiveModelAdapter());
+    if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(PortfolioHoldingsHiveModelAdapter());
+    if (!Hive.isAdapterRegistered(3)) Hive.registerAdapter(SectorAllocationHiveModelAdapter());
+    if (!Hive.isAdapterRegistered(4)) Hive.registerAdapter(TopPerformerHiveModelAdapter());
+    if (!Hive.isAdapterRegistered(5)) Hive.registerAdapter(PortfolioSummaryHiveModelAdapter());
+    if (!Hive.isAdapterRegistered(6)) Hive.registerAdapter(PortfolioItemHiveModelAdapter());
+    if (!Hive.isAdapterRegistered(7)) Hive.registerAdapter(PortfolioListHiveModelAdapter());
+
+    // Open boxes with robust error handling / auto-recovery from corruption
+    try {
+      await Hive.openBox<PortfolioHoldingsHiveModel>(_holdingsBoxName);
+    } catch (e) {
+      CommonLogger.error('Failed to open holdings box. Deleting and recreating...', error: e, tag: 'PortfolioLocalDataSource');
+      await Hive.deleteBoxFromDisk(_holdingsBoxName);
+      await Hive.openBox<PortfolioHoldingsHiveModel>(_holdingsBoxName);
     }
 
-    await Hive.openBox<PortfolioHoldingsHiveModel>(_holdingsBoxName);
-    await Hive.openBox<PortfolioSummaryHiveModel>(_summaryBoxName);
-    await Hive.openBox<PortfolioListHiveModel>(_listBoxName);
+    try {
+      await Hive.openBox<PortfolioSummaryHiveModel>(_summaryBoxName);
+    } catch (e) {
+      CommonLogger.error('Failed to open summary box. Deleting and recreating...', error: e, tag: 'PortfolioLocalDataSource');
+      await Hive.deleteBoxFromDisk(_summaryBoxName);
+      await Hive.openBox<PortfolioSummaryHiveModel>(_summaryBoxName);
+    }
+
+    try {
+      await Hive.openBox<PortfolioListHiveModel>(_listBoxName);
+    } catch (e) {
+      CommonLogger.error('Failed to open list box. Deleting and recreating...', error: e, tag: 'PortfolioLocalDataSource');
+      await Hive.deleteBoxFromDisk(_listBoxName);
+      await Hive.openBox<PortfolioListHiveModel>(_listBoxName);
+    }
   }
 
   /// Get cached holdings
