@@ -5,10 +5,13 @@ class TradeEndpoints {
   // Base URLs
   static String get tradeBaseUrl {
     try {
-      return ConfigService.config.api.trade.baseUrl;
-    } catch (_) {
-      return '/v1/trades'; // Safe fallback
-    }
+      final configUrl = ConfigService.config.api.trade.baseUrl;
+      if (configUrl.isNotEmpty) return configUrl;
+    } catch (_) {}
+    return const String.fromEnvironment(
+      'AM_TRADE_BASE_URL',
+      defaultValue: 'http://localhost:8080/api/trade',
+    );
   }
   
   // Trade Details
