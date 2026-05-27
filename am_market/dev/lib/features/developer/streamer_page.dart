@@ -24,8 +24,9 @@ class _StreamerPageState extends ConsumerState<StreamerPage> {
   String _provider = 'UPSTOX'; // UPSTOX, ZERODHA
   String _exchangeSegment = 'None'; 
   bool _autoPrefix = true;
-  bool _isIndexSymbol = false;
-  final TextEditingController _symbolsController = TextEditingController(text: 'NIFTY 50'); 
+  bool _isIndexSymbol = true;
+  bool _mockMode = true;
+  final TextEditingController _symbolsController = TextEditingController(); 
   final TextEditingController _searchController = TextEditingController();
   
   // Live Data State
@@ -59,6 +60,59 @@ class _StreamerPageState extends ConsumerState<StreamerPage> {
   @override
   void initState() {
     super.initState();
+    _loadDefaultIndices();
+  }
+
+  Future<void> _loadDefaultIndices() async {
+    try {
+      final available = await _apiService.fetchAvailableIndices();
+      final allSymbols = [
+        ...available.broad,
+        ...available.sectoral,
+      ];
+      
+      if (allSymbols.isNotEmpty) {
+        _log("Fetching details from batch API: https://am.asrax.in/market/v1/indices/batch?forceRefresh=false");
+        final batchData = await _apiService.fetchIndicesBatch(allSymbols, forceRefresh: false);
+        final Set<String> uniqueSymbols = {};
+        
+        for (final indexData in batchData) {
+          // Add the index symbol itself (e.g. NIFTY 50)
+          uniqueSymbols.add(indexData.indexSymbol);
+          
+          // Add all constituent stock symbols
+          for (final stock in indexData.stocks) {
+            if (stock.symbol.isNotEmpty) {
+              uniqueSymbols.add(stock.symbol);
+            }
+          }
+        }
+        
+        if (uniqueSymbols.isNotEmpty && mounted) {
+          setState(() {
+            _symbolsController.text = uniqueSymbols.join(', ');
+          });
+          _log("Loaded ${uniqueSymbols.length} symbols (indices + constituents) from batch API as default.");
+          return;
+        }
+      }
+      
+      // Fallback if batch endpoint returns empty or isn't populated
+      if (allSymbols.isNotEmpty && mounted) {
+        setState(() {
+          _symbolsController.text = allSymbols.join(', ');
+        });
+        _log("Loaded ${allSymbols.length} indices from API as default.");
+      }
+    } catch (e) {
+      _log("Error loading default indices: $e", level: LogLevel.warning);
+      // Fallback in case of API failure
+      if (mounted) {
+        setState(() {
+          _symbolsController.text = 'NIFTY 50, NIFTY BANK, NIFTY NEXT 50, NIFTY 100, INDIA VIX';
+        });
+      }
+    }
   }
 
   void _handleUpdate(MarketDataUpdate update) {
@@ -201,9 +255,14 @@ class _StreamerPageState extends ConsumerState<StreamerPage> {
     }
 
     try {
-      await priceService.subscribe(symbols, provider: _provider);
+      await priceService.subscribe(
+        symbols,
+        provider: _provider,
+        isIndexSymbol: _isIndexSymbol,
+        mockMode: _mockMode,
+      );
       setState(() => _isStreaming = true);
-      _log("Stream Subscription Sent via PriceService: OK", method: "StreamerPage._startStream");
+      _log("Stream Subscription Sent via PriceService: OK (isIndexSymbol: $_isIndexSymbol, mockMode: $_mockMode)", method: "StreamerPage._startStream");
       
       // _log("Explicit Stream Subscription DISABLED. Monitoring global stream for ${symbols.join(',')}", method: "StreamerPage._startStream", level: LogLevel.warning);
       // setState(() => _isStreaming = true); // Just pretend to start so UI updates (monitoring mode)
@@ -380,6 +439,17 @@ class _StreamerPageState extends ConsumerState<StreamerPage> {
             Row(
               children: [
                 Checkbox(
+                  value: _mockMode, 
+                  onChanged: (val) => setState(() => _mockMode = val!),
+                  activeColor: theme.primaryColor,
+                ),
+                Text("Mock Mode?", style: theme.textTheme.bodyMedium),
+              ],
+            ),
+            
+            Row(
+              children: [
+                Checkbox(
                   value: _isIndexSymbol, 
                   onChanged: (val) => setState(() => _isIndexSymbol = val!),
                   activeColor: theme.primaryColor,
@@ -389,7 +459,26 @@ class _StreamerPageState extends ConsumerState<StreamerPage> {
             ),
             
             const SizedBox(height: 10),
-            Text("Symbols (Comma Separated)", style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Symbols (Comma Separated)", style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+                TextButton(
+                  onPressed: () {
+                    _loadDefaultIndices();
+                    setState(() {
+                      _isIndexSymbol = true;
+                    });
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text("Default All", style: TextStyle(color: theme.primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
             const SizedBox(height: 5),
             TextField(
               controller: _symbolsController,
