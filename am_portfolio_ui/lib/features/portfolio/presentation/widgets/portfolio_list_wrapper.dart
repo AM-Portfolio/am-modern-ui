@@ -11,6 +11,7 @@ import '../mobile/portfolio_mobile_screen.dart';
 import '../web/portfolio_web_screen.dart';
 import 'global_portfolio_wrapper.dart';
 import 'gmail_sync/gmail_connect_button.dart';
+import 'global_portfolio_wrapper.dart';
 
 /// Wrapper widget that handles portfolio list loading and selection
 /// Provides portfolio selection functionality for both mobile and web screens
@@ -56,6 +57,9 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
       selectedPortfolioId = portfolioId;
       selectedPortfolioName = portfolioName;
     });
+    if (context.mounted) {
+      context.selectPortfolio(portfolioId, portfolioName);
+    }
 
     CommonLogger.info(
       'Portfolio selection changed to: $portfolioName ($portfolioId)',
@@ -65,12 +69,39 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
 
   /// Auto-selects the first portfolio if none is selected
   void _autoSelectFirstPortfolio(List<PortfolioItem> portfolios) {
-    if (portfolios.isNotEmpty && selectedPortfolioId == null) {
+    if (portfolios.isEmpty) return;
+
+    final inheritedId = context.selectedPortfolioId;
+    if (inheritedId != null) {
+      PortfolioItem? match;
+      for (final p in portfolios) {
+        if (p.portfolioId == inheritedId) {
+          match = p;
+          break;
+        }
+      }
+      if (match != null && selectedPortfolioId != inheritedId) {
+        final selected = match;
+        setState(() {
+          selectedPortfolioId = selected.portfolioId;
+          selectedPortfolioName = selected.portfolioName;
+        });
+        return;
+      }
+    }
+
+    if (selectedPortfolioId == null) {
       final firstPortfolio = portfolios.first;
       setState(() {
         selectedPortfolioId = firstPortfolio.portfolioId;
         selectedPortfolioName = firstPortfolio.portfolioName;
       });
+      if (context.mounted) {
+        context.selectPortfolio(
+          firstPortfolio.portfolioId,
+          firstPortfolio.portfolioName,
+        );
+      }
 
       CommonLogger.info(
         'Auto-selected first portfolio: ${firstPortfolio.portfolioName} (${firstPortfolio.portfolioId})',

@@ -1,0 +1,19 @@
+{
+  "_comment": "Local backends (npm run config:local). Align ports with .env.preprod on each service.",
+  "domain": "am.asrax.in",
+  "services": {
+    "auth": "http://localhost:8001",
+    "users": "http://localhost:8002",
+    "portfolio": "http://localhost:8072",
+    "market": "http://localhost:8092",
+    "marketWs": "ws://localhost:8092",
+    "etf": "http://localhost:8022",
+    "trades": "http://localhost:8082",
+    "analysis": "http://localhost:8090",
+    "docs": "http://localhost:8085",
+    "gmail": "http://localhost:8086"
+  },
+  "google": {
+    "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
+  }
+}

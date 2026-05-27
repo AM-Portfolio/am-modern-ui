@@ -22,7 +22,7 @@ class AuthConstants {
   static const String demoPassword = '@M1unish';
   
   // Google Auth
-  static const String googleClientId = '975108297824-1i2eggljb1nggbspaa3e3uttdvp02ivc.apps.googleusercontent.com';
+  static const String googleClientId = '307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com';
 
   // Token settings
   static const Duration tokenExpiryDuration = Duration(hours: 24);

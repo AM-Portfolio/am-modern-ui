@@ -45,6 +45,9 @@ dependencies:
   logger: ^2.0.2
   universal_io: ^2.3.1
 
+  # Local session (navigation / workspace per user)
+  shared_preferences: ^2.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -20,12 +20,10 @@ final getIt = GetIt.instance;
 
 /// Configure all dependencies for the application
 Future<void> configureDependencies() async {
-  // 1. Initialize Technical Infrastructure (One Source of Truth)
   ServiceRegistry.initialize(
-    analysisBaseUrl: common.ConfigService.config.api.analysis?.baseUrl,
-    wsUrl: common.ConfigService.config.api.marketData?.wsUrl,
+    analysisBaseUrl: common.EnvDomains.analysis, // Standard Analysis Port
+    wsUrl: common.EnvDomains.wsStream,
   );
-
   // Register Theme Repository (required by ThemeCubit)
   getIt.registerLazySingleton<ThemeRepository>(() => ThemeRepository());
 

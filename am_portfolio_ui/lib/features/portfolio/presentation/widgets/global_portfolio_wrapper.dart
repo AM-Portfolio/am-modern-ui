@@ -10,10 +10,12 @@ import '../../providers/portfolio_providers.dart';
 /// initial portfolio selection. Sync is now handled at the root level.
 class GlobalPortfolioWrapper extends ConsumerStatefulWidget {
   final Widget child;
+  final String userId;
   final Function(String, String)? onPortfolioChanged;
 
   const GlobalPortfolioWrapper({
     required this.child,
+    required this.userId,
     this.onPortfolioChanged,
     super.key,
   });
@@ -23,10 +25,39 @@ class GlobalPortfolioWrapper extends ConsumerStatefulWidget {
       _GlobalPortfolioWrapperState();
 }
 
-class _GlobalPortfolioWrapperState
-    extends ConsumerState<GlobalPortfolioWrapper> {
+class _GlobalPortfolioWrapperState extends ConsumerState<GlobalPortfolioWrapper> {
   String? _selectedPortfolioId;
   String? _selectedPortfolioName;
+  bool _sessionLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSessionPortfolio();
+  }
+
+  Future<void> _loadSessionPortfolio() async {
+    final session =
+        await SessionPersistenceService.instance.load(widget.userId);
+    _sessionLoaded = true;
+    if (session?.portfolioId != null && mounted) {
+      setState(() {
+        _selectedPortfolioId = session!.portfolioId;
+        _selectedPortfolioName = session.portfolioName;
+      });
+    }
+  }
+
+  void _persistPortfolio(String id, String name) {
+    SessionPersistenceService.instance.patch(
+      widget.userId,
+      (s) => s.copyWith(
+        globalNav: 'Portfolio',
+        portfolioId: id,
+        portfolioName: name,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,26 +68,41 @@ class _GlobalPortfolioWrapperState
         return BlocProvider<PortfolioCubit>(
           create: (context) {
             final cubit = PortfolioCubit(service);
-            cubit.loadPortfoliosList();
+            cubit.loadPortfoliosList(widget.userId);
             return cubit;
           },
           child: BlocListener<PortfolioCubit, PortfolioState>(
             listener: (context, state) {
-              if (state is PortfolioListLoaded &&
-                  _selectedPortfolioId == null) {
-                if (state.portfolioList!.portfolios.isNotEmpty) {
-                  final first = state.portfolioList!.portfolios.first;
+              if (state is PortfolioListLoaded) {
+                final portfolios = state.portfolioList.portfolios;
+                if (portfolios.isEmpty) return;
+
+                if (_selectedPortfolioId != null) {
+                  final stillValid = portfolios.any(
+                    (p) => p.portfolioId == _selectedPortfolioId,
+                  );
+                  if (!stillValid) {
+                    final first = portfolios.first;
+                    setState(() {
+                      _selectedPortfolioId = first.portfolioId;
+                      _selectedPortfolioName = first.portfolioName;
+                    });
+                    _persistPortfolio(first.portfolioId, first.portfolioName);
+                    widget.onPortfolioChanged?.call(
+                      first.portfolioId,
+                      first.portfolioName,
+                    );
+                  }
+                  return;
+                }
+
+                if (_sessionLoaded) {
+                  final first = portfolios.first;
                   setState(() {
                     _selectedPortfolioId = first.portfolioId;
                     _selectedPortfolioName = first.portfolioName;
                   });
-
-                  // Trigger real-time subscription
-                  context.read<PortfolioCubit>().subscribeToPortfolioUpdates();
-
-                  // Trigger initial REST load for details
-                  context.read<PortfolioCubit>().loadPortfolioById(first.portfolioId);
-
+                  _persistPortfolio(first.portfolioId, first.portfolioName);
                   widget.onPortfolioChanged?.call(
                     first.portfolioId,
                     first.portfolioName,
@@ -72,12 +118,7 @@ class _GlobalPortfolioWrapperState
                   _selectedPortfolioId = id;
                   _selectedPortfolioName = name;
                 });
-                // Trigger real-time subscription on manual selection
-                context.read<PortfolioCubit>().subscribeToPortfolioUpdates();
-
-                // Trigger REST load for details on manual selection
-                context.read<PortfolioCubit>().loadPortfolioById(id);
-
+                _persistPortfolio(id, name);
                 widget.onPortfolioChanged?.call(id, name);
               },
               child: widget.child,
@@ -87,7 +128,8 @@ class _GlobalPortfolioWrapperState
       },
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
+      error: (err, stack) =>
+          Scaffold(body: Center(child: Text('Error: $err'))),
     );
   }
 }
@@ -105,8 +147,7 @@ class _SelectedPortfolioProvider extends InheritedWidget {
   });
 
   static _SelectedPortfolioProvider? of(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<_SelectedPortfolioProvider>();
+    return context.dependOnInheritedWidgetOfExactType<_SelectedPortfolioProvider>();
   }
 
   @override

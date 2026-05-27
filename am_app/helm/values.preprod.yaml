@@ -1,3 +1,4 @@
+# Preprod Environment — am-modern-ui
 environment: preprod
 
 global:
@@ -8,18 +9,16 @@ global:
 config:
   env: "preprod"
 
-security:
-  hosts:
-    - host: modern-ui.preprod.local
-      paths:
-        - path: /
-          pathType: Prefix
+appConfig:
+  domain: "am.asrax.in"
+
+replicaCount: 1
 
 ingress:
   enabled: true
   className: "nginx"
   hosts:
-    - host: modern-ui.preprod.local
+    - host: am.asrax.in
       paths:
         - path: /
           pathType: Prefix
