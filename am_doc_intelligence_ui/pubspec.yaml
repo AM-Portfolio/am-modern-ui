@@ -23,6 +23,8 @@ dependencies:
     path: ../am_common
   am_design_system:
     path: ../am_design_system
+  am_library:
+    path: ../am_library
 
 dev_dependencies:
   flutter_test:

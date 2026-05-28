@@ -3,6 +3,9 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/browser_client.dart';
+import 'package:am_common/am_common.dart';
+import 'package:am_library/am_library.dart';
+import 'package:get_it/get_it.dart';
 
 enum AppEnvironment { local, preprod }
 
@@ -20,35 +23,53 @@ class ApiService {
     return http.Client();
   }
 
-  // Base URLs — matching test_api.py exactly
-  String get _docBase {
-    if (environment == AppEnvironment.local) {
-      return 'http://localhost:8080/v1';
-    }
-    return kIsWeb ? '/doc/processor/v1' : 'https://am.asrax.in/doc/processor/v1';
-  }
+  // Base URLs resolved dynamically based on environment switcher selection
+  String get _docBase => environment == AppEnvironment.local
+      ? 'http://localhost:8081/v1'
+      : '${EnvDomains.docs}/v1';
 
-  String get _emailBase {
-    if (environment == AppEnvironment.local) {
-      return 'http://localhost:8080/api/v1';
-    }
-    return kIsWeb ? '/email/api/v1' : 'https://am.asrax.in/email/api/v1';
-  }
+  String get _emailBase => environment == AppEnvironment.local
+      ? 'http://localhost:8080/api/v1'
+      : '${EnvDomains.gmail}/api/v1';
 
-  // Credentials — matching test_api.py exactly
+  // Credentials — fallback values for demo login sessions
   static const String _authToken =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzkwMDcyNzUsImlhdCI6MTc3ODkyMDg3NSwic3ViIjoiYjc1NzQzYzktZmUwZS00YzU0LThlZTAtOGRhMzUwY2MyN2IzIiwidXNlcm5hbWUiOiJzc2QyNjU4QGdtYWlsLmNvbSIsImVtYWlsIjoic3NkMjY1OEBnbWFpbC5jb20iLCJzY29wZXMiOlsicmVhZCIsIndyaXRlIl19.uqaDH_iDEZeSgnjOD7Q5gnG3MrE8jnxzhrPgYQjUUpU";
   static const String _userId = "b75743c9-fe0e-4c54-8ee0-8da350cc27b3";
 
-  Map<String, String> get _headers => {
-        'Authorization': 'Bearer $_authToken',
-        'X-User-ID': _userId,
-      };
+  Future<Map<String, String>> _getHeaders() async {
+    String? token;
+    String? userId;
+    try {
+      if (GetIt.I.isRegistered<SecureStorageService>()) {
+        final storage = GetIt.I<SecureStorageService>();
+        token = await storage.getAccessToken();
+        userId = await storage.getUserId();
+      } else {
+        final storage = SecureStorageService();
+        token = await storage.getAccessToken();
+        userId = await storage.getUserId();
+      }
+    } catch (e) {
+      debugPrint('[ApiService] Secure storage read failed: $e');
+    }
+
+    // Fallback to static demo credentials only if the session storage is completely empty
+    final finalToken = (token != null && token.isNotEmpty) ? token : _authToken;
+    final finalUserId = (userId != null && userId.isNotEmpty) ? userId : _userId;
+
+    return {
+      'Authorization': 'Bearer $finalToken',
+      'X-User-ID': finalUserId,
+    };
+  }
 
   final List<String> brokerTypes = [
     'ZERODHA',
     'UPSTOX',
     'GROWW',
+    'DHAN',
+    'MSTOCK',
     'ICICI_DIRECT',
     'HDFC_SECURITIES',
     'ANGEL_ONE',
@@ -60,22 +81,16 @@ class ApiService {
   Future<List<String>> getSupportedDocumentTypes() async {
     final url = '$_docBase/documents/types';
     debugPrint('[ApiService] GET $url');
-    final client = _makeClient();
-    try {
-      final response = await client
-          .get(Uri.parse(url), headers: _headers)
-          .timeout(const Duration(seconds: 10));
-      debugPrint('[ApiService] types: ${response.statusCode}');
-      if (response.statusCode == 200) {
-        return List<String>.from(jsonDecode(response.body));
-      }
-      throw Exception('types failed: ${response.statusCode} ${response.body}');
-    } catch (e) {
-      debugPrint('[ApiService] types error: $e');
-      throw Exception('Connection error: $e');
-    } finally {
-      client.close();
-    }
+    final apiClient = GetIt.I.isRegistered<ApiClient>() 
+        ? GetIt.I<ApiClient>() 
+        : ApiClient();
+
+    final headers = await _getHeaders();
+    return apiClient.get<List<String>>(
+      url,
+      headers: headers,
+      parser: (data) => List<String>.from(data),
+    );
   }
 
   Future<Map<String, dynamic>> processDocument(
@@ -84,9 +99,22 @@ class ApiService {
     final url = '$_docBase/documents/process';
     debugPrint('[ApiService] POST $url (type=$docType, broker=$brokerType)');
     var request = http.MultipartRequest('POST', Uri.parse(url));
-    request.headers.addAll(_headers);
-    request.fields['brokerType'] = brokerType;
-    request.fields['documentType'] = docType;
+    final headers = await _getHeaders();
+    request.headers.addAll(headers);
+    // Map custom UI broker types to backend enum values
+    String apiBrokerType = brokerType;
+    if (brokerType == 'GROWW') {
+      apiBrokerType = 'GROW';
+    }
+    request.fields['brokerType'] = apiBrokerType;
+    
+    // Map custom UI document types to backend-supported document types
+    String apiDocType = docType;
+    if (docType == 'PORTFOLIO_EQUITY' || docType == 'PORTFOLIO_ETF') {
+      apiDocType = 'STOCK_PORTFOLIO';
+    }
+    request.fields['documentType'] = apiDocType;
+    
     request.files
         .add(http.MultipartFile.fromBytes('file', fileBytes, filename: filename));
 
@@ -108,38 +136,41 @@ class ApiService {
   // --- Health Checks ---
 
   Future<bool> checkDocProcessorHealth() async {
+    // /documents/types is a public endpoint — no auth header needed.
+    // Using a plain http.get avoids false-offline status caused by expired JWT tokens.
     final url = '$_docBase/documents/types';
     debugPrint('[ApiService] Health -> GET $url');
-    final client = _makeClient();
     try {
-      final response = await client
-          .get(Uri.parse(url), headers: _headers)
-          .timeout(const Duration(seconds: 10));
-      debugPrint('[ApiService] Health: ${response.statusCode}');
-      return response.statusCode == 200;
+      final client = _makeClient();
+      final response = await client.get(Uri.parse(url))
+          .timeout(const Duration(seconds: 5));
+      client.close();
+      debugPrint('[ApiService] Health status: ${response.statusCode}');
+      return response.statusCode >= 200 && response.statusCode < 300;
     } catch (e) {
       debugPrint('[ApiService] Health failed: $e');
       return false;
-    } finally {
-      client.close();
     }
   }
 
   Future<bool> checkEmailExtractorHealth() async {
     final url = '$_emailBase/health';
     debugPrint('[ApiService] Email health -> GET $url');
-    final client = _makeClient();
     try {
-      final response = await client
-          .get(Uri.parse(url), headers: _headers)
-          .timeout(const Duration(seconds: 10));
-      debugPrint('[ApiService] Email health: ${response.statusCode}');
-      return response.statusCode == 200;
+      final apiClient = GetIt.I.isRegistered<ApiClient>() 
+          ? GetIt.I<ApiClient>() 
+          : ApiClient();
+          
+      final headers = await _getHeaders();
+      await apiClient.get<dynamic>(
+        url,
+        headers: headers,
+        parser: (data) => data,
+      );
+      return true;
     } catch (e) {
       debugPrint('[ApiService] Email health failed: $e');
       return false;
-    } finally {
-      client.close();
     }
   }
 
@@ -148,53 +179,81 @@ class ApiService {
   Future<Map<String, dynamic>> checkGmailStatus() async {
     final url = '$_emailBase/gmail/status';
     debugPrint('[ApiService] GET $url');
-    final client = _makeClient();
     try {
-      final response = await client
-          .get(Uri.parse(url), headers: _headers)
-          .timeout(const Duration(seconds: 10));
-      debugPrint('[ApiService] gmail/status: ${response.statusCode}');
-      if (response.statusCode == 200) return jsonDecode(response.body);
-      return {'connected': false, 'error': 'Status ${response.statusCode}'};
+      final apiClient = GetIt.I.isRegistered<ApiClient>() 
+          ? GetIt.I<ApiClient>() 
+          : ApiClient();
+          
+      final headers = await _getHeaders();
+      return await apiClient.get<Map<String, dynamic>>(
+        url,
+        headers: headers,
+        parser: (data) => Map<String, dynamic>.from(data),
+      );
     } catch (e) {
       debugPrint('[ApiService] gmail/status error: $e');
       return {'connected': false, 'error': '$e'};
-    } finally {
-      client.close();
     }
   }
 
   Future<Map<String, dynamic>> getBrokers() async {
     final url = '$_emailBase/brokers';
     debugPrint('[ApiService] GET $url');
-    final client = _makeClient();
-    try {
-      final response = await client
-          .get(Uri.parse(url), headers: _headers)
-          .timeout(const Duration(seconds: 10));
-      debugPrint('[ApiService] brokers: ${response.statusCode}');
-      if (response.statusCode == 200) return jsonDecode(response.body);
-      throw Exception('Failed to load brokers: ${response.statusCode}');
-    } finally {
-      client.close();
-    }
+    final apiClient = GetIt.I.isRegistered<ApiClient>() 
+        ? GetIt.I<ApiClient>() 
+        : ApiClient();
+        
+    final headers = await _getHeaders();
+    return apiClient.get<Map<String, dynamic>>(
+      url,
+      headers: headers,
+      parser: (data) => Map<String, dynamic>.from(data),
+    );
   }
 
   Future<Map<String, dynamic>> extractFromGmail(String broker) async {
     final url = '$_emailBase/extract/gmail/$broker?pan=PANK1234F';
     debugPrint('[ApiService] GET $url');
-    final client = _makeClient();
-    try {
-      final response = await client
-          .get(Uri.parse(url), headers: _headers)
-          .timeout(const Duration(seconds: 30));
-      debugPrint('[ApiService] extract: ${response.statusCode}');
-      if (response.statusCode == 200) return jsonDecode(response.body);
-      throw Exception(
-          'Extraction failed: ${response.statusCode}\n${response.body}');
-    } finally {
-      client.close();
-    }
+    final apiClient = GetIt.I.isRegistered<ApiClient>() 
+        ? GetIt.I<ApiClient>() 
+        : ApiClient();
+        
+    final headers = await _getHeaders();
+    return apiClient.get<Map<String, dynamic>>(
+      url,
+      headers: headers,
+      parser: (data) => Map<String, dynamic>.from(data),
+    );
+  }
+
+  Future<Map<String, dynamic>> connectGmail() async {
+    final url = '$_emailBase/gmail/connect';
+    debugPrint('[ApiService] GET $url');
+    final apiClient = GetIt.I.isRegistered<ApiClient>() 
+        ? GetIt.I<ApiClient>() 
+        : ApiClient();
+        
+    final headers = await _getHeaders();
+    return apiClient.get<Map<String, dynamic>>(
+      url,
+      headers: headers,
+      parser: (data) => Map<String, dynamic>.from(data),
+    );
+  }
+
+  Future<Map<String, dynamic>> disconnectGmail() async {
+    final url = '$_emailBase/gmail/disconnect';
+    debugPrint('[ApiService] DELETE $url');
+    final apiClient = GetIt.I.isRegistered<ApiClient>() 
+        ? GetIt.I<ApiClient>() 
+        : ApiClient();
+        
+    final headers = await _getHeaders();
+    return apiClient.delete<Map<String, dynamic>>(
+      url,
+      headers: headers,
+      parser: (data) => Map<String, dynamic>.from(data),
+    );
   }
 }
 
