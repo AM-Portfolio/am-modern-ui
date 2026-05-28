@@ -12,9 +12,9 @@ class TradeMetricsMapper {
       riskAmount: dto.riskAmount,
       rewardAmount: dto.rewardAmount,
       riskRewardRatio: dto.riskRewardRatio,
-      holdingTimeDays: dto.holdingTimeDays,
-      holdingTimeHours: dto.holdingTimeHours,
-      holdingTimeMinutes: dto.holdingTimeMinutes,
+      holdingTimeDays: dto.holdingTimeDays ?? 0,
+      holdingTimeHours: dto.holdingTimeHours ?? 0,
+      holdingTimeMinutes: dto.holdingTimeMinutes ?? 0,
       maxAdverseExcursion: dto.maxAdverseExcursion,
       maxFavorableExcursion: dto.maxFavorableExcursion,
     );

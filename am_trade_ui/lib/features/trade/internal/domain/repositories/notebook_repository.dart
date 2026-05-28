@@ -6,7 +6,6 @@ abstract class NotebookRepository {
   // Notebook Items
   Future<NotebookItem> createNotebookItem(NotebookItem item);
   Future<List<NotebookItem>> getNotebookItems({
-    required String userId,
     String? parentId,
     NotebookItemType? type,
   });
@@ -16,7 +15,7 @@ abstract class NotebookRepository {
 
   // Notebook Tags
   Future<NotebookTag> createNotebookTag(NotebookTag tag);
-  Future<List<NotebookTag>> getNotebookTags(String userId);
+  Future<List<NotebookTag>> getNotebookTags();
   Future<NotebookTag> updateNotebookTag(NotebookTag tag);
   Future<void> deleteNotebookTag(String tagId);
 }

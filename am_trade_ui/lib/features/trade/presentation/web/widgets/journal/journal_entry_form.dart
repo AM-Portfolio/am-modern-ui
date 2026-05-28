@@ -23,15 +23,13 @@ import 'hover_input_field.dart';
 
 class JournalEntryForm extends ConsumerStatefulWidget {
   const JournalEntryForm({
-    required this.userId,
-    required this.cubit,
+        required this.cubit,
     required this.portfolioId,
     super.key,
     this.entry,
   });
 
-  final String userId;
-  final JournalCubit cubit;
+    final JournalCubit cubit;
   final String portfolioId;
   final JournalEntry? entry;
 
@@ -160,12 +158,9 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
   void _onUrlChanged() {
     final text = _urlController.text.trim();
-    print('URL Changed: $text'); // Debug
     if (text.isNotEmpty && (text.startsWith('http://') || text.startsWith('https://'))) {
-      print('Setting preview for: $text'); // Debug
       setState(() => _urlPreview = text);
     } else {
-      print('Clearing preview'); // Debug
       setState(() => _urlPreview = null);
     }
   }
@@ -178,7 +173,7 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       switch (period) {
         case TradePeriodType.daily:
           final getTradeCalendarByDay = await ref.read(getTradeCalendarByDayProvider.future);
-          final calendar = await getTradeCalendarByDay(widget.userId, widget.portfolioId, date: date);
+          final calendar = await getTradeCalendarByDay(widget.portfolioId, date: date);
           final trades = calendar.allTrades;
           setState(() {
             _availableTrades = TradeHoldingViewModel.fromEntityList(trades);
@@ -192,10 +187,7 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
         case TradePeriodType.monthly:
           final getTradeCalendarByMonth = await ref.read(getTradeCalendarByMonthProvider.future);
-          final calendar = await getTradeCalendarByMonth(
-            widget.userId,
-            widget.portfolioId,
-            year: date.year,
+          final calendar = await getTradeCalendarByMonth(widget.portfolioId, year: date.year,
             month: date.month,
           );
           final trades = calendar.allTrades;
@@ -213,7 +205,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       // For weekly and yearly, use date range
       final getTradeCalendarByDateRange = await ref.read(getTradeCalendarByDateRangeProvider.future);
       final calendar = await getTradeCalendarByDateRange(
-        widget.userId,
         widget.portfolioId,
         startDate: startDate,
         endDate: endDate,
@@ -223,9 +214,9 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       setState(() {
         _availableTrades = TradeHoldingViewModel.fromEntityList(trades);
       });
-    } catch (e, stackTrace) {
-      print('Error loading trades for period: $e');
-      print('Stack trace: $stackTrace');
+    } catch (e) {
+      // Log error silently for debugging if needed but don't leak to console
+      // AppLogger.error('Error loading trades for period', error: e);
       setState(() {
         _availableTrades = [];
       });
@@ -329,7 +320,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
         if (widget.entry == null) {
           await widget.cubit.addJournalEntry(
-            userId: widget.userId,
             title: _titleController.text,
             content: content,
             entryDate: _entryDate,
@@ -353,7 +343,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         } else {
           await widget.cubit.editJournalEntry(
             entryId: widget.entry!.id,
-            userId: widget.userId,
             title: _titleController.text,
             content: content,
             entryDate: _entryDate,
@@ -528,7 +517,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         imageUrls: _imageUrls,
         onAttachmentsChanged: (urls) => setState(() => _imageUrls = urls),
         featureName: 'journal',
-        userId: widget.userId,
         isEditMode: _isEditMode,
       ),
     ],

@@ -18,12 +18,10 @@ import '../cubit/trade_report_cubit.dart';
 import '../cubit/trade_report_state.dart';
 
 class TradeReportPage extends ConsumerStatefulWidget {
-  final String userId;
-  final String? portfolioId;
+    final String? portfolioId;
 
   const TradeReportPage({
-    required this.userId,
-    this.portfolioId,
+        this.portfolioId,
     super.key,
   });
 

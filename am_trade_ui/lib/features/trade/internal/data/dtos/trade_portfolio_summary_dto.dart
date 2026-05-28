@@ -8,7 +8,7 @@ part 'trade_portfolio_summary_dto.g.dart';
 abstract class TradePortfolioSummaryDto with _$TradePortfolioSummaryDto {
   const factory TradePortfolioSummaryDto({
     required String portfolioId,
-    required String name,
+    String? name,
     String? description,
     String? ownerId,
     @Default(true) bool active,
@@ -21,7 +21,7 @@ abstract class TradePortfolioSummaryDto with _$TradePortfolioSummaryDto {
     @Default([]) List<String> tradeIds,
     List<String>? winningTradeIds,
     List<String>? losingTradeIds,
-    Map<String, dynamic>? assetAllocations,
+    List<dynamic>? assetAllocations,
   }) = _TradePortfolioSummaryDto;
 
   factory TradePortfolioSummaryDto.fromJson(Map<String, dynamic> json) =>

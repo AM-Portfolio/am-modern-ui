@@ -225,8 +225,15 @@ class _AddTradeFormState extends State<AddTradeForm> {
 
   void _onInstrumentSelected(Map<String, dynamic> instrument) {
     setState(() {
-      _symbolController.text = instrument['symbol'] ?? '';
-      _descriptionController.text = instrument['description'] ?? instrument['displayName'] ?? '';
+      _symbolController.text = instrument['symbol'] ?? 
+                              instrument['tradingSymbol'] ?? 
+                              instrument['tradingsymbol'] ?? 
+                              instrument['name'] ?? 
+                              '';
+      _descriptionController.text = instrument['description'] ?? 
+                                   instrument['displayName'] ?? 
+                                   instrument['name'] ?? 
+                                   '';
       
       // Auto-select exchange if available
       if (instrument['exchange'] != null) {

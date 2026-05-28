@@ -33,28 +33,11 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
 
     setState(() => _isLoading = true);
 
-    // Get userId from AuthCubit
-    final authState = context.read<AuthCubit>().state;
-    final userId = authState is Authenticated ? authState.user.id : null;
-
-    if (userId == null || userId.isEmpty) {
-      AppLogger.error('🚨 CRITICAL: Cannot save trade - userId is null or empty!', tag: 'AddTradeMobilePage');
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Authentication error. Please log in again.'), backgroundColor: Colors.red),
-        );
-      }
-      return;
-    }
-
-    AppLogger.info('✅ UserId validated: $userId', tag: 'AddTradeMobilePage');
-
     // CRITICAL: Set userId since it's not included in the form
-    final tradeToSave = tradeDetails.copyWith(userId: userId);
+    final tradeToSave = tradeDetails.copyWith();
 
-    AppLogger.debug('📋 Trade Details (with userId): ${tradeToSave.toString()}', tag: 'AddTradeMobilePage');
-    AppLogger.info('🚀 Calling TradeControllerCubit.addNewTrade() with userId: $userId', tag: 'AddTradeMobilePage');
+    AppLogger.debug('📋 Trade Details (without explicit userId, handled by token): ${tradeToSave.toString()}', tag: 'AddTradeMobilePage');
+    AppLogger.info('🚀 Calling TradeControllerCubit.addNewTrade()', tag: 'AddTradeMobilePage');
 
     // Trigger the trade save action
     context.read<TradeControllerCubit>().addNewTrade(tradeToSave);

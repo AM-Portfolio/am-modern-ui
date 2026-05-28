@@ -85,20 +85,18 @@ class TradePortfolioViewModel {
 
 /// View model for portfolio list
 class TradePortfolioListViewModel {
-  const TradePortfolioListViewModel({required this.userId, required this.portfolios, this.totalCount = 0});
+  const TradePortfolioListViewModel({required this.portfolios, this.totalCount = 0});
 
   /// Factory from domain entity
   factory TradePortfolioListViewModel.fromEntity(TradePortfolioList entity) => TradePortfolioListViewModel(
-    userId: entity.userId,
     portfolios: TradePortfolioViewModel.fromEntityList(entity.portfolios),
     totalCount: entity.totalCount,
   );
 
-  factory TradePortfolioListViewModel.empty(String userId) =>
-      TradePortfolioListViewModel(userId: userId, portfolios: []);
+  factory TradePortfolioListViewModel.empty() =>
+      TradePortfolioListViewModel(portfolios: []);
 
-  final String userId;
-  final List<TradePortfolioViewModel> portfolios;
+    final List<TradePortfolioViewModel> portfolios;
   final int totalCount;
 
   /// Computed properties

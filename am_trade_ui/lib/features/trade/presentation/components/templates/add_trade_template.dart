@@ -27,16 +27,14 @@ class AddTradeTemplate extends StatefulWidget {
   const AddTradeTemplate({
     required this.portfolioId,
     required this.onSave,
-    required this.userId,
-    super.key,
+        super.key,
     this.onCancel,
     this.initialData,
     this.isLoading = false,
   });
 
   final String portfolioId;
-  final String userId;
-  final Function(TradeDetails) onSave;
+    final Function(TradeDetails) onSave;
   final VoidCallback? onCancel;
   final TradeDetails? initialData;
   final bool isLoading;
@@ -97,7 +95,7 @@ class _AddTradeTemplateState extends State<AddTradeTemplate> {
   void initState() {
     super.initState();
     AppLogger.info(
-      '[AddTradeTemplate] Template initialized - portfolioId: ${widget.portfolioId}, userId: ${widget.userId}, hasInitialData: ${widget.initialData != null}',
+      '[AddTradeTemplate] Template initialized - portfolioId: ${widget.portfolioId}, hasInitialData: ${widget.initialData != null}',
       tag: 'AddTradeTemplate',
     );
     _initControllers();
@@ -542,7 +540,6 @@ class _AddTradeTemplateState extends State<AddTradeTemplate> {
                     _attachmentUrls.addAll(urls);
                   });
                 },
-                userId: widget.userId,
                 isEditMode: true,
               );
             },

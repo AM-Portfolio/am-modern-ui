@@ -6,6 +6,7 @@ import '../../../internal/domain/entities/notebook_tag.dart';
 import '../../cubit/journal/journal_cubit.dart';
 import '../../notebook/cubit/notebook_cubit.dart';
 import '../../notebook/cubit/notebook_state.dart';
+import '../../web/widgets/journal/journal_entry_form.dart';
 import 'journal_entry_detail_view.dart';
 import 'journal_entry_list_view.dart';
 import 'journal_navigation_sidebar.dart';
@@ -13,8 +14,7 @@ import 'journal_navigation_sidebar.dart';
 class JournalThreeColumnLayout extends StatefulWidget {
   const JournalThreeColumnLayout({
     required this.entries,
-    required this.userId,
-    required this.journalCubit,
+        required this.journalCubit,
     required this.notebookCubit,
     this.onAddFolder,
     this.onEntryDropped,
@@ -22,8 +22,7 @@ class JournalThreeColumnLayout extends StatefulWidget {
   });
 
   final List<JournalEntry> entries;
-  final String userId;
-  final JournalCubit journalCubit;
+    final JournalCubit journalCubit;
   final NotebookCubit notebookCubit;
   final VoidCallback? onAddFolder;
   final Function(JournalEntry entry, String folderId)? onEntryDropped;
@@ -35,6 +34,7 @@ class JournalThreeColumnLayout extends StatefulWidget {
 class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
   String _selectedFolder = 'Daily Journal';
   String? _selectedEntryId;
+  bool _isCreatingNew = false;
   bool _isLeftSidebarCollapsed = false;
 
   @override
@@ -99,18 +99,54 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
           JournalEntryListView(
             entries: widget.entries,
             selectedEntryId: _selectedEntryId,
-            onEntrySelected: (entry) => setState(() => _selectedEntryId = entry.id),
+            onEntrySelected: (entry) => setState(() {
+              _selectedEntryId = entry.id;
+              _isCreatingNew = false;
+            }),
+            onLogDayPressed: () => setState(() {
+              _selectedEntryId = null;
+              _isCreatingNew = true;
+            }),
           ),
 
           VerticalDivider(width: 1, color: Theme.of(context).dividerColor.withOpacity(0.2)),
 
           // Right Column: Detail View
           Expanded(
-            child: JournalEntryDetailView(
-              entry: selectedEntry,
-              userId: widget.userId,
-              cubit: widget.journalCubit,
-            ),
+            child: _isCreatingNew 
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(32, 32, 32, 16),
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_document, size: 24, color: Theme.of(context).colorScheme.primary),
+                            const SizedBox(width: 12),
+                            Text(
+                              'New Journal Entry',
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(),
+                      Expanded(
+                        child: JournalEntryForm(
+                          cubit: widget.journalCubit,
+                          portfolioId: '8a57024c-05c2-475b-a2c4-0545865efa4a', // TODO: Get from context or provider
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : JournalEntryDetailView(
+                  entry: selectedEntry,
+                  cubit: widget.journalCubit,
+                ),
           ),
         ],
       ),

@@ -44,10 +44,9 @@ class SimpleTradeEvent {
 
 /// Enhanced Trade Calendar Analytics Web Page using Cubit and Universal Templates
 class TradeCalendarAnalyticsWebPage extends ConsumerStatefulWidget {
-  const TradeCalendarAnalyticsWebPage({required this.userId, required this.portfolioId, super.key});
+  const TradeCalendarAnalyticsWebPage({ required this.portfolioId, super.key});
 
-  final String userId;
-  final String portfolioId;
+    final String portfolioId;
 
   @override
   ConsumerState<TradeCalendarAnalyticsWebPage> createState() => _TradeCalendarAnalyticsWebPageState();
@@ -73,11 +72,11 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
 
   /// Initialize trade calendar with optimal settings
   void _initializeTradeCalendar() async {
-    final params = (userId: widget.userId, portfolioId: widget.portfolioId);
-    final cubit = await ref.read(tradeCalendarCubitProvider(params).future);
+    final portfolioId = widget.portfolioId;
+    final cubit = await ref.read(tradeCalendarCubitProvider(portfolioId).future);
     
     // Start in yearly view
-    cubit.navigateToYearly(userId: widget.userId, portfolioId: widget.portfolioId, year: _selectedYear);
+    cubit.navigateToYearly( portfolioId: widget.portfolioId, year: _selectedYear);
   }
 
   /// Handle date selection changes through Cubit
@@ -92,13 +91,13 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
           _selectedYear = newYear;
         });
         // Navigate to the new year
-        cubit.navigateToYearly(userId: widget.userId, portfolioId: widget.portfolioId, year: newYear);
+        cubit.navigateToYearly( portfolioId: widget.portfolioId, year: newYear);
         return;
       }
     }
 
     // Apply filter through Cubit
-    cubit.applyDateFilter(userId: widget.userId, portfolioId: widget.portfolioId, dateSelection: selection);
+    cubit.applyDateFilter( portfolioId: widget.portfolioId, dateSelection: selection);
 
     // Show user feedback
     _showDateSelectionFeedback(selection);
@@ -130,8 +129,8 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
 
   @override
   Widget build(BuildContext context) {
-    final params = (userId: widget.userId, portfolioId: widget.portfolioId);
-    final cubitAsync = ref.watch(tradeCalendarCubitProvider(params));
+    final portfolioId = widget.portfolioId;
+    final cubitAsync = ref.watch(tradeCalendarCubitProvider(widget.portfolioId));
 
     return cubitAsync.when(
       data: (cubit) => Scaffold(
@@ -213,7 +212,7 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
                 icon: const Icon(Icons.refresh),
                 tooltip: 'Refresh Data',
                 onPressed: () {
-                  cubit.refresh(userId: widget.userId, portfolioId: widget.portfolioId);
+                  cubit.refresh( portfolioId: widget.portfolioId);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Refreshing calendar data...'), duration: Duration(seconds: 2)),
                   );
@@ -332,7 +331,7 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
         ),
         const SizedBox(height: 24),
         ElevatedButton.icon(
-          onPressed: () => cubit.retryLoad(userId: widget.userId, portfolioId: widget.portfolioId),
+          onPressed: () => cubit.retryLoad( portfolioId: widget.portfolioId),
           icon: const Icon(Icons.refresh),
           label: const Text('Retry'),
         ),

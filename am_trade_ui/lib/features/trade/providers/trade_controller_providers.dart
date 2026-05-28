@@ -23,9 +23,14 @@ final _tradeControllerRemoteDataSourceProvider = FutureProvider<TradeControllerR
 /// Provider for trade controller repository
 final _tradeControllerRepositoryProvider = FutureProvider<TradeControllerRepository>((ref) async {
   final remoteDataSource = await ref.watch(_tradeControllerRemoteDataSourceProvider.future);
+  final stompClient = ref.watch(stompClientProvider);
 
-  return TradeControllerRepositoryImpl(remoteDataSource: remoteDataSource);
+  return TradeControllerRepositoryImpl(
+    remoteDataSource: remoteDataSource,
+    stompClient: stompClient,
+  );
 });
+
 
 /// Provider for AddTrade use case
 final _addTradeProvider = FutureProvider<AddTrade>((ref) async {

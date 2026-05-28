@@ -4,22 +4,19 @@ import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/am_common.dart';
 import '../dtos/notebook_item_dto.dart';
 import '../dtos/notebook_tag_dto.dart';
+import 'trade_api_request_util.dart';
 
 abstract class NotebookRemoteDataSource {
   // Notebook Items
   Future<NotebookItemDto> createNotebookItem(NotebookItemDto request);
-  Future<List<NotebookItemDto>> getNotebookItems({
-    required String userId,
-    String? parentId,
-    NotebookItemType? type,
-  });
+  Future<List<NotebookItemDto>> getNotebookItems({String? parentId, NotebookItemType? type});
   Future<NotebookItemDto> getNotebookItem(String itemId);
   Future<NotebookItemDto> updateNotebookItem(String itemId, NotebookItemDto request);
   Future<void> deleteNotebookItem(String itemId);
 
   // Notebook Tags
   Future<NotebookTagDto> createNotebookTag(NotebookTagDto request);
-  Future<List<NotebookTagDto>> getNotebookTags(String userId);
+  Future<List<NotebookTagDto>> getNotebookTags();
   Future<NotebookTagDto> updateNotebookTag(String tagId, NotebookTagDto request);
   Future<void> deleteNotebookTag(String tagId);
 }
@@ -59,7 +56,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
       final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/items');
       final response = await _apiClient.post<NotebookItemDto>(
         fullUri,
-        body: request.toJson(),
+        body: tradeRequestBodyWithoutUserId(request.toJson()),
         parser: (data) => NotebookItemDto.fromJson(data! as Map<String, dynamic>),
       );
       AppLogger.info('Notebook item created successfully', tag: 'NotebookRemoteDataSource');
@@ -77,24 +74,20 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
   }
 
   @override
-  Future<List<NotebookItemDto>> getNotebookItems({
-    required String userId,
-    String? parentId,
-    NotebookItemType? type,
-  }) async {
+  Future<List<NotebookItemDto>> getNotebookItems({String? parentId, NotebookItemType? type}) async {
     AppLogger.methodEntry(
       'getNotebookItems',
       tag: 'NotebookRemoteDataSource',
-      params: {'userId': userId, 'parentId': parentId, 'type': type},
+      params: {'parentId': parentId, 'type': type},
     );
 
     try {
-      var queryParams = 'userId=$userId';
-      if (parentId != null) queryParams += '&parentId=$parentId';
-      if (type != null) queryParams += '&type=${type.toString().split('.').last}';
+      final queryParts = <String>[];
+      if (parentId != null) queryParts.add('parentId=$parentId');
+      if (type != null) queryParts.add('type=${type.toString().split('.').last}');
 
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/items');
-      final fullUri = '$baseUri?$queryParams';
+      final fullUri = queryParts.isEmpty ? baseUri : '$baseUri?${queryParts.join('&')}';
 
       final response = await _apiClient.get<List<NotebookItemDto>>(
         fullUri,
@@ -155,7 +148,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
 
       final response = await _apiClient.put<NotebookItemDto>(
         fullUri,
-        body: request.toJson(),
+        body: tradeRequestBodyWithoutUserId(request.toJson()),
         parser: (data) => NotebookItemDto.fromJson(data! as Map<String, dynamic>),
       );
       AppLogger.info('Notebook item updated successfully', tag: 'NotebookRemoteDataSource');
@@ -208,7 +201,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
       final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/tags');
       final response = await _apiClient.post<NotebookTagDto>(
         fullUri,
-        body: request.toJson(),
+        body: tradeRequestBodyWithoutUserId(request.toJson()),
         parser: (data) => NotebookTagDto.fromJson(data! as Map<String, dynamic>),
       );
       AppLogger.info('Notebook tag created successfully', tag: 'NotebookRemoteDataSource');
@@ -226,12 +219,12 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
   }
 
   @override
-  Future<List<NotebookTagDto>> getNotebookTags(String userId) async {
-    AppLogger.methodEntry('getNotebookTags', tag: 'NotebookRemoteDataSource', params: {'userId': userId});
+  Future<List<NotebookTagDto>> getNotebookTags() async {
+    AppLogger.methodEntry('getNotebookTags', tag: 'NotebookRemoteDataSource', params: {});
 
     try {
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/notebook/tags');
-      final fullUri = '$baseUri?userId=$userId';
+      final fullUri = baseUri;
 
       final response = await _apiClient.get<List<NotebookTagDto>>(
         fullUri,
@@ -266,7 +259,7 @@ class NotebookRemoteDataSourceImpl implements NotebookRemoteDataSource {
 
       final response = await _apiClient.put<NotebookTagDto>(
         fullUri,
-        body: request.toJson(),
+        body: tradeRequestBodyWithoutUserId(request.toJson()),
         parser: (data) => NotebookTagDto.fromJson(data! as Map<String, dynamic>),
       );
       AppLogger.info('Notebook tag updated successfully', tag: 'NotebookRemoteDataSource');

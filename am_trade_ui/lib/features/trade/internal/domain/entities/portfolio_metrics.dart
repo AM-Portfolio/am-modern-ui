@@ -23,7 +23,7 @@ abstract class PortfolioMetrics with _$PortfolioMetrics {
     double? maxDrawdownPercentage,
     double? sharpeRatio,
     double? sortinoRatio,
-    double? monthlyReturns,
-    double? weeklyReturns,
+    Map<String, double>? monthlyReturns,
+    Map<String, double>? weeklyReturns,
   }) = _PortfolioMetrics;
 }

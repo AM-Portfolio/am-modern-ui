@@ -43,7 +43,6 @@ class JournalAttachmentDto {
 @JsonSerializable(explicitToJson: true)
 class TradeJournalEntryRequestDto {
   const TradeJournalEntryRequestDto({
-    required this.userId,
     required this.title,
     required this.content,
     required this.entryDate,
@@ -59,7 +58,6 @@ class TradeJournalEntryRequestDto {
   factory TradeJournalEntryRequestDto.fromJson(Map<String, dynamic> json) =>
       _$TradeJournalEntryRequestDtoFromJson(json);
 
-  final String userId;
   final String? tradeId;
   final String title;
   final String content;

@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../internal/domain/entities/journal_template.dart';
+import '../../../internal/domain/entities/journal_template.dart';
 import '../../../journal_template_providers.dart';
 import 'template_form_builder.dart';
 
@@ -9,14 +9,12 @@ import 'template_form_builder.dart';
 class TemplateDetailDialog extends ConsumerStatefulWidget {
   const TemplateDetailDialog({
     required this.template,
-    required this.userId,
-    this.onUseTemplate,
+        this.onUseTemplate,
     super.key,
   });
 
   final JournalTemplate template;
-  final String userId;
-  final Function(JournalTemplate)? onUseTemplate;
+    final Function(JournalTemplate)? onUseTemplate;
 
   @override
   ConsumerState<TemplateDetailDialog> createState() =>
@@ -390,7 +388,6 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
       context: context,
       builder: (context) => TemplateFormBuilder(
         template: widget.template,
-        userId: widget.userId,
         onSubmit: (fieldValues) {
           widget.onUseTemplate?.call(widget.template);
           Navigator.of(context).pop();

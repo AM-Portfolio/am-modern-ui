@@ -18,12 +18,10 @@ import '../../internal/domain/entities/metrics/trade_metrics_response.dart';
 import '../../internal/domain/enums/metric_types.dart';
 
 class TradeMetricsPage extends ConsumerStatefulWidget {
-  final String userId;
-  final String? portfolioId;
+    final String? portfolioId;
 
   const TradeMetricsPage({
-    required this.userId,
-    this.portfolioId,
+        this.portfolioId,
     super.key,
   });
 
@@ -107,7 +105,6 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
             children: [
               // Filter Panel
               TradeMetricsFilterPanel(
-                userId: widget.userId,
                 initialConfig: _currentConfig,
                 onApplyFilter: _applyFilter,
                 onReset: () => _applyFilter(MetricsFilterConfig.empty()),

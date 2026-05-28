@@ -32,21 +32,19 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
 
   /// Load all templates for a user
   Future<void> loadTemplates({
-    required String userId,
-    JournalTemplateCategory? category,
+        JournalTemplateCategory? category,
     String? search,
   }) async {
     AppLogger.methodEntry(
       'loadTemplates',
       tag: 'JournalTemplateCubit',
-      params: {'userId': userId, 'category': category?.value, 'search': search},
+      params: {'category': category?.value, 'search': search},
     );
 
     emit(const JournalTemplateLoading());
 
     try {
       final templates = await _getTemplatesUseCase(
-        userId: userId,
         category: category,
         search: search,
       );
@@ -96,7 +94,6 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
   Future<void> createTemplate({
     required String name,
     required JournalTemplateCategory category,
-    required String createdBy,
     String? description,
     List<Map<String, dynamic>>? fields,
     List<String>? tags,
@@ -114,7 +111,6 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
       final template = await _createTemplateUseCase(
         name: name,
         category: category,
-        createdBy: createdBy,
         description: description,
         fields: fields,
         tags: tags,
@@ -142,8 +138,7 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
   /// Toggle favorite status of a template
   Future<void> toggleFavorite({
     required String templateId,
-    required String userId,
-  }) async {
+      }) async {
     AppLogger.methodEntry(
       'toggleFavorite',
       tag: 'JournalTemplateCubit',
@@ -153,7 +148,6 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
     try {
       final updatedTemplate = await _toggleFavoriteTemplateUseCase(
         templateId: templateId,
-        userId: userId,
       );
 
       AppLogger.info(
@@ -185,8 +179,7 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
   /// Delete a template
   Future<void> deleteTemplate({
     required String templateId,
-    required String userId,
-  }) async {
+      }) async {
     AppLogger.methodEntry(
       'deleteTemplate',
       tag: 'JournalTemplateCubit',
@@ -198,7 +191,6 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
     try {
       await _deleteTemplateUseCase(
         templateId: templateId,
-        userId: userId,
       );
 
       AppLogger.info(
@@ -221,8 +213,7 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
 
   /// Use a template to create a journal entry
   Future<void> useTemplate({
-    required String userId,
-    required String templateId,
+        required String templateId,
     required Map<String, dynamic> fieldValues,
     String? tradeId,
     String? customTitle,
@@ -237,7 +228,6 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
 
     try {
       final entry = await _useTemplateUseCase(
-        userId: userId,
         templateId: templateId,
         fieldValues: fieldValues,
         tradeId: tradeId,

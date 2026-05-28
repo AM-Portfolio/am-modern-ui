@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../internal/domain/enums/journal_template_category.dart';
+import '../../../internal/domain/enums/journal_template_category.dart';
 
 /// Animated category filter sidebar
 class TemplateCategoryFilter extends StatefulWidget {

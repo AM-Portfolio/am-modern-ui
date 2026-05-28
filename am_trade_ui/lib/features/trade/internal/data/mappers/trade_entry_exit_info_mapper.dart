@@ -10,7 +10,7 @@ class TradeEntryExitInfoMapper {
       price: dto.price,
       quantity: dto.quantity,
       totalValue: dto.totalValue,
-      fees: dto.fees,
+      fees: dto.fees ?? 0.0,
     );
   }
 

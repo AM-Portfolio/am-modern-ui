@@ -8,16 +8,16 @@ class GetTradeCalendarByQuarter {
   final TradeRepository _repository;
 
   /// Execute the use case to get trade calendar for a specific portfolio by quarter
-  Future<TradeCalendar> call(String userId, String portfolioId, {required int year, required int quarter}) async {
+  Future<TradeCalendar> call(String portfolioId, {required int year, required int quarter}) async {
     AppLogger.methodEntry(
       'GetTradeCalendarByQuarter.call',
       tag: 'GetTradeCalendarByQuarter',
-      params: {'userId': userId, 'portfolioId': portfolioId, 'year': year, 'quarter': quarter},
+      params: {},
     );
 
-    if (userId.isEmpty || portfolioId.isEmpty) {
+    if (portfolioId.isEmpty) {
       AppLogger.error('Validation failed - empty userId or portfolioId', tag: 'GetTradeCalendarByQuarter');
-      throw ArgumentError('User ID and Portfolio ID cannot be empty');
+      throw ArgumentError('Portfolio ID cannot be empty');
     }
 
     if (quarter < 1 || quarter > 4) {
@@ -28,7 +28,7 @@ class GetTradeCalendarByQuarter {
     try {
       AppLogger.info('Executing get trade calendar by quarter use case', tag: 'GetTradeCalendarByQuarter');
 
-      final result = await _repository.getTradeCalendarByQuarter(userId, portfolioId, year: year, quarter: quarter);
+      final result = await _repository.getTradeCalendarByQuarter(portfolioId, year: year, quarter: quarter);
 
       AppLogger.info('Trade calendar by quarter use case completed successfully', tag: 'GetTradeCalendarByQuarter');
       AppLogger.methodExit('GetTradeCalendarByQuarter.call', tag: 'GetTradeCalendarByQuarter', result: 'success');
