@@ -10,6 +10,7 @@ import '../internal/domain/entities/trade_holding.dart';
 import '../internal/domain/entities/trade_portfolio.dart';
 import '../internal/domain/entities/trade_summary.dart';
 import '../internal/domain/repositories/trade_repository.dart';
+import 'package:get_it/get_it.dart';
 import 'package:am_common/core/di/network_providers.dart';
 import 'package:am_library/am_library.dart';
 import '../internal/domain/usecases/get_trade_calendar.dart';
@@ -34,7 +35,7 @@ final _tradeRemoteDataSourceProvider = FutureProvider<TradeRemoteDataSource>((re
 /// Provider for trade repository
 final _tradeRepositoryProvider = FutureProvider<TradeRepository>((ref) async {
   final remoteDataSource = await ref.watch(_tradeRemoteDataSourceProvider.future);
-  final stompClient = ref.watch(stompClientProvider);
+  final stompClient = GetIt.I<AmStompClient>();
 
   return TradeRepositoryImpl(
     remoteDataSource: remoteDataSource,
