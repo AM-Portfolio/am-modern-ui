@@ -420,15 +420,12 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   @override
   Widget build(BuildContext context) => Form(
     key: _formKey,
-    child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 8, 24, 16), child: _buildMainContent()),
-  );
-
-  Widget _buildMainContent() => Builder(
-    builder: (context) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 650;
-          return Column(
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 650;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (isWide)
@@ -450,7 +447,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
                   ],
                 ),
               const SizedBox(height: 24),
-              // Moved from left column to span the whole bottom area nicely
               JournalFormActions(
                 isEditMode: _isEditMode,
                 isSubmitting: _isSubmitting,
@@ -460,10 +456,10 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
                 onCancel: () => setState(() => _isEditMode = false),
               ),
             ],
-          );
-        },
-      );
-    },
+          ),
+        );
+      },
+    ),
   );
 
   Widget _buildLeftColumn(BuildContext context) => Column(
