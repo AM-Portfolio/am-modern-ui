@@ -92,27 +92,27 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     _urlController = TextEditingController();
     _entryDate = widget.entry?.entryDate ?? DateTime.now();
 
+    final customFields = widget.entry?.customFields ?? {};
+    
     // Initialize planning phase from customFields
-    _planningBehaviorController = TextEditingController(text: widget.entry?.customFields['planningBehavior'] ?? '');
-    _planningMood = widget.entry?.customFields['planningMood'];
-    _planningSentiment = widget.entry?.customFields['planningSentiment'];
+    _planningBehaviorController = TextEditingController(text: customFields['planningBehavior'] ?? '');
+    _planningMood = customFields['planningMood'];
+    _planningSentiment = customFields['planningSentiment'];
 
     // Initialize mid phase from customFields
-    _midBehaviorController = TextEditingController(text: widget.entry?.customFields['midBehavior'] ?? '');
-    _midMood = widget.entry?.customFields['midMood'];
-    _midSentiment = widget.entry?.customFields['midSentiment'];
+    _midBehaviorController = TextEditingController(text: customFields['midBehavior'] ?? '');
+    _midMood = customFields['midMood'];
+    _midSentiment = customFields['midSentiment'];
 
     // Initialize end phase from customFields (with legacy fallback)
-  
-
-    _endBehaviorController = TextEditingController(text: widget.entry?.customFields['endBehavior'] ?? '');
+    _endBehaviorController = TextEditingController(text: customFields['endBehavior'] ?? '');
     _endMood =
-        widget.entry?.customFields['endMood'] ??
+        customFields['endMood'] ??
         (widget.entry?.behaviorPatternSummaries.isNotEmpty == true
             ? JournalHelpers.mapMoodFromEntry(widget.entry!.behaviorPatternSummaries.first.mood)
             : null);
     _endSentiment =
-        widget.entry?.customFields['endSentiment'] ??
+        customFields['endSentiment'] ??
         (widget.entry?.behaviorPatternSummaries.isNotEmpty == true
             ? JournalHelpers.mapSentimentFromValue(widget.entry!.behaviorPatternSummaries.first.marketSentiment)
             : null);
@@ -435,6 +435,16 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
             Expanded(child: _buildRightColumn()),
           ],
         ),
+        const SizedBox(height: 24),
+        // Moved from left column to span the whole bottom area nicely
+        JournalFormActions(
+          isEditMode: _isEditMode,
+          isSubmitting: _isSubmitting,
+          isNewEntry: widget.entry == null,
+          onSubmit: _submit,
+          onToggleEditMode: () => setState(() => _isEditMode = !_isEditMode),
+          onCancel: () => setState(() => _isEditMode = false),
+        ),
       ],
     ),
   );
@@ -447,15 +457,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       _buildBehaviorTracking(),
       const SizedBox(height: 12),
       RichTextEditor(controller: _quillController, readOnly: !_isEditMode),
-      const SizedBox(height: 16),
-      JournalFormActions(
-        isEditMode: _isEditMode,
-        isSubmitting: _isSubmitting,
-        isNewEntry: widget.entry == null,
-        onSubmit: _submit,
-        onToggleEditMode: () => setState(() => _isEditMode = !_isEditMode),
-        onCancel: () => setState(() => _isEditMode = false),
-      ),
     ],
   );
 

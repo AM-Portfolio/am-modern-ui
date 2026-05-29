@@ -223,7 +223,7 @@ class JournalNavigationSidebar extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            // Navigate to NEW TRADE
+            Navigator.of(context).pushNamed('/trade/add');
           },
           borderRadius: BorderRadius.circular(12),
           child: Row(
