@@ -59,6 +59,9 @@ dependencies:
   dio: ^5.4.0
   webview_flutter: ^4.9.0
   webview_flutter_web: ^0.2.3+4
+  flutter_localizations:
+    sdk: flutter
+  flutter_quill: ^11.5.0
 
 dev_dependencies:
   flutter_test:
