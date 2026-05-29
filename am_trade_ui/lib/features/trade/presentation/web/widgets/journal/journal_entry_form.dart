@@ -424,29 +424,46 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   );
 
   Widget _buildMainContent() => Builder(
-    builder: (context) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 2, child: _buildLeftColumn(context)),
-            const SizedBox(width: 20),
-            Expanded(child: _buildRightColumn()),
-          ],
-        ),
-        const SizedBox(height: 24),
-        // Moved from left column to span the whole bottom area nicely
-        JournalFormActions(
-          isEditMode: _isEditMode,
-          isSubmitting: _isSubmitting,
-          isNewEntry: widget.entry == null,
-          onSubmit: _submit,
-          onToggleEditMode: () => setState(() => _isEditMode = !_isEditMode),
-          onCancel: () => setState(() => _isEditMode = false),
-        ),
-      ],
-    ),
+    builder: (context) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 650;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isWide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 2, child: _buildLeftColumn(context)),
+                    const SizedBox(width: 20),
+                    Expanded(child: _buildRightColumn()),
+                  ],
+                )
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildLeftColumn(context),
+                    const SizedBox(height: 24),
+                    _buildRightColumn(),
+                  ],
+                ),
+              const SizedBox(height: 24),
+              // Moved from left column to span the whole bottom area nicely
+              JournalFormActions(
+                isEditMode: _isEditMode,
+                isSubmitting: _isSubmitting,
+                isNewEntry: widget.entry == null,
+                onSubmit: _submit,
+                onToggleEditMode: () => setState(() => _isEditMode = !_isEditMode),
+                onCancel: () => setState(() => _isEditMode = false),
+              ),
+            ],
+          );
+        },
+      );
+    },
   );
 
   Widget _buildLeftColumn(BuildContext context) => Column(

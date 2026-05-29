@@ -17,6 +17,7 @@ class JournalThreeColumnLayout extends StatefulWidget {
         required this.journalCubit,
     required this.notebookCubit,
     this.onAddFolder,
+    this.onNewTradeTap,
     this.onEntryDropped,
     super.key,
   });
@@ -25,6 +26,7 @@ class JournalThreeColumnLayout extends StatefulWidget {
     final JournalCubit journalCubit;
   final NotebookCubit notebookCubit;
   final VoidCallback? onAddFolder;
+  final VoidCallback? onNewTradeTap;
   final Function(JournalEntry entry, String folderId)? onEntryDropped;
 
   @override
@@ -88,6 +90,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
                 folders: folders,
                 tags: tags,
                 onAddFolder: widget.onAddFolder,
+                onNewTradeTap: widget.onNewTradeTap,
                 onEntryDropped: widget.onEntryDropped,
               );
             },
