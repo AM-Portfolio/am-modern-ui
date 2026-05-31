@@ -1,3 +1,8 @@
+global:
+  image:
+    imagePullSecrets:
+      - name: github-registry-secret
+
 replicaCount: 1
 service:
   port: 8080
@@ -10,6 +15,14 @@ global:
     pullPolicy: Always
     imagePullSecrets:
       - name: github-registry-secret
+
+appConfig:
+  domain: "am.munish.org"
+
+configMap:
+  enabled: true
+  mountPath: /usr/share/nginx/html/config.json
+  subPath: config.json
 
 image:
   repository: am-modern-ui

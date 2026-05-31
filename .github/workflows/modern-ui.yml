@@ -4,9 +4,9 @@ on:
   push:
     branches: ["main", "develop", "test/**", "feature/**", "hotfix/**", "fix/**"]
     paths-ignore:
-      - 'docs/**'
-      - 'README.md'
-      - '.env.example'
+      - "docs/**"
+      - "README.md"
+      - ".env.example"
   pull_request:
     branches: ["main", "develop", "test/**", "feature/**", "hotfix/**", "fix/**"]
   workflow_dispatch:
@@ -19,11 +19,11 @@ jobs:
       packages: write
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish.yml@main
     with:
-      language: 'flutter'
-      working_directory: 'am_app'
-      build_context: '..'
-      image_name: 'am-modern-ui'
-      preprod_namespace: 'am-apps-preprod'
-      prod_namespace: 'am-apps-prod'
+      language: "flutter"
+      working_directory: "am_app"
+      build_context: ".."
+      image_name: "am-modern-ui"
+      preprod_namespace: "am-apps-preprod"
+      prod_namespace: "am-apps-prod"
       deploy_prod: true
     secrets: inherit

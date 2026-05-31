@@ -83,3 +83,6 @@ scripts/run_local.sh
 
 # OpenAPI spec files (contain localhost server URLs)
 analysis_openapi.json
+
+# Machine-specific UI config (copy from config.local.json and edit ports)
+am_app/web/config.local.json
