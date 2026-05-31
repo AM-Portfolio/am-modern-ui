@@ -37,6 +37,7 @@ class PortfolioLoaded extends PortfolioState {
     this.isRefreshing = false,
     this.searchQuery = '',
     this.searchResults = const [],
+    this.isLiveDataActive = false,
   });
   final String portfolioId;
   final PortfolioSummary summary;
@@ -45,6 +46,7 @@ class PortfolioLoaded extends PortfolioState {
   final bool isRefreshing;
   final String searchQuery;
   final List<PortfolioHolding> searchResults;
+  final bool isLiveDataActive;
 
   PortfolioLoaded copyWith({
     String? portfolioId,
@@ -55,6 +57,7 @@ class PortfolioLoaded extends PortfolioState {
     bool? isRefreshing,
     String? searchQuery,
     List<PortfolioHolding>? searchResults,
+    bool? isLiveDataActive,
   }) => PortfolioLoaded(
     portfolioId: portfolioId ?? this.portfolioId,
     summary: summary ?? this.summary,
@@ -64,6 +67,7 @@ class PortfolioLoaded extends PortfolioState {
     isRefreshing: isRefreshing ?? this.isRefreshing,
     searchQuery: searchQuery ?? this.searchQuery,
     searchResults: searchResults ?? this.searchResults,
+    isLiveDataActive: isLiveDataActive ?? this.isLiveDataActive,
   );
 
   @override
@@ -74,6 +78,7 @@ class PortfolioLoaded extends PortfolioState {
     isRefreshing,
     searchQuery,
     searchResults,
+    isLiveDataActive,
   ];
 }
 

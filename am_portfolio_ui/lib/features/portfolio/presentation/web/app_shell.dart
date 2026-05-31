@@ -24,6 +24,8 @@ class AppShell extends StatelessWidget {
     final String location = GoRouterState.of(context).uri.toString();
 
     return BlocBuilder<PortfolioCubit, PortfolioState>(
+      buildWhen: (previous, current) =>
+          previous.portfolioList != current.portfolioList,
       builder: (context, state) {
         final portfolios = state.portfolioList?.portfolios;
 

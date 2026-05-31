@@ -125,6 +125,7 @@ class HeatmapSelectorTemplate extends StatefulWidget {
 
 class _HeatmapSelectorTemplateState extends State<HeatmapSelectorTemplate> {
   late HeatmapSelectorCore _effectiveCore;
+  SelectorLayoutType? _lastNotifiedLayout;
 
   @override
   void initState() {
@@ -257,9 +258,12 @@ class _HeatmapSelectorTemplateState extends State<HeatmapSelectorTemplate> {
     final layout = _effectiveLayout;
 
     // Notify layout changes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.onLayoutChanged?.call(layout);
-    });
+    if (_lastNotifiedLayout != layout) {
+      _lastNotifiedLayout = layout;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onLayoutChanged?.call(layout);
+      });
+    }
 
     switch (_platformType) {
       case _PlatformType.mobile:

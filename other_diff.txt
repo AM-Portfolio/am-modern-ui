@@ -1,0 +1,276 @@
+﻿diff --git a/am_app/Dockerfile b/am_app/Dockerfile
+index b3e8afb..fd26a6c 100644
+--- a/am_app/Dockerfile
++++ b/am_app/Dockerfile
+@@ -46,7 +46,7 @@ ARG AM_USER_BASE_URL=https://am-dev.asrax.in/users
+ ARG AM_PORTFOLIO_BASE_URL=https://am-dev.asrax.in/portfolio
+ ARG AM_TRADE_BASE_URL=https://am-dev.asrax.in/trade
+ ARG AM_GMAIL_BASE_URL=https://am-dev.asrax.in/gmail
+-ARG AM_MARKET_WS_URL=wss://am-dev.asrax.in/market/ws/market-data-stream
++ARG AM_MARKET_WS_URL=wss://am-dev.asrax.in/v1/streams
+ ARG AM_MARKET_BASE_URL=https://am-dev.asrax.in/market
+ ARG AM_ANALYSIS_BASE_URL=https://am-dev.asrax.in/analysis
+ 
+@@ -71,7 +71,7 @@ RUN flutter build web --release \
+ COPY am_app/nginx.conf /app/nginx.conf
+ 
+ # ── RUNTIME STAGE ────────────────────────────────────────────────────────
+-FROM nginx:1.25-alpine
++FROM nginx:alpine
+ 
+ # Copy built web files from build stage
+ COPY --from=build-env /app/am_app/build/web /usr/share/nginx/html
+diff --git a/am_app/lib/core/di/injection.dart b/am_app/lib/core/di/injection.dart
+index 223c63e..d7a5cd6 100644
+--- a/am_app/lib/core/di/injection.dart
++++ b/am_app/lib/core/di/injection.dart
+@@ -94,23 +94,7 @@ void _registerAuthDependencies() {
+     () => auth_ui.GoogleSignInService(),
+   );
+ 
+-  getIt.registerLazySingleton<Dio>(() {
+-    final dio = Dio();
+-    dio.interceptors.add(InterceptorsWrapper(
+-      onRequest: (options, handler) async {
+-        final path = options.path;
+-        if (!path.contains('/v1/tokens') && !path.contains('/register')) {
+-          final storage = getIt<common.SecureStorageService>();
+-          final token = await storage.getAccessToken();
+-          if (token != null && token.isNotEmpty) {
+-            options.headers['Authorization'] = 'Bearer $token';
+-          }
+-        }
+-        handler.next(options);
+-      },
+-    ));
+-    return dio;
+-  });
++  getIt.registerLazySingleton<Dio>(() => Dio());
+ 
+   // ApiClient now from ServiceRegistry
+   // ApiClient is handled by ServiceRegistry.initialize()
+diff --git a/am_app/macos/Flutter/GeneratedPluginRegistrant.swift b/am_app/macos/Flutter/GeneratedPluginRegistrant.swift
+index 039b2f7..cb51f5a 100644
+--- a/am_app/macos/Flutter/GeneratedPluginRegistrant.swift
++++ b/am_app/macos/Flutter/GeneratedPluginRegistrant.swift
+@@ -10,7 +10,6 @@ import file_picker
+ import file_selector_macos
+ import flutter_secure_storage_macos
+ import google_sign_in_ios
+-import path_provider_foundation
+ import quill_native_bridge_macos
+ import shared_preferences_foundation
+ import sqflite_darwin
+@@ -24,11 +23,10 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
+   FileSelectorPlugin.register(with: registry.registrar(forPlugin: "FileSelectorPlugin"))
+   FlutterSecureStoragePlugin.register(with: registry.registrar(forPlugin: "FlutterSecureStoragePlugin"))
+   FLTGoogleSignInPlugin.register(with: registry.registrar(forPlugin: "FLTGoogleSignInPlugin"))
+-  PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
+   QuillNativeBridgePlugin.register(with: registry.registrar(forPlugin: "QuillNativeBridgePlugin"))
+   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
+   SqflitePlugin.register(with: registry.registrar(forPlugin: "SqflitePlugin"))
+   UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
+-  VideoPlayerPlugin.register(with: registry.registrar(forPlugin: "VideoPlayerPlugin"))
++  FVPVideoPlayerPlugin.register(with: registry.registrar(forPlugin: "FVPVideoPlayerPlugin"))
+   WebViewFlutterPlugin.register(with: registry.registrar(forPlugin: "WebViewFlutterPlugin"))
+ }
+diff --git a/am_app/pubspec.yaml b/am_app/pubspec.yaml
+index 430e9b3..9e59850 100644
+--- a/am_app/pubspec.yaml
++++ b/am_app/pubspec.yaml
+@@ -65,6 +65,3 @@ dev_dependencies:
+ 
+ flutter:
+   uses-material-design: true
+-
+-dependency_overrides:
+-  path_provider_foundation: 2.3.1
+diff --git a/am_auth_ui/lib/features/authentication/data/datasources/auth_remote_datasource.dart b/am_auth_ui/lib/features/authentication/data/datasources/auth_remote_datasource.dart
+index 96e7f0d..71d009f 100644
+--- a/am_auth_ui/lib/features/authentication/data/datasources/auth_remote_datasource.dart
++++ b/am_auth_ui/lib/features/authentication/data/datasources/auth_remote_datasource.dart
+@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
+ import 'package:am_auth_ui/core/constants/auth_endpoints.dart';
+ import 'package:am_design_system/core/constants/auth_constants.dart';
+ import 'package:am_design_system/core/errors/exceptions.dart';
++import 'package:am_design_system/core/errors/exceptions.dart';
+ import '../models/auth_result_model.dart';
+ import '../models/auth_tokens_model.dart';
+ import '../models/user_model.dart';
+@@ -127,6 +128,7 @@ class AuthRemoteDataSource implements AuthDataSource {
+         
+         final model = AuthResultModel(user: user, tokens: tokens);
+         
++        print('✅ [BACKEND] Parsed user: ${model.user.email}, ID: ${model.user.id}');
+         AppLogger.info('🔵 [BACKEND] Parsed user: ${model.user.email}');
+         return model;
+       } else {
+diff --git a/am_auth_ui/lib/features/authentication/data/repositories/auth_repository_impl.dart b/am_auth_ui/lib/features/authentication/data/repositories/auth_repository_impl.dart
+index df0e60e..e053971 100644
+--- a/am_auth_ui/lib/features/authentication/data/repositories/auth_repository_impl.dart
++++ b/am_auth_ui/lib/features/authentication/data/repositories/auth_repository_impl.dart
+@@ -269,7 +269,20 @@ class AuthRepositoryImpl implements AuthRepository {
+   Future<Either<Failure, bool>> checkAuthStatus() async {
+     try {
+       final accessToken = await _storageService.getAccessToken();
+-      if (accessToken == null) return const Right(false);
++      if (accessToken == null) {
++        // If stored token is missing, check for a development fallback
++        try {
++          final config = ConfigService.config;
++          if (kDebugMode && 
++              config.devAuthToken != null && 
++              config.devAuthToken!.isNotEmpty &&
++              config.devUserId != null &&
++              config.devUserId!.isNotEmpty) {
++            return const Right(true);
++          }
++        } catch (_) {}
++        return const Right(false);
++      }
+ 
+       final isExpired = await _storageService.isTokenExpired();
+       if (isExpired) {
+diff --git a/am_common/lib/core/config/config_service.dart b/am_common/lib/core/config/config_service.dart
+index 7a56d71..cba3e11 100644
+--- a/am_common/lib/core/config/config_service.dart
++++ b/am_common/lib/core/config/config_service.dart
+@@ -25,31 +25,31 @@ class ConfigService {
+         environment: Environment.development,
+         google: const GoogleConfig(webClientId: ''),
+         api: ApiConfig(
+-          baseUrl: 'https://am-dev.asrax.in/analysis',
++          baseUrl: 'https://am.asrax.in/analysis',
+           timeout: 30000,
+           useMockData: false,
+           auth: const AuthApiConfig(
+-            baseUrl: 'https://am-dev.asrax.in/auth',
+-            loginEndpoint: '/v1/tokens',
++            baseUrl: 'https://am.asrax.in/auth',
++            loginEndpoint: '/v1/auth/login',
+             logoutEndpoint: '/v1/auth/logout',
+             refreshTokenEndpoint: '/v1/auth/refresh',
+-            googleLoginEndpoint: '/v1/auth/google/token',
++            googleLoginEndpoint: '/v1/auth/google',
+           ),
+           user: const UserApiConfig(
+-            baseUrl: 'https://am-dev.asrax.in/users',
++            baseUrl: 'https://am.asrax.in/users',
+             registerEndpoint: '/v1/auth/register',
+             forgotPasswordEndpoint: '/v1/auth/request-reset',
+             resetPasswordEndpoint: '/v1/auth/confirm-reset',
+           ),
+           portfolio: const PortfolioApiConfig(
+-            baseUrl: 'https://am-dev.asrax.in/portfolio',
++            baseUrl: 'https://am.asrax.in/portfolio',
+             holdingsResource: '/v1/portfolios/holdings',
+             summaryResource: '/v1/portfolios/summary',
+             transactionsResource: '/v1/portfolios/transactions',
+             listResource: '/v1/portfolios/list',
+           ),
+           trade: const TradeApiConfig(
+-            baseUrl: 'https://am-dev.asrax.in/trade',
++            baseUrl: 'https://am.asrax.in/trade',
+             portfolioListResource: '/v1/portfolio-summary/by-owner',
+             portfolioSummaryResource: '/v1/portfolio-summary',
+             holdingsResource: '/v1/trades/details/portfolio',
+@@ -82,10 +82,10 @@ class ConfigService {
+         // ── Auth (PRODUCTION — not running locally) ──
+         auth: AuthApiConfig(
+           baseUrl: const String.fromEnvironment('AM_AUTH_BASE_URL', defaultValue: 'https://am-dev.asrax.in/auth'),
+-          loginEndpoint: '/v1/tokens',
++          loginEndpoint: '/v1/auth/login',
+           logoutEndpoint: '/v1/auth/logout',
+           refreshTokenEndpoint: '/v1/auth/refresh',
+-          googleLoginEndpoint: '/v1/auth/google/token',
++          googleLoginEndpoint: '/v1/auth/google',
+           connectTimeout: 30000,
+           receiveTimeout: 30000,
+           sendTimeout: 30000,
+diff --git a/am_common/lib/core/services/price_service.dart b/am_common/lib/core/services/price_service.dart
+index bd107d6..5328102 100644
+--- a/am_common/lib/core/services/price_service.dart
++++ b/am_common/lib/core/services/price_service.dart
+@@ -7,7 +7,6 @@ import 'package:am_common/core/models/price_update_model.dart';
+ import 'package:am_common/am_common.dart';
+ import 'package:am_common/core/network/websocket/am_websocket_client.dart';
+ import 'package:http/http.dart' as http;
+-import 'package:am_library/am_library.dart';
+ 
+ /// Singleton service to manage global WebSocket connection for real-time prices.
+ class PriceService {
+@@ -81,13 +80,9 @@ class PriceService {
+        final url = Uri.parse('$baseUrl$endpoint');
+        AppLogger.info('PriceService: Subscribing to $symbols via $url');
+        
+-       final token = await ServiceRegistry.storage.getAccessToken();
+        final response = await http.post(
+          url,
+-         headers: {
+-           'Content-Type': 'application/json',
+-           if (token != null) 'Authorization': 'Bearer $token',
+-         },
++         headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'instrumentKeys': symbols,
+            'provider': provider,
+diff --git a/package.json b/package.json
+index 7048fc2..6d54270 100644
+--- a/package.json
++++ b/package.json
+@@ -33,8 +33,9 @@
+     "get:trade": "cd am_trade_ui && flutter pub get",
+     "gen:trade": "cd am_trade_ui && dart run build_runner build --delete-conflicting-outputs",
+     "run:trade": "cd am_trade_ui && flutter run -d chrome --web-port 8083",
++    "run:trade:local": "cd am_trade_ui && flutter run -d chrome --web-port 8083 --dart-define=AM_TRADE_BASE_URL=http://localhost:8080 --dart-define=AM_DEV_AUTH_TOKEN=mock_dev_token --dart-define=AM_DEV_USER_ID=local-dev-user",
+     "build:trade": "cd am_trade_ui && flutter build web --no-wasm-dry-run",
+-    "build:trade:local": "cd am_trade_ui && flutter build web --no-wasm-dry-run --dart-define=AM_TRADE_BASE_URL=http://localhost:8080",
++    "build:trade:local": "cd am_trade_ui && flutter build web --no-wasm-dry-run --dart-define=AM_TRADE_BASE_URL=http://localhost:8080 --dart-define=AM_DEV_AUTH_TOKEN=mock_dev_token --dart-define=AM_DEV_USER_ID=local-dev-user",
+     "dev:trade": "npm run build:trade && npx serve am_trade_ui/build/web -p 8083 --no-clipboard",
+     "dev:trade:local": "npm run build:trade:local && npx serve am_trade_ui/build/web -p 8083 --no-clipboard",
+     "test:trade": "cd am_trade_ui && flutter test",
+@@ -45,7 +46,7 @@
+     "─── ANALYSIS ───": "echo",
+     "clean:analysis": "cd am_analysis/sdk && flutter clean && cd ../common && flutter clean && cd ../ui && flutter clean",
+     "get:analysis": "cd am_analysis/sdk && flutter pub get && cd ../common && flutter pub get && cd ../ui && flutter pub get",
+-    "gen:analysis": "cd am_analysis/common && dart run build_runner build --delete-conflicting-outputs",
++    "gen:analysis": "cd am_analysis/ui && dart run build_runner build --delete-conflicting-outputs",
+     "─── DASHBOARD ───": "echo",
+     "clean:dashboard": "cd am_dashboard_ui && flutter clean",
+     "get:dashboard": "cd am_dashboard_ui && flutter pub get",
+diff --git a/scripts/run_local.py b/scripts/run_local.py
+index 8cd8619..699f6c7 100644
+--- a/scripts/run_local.py
++++ b/scripts/run_local.py
+@@ -39,7 +39,7 @@ def run_with_logging(cmd, cwd, env, log_name):
+     os.makedirs(logs_dir, exist_ok=True)
+     log_file = os.path.join(logs_dir, f"{log_name}.log")
+     
+-    print(f"[LOG] Logging output to {log_file}")
++    print(f"📖 Logging output to {log_file}")
+     with open(log_file, "a") as f:
+         f.write("\n\n--- NEW EXECUTION ---\n")
+         is_windows = os.name == "nt"
+@@ -198,11 +198,11 @@ def all_pub_get():
+             if os.path.exists(os.path.join(live_path, "pubspec.yaml")):
+                 run_flutter_cmd(os.path.join(item, "live"), "pub get")
+                 print("-" * 40)
+-    print("Finished resolving all packages.")
++    print("✅ Finished resolving all packages.")
+ 
+ def all_build_runner():
+     """Run flutter pub run build_runner build on all subdirectories containing pubspec.yaml"""
+-    print("Running 'flutter pub run build_runner build' on all modules...")
++    print("🚀 Running 'flutter pub run build_runner build' on all modules...")
+     for item in os.listdir(workspace_root):
+         item_path = os.path.join(workspace_root, item)
+         if os.path.isdir(item_path):
+@@ -215,7 +215,7 @@ def all_build_runner():
+             if os.path.exists(os.path.join(live_path, "pubspec.yaml")):
+                 run_flutter_cmd(os.path.join(item, "live"), "pub run build_runner build --delete-conflicting-outputs")
+                 print("-" * 40)
+-    print("Finished building all packages.")
++    print("✅ Finished building all packages.")
+ 
+ if __name__ == "__main__":
+     if len(sys.argv) < 2:

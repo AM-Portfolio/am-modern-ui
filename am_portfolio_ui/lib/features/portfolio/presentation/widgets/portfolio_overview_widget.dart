@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -107,6 +108,9 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
         if (current is PortfolioLoaded && current.portfolioId == portfolioId) {
           return false;
         }
+        if (current is PortfolioLoaded && current.portfolioId != portfolioId) {
+          return false; // Prevent ping-pong loop when multiple widgets are mounted
+        }
         return current is PortfolioListLoaded ||
             current is PortfolioInitial ||
             (current is PortfolioLoading && previous is! PortfolioLoading);
@@ -192,11 +196,6 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
         // 2. Loaded State (show when cubit has data for this portfolio)
         if (state is PortfolioLoaded) {
           if (state.portfolioId != portfolioId) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
-              }
-            });
             return _buildOverviewSkeleton(context);
           }
           return LayoutBuilder(
@@ -446,24 +445,35 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
     final verticalPadding = compact ? 12.0 : 16.0;
     final horizontalPadding = compact ? 12.0 : 16.0;
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: verticalPadding,
-      ),
-      decoration: BoxDecoration(
-        gradient: isHighlight
-            ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [accentColor, accentColor.withValues(alpha: 0.85)],
-              )
-            : LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [cardColor, cardColor.withValues(alpha: 0.95)],
-              ),
-        borderRadius: BorderRadius.circular(16), // Softer corners
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: verticalPadding,
+          ),
+          decoration: BoxDecoration(
+            gradient: isHighlight
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      accentColor.withValues(alpha: 0.8),
+                      accentColor.withValues(alpha: 0.6),
+                    ],
+                  )
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      cardColor.withValues(alpha: isDark ? 0.4 : 0.6),
+                      cardColor.withValues(alpha: isDark ? 0.2 : 0.4),
+                    ],
+                  ),
+            borderRadius: BorderRadius.circular(16), // Softer corners
         border: Border.all(
           color: isHighlight
               ? Colors.white.withValues(alpha: 0.2)
@@ -577,7 +587,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           ),
         ],
       ),
-    );
+    )));
   }
 
   // Helper to format currency

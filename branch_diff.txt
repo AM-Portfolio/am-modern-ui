@@ -1,0 +1,1180 @@
+﻿diff --git a/am_analysis/common/lib/models/allocation_item.dart b/am_analysis/common/lib/models/allocation_item.dart
+index 64c146d..999a5b5 100644
+--- a/am_analysis/common/lib/models/allocation_item.dart
++++ b/am_analysis/common/lib/models/allocation_item.dart
+@@ -19,11 +19,19 @@ class AllocationItem {
+   final double percentage;
+   final double value;
+   final List<AllocationHolding>? holdings;
++  final double? dayChangePercentage;
++  final double? dayChangeAmount;
++  final double? totalChangePercentage;
++  final double? totalChangeAmount;
+ 
+   AllocationItem({
+     required this.name,
+     required this.percentage,
+     required this.value,
+     this.holdings,
++    this.dayChangePercentage,
++    this.dayChangeAmount,
++    this.totalChangePercentage,
++    this.totalChangeAmount,
+   });
+ }
+diff --git a/am_analysis/common/lib/models/performance_data_point.dart b/am_analysis/common/lib/models/performance_data_point.dart
+index 5b322df..d45fefb 100644
+--- a/am_analysis/common/lib/models/performance_data_point.dart
++++ b/am_analysis/common/lib/models/performance_data_point.dart
+@@ -7,3 +7,15 @@ class PerformanceDataPoint {
+     required this.value,
+   });
+ }
++
++class PerformanceData {
++  final List<PerformanceDataPoint> dataPoints;
++  final double? totalReturnPercentage;
++  final double? totalReturnValue;
++
++  PerformanceData({
++    required this.dataPoints,
++    this.totalReturnPercentage,
++    this.totalReturnValue,
++  });
++}
+diff --git a/am_analysis/ui/lib/mappers/analysis_mapper.dart b/am_analysis/ui/lib/mappers/analysis_mapper.dart
+index f5db17a..6ac3122 100644
+--- a/am_analysis/ui/lib/mappers/analysis_mapper.dart
++++ b/am_analysis/ui/lib/mappers/analysis_mapper.dart
+@@ -71,6 +71,10 @@ class AnalysisMapper {
+         percentage: _sanitizePercent(item.percentage ?? 0.0),
+         value: (item.value ?? 0).toDouble(),
+         holdings: holdings,
++        dayChangePercentage: item.dayChangePercentage?.toDouble(),
++        dayChangeAmount: item.dayChangeAmount?.toDouble(),
++        totalChangePercentage: item.totalChangePercentage?.toDouble(),
++        totalChangeAmount: item.totalChangeAmount?.toDouble(),
+       );
+     }).toList();
+     
+@@ -123,18 +127,26 @@ class AnalysisMapper {
+     return allMovers;
+   }
+ 
+-  /// Convert SDK PerformanceResponse to UI PerformanceDataPoint list
+-  static List<PerformanceDataPoint> toPerformanceDataPoints(
++  /// Convert SDK PerformanceResponse to UI PerformanceData
++  static PerformanceData toPerformanceData(
+     sdk.PerformanceResponse? sdkResponse,
+   ) {
+-    if (sdkResponse == null || sdkResponse.chartData == null) return [];
++    if (sdkResponse == null || sdkResponse.chartData == null) {
++      return PerformanceData(dataPoints: []);
++    }
+     
+     // Convert SDK DataPoint to UI PerformanceDataPoint
+-    return sdkResponse.chartData!.map((dataPoint) {
++    final dataPoints = sdkResponse.chartData!.map((dataPoint) {
+       return PerformanceDataPoint(
+         date: dataPoint.date ?? DateTime.now(),
+         value: (dataPoint.value ?? 0).toDouble(),
+       );
+     }).toList();
++
++    return PerformanceData(
++      dataPoints: dataPoints,
++      totalReturnPercentage: sdkResponse.totalReturnPercentage?.toDouble(),
++      totalReturnValue: sdkResponse.totalReturnValue?.toDouble(),
++    );
+   }
+ }
+diff --git a/am_analysis/ui/lib/services/analysis_service.dart b/am_analysis/ui/lib/services/analysis_service.dart
+index 930ab6d..5c548d6 100644
+--- a/am_analysis/ui/lib/services/analysis_service.dart
++++ b/am_analysis/ui/lib/services/analysis_service.dart
+@@ -7,7 +7,7 @@ abstract class UiAnalysisService {
+     GroupBy? groupBy,
+   });
+ 
+-  Future<List<PerformanceDataPoint>> getPerformance(
++  Future<PerformanceData> getPerformance(
+     String? id,
+     AnalysisEntityType type,
+     String timeFrame,
+@@ -39,19 +39,24 @@ class MockAnalysisService implements UiAnalysisService {
+   }
+ 
+   @override
+-  Future<List<PerformanceDataPoint>> getPerformance(
++  Future<PerformanceData> getPerformance(
+     String? id,
+     AnalysisEntityType type,
+     String timeFrame,
+   ) async {
+     await Future.delayed(const Duration(milliseconds: 600));
+     final now = DateTime.now();
+-    return List.generate(30, (index) {
++    final dataPoints = List.generate(30, (index) {
+       return PerformanceDataPoint(
+         date: now.subtract(Duration(days: 30 - index)),
+         value: 10000 + (index * 100) + (index % 2 == 0 ? 50 : -50),
+       );
+     });
++    return PerformanceData(
++      dataPoints: dataPoints,
++      totalReturnPercentage: 15.5,
++      totalReturnValue: 1550.0,
++    );
+   }
+ 
+   @override
+diff --git a/am_analysis/ui/lib/services/analysis_service_adapter.dart b/am_analysis/ui/lib/services/analysis_service_adapter.dart
+index 93fc0eb..aa5e33d 100644
+--- a/am_analysis/ui/lib/services/analysis_service_adapter.dart
++++ b/am_analysis/ui/lib/services/analysis_service_adapter.dart
+@@ -1,7 +1,4 @@
+ import 'package:am_analysis_core/am_analysis_core.dart' as core;
+-import 'package:am_analysis_core/am_analysis_core.dart' as ui;
+-import 'package:am_analysis_core/models/enums.dart' as core_enums;
+-import '../config/analysis_config.dart';
+ import './real_analysis_service.dart';
+ 
+ /// Adapter that converts am_analysis_ui's RealAnalysisService to implement
+@@ -74,7 +71,7 @@ class AnalysisServiceAdapter implements core.AnalysisService {
+     );
+     
+     // Convert UI models to core models
+-    return uiItems.map((item) => core.PerformanceDataPoint(
++    return uiItems.dataPoints.map((item) => core.PerformanceDataPoint(
+       date: item.date,
+       value: item.value,
+     )).toList();
+diff --git a/am_analysis/ui/lib/services/real_analysis_service.dart b/am_analysis/ui/lib/services/real_analysis_service.dart
+index f1b9125..c5121a4 100644
+--- a/am_analysis/ui/lib/services/real_analysis_service.dart
++++ b/am_analysis/ui/lib/services/real_analysis_service.dart
+@@ -87,7 +87,7 @@ class RealAnalysisService implements UiAnalysisService {
+   }
+ 
+   @override
+-  Future<List<PerformanceDataPoint>> getPerformance(
++  Future<PerformanceData> getPerformance(
+     String? id,
+     AnalysisEntityType type,
+     String timeFrame,
+@@ -107,7 +107,7 @@ class RealAnalysisService implements UiAnalysisService {
+ 
+       _logger.d('Performance response: ${response?.chartData?.length ?? 0} data points');
+       
+-      return AnalysisMapper.toPerformanceDataPoints(response);
++      return AnalysisMapper.toPerformanceData(response);
+     } catch (e, stackTrace) {
+       _logger.e('Error fetching performance', error: e, stackTrace: stackTrace);
+       rethrow;
+diff --git a/am_analysis/ui/lib/widgets/analysis_allocation_widget.dart b/am_analysis/ui/lib/widgets/analysis_allocation_widget.dart
+index cc33dac..ef2c2d5 100644
+--- a/am_analysis/ui/lib/widgets/analysis_allocation_widget.dart
++++ b/am_analysis/ui/lib/widgets/analysis_allocation_widget.dart
+@@ -423,6 +423,50 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
+                               ],
+                             ),
+                             const Divider(height: 12),
++                            // Metrics Row
++                            if (item.dayChangePercentage != null || item.totalChangePercentage != null)
++                              Padding(
++                                padding: const EdgeInsets.only(bottom: 8),
++                                child: Row(
++                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
++                                  children: [
++                                    if (item.dayChangePercentage != null)
++                                      Row(
++                                        children: [
++                                          Text('Day: ', style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
++                                          Text(
++                                            '${item.dayChangePercentage! >= 0 ? '+' : ''}${item.dayChangePercentage!.toStringAsFixed(2)}%',
++                                            style: TextStyle(
++                                              fontSize: 11,
++                                              fontWeight: FontWeight.bold,
++                                              color: item.dayChangePercentage! >= 0 
++                                                ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF00B894) : const Color(0xFF009975))
++                                                : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFF7675) : const Color(0xFFE85656)),
++                                            ),
++                                          ),
++                                        ],
++                                      ),
++                                    if (item.totalChangePercentage != null)
++                                      Row(
++                                        children: [
++                                          Text('Total: ', style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
++                                          Text(
++                                            '${item.totalChangePercentage! >= 0 ? '+' : ''}${item.totalChangePercentage!.toStringAsFixed(2)}%',
++                                            style: TextStyle(
++                                              fontSize: 11,
++                                              fontWeight: FontWeight.bold,
++                                              color: item.totalChangePercentage! >= 0 
++                                                ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF00B894) : const Color(0xFF009975))
++                                                : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFF7675) : const Color(0xFFE85656)),
++                                            ),
++                                          ),
++                                        ],
++                                      ),
++                                  ],
++                                ),
++                              ),
++                            if (item.dayChangePercentage != null || item.totalChangePercentage != null)
++                              const Divider(height: 12),
+                             // Holdings List
+                             if (item.holdings != null && item.holdings!.isNotEmpty)
+                               ...item.holdings!.take(7).map((h) => Padding(
+@@ -530,11 +574,11 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
+             final color = _getColorForIndex(context, index);
+             final abbreviation = _getSectorAbbreviation(item.name);
+             
+-            // Only show label if segment is big enough (>= 5%)
+-            final showLabel = item.percentage >= 0.05;
++            // Only show label if segment is big enough (>= 8%)
++            final showLabel = item.percentage >= 8.0;
+             
+             return Expanded(
+-              flex: (item.percentage * 100).round(),
++              flex: item.percentage.round() > 0 ? item.percentage.round() : 1,
+               child: MouseRegion(
+                 onEnter: (_) => setState(() => _hoveredIndex = index),
+                 onExit: (_) => setState(() => _hoveredIndex = null),
+@@ -547,20 +591,26 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
+                       color: color.withValues(alpha: _hoveredIndex == index ? 1.0 : 0.9),
+                       child: Center(
+                         child: showLabel
+-                            ? Text(
+-                                _hoveredIndex == index && !isMobile
+-                                    ? '${item.percentage.toStringAsFixed(1)}%'
+-                                    : abbreviation,
+-                                style: TextStyle(
+-                                  color: Theme.of(context).textTheme.bodyMedium?.color,
+-                                  fontWeight: FontWeight.bold,
+-                                  fontSize: isMobile ? 9 : (_hoveredIndex == index ? 12 : 10),
+-                                  shadows: const [
+-                                    Shadow(
+-                                      color: Colors.black45,
+-                                      blurRadius: 2,
++                            ? Padding(
++                                padding: const EdgeInsets.symmetric(horizontal: 2.0),
++                                child: FittedBox(
++                                  fit: BoxFit.scaleDown,
++                                  child: Text(
++                                    _hoveredIndex == index && !isMobile
++                                        ? '${item.percentage.toStringAsFixed(1)}%'
++                                        : abbreviation,
++                                    style: TextStyle(
++                                      color: Theme.of(context).textTheme.bodyMedium?.color,
++                                      fontWeight: FontWeight.bold,
++                                      fontSize: isMobile ? 9 : (_hoveredIndex == index ? 12 : 10),
++                                      shadows: const [
++                                        Shadow(
++                                          color: Colors.black45,
++                                          blurRadius: 2,
++                                        ),
++                                      ],
+                                     ),
+-                                  ],
++                                  ),
+                                 ),
+                               )
+                             : const SizedBox.shrink(),
+diff --git a/am_analysis/ui/lib/widgets/analysis_dashboard.dart b/am_analysis/ui/lib/widgets/analysis_dashboard.dart
+index 5e94d69..899f253 100644
+--- a/am_analysis/ui/lib/widgets/analysis_dashboard.dart
++++ b/am_analysis/ui/lib/widgets/analysis_dashboard.dart
+@@ -34,7 +34,7 @@ class _AnalysisDashboardState extends State<AnalysisDashboard> {
+ 
+   void _loadData() {
+     _allocationFuture = widget.analysisService.getAllocation(widget.entityId, widget.entityType);
+-    _performanceFuture = widget.analysisService.getPerformance(widget.entityId, widget.entityType, '1M');
++    _performanceFuture = widget.analysisService.getPerformance(widget.entityId, widget.entityType, '1M').then((data) => data.dataPoints);
+     // For top movers, if entityId is present, we get generic movers WITHIN that entity
+     // If not, we get top movers OF that type (e.g. top ETF performers)
+     _moversFuture = widget.analysisService.getTopMovers(id: widget.entityId, type: widget.entityType);
+diff --git a/am_analysis/ui/lib/widgets/analysis_performance_widget.dart b/am_analysis/ui/lib/widgets/analysis_performance_widget.dart
+index 61d5fa5..8b95a05 100644
+--- a/am_analysis/ui/lib/widgets/analysis_performance_widget.dart
++++ b/am_analysis/ui/lib/widgets/analysis_performance_widget.dart
+@@ -34,7 +34,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
+   ChartType _chartType = ChartType.area;
+   bool _isLoading = true;
+   String? _error;
+-  List<PerformanceDataPoint> _dataPoints = [];
++  PerformanceData? _performanceData;
+ 
+   @override
+   void initState() {
+@@ -58,16 +58,16 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
+ 
+     try {
+       print('[Performance] Loading data for portfolio=${widget.portfolioId}, timeFrame=${_selectedTimeFrame.code}');
+-      final points = await _service.getPerformance(
++      final data = await _service.getPerformance(
+         widget.portfolioId,
+         AnalysisEntityType.PORTFOLIO,
+         _selectedTimeFrame.code,
+       );
+-      print('[Performance] Successfully loaded ${points.length} data points');
++      print('[Performance] Successfully loaded ${data.dataPoints.length} data points');
+       
+       if (mounted) {
+         setState(() {
+-          _dataPoints = points;
++          _performanceData = data;
+           _isLoading = false;
+         });
+       }
+@@ -116,12 +116,46 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                   Flexible(
+-                    child: Text(
+-                      'Performance',
+-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+-                        fontWeight: FontWeight.bold,
+-                        fontSize: isMobile ? 16 : 18,
+-                      ),
++                    child: Column(
++                      crossAxisAlignment: CrossAxisAlignment.start,
++                      children: [
++                        Text(
++                          'Performance',
++                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
++                            fontWeight: FontWeight.bold,
++                            fontSize: isMobile ? 16 : 18,
++                          ),
++                        ),
++                        if (_performanceData != null && _performanceData!.totalReturnPercentage != null)
++                          Padding(
++                            padding: const EdgeInsets.only(top: 4.0),
++                            child: Row(
++                              children: [
++                                Icon(
++                                  _performanceData!.totalReturnPercentage! >= 0 
++                                    ? Icons.arrow_upward 
++                                    : Icons.arrow_downward,
++                                  size: isMobile ? 12 : 14,
++                                  color: _performanceData!.totalReturnPercentage! >= 0 
++                                    ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF00B894) : const Color(0xFF009975))
++                                    : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFF7675) : const Color(0xFFE85656)),
++                                ),
++                                const SizedBox(width: 4),
++                                Text(
++                                  '${_performanceData!.totalReturnPercentage!.abs().toStringAsFixed(2)}% '
++                                  '(${_formatCurrency(_performanceData!.totalReturnValue?.abs() ?? 0)})',
++                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
++                                    fontWeight: FontWeight.w600,
++                                    fontSize: isMobile ? 13 : 15,
++                                    color: _performanceData!.totalReturnPercentage! >= 0 
++                                      ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF00B894) : const Color(0xFF009975))
++                                      : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFF7675) : const Color(0xFFE85656)),
++                                  ),
++                                ),
++                              ],
++                            ),
++                          ),
++                      ],
+                     ),
+                   ),
+                   if (_isLoading)
+@@ -255,7 +289,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
+       );
+     }
+ 
+-    if (_dataPoints.isEmpty) {
++    if (_performanceData?.dataPoints.isEmpty ?? true) {
+       return Center(
+         child: Text(
+           'No performance data available',
+@@ -271,13 +305,14 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
+   }
+ 
+   Widget _buildChart() {
+-    final spots = _dataPoints.asMap().entries.map((entry) {
++    final points = _performanceData!.dataPoints;
++    final spots = points.asMap().entries.map((entry) {
+       return FlSpot(entry.key.toDouble(), entry.value.value);
+     }).toList();
+ 
+-    final minY = _dataPoints.map((p) => p.value).reduce((a, b) => a < b ? a : b);
+-    final maxY = _dataPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+-    final isPositive = _dataPoints.last.value >= _dataPoints.first.value;
++    final minY = points.map((p) => p.value).reduce((a, b) => a < b ? a : b);
++    final maxY = points.map((p) => p.value).reduce((a, b) => a > b ? a : b);
++    final isPositive = points.last.value >= points.first.value;
+     
+     final gainColor = Theme.of(context).brightness == Brightness.dark 
+         ? const Color(0xFF00B894) : const Color(0xFF009975);
+@@ -286,7 +321,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
+     final chartColor = isPositive ? gainColor : lossColor;
+     
+     // Interval calculation for X axis
+-    final xInterval = (_dataPoints.length / 5).ceil().toDouble();
++    final xInterval = (points.length / 5).ceil().toDouble();
+ 
+     if (_chartType == ChartType.bar) {
+       return BarChart(
+@@ -344,11 +379,11 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
+               interval: xInterval > 0 ? xInterval : 1,
+               getTitlesWidget: (value, meta) {
+                 final index = value.toInt();
+-                if (index < 0 || index >= _dataPoints.length) {
++                if (index < 0 || index >= points.length) {
+                   return const SizedBox.shrink();
+                 }
+                 
+-                final date = _dataPoints[index].date;
++                final date = points[index].date;
+                 String text;
+                 
+                 if (_selectedTimeFrame == ds.TimeFrame.oneDay) {
+@@ -409,7 +444,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
+             getTooltipColor: (_) => Theme.of(context).cardColor.withValues(alpha: 0.9),
+             getTooltipItems: (touchedSpots) {
+               return touchedSpots.map((spot) {
+-                final date = _dataPoints[spot.x.toInt()].date;
++                final date = points[spot.x.toInt()].date;
+                 final formattedDate = DateFormat('MMM d, yyyy').format(date);
+                 
+                 return LineTooltipItem(
+diff --git a/am_analysis/ui/lib/widgets/analysis_top_movers_widget.dart b/am_analysis/ui/lib/widgets/analysis_top_movers_widget.dart
+index ff33145..97b00c5 100644
+--- a/am_analysis/ui/lib/widgets/analysis_top_movers_widget.dart
++++ b/am_analysis/ui/lib/widgets/analysis_top_movers_widget.dart
+@@ -11,7 +11,6 @@ class AnalysisTopMoversWidget extends StatefulWidget {
+     this.initialTimeFrame = ds.TimeFrame.oneDay,
+     this.height,
+     this.showTimeFrameSelector = true,
+-    this.fallbackMovers,
+     super.key,
+   });
+ 
+@@ -19,8 +18,6 @@ class AnalysisTopMoversWidget extends StatefulWidget {
+   final ds.TimeFrame initialTimeFrame;
+   final double? height;
+   final bool showTimeFrameSelector;
+-  /// When analysis API fails (e.g. 500), show these movers from portfolio holdings.
+-  final List<MoverItem>? fallbackMovers;
+ 
+   @override
+   State<AnalysisTopMoversWidget> createState() => _AnalysisTopMoversWidgetState();
+@@ -32,7 +29,6 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
+   bool _isLoading = true;
+   String? _error;
+   List<MoverItem> _movers = [];
+-  bool _usingHoldingsFallback = false;
+ 
+   @override
+   void initState() {
+@@ -55,6 +51,7 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
+     });
+ 
+     try {
++
+       print('[TopMovers] Loading data for portfolio=${widget.portfolioId}, timeFrame=${_selectedTimeFrame.code}');
+       final movers = await _service.getTopMovers(
+         id: widget.portfolioId,
+@@ -66,7 +63,6 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
+       if (mounted) {
+         setState(() {
+           _movers = movers;
+-          _usingHoldingsFallback = false;
+           _isLoading = false;
+         });
+       }
+@@ -74,24 +70,8 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
+       print('[TopMovers] Error loading data: $e');
+       print('[TopMovers] Stack trace: $stackTrace');
+       if (mounted) {
+-        final fallback = widget.fallbackMovers;
+-        if (fallback != null && fallback.isNotEmpty) {
+-          setState(() {
+-            _movers = fallback;
+-            _error = null;
+-            _usingHoldingsFallback = true;
+-            _isLoading = false;
+-          });
+-          return;
+-        }
+-        final message = e.toString();
+-        final isServerError = message.contains('500') ||
+-            message.contains('currentPrice');
+         setState(() {
+-          _error = isServerError
+-              ? 'Top movers temporarily unavailable'
+-              : 'Failed to load top movers';
+-          _usingHoldingsFallback = false;
++          _error = 'Failed to load top movers';
+           _isLoading = false;
+         });
+       }
+@@ -141,18 +121,6 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
+                             fontSize: isMobile ? 16 : 18,
+                           ),
+                         ),
+-                        if (_usingHoldingsFallback)
+-                          Text(
+-                            'From portfolio holdings',
+-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+-                              fontSize: 11,
+-                              color: Theme.of(context)
+-                                  .textTheme
+-                                  .bodySmall
+-                                  ?.color
+-                                  ?.withValues(alpha: 0.6),
+-                            ),
+-                          ),
+                       ],
+                     ),
+                   ),
+diff --git a/am_analysis/ui/test/mappers/analysis_mapper_test.dart b/am_analysis/ui/test/mappers/analysis_mapper_test.dart
+index ae0eb76..f674eca 100644
+--- a/am_analysis/ui/test/mappers/analysis_mapper_test.dart
++++ b/am_analysis/ui/test/mappers/analysis_mapper_test.dart
+@@ -1,8 +1,7 @@
+ import 'package:flutter_test/flutter_test.dart';
+ import 'package:am_analysis_ui/mappers/analysis_mapper.dart';
+-import 'package:am_analysis_ui/models/analysis_enums.dart';
++import 'package:am_analysis_core/am_analysis_core.dart';
+ import 'package:am_analysis_sdk/api.dart' as sdk;
+-
+ void main() {
+   group('AnalysisMapper', () {
+     group('toAllocationItems', () {
+@@ -112,7 +111,7 @@ void main() {
+       });
+     });
+ 
+-    group('toPerformanceDataPoints', () {
++    group('toPerformanceData', () {
+       test('should convert SDK PerformanceResponse to DataPoints', () {
+         final sdkResponse = sdk.PerformanceResponse(
+           chartData: [
+@@ -121,22 +120,22 @@ void main() {
+           ],
+         );
+ 
+-        final result = AnalysisMapper.toPerformanceDataPoints(sdkResponse);
++        final result = AnalysisMapper.toPerformanceData(sdkResponse);
+ 
+-        expect(result.length, 2);
+-        expect(result[0].date, DateTime.parse('2024-01-01T00:00:00Z'));
+-        expect(result[0].value, 10000.0);
++        expect(result.dataPoints.length, 2);
++        expect(result.dataPoints[0].date, DateTime.parse('2024-01-01T00:00:00Z'));
++        expect(result.dataPoints[0].value, 10000.0);
+       });
+ 
+       test('should handle null response', () {
+-        final result = AnalysisMapper.toPerformanceDataPoints(null);
+-        expect(result, isEmpty);
++        final result = AnalysisMapper.toPerformanceData(null);
++        expect(result.dataPoints, isEmpty);
+       });
+ 
+       test('should handle null chartData', () {
+         final sdkResponse = sdk.PerformanceResponse();
+-        final result = AnalysisMapper.toPerformanceDataPoints(sdkResponse);
+-        expect(result, isEmpty);
++        final result = AnalysisMapper.toPerformanceData(sdkResponse);
++        expect(result.dataPoints, isEmpty);
+       });
+     });
+   });
+diff --git a/am_analysis/ui/test/services/real_analysis_service_test.dart b/am_analysis/ui/test/services/real_analysis_service_test.dart
+index b49444d..0f119af 100644
+--- a/am_analysis/ui/test/services/real_analysis_service_test.dart
++++ b/am_analysis/ui/test/services/real_analysis_service_test.dart
+@@ -1,7 +1,6 @@
+ import 'package:flutter_test/flutter_test.dart';
+ import 'package:am_analysis_ui/services/real_analysis_service.dart';
+-import 'package:am_analysis_ui/models/analysis_enums.dart';
+-
++import 'package:am_analysis_core/am_analysis_core.dart';
+ void main() {
+   group('RealAnalysisService', () {
+     late RealAnalysisService service;
+@@ -69,7 +68,7 @@ void main() {
+           );
+           
+           expect(result, isNotNull);
+-          expect(result, isA<List>());
++          expect(result, isA<PerformanceData>());
+         } catch (e) {
+           print('Backend not available for testing: $e');
+         }
+diff --git a/am_portfolio_ui/lib/features/portfolio/internal/data/mappers/portfolio_summary_mapper.dart b/am_portfolio_ui/lib/features/portfolio/internal/data/mappers/portfolio_summary_mapper.dart
+index 2d0273b..fda73ed 100644
+--- a/am_portfolio_ui/lib/features/portfolio/internal/data/mappers/portfolio_summary_mapper.dart
++++ b/am_portfolio_ui/lib/features/portfolio/internal/data/mappers/portfolio_summary_mapper.dart
+@@ -16,11 +16,12 @@ class PortfolioSummaryMapper {
+       apiModel.sectorialHoldings.forEach((sectorName, holdings) {
+         // Calculate total value for this sector
+         double sectorValue = 0.0;
+-        double sectorWeight = 0.0;
+         for (final h in holdings) {
+           sectorValue += h.currentValue;
+-          sectorWeight += h.weightInPortfolio;
+         }
++        double sectorWeight = apiModel.currentValue > 0
++            ? (sectorValue / apiModel.currentValue) * 100
++            : 0.0;
+         sectorAllocations.add(
+           SectorAllocation(
+             sector: sectorName,
+diff --git a/am_portfolio_ui/lib/features/portfolio/presentation/web/portfolio_web_screen.dart b/am_portfolio_ui/lib/features/portfolio/presentation/web/portfolio_web_screen.dart
+index 177d147..711ddc9 100644
+--- a/am_portfolio_ui/lib/features/portfolio/presentation/web/portfolio_web_screen.dart
++++ b/am_portfolio_ui/lib/features/portfolio/presentation/web/portfolio_web_screen.dart
+@@ -204,7 +204,11 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
+         Navigator.push(
+           context,
+           MaterialPageRoute(
+-            builder: (_) => ProfileSettingsPage(userId: 'user'),
++            builder: (_) {
++              final authState = context.read<AuthCubit>().state;
++              final userId = authState is Authenticated ? authState.user.id : '';
++              return ProfileSettingsPage(userId: userId);
++            },
+           ),
+         );
+       },
+diff --git a/am_portfolio_ui/lib/features/portfolio/presentation/widgets/portfolio_analysis_widget.dart b/am_portfolio_ui/lib/features/portfolio/presentation/widgets/portfolio_analysis_widget.dart
+index a6b517c..541a9fb 100644
+--- a/am_portfolio_ui/lib/features/portfolio/presentation/widgets/portfolio_analysis_widget.dart
++++ b/am_portfolio_ui/lib/features/portfolio/presentation/widgets/portfolio_analysis_widget.dart
+@@ -1,12 +1,14 @@
+ import 'package:flutter/material.dart';
+ import 'package:flutter_bloc/flutter_bloc.dart';
+ 
++import '../../internal/domain/entities/portfolio_summary.dart';
+ import '../cubit/portfolio_cubit.dart';
+ import '../cubit/portfolio_state.dart';
+ 
+ /// Portfolio analysis widget showing analytics and insights
+ class PortfolioAnalysisWidget extends StatelessWidget {
+   const PortfolioAnalysisWidget({super.key});
++
+   @override
+   Widget build(BuildContext context) =>
+       BlocBuilder<PortfolioCubit, PortfolioState>(
+@@ -60,51 +62,82 @@ class PortfolioAnalysisWidget extends StatelessWidget {
+         },
+       );
+ 
+-  Widget _buildAllocationChart(BuildContext context, summary) => Card(
+-    child: Padding(
+-      padding: const EdgeInsets.all(16),
+-      child: Column(
+-        crossAxisAlignment: CrossAxisAlignment.start,
+-        children: [
+-          Text(
+-            'Sector Allocation',
+-            style: Theme.of(context).textTheme.titleMedium,
+-          ),
+-          const SizedBox(height: 16),
+-          Row(
+-            children: [
+-              Expanded(
+-                flex: 2,
+-                child: Container(
+-                  height: 200,
+-                  decoration: BoxDecoration(
+-                    color: Colors.grey.shade100,
+-                    borderRadius: BorderRadius.circular(8),
+-                  ),
+-                  child: const Center(
+-                    child: Text('Pie Chart\n(Sector Allocation)'),
++  Widget _buildAllocationChart(BuildContext context, PortfolioSummary summary) {
++    final colors = [
++      Colors.blue,
++      Colors.green,
++      Colors.orange,
++      Colors.red,
++      Colors.purple,
++      Colors.teal,
++      Colors.grey,
++    ];
++    final allocations = summary.sectorAllocation;
++
++    return Card(
++      child: Padding(
++        padding: const EdgeInsets.all(16),
++        child: Column(
++          crossAxisAlignment: CrossAxisAlignment.start,
++          children: [
++            Text(
++              'Sector Allocation',
++              style: Theme.of(context).textTheme.titleMedium,
++            ),
++            const SizedBox(height: 16),
++            Row(
++              children: [
++                Expanded(
++                  flex: 2,
++                  child: Container(
++                    height: 200,
++                    decoration: BoxDecoration(
++                      color: Colors.grey.shade100,
++                      borderRadius: BorderRadius.circular(8),
++                    ),
++                    child: const Center(
++                      child: Text('Pie Chart\n(Sector Allocation)'),
++                    ),
+                   ),
+                 ),
+-              ),
+-              const SizedBox(width: 16),
+-              Expanded(
+-                child: Column(
+-                  crossAxisAlignment: CrossAxisAlignment.start,
+-                  children: [
+-                    _buildAllocationItem('Technology', 35.2, Colors.blue),
+-                    _buildAllocationItem('Healthcare', 22.8, Colors.green),
+-                    _buildAllocationItem('Finance', 18.3, Colors.orange),
+-                    _buildAllocationItem('Energy', 12.1, Colors.red),
+-                    _buildAllocationItem('Others', 11.6, Colors.grey),
+-                  ],
++                const SizedBox(width: 16),
++                Expanded(
++                  child: Column(
++                    crossAxisAlignment: CrossAxisAlignment.start,
++                    children: allocations.isEmpty
++                        ? [
++                            const Padding(
++                              padding: EdgeInsets.symmetric(vertical: 8),
++                              child: Text(
++                                'No sector data available',
++                                style: TextStyle(
++                                  color: Colors.grey,
++                                  fontSize: 12,
++                                ),
++                              ),
++                            ),
++                          ]
++                        : List.generate(
++                            allocations.length,
++                            (index) {
++                              final allocation = allocations[index];
++                              final color = colors[index % colors.length];
++                              return _buildAllocationItem(
++                                allocation.sector,
++                                allocation.percentage,
++                                color,
++                              );
++                            },
++                          ),
++                  ),
+                 ),
+-              ),
+-            ],
+-          ),
+-        ],
++              ],
++            ),
++          ],
++        ),
+       ),
+-    ),
+-  );
++    );
++  }
+ 
+   Widget _buildAllocationItem(String sector, double percentage, Color color) =>
+       Padding(
+@@ -129,60 +162,63 @@ class PortfolioAnalysisWidget extends StatelessWidget {
+         ),
+       );
+ 
+-  Widget _buildPerformanceMetrics(BuildContext context, summary) => Card(
+-    child: Padding(
+-      padding: const EdgeInsets.all(16),
+-      child: Column(
+-        crossAxisAlignment: CrossAxisAlignment.start,
+-        children: [
+-          Text(
+-            'Performance Metrics',
+-            style: Theme.of(context).textTheme.titleMedium,
+-          ),
+-          const SizedBox(height: 16),
+-          Row(
++  Widget _buildPerformanceMetrics(
++    BuildContext context,
++    PortfolioSummary summary,
++  ) =>
++      Card(
++        child: Padding(
++          padding: const EdgeInsets.all(16),
++          child: Column(
++            crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+-              Expanded(child: _buildMetricCard('Sharpe Ratio', '1.42')),
+-              const SizedBox(width: 8),
+-              Expanded(child: _buildMetricCard('Beta', '0.95')),
+-              const SizedBox(width: 8),
+-              Expanded(child: _buildMetricCard('Alpha', '2.1%')),
+-              const SizedBox(width: 8),
+-              Expanded(child: _buildMetricCard('Volatility', '12.3%')),
++              Text(
++                'Performance Metrics',
++                style: Theme.of(context).textTheme.titleMedium,
++              ),
++              const SizedBox(height: 16),
++              Row(
++                children: [
++                  Expanded(child: _buildMetricCard('Sharpe Ratio', '1.42')),
++                  const SizedBox(width: 8),
++                  Expanded(child: _buildMetricCard('Beta', '0.95')),
++                  const SizedBox(width: 8),
++                  Expanded(child: _buildMetricCard('Alpha', '2.1%')),
++                  const SizedBox(width: 8),
++                  Expanded(child: _buildMetricCard('Volatility', '12.3%')),
++                ],
++              ),
+             ],
+           ),
+-        ],
+-      ),
+-    ),
+-  );
++        ),
++      );
+ 
+   Widget _buildMetricCard(String title, String value) => Container(
+-    padding: const EdgeInsets.all(12),
+-    decoration: BoxDecoration(
+-      color: Colors.grey.shade50,
+-      borderRadius: BorderRadius.circular(8),
+-    ),
+-    child: Column(
+-      children: [
+-        Text(
+-          title,
+-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+-          textAlign: TextAlign.center,
++        padding: const EdgeInsets.all(12),
++        decoration: BoxDecoration(
++          color: Colors.grey.shade50,
++          borderRadius: BorderRadius.circular(8),
+         ),
+-        const SizedBox(height: 4),
+-        Text(
+-          value,
+-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
++        child: Column(
++          children: [
++            Text(
++              title,
++              style: const TextStyle(fontSize: 12, color: Colors.grey),
++              textAlign: TextAlign.center,
++            ),
++            const SizedBox(height: 4),
++            Text(
++              value,
++              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
++            ),
++          ],
+         ),
+-      ],
+-    ),
+-  );
++      );
+ 
+-  Widget _buildTopPerformers(BuildContext context, summary) {
+-    final performers = [
+-      {'symbol': 'AAPL', 'gain': '+15.2%', 'isPositive': true},
+-      {'symbol': 'GOOGL', 'gain': '+12.8%', 'isPositive': true},
+-      {'symbol': 'TSLA', 'gain': '-8.3%', 'isPositive': false},
++  Widget _buildTopPerformers(BuildContext context, PortfolioSummary summary) {
++    final allPerformers = <TopPerformer>[
++      ...summary.topPerformers,
++      ...summary.worstPerformers,
+     ];
+ 
+     return Card(
+@@ -192,82 +228,102 @@ class PortfolioAnalysisWidget extends StatelessWidget {
+           crossAxisAlignment: CrossAxisAlignment.start,
+           children: [
+             Text(
+-              'Top Performers',
++              'Top & Worst Performers',
+               style: Theme.of(context).textTheme.titleMedium,
+             ),
+             const SizedBox(height: 16),
+-            ...performers.map(
+-              (performer) => ListTile(
+-                leading: CircleAvatar(
+-                  backgroundColor: performer['isPositive']! as bool
+-                      ? Colors.green.shade100
+-                      : Colors.red.shade100,
++            if (allPerformers.isEmpty)
++              const Padding(
++                padding: EdgeInsets.symmetric(vertical: 16),
++                child: Center(
+                   child: Text(
+-                    performer['symbol'].toString(),
+-                    style: TextStyle(
+-                      color: performer['isPositive']! as bool
+-                          ? Colors.green.shade800
+-                          : Colors.red.shade800,
+-                      fontSize: 10,
+-                      fontWeight: FontWeight.bold,
+-                    ),
+-                  ),
+-                ),
+-                title: Text(performer['symbol'].toString()),
+-                trailing: Text(
+-                  performer['gain'].toString(),
+-                  style: TextStyle(
+-                    color: performer['isPositive']! as bool
+-                        ? Colors.green
+-                        : Colors.red,
+-                    fontWeight: FontWeight.bold,
++                    'No performance data available',
++                    style: TextStyle(color: Colors.grey),
+                   ),
+                 ),
++              )
++            else
++              ...allPerformers.map(
++                (performer) {
++                  final isPositive = performer.gainLossPercentage >= 0;
++                  final gainText =
++                      '${isPositive ? "+" : ""}${performer.gainLossPercentage.toStringAsFixed(2)}%';
++                  return ListTile(
++                    leading: CircleAvatar(
++                      backgroundColor: isPositive
++                          ? Colors.green.shade100
++                          : Colors.red.shade100,
++                      child: Text(
++                        performer.symbol,
++                        style: TextStyle(
++                          color: isPositive
++                              ? Colors.green.shade800
++                              : Colors.red.shade800,
++                          fontSize: 10,
++                          fontWeight: FontWeight.bold,
++                        ),
++                      ),
++                    ),
++                    title: Text(performer.symbol),
++                    subtitle: Text(performer.companyName),
++                    trailing: Text(
++                      gainText,
++                      style: TextStyle(
++                        color: isPositive ? Colors.green : Colors.red,
++                        fontWeight: FontWeight.bold,
++                      ),
++                    ),
++                  );
++                },
+               ),
+-            ),
+           ],
+         ),
+       ),
+     );
+   }
+ 
+-  Widget _buildRiskAnalysis(BuildContext context, summary) => Card(
+-    child: Padding(
+-      padding: const EdgeInsets.all(16),
+-      child: Column(
+-        crossAxisAlignment: CrossAxisAlignment.start,
+-        children: [
+-          Text('Risk Analysis', style: Theme.of(context).textTheme.titleMedium),
+-          const SizedBox(height: 16),
+-          _buildRiskIndicator('Overall Risk', 0.65, Colors.orange),
+-          const SizedBox(height: 8),
+-          _buildRiskIndicator('Market Risk', 0.45, Colors.blue),
+-          const SizedBox(height: 8),
+-          _buildRiskIndicator('Concentration Risk', 0.8, Colors.red),
+-        ],
+-      ),
+-    ),
+-  );
++  Widget _buildRiskAnalysis(BuildContext context, PortfolioSummary summary) =>
++      Card(
++        child: Padding(
++          padding: const EdgeInsets.all(16),
++          child: Column(
++            crossAxisAlignment: CrossAxisAlignment.start,
++            children: [
++              Text(
++                'Risk Analysis',
++                style: Theme.of(context).textTheme.titleMedium,
++              ),
++              const SizedBox(height: 16),
++              _buildRiskIndicator('Overall Risk', 0.65, Colors.orange),
++              const SizedBox(height: 8),
++              _buildRiskIndicator('Market Risk', 0.45, Colors.blue),
++              const SizedBox(height: 8),
++              _buildRiskIndicator('Concentration Risk', 0.8, Colors.red),
++            ],
++          ),
++        ),
++      );
+ 
+   Widget _buildRiskIndicator(String title, double value, Color color) => Column(
+-    crossAxisAlignment: CrossAxisAlignment.start,
+-    children: [
+-      Row(
+-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
++        crossAxisAlignment: CrossAxisAlignment.start,
+         children: [
+-          Text(title, style: const TextStyle(fontSize: 14)),
+-          Text(
+-            '${(value * 100).toInt()}%',
+-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
++          Row(
++            mainAxisAlignment: MainAxisAlignment.spaceBetween,
++            children: [
++              Text(title, style: const TextStyle(fontSize: 14)),
++              Text(
++                '${(value * 100).toInt()}%',
++                style:
++                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
++              ),
++            ],
++          ),
++          const SizedBox(height: 4),
++          LinearProgressIndicator(
++            value: value,
++            backgroundColor: Colors.grey.shade200,
++            valueColor: AlwaysStoppedAnimation<Color>(color),
+           ),
+         ],
+-      ),
+-      const SizedBox(height: 4),
+-      LinearProgressIndicator(
+-        value: value,
+-        backgroundColor: Colors.grey.shade200,
+-        valueColor: AlwaysStoppedAnimation<Color>(color),
+-      ),
+-    ],
+-  );
++      );
+ }
+diff --git a/am_portfolio_ui/lib/features/portfolio/presentation/widgets/portfolio_overview_widget.dart b/am_portfolio_ui/lib/features/portfolio/presentation/widgets/portfolio_overview_widget.dart
+index ad4a459..b762819 100644
+--- a/am_portfolio_ui/lib/features/portfolio/presentation/widgets/portfolio_overview_widget.dart
++++ b/am_portfolio_ui/lib/features/portfolio/presentation/widgets/portfolio_overview_widget.dart
+@@ -238,10 +238,10 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
+                               context,
+                               'Total Balance',
+                               _formatCurrency(state.summary.totalValue),
+-                              '${state.summary.todayChangePercentage.isFinite ? (state.summary.todayChangePercentage >= 0 ? "+" : "") : ""}${state.summary.todayChangePercentage.isFinite ? state.summary.todayChangePercentage.toStringAsFixed(2) : "0.00"}%',
++                              '${state.summary.totalGainLossPercentage.isFinite ? (state.summary.totalGainLossPercentage >= 0 ? "+" : "") : ""}${state.summary.totalGainLossPercentage.isFinite ? state.summary.totalGainLossPercentage.toStringAsFixed(2) : "0.00"}%',
+                               const Color(0xFF6C5DD3),
+                               Icons.account_balance_wallet,
+-                              isPositive: state.summary.todayChangePercentage >= 0,
++                              isPositive: state.summary.totalGainLossPercentage >= 0,
+                               compact: isSmallMobile,
+                             ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
+                             _buildMetricCard(
+@@ -288,10 +288,10 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
+                                 context,
+                                 'Total Balance',
+                                 _formatCurrency(state.summary.totalValue),
+-                                '${state.summary.todayChangePercentage.isFinite ? (state.summary.todayChangePercentage >= 0 ? "+" : "") : ""}${state.summary.todayChangePercentage.isFinite ? state.summary.todayChangePercentage.toStringAsFixed(2) : "0.00"}%',
++                                '${state.summary.totalGainLossPercentage.isFinite ? (state.summary.totalGainLossPercentage >= 0 ? "+" : "") : ""}${state.summary.totalGainLossPercentage.isFinite ? state.summary.totalGainLossPercentage.toStringAsFixed(2) : "0.00"}%',
+                                 const Color(0xFF6C5DD3),
+                                 Icons.account_balance_wallet,
+-                                isPositive: state.summary.todayChangePercentage >= 0,
++                                isPositive: state.summary.totalGainLossPercentage >= 0,
+                               ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
+                             ),
+                             const SizedBox(width: 12),
+diff --git a/am_portfolio_ui/lib/features/portfolio/presentation/widgets/portfolio_top_movers_panel.dart b/am_portfolio_ui/lib/features/portfolio/presentation/widgets/portfolio_top_movers_panel.dart
+index 9272c17..4f04b87 100644
+--- a/am_portfolio_ui/lib/features/portfolio/presentation/widgets/portfolio_top_movers_panel.dart
++++ b/am_portfolio_ui/lib/features/portfolio/presentation/widgets/portfolio_top_movers_panel.dart
+@@ -34,14 +34,9 @@ class PortfolioTopMoversPanel extends StatelessWidget {
+         return false;
+       },
+       builder: (context, state) {
+-        List<MoverItem>? fallback;
+         var holdingsCount = 0;
+         if (state is PortfolioLoaded && state.portfolioId == portfolioId) {
+           holdingsCount = state.holdings.length;
+-          fallback = moversFromHoldings(
+-            state.holdings,
+-            timeFrame: timeFrame,
+-          );
+         }
+ 
+         return AnalysisTopMoversWidget(
+@@ -50,7 +45,6 @@ class PortfolioTopMoversPanel extends StatelessWidget {
+           initialTimeFrame: timeFrame,
+           showTimeFrameSelector: showTimeFrameSelector,
+           height: height,
+-          fallbackMovers: fallback,
+         );
+       },
+     );
+diff --git a/am_portfolio_ui/pubspec.yaml b/am_portfolio_ui/pubspec.yaml
+index d6051ab..026fe20 100644
+--- a/am_portfolio_ui/pubspec.yaml
++++ b/am_portfolio_ui/pubspec.yaml
+@@ -21,6 +21,8 @@ dependencies:
+     path: ../am_user_ui
+   am_analysis_ui:
+     path: ../am_analysis/ui
++  am_analysis_core:
++    path: ../am_analysis/common
+ 
+   # State Management
+   flutter_bloc: ^9.1.1
+diff --git a/am_portfolio_ui/test/presentation/widgets/portfolio_summary_widget_test.dart b/am_portfolio_ui/test/presentation/widgets/portfolio_summary_widget_test.dart
+index 2aacd95..da2c479 100644
+--- a/am_portfolio_ui/test/presentation/widgets/portfolio_summary_widget_test.dart
++++ b/am_portfolio_ui/test/presentation/widgets/portfolio_summary_widget_test.dart
+@@ -35,30 +35,22 @@ void main() {
+       // Verify overall portfolio value formatting (₹12.50L)
+       expect(find.text('₹12.50L'), findsOneWidget);
+       // Verify gains percentage formatting
+-      expect(find.text('(25.00%)'), findsOneWidget);
++      expect(find.text('+25.00%'), findsNWidgets(2));
+       // Verify trending up icon is found
+       expect(find.byIcon(Icons.trending_up), findsWidgets);
+ 
+-      // Verify invested, current, and holdings values formatted
++      // Verify invested and holdings values formatted
+       expect(find.text('₹1000000'), findsOneWidget);
+-      expect(find.text('₹1250000'), findsOneWidget);
+       expect(find.text('8'), findsOneWidget);
+ 
+       // Verify dynamic performance section today's change & total returns
+       expect(find.text('₹15.0K'), findsOneWidget);
+-      expect(find.text('1.20%'), findsOneWidget);
++      expect(find.text('+1.20%'), findsOneWidget);
+       expect(find.text('₹2.50L'), findsOneWidget);
+ 
+-      // Verify gainer/loser counts using RichText matcher predicate
+-      final todayRichTextFinder = find.byWidgetPredicate(
+-        (widget) => widget is RichText && widget.text.toPlainText().contains('6/2')
+-      );
+-      expect(todayRichTextFinder, findsOneWidget);
+-
+-      final overallRichTextFinder = find.byWidgetPredicate(
+-        (widget) => widget is RichText && widget.text.toPlainText().contains('5/3')
+-      );
+-      expect(overallRichTextFinder, findsOneWidget);
++      // Verify overall gainers/losers count is displayed properly
++      expect(find.text('Gainers/Losers'), findsOneWidget);
++      expect(find.text('5/3'), findsOneWidget);
+       expect(find.text('5m ago'), findsOneWidget);
+     });
+ 
+@@ -93,7 +85,7 @@ void main() {
+       expect(find.text('₹80.0K'), findsOneWidget);
+       // Verify trending down icon
+       expect(find.byIcon(Icons.trending_down), findsWidgets);
+-      expect(find.text('(-20.00%)'), findsOneWidget);
++      expect(find.text('-20.00%'), findsNWidgets(2));
+ 
+       // Verify performance details
+       expect(find.text('₹-500.00'), findsOneWidget);

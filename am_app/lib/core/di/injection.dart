@@ -95,7 +95,12 @@ void _registerAuthDependencies() {
   );
 
   getIt.registerLazySingleton<Dio>(() {
-    final dio = Dio();
+    final dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+      ),
+    );
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         final path = options.path;

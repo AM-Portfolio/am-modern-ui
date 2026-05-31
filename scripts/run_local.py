@@ -68,17 +68,20 @@ def run_flutter_cmd(package, command):
         
     # Append port if starting the app
     is_interactive = command.startswith("run")
+    cmd_list = command.split()
+    
     if is_interactive:
         # Replace default chrome with available device
-        if "-d chrome" in command:
+        if "-d" in cmd_list and "chrome" in cmd_list:
+            idx = cmd_list.index("chrome")
             device = get_available_device()
             if device != "chrome":
                 print(f"💡 Default device 'chrome' not found. Using '{device}' instead.")
-                command = command.replace("-d chrome", f"-d {device}")
+                cmd_list[idx] = device
                 
         port = os.getenv("FLUTTER_WEB_PORT")
         if port:
-            command += f" --web-port={port}"
+            cmd_list.append(f"--web-port={port}")
             
         # Inject environment variables from .env as --dart-define
         env_vars = {}
@@ -92,22 +95,23 @@ def run_flutter_cmd(package, command):
                         env_vars[k.strip()] = v.strip()
         
         for k, v in env_vars.items():
-            command += f' --dart-define={k}={v}'
+            cmd_list.append(f"--dart-define={k}={v}")
 
-    print(f"[RUN] Running 'flutter {command}' in {package}...")
+    command_str = " ".join(cmd_list)
+    print(f"[RUN] Running 'flutter {command_str}' in {package}...")
     is_windows = os.name == "nt"
     env = dict(os.environ)
 
     if is_interactive:
         try:
-            result = subprocess.run(["flutter"] + command.split(), cwd=package_dir, shell=is_windows)
+            result = subprocess.run(["flutter"] + cmd_list, cwd=package_dir, shell=is_windows)
             return result.returncode == 0
         except Exception as e:
             print(f"❌ Execution failed: {e}")
             return False
     else:
         log_safe_name = package.replace("/", "-").replace("\\", "-")
-        cmd_full = ["flutter"] + command.split()
+        cmd_full = ["flutter"] + cmd_list
         return run_with_logging(cmd_full, cwd=package_dir, env=env, log_name=f"{log_safe_name}")
 
 def get_args():
@@ -161,25 +165,25 @@ def generate_package():
 # --- Short Aliases ---
 
 def run_app():
-    run_flutter_cmd("am_app", "run -d chrome")
+    run_flutter_cmd("am_app", "run -d chrome --web-browser-flag=--disable-web-security")
 
 def run_auth():
-    run_flutter_cmd("am_auth_ui/live", "run -d chrome")
+    run_flutter_cmd("am_auth_ui/live", "run -d chrome --web-browser-flag=--disable-web-security")
 
 def run_design():
-    run_flutter_cmd("am_design_system", "run -d chrome")
+    run_flutter_cmd("am_design_system", "run -d chrome --web-browser-flag=--disable-web-security")
 
 def run_trade():
-    run_flutter_cmd("am_trade_ui/live", "run -d chrome")
+    run_flutter_cmd("am_trade_ui/live", "run -d chrome --web-browser-flag=--disable-web-security")
 
 def run_portfolio():
-    run_flutter_cmd("am_portfolio_ui/live", "run -d chrome")
+    run_flutter_cmd("am_portfolio_ui/live", "run -d chrome --web-browser-flag=--disable-web-security")
 
 def run_market():
-    run_flutter_cmd("am_analysis_ui/live", "run -d chrome")
+    run_flutter_cmd("am_analysis_ui/live", "run -d chrome --web-browser-flag=--disable-web-security")
 
 def run_ai():
-    run_flutter_cmd("am_ai_ui/live", "run -d chrome")
+    run_flutter_cmd("am_ai_ui/live", "run -d chrome --web-browser-flag=--disable-web-security")
 
 # --- Utility ---
 

@@ -33,6 +33,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   String? _subPortfolioId;
   DateTime? _lastStatusErrorTime;
 
+  bool isLiveDataActive = false;
+
   /// Subscribe to portfolio updates via WebSocket
   void subscribeToPortfolioUpdates({String? portfolioId}) {
         _subPortfolioId = portfolioId;
@@ -75,6 +77,14 @@ class PortfolioCubit extends Cubit<PortfolioState> {
           tag: 'PortfolioCubit',
         );
         _performSubscription();
+      }
+
+      if (status == StompStatus.disconnected || status == StompStatus.error) {
+        _isSubscribed = false; // Reset so re-subscription fires on next connect
+        isLiveDataActive = false;
+        if (state is PortfolioLoaded) {
+          emit((state as PortfolioLoaded).copyWith(isLiveDataActive: false));
+        }
       }
     });
 
@@ -813,10 +823,13 @@ class PortfolioCubit extends Cubit<PortfolioState> {
               .cast<PortfolioHolding>();
         }
 
+        isLiveDataActive = true;
+
         emit(
           currentState.copyWith(
             summary: updatedSummary,
             holdings: updatedHoldings,
+            isLiveDataActive: true,
           ),
         );
         CommonLogger.info(

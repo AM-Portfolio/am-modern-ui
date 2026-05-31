@@ -27,8 +27,7 @@ class PortfolioTabContentWidget extends ConsumerWidget {
   Widget build(
     BuildContext context,
     WidgetRef ref,
-  ) => BlocBuilder<PortfolioCubit, PortfolioState>(
-    builder: (context, state) => TabBarView(
+  ) => TabBarView(
       controller: tabController,
       children: [
         _OverviewTab(currentPortfolioId: currentPortfolioId, ),
@@ -37,8 +36,7 @@ class PortfolioTabContentWidget extends ConsumerWidget {
         _HeatmapTab(currentPortfolioId: currentPortfolioId, ),
         _TradeTab(ref: ref),
       ],
-    ),
-  );
+    );
 }
 
 /// Overview tab widget

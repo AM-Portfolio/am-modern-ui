@@ -58,13 +58,31 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
 
     try {
       print('[Performance] Loading data for portfolio=${widget.portfolioId}, timeFrame=${_selectedTimeFrame.code}');
-      final data = await _service.getPerformance(
+      var data = await _service.getPerformance(
         widget.portfolioId,
         AnalysisEntityType.PORTFOLIO,
         _selectedTimeFrame.code,
       );
       print('[Performance] Successfully loaded ${data.dataPoints.length} data points');
       
+      // Fallback calculation if backend returned 0 or null
+      if ((data.totalReturnPercentage == null || data.totalReturnPercentage == 0.0) &&
+          data.dataPoints.length >= 2) {
+        final firstValue = data.dataPoints.first.value;
+        final lastValue = data.dataPoints.last.value;
+        
+        if (firstValue > 0) {
+          final calculatedReturn = ((lastValue - firstValue) / firstValue) * 100;
+          final calculatedReturnValue = lastValue - firstValue;
+          
+          data = PerformanceData(
+            dataPoints: data.dataPoints,
+            totalReturnPercentage: calculatedReturn,
+            totalReturnValue: calculatedReturnValue,
+          );
+        }
+      }
+
       if (mounted) {
         setState(() {
           _performanceData = data;
@@ -369,7 +387,32 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         ),
         titlesData: FlTitlesData(
           show: true,
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 52,
+              getTitlesWidget: (value, meta) {
+                String text;
+                if (value >= 100000) {
+                  text = '₹${(value / 100000).toStringAsFixed(1)}L';
+                } else if (value >= 1000) {
+                  text = '₹${(value / 1000).toStringAsFixed(1)}K';
+                } else {
+                  text = '₹${value.toStringAsFixed(0)}';
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                      fontSize: 10,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
           topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           bottomTitles: AxisTitles(

@@ -1,0 +1,305 @@
+﻿diff --git a/am_trade_ui/lib/features/trade/internal/data/datasources/trade_remote_data_source.dart b/am_trade_ui/lib/features/trade/internal/data/datasources/trade_remote_data_source.dart
+index 7ede891..6a53a61 100644
+--- a/am_trade_ui/lib/features/trade/internal/data/datasources/trade_remote_data_source.dart
++++ b/am_trade_ui/lib/features/trade/internal/data/datasources/trade_remote_data_source.dart
+@@ -1,3 +1,4 @@
++import 'package:flutter/foundation.dart';
+ import 'package:am_library/am_library.dart';
+ import 'package:am_common/core/config/config_service.dart';
+ import 'package:am_common/core/config/app_config.dart';
+@@ -126,11 +127,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
+         stackTrace: StackTrace.current,
+       );
+ 
+-      try {
+-        AppLogger.info('Loading mock trade portfolios', tag: 'TradeRemoteDataSource');
+-        return await TradeMockDataHelper.getMockTradePortfolios();
+-      } catch (mockError) {
+-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++      if (kDebugMode) {
++        try {
++          AppLogger.info('Loading mock trade portfolios', tag: 'TradeRemoteDataSource');
++          return await TradeMockDataHelper.getMockTradePortfolios();
++        } catch (mockError) {
++          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++          rethrow;
++        }
++      } else {
+         rethrow;
+       }
+     }
+@@ -190,11 +195,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
+         stackTrace: StackTrace.current,
+       );
+ 
+-      try {
+-        AppLogger.info('Loading mock trade holdings', tag: 'TradeRemoteDataSource');
+-        return await TradeMockDataHelper.getMockTradeHoldings();
+-      } catch (mockError) {
+-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++      if (kDebugMode) {
++        try {
++          AppLogger.info('Loading mock trade holdings', tag: 'TradeRemoteDataSource');
++          return await TradeMockDataHelper.getMockTradeHoldings();
++        } catch (mockError) {
++          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++          rethrow;
++        }
++      } else {
+         rethrow;
+       }
+     }
+@@ -230,11 +239,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
+         stackTrace: StackTrace.current,
+       );
+ 
+-      try {
+-        AppLogger.info('Loading mock trade summary', tag: 'TradeRemoteDataSource');
+-        return await TradeMockDataHelper.getMockTradeSummary();
+-      } catch (mockError) {
+-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++      if (kDebugMode) {
++        try {
++          AppLogger.info('Loading mock trade summary', tag: 'TradeRemoteDataSource');
++          return await TradeMockDataHelper.getMockTradeSummary();
++        } catch (mockError) {
++          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++          rethrow;
++        }
++      } else {
+         rethrow;
+       }
+     }
+@@ -300,11 +313,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
+         stackTrace: StackTrace.current,
+       );
+ 
+-      try {
+-        AppLogger.info('Loading mock trade calendar', tag: 'TradeRemoteDataSource');
+-        return await TradeMockDataHelper.getMockTradeCalendar();
+-      } catch (mockError) {
+-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++      if (kDebugMode) {
++        try {
++          AppLogger.info('Loading mock trade calendar', tag: 'TradeRemoteDataSource');
++          return await TradeMockDataHelper.getMockTradeCalendar();
++        } catch (mockError) {
++          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++          rethrow;
++        }
++      } else {
+         rethrow;
+       }
+     }
+@@ -370,11 +387,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
+         stackTrace: StackTrace.current,
+       );
+ 
+-      try {
+-        AppLogger.info('Loading mock trade calendar by day', tag: 'TradeRemoteDataSource');
+-        return await TradeMockDataHelper.getMockTradeCalendarByDay();
+-      } catch (mockError) {
+-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++      if (kDebugMode) {
++        try {
++          AppLogger.info('Loading mock trade calendar by day', tag: 'TradeRemoteDataSource');
++          return await TradeMockDataHelper.getMockTradeCalendarByDay();
++        } catch (mockError) {
++          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++          rethrow;
++        }
++      } else {
+         rethrow;
+       }
+     }
+@@ -454,11 +475,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
+         stackTrace: StackTrace.current,
+       );
+ 
+-      try {
+-        AppLogger.info('Loading mock trade calendar by date range', tag: 'TradeRemoteDataSource');
+-        return await TradeMockDataHelper.getMockTradeCalendarByDateRange();
+-      } catch (mockError) {
+-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++      if (kDebugMode) {
++        try {
++          AppLogger.info('Loading mock trade calendar by date range', tag: 'TradeRemoteDataSource');
++          return await TradeMockDataHelper.getMockTradeCalendarByDateRange();
++        } catch (mockError) {
++          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++          rethrow;
++        }
++      } else {
+         rethrow;
+       }
+     }
+@@ -524,11 +549,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
+         stackTrace: StackTrace.current,
+       );
+ 
+-      try {
+-        AppLogger.info('Loading mock trade calendar', tag: 'TradeRemoteDataSource');
+-        return await TradeMockDataHelper.getMockTradeCalendar();
+-      } catch (mockError) {
+-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++      if (kDebugMode) {
++        try {
++          AppLogger.info('Loading mock trade calendar', tag: 'TradeRemoteDataSource');
++          return await TradeMockDataHelper.getMockTradeCalendar();
++        } catch (mockError) {
++          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++          rethrow;
++        }
++      } else {
+         rethrow;
+       }
+     }
+@@ -593,11 +622,15 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
+         stackTrace: StackTrace.current,
+       );
+ 
+-      try {
+-        AppLogger.info('Loading mock trade calendar', tag: 'TradeRemoteDataSource');
+-        return await TradeMockDataHelper.getMockTradeCalendar();
+-      } catch (mockError) {
+-        AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++      if (kDebugMode) {
++        try {
++          AppLogger.info('Loading mock trade calendar', tag: 'TradeRemoteDataSource');
++          return await TradeMockDataHelper.getMockTradeCalendar();
++        } catch (mockError) {
++          AppLogger.error('Failed to load mock data', tag: 'TradeRemoteDataSource', error: mockError);
++          rethrow;
++        }
++      } else {
+         rethrow;
+       }
+     }
+diff --git a/am_trade_ui/lib/features/trade/internal/data/dtos/trade_portfolio_dto.dart b/am_trade_ui/lib/features/trade/internal/data/dtos/trade_portfolio_dto.dart
+index bab202f..5270696 100644
+--- a/am_trade_ui/lib/features/trade/internal/data/dtos/trade_portfolio_dto.dart
++++ b/am_trade_ui/lib/features/trade/internal/data/dtos/trade_portfolio_dto.dart
+@@ -8,7 +8,7 @@ part 'trade_portfolio_dto.g.dart';
+ class TradePortfolioDto {
+   const TradePortfolioDto({
+     required this.portfolioId,
+-    required this.name,
++    this.name,
+     this.ownerId,
+     this.totalValue,
+     this.totalGainLoss,
+@@ -29,7 +29,7 @@ class TradePortfolioDto {
+   factory TradePortfolioDto.fromJson(Map<String, dynamic> json) => _$TradePortfolioDtoFromJson(json);
+ 
+   final String portfolioId;
+-  final String name;
++  final String? name;
+   final String? ownerId;
+   final double? totalValue;
+   final double? totalGainLoss;
+diff --git a/am_trade_ui/lib/features/trade/internal/data/dtos/trade_portfolio_summary_dto.dart b/am_trade_ui/lib/features/trade/internal/data/dtos/trade_portfolio_summary_dto.dart
+index b8ff9bc..20ae3b5 100644
+--- a/am_trade_ui/lib/features/trade/internal/data/dtos/trade_portfolio_summary_dto.dart
++++ b/am_trade_ui/lib/features/trade/internal/data/dtos/trade_portfolio_summary_dto.dart
+@@ -8,7 +8,7 @@ part 'trade_portfolio_summary_dto.g.dart';
+ abstract class TradePortfolioSummaryDto with _$TradePortfolioSummaryDto {
+   const factory TradePortfolioSummaryDto({
+     required String portfolioId,
+-    required String name,
++    String? name,
+     String? description,
+     String? ownerId,
+     @Default(true) bool active,
+diff --git a/am_trade_ui/lib/features/trade/internal/data/mappers/trade_portfolio_mapper.dart b/am_trade_ui/lib/features/trade/internal/data/mappers/trade_portfolio_mapper.dart
+index 24f5801..da0d74b 100644
+--- a/am_trade_ui/lib/features/trade/internal/data/mappers/trade_portfolio_mapper.dart
++++ b/am_trade_ui/lib/features/trade/internal/data/mappers/trade_portfolio_mapper.dart
+@@ -8,7 +8,7 @@ class TradePortfolioMapper {
+   /// Convert TradePortfolioDto to TradePortfolio domain entity
+   static TradePortfolio fromDto(TradePortfolioDto dto) => TradePortfolio(
+     id: dto.portfolioId,
+-    name: dto.name,
++    name: dto.name ?? 'Unnamed Portfolio',
+     ownerId: dto.ownerId,
+     totalValue: dto.totalValue,
+     totalGainLoss: dto.totalGainLoss,
+@@ -45,7 +45,7 @@ class TradePortfolioMapper {
+   /// Convert TradePortfolioSummaryDto to TradePortfolioSummary entity
+   static TradePortfolioSummary fromSummaryDto(TradePortfolioSummaryDto dto) => TradePortfolioSummary(
+     portfolioId: dto.portfolioId,
+-    name: dto.name,
++    name: dto.name ?? 'Unnamed Portfolio',
+     description: dto.description,
+     ownerId: dto.ownerId,
+     active: dto.active,
+diff --git a/am_trade_ui/lib/features/trade/internal/data/mappers/trade_summary_mapper.dart b/am_trade_ui/lib/features/trade/internal/data/mappers/trade_summary_mapper.dart
+index cd427b1..97538e4 100644
+--- a/am_trade_ui/lib/features/trade/internal/data/mappers/trade_summary_mapper.dart
++++ b/am_trade_ui/lib/features/trade/internal/data/mappers/trade_summary_mapper.dart
+@@ -50,7 +50,7 @@ class TradeSummaryMapper {
+   /// Convert TradePortfolioSummaryDto to TradeSummary domain entity
+   static TradeSummary fromPortfolioSummaryDto(TradePortfolioSummaryDto dto) => TradeSummary(
+     portfolioId: dto.portfolioId,
+-    name: dto.name,
++    name: dto.name ?? 'Unnamed Portfolio',
+     ownerId: dto.ownerId ?? '',
+     description: dto.description,
+     active: dto.active,
+diff --git a/am_trade_ui/lib/features/trade/presentation/add_trade/components/add_trade_form.dart b/am_trade_ui/lib/features/trade/presentation/add_trade/components/add_trade_form.dart
+index b4f9e2e..692798c 100644
+--- a/am_trade_ui/lib/features/trade/presentation/add_trade/components/add_trade_form.dart
++++ b/am_trade_ui/lib/features/trade/presentation/add_trade/components/add_trade_form.dart
+@@ -225,8 +225,15 @@ class _AddTradeFormState extends State<AddTradeForm> {
+ 
+   void _onInstrumentSelected(Map<String, dynamic> instrument) {
+     setState(() {
+-      _symbolController.text = instrument['symbol'] ?? '';
+-      _descriptionController.text = instrument['description'] ?? instrument['displayName'] ?? '';
++      _symbolController.text = instrument['symbol'] ?? 
++                              instrument['tradingSymbol'] ?? 
++                              instrument['tradingsymbol'] ?? 
++                              instrument['name'] ?? 
++                              '';
++      _descriptionController.text = instrument['description'] ?? 
++                                   instrument['displayName'] ?? 
++                                   instrument['name'] ?? 
++                                   '';
+       
+       // Auto-select exchange if available
+       if (instrument['exchange'] != null) {
+diff --git a/am_trade_ui/lib/main.dart b/am_trade_ui/lib/main.dart
+index fd71fd8..9d9688a 100644
+--- a/am_trade_ui/lib/main.dart
++++ b/am_trade_ui/lib/main.dart
+@@ -45,16 +45,8 @@ void main() async {
+                       theme: themeState.lightTheme,
+                       darkTheme: themeState.darkTheme,
+                       themeMode: themeState.themeMode,
+-                      home: BlocBuilder<AuthCubit, AuthState>(
+-                        builder: (context, authState) {
+-                          if (authState is AuthInitial || authState is AuthLoading) {
+-                            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+-                          }
+-                          if (authState is Authenticated) {
+-                            return TradeWebScreen(userId: authState.user.id);
+-                          }
+-                          return const LoginPage();
+-                        },
++                      home: const AuthWrapper(
++                        child: TradeWebScreen(),
+                       ),
+                       onGenerateRoute: (settings) {
+                         if (settings.name == '/trade/add') {
+diff --git a/am_trade_ui/lib/shared/core/ui/components/trade/instrument_card.dart b/am_trade_ui/lib/shared/core/ui/components/trade/instrument_card.dart
+index 9ac50ab..084748c 100644
+--- a/am_trade_ui/lib/shared/core/ui/components/trade/instrument_card.dart
++++ b/am_trade_ui/lib/shared/core/ui/components/trade/instrument_card.dart
+@@ -189,7 +189,7 @@ class _InstrumentCardState extends State<InstrumentCard> {
+                           return ListTile(
+                             dense: true,
+                             title: Text(instrument['displayName'] ?? instrument['description'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+-                            subtitle: Text('${instrument['symbol']} | ${instrument['exchange']}'),
++                            subtitle: Text('${instrument['symbol'] ?? instrument['tradingSymbol'] ?? instrument['tradingsymbol'] ?? ''} | ${instrument['exchange'] ?? ''}'),
+                             onTap: () {
+                               widget.onInstrumentSelected?.call(instrument);
+                               setState(() => _searchResults = []);

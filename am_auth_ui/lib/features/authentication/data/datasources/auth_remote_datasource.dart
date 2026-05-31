@@ -57,11 +57,19 @@ class AuthRemoteDataSource implements AuthDataSource {
         );
       }
     } on DioException catch (e) {
+      // Safely serialize the response data to avoid OOM in DevTools
+      final errorData = e.response?.data;
+      String safeErrorLog = 'No response data';
+      if (errorData != null) {
+        final str = errorData.toString();
+        safeErrorLog = str.length > 500 ? '${str.substring(0, 500)}... (truncated)' : str;
+      }
+
       // More detailed error handling using AppLogger
       AppLogger.error(
-        'Login API Error',
+        'Login API Error: ${e.message}',
         tag: 'AuthRemoteDataSource',
-        error: e.response?.data,
+        error: safeErrorLog,
       );
 
       if (e.type == DioExceptionType.connectionError ||
@@ -139,16 +147,21 @@ class AuthRemoteDataSource implements AuthDataSource {
         );
       }
     } on DioException catch (e) {
+      // Safely serialize the response data to avoid OOM in DevTools
+      final errorData = e.response?.data;
+      String safeErrorLog = 'No response data';
+      if (errorData != null) {
+        final str = errorData.toString();
+        safeErrorLog = str.length > 500 ? '${str.substring(0, 500)}... (truncated)' : str;
+      }
+
       AppLogger.error(
-        '🔴 [BACKEND] DioException occurred',
+        '🔴 [BACKEND] DioException occurred: ${e.message}',
         tag: 'AuthRemoteDataSource',
-        error: e,
+        error: safeErrorLog,
       );
       
-      AppLogger.error('🔴 [BACKEND] DioException occurred');
       AppLogger.error('🔴 [BACKEND] Type: ${e.type}');
-      AppLogger.error('🔴 [BACKEND] Message: ${e.message}');
-      AppLogger.error('🔴 [BACKEND] Response: ${e.response?.data}');
       AppLogger.error('🔴 [BACKEND] Status Code: ${e.response?.statusCode}');
 
       if (e.type == DioExceptionType.connectionError ||

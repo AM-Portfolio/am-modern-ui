@@ -21,39 +21,43 @@ class PortfolioAnalysisWebPage extends ConsumerStatefulWidget {
   @override
   ConsumerState<PortfolioAnalysisWebPage> createState() =>
       _PortfolioAnalysisWebPageState();
-}
+} 
+
 
 class _PortfolioAnalysisWebPageState
     extends ConsumerState<PortfolioAnalysisWebPage> {
   String _selectedTimeframe = '1M';
   String _selectedAnalysisType = 'Performance';
+  late final PortfolioAnalyticsRequest _analyticsRequest;
+
+  @override
+  void initState() {
+    super.initState();
+    _analyticsRequest = PortfolioAnalyticsRequest(
+      coreIdentifiers: CoreIdentifiers(portfolioId: widget.portfolioId),
+      featureToggles: const FeatureToggles(
+        includeHeatmap: true,
+        includeMovers: true,
+        includeSectorAllocation: true,
+        includeMarketCapAllocation: true,
+      ),
+      featureConfiguration: const FeatureConfiguration(moversLimit: 10),
+      pagination: const Pagination(
+        page: 1,
+        size: 100,
+        sortBy: 'currentValue',
+        sortDirection: 'DESC',
+        returnAllData: true,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final summaryAsync = ref.watch(
       portfolioSummaryProvider(widget.portfolioId),
     );
-    final analyticsAsync = ref.watch(
-      portfolioAnalyticsProvider(
-        PortfolioAnalyticsRequest(
-          coreIdentifiers: CoreIdentifiers(portfolioId: widget.portfolioId),
-          featureToggles: const FeatureToggles(
-            includeHeatmap: true,
-            includeMovers: true,
-            includeSectorAllocation: true,
-            includeMarketCapAllocation: true,
-          ),
-          featureConfiguration: const FeatureConfiguration(moversLimit: 10),
-          pagination: const Pagination(
-            page: 0,
-            size: 100,
-            sortBy: 'currentValue',
-            sortDirection: 'DESC',
-            returnAllData: true,
-          ),
-        ),
-      ),
-    );
+    final analyticsAsync = ref.watch(portfolioAnalyticsProvider(_analyticsRequest));
     final holdingsAsync = ref.watch(
       portfolioHoldingsProvider(widget.portfolioId),
     );

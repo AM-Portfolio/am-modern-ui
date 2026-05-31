@@ -14,6 +14,12 @@ class PortfolioSummaryMapper {
       // Build sector allocation from sectorialHoldings map
       final sectorAllocations = <SectorAllocation>[];
       apiModel.sectorialHoldings.forEach((sectorName, holdings) {
+        // Step A - Name sanitization
+        String sanitizedName = sectorName;
+        if (sanitizedName.isEmpty || sanitizedName == '-' || sanitizedName == 'null') {
+          sanitizedName = 'Uncategorized';
+        }
+
         // Calculate total value for this sector
         double sectorValue = 0.0;
         for (final h in holdings) {
@@ -24,7 +30,7 @@ class PortfolioSummaryMapper {
             : 0.0;
         sectorAllocations.add(
           SectorAllocation(
-            sector: sectorName,
+            sector: sanitizedName,
             value: sectorValue,
             percentage: sectorWeight,
             holdings: holdings.length,
@@ -32,8 +38,50 @@ class PortfolioSummaryMapper {
         );
       });
 
+      // Step B - Merge duplicates
+      final mergedSectors = <String, SectorAllocation>{};
+      for (final alloc in sectorAllocations) {
+        if (mergedSectors.containsKey(alloc.sector)) {
+          final existing = mergedSectors[alloc.sector]!;
+          mergedSectors[alloc.sector] = SectorAllocation(
+            sector: alloc.sector,
+            value: existing.value + alloc.value,
+            percentage: existing.percentage + alloc.percentage,
+            holdings: existing.holdings + alloc.holdings,
+          );
+        } else {
+          mergedSectors[alloc.sector] = alloc;
+        }
+      }
+
+      // Step C - Roll up tiny sectors
+      final finalSectors = <SectorAllocation>[];
+      double othersValue = 0.0, othersPercentage = 0.0;
+      int othersHoldings = 0;
+      bool hasOthers = false;
+
+      for (final sector in mergedSectors.values) {
+        if (sector.percentage < 2.0) {
+          othersValue += sector.value;
+          othersPercentage += sector.percentage;
+          othersHoldings += sector.holdings;
+          hasOthers = true;
+        } else {
+          finalSectors.add(sector);
+        }
+      }
+
+      if (hasOthers) {
+        finalSectors.add(SectorAllocation(
+          sector: 'Others',
+          value: othersValue,
+          percentage: othersPercentage,
+          holdings: othersHoldings,
+        ));
+      }
+
       // Sort sectors by value descending
-      sectorAllocations.sort((a, b) => b.value.compareTo(a.value));
+      finalSectors.sort((a, b) => b.value.compareTo(a.value));
 
       // Build top performers from all holdings (sorted by gainLossPercentage desc)
       final allHoldings = <SectorialEquityHoldingDto>[];
