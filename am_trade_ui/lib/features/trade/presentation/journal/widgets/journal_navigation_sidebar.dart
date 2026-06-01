@@ -17,6 +17,7 @@ class JournalNavigationSidebar extends StatelessWidget {
     this.folders = const [],
     this.tags = const [],
     this.onAddFolder,
+    this.onNewTradeTap,
     this.onEntryDropped,
     super.key,
   });
@@ -28,6 +29,7 @@ class JournalNavigationSidebar extends StatelessWidget {
   final List<NotebookItem> folders;
   final List<NotebookTag> tags;
   final VoidCallback? onAddFolder;
+  final VoidCallback? onNewTradeTap;
   final Function(JournalEntry entry, String folderId)? onEntryDropped;
 
   @override
@@ -223,7 +225,11 @@ class JournalNavigationSidebar extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            // Navigate to NEW TRADE
+            if (onNewTradeTap != null) {
+              onNewTradeTap!();
+            } else {
+              Navigator.of(context).pushNamed('/trade/add');
+            }
           },
           borderRadius: BorderRadius.circular(12),
           child: Row(

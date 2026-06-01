@@ -10,11 +10,13 @@ class JournalEntryListView extends StatelessWidget {
     required this.entries,
     required this.selectedEntryId,
     required this.onEntrySelected,
+    required this.onLogDayPressed,
   });
 
   final List<JournalEntry> entries;
   final String? selectedEntryId;
   final ValueChanged<JournalEntry> onEntrySelected;
+  final VoidCallback onLogDayPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -72,9 +74,7 @@ class JournalEntryListView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: ElevatedButton.icon(
-              onPressed: () {
-                // TODO: Implement Log Day action
-              },
+              onPressed: onLogDayPressed,
               icon: const Icon(Icons.add),
               label: const Text('Log Day'),
               style: ElevatedButton.styleFrom(

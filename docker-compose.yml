@@ -73,12 +73,27 @@ services:
     build:
       context: ../../..
       dockerfile: AM-Repos/ui/am_modern_ui/am_trade_ui/live/Dockerfile
+      args:
+        AM_API_BASE_URL: ${AM_API_BASE_URL}
+        AM_AUTH_BASE_URL: ${AM_AUTH_BASE_URL}
+        AM_USER_BASE_URL: ${AM_USER_BASE_URL}
+        AM_PORTFOLIO_BASE_URL: ${AM_PORTFOLIO_BASE_URL}
+        AM_TRADE_BASE_URL: ${AM_TRADE_BASE_URL}
+        AM_GMAIL_BASE_URL: ${AM_GMAIL_BASE_URL}
+        AM_MARKET_WS_URL: ${AM_MARKET_WS_URL}
+        AM_MARKET_BASE_URL: ${AM_MARKET_BASE_URL}
+        AM_ANALYSIS_BASE_URL: ${AM_ANALYSIS_BASE_URL}
     container_name: am-trade-ui-live
     ports:
       - "9006:80"
     environment:
+<<<<<<< HEAD
       - API_BASE_URL=${TRADE_API_URL:-https://am-dev.asrax.in/api/trade}
       - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am-dev.asrax.in/api/auth}
+=======
+      - API_BASE_URL=${TRADE_API_URL}
+      - AUTH_BASE_URL=${AUTH_BASE_URL}
+>>>>>>> origin/main
     networks:
       - am-infra_am-net
     restart: unless-stopped

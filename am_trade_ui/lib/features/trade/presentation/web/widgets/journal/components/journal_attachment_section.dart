@@ -28,6 +28,7 @@ class JournalAttachmentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SharedAttachmentSection(
+    userId: '',
     imageUrls: imageUrls,
     onAttachmentsChanged: onAttachmentsChanged,
     featureName: featureName,

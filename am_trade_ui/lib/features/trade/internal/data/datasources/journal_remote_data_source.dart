@@ -2,6 +2,7 @@ import 'package:am_library/am_library.dart';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_trade_ui/core/constants/trade_endpoints.dart';
 import '../dtos/journal_entry_dto.dart';
 import 'trade_api_request_util.dart';
 
@@ -40,6 +41,14 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   final ApiClient _apiClient;
   final TradeApiConfig _tradeConfig;
 
+  /// Use ConfigService baseUrl if configured, fall back to the constant
+  String get _baseUrl {
+    try {
+      if (_tradeConfig.baseUrl.isNotEmpty) return _tradeConfig.baseUrl;
+    } catch (_) {}
+    return TradeEndpoints.tradeBaseUrl;
+  }
+
   /// Helper to safely build URI avoiding double slashes
   String _buildUri(String baseUrl, String resource) {
     final cleanBase = baseUrl.endsWith('/')
@@ -61,7 +70,7 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
     try {
       // API Spec: POST /v1/journal
-      final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal');
+      final fullUri = _buildUri(_baseUrl, 'v1/journal');
 
       final response = await _apiClient.post<TradeJournalEntryResponseDto>(
         fullUri,
@@ -90,7 +99,7 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
     try {
       // API Spec: GET /v1/journal/{entryId}
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal');
+      final baseUri = _buildUri(_baseUrl, 'v1/journal');
       final fullUri = '$baseUri/$entryId';
 
       final response = await _apiClient.get<TradeJournalEntryResponseDto>(
@@ -122,7 +131,7 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
     try {
       // API Spec: PUT /v1/journal/{entryId}
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal');
+      final baseUri = _buildUri(_baseUrl, 'v1/journal');
       final fullUri = '$baseUri/$entryId';
 
       final response = await _apiClient.put<TradeJournalEntryResponseDto>(
@@ -152,7 +161,7 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
     try {
       // API Spec: DELETE /v1/journal/{entryId}
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal');
+      final baseUri = _buildUri(_baseUrl, 'v1/journal');
       final fullUri = '$baseUri/$entryId';
 
       await _apiClient.delete<void>(fullUri, parser: (_) {});
@@ -176,7 +185,7 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
     try {
       // API Spec: GET /v1/journal/user (user from JWT)
-      final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal/user');
+      final fullUri = _buildUri(_baseUrl, 'v1/journal/user');
 
       final response = await _apiClient.get<List<TradeJournalEntryResponseDto>>(
         fullUri,
@@ -211,7 +220,7 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
     try {
       // API Spec: GET /v1/journal/trade/{tradeId}
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal/trade');
+      final baseUri = _buildUri(_baseUrl, 'v1/journal/trade');
       final fullUri = '$baseUri/$tradeId';
 
       final response = await _apiClient.get<List<TradeJournalEntryResponseDto>>(
@@ -251,7 +260,7 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
     try {
       // API Spec: GET /v1/journal/date-range?startDate={startDate}&endDate={endDate}
-      final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal/date-range');
+      final baseUri = _buildUri(_baseUrl, 'v1/journal/date-range');
       final fullUri = '$baseUri?startDate=$startDate&endDate=$endDate';
 
       final response = await _apiClient.get<List<TradeJournalEntryResponseDto>>(

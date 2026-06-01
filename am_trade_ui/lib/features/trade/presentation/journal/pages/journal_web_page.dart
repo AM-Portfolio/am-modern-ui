@@ -16,6 +16,7 @@ import '../../notebook/cubit/notebook_cubit.dart';
 import '../../notebook/cubit/notebook_state.dart';
 import '../widgets/journal_three_column_layout.dart';
 import '../widgets/add_folder_dialog.dart';
+import '../../trade_navigation.dart';
 
 class JournalWebPage extends ConsumerStatefulWidget {
   const JournalWebPage({ this.portfolioId, super.key});
@@ -197,6 +198,9 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                             journalCubit: journalCubit,
                             notebookCubit: notebookCubit,
                             onAddFolder: _handleAddFolder,
+                            onNewTradeTap: widget.portfolioId != null 
+                                ? () => openAddTradeWebPage(context, portfolioId: widget.portfolioId!)
+                                : null,
                             onEntryDropped: (entry, folderId) => _handleEntryDropped(entry, folderId, notebookCubit),
                           ),
                       );
