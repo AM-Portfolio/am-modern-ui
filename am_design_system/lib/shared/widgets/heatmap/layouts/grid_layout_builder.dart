@@ -122,8 +122,8 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
   /// Gets appropriate text color based on background color
   @override
   Color getTextColor(Color backgroundColor) {
+    return Colors.white; // Text color: always white for all tiles
   }
-  }}
 
   /// Calculates optimal number of columns to ensure all tiles fit in viewport
   int _calculateOptimalColumns(int tileCount, double width) {
