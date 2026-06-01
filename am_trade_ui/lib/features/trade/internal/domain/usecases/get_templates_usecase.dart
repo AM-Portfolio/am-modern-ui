@@ -9,12 +9,10 @@ class GetTemplatesUseCase {
   final JournalTemplateRepository _repository;
 
   Future<List<JournalTemplate>> call({
-    required String userId,
     JournalTemplateCategory? category,
     String? search,
   }) {
     return _repository.getTemplates(
-      userId: userId,
       category: category,
       search: search,
     );

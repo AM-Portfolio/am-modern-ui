@@ -25,36 +25,37 @@ class NotebookCubit extends Cubit<NotebookState> {
     required this.deleteNotebookTagUseCase,
   }) : super(NotebookInitial());
 
-  Future<void> loadNotebook(String userId, {String? parentId}) async {
+  Future<void> loadNotebook({String? parentId}) async {
     emit(NotebookLoading());
     try {
-      final items = await getNotebookItemsUseCase(userId: userId, parentId: parentId);
-      final tags = await getNotebookTagsUseCase(userId);
+      final items = await getNotebookItemsUseCase(parentId: parentId);
+      final tags = await getNotebookTagsUseCase();
       emit(NotebookLoaded(items: items, tags: tags, currentParentId: parentId));
     } catch (e) {
       emit(NotebookError(e.toString()));
     }
   }
 
-  Future<void> refreshItems(String userId, {String? parentId}) async {
+  Future<void> refreshItems({String? parentId}) async {
     if (state is NotebookLoaded) {
       final currentState = state as NotebookLoaded;
       try {
-        final items = await getNotebookItemsUseCase(userId: userId, parentId: parentId ?? currentState.currentParentId);
+        final items = await getNotebookItemsUseCase(
+          parentId: parentId ?? currentState.currentParentId,
+        );
         emit(currentState.copyWith(items: items, currentParentId: parentId ?? currentState.currentParentId));
       } catch (e) {
         emit(NotebookError(e.toString()));
       }
     } else {
-      loadNotebook(userId, parentId: parentId);
+      await loadNotebook(parentId: parentId);
     }
   }
 
   Future<void> createItem(NotebookItem item) async {
     try {
       await createNotebookItemUseCase(item);
-      // Refresh items after creation
-      await refreshItems(item.userId, parentId: item.parentId);
+      await refreshItems(parentId: item.parentId);
     } catch (e) {
       emit(NotebookError(e.toString()));
     }
@@ -63,28 +64,27 @@ class NotebookCubit extends Cubit<NotebookState> {
   Future<void> updateItem(NotebookItem item) async {
     try {
       await updateNotebookItemUseCase(item);
-      await refreshItems(item.userId, parentId: item.parentId);
+      await refreshItems(parentId: item.parentId);
     } catch (e) {
       emit(NotebookError(e.toString()));
     }
   }
 
-  Future<void> deleteItem(String itemId, String userId, {String? parentId}) async {
+  Future<void> deleteItem(String itemId, {String? parentId}) async {
     try {
       await deleteNotebookItemUseCase(itemId);
-      await refreshItems(userId, parentId: parentId);
+      await refreshItems(parentId: parentId);
     } catch (e) {
       emit(NotebookError(e.toString()));
     }
   }
 
-  // Tags
   Future<void> createTag(NotebookTag tag) async {
     try {
       await createNotebookTagUseCase(tag);
       if (state is NotebookLoaded) {
         final currentState = state as NotebookLoaded;
-        final tags = await getNotebookTagsUseCase(tag.userId);
+        final tags = await getNotebookTagsUseCase();
         emit(currentState.copyWith(tags: tags));
       }
     } catch (e) {

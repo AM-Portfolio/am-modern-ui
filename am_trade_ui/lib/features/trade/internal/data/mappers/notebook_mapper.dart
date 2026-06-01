@@ -26,7 +26,7 @@ class NotebookMapper {
   static dto.NotebookItemDto toNotebookItemDto(NotebookItem entity) {
     return dto.NotebookItemDto(
       id: entity.id,
-      userId: entity.userId,
+      userId: entity.userId ?? '',
       type: _mapItemTypeDto(entity.type),
       parentId: entity.parentId,
       title: entity.title,
@@ -75,7 +75,7 @@ class NotebookMapper {
   static NotebookTagDto toNotebookTagDto(NotebookTag entity) {
     return NotebookTagDto(
       id: entity.id,
-      userId: entity.userId,
+      userId: entity.userId ?? '',
       name: entity.name,
       colorHex: entity.colorHex,
     );

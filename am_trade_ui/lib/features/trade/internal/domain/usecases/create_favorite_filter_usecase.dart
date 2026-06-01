@@ -9,11 +9,10 @@ class CreateFavoriteFilterUseCase {
   final FavoriteFilterRepository _repository;
 
   Future<FavoriteFilter> call({
-    required String userId,
     required String name,
     required MetricsFilterConfig filterConfig,
     String? description,
     bool? isDefault,
   }) async =>
-      _repository.createFavoriteFilter(userId, name, filterConfig, description: description, isDefault: isDefault);
+      _repository.createFavoriteFilter(name, filterConfig, description: description, isDefault: isDefault);
 }

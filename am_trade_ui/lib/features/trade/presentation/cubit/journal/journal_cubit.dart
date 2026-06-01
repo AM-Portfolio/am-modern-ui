@@ -21,11 +21,11 @@ class JournalCubit extends Cubit<JournalState> {
   final UpdateJournalEntryUseCase updateJournalEntry;
   final DeleteJournalEntryUseCase deleteJournalEntry;
 
-  Future<void> loadJournalEntries(String userId) async {
-    AppLogger.methodEntry('loadJournalEntries', tag: 'JournalCubit', params: {'userId': userId});
+  Future<void> loadJournalEntries() async {
+    AppLogger.methodEntry('loadJournalEntries', tag: 'JournalCubit');
     emit(const JournalState.loading());
     try {
-      final entries = await getJournalEntries.getByUser(userId);
+      final entries = await getJournalEntries.getByUser();
       AppLogger.info('Loaded ${entries.length} journal entries', tag: 'JournalCubit');
       emit(JournalState.loaded(entries));
     } catch (e) {
@@ -35,7 +35,6 @@ class JournalCubit extends Cubit<JournalState> {
   }
 
   Future<void> addJournalEntry({
-    required String userId,
     required String title,
     required String content,
     required DateTime entryDate,
@@ -47,11 +46,10 @@ class JournalCubit extends Cubit<JournalState> {
     List<String>? relatedTradeIds,
     List<String>? tagIds,
   }) async {
-    AppLogger.methodEntry('addJournalEntry', tag: 'JournalCubit', params: {'userId': userId, 'title': title});
+    AppLogger.methodEntry('addJournalEntry', tag: 'JournalCubit', params: {'title': title});
     emit(const JournalState.loading());
     try {
       await createJournalEntry(
-        userId: userId,
         title: title,
         content: content,
         entryDate: entryDate,
@@ -65,7 +63,7 @@ class JournalCubit extends Cubit<JournalState> {
       );
       AppLogger.info('Journal entry added successfully', tag: 'JournalCubit');
       emit(const JournalState.success('Journal entry created successfully'));
-      await loadJournalEntries(userId);
+      await loadJournalEntries();
     } catch (e) {
       AppLogger.error('Failed to add journal entry', tag: 'JournalCubit', error: e);
       emit(JournalState.error(e.toString()));
@@ -74,7 +72,6 @@ class JournalCubit extends Cubit<JournalState> {
 
   Future<void> editJournalEntry({
     required String entryId,
-    required String userId,
     required String title,
     required String content,
     required DateTime entryDate,
@@ -91,7 +88,6 @@ class JournalCubit extends Cubit<JournalState> {
     try {
       await updateJournalEntry(
         entryId: entryId,
-        userId: userId,
         title: title,
         content: content,
         entryDate: entryDate,
@@ -105,25 +101,24 @@ class JournalCubit extends Cubit<JournalState> {
       );
       AppLogger.info('Journal entry edited successfully', tag: 'JournalCubit');
       emit(const JournalState.success('Journal entry updated successfully'));
-      await loadJournalEntries(userId);
+      await loadJournalEntries();
     } catch (e) {
       AppLogger.error('Failed to edit journal entry', tag: 'JournalCubit', error: e);
       emit(JournalState.error(e.toString()));
     }
   }
 
-  Future<void> removeJournalEntry(String userId, String entryId) async {
+  Future<void> removeJournalEntry(String entryId) async {
     AppLogger.methodEntry('removeJournalEntry', tag: 'JournalCubit', params: {'entryId': entryId});
     emit(const JournalState.loading());
     try {
       await deleteJournalEntry(entryId);
       AppLogger.info('Journal entry removed successfully', tag: 'JournalCubit');
       emit(const JournalState.success('Journal entry deleted successfully'));
-      await loadJournalEntries(userId);
+      await loadJournalEntries();
     } catch (e) {
       AppLogger.error('Failed to remove journal entry', tag: 'JournalCubit', error: e);
       emit(JournalState.error(e.toString()));
     }
   }
 }
-

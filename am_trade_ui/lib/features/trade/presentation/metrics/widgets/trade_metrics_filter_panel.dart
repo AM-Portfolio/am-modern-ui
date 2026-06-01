@@ -16,16 +16,14 @@ enum MetricsFilterGroupType { dateRange, instrument, tradeCharacteristics, profi
 /// Customized Filter Panel for Trade Metrics
 class TradeMetricsFilterPanel extends ConsumerStatefulWidget {
   const TradeMetricsFilterPanel({
-    required this.userId,
-    required this.initialConfig,
+        required this.initialConfig,
     required this.onApplyFilter,
     super.key,
     this.onReset,
     this.availableMetricTypes = const [],
   });
 
-  final String userId;
-  final MetricsFilterConfig initialConfig;
+    final MetricsFilterConfig initialConfig;
   final Function(MetricsFilterConfig) onApplyFilter;
   final VoidCallback? onReset;
   final List<MetricTypes> availableMetricTypes;

@@ -21,12 +21,10 @@ class NotebookRepositoryImpl implements NotebookRepository {
 
   @override
   Future<List<NotebookItem>> getNotebookItems({
-    required String userId,
     String? parentId,
     NotebookItemType? type,
   }) async {
     final dtos = await _remoteDataSource.getNotebookItems(
-      userId: userId,
       parentId: parentId,
       type: type != null ? NotebookMapper.toNotebookItemDto(NotebookItem(userId: '', type: type, title: '')).type : null, // Hacky way to get enum, better to expose helper in mapper
     );
@@ -64,8 +62,8 @@ class NotebookRepositoryImpl implements NotebookRepository {
   }
 
   @override
-  Future<List<NotebookTag>> getNotebookTags(String userId) async {
-    final dtos = await _remoteDataSource.getNotebookTags(userId);
+  Future<List<NotebookTag>> getNotebookTags() async {
+    final dtos = await _remoteDataSource.getNotebookTags();
     return dtos.map((dto) => NotebookMapper.toNotebookTag(dto)).toList();
   }
 

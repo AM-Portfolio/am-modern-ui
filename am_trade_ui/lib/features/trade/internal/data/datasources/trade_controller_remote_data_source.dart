@@ -7,6 +7,7 @@ import 'package:am_library/am_library.dart';
 import 'package:am_common/am_common.dart';
 import '../dtos/metrics_filter_config_dto.dart';
 import '../dtos/trade_controller_dtos.dart';
+import 'trade_api_request_util.dart';
 
 /// Remote data source for Trade Controller API
 /// Handles all HTTP requests related to trade details management
@@ -55,7 +56,6 @@ abstract class TradeControllerRemoteDataSource {
   /// POST /v1/trades/details/filter
   /// Filter trade details using favorite filter configuration
   Future<FilterTradeDetailsResponseDto> filterTradeDetails({
-    required String userId,
     String? favoriteFilterId,
     MetricsFilterConfigDto? metricsConfig,
     int page = 0,
@@ -152,35 +152,11 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
       // Convert to JSON for API call
       final jsonPayload = tradeDetails.toJson();
 
-      // Log the complete JSON payload for debugging (pretty printed, multi-line)
-      final prettyJson = const JsonEncoder.withIndent('  ').convert(jsonPayload);
-
-      // Single-line JSON for easy copy-paste to Postman
-      final singleLineJson = jsonEncode(jsonPayload);
-
-      // Use print for complete output without truncation
-      print('════════════════════════════════════════════════════════════════');
-      print('📤 COMPLETE JSON PAYLOAD FOR POSTMAN (SINGLE LINE):');
-      print('════════════════════════════════════════════════════════════════');
-
-      // Split single-line JSON into chunks of 800 characters to avoid truncation
-      const chunkSize = 800;
-      for (var i = 0; i < singleLineJson.length; i += chunkSize) {
-        final end = (i + chunkSize < singleLineJson.length) ? i + chunkSize : singleLineJson.length;
-        print(singleLineJson.substring(i, end));
-      }
-
-      print('════════════════════════════════════════════════════════════════');
-      print('📋 Endpoint: POST $fullUri');
-      print('📋 Content-Type: application/json');
-      print('📋 JSON Length: ${singleLineJson.length} characters');
-      print('════════════════════════════════════════════════════════════════');
-
-      AppLogger.debug('📤 POST Request Payload (Complete JSON):\n$prettyJson', tag: 'TradeControllerRemoteDataSource');
+      AppLogger.debug('📤 POST Request Payload (Complete JSON)', tag: 'TradeControllerRemoteDataSource');
 
       final response = await _apiClient.post<TradeDetailsDto>(
         fullUri,
-        body: jsonPayload,
+        body: tradeRequestBodyWithoutUserId(jsonPayload),
         parser: (data) => TradeDetailsDto.fromJson(data! as Map<String, dynamic>),
       );
 
@@ -207,7 +183,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
 
       final response = await _apiClient.put<TradeDetailsDto>(
         fullUri,
-        body: tradeDetails.toJson(),
+        body: tradeRequestBodyWithoutUserId(tradeDetails.toJson()),
         parser: (data) => TradeDetailsDto.fromJson(data! as Map<String, dynamic>),
       );
 
@@ -322,7 +298,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
 
       final response = await _apiClient.post<List<TradeDetailsDto>>(
         fullUri,
-        body: trades.map((trade) => trade.toJson()).toList(),
+        body: trades.map((trade) => tradeRequestBodyWithoutUserId(trade.toJson())).toList(),
         parser: (data) {
           if (data is List) {
             return data.map((json) => TradeDetailsDto.fromJson(json as Map<String, dynamic>)).toList();
@@ -381,14 +357,13 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
 
   @override
   Future<FilterTradeDetailsResponseDto> filterTradeDetails({
-    required String userId,
     String? favoriteFilterId,
     MetricsFilterConfigDto? metricsConfig,
     int page = 0,
     int size = 20,
     String? sort,
   }) async {
-    AppLogger.methodEntry('filterTradeDetails', tag: 'TradeControllerRemoteDataSource', params: {'userId': userId});
+    AppLogger.methodEntry('filterTradeDetails', tag: 'TradeControllerRemoteDataSource', params: {});
 
     try {
       final queryParams = <String>[];
@@ -402,14 +377,13 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
       final fullUri = '$baseUri?${queryParams.join('&')}';
 
       final requestData = FilterTradeDetailsRequestDto(
-        userId: userId,
         favoriteFilterId: favoriteFilterId,
         metricsConfig: metricsConfig,
       );
 
       final response = await _apiClient.post<FilterTradeDetailsResponseDto>(
         fullUri,
-        body: requestData.toJson(),
+        body: tradeRequestBodyWithoutUserId(requestData.toJson()),
         parser: (data) => FilterTradeDetailsResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 

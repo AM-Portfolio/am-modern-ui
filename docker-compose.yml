@@ -14,8 +14,8 @@ services:
       - "9000:80"
     environment:
       - NODE_ENV=production
-      - API_BASE_URL=${API_BASE_URL:-https://am.asrax.in/api}
-      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.asrax.in/api/auth}
+      - API_BASE_URL=${API_BASE_URL:-https://am-dev.asrax.in/api}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am-dev.asrax.in/api/auth}
     networks:
       - am-infra_am-net
     restart: unless-stopped
@@ -35,8 +35,8 @@ services:
     ports:
       - "9002:80"
     environment:
-      - API_BASE_URL=${MARKET_API_URL:-https://am.asrax.in/api/market}
-      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.asrax.in/api/auth}
+      - API_BASE_URL=${MARKET_API_URL:-https://am-dev.asrax.in/api/market}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am-dev.asrax.in/api/auth}
     networks:
       - am-infra_am-net
     restart: unless-stopped
@@ -48,12 +48,20 @@ services:
     build:
       context: ../../..
       dockerfile: AM-Repos/ui/am_modern_ui/am_portfolio_ui/live/Dockerfile
+      args:
+        AM_AUTH_BASE_URL: ${AM_AUTH_BASE_URL:-https://am-dev.asrax.in/auth}
+        AM_PORTFOLIO_BASE_URL: ${AM_PORTFOLIO_BASE_URL:-https://am-dev.asrax.in/portfolio}
+        AM_TRADE_BASE_URL: ${AM_TRADE_BASE_URL:-https://am-dev.asrax.in/trade}
+        AM_MARKET_BASE_URL: ${AM_MARKET_BASE_URL:-https://am-dev.asrax.in/market}
+        AM_ANALYSIS_BASE_URL: ${AM_ANALYSIS_BASE_URL:-https://am-dev.asrax.in/analysis}
+        AM_DOC_PARSER_BASE_URL: ${AM_DOC_PARSER_BASE_URL:-https://am-dev.asrax.in/doc-parser}
+        AM_WS_URL: ${AM_WS_URL:-wss://am-dev.asrax.in/market/ws/market-data-stream}
     container_name: am-portfolio-ui-live
     ports:
       - "9005:80"
     environment:
-      - API_BASE_URL=${PORTFOLIO_API_URL:-https://am.asrax.in/api/portfolio}
-      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.asrax.in/api/auth}
+      - API_BASE_URL=${PORTFOLIO_API_URL:-https://am-dev.asrax.in/api/portfolio}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am-dev.asrax.in/api/auth}
     networks:
       - am-infra_am-net
     restart: unless-stopped
@@ -65,12 +73,22 @@ services:
     build:
       context: ../../..
       dockerfile: AM-Repos/ui/am_modern_ui/am_trade_ui/live/Dockerfile
+      args:
+        AM_API_BASE_URL: ${AM_API_BASE_URL}
+        AM_AUTH_BASE_URL: ${AM_AUTH_BASE_URL}
+        AM_USER_BASE_URL: ${AM_USER_BASE_URL}
+        AM_PORTFOLIO_BASE_URL: ${AM_PORTFOLIO_BASE_URL}
+        AM_TRADE_BASE_URL: ${AM_TRADE_BASE_URL}
+        AM_GMAIL_BASE_URL: ${AM_GMAIL_BASE_URL}
+        AM_MARKET_WS_URL: ${AM_MARKET_WS_URL}
+        AM_MARKET_BASE_URL: ${AM_MARKET_BASE_URL}
+        AM_ANALYSIS_BASE_URL: ${AM_ANALYSIS_BASE_URL}
     container_name: am-trade-ui-live
     ports:
       - "9006:80"
     environment:
-      - API_BASE_URL=${TRADE_API_URL:-https://am.asrax.in/api/trade}
-      - AUTH_BASE_URL=${AUTH_BASE_URL:-https://am.asrax.in/api/auth}
+      - API_BASE_URL=${TRADE_API_URL}
+      - AUTH_BASE_URL=${AUTH_BASE_URL}
     networks:
       - am-infra_am-net
     restart: unless-stopped

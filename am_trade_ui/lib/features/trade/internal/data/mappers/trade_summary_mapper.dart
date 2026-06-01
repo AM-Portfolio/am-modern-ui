@@ -33,7 +33,7 @@ class TradeSummaryMapper {
 
   /// Convert TradeAssetAllocationDto to TradeAssetAllocation domain entity
   /// (To be implemented when asset allocation data becomes available)
-  static List<TradeAssetAllocation>? fromAssetAllocationsDto(Map<String, dynamic>? dto) {
+  static List<TradeAssetAllocation>? fromAssetAllocationsDto(List<dynamic>? dto) {
     // This will be implemented when the API provides proper asset allocation structure
     return null;
   }
@@ -50,7 +50,7 @@ class TradeSummaryMapper {
   /// Convert TradePortfolioSummaryDto to TradeSummary domain entity
   static TradeSummary fromPortfolioSummaryDto(TradePortfolioSummaryDto dto) => TradeSummary(
     portfolioId: dto.portfolioId,
-    name: dto.name,
+    name: dto.name ?? 'Unnamed Portfolio',
     ownerId: dto.ownerId ?? '',
     description: dto.description,
     active: dto.active,

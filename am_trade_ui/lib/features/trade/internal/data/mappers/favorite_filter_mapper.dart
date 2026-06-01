@@ -31,8 +31,8 @@ class FavoriteFilterMapper {
   );
 
   /// Convert list of FavoriteFilterResponseDto to FavoriteFilterList entity
-  static FavoriteFilterList fromListDto(List<FavoriteFilterResponseDto> dtos, String userId) =>
-      FavoriteFilterList(userId: userId, filters: dtos.map(fromResponseDto).toList(), totalCount: dtos.length);
+  static FavoriteFilterList fromListDto(List<FavoriteFilterResponseDto> dtos) =>
+      FavoriteFilterList(userId: '', filters: dtos.map(fromResponseDto).toList(), totalCount: dtos.length);
 
   /// Convert BulkDeleteResponseDto to BulkDeleteResult entity
   static BulkDeleteResult fromBulkDeleteDto(BulkDeleteResponseDto dto) =>

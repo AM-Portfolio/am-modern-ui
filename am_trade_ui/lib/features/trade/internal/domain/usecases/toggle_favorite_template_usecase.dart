@@ -9,11 +9,9 @@ class ToggleFavoriteTemplateUseCase {
 
   Future<JournalTemplate> call({
     required String templateId,
-    required String userId,
-  }) {
+    }) {
     return _repository.toggleFavorite(
       templateId: templateId,
-      userId: userId,
     );
   }
 }

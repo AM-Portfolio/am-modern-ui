@@ -44,7 +44,6 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    print('UrlPreviewWidget building for: ${widget.url}'); // Debug
 
     return Container(
       decoration: BoxDecoration(

@@ -23,15 +23,13 @@ import 'hover_input_field.dart';
 
 class JournalEntryForm extends ConsumerStatefulWidget {
   const JournalEntryForm({
-    required this.userId,
-    required this.cubit,
+        required this.cubit,
     required this.portfolioId,
     super.key,
     this.entry,
   });
 
-  final String userId;
-  final JournalCubit cubit;
+    final JournalCubit cubit;
   final String portfolioId;
   final JournalEntry? entry;
 
@@ -94,27 +92,27 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     _urlController = TextEditingController();
     _entryDate = widget.entry?.entryDate ?? DateTime.now();
 
+    final customFields = widget.entry?.customFields ?? {};
+    
     // Initialize planning phase from customFields
-    _planningBehaviorController = TextEditingController(text: widget.entry?.customFields['planningBehavior'] ?? '');
-    _planningMood = widget.entry?.customFields['planningMood'];
-    _planningSentiment = widget.entry?.customFields['planningSentiment'];
+    _planningBehaviorController = TextEditingController(text: customFields['planningBehavior'] ?? '');
+    _planningMood = customFields['planningMood'];
+    _planningSentiment = customFields['planningSentiment'];
 
     // Initialize mid phase from customFields
-    _midBehaviorController = TextEditingController(text: widget.entry?.customFields['midBehavior'] ?? '');
-    _midMood = widget.entry?.customFields['midMood'];
-    _midSentiment = widget.entry?.customFields['midSentiment'];
+    _midBehaviorController = TextEditingController(text: customFields['midBehavior'] ?? '');
+    _midMood = customFields['midMood'];
+    _midSentiment = customFields['midSentiment'];
 
     // Initialize end phase from customFields (with legacy fallback)
-  
-
-    _endBehaviorController = TextEditingController(text: widget.entry?.customFields['endBehavior'] ?? '');
+    _endBehaviorController = TextEditingController(text: customFields['endBehavior'] ?? '');
     _endMood =
-        widget.entry?.customFields['endMood'] ??
+        customFields['endMood'] ??
         (widget.entry?.behaviorPatternSummaries.isNotEmpty == true
             ? JournalHelpers.mapMoodFromEntry(widget.entry!.behaviorPatternSummaries.first.mood)
             : null);
     _endSentiment =
-        widget.entry?.customFields['endSentiment'] ??
+        customFields['endSentiment'] ??
         (widget.entry?.behaviorPatternSummaries.isNotEmpty == true
             ? JournalHelpers.mapSentimentFromValue(widget.entry!.behaviorPatternSummaries.first.marketSentiment)
             : null);
@@ -160,12 +158,9 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
   void _onUrlChanged() {
     final text = _urlController.text.trim();
-    print('URL Changed: $text'); // Debug
     if (text.isNotEmpty && (text.startsWith('http://') || text.startsWith('https://'))) {
-      print('Setting preview for: $text'); // Debug
       setState(() => _urlPreview = text);
     } else {
-      print('Clearing preview'); // Debug
       setState(() => _urlPreview = null);
     }
   }
@@ -178,7 +173,7 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       switch (period) {
         case TradePeriodType.daily:
           final getTradeCalendarByDay = await ref.read(getTradeCalendarByDayProvider.future);
-          final calendar = await getTradeCalendarByDay(widget.userId, widget.portfolioId, date: date);
+          final calendar = await getTradeCalendarByDay(widget.portfolioId, date: date);
           final trades = calendar.allTrades;
           setState(() {
             _availableTrades = TradeHoldingViewModel.fromEntityList(trades);
@@ -192,10 +187,7 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
         case TradePeriodType.monthly:
           final getTradeCalendarByMonth = await ref.read(getTradeCalendarByMonthProvider.future);
-          final calendar = await getTradeCalendarByMonth(
-            widget.userId,
-            widget.portfolioId,
-            year: date.year,
+          final calendar = await getTradeCalendarByMonth(widget.portfolioId, year: date.year,
             month: date.month,
           );
           final trades = calendar.allTrades;
@@ -213,7 +205,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       // For weekly and yearly, use date range
       final getTradeCalendarByDateRange = await ref.read(getTradeCalendarByDateRangeProvider.future);
       final calendar = await getTradeCalendarByDateRange(
-        widget.userId,
         widget.portfolioId,
         startDate: startDate,
         endDate: endDate,
@@ -223,9 +214,9 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       setState(() {
         _availableTrades = TradeHoldingViewModel.fromEntityList(trades);
       });
-    } catch (e, stackTrace) {
-      print('Error loading trades for period: $e');
-      print('Stack trace: $stackTrace');
+    } catch (e) {
+      // Log error silently for debugging if needed but don't leak to console
+      // AppLogger.error('Error loading trades for period', error: e);
       setState(() {
         _availableTrades = [];
       });
@@ -329,7 +320,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
         if (widget.entry == null) {
           await widget.cubit.addJournalEntry(
-            userId: widget.userId,
             title: _titleController.text,
             content: content,
             entryDate: _entryDate,
@@ -353,7 +343,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         } else {
           await widget.cubit.editJournalEntry(
             entryId: widget.entry!.id,
-            userId: widget.userId,
             title: _titleController.text,
             content: content,
             entryDate: _entryDate,
@@ -431,22 +420,45 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   @override
   Widget build(BuildContext context) => Form(
     key: _formKey,
-    child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 8, 24, 16), child: _buildMainContent()),
-  );
-
-  Widget _buildMainContent() => Builder(
-    builder: (context) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 2, child: _buildLeftColumn(context)),
-            const SizedBox(width: 20),
-            Expanded(child: _buildRightColumn()),
-          ],
-        ),
-      ],
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 650;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isWide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 2, child: _buildLeftColumn(context)),
+                    const SizedBox(width: 20),
+                    Expanded(child: _buildRightColumn()),
+                  ],
+                )
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildLeftColumn(context),
+                    const SizedBox(height: 24),
+                    _buildRightColumn(),
+                  ],
+                ),
+              const SizedBox(height: 24),
+              JournalFormActions(
+                isEditMode: _isEditMode,
+                isSubmitting: _isSubmitting,
+                isNewEntry: widget.entry == null,
+                onSubmit: _submit,
+                onToggleEditMode: () => setState(() => _isEditMode = !_isEditMode),
+                onCancel: () => setState(() => _isEditMode = false),
+              ),
+            ],
+          ),
+        );
+      },
     ),
   );
 
@@ -458,15 +470,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       _buildBehaviorTracking(),
       const SizedBox(height: 12),
       RichTextEditor(controller: _quillController, readOnly: !_isEditMode),
-      const SizedBox(height: 16),
-      JournalFormActions(
-        isEditMode: _isEditMode,
-        isSubmitting: _isSubmitting,
-        isNewEntry: widget.entry == null,
-        onSubmit: _submit,
-        onToggleEditMode: () => setState(() => _isEditMode = !_isEditMode),
-        onCancel: () => setState(() => _isEditMode = false),
-      ),
     ],
   );
 
@@ -528,7 +531,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         imageUrls: _imageUrls,
         onAttachmentsChanged: (urls) => setState(() => _imageUrls = urls),
         featureName: 'journal',
-        userId: widget.userId,
         isEditMode: _isEditMode,
       ),
     ],

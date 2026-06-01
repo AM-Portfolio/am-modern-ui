@@ -11,6 +11,7 @@ import '../internal/domain/usecases/delete_trade.dart';
 import '../internal/domain/usecases/get_trades_by_portfolio.dart';
 import '../internal/domain/usecases/update_trade.dart';
 import '../presentation/cubit/trade_controller_cubit.dart';
+import 'package:get_it/get_it.dart';
 import 'package:am_common/core/di/network_providers.dart';
 
 /// Provider for trade controller remote data source
@@ -23,9 +24,14 @@ final _tradeControllerRemoteDataSourceProvider = FutureProvider<TradeControllerR
 /// Provider for trade controller repository
 final _tradeControllerRepositoryProvider = FutureProvider<TradeControllerRepository>((ref) async {
   final remoteDataSource = await ref.watch(_tradeControllerRemoteDataSourceProvider.future);
+  final stompClient = GetIt.I<AmStompClient>();
 
-  return TradeControllerRepositoryImpl(remoteDataSource: remoteDataSource);
+  return TradeControllerRepositoryImpl(
+    remoteDataSource: remoteDataSource,
+    stompClient: stompClient,
+  );
 });
+
 
 /// Provider for AddTrade use case
 final _addTradeProvider = FutureProvider<AddTrade>((ref) async {
