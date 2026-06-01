@@ -370,8 +370,11 @@ class _PortfolioHeatmapWidgetState
             layout: layout,
           );
         },
-        templateType: widget.config.templateType,
-      ),
+              templateType: widget.config.templateType,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

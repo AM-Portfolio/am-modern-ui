@@ -39,7 +39,7 @@ abstract class HeatmapLayoutBuilder {
   }) {
     if (customTileBuilder != null) {
       return GestureDetector(
-        onTap: onTilePressed,
+        onTap: onTilePressed != null ? () => onTilePressed(tile) : null,
         child: customTileBuilder(tile),
       );
     }
@@ -49,7 +49,7 @@ abstract class HeatmapLayoutBuilder {
     final config = data.configuration;
 
     return GestureDetector(
-      onTap: onTilePressed,
+      onTap: onTilePressed != null ? () => onTilePressed(tile) : null,
       child: Container(
         margin: config.tileMargin ?? const EdgeInsets.all(1),
         decoration: BoxDecoration(
@@ -369,7 +369,7 @@ abstract class HeatmapLayoutBuilder {
   }) {
     if (customTileBuilder != null) {
       return GestureDetector(
-        onTap: onTilePressed,
+        onTap: onTilePressed != null ? () => onTilePressed(tile) : null,
         child: customTileBuilder(tile),
       );
     }
@@ -459,7 +459,7 @@ abstract class HeatmapLayoutBuilder {
     final hierarchyLevel = _calculateHierarchyLevel(tile, data);
 
     return GestureDetector(
-      onTap: onTilePressed,
+      onTap: onTilePressed != null ? () => onTilePressed(tile) : null,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 2),
         decoration: BoxDecoration(
