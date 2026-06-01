@@ -13,7 +13,7 @@ abstract class HeatmapLayoutBuilder {
     HeatmapData data,
     double width,
     double height, {
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
     SectorType? selectedSector,
   });
@@ -34,7 +34,7 @@ abstract class HeatmapLayoutBuilder {
     HeatmapData data, {
     double? width,
     double? height,
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
   }) {
     if (customTileBuilder != null) {
@@ -364,7 +364,7 @@ abstract class HeatmapLayoutBuilder {
     HeatmapTileCardType cardType, {
     double? width,
     double? height,
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
   }) {
     if (customTileBuilder != null) {
@@ -412,7 +412,7 @@ abstract class HeatmapLayoutBuilder {
     HeatmapData data,
     double? width,
     double? height,
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
   ) {
     final hierarchyLevel = _calculateHierarchyLevel(tile, data);
 
@@ -452,7 +452,7 @@ abstract class HeatmapLayoutBuilder {
     HeatmapData data,
     double? width,
     double? height,
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
   ) {
     final tileColor = getTileColor(tile, data);
     final textColor = getTextColor(tileColor);
@@ -497,7 +497,7 @@ abstract class HeatmapLayoutBuilder {
     HeatmapData data,
     double? width,
     double? height,
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
   ) {
     // Treemap uses the standard tile with subtle hierarchy indication
     final hierarchyLevel = _calculateHierarchyLevel(tile, data);

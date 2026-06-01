@@ -16,7 +16,7 @@ class ListLayoutBuilder extends HeatmapLayoutBuilder {
     HeatmapData data,
     double width,
     double height, {
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
     SectorType? selectedSector,
   }) {
@@ -47,7 +47,7 @@ class ListLayoutBuilder extends HeatmapLayoutBuilder {
     HeatmapData data,
     double width,
     double height, {
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
   }) {
     if (tiles.isEmpty) {

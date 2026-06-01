@@ -56,6 +56,14 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             showSubCards: true,
             subtitle: 'Sector Performance Analysis',
           );
+        } else if (analyticsState is PortfolioAnalyticsError) {
+          CommonLogger.warning(
+            'Analytics data failed to load: ${analyticsState.message}',
+            tag: 'PortfolioHeatmapCubit',
+          );
+          if (isClosed) return;
+          emit(const PortfolioHeatmapError(message: 'Failed to load portfolio data. Please retry.'));
+          return;
         } else {
           CommonLogger.warning(
             'Analytics data not loaded or no heatmap data available',
@@ -112,6 +120,11 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
         ),
       );
     }
+  }
+
+  /// Explicitly show an error state
+  void showError(String message) {
+    emit(PortfolioHeatmapError(message: message));
   }
 
   Future<void> updateTimeFrame(TimeFrame timeFrame) async {

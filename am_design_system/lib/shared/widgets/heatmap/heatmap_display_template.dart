@@ -24,7 +24,7 @@ class HeatmapDisplayTemplate extends StatelessWidget {
   final HeatmapData data;
   final bool isLoading;
   final String? error;
-  final VoidCallback? onTilePressed;
+  final Function(HeatmapTileData tile)? onTilePressed;
   final Widget Function(HeatmapTileData tile)? customTileBuilder;
   final HeatmapLayoutType layout;
   final SectorType? selectedSector;

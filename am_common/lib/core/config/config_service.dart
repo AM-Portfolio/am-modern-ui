@@ -17,6 +17,9 @@ import 'package:am_library/am_library.dart' show Environment;
 class ConfigService {
   static AppConfig? _config;
 
+  static String get domain => const String.fromEnvironment('AM_DOMAIN', defaultValue: 'am-dev.asrax.in');
+  static String? override(String key) => null;
+
   static AppConfig get config {
     if (_config == null) {
       // Return a default config instead of throwing to prevent crashes

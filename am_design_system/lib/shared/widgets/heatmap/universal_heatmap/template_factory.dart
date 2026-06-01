@@ -21,7 +21,7 @@ class UniversalHeatmapTemplateFactory {
     required ui_config.HeatmapConfig config,
     required bool isLoading,
     String? error,
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
     SectorType? selectedSector,
   }) {
     CommonLogger.debug(

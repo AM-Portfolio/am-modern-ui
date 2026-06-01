@@ -41,7 +41,7 @@ class UniversalHeatmapWidget extends StatelessWidget {
   final String title;
 
   /// Callback when a tile is pressed
-  final VoidCallback? onTilePressed;
+  final Function(HeatmapTileData tile)? onTilePressed;
 
   /// Callback when filters change
   final Function({

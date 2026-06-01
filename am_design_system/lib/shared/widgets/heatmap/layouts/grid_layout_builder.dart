@@ -16,7 +16,7 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
     HeatmapData data,
     double width,
     double height, {
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
     SectorType? selectedSector,
   }) {
@@ -47,43 +47,47 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
     HeatmapData data,
     double width,
     double height, {
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
   }) {
     if (tiles.isEmpty) {
       return const Center(child: Text('No data available'));
     }
 
-    // Calculate optimal grid parameters to ensure all cards fit
-    final crossAxisCount = _calculateOptimalColumns(tiles.length, width);
     final spacing = _calculateSpacing(width);
     final padding = _calculatePadding(width);
-    final aspectRatio = _calculateOptimalAspectRatio(
-      data,
-      width,
-      height,
-      tiles.length,
-      crossAxisCount,
-    );
 
     return Padding(
       padding: EdgeInsets.all(padding),
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          crossAxisSpacing: spacing,
-          mainAxisSpacing: spacing,
-          childAspectRatio: aspectRatio,
-        ),
-        itemCount: tiles.length,
-        itemBuilder: (context, index) {
-          final tile = tiles[index];
-          return _buildCenteredGridCard(
-            context,
-            tile,
-            data,
-            onTilePressed: onTilePressed,
-            customTileBuilder: customTileBuilder,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final availableWidth = constraints.maxWidth;
+
+          return SingleChildScrollView(
+            child: Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: tiles.map((tile) {
+                // Calculate proportional sizing based on weightage
+                double tileWidth = (tile.weightage / 100) * availableWidth;
+                tileWidth = tileWidth.clamp(72.0, availableWidth * 0.92);
+                double tileHeight = tileWidth * 0.85; // slightly taller to show more text
+
+                return SizedBox(
+                  width: tileWidth,
+                  height: tileHeight,
+                  child: _HeatmapTileCard(
+                    tile: tile,
+                    data: data,
+                    tileWidth: tileWidth,
+                    tileHeight: tileHeight,
+                    tileColor: getTileColor(tile, data),
+                    textColor: getTextColor(getTileColor(tile, data)),
+                    onTilePressed: onTilePressed,
+                  ),
+                );
+              }).toList(),
+            ),
           );
         },
       ),
@@ -94,49 +98,190 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
   @override
   Color getTileColor(HeatmapTileData tile, HeatmapData data) {
     if (!data.configuration.showPerformance) {
-      return Colors
-          .blue
-          .shade400; // Default color when performance is not shown
+      return const Color(0xFF1E2530); // Default color when performance is not shown
     }
 
     final performance = tile.performance;
-    if (performance > 0) {
-      return Color.lerp(
-        Colors.green.shade300,
-        Colors.green.shade700,
-        (performance / 10).clamp(0.0, 1.0),
-      )!;
-    } else if (performance < 0) {
-      return Color.lerp(
-        Colors.red.shade300,
-        Colors.red.shade700,
-        (performance.abs() / 10).clamp(0.0, 1.0),
-      )!;
+    if (performance >= 3.0) {
+      return const Color(0xFF00875A); // strong green
+    } else if (performance >= 1.0) {
+      return const Color(0xFF00B074); // medium green
+    } else if (performance > 0.0) {
+      return const Color(0xFF1A3D2B); // dark green (neutral positive)
+    } else if (performance == 0.0) {
+      return const Color(0xFF1E2530); // dark slate — matches dark theme
+    } else if (performance >= -1.0) {
+      return const Color(0xFF3D1A1A); // dark red (neutral negative)
+    } else if (performance >= -3.0) {
+      return const Color(0xFFB04040); // medium red
     } else {
-      return Colors.grey.shade400; // Neutral for zero performance
+      return const Color(0xFFD32F2F); // strong red
     }
   }
 
   /// Gets appropriate text color based on background color
   @override
   Color getTextColor(Color backgroundColor) {
-    final luminance = backgroundColor.computeLuminance();
-    return luminance > 0.5 ? Colors.black87 : Colors.white;
-  }
+    return Colors.white; // Text color: always white for all tiles
+  }}
 
-  /// Builds a centered grid card with consistent styling and proper alignment
-  Widget _buildCenteredGridCard(
-    BuildContext context,
-    HeatmapTileData tile,
-    HeatmapData data, {
-    VoidCallback? onTilePressed,
-    Widget Function(HeatmapTileData tile)? customTileBuilder,
-  }) {
-    // Get tile color for consistent background
-    final tileColor = getTileColor(tile, data);
-    final textColor = getTextColor(tileColor);
+class _HeatmapTileCard extends StatefulWidget {
+  const _HeatmapTileCard({
+    required this.tile,
+    required this.data,
+    required this.tileWidth,
+    required this.tileHeight,
+    required this.tileColor,
+    required this.textColor,
+    this.onTilePressed,
+  });
+
+  final HeatmapTileData tile;
+  final HeatmapData data;
+  final double tileWidth;
+  final double tileHeight;
+  final Color tileColor;
+  final Color textColor;
+  final Function(HeatmapTileData tile)? onTilePressed;
+
+  @override
+  State<_HeatmapTileCard> createState() => _HeatmapTileCardState();
+}
+
+class _HeatmapTileCardState extends State<_HeatmapTileCard> {
+  bool _isHovered = false;
+
+  Widget _buildTooltip() {
+    final tile = widget.tile;
+    
+    final value = tile.value ?? 0.0;
+    String formattedValue;
+    if (value > 100000) {
+      formattedValue = '₹${(value / 100000).toStringAsFixed(2)}L';
+    } else {
+      formattedValue = '₹${(value / 1000).toStringAsFixed(2)}K';
+    }
+
+    final isPositive = tile.performance >= 0;
+    final perfColor = isPositive ? Colors.green.shade400 : Colors.red.shade400;
 
     return Container(
+      width: 220,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1F2E),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            tile.displayName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                formattedValue,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+              ),
+              Text(
+                '${isPositive ? '+' : ''}${tile.performance.toStringAsFixed(2)}%',
+                style: TextStyle(
+                  color: perfColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${tile.weightage.toStringAsFixed(1)}% of portfolio',
+            style: TextStyle(
+              color: Colors.grey.shade400,
+              fontSize: 12,
+            ),
+          ),
+          if (tile.children != null && tile.children!.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Divider(color: Colors.grey, height: 1),
+            ),
+            const Text(
+              'Top holdings:',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            ...tile.children!.take(3).map((child) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      child.name,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                    Text(
+                      '${child.weightage.toStringAsFixed(1)}%',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tile = widget.tile;
+    final data = widget.data;
+    final tileColor = widget.tileColor;
+    final textColor = widget.textColor;
+    
+    double titleFontSize;
+    double percentFontSize;
+    bool showSubtitle = true;
+
+    if (tile.weightage >= 20.0) {
+      titleFontSize = 14.0;
+      percentFontSize = 16.0;
+    } else if (tile.weightage >= 10.0) {
+      titleFontSize = 12.0;
+      percentFontSize = 14.0;
+    } else if (tile.weightage >= 5.0) {
+      titleFontSize = 11.0;
+      percentFontSize = 12.0;
+    } else {
+      titleFontSize = 9.0;
+      percentFontSize = 10.0;
+      showSubtitle = false;
+    }
+
+    final card = Container(
       margin: const EdgeInsets.all(1), // Minimal margin for visual separation
       decoration: BoxDecoration(
         color: tileColor, // Use consistent tile color as background
@@ -153,7 +298,7 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTilePressed,
+          onTap: () => widget.onTilePressed?.call(widget.tile),
           borderRadius: BorderRadius.circular(6),
           child: Container(
             padding: const EdgeInsets.all(8),
@@ -168,10 +313,7 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
                       tile.name,
                       style: TextStyle(
                         color: textColor,
-                        fontSize: calculateFontSize(
-                          120,
-                          false,
-                        ), // Consistent font size
+                        fontSize: titleFontSize,
                         fontWeight: FontWeight.w600,
                       ),
                       textAlign: TextAlign.center,
@@ -180,35 +322,33 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
                     ),
                   ),
 
-                  const SizedBox(height: 4),
+                  if (showSubtitle) ...[
+                    const SizedBox(height: 4),
 
-                  // Weightage - always show for grid layout
-                  Text(
-                    '${tile.weightage.toStringAsFixed(1)}%',
-                    style: TextStyle(
-                      color: textColor.withOpacity(0.8),
-                      fontSize: calculateFontSize(
-                        120,
-                        false,
-                        isSecondary: true,
-                      ),
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  // Performance if available
-                  if (data.configuration.showPerformance) ...[
-                    const SizedBox(height: 2),
+                    // Weightage - always show for grid layout
                     Text(
-                      '${tile.performance >= 0 ? '+' : ''}${tile.performance.toStringAsFixed(1)}%',
+                      '${tile.weightage.toStringAsFixed(1)}%',
                       style: TextStyle(
-                        color: textColor.withOpacity(0.9),
-                        fontSize: calculateFontSize(120, false, isSmall: true),
-                        fontWeight: FontWeight.w600,
+                        color: textColor.withOpacity(0.8),
+                        fontSize: percentFontSize,
+                        fontWeight: FontWeight.w500,
                       ),
                       textAlign: TextAlign.center,
                     ),
+
+                    // Performance if available
+                    if (data.configuration.showPerformance) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${tile.performance >= 0 ? '+' : ''}${tile.performance.toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          color: textColor.withOpacity(0.9),
+                          fontSize: percentFontSize,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ],
                 ],
               ),
@@ -217,7 +357,28 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
         ),
       ),
     );
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          card,
+          if (_isHovered)
+            Positioned(
+              bottom: widget.tileHeight + 8,
+              left: 0,
+              child: Material(
+                color: Colors.transparent,
+                child: _buildTooltip(),
+              ),
+            ),
+        ],
+      ),
+    );
   }
+}}
 
   /// Calculates optimal number of columns to ensure all tiles fit in viewport
   int _calculateOptimalColumns(int tileCount, double width) {

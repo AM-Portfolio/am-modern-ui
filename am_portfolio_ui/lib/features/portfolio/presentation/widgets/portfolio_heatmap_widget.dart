@@ -89,6 +89,7 @@ class _PortfolioHeatmapWidgetState
   SectorType? _selectedSector;
   MarketCapType? _selectedMarketCap;
   late HeatmapLayoutType _selectedLayout;
+  HeatmapTileData? _drillDownTile;
 
   @override
   void initState() {
@@ -130,6 +131,16 @@ class _PortfolioHeatmapWidgetState
     portfolioAnalyticsCubit
         .loadAnalytics(widget.portfolioId)
         .then((_) {
+          final analyticsState = portfolioAnalyticsCubit.state;
+          if (analyticsState is PortfolioAnalyticsError) {
+            CommonLogger.error(
+              'Analytics failed, skipping heatmap data load',
+              tag: '${widget.config.logTag}.Data',
+            );
+            portfolioHeatmapCubit.showError('Failed to load portfolio data. Please retry.');
+            return;
+          }
+
           CommonLogger.info(
             'Analytics loaded, proceeding with heatmap data',
             tag: '${widget.config.logTag}.Data',
@@ -299,24 +310,58 @@ class _PortfolioHeatmapWidgetState
       ),
     );
 
+    // Drill-down filtering
+    HeatmapData displayData = convertedHeatmapData;
+    if (_drillDownTile != null && _drillDownTile!.children != null) {
+      displayData = convertedHeatmapData.copyWith(
+        tiles: _drillDownTile!.children,
+      );
+    }
+
     // Return UniversalHeatmapWidget with configuration
-    return SizedBox(
-      width: double.infinity,
-      child: UniversalHeatmapWidget(
-        investmentType: InvestmentType.portfolio,
-        heatmapData: convertedHeatmapData,
-        config: _mapToWidgetConfig(customConfig),
-        title: widget.config.title,
-        showSelectors: widget.config.showSelectors,
-        compactMode: widget.config.compactMode,
-        selectedSector: _selectedSector,
-        onTilePressed: () {
-          CommonLogger.userAction(
-            'Heatmap tile pressed',
-            tag: '${widget.config.logTag}.Action',
-          );
-        },
-        onFiltersChanged: ({timeFrame, metric, sector, marketCap, layout}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_drillDownTile != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: InkWell(
+              onTap: () => setState(() => _drillDownTile = null),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.arrow_back, size: 16, color: Colors.blue),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Portfolio > ${_drillDownTile!.displayName}',
+                    style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        Expanded(
+          child: SizedBox(
+            width: double.infinity,
+            child: UniversalHeatmapWidget(
+              investmentType: InvestmentType.portfolio,
+              heatmapData: displayData,
+              config: _mapToWidgetConfig(customConfig),
+              title: widget.config.title,
+              showSelectors: widget.config.showSelectors,
+              compactMode: widget.config.compactMode,
+              selectedSector: _selectedSector,
+              onTilePressed: (HeatmapTileData tile) {
+                if (tile.children != null && tile.children!.isNotEmpty) {
+                  setState(() => _drillDownTile = tile);
+                } else {
+                  CommonLogger.userAction(
+                    'Heatmap stock tile pressed: ${tile.name}',
+                    tag: '${widget.config.logTag}.Action',
+                  );
+                }
+              },
+              onFiltersChanged: ({timeFrame, metric, sector, marketCap, layout}) {
           _onFiltersChanged(
             timeFrame: timeFrame,
             metric: metric,

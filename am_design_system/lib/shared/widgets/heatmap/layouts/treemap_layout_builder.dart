@@ -18,7 +18,7 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     HeatmapData data,
     double width,
     double height, {
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
     SectorType? selectedSector,
   }) {
@@ -89,7 +89,7 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     List<HeatmapTileData> tiles,
     double width,
     double height, {
-    VoidCallback? onTilePressed,
+    Function(HeatmapTileData tile)? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
   }) {
     if (tiles.isEmpty) return [];
