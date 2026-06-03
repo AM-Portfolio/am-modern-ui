@@ -17,7 +17,7 @@ void main() async {
   // Initialize ServiceRegistry
   ServiceRegistry.initialize(
     analysisBaseUrl: ConfigService.config.api.analysis!.baseUrl,
-    wsUrl: ConfigService.config.api.marketData!.wsUrl,
+    wsUrl: EnvDomains.wsStream,
   );
   
   runApp(
