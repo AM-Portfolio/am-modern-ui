@@ -59,7 +59,6 @@ class PortfolioItemHiveModelAdapter
 
 @HiveType(typeId: 7)
 class PortfolioListHiveModel extends HiveObject {
-  @HiveField(0)
   @HiveField(1)
   final DateTime lastUpdated;
 
@@ -99,8 +98,9 @@ class PortfolioListHiveModelAdapter
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return PortfolioListHiveModel(      lastUpdated: fields[1] as DateTime,
-      portfolios: (fields[2] as List).cast<PortfolioItemHiveModel>(),
+    return PortfolioListHiveModel(
+      lastUpdated: fields[1] as DateTime? ?? DateTime.now(),
+      portfolios: (fields[2] as List?)?.cast<PortfolioItemHiveModel>() ?? [],
     );
   }
 

@@ -28,7 +28,7 @@ class PortfolioOverviewWidget extends StatefulWidget {
 }
 
 class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
-  ds.TimeFrame _selectedTimeFrame = ds.TimeFrame.oneMonth;
+  ds.TimeFrame _selectedTimeFrame = ds.TimeFrame.oneYear;
 
   void _onTimeFrameChanged(ds.TimeFrame timeFrame) {
     setState(() {

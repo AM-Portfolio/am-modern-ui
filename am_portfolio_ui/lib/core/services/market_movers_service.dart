@@ -76,7 +76,7 @@ class MarketMoversService {
 
       final headers = await _getHeaders();
       final response = await http.get(uri, headers: headers).timeout(
-        const Duration(seconds: 30),
+        const Duration(seconds: 60),
         onTimeout: () => throw Exception('Connection timeout fetching market movers'),
       );
 
