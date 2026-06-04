@@ -12,7 +12,6 @@ import 'package:intl/intl.dart';
 
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
-import 'package:am_auth_ui/features/authentication/presentation/cubit/auth_cubit.dart';
 import 'package:am_common/am_common.dart';
 
 /// Portfolio overview widget showing summary and key metrics
@@ -30,7 +29,6 @@ class PortfolioOverviewWidget extends StatefulWidget {
 
 class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
   ds.TimeFrame _selectedTimeFrame = ds.TimeFrame.oneMonth;
-  String? _authToken;
 
   void _onTimeFrameChanged(ds.TimeFrame timeFrame) {
     setState(() {
@@ -41,7 +39,6 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
   @override
   void initState() {
     super.initState();
-    _loadAuthToken();
     _triggerLoad();
   }
 
@@ -53,19 +50,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
     }
   }
 
-  Future<void> _loadAuthToken() async {
-    try {
-      final storage = SecureStorageService();
-      final token = await storage.getAccessToken();
-      if (mounted) {
-        setState(() {
-          _authToken = token != null ? 'Bearer $token' : null;
-        });
-      }
-    } catch (e) {
-      debugPrint('[PortfolioOverview] Error loading auth token: $e');
-    }
-  }
+
 
   void _triggerLoad() {
     final cubit = context.read<PortfolioCubit>();

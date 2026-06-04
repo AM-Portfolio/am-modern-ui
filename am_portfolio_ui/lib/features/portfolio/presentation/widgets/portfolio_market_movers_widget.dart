@@ -85,18 +85,18 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            cardColor.withOpacity(isDark ? 0.4 : 0.6),
-            cardColor.withOpacity(isDark ? 0.2 : 0.4),
+            cardColor.withValues(alpha: isDark ? 0.4 : 0.6),
+            cardColor.withValues(alpha: isDark ? 0.2 : 0.4),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -122,7 +122,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -182,10 +182,10 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.15) : Colors.transparent,
+          color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color.withOpacity(0.5) : (isDark ? Colors.white24 : Colors.black12),
+            color: isSelected ? color.withValues(alpha: 0.5) : (isDark ? Colors.white24 : Colors.black12),
           ),
         ),
         child: Text(
@@ -216,7 +216,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
       padding: EdgeInsets.zero,
       itemCount: list.length,
       separatorBuilder: (context, index) => Divider(
-        color: Theme.of(context).dividerColor.withOpacity(0.1),
+        color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
         height: 16,
       ),
       itemBuilder: (context, index) {
@@ -232,7 +232,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
               height: 24,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -290,7 +290,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
