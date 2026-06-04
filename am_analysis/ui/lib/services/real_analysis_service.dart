@@ -53,7 +53,7 @@ class RealAnalysisService implements UiAnalysisService {
       case GroupBy.stock:
         return 'STOCK';
       case GroupBy.industry:
-        return 'SECTOR';
+        return 'SECTOR'; // Uses sector grouping — data now correctly split in am-portfolio
     }
   }
 

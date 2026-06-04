@@ -220,14 +220,16 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                           children: [
                             _buildMetricCard(
                               context,
-                              'Total Balance',
-                              _formatCurrency(state.summary.totalValue),
-                              '${state.summary.totalAssets} Active Holdings',
-                              const Color(0xFF6C5DD3),
-                              Icons.account_balance_wallet,
-                              isPositive: null,
+                              'Total Return',
+                              _formatCurrency(state.summary.totalGainLoss),
+                              '${state.summary.totalGainLossPercentage >= 0 ? "+" : ""}${state.summary.totalGainLossPercentage.toStringAsFixed(2)}% total',
+                              state.summary.totalGainLoss == 0
+                                  ? Colors.grey
+                                  : (state.summary.totalGainLoss > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
+                              Icons.show_chart,
+                              isPositive: state.summary.totalGainLoss == 0 ? null : state.summary.totalGainLoss > 0,
                               compact: isSmallMobile,
-                              tooltip: 'Total value of all holdings based on current market price',
+                              tooltip: 'Total unrealized profit or loss across all holdings',
                             ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
                             _buildMetricCard(
                               context,
@@ -244,16 +246,14 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                             ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0),
                             _buildMetricCard(
                               context,
-                              'Total Return',
-                              _formatCurrency(state.summary.totalGainLoss),
-                              '${state.summary.totalGainLossPercentage >= 0 ? "+" : ""}${state.summary.totalGainLossPercentage.toStringAsFixed(2)}% total',
-                              state.summary.totalGainLoss == 0
-                                  ? Colors.grey
-                                  : (state.summary.totalGainLoss > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
-                              Icons.show_chart,
-                              isPositive: state.summary.totalGainLoss == 0 ? null : state.summary.totalGainLoss > 0,
+                              'Total Balance',
+                              _formatCurrency(state.summary.totalValue),
+                              '${state.summary.totalAssets} Active Holdings',
+                              const Color(0xFF6C5DD3),
+                              Icons.account_balance_wallet,
+                              isPositive: null,
                               compact: isSmallMobile,
-                              tooltip: 'Total unrealized profit or loss across all holdings',
+                              tooltip: 'Total value of all holdings based on current market price',
                             ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0),
                             _buildMetricCard(
                               context,
@@ -274,13 +274,15 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                             Expanded(
                               child: _buildMetricCard(
                                 context,
-                                'Total Balance',
-                                _formatCurrency(state.summary.totalValue),
-                                '${state.summary.totalAssets} Active Holdings',
-                                const Color(0xFF6C5DD3),
-                                Icons.account_balance_wallet,
-                                isPositive: null,
-                                tooltip: 'Total value of all holdings based on current market price',
+                                'Total Return',
+                                _formatCurrency(state.summary.totalGainLoss),
+                                '${state.summary.totalGainLossPercentage >= 0 ? "+" : ""}${state.summary.totalGainLossPercentage.toStringAsFixed(2)}% total',
+                                state.summary.totalGainLoss == 0
+                                    ? Colors.grey
+                                    : (state.summary.totalGainLoss > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
+                                Icons.show_chart,
+                                isPositive: state.summary.totalGainLoss == 0 ? null : state.summary.totalGainLoss > 0,
+                                tooltip: 'Total unrealized profit or loss across all holdings',
                               ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
                             ),
                             const SizedBox(width: 12),
@@ -302,15 +304,13 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                             Expanded(
                               child: _buildMetricCard(
                                 context,
-                                'Total Return',
-                                _formatCurrency(state.summary.totalGainLoss),
-                                '${state.summary.totalGainLossPercentage >= 0 ? "+" : ""}${state.summary.totalGainLossPercentage.toStringAsFixed(2)}% total',
-                                state.summary.totalGainLoss == 0
-                                    ? Colors.grey
-                                    : (state.summary.totalGainLoss > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
-                                Icons.show_chart,
-                                isPositive: state.summary.totalGainLoss == 0 ? null : state.summary.totalGainLoss > 0,
-                                tooltip: 'Total unrealized profit or loss across all holdings',
+                                'Total Balance',
+                                _formatCurrency(state.summary.totalValue),
+                                '${state.summary.totalAssets} Active Holdings',
+                                const Color(0xFF6C5DD3),
+                                Icons.account_balance_wallet,
+                                isPositive: null,
+                                tooltip: 'Total value of all holdings based on current market price',
                               ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0),
                             ),
                             const SizedBox(width: 12),

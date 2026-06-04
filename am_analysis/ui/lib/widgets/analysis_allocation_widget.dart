@@ -259,7 +259,7 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
         SizedBox(height: isMobile ? 12 : 16),
         
         Text(
-          'Top ${topItems.length} ${_getGroupByDisplayName(_selectedGroupBy)}s',
+          'Top ${topItems.length} ${_selectedGroupBy == GroupBy.industry ? 'INDUSTRIES' : '${_getGroupByDisplayName(_selectedGroupBy)}S'}',
           style: TextStyle(
             fontSize: isMobile ? 11 : 12,
             fontWeight: FontWeight.w600,
@@ -399,7 +399,7 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
                                 Expanded(
                                   flex: 2,
                                   child: Text(
-                                    "% SECTOR", 
+                                    "% ${_getGroupByDisplayName(_selectedGroupBy)}", 
                                     textAlign: TextAlign.end, 
                                     style: TextStyle(
                                       fontSize: 10, 

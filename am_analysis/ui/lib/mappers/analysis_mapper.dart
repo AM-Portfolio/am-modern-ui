@@ -28,7 +28,7 @@ class AnalysisMapper {
         sdkItems = sdkResponse.sectors;
         break;
       case GroupBy.industry:
-        sdkItems = sdkResponse.assetClasses; // Using assetClasses as proxy
+        sdkItems = sdkResponse.sectors; // Industry tab uses sector data (grouping fixed upstream in am-portfolio)
         break;
       case GroupBy.marketCap:
         sdkItems = sdkResponse.marketCaps;
