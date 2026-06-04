@@ -151,35 +151,8 @@ class AnalysisMapper {
       }
     }
     
-    // Inject mock losers if none were provided by the backend to satisfy "where is lousser?"
-    if (!hasLosers) {
-      allMovers.addAll([
-        MoverItem(
-          symbol: 'TCS', 
-          name: 'Tata Consultancy Services', 
-          price: 3450.25, 
-          changePercentage: -14.45, 
-          changeAmount: -(3450.25 * 0.1445), 
-          isGainer: false,
-        ),
-        MoverItem(
-          symbol: 'HDFCBANK', 
-          name: 'HDFC Bank', 
-          price: 1530.10, 
-          changePercentage: -6.20, 
-          changeAmount: -(1530.10 * 0.0620), 
-          isGainer: false,
-        ),
-        MoverItem(
-          symbol: 'INFY', 
-          name: 'Infosys', 
-          price: 1420.50, 
-          changePercentage: -22.60, 
-          changeAmount: -(1420.50 * 0.2260), 
-          isGainer: false,
-        ),
-      ]);
-    }
+    // Removed mock losers injection since we are moving to real market data
+
     
     return allMovers;
   }

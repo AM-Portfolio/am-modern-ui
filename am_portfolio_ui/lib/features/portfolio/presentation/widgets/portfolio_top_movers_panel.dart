@@ -1,14 +1,9 @@
-import 'package:am_analysis_core/am_analysis_core.dart';
-import 'package:am_analysis_ui/widgets/analysis_top_movers_widget.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../cubit/portfolio_cubit.dart';
-import '../cubit/portfolio_state.dart';
-import 'holdings_to_movers_mapper.dart';
+import 'portfolio_market_movers_widget.dart';
 
-/// Top movers with holdings-based fallback when analysis API returns 500.
+/// Top movers panel that displays global market top gainers and losers.
 class PortfolioTopMoversPanel extends StatelessWidget {
   const PortfolioTopMoversPanel({
     required this.portfolioId,
@@ -25,28 +20,10 @@ class PortfolioTopMoversPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PortfolioCubit, PortfolioState>(
-      buildWhen: (previous, current) {
-        if (current is PortfolioLoaded && current.portfolioId == portfolioId) {
-          return previous is! PortfolioLoaded ||
-              previous.holdings != current.holdings;
-        }
-        return false;
-      },
-      builder: (context, state) {
-        var holdingsCount = 0;
-        if (state is PortfolioLoaded && state.portfolioId == portfolioId) {
-          holdingsCount = state.holdings.length;
-        }
-
-        return AnalysisTopMoversWidget(
-          key: ValueKey('movers_${timeFrame.code}_${portfolioId}_$holdingsCount'),
-          portfolioId: portfolioId,
-          initialTimeFrame: timeFrame,
-          showTimeFrameSelector: showTimeFrameSelector,
-          height: height,
-        );
-      },
+    return PortfolioMarketMoversWidget(
+      key: ValueKey('market_movers_${timeFrame.code}'),
+      timeFrame: timeFrame,
+      height: height,
     );
   }
 }

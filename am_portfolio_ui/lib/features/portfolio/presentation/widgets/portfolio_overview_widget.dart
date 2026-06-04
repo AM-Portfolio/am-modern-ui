@@ -237,45 +237,49 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                               context,
                               'Total Balance',
                               _formatCurrency(state.summary.totalValue),
-                              '${state.summary.totalGainLossPercentage.isFinite ? (state.summary.totalGainLossPercentage >= 0 ? "+" : "") : ""}${state.summary.totalGainLossPercentage.isFinite ? state.summary.totalGainLossPercentage.toStringAsFixed(2) : "0.00"}%',
+                              '${state.summary.totalAssets} Active Holdings',
                               const Color(0xFF6C5DD3),
                               Icons.account_balance_wallet,
-                              isPositive: state.summary.totalGainLossPercentage >= 0,
+                              isPositive: null,
                               compact: isSmallMobile,
+                              tooltip: 'Total value of all holdings based on current market price',
                             ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
                             _buildMetricCard(
                               context,
-                              'Daily P&L',
+                              'Today\'s P&L',
                               _formatCurrency(state.summary.todayChange),
-                              '${state.summary.todayChange.isFinite ? (state.summary.todayChange >= 0 ? "+" : "") : ""}${state.summary.todayChangePercentage.isFinite ? state.summary.todayChangePercentage.toStringAsFixed(2) : "0.00"}% today',
-                              state.summary.todayChange >= 0
-                                  ? const Color(0xFF00B894)
-                                  : const Color(0xFFFF7675),
+                              '${state.summary.todayChangePercentage >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}% today',
+                              state.summary.todayChange == 0
+                                  ? Colors.grey
+                                  : (state.summary.todayChange > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
                               Icons.trending_up,
-                              isPositive: state.summary.todayChange >= 0,
+                              isPositive: state.summary.todayChange == 0 ? null : state.summary.todayChange > 0,
                               compact: isSmallMobile,
+                              tooltip: 'Unrealized profit or loss for today',
                             ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0),
                             _buildMetricCard(
                               context,
                               'Total Return',
                               _formatCurrency(state.summary.totalGainLoss),
-                              '${state.summary.totalGainLossPercentage.isFinite ? (state.summary.totalGainLossPercentage >= 0 ? "+" : "") : ""}${state.summary.totalGainLossPercentage.isFinite ? state.summary.totalGainLossPercentage.toStringAsFixed(2) : "0.00"}% total',
-                              state.summary.totalGainLoss >= 0
-                                  ? const Color(0xFF00B894)
-                                  : const Color(0xFFFF7675),
+                              '${state.summary.totalGainLossPercentage >= 0 ? "+" : ""}${state.summary.totalGainLossPercentage.toStringAsFixed(2)}% total',
+                              state.summary.totalGainLoss == 0
+                                  ? Colors.grey
+                                  : (state.summary.totalGainLoss > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
                               Icons.show_chart,
-                              isPositive: state.summary.totalGainLoss >= 0,
+                              isPositive: state.summary.totalGainLoss == 0 ? null : state.summary.totalGainLoss > 0,
                               compact: isSmallMobile,
+                              tooltip: 'Total unrealized profit or loss across all holdings',
                             ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0),
                             _buildMetricCard(
                               context,
-                              'Cash Available',
-                              _formatCurrency(12000.00),
-                              'Buying power',
+                              'Invested Amount',
+                              _formatCurrency(state.summary.investmentValue),
+                              'Total Principal',
                               const Color(0xFF4A90E2),
-                              Icons.add_circle_outline,
+                              Icons.savings_outlined,
                               isHighlight: true,
                               compact: isSmallMobile,
+                              tooltip: 'Total principal amount invested',
                             ).animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.2, end: 0),
                           ],
                         )
@@ -287,24 +291,26 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                                 context,
                                 'Total Balance',
                                 _formatCurrency(state.summary.totalValue),
-                                '${state.summary.totalGainLossPercentage.isFinite ? (state.summary.totalGainLossPercentage >= 0 ? "+" : "") : ""}${state.summary.totalGainLossPercentage.isFinite ? state.summary.totalGainLossPercentage.toStringAsFixed(2) : "0.00"}%',
+                                '${state.summary.totalAssets} Active Holdings',
                                 const Color(0xFF6C5DD3),
                                 Icons.account_balance_wallet,
-                                isPositive: state.summary.totalGainLossPercentage >= 0,
+                                isPositive: null,
+                                tooltip: 'Total value of all holdings based on current market price',
                               ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: _buildMetricCard(
                                 context,
-                                'Daily P&L',
+                                'Today\'s P&L',
                                 _formatCurrency(state.summary.todayChange),
-                                '${state.summary.todayChange.isFinite ? (state.summary.todayChange >= 0 ? "+" : "") : ""}${state.summary.todayChangePercentage.isFinite ? state.summary.todayChangePercentage.toStringAsFixed(2) : "0.00"}% today',
-                                state.summary.todayChange >= 0
-                                    ? const Color(0xFF00B894)
-                                    : const Color(0xFFFF7675),
+                                '${state.summary.todayChangePercentage >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}% today',
+                                state.summary.todayChange == 0
+                                    ? Colors.grey
+                                    : (state.summary.todayChange > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
                                 Icons.trending_up,
-                                isPositive: state.summary.todayChange >= 0,
+                                isPositive: state.summary.todayChange == 0 ? null : state.summary.todayChange > 0,
+                                tooltip: 'Unrealized profit or loss for today',
                               ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0),
                             ),
                             const SizedBox(width: 12),
@@ -313,24 +319,26 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                                 context,
                                 'Total Return',
                                 _formatCurrency(state.summary.totalGainLoss),
-                                '${state.summary.totalGainLossPercentage.isFinite ? (state.summary.totalGainLossPercentage >= 0 ? "+" : "") : ""}${state.summary.totalGainLossPercentage.isFinite ? state.summary.totalGainLossPercentage.toStringAsFixed(2) : "0.00"}% total',
-                                state.summary.totalGainLoss >= 0
-                                    ? const Color(0xFF00B894)
-                                    : const Color(0xFFFF7675),
+                                '${state.summary.totalGainLossPercentage >= 0 ? "+" : ""}${state.summary.totalGainLossPercentage.toStringAsFixed(2)}% total',
+                                state.summary.totalGainLoss == 0
+                                    ? Colors.grey
+                                    : (state.summary.totalGainLoss > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
                                 Icons.show_chart,
-                                isPositive: state.summary.totalGainLoss >= 0,
+                                isPositive: state.summary.totalGainLoss == 0 ? null : state.summary.totalGainLoss > 0,
+                                tooltip: 'Total unrealized profit or loss across all holdings',
                               ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: _buildMetricCard(
                                 context,
-                                'Cash Available',
-                                _formatCurrency(12000.00),
-                                'Buying power',
+                                'Invested Amount',
+                                _formatCurrency(state.summary.investmentValue),
+                                'Total Principal',
                                 const Color(0xFF4A90E2),
-                                Icons.add_circle_outline,
+                                Icons.savings_outlined,
                                 isHighlight: true,
+                                tooltip: 'Total principal amount invested',
                               ).animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.2, end: 0),
                             ),
                           ],
@@ -434,9 +442,10 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
     String subtitle,
     Color accentColor,
     IconData icon, {
-    bool isPositive = false,
+    bool? isPositive,
     bool isHighlight = false,
     bool compact = false,
+    String? tooltip,
   }) {
     // Use theme colors
     final cardColor = Theme.of(context).cardColor;
@@ -446,9 +455,11 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
     final horizontalPadding = compact ? 12.0 : 16.0;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
+    return Tooltip(
+      message: tooltip ?? title,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           padding: EdgeInsets.symmetric(
@@ -557,9 +568,9 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (isPositive) ...[
+              if (isPositive != null) ...[
                 Icon(
-                  Icons.arrow_upward_rounded,
+                  isPositive ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
                   size: compact ? 10 : 12,
                   color: isHighlight
                       ? Colors.white.withValues(alpha: 0.9)
@@ -574,11 +585,11 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                     fontSize: compact ? 9 : 11,
                     color: isHighlight
                         ? Colors.white.withValues(alpha: 0.75)
-                        : (isPositive
+                        : ((isPositive != null)
                               ? accentColor
                               : Theme.of(context).textTheme.bodySmall?.color
                                     ?.withValues(alpha: 0.5)),
-                    fontWeight: isPositive ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: (isPositive != null && isPositive) ? FontWeight.w600 : FontWeight.w400,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -587,7 +598,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           ),
         ],
       ),
-    )));
+    ))));
   }
 
   // Helper to format currency

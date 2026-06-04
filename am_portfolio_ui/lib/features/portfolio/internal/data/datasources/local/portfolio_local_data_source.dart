@@ -11,7 +11,7 @@ import 'package:am_design_system/am_design_system.dart';
 /// Local data source for caching portfolio data using Hive
 class PortfolioLocalDataSource {
   static const String _holdingsBoxName = 'portfolio_holdings';
-  static const String _summaryBoxName = 'portfolio_summary';
+  static const String _summaryBoxName = 'portfolio_summary_v2';
   static const String _listBoxName = 'user_portfolios';
 
   /// Initialize Hive and open boxes

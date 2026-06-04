@@ -322,9 +322,7 @@ class PortfolioSummaryHiveModelAdapter
   @override
   void write(BinaryWriter writer, PortfolioSummaryHiveModel obj) {
     writer
-      ..writeByte(19)
-      ..writeByte(0)
-      
+      ..writeByte(18)
       ..writeByte(1)
       ..write(obj.totalValue)
       ..writeByte(2)
