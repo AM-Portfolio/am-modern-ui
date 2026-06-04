@@ -19,6 +19,7 @@ ALIAS_MAP = {
     "ai": "am_ai_ui",
     "doc": "am_doc_intelligence_ui",
     "market": "am_market/ui",
+    "subscription": "am_subscription_ui",
     "market-sdk": "am_market/sdk",
     "market-common": "am_market/common",
     "market-dev": "am_market/dev",
@@ -34,6 +35,7 @@ DEFAULT_PORTS = {
     "am_portfolio_ui": "8082",
     "am_trade_ui": "8083",
     "am_auth_ui": "9002",
+    "am_subscription_ui": "9007",
 }
 
 # Ordered list of dependencies to run clean/get/gen across submodules
@@ -48,6 +50,7 @@ ALL_PACKAGES = [
     "am_diagnostic_ui",
     "am_ai_ui",
     "am_doc_intelligence_ui",
+    "am_subscription_ui",
     "am_user_ui",
     "am_market/sdk",
     "am_market/common",
@@ -152,6 +155,12 @@ def resolve_package(pkg_name):
         print("[Error] Missing package name.")
         sys.exit(1)
     resolved = ALIAS_MAP.get(pkg_name.lower(), pkg_name)
+    
+    # Check if a standalone 'live' app exists under this package directory
+    target_dir = os.path.join(workspace_root, resolved)
+    if os.path.exists(os.path.join(target_dir, "live")):
+        resolved = os.path.join(resolved, "live")
+        
     return resolved
 
 def construct_dart_defines(env_vars):
@@ -164,7 +173,8 @@ def construct_dart_defines(env_vars):
 def get_web_port(package, env_vars):
     if "FLUTTER_WEB_PORT" in env_vars:
         return env_vars["FLUTTER_WEB_PORT"]
-    return DEFAULT_PORTS.get(package, "9000")
+    base_package = package.replace("/live", "").replace("\\live", "")
+    return DEFAULT_PORTS.get(base_package, "9000")
 
 def handle_run(pkg, env_name):
     package = resolve_package(pkg)

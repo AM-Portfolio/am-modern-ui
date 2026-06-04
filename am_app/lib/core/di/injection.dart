@@ -5,6 +5,7 @@ import 'package:am_auth_ui/am_auth_ui.dart' as auth_ui;
 import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard_ui;
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_library/am_library.dart';
+import 'package:am_subscription_ui/am_subscription_ui.dart' as subscription_ui;
 
 final getIt = GetIt.instance;
 
@@ -44,6 +45,7 @@ Future<void> configureDependencies() async {
   _registerAiDependencies();
   _registerDiagnosticDependencies();
   _registerAnalysisDependencies();
+  _registerSubscriptionDependencies();
 
   // ────────────────────────────────────────────────────────────────────────
 
@@ -187,4 +189,30 @@ void _registerDiagnosticDependencies() {
 
 void _registerAnalysisDependencies() {
   // Analysis UI registration placeholder
+}
+
+void _registerSubscriptionDependencies() {
+  final subscriptionDio = Dio(
+    BaseOptions(
+      baseUrl: common.EnvDomains.subscription,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+    ),
+  );
+  subscriptionDio.interceptors.add(
+    auth_ui.AuthInterceptor(getIt<auth_ui.SecureStorageService>()),
+  );
+  getIt.registerSingleton<Dio>(subscriptionDio, instanceName: 'subscriptionDio');
+
+  getIt.registerLazySingleton<subscription_ui.SubscriptionRemoteDataSource>(
+    () => subscription_ui.SubscriptionRemoteDataSourceImpl(
+      getIt<Dio>(instanceName: 'subscriptionDio'),
+    ),
+  );
+
+  getIt.registerLazySingleton<subscription_ui.SubscriptionCubit>(
+    () => subscription_ui.SubscriptionCubit(
+      getIt<subscription_ui.SubscriptionRemoteDataSource>(),
+    ),
+  );
 }
