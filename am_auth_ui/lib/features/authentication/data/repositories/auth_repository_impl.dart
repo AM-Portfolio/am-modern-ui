@@ -14,6 +14,7 @@ import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_data_source.dart';
 import '../datasources/auth_remote_datasource.dart';
+import '../datasources/identity_auth_remote_datasource.dart';
 import '../datasources/mock_auth_datasource.dart';
 import '../models/auth_result_model.dart';
 import '../models/auth_tokens_model.dart';
@@ -24,18 +25,27 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(
     this._mockDataSource,
     this._remoteDataSource,
+    this._identityDataSource,
     this._storageService,
     this._googleSignInService,
   );
   final MockAuthDataSource _mockDataSource;
   final AuthRemoteDataSource _remoteDataSource;
+  final IdentityAuthRemoteDataSource _identityDataSource;
   final SecureStorageService _storageService;
   final GoogleSignInService _googleSignInService;
   final FeatureFlags _featureFlags = FeatureFlags();
 
   /// Get the appropriate data source based on feature flags
-  AuthDataSource get _dataSource =>
-      _featureFlags.useRealBackendAPI ? _remoteDataSource : _mockDataSource;
+  AuthDataSource get _dataSource {
+    if (!_featureFlags.useRealBackendAPI) {
+      return _mockDataSource;
+    }
+    if (_featureFlags.useIdentityAuth) {
+      return _identityDataSource;
+    }
+    return _remoteDataSource;
+  }
 
   @override
   Future<Either<Failure, AuthResultEntity>> register({

@@ -98,11 +98,16 @@ void _registerAuthDependencies() {
     () => auth_ui.AuthRemoteDataSource(getIt<Dio>()),
   );
 
+  getIt.registerLazySingleton<auth_ui.IdentityAuthRemoteDataSource>(
+    () => auth_ui.IdentityAuthRemoteDataSource(getIt<Dio>()),
+  );
+
   // Repository
   getIt.registerLazySingleton<auth_ui.AuthRepository>(
     () => auth_ui.AuthRepositoryImpl(
       getIt<auth_ui.MockAuthDataSource>(),
       getIt<auth_ui.AuthRemoteDataSource>(),
+      getIt<auth_ui.IdentityAuthRemoteDataSource>(),
       getIt<auth_ui.SecureStorageService>(),
       getIt<auth_ui.GoogleSignInService>(),
     ),

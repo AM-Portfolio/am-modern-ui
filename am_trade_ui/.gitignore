@@ -53,3 +53,7 @@ app.*.map.json
 # Coverage
 coverage/
 *.lcov
+
+# Environment and Secret configurations
+.env
+.env.*

@@ -7,6 +7,15 @@ class AuthEndpoints {
       ConfigService.config.api.auth?.baseUrl ?? 'https://am.asrax.in/auth';
   static String get userBaseUrl =>
       ConfigService.config.api.user?.baseUrl ?? 'https://am.asrax.in/users';
+  static String get identityBaseUrl =>
+      ConfigService.override('identity') ?? 'https://${ConfigService.domain}/identity';
+
+  // Identity authentication endpoints
+  static String get identityLogin => '$identityBaseUrl/auth/login';
+  static String get identityRegister => '$identityBaseUrl/auth/register';
+  static String get identityLogout => '$identityBaseUrl/auth/logout';
+  static String get identityRefreshToken => '$identityBaseUrl/auth/refresh';
+  static String get identityGoogleLogin => '$identityBaseUrl/auth/google/token';
 
   // Authentication endpoints
   static String get login =>
