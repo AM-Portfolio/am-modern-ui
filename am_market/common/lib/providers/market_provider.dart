@@ -74,9 +74,6 @@ class MarketProvider with ChangeNotifier {
 
   // Legacy Store Support
   Map<String, Map<String, dynamic>> get livePrices {
-      if (_priceService != null) {
-          return {}; // UI should use QuoteChange, ignoring legacy map for PriceService path
-      }
       return _internalLivePrices; 
   }
 
@@ -88,7 +85,7 @@ class MarketProvider with ChangeNotifier {
               return quote.toJson()..['symbol'] = symbol;
           }
       }
-      return _internalLivePrices[symbol];
+      return _internalLivePrices[symbol] ?? _internalLivePrices[symbol.toUpperCase()];
   }
 
   // Restored Getters
@@ -172,10 +169,15 @@ class MarketProvider with ChangeNotifier {
   void _processSingleUpdate(String rawSymbol, Map<String, dynamic> data) {
       // 1. Store with raw key
       _internalLivePrices[rawSymbol] = data;
+      _internalLivePrices[rawSymbol.toUpperCase()] = data;
 
       // 2. Store with base key
       if (rawSymbol.contains(':')) {
-        final baseSymbol = rawSymbol.split(':').last;
+        final baseSymbol = rawSymbol.split(':').last.toUpperCase();
+        _internalLivePrices[baseSymbol] = data;
+      }
+      if (rawSymbol.contains('|')) {
+        final baseSymbol = rawSymbol.split('|').last.toUpperCase();
         _internalLivePrices[baseSymbol] = data;
       }
       

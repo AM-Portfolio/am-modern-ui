@@ -35,7 +35,7 @@ class ConstituentsTable extends StatelessWidget {
             SortableColumn<StockData>(
               title: 'Price',
               builder: (stock) {
-                final liveData = provider.livePrices[stock.symbol];
+                final liveData = provider.getPrice(stock.symbol);
                 final price = liveData != null ? (liveData['lastPrice'] as num).toDouble() : stock.lastPrice;
                 return Text(
                   price.toStringAsFixed(2),
@@ -51,7 +51,7 @@ class ConstituentsTable extends StatelessWidget {
             SortableColumn<StockData>(
               title: 'Change %',
               builder: (stock) {
-                final liveData = provider.livePrices[stock.symbol];
+                final liveData = provider.getPrice(stock.symbol);
                 final pChange = liveData != null ? (liveData['changePercent'] as num).toDouble() : stock.pChange;
                 final isPositive = pChange >= 0;
                 return Text(
