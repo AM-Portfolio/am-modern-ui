@@ -15,10 +15,13 @@ class SubscriptionPricingScreen extends StatefulWidget {
 class _SubscriptionPricingScreenState extends State<SubscriptionPricingScreen> {
   bool _isAnnual = true;
   final ScrollController _scrollController = ScrollController();
+  late PageController _pageController;
+  int _currentPage = 0;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(viewportFraction: 0.85);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<SubscriptionCubit>().loadPlansAndSubscription();
@@ -29,6 +32,7 @@ class _SubscriptionPricingScreenState extends State<SubscriptionPricingScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -69,18 +73,32 @@ class _SubscriptionPricingScreenState extends State<SubscriptionPricingScreen> {
       
       // Delay slightly to allow layout calculations to finish
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (_scrollController.hasClients) {
-          final screenWidth = MediaQuery.of(context).size.width;
-          const cardWidth = 300.0; // card width is 280 + margins (10 * 2) = 300
-          
-          final targetOffset = (activeIndex * cardWidth) - (screenWidth - cardWidth) / 2;
-          final maxScroll = _scrollController.position.maxScrollExtent;
-          
-          _scrollController.animateTo(
-            targetOffset.clamp(0.0, maxScroll),
-            duration: const Duration(milliseconds: 800),
-            curve: Curves.easeInOutCubic,
-          );
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isMobile = screenWidth < 768;
+
+        if (isMobile) {
+          if (_pageController.hasClients) {
+            setState(() {
+              _currentPage = activeIndex;
+            });
+            _pageController.animateToPage(
+              activeIndex,
+              duration: const Duration(milliseconds: 800),
+              curve: Curves.easeInOutCubic,
+            );
+          }
+        } else {
+          if (_scrollController.hasClients) {
+            const cardWidth = 300.0; // card width is 280 + margins (10 * 2) = 300
+            final targetOffset = (activeIndex * cardWidth) - (screenWidth - cardWidth) / 2;
+            final maxScroll = _scrollController.position.maxScrollExtent;
+            
+            _scrollController.animateTo(
+              targetOffset.clamp(0.0, maxScroll),
+              duration: const Duration(milliseconds: 800),
+              curve: Curves.easeInOutCubic,
+            );
+          }
         }
       });
     });
@@ -108,16 +126,23 @@ class _SubscriptionPricingScreenState extends State<SubscriptionPricingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Pricing & Subscriptions',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
         centerTitle: true,
       ),
       body: BlocConsumer<SubscriptionCubit, SubscriptionState>(
@@ -184,6 +209,107 @@ class _SubscriptionPricingScreenState extends State<SubscriptionPricingScreen> {
           final premiumPlan = _findPlan(plans, 'premium', _isAnnual);
 
           final bool isActionInProgress = state is SubscriptionActionInProgress;
+          final screenWidth = MediaQuery.of(context).size.width;
+          final isMobile = screenWidth < 768;
+
+          final List<Widget> cards = [
+            // Free Card
+            if (freePlan != null)
+              PricingCard(
+                title: freePlan.name,
+                description: freePlan.description,
+                monthlyPrice: freePlan.amountInr,
+                annualPrice: freePlan.amountInr,
+                isAnnual: _isAnnual,
+                ctaText: currentSubscription?.planCode == freePlan.code
+                    ? 'Current Plan'
+                    : 'Get Started',
+                onCtaPressed: (isActionInProgress ||
+                        currentSubscription?.planCode == freePlan.code)
+                    ? null
+                    : () => _handlePlanAction(context, state, freePlan),
+                primaryColor: Colors.grey.shade400,
+                features: freePlan.features,
+                isCurrentPlan: currentSubscription?.planCode == freePlan.code,
+              ),
+
+            // Pro Card
+            if (proPlan != null)
+              PricingCard(
+                title: 'Pro',
+                description: proPlan.description,
+                monthlyPrice: proPlan.interval == 'monthly'
+                    ? proPlan.amountInr
+                    : (proPlan.amountInr / 12).round(),
+                annualPrice: proPlan.interval == 'yearly'
+                    ? proPlan.amountInr
+                    : proPlan.amountInr * 12,
+                isAnnual: _isAnnual,
+                ctaText: currentSubscription?.planCode == proPlan.code
+                    ? 'Current Plan'
+                    : (isActionInProgress ? 'Processing...' : 'Upgrade to Pro'),
+                onCtaPressed: (isActionInProgress ||
+                        currentSubscription?.planCode == proPlan.code)
+                    ? null
+                    : () => _handlePlanAction(context, state, proPlan),
+                primaryColor: const Color(0xFF1B64F2),
+                isPopular: true,
+                features: proPlan.features,
+                isCurrentPlan: currentSubscription?.planCode == proPlan.code,
+              ),
+
+            // Premium Card
+            if (premiumPlan != null)
+              PricingCard(
+                title: 'Premium',
+                description: premiumPlan.description,
+                monthlyPrice: premiumPlan.interval == 'monthly'
+                    ? premiumPlan.amountInr
+                    : (premiumPlan.amountInr / 12).round(),
+                annualPrice: premiumPlan.interval == 'yearly'
+                    ? premiumPlan.amountInr
+                    : premiumPlan.amountInr * 12,
+                isAnnual: _isAnnual,
+                ctaText: currentSubscription?.planCode == premiumPlan.code
+                    ? 'Current Plan'
+                    : (isActionInProgress ? 'Processing...' : 'Get Premium'),
+                onCtaPressed: (isActionInProgress ||
+                        currentSubscription?.planCode == premiumPlan.code)
+                    ? null
+                    : () => _handlePlanAction(context, state, premiumPlan),
+                primaryColor: const Color(0xFFA824EE),
+                features: premiumPlan.features,
+                isCurrentPlan: currentSubscription?.planCode == premiumPlan.code,
+              ),
+
+            // Enterprise Card
+            PricingCard(
+              title: 'Enterprise',
+              description: 'Custom solutions and unlimited usage for scaling teams.',
+              monthlyPrice: 0,
+              annualPrice: 0,
+              isAnnual: _isAnnual,
+              ctaText: 'Contact Sales',
+              onCtaPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Contact sales triggered!')),
+                );
+              },
+              primaryColor: const Color(0xFFE87C00),
+              isCustom: true,
+              features: const [
+                'Unlimited Portfolios & Analytics',
+                'Unlimited AI Document Parsing',
+                'Enterprise Custom AI Agents',
+                'Dedicated Account Manager',
+                'Custom API Access',
+                'White-label Reports',
+                'Advanced Team Permissions',
+                'Priority 24/7 Support',
+                'On-premise Deployment'
+              ],
+            ),
+          ];
 
           return SingleChildScrollView(
             child: Padding(
@@ -191,160 +317,63 @@ class _SubscriptionPricingScreenState extends State<SubscriptionPricingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  if (currentSubscription != null) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.only(bottom: 24),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.blue.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline, color: Colors.blue.shade700),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Current Active Subscription: ${currentSubscription.planName}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue.shade900,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'State: ${currentSubscription.state.toUpperCase()} • Interval: ${currentSubscription.billingInterval}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blue.shade800,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
                   BillingToggle(
                     isAnnual: _isAnnual,
                     onChanged: (value) => setState(() => _isAnnual = value),
                   ),
                   const SizedBox(height: 40),
-                  // Lay out all 4 cards in one scrollable row
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Free Card
-                        if (freePlan != null)
-                          PricingCard(
-                            title: freePlan.name,
-                            description: freePlan.description,
-                            monthlyPrice: freePlan.amountInr,
-                            annualPrice: freePlan.amountInr,
-                            isAnnual: _isAnnual,
-                            ctaText: currentSubscription?.planCode == freePlan.code
-                                ? 'Current Plan'
-                                : 'Get Started',
-                            onCtaPressed: (isActionInProgress ||
-                                    currentSubscription?.planCode == freePlan.code)
-                                ? null
-                                : () => _handlePlanAction(context, state, freePlan),
-                            primaryColor: Colors.grey.shade400,
-                            features: freePlan.features,
-                            isCurrentPlan: currentSubscription?.planCode == freePlan.code,
-                          ),
 
-                        // Pro Card
-                        if (proPlan != null)
-                          PricingCard(
-                            title: 'Pro',
-                            description: proPlan.description,
-                            monthlyPrice: proPlan.interval == 'monthly'
-                                ? proPlan.amountInr
-                                : (proPlan.amountInr / 12).round(),
-                            annualPrice: proPlan.interval == 'yearly'
-                                ? proPlan.amountInr
-                                : proPlan.amountInr * 12,
-                            isAnnual: _isAnnual,
-                            ctaText: currentSubscription?.planCode == proPlan.code
-                                ? 'Current Plan'
-                                : (isActionInProgress ? 'Processing...' : 'Upgrade to Pro'),
-                            onCtaPressed: (isActionInProgress ||
-                                    currentSubscription?.planCode == proPlan.code)
-                                ? null
-                                : () => _handlePlanAction(context, state, proPlan),
-                            primaryColor: const Color(0xFF1B64F2),
-                            isPopular: true,
-                            features: proPlan.features,
-                            isCurrentPlan: currentSubscription?.planCode == proPlan.code,
-                          ),
-
-                        // Premium Card
-                        if (premiumPlan != null)
-                          PricingCard(
-                            title: 'Premium',
-                            description: premiumPlan.description,
-                            monthlyPrice: premiumPlan.interval == 'monthly'
-                                ? premiumPlan.amountInr
-                                : (premiumPlan.amountInr / 12).round(),
-                            annualPrice: premiumPlan.interval == 'yearly'
-                                ? premiumPlan.amountInr
-                                : premiumPlan.amountInr * 12,
-                            isAnnual: _isAnnual,
-                            ctaText: currentSubscription?.planCode == premiumPlan.code
-                                ? 'Current Plan'
-                                : (isActionInProgress ? 'Processing...' : 'Get Premium'),
-                            onCtaPressed: (isActionInProgress ||
-                                    currentSubscription?.planCode == premiumPlan.code)
-                                ? null
-                                : () => _handlePlanAction(context, state, premiumPlan),
-                            primaryColor: const Color(0xFFA824EE),
-                            features: premiumPlan.features,
-                            isCurrentPlan: currentSubscription?.planCode == premiumPlan.code,
-                          ),
-
-                        // Enterprise Card
-                        PricingCard(
-                          title: 'Enterprise',
-                          description: 'Custom solutions and unlimited usage for scaling teams.',
-                          monthlyPrice: 0,
-                          annualPrice: 0,
-                          isAnnual: _isAnnual,
-                          ctaText: 'Contact Sales',
-                          onCtaPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Contact sales triggered!')),
-                            );
-                          },
-                          primaryColor: const Color(0xFFE87C00),
-                          isCustom: true,
-                          features: const [
-                            'Unlimited Portfolios & Analytics',
-                            'Unlimited AI Document Parsing',
-                            'Enterprise Custom AI Agents',
-                            'Dedicated Account Manager',
-                            'Custom API Access',
-                            'White-label Reports',
-                            'Advanced Team Permissions',
-                            'Priority 24/7 Support',
-                            'On-premise Deployment'
-                          ],
-                        ),
-                      ],
+                  if (isMobile) ...[
+                    // Mobile View: Swipeable PageView with dot indicators
+                    SizedBox(
+                      height: 560,
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentPage = index;
+                          });
+                        },
+                        children: cards,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        cards.length,
+                        (index) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: _currentPage == index ? 24 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _currentPage == index
+                                ? theme.colorScheme.primary
+                                : (isDark ? Colors.white30 : Colors.black12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    // Desktop View: Center-aligned horizontal row (scrollable if screen is narrow)
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minWidth: screenWidth - 32, // account for horizontal padding
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: cards,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

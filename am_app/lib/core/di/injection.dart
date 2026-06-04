@@ -192,9 +192,16 @@ void _registerAnalysisDependencies() {
 }
 
 void _registerSubscriptionDependencies() {
+  String baseUrl = common.EnvDomains.subscription;
+  if (baseUrl.endsWith('/subscriptions')) {
+    baseUrl = baseUrl.substring(0, baseUrl.length - '/subscriptions'.length);
+  } else if (baseUrl.endsWith('/subscriptions/')) {
+    baseUrl = baseUrl.substring(0, baseUrl.length - '/subscriptions/'.length);
+  }
+
   final subscriptionDio = Dio(
     BaseOptions(
-      baseUrl: common.EnvDomains.subscription,
+      baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
     ),

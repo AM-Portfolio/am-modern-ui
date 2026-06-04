@@ -39,6 +39,9 @@ class _PricingCardState extends State<PricingCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
     final currentPrice = widget.isAnnual ? (widget.annualPrice / 12).round() : widget.monthlyPrice;
     
     return MouseRegion(
@@ -52,14 +55,14 @@ class _PricingCardState extends State<PricingCard> {
         width: 280,
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardTheme.color ?? (isDark ? const Color(0xFF2C2C3E) : Colors.white),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: widget.isCurrentPlan
                 ? const Color(0xFF10B981) // Green for active plan
                 : (_isHovered 
                     ? widget.primaryColor 
-                    : (widget.isPopular ? widget.primaryColor : Colors.grey.shade200)),
+                    : (widget.isPopular ? widget.primaryColor : (isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade200))),
             width: (widget.isCurrentPlan || widget.isPopular || _isHovered) ? 2 : 1,
           ),
           boxShadow: [
@@ -71,13 +74,13 @@ class _PricingCardState extends State<PricingCard> {
               )
             else if (_isHovered)
               BoxShadow(
-                color: widget.primaryColor.withOpacity(0.18),
+                color: widget.primaryColor.withOpacity(isDark ? 0.25 : 0.18),
                 blurRadius: 25,
                 offset: const Offset(0, 12),
               )
             else if (widget.isPopular)
               BoxShadow(
-                color: widget.primaryColor.withOpacity(0.1),
+                color: widget.primaryColor.withOpacity(isDark ? 0.15 : 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               )
@@ -94,10 +97,10 @@ class _PricingCardState extends State<PricingCard> {
                 children: [
                   Text(
                     widget.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -105,7 +108,7 @@ class _PricingCardState extends State<PricingCard> {
                     widget.description,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade600,
+                      color: isDark ? Colors.white70 : Colors.grey.shade600,
                       height: 1.4,
                     ),
                   ),
@@ -116,10 +119,10 @@ class _PricingCardState extends State<PricingCard> {
                       children: [
                         Text(
                           '₹$currentPrice',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w800,
-                            color: Colors.black,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -127,7 +130,7 @@ class _PricingCardState extends State<PricingCard> {
                           '/mo',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey.shade500,
+                            color: isDark ? Colors.white54 : Colors.grey.shade500,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -139,7 +142,7 @@ class _PricingCardState extends State<PricingCard> {
                         'Billed annually (₹${widget.annualPrice}/yr)',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade500,
+                          color: isDark ? Colors.white54 : Colors.grey.shade500,
                         ),
                       ),
                     ] else if (widget.annualPrice == 0) ...[
@@ -148,19 +151,19 @@ class _PricingCardState extends State<PricingCard> {
                         'Free forever',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade500,
+                          color: isDark ? Colors.white54 : Colors.grey.shade500,
                         ),
                       ),
                     ] else ...[
                       const SizedBox(height: 18), // Spacer to match height
                     ]
                   ] else ...[
-                    const Text(
+                    Text(
                       'Custom',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w800,
-                        color: Colors.black,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -168,7 +171,7 @@ class _PricingCardState extends State<PricingCard> {
                       'Contact us for team pricing',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: isDark ? Colors.white54 : Colors.grey.shade500,
                       ),
                     ),
                   ],
@@ -179,17 +182,17 @@ class _PricingCardState extends State<PricingCard> {
                       onPressed: widget.onCtaPressed,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: widget.onCtaPressed == null 
-                            ? (widget.isCurrentPlan ? const Color(0xFFE8F5E9) : Colors.grey.shade200) 
+                            ? (widget.isCurrentPlan ? (isDark ? const Color(0xFF064E3B) : const Color(0xFFE8F5E9)) : (isDark ? const Color(0xFF1E293B) : Colors.grey.shade200)) 
                             : widget.primaryColor,
                         foregroundColor: widget.onCtaPressed == null 
-                            ? (widget.isCurrentPlan ? const Color(0xFF2E7D32) : Colors.grey.shade500) 
-                            : (widget.title == 'Free' ? Colors.black87 : Colors.white),
+                            ? (widget.isCurrentPlan ? (isDark ? const Color(0xFF34D399) : const Color(0xFF2E7D32)) : (isDark ? Colors.white38 : Colors.grey.shade500)) 
+                            : (widget.title == 'Free' ? (isDark ? Colors.white : Colors.black87) : Colors.white),
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                           side: widget.title == 'Free' && widget.onCtaPressed != null
-                              ? BorderSide(color: Colors.grey.shade300) 
+                              ? BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300) 
                               : BorderSide.none,
                         ),
                       ),
@@ -221,7 +224,7 @@ class _PricingCardState extends State<PricingCard> {
                             feature,
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey.shade700,
+                              color: isDark ? Colors.white70 : Colors.grey.shade700,
                               height: 1.4,
                             ),
                           ),

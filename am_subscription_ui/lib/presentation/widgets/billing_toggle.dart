@@ -18,6 +18,9 @@ class BillingToggle extends StatefulWidget {
 class _BillingToggleState extends State<BillingToggle> {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Stack(
       clipBehavior: Clip.none, // Allow discount tag to float outside bounds
       children: [
@@ -30,15 +33,15 @@ class _BillingToggleState extends State<BillingToggle> {
               width: 260,
               height: 50,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.55), // Semi-transparent glass white
+                color: isDark ? Colors.black.withOpacity(0.35) : Colors.white.withOpacity(0.55), // Semi-transparent glass background
                 borderRadius: BorderRadius.circular(30),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.35),
+                  color: isDark ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.35),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
+                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.02),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -91,7 +94,7 @@ class _BillingToggleState extends State<BillingToggle> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: !widget.isAnnual ? FontWeight.bold : FontWeight.w600,
-                                  color: !widget.isAnnual ? Colors.white : Colors.grey.shade700,
+                                  color: !widget.isAnnual ? Colors.white : (isDark ? Colors.white60 : Colors.grey.shade700),
                                 ),
                               ),
                             ),
@@ -109,7 +112,7 @@ class _BillingToggleState extends State<BillingToggle> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: widget.isAnnual ? FontWeight.bold : FontWeight.w600,
-                                  color: widget.isAnnual ? Colors.white : Colors.grey.shade700,
+                                  color: widget.isAnnual ? Colors.white : (isDark ? Colors.white60 : Colors.grey.shade700),
                                 ),
                               ),
                             ),

@@ -18,9 +18,16 @@ void main() async {
   GetIt.I.registerSingleton<SecureStorageService>(storage);
 
   // Configure authenticated Dio client targeting subscription service base URL
+  String baseUrl = EnvDomains.subscription;
+  if (baseUrl.endsWith('/subscriptions')) {
+    baseUrl = baseUrl.substring(0, baseUrl.length - '/subscriptions'.length);
+  } else if (baseUrl.endsWith('/subscriptions/')) {
+    baseUrl = baseUrl.substring(0, baseUrl.length - '/subscriptions/'.length);
+  }
+
   final subscriptionDio = Dio(
     BaseOptions(
-      baseUrl: EnvDomains.subscription,
+      baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
     ),
