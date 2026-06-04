@@ -26,6 +26,23 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
 
   // String _getColorSchemeName(double pChange) ... (Not used in build? kept if needed or removed if unused)
 
+  StockIndicesMarketData _withLivePrice(MarketProvider provider, StockIndicesMarketData data) {
+    final liveData = provider.getPrice(data.indexSymbol);
+    if (liveData == null) return data;
+
+    final lastPrice = (liveData['lastPrice'] as num?)?.toDouble();
+    final change = (liveData['change'] as num?)?.toDouble();
+    final changePercent = (liveData['changePercent'] as num?)?.toDouble();
+
+    if (lastPrice == null && change == null && changePercent == null) return data;
+
+    return data.copyWith(
+      lastPrice: lastPrice ?? data.lastPrice,
+      change: change ?? data.change,
+      pChange: changePercent ?? data.pChange,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Listen to real-time updates and bridge to MarketProvider
@@ -75,7 +92,9 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
           );
         }
 
-        final allIndices = List<StockIndicesMarketData>.from(provider.allIndicesData);
+        final allIndices = provider.allIndicesData
+            .map((data) => _withLivePrice(provider, data))
+            .toList();
         allIndices.sort((a, b) => b.pChange.compareTo(a.pChange));
         final isDark = Theme.of(context).brightness == Brightness.dark;
 

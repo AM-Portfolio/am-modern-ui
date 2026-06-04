@@ -18,12 +18,15 @@ class StockIndicesMarketData {
     // market.html checks 'data' or 'stocks'
     var list = json['data'] as List? ?? json['stocks'] as List? ?? [];
     List<StockData> stocksList = list.map((i) => StockData.fromJson(i)).toList();
+    final metadata = json['metadata'] is Map<String, dynamic>
+        ? json['metadata'] as Map<String, dynamic>
+        : const <String, dynamic>{};
 
     return StockIndicesMarketData(
       indexSymbol: json['indexSymbol'] ?? 'Unknown',
-      lastPrice: (json['lastPrice'] ?? json['last'] ?? 0).toDouble(),
-      change: (json['change'] ?? 0).toDouble(),
-      pChange: (json['pChange'] ?? json['percentChange'] ?? 0).toDouble(),
+      lastPrice: (json['lastPrice'] ?? json['last'] ?? metadata['last'] ?? 0).toDouble(),
+      change: (json['change'] ?? metadata['change'] ?? 0).toDouble(),
+      pChange: (json['pChange'] ?? json['percentChange'] ?? metadata['percChange'] ?? metadata['percentChange'] ?? 0).toDouble(),
       stocks: stocksList,
     );
   }
@@ -83,5 +86,4 @@ class MarketData {
 
   MarketData({required this.indices, required this.globalIndices});
 }
-
 
