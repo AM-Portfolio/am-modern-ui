@@ -13,6 +13,27 @@ class StockIndicesMarketData {
     required this.stocks,
   });
 
+  static double _number(dynamic value) => value is num ? value.toDouble() : 0.0;
+
+  static double _resolveLastPrice(
+    Map<String, dynamic> json,
+    Map<String, dynamic> metadata,
+  ) {
+    final direct = _number(json['lastPrice'] ?? json['last'] ?? metadata['last']);
+    if (direct > 0) return direct;
+
+    final previousClose = _number(json['previousClose'] ?? metadata['previousClose']);
+    final change = _number(json['change'] ?? metadata['change']);
+    if (previousClose > 0 && change != 0) return previousClose + change;
+
+    final pChange = _number(json['pChange'] ?? json['percentChange'] ?? metadata['percChange'] ?? metadata['percentChange']);
+    if (previousClose > 0 && pChange != 0) {
+      return previousClose * (1 + (pChange / 100));
+    }
+
+    return 0.0;
+  }
+
   factory StockIndicesMarketData.fromJson(Map<String, dynamic> json) {
     // Handle differences in API response vs expected
     // market.html checks 'data' or 'stocks'
@@ -24,9 +45,9 @@ class StockIndicesMarketData {
 
     return StockIndicesMarketData(
       indexSymbol: json['indexSymbol'] ?? 'Unknown',
-      lastPrice: (json['lastPrice'] ?? json['last'] ?? metadata['last'] ?? 0).toDouble(),
-      change: (json['change'] ?? metadata['change'] ?? 0).toDouble(),
-      pChange: (json['pChange'] ?? json['percentChange'] ?? metadata['percChange'] ?? metadata['percentChange'] ?? 0).toDouble(),
+      lastPrice: _resolveLastPrice(json, metadata),
+      change: _number(json['change'] ?? metadata['change']),
+      pChange: _number(json['pChange'] ?? json['percentChange'] ?? metadata['percChange'] ?? metadata['percentChange']),
       stocks: stocksList,
     );
   }
@@ -86,4 +107,3 @@ class MarketData {
 
   MarketData({required this.indices, required this.globalIndices});
 }
-

@@ -30,9 +30,18 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
     final liveData = provider.getPrice(data.indexSymbol);
     if (liveData == null) return data;
 
-    final lastPrice = (liveData['lastPrice'] as num?)?.toDouble();
+    var lastPrice = (liveData['lastPrice'] as num?)?.toDouble();
     final change = (liveData['change'] as num?)?.toDouble();
     final changePercent = (liveData['changePercent'] as num?)?.toDouble();
+    final previousClose = (liveData['previousClose'] as num?)?.toDouble();
+
+    if ((lastPrice == null || lastPrice == 0) && previousClose != null && previousClose > 0) {
+      if (change != null && change != 0) {
+        lastPrice = previousClose + change;
+      } else if (changePercent != null && changePercent != 0) {
+        lastPrice = previousClose * (1 + (changePercent / 100));
+      }
+    }
 
     if (lastPrice == null && change == null && changePercent == null) return data;
 
