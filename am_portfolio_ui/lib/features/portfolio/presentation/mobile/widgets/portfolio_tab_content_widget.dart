@@ -7,7 +7,8 @@ import 'package:am_common/am_common.dart';
 import '../../cubit/portfolio_cubit.dart';
 import '../../cubit/portfolio_heatmap_cubit.dart';
 import '../../cubit/portfolio_state.dart';
-import '../../widgets/portfolio_summary_widget.dart';
+import '../../widgets/portfolio_overview_widget.dart';
+import 'package:am_analysis_ui/am_analysis_ui.dart' hide TimeFrame;
 import '../pages/portfolio_heatmap_mobile_page.dart';
 import '../portfolio_analysis_widget.dart';
 import 'portfolio_holdings_widget.dart';
@@ -18,38 +19,43 @@ class PortfolioTabContentWidget extends ConsumerWidget {
   const PortfolioTabContentWidget({
     required this.tabController,
     required this.currentPortfolioId,
-    required this.userId,
     super.key,
   });
   final TabController tabController;
   final String currentPortfolioId;
-  final String userId;
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
-      BlocBuilder<PortfolioCubit, PortfolioState>(
-        builder: (context, state) => TabBarView(
-          controller: tabController,
-          children: [
-            _OverviewTab(currentPortfolioId: currentPortfolioId, userId: userId),
-            _HoldingsTab(currentPortfolioId: currentPortfolioId, userId: userId),
-            _AnalysisTab(currentPortfolioId: currentPortfolioId, userId: userId),
-            _HeatmapTab(currentPortfolioId: currentPortfolioId, userId: userId),
-            _TradeTab(userId: userId, ref: ref),
-          ],
-        ),
-      );
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) => TabBarView(
+      controller: tabController,
+      children: [
+        _OverviewTab(currentPortfolioId: currentPortfolioId, ),
+        _HoldingsTab(currentPortfolioId: currentPortfolioId, ),
+        _AnalysisTab(currentPortfolioId: currentPortfolioId, ),
+        _HeatmapTab(currentPortfolioId: currentPortfolioId, ),
+        _TradeTab(ref: ref),
+      ],
+    );
 }
 
 /// Overview tab widget
-class _OverviewTab extends StatelessWidget {
-  const _OverviewTab({required this.currentPortfolioId, required this.userId});
+class _OverviewTab extends StatefulWidget {
+  const _OverviewTab({required this.currentPortfolioId, });
   final String currentPortfolioId;
-  final String userId;
+  @override
+  State<_OverviewTab> createState() => _OverviewTabState();
+}
+
+class _OverviewTabState extends State<_OverviewTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<PortfolioCubit, PortfolioState>(
+  Widget build(BuildContext context) {
+    super.build(context);
+    return BlocBuilder<PortfolioCubit, PortfolioState>(
         builder: (context, state) {
           if (state is PortfolioLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -64,30 +70,20 @@ class _OverviewTab extends StatelessWidget {
           }
 
           if (state is PortfolioLoaded) {
-            return _buildOverviewContent(context, state);
+            return _buildOverviewContent(context);
           }
 
           return _buildLoadingWithRefresh(context, 'Pull to Refresh Portfolio');
         },
       );
+  }
 
-  Widget _buildOverviewContent(BuildContext context, PortfolioLoaded state) {
-    final summary = state.summary;
-
-    CommonLogger.debug(
-      'Building overview with summary - totalValue: ${summary.totalValue}, todayChange: ${summary.todayChange}, totalGainLoss: ${summary.totalGainLoss}',
-      tag: 'PortfolioOverviewTab',
-    );
-
+  Widget _buildOverviewContent(BuildContext context) {
     return RefreshIndicator(
       onRefresh: () => _refreshPortfolio(context, 'Pull to Refresh Overview'),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: PortfolioSummaryWidget(
-          summary: summary,
-          onViewHoldings: () => _navigateToTab(1, context),
-          onViewAnalysis: () => _navigateToTab(2, context),
-        ),
+      child: PortfolioOverviewWidget(
+        key: ValueKey('overview_mobile_${widget.currentPortfolioId}'),
+        portfolioId: widget.currentPortfolioId,
       ),
     );
   }
@@ -126,27 +122,18 @@ class _OverviewTab extends StatelessWidget {
     CommonLogger.userAction(
       action,
       tag: 'PortfolioOverviewTab',
-      metadata: {'portfolioId': currentPortfolioId, 'userId': userId},
+      metadata: {
+        'portfolioId': widget.currentPortfolioId,
+      },
     );
-    context.read<PortfolioCubit>().refreshPortfolioById(
-      userId,
-      currentPortfolioId,
-    );
-  }
-
-  void _navigateToTab(int index, BuildContext context) {
-    // Find the tab controller from the widget tree
-    final tabController = DefaultTabController.of(context);
-    tabController.animateTo(index);
+    context.read<PortfolioCubit>().refreshPortfolioById(widget.currentPortfolioId);
   }
 }
 
 /// Holdings tab widget
 class _HoldingsTab extends StatelessWidget {
-  const _HoldingsTab({required this.currentPortfolioId, required this.userId});
+  const _HoldingsTab({required this.currentPortfolioId, });
   final String currentPortfolioId;
-  final String userId;
-
   @override
   Widget build(BuildContext context) =>
       BlocBuilder<PortfolioCubit, PortfolioState>(
@@ -160,7 +147,7 @@ class _HoldingsTab extends StatelessWidget {
           }
 
           return PortfolioHoldingsWidget(
-            userId: userId,
+            key: ValueKey('holdings_$currentPortfolioId'),
             portfolioId: currentPortfolioId,
           );
         },
@@ -185,21 +172,16 @@ class _HoldingsTab extends StatelessWidget {
     CommonLogger.userAction(
       'Pull to Refresh Holdings',
       tag: 'PortfolioHoldingsTab',
-      metadata: {'portfolioId': currentPortfolioId, 'userId': userId},
+      metadata: {'portfolioId': currentPortfolioId},
     );
-    context.read<PortfolioCubit>().refreshPortfolioById(
-      userId,
-      currentPortfolioId,
-    );
+    context.read<PortfolioCubit>().refreshPortfolioById(currentPortfolioId);
   }
 }
 
 /// Analysis tab widget
 class _AnalysisTab extends StatelessWidget {
-  const _AnalysisTab({required this.currentPortfolioId, required this.userId});
+  const _AnalysisTab({required this.currentPortfolioId, });
   final String currentPortfolioId;
-  final String userId;
-
   @override
   Widget build(BuildContext context) =>
       BlocBuilder<PortfolioCubit, PortfolioState>(
@@ -216,7 +198,10 @@ class _AnalysisTab extends StatelessWidget {
             onRefresh: () => _refreshPortfolio(context),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              child: PortfolioAnalysisWidget(portfolioId: currentPortfolioId),
+              child: PortfolioAnalysisWidget(
+                key: ValueKey('analysis_$currentPortfolioId'),
+                portfolioId: currentPortfolioId,
+              ),
             ),
           );
         },
@@ -241,26 +226,20 @@ class _AnalysisTab extends StatelessWidget {
     CommonLogger.userAction(
       'Pull to Refresh Analysis',
       tag: 'PortfolioAnalysisTab',
-      metadata: {'portfolioId': currentPortfolioId, 'userId': userId},
+      metadata: {'portfolioId': currentPortfolioId},
     );
-    context.read<PortfolioCubit>().refreshPortfolioById(
-      userId,
-      currentPortfolioId,
-    );
+    context.read<PortfolioCubit>().refreshPortfolioById(currentPortfolioId);
   }
 }
 
 /// Heatmap tab widget using the new mobile heatmap page
 class _HeatmapTab extends StatelessWidget {
-  const _HeatmapTab({required this.currentPortfolioId, required this.userId});
+  const _HeatmapTab({required this.currentPortfolioId, });
   final String currentPortfolioId;
-  final String userId;
-
   @override
   Widget build(BuildContext context) => BlocProvider<PortfolioHeatmapCubit>(
     create: (context) => PortfolioHeatmapCubit(),
     child: PortfolioHeatmapMobilePage(
-      userId: userId,
       portfolioId: currentPortfolioId,
       portfolioName: _getPortfolioName(context),
     ),
@@ -272,13 +251,12 @@ class _HeatmapTab extends StatelessWidget {
 
 /// Trade tab widget using the trade mobile page with Riverpod
 class _TradeTab extends StatelessWidget {
-  const _TradeTab({required this.userId, required this.ref});
-  final String userId;
+  const _TradeTab({required this.ref});
   final WidgetRef ref;
 
   @override
   Widget build(BuildContext context) {
-    return TradePortfolioListMobilePage(userId: userId);
+    return TradePortfolioListMobilePage();
   }
 }
 
@@ -315,4 +293,3 @@ class PortfolioErrorWidget extends StatelessWidget {
     ),
   );
 }
-

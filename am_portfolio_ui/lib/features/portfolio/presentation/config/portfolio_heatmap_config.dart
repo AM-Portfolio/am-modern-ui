@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:am_common/am_common.dart';
-import 'package:am_design_system/am_design_system.dart' hide MarketCapType, MetricType, TimeFrame, SectorType;
+import 'package:am_design_system/am_design_system.dart'
+    hide MarketCapType, MetricType, TimeFrame, SectorType;
 import 'package:am_design_system/am_design_system.dart' as layout_config;
 import 'package:am_design_system/am_design_system.dart' as ui_config;
 

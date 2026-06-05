@@ -124,10 +124,28 @@ class PortfolioAnalyticsMapper {
   );
 
   /// Convert movers DTO to entity
-  static Movers _moversFromDto(MoversDto dto) => Movers(
-    topGainers: dto.topGainers?.map(_stockFromDto).toList() ?? [],
-    topLosers: dto.topLosers?.map(_stockFromDto).toList() ?? [],
-  );
+  static Movers _moversFromDto(MoversDto dto) {
+    // Map gainers (ensure positive values if needed, though usually they are)
+    final topGainers = dto.topGainers?.map(_stockFromDto).toList() ?? <Stock>[];
+
+    // Map losers (ensure negative values for accurate display)
+    final topLosers = dto.topLosers?.map((stockDto) {
+      final stock = _stockFromDto(stockDto);
+
+      // Ensure negative signs for losers if they are reported as absolute values
+      return stock.copyWith(
+        changeAmount:
+            stock.changeAmount > 0 ? -stock.changeAmount : stock.changeAmount,
+        changePercent:
+            stock.changePercent > 0 ? -stock.changePercent : stock.changePercent,
+      );
+    }).toList() ?? <Stock>[];
+
+    return Movers(
+      topGainers: List<Stock>.from(topGainers),
+      topLosers: List<Stock>.from(topLosers),
+    );
+  }
 
   /// Convert sector allocation DTO to entity
   static SectorAllocation _sectorAllocationFromDto(SectorAllocationDto dto) =>

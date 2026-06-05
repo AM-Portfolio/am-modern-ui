@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
 class TradePortfolioListMobilePage extends StatelessWidget {
-  const TradePortfolioListMobilePage({required this.userId, super.key});
-  final String userId;
-
+  const TradePortfolioListMobilePage({super.key});
   @override
   Widget build(BuildContext context) {
     return const Center(
