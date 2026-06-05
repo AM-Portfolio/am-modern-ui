@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../../internal/domain/entities/portfolio_analytics_request.dart';
 import '../../../internal/domain/entities/portfolio_summary.dart';
+import '../../../internal/domain/entities/portfolio_holding.dart';
+import '../../../internal/domain/entities/portfolio_analytics.dart';
 import '../../../providers/portfolio_providers.dart';
 
 /// Web-specific portfolio analysis page with comprehensive analytics
@@ -220,7 +222,7 @@ class _PortfolioAnalysisWebPageState
 
   Widget _buildPerformanceSection(
     BuildContext context,
-    AsyncValue<dynamic> summaryAsync,
+    AsyncValue<PortfolioSummary> summaryAsync,
   ) => Card(
     margin: const EdgeInsets.all(16),
     child: Padding(
@@ -299,8 +301,8 @@ class _PortfolioAnalysisWebPageState
 
   Widget _buildAnalyticsGrid(
     BuildContext context,
-    AsyncValue<dynamic> analyticsAsync,
-    AsyncValue<dynamic> holdingsAsync,
+    AsyncValue<PortfolioAnalytics> analyticsAsync,
+    AsyncValue<PortfolioHoldings> holdingsAsync,
   ) => Padding(
     padding: const EdgeInsets.all(16),
     child: Column(
@@ -349,15 +351,15 @@ class _PortfolioAnalysisWebPageState
     ),
   );
 
-  Widget _buildAnalyticsCharts(BuildContext context, analytics, holdings) {
+  Widget _buildAnalyticsCharts(BuildContext context, PortfolioAnalytics analytics, PortfolioHoldings holdings) {
     // Extract allocation data
-    final sectorAlloc = analytics.analytics.sectorAllocation;
-    final marketCapAlloc = analytics.analytics.marketCapAllocation;
+    final sectorAlloc = analytics.analytics?.sectorAllocation;
+    final marketCapAlloc = analytics.analytics?.marketCapAllocation;
 
-    final sectorData =
+    final List<AllocationItem> sectorData =
         sectorAlloc != null && sectorAlloc.sectorWeights.isNotEmpty
         ? sectorAlloc.sectorWeights
-              .map(
+              .map<AllocationItem>(
                 (sector) => AllocationItem(
                   label: sector.sectorName,
                   value: sector.marketCap,
@@ -368,10 +370,10 @@ class _PortfolioAnalysisWebPageState
               .toList()
         : <AllocationItem>[];
 
-    final marketCapData =
+    final List<AllocationItem> marketCapData =
         marketCapAlloc != null && marketCapAlloc.segments.isNotEmpty
         ? marketCapAlloc.segments
-              .map(
+              .map<AllocationItem>(
                 (segment) => AllocationItem(
                   label: segment.segmentName,
                   value: segment.segmentValue,
@@ -478,7 +480,7 @@ class _PortfolioAnalysisWebPageState
     ),
   );
 
-  Widget _buildTopHoldingsCard(BuildContext context, holdings) {
+  Widget _buildTopHoldingsCard(BuildContext context, PortfolioHoldings holdings) {
     final topHoldings = holdings.holdings.take(5).toList();
 
     return Card(
@@ -616,114 +618,6 @@ class _PortfolioAnalysisWebPageState
       ),
     ],
   );
-
-  Widget _buildAnalyticsCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color color,
-    AsyncValue<dynamic> dataAsync,
-  ) => Card(
-    elevation: 2,
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          Expanded(
-            child: dataAsync.when(
-              data: (data) => _buildCardContent(context, title, color),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, color: Colors.red, size: 32),
-                    SizedBox(height: 8),
-                    Text(
-                      'Error loading data',
-                      style: TextStyle(color: Colors.red, fontSize: 12),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-
-  Widget _buildCardContent(BuildContext context, String title, Color color) =>
-      Container(
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(_getIconForTitle(title), size: 32, color: color),
-              const SizedBox(height: 8),
-              Text(
-                _getPlaceholderData(title),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
-
-  IconData _getIconForTitle(String title) {
-    switch (title) {
-      case 'Sector Allocation':
-        return Icons.donut_small;
-      case 'Risk Metrics':
-        return Icons.warning;
-      case 'Top Holdings':
-        return Icons.star;
-      case 'Market Cap Distribution':
-        return Icons.show_chart;
-      default:
-        return Icons.analytics;
-    }
-  }
-
-  String _getPlaceholderData(String title) {
-    switch (title) {
-      case 'Sector Allocation':
-        return 'Tech: 35%\nFinance: 25%\nHealthcare: 20%\nOther: 20%';
-      case 'Risk Metrics':
-        return 'Beta: 1.2\nSharpe: 0.85\nVolatility: 15%';
-      case 'Top Holdings':
-        return 'AAPL: 12%\nMSFT: 10%\nAMZN: 8%';
-      case 'Market Cap Distribution':
-        return 'Large: 70%\nMid: 20%\nSmall: 10%';
-      default:
-        return 'Data Available';
-    }
-  }
 
   Widget _buildInsightsPanel(BuildContext context) => Container(
     color: Theme.of(context).colorScheme.surface,
