@@ -140,7 +140,7 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> with 
 
           // Tab Content
           SizedBox(
-            height: 180,
+            height: 280,
             child: TabBarView(
               controller: _tabController,
               children: [

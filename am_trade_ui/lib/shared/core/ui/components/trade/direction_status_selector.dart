@@ -140,7 +140,6 @@ class DirectionStatusSelector extends StatelessWidget {
   );
 
   Widget _buildStatusDropdown(ThemeData theme, bool isMobile) => Container(
-    constraints: BoxConstraints(minWidth: isMobile ? 120 : 140),
     decoration: BoxDecoration(
       color: theme.colorScheme.surface.withOpacity(0.6),
       borderRadius: BorderRadius.circular(8),
@@ -151,6 +150,7 @@ class DirectionStatusSelector extends StatelessWidget {
       child: DropdownButton<TradeStatuses>(
         value: selectedStatus,
         isDense: true,
+        isExpanded: isMobile,
         icon: Icon(Icons.arrow_drop_down, size: isMobile ? 20 : 24),
         onChanged: (newValue) {
           if (newValue != null) {
@@ -166,7 +166,12 @@ class DirectionStatusSelector extends StatelessWidget {
                   children: [
                     Icon(_getStatusIcon(status), size: isMobile ? 16 : 18, color: _getStatusColor(status)),
                     const SizedBox(width: 8),
-                    Text(status.displayName),
+                    Flexible(
+                      child: Text(
+                        status.displayName,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ),

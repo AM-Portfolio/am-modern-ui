@@ -16,7 +16,31 @@ import 'package:am_common/core/di/network_providers.dart';
 final _notebookRemoteDataSourceProvider = FutureProvider<NotebookRemoteDataSource>((ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
   final apiConfig = await ref.watch(appConfigProvider.future);
-  return NotebookRemoteDataSourceImpl(apiClient: apiClient, tradeConfig: apiConfig.api.trade);
+  
+  TradeApiConfig tradeConfig = apiConfig.api.trade;
+
+  // Local environment override for the Trade API
+  const localTradeUrl = String.fromEnvironment('AM_TRADE_BASE_URL');
+  if (localTradeUrl.isNotEmpty) {
+    tradeConfig = TradeApiConfig(
+      baseUrl: localTradeUrl,
+      portfolioListResource: tradeConfig.portfolioListResource,
+      portfolioSummaryResource: tradeConfig.portfolioSummaryResource,
+      holdingsResource: tradeConfig.holdingsResource,
+      tradeDetailsResource: tradeConfig.tradeDetailsResource,
+      calendarMonthResource: tradeConfig.calendarMonthResource,
+      calendarDayResource: tradeConfig.calendarDayResource,
+      calendarQuarterResource: tradeConfig.calendarQuarterResource,
+      calendarFinancialYearResource: tradeConfig.calendarFinancialYearResource,
+      searchResource: tradeConfig.searchResource,
+      connectTimeout: tradeConfig.connectTimeout,
+      receiveTimeout: tradeConfig.receiveTimeout,
+      sendTimeout: tradeConfig.sendTimeout,
+      enabled: tradeConfig.enabled,
+    );
+  }
+
+  return NotebookRemoteDataSourceImpl(apiClient: apiClient, tradeConfig: tradeConfig);
 });
 
 /// Provider for NotebookRepository

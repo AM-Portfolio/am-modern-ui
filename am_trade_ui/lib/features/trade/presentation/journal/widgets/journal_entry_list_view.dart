@@ -333,14 +333,8 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                             ),
                       ),
                     ),
-                    // PNL Placeholder
-                    Text(
-                      '+\$1,330', // Placeholder
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
-                    ),
+                    // PNL Placeholder removed as it requires fetching trade stats
+                    const SizedBox.shrink(),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -353,12 +347,11 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
-                    // Stats Placeholder
+                    // Dynamic Trade Stats
                     Row(
                       children: [
-                        _buildMiniStat(context, '54% Win'),
-                        const SizedBox(width: 8),
-                        _buildMiniStat(context, '11 Trades'),
+                        if (widget.entry.relatedTradeIds.isNotEmpty)
+                          _buildMiniStat(context, '${widget.entry.relatedTradeIds.length} Trades'),
                       ],
                     ),
                   ],

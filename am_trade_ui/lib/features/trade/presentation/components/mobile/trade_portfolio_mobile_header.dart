@@ -20,190 +20,141 @@ class TradePortfolioMobileHeader extends StatelessWidget {
   final VoidCallback? onRefresh;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.primary.withOpacity(0.02),
-      border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Highlighted Portfolio Count and Value
-        Row(
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.02),
+        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        child: Row(
           children: [
-            // Portfolio count - prominent
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                      Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Icon(Icons.folder_special, color: Theme.of(context).colorScheme.primary, size: 14),
-                    ),
-                    const SizedBox(width: 6),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Portfolios',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                        ),
-                        Text(
-                          '$portfolioCount',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+            _buildModernStatBadge(
+              context,
+              label: 'Portfolios',
+              value: '$portfolioCount',
+              icon: Icons.folder_special_rounded,
+              iconColor: Colors.white,
+              iconBgColor: Theme.of(context).colorScheme.primary,
             ),
-            const SizedBox(width: 6),
-            // Total value - prominent
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [Colors.blue.withOpacity(0.15), Colors.blue.withOpacity(0.05)]),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Icon(Icons.attach_money, color: Colors.blue, size: 14),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Value',
-                            style: TextStyle(
-                              fontSize: 9,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                            ),
-                          ),
-                          Text(
-                            '\$${totalValue.toStringAsFixed(0)}',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            const SizedBox(width: 8),
+            _buildModernStatBadge(
+              context,
+              label: 'Total Value',
+              value: '\$${_formatNum(totalValue)}',
+              icon: Icons.account_balance_wallet_rounded,
+              iconColor: Colors.white,
+              iconBgColor: Colors.blue,
             ),
-            if (onRefresh != null) const SizedBox(width: 4),
-            if (onRefresh != null)
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Refresh',
-                iconSize: 18,
-                onPressed: onRefresh,
-                visualDensity: VisualDensity.compact,
-                color: Theme.of(context).colorScheme.primary,
-                padding: const EdgeInsets.all(4),
-              ),
+            const SizedBox(width: 8),
+            _buildModernStatBadge(
+              context,
+              label: 'Profitable',
+              value: '$profitableCount/$portfolioCount',
+              icon: Icons.trending_up_rounded,
+              iconColor: Colors.white,
+              iconBgColor: const Color(0xFF10B981),
+              valueColor: const Color(0xFF10B981),
+            ),
+            const SizedBox(width: 8),
+            _buildModernStatBadge(
+              context,
+              label: 'Total Trades',
+              value: '$totalTrades',
+              icon: Icons.swap_horiz_rounded,
+              iconColor: Colors.white,
+              iconBgColor: Colors.purple,
+            ),
+            const SizedBox(width: 8),
+            _buildModernStatBadge(
+              context,
+              label: 'Trade P&L',
+              value: '${totalNetProfitLoss >= 0 ? '+' : ''}\$${_formatNum(totalNetProfitLoss)}',
+              icon: totalNetProfitLoss >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+              iconColor: Colors.white,
+              iconBgColor: totalNetProfitLoss >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+              valueColor: totalNetProfitLoss >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+            ),
+            const SizedBox(width: 8),
+            _buildModernStatBadge(
+              context,
+              label: 'Avg Win Rate',
+              value: '${avgWinRate.toStringAsFixed(1)}%',
+              icon: Icons.percent_rounded,
+              iconColor: Colors.white,
+              iconBgColor: avgWinRate >= 50 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+              valueColor: avgWinRate >= 50 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+            ),
           ],
         ),
+      ),
+    );
+  }
 
-        const SizedBox(height: 6),
+  String _formatNum(double v) {
+    if (v.abs() >= 1000000) return '${(v / 1000000).toStringAsFixed(2)}M';
+    if (v.abs() >= 1000) return '${(v / 1000).toStringAsFixed(1)}k';
+    return v.toStringAsFixed(2);
+  }
 
-        // Compact Secondary Stats - Single row
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
+  Widget _buildModernStatBadge(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBgColor,
+    Color? valueColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E30),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF2D2D45)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: iconColor, size: 16),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _buildCompactStat(
-                context,
-                'Profitable',
-                '$profitableCount/$portfolioCount',
-                Icons.trending_up,
-                Colors.green,
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                ),
               ),
-              const SizedBox(width: 4),
-              _buildCompactStat(context, 'Trades', '$totalTrades', Icons.swap_horiz, Colors.purple),
-              const SizedBox(width: 4),
-              _buildCompactStat(
-                context,
-                'P&L',
-                '${totalNetProfitLoss >= 0 ? '+' : ''}\$${totalNetProfitLoss.toStringAsFixed(0)}',
-                totalNetProfitLoss >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                totalNetProfitLoss >= 0 ? Colors.green : Colors.red,
-              ),
-              const SizedBox(width: 4),
-              _buildCompactStat(
-                context,
-                'Win Rate',
-                '${avgWinRate.toStringAsFixed(0)}%',
-                Icons.percent,
-                avgWinRate >= 50 ? Colors.green : Colors.orange,
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: valueColor ?? Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ],
           ),
-        ),
-      ],
-    ),
-  );
-
-  Widget _buildCompactStat(BuildContext context, String label, String value, IconData icon, Color color) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-    decoration: BoxDecoration(
-      color: Theme.of(context).cardColor,
-      borderRadius: BorderRadius.circular(6),
-      border: Border.all(color: color.withOpacity(0.2)),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 12),
-        const SizedBox(width: 4),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(label, style: TextStyle(fontSize: 8, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
-            Text(
-              value,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }

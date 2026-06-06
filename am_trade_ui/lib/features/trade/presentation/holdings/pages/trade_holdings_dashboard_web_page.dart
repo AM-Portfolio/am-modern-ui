@@ -29,10 +29,9 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
     super.initState();
     // Load favorite filters when page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (mounted) {
-        final cubit = await ref.read(favoriteFilterCubitProvider.future);
-        cubit.loadFilters();
-      }
+      final cubit = await ref.read(favoriteFilterCubitProvider.future);
+      if (!mounted) return;
+      cubit.loadFilters();
     });
   }
 

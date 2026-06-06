@@ -55,6 +55,7 @@
     "clean:app": "cd am_app && flutter clean",
     "get:app": "cd am_app && flutter pub get",
     "run:app": "cd am_app && flutter run -d chrome --web-port 3000",
+    "run:app:local": "cd am_app && flutter run -d chrome --web-port 3000 --dart-define=AM_TRADE_BASE_URL=http://localhost:8080 --dart-define=AM_DEV_AUTH_TOKEN=mock_dev_token --dart-define=AM_DEV_USER_ID=local-dev-user",
     "build:app": "cd am_app && flutter build web --release --no-wasm-dry-run",
     "dev:app": "npm run build:app && npx serve am_app/build/web -p 3000 --no-clipboard",
     "─── GLOBAL ───": "echo",

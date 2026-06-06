@@ -14,11 +14,12 @@ import '../components/add_trade_form.dart';
 /// Web page for adding new trades with responsive design
 /// Streamlined 4-step process with click-and-select focus
 class AddTradeWebPage extends StatefulWidget {
-  const AddTradeWebPage({required this.portfolioId, super.key, this.portfolioName, this.onTradeAdded});
+  const AddTradeWebPage({required this.portfolioId, super.key, this.portfolioName, this.onTradeAdded, this.onCancel});
 
   final String portfolioId;
   final String? portfolioName;
   final VoidCallback? onTradeAdded;
+  final VoidCallback? onCancel;
 
   @override
   State<AddTradeWebPage> createState() => _AddTradeWebPageState();
@@ -96,10 +97,17 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
 
   void _navigateBack() {
     AppLogger.methodEntry('_navigateBack', tag: 'AddTradeWebPage');
-    AppLogger.info('🔙 Popping navigation stack to return to previous screen', tag: 'AddTradeWebPage');
+    AppLogger.info('🔙 Navigating back', tag: 'AddTradeWebPage');
 
-    // Simply pop the current route to go back to the previous screen (which has WebLayout)
-    Navigator.of(context).pop();
+    if (widget.onCancel != null) {
+      widget.onCancel!();
+    } else {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        Navigator.of(context).pushReplacementNamed('/');
+      }
+    }
 
     AppLogger.methodExit('_navigateBack', tag: 'AddTradeWebPage');
   }
@@ -163,29 +171,10 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
           },
         );
       },
-      child: UnifiedSidebarScaffold(
-        title: 'Add Trade',
-        subtitle: widget.portfolioName ?? 'Portfolio Management',
-        icon: Icons.add_circle_outline,
-        accentColor: ModuleColors.trade, // Trade accent
-        sections: [
-           SecondarySidebarSection(
-             title: 'Navigation',
-             items: [
-               SecondarySidebarItem(
-                 title: 'Back to Dashboard',
-                 icon: Icons.arrow_back,
-                 onTap: _navigateBack,
-               ),
-               // We could add other items here but they would navigate away.
-               // For "Add Trade", minimal navigation is better to focus user.
-             ]
-           )
-        ],
-        body: Container(
-          color: theme.colorScheme.surfaceContainerLowest,
-          child: Column(
-            children: [
+      child: Scaffold(
+        backgroundColor: theme.colorScheme.surfaceContainerLowest,
+        body: Column(
+          children: [
               // Header
               Container(
                 padding: const EdgeInsets.all(24),
@@ -231,7 +220,6 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
               ),
             ],
           ),
-        ),
       ),
     );
   }

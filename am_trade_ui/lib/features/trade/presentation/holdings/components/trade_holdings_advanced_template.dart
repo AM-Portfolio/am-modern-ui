@@ -317,80 +317,119 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
     ),
   );
 
-  Widget _buildAdvancedTableView() => SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    child: SingleChildScrollView(
-      child: _buildEnhancedDataTable(),
-    ),
+  Widget _buildAdvancedTableView() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _buildCustomTableHeader(),
+      const Divider(height: 1),
+      Expanded(
+        child: ListView.builder(
+          itemCount: _paginatedHoldings.length,
+          itemBuilder: (context, index) {
+            final holding = _paginatedHoldings[index];
+            return _buildCustomTableRow(holding, index);
+          },
+        ),
+      ),
+    ],
   ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0);
 
-  Widget _buildEnhancedDataTable() => DataTable(
-        sortColumnIndex: _sortColumnIndex,
-        sortAscending: _sortAscending,
-        columns: [
-          DataColumn(label: const Text('Symbol'), onSort: _sort),
-          DataColumn(label: const Text('Company'), onSort: _sort),
-          DataColumn(label: const Text('Status'), onSort: _sort),
-          DataColumn(label: const Text('Quantity'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('Entry Price'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('Current Price'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('Current Value'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('P&L'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('P&L %'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('R:R Ratio'), numeric: true, onSort: _sort),
-        ],
-        rows: _paginatedHoldings.asMap().entries.map((entry) {
-          final holding = entry.value;
-          final isPositive = holding.isProfit;
+  Widget _buildCustomTableHeader() => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    child: Row(
+      children: [
+        _buildHeaderCell('Symbol', 2, 0),
+        _buildHeaderCell('Company', 2, 1),
+        _buildHeaderCell('Status', 1, 2),
+        _buildHeaderCell('Quantity', 1, 3, isNumeric: true),
+        _buildHeaderCell('Entry Price', 1, 4, isNumeric: true),
+        _buildHeaderCell('Current Price', 1, 5, isNumeric: true),
+        _buildHeaderCell('Current Value', 1, 6, isNumeric: true),
+        _buildHeaderCell('P&L', 1, 7, isNumeric: true),
+        _buildHeaderCell('P&L %', 1, 8, isNumeric: true),
+        _buildHeaderCell('R:R Ratio', 1, 9, isNumeric: true),
+      ],
+    ),
+  );
 
-          return DataRow(
-            onSelectChanged: (_) {}, // Enables hover effect
-            onLongPress: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
-            cells: [
-              DataCell(
-                _buildSymbolCell(holding),
-                onTap: widget.onSymbolTap != null ? () => widget.onSymbolTap!(holding.displaySymbol) : (widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null),
+  Widget _buildHeaderCell(String label, int flex, int columnIndex, {bool isNumeric = false}) {
+    final isSorted = _sortColumnIndex == columnIndex;
+    final theme = Theme.of(context);
+    
+    return Expanded(
+      flex: flex,
+      child: InkWell(
+        onTap: () => _sort(columnIndex, isSorted ? !_sortAscending : true),
+        child: Row(
+          mainAxisAlignment: isNumeric ? MainAxisAlignment.end : MainAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.8)),
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (isSorted)
+              Icon(
+                _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                size: 14,
               ),
-              DataCell(
-                Text(holding.displayCompanyName),
-                onTap: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
-              ),
-              DataCell(
-                _buildStatusBadge(holding.displayStatus),
-                onTap: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
-              ),
-              DataCell(
-                Text(holding.displayQuantity),
-                onTap: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
-              ),
-              DataCell(
-                Text(holding.displayEntryPrice),
-                onTap: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
-              ),
-              DataCell(
-                Text(holding.displayCurrentPrice),
-                onTap: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
-              ),
-              DataCell(
-                Text(holding.displayCurrentValue),
-                onTap: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
-              ),
-              DataCell(
-                _buildPnLCell(holding.displayProfitLoss, isPositive),
-                onTap: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
-              ),
-              DataCell(
-                _buildPnLPercentageCell(holding.displayProfitLossPercentage, isPositive),
-                onTap: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
-              ),
-              DataCell(
-                Text(holding.displayRiskRewardRatio),
-                onTap: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
-              ),
-            ],
-          );
-        }).toList(),
-      );
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomTableRow(TradeHoldingViewModel holding, int index) {
+    final isPositive = holding.isProfit;
+    final pnlColor = isPositive ? Colors.green : Colors.red;
+    final isExpanded = _isExpanded(holding.tradeId);
+    final theme = Theme.of(context);
+
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => _toggleExpanded(holding.tradeId),
+          onLongPress: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: index.isEven ? theme.colorScheme.surface : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              border: Border(bottom: BorderSide(color: theme.dividerColor.withOpacity(0.5))),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: InkWell(
+                    onTap: widget.onSymbolTap != null ? () => widget.onSymbolTap!(holding.displaySymbol) : null,
+                    child: _buildSymbolCell(holding),
+                  ),
+                ),
+                Expanded(flex: 2, child: Text(holding.displayCompanyName, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
+                Expanded(flex: 1, child: Align(alignment: Alignment.centerLeft, child: _buildStatusBadge(holding.displayStatus))),
+                Expanded(flex: 1, child: Text(holding.displayQuantity, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13))),
+                Expanded(flex: 1, child: Text(holding.displayEntryPrice, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13))),
+                Expanded(flex: 1, child: Text(holding.displayCurrentPrice, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13))),
+                Expanded(flex: 1, child: Text(holding.displayCurrentValue, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13))),
+                Expanded(flex: 1, child: Align(alignment: Alignment.centerRight, child: _buildPnLCell(holding.displayProfitLoss, isPositive))),
+                Expanded(flex: 1, child: Align(alignment: Alignment.centerRight, child: _buildPnLPercentageCell(holding.displayProfitLossPercentage, isPositive))),
+                Expanded(flex: 1, child: Text(holding.displayRiskRewardRatio, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13))),
+              ],
+            ),
+          ),
+        ),
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Container(
+            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            child: _buildExpandedDetails(holding, pnlColor),
+          ),
+          crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 300),
+        ),
+      ],
+    );
+  }
 
   Widget _buildSymbolCell(TradeHoldingViewModel holding) => Row(
     mainAxisSize: MainAxisSize.min,

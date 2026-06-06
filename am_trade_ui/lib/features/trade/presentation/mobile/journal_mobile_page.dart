@@ -22,6 +22,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cubit = await ref.read(journalCubitProvider.future);
+      if (!mounted) return;
       cubit.loadJournalEntries();
     });
   }
@@ -41,9 +42,14 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => JournalEntryForm(
-                    cubit: cubit,
-                    portfolioId: widget.portfolioId ?? '8a57024c-05c2-475b-a2c4-0545865efa4a',
+                  builder: (context) => Scaffold(
+                    appBar: AppBar(
+                      title: const Text('New Journal Entry'),
+                    ),
+                    body: JournalEntryForm(
+                      cubit: cubit,
+                      portfolioId: widget.portfolioId ?? '8a57024c-05c2-475b-a2c4-0545865efa4a',
+                    ),
                   ),
                 ),
               );
@@ -95,10 +101,15 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => JournalEntryForm(
-                                cubit: cubit,
-                                portfolioId: widget.portfolioId ?? '8a57024c-05c2-475b-a2c4-0545865efa4a',
-                                entry: entry,
+                              builder: (context) => Scaffold(
+                                appBar: AppBar(
+                                  title: Text(entry.title),
+                                ),
+                                body: JournalEntryForm(
+                                  cubit: cubit,
+                                  portfolioId: widget.portfolioId ?? '8a57024c-05c2-475b-a2c4-0545865efa4a',
+                                  entry: entry,
+                                ),
                               ),
                             ),
                           );

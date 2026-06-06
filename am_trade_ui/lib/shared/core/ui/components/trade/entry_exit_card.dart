@@ -150,6 +150,7 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ModernDateTimePicker(initialDateTime: widget.entryDate, onDateTimeChanged: widget.onEntryDateChanged),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -209,6 +210,7 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ModernDateTimePicker(initialDateTime: widget.exitDate, onDateTimeChanged: widget.onExitDateChanged),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(

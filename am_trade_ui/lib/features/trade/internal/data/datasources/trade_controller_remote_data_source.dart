@@ -74,6 +74,11 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
   
   /// Use ConfigService baseUrl if configured, fall back to the constant
   String get _baseUrl {
+    const localTradeUrl = String.fromEnvironment('AM_TRADE_BASE_URL');
+    if (localTradeUrl.isNotEmpty) {
+      return localTradeUrl;
+    }
+
     try {
       final configUrl = ConfigService.config.api.trade.baseUrl;
       return configUrl.isNotEmpty ? configUrl : TradeEndpoints.tradeBaseUrl;
