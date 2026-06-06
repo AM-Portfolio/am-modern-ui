@@ -50,6 +50,7 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     // Load templates
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cubit = await ref.read(journalTemplateCubitProvider.future);
+      if (!mounted) return;
       cubit.loadTemplates();
     });
   }

@@ -26,7 +26,28 @@ class TradePortfolioDto {
     this.openPositions,
   });
 
-  factory TradePortfolioDto.fromJson(Map<String, dynamic> json) => _$TradePortfolioDtoFromJson(json);
+  factory TradePortfolioDto.fromJson(Map<String, dynamic> json) {
+    if (json['metrics'] != null && json['metrics'] is Map<String, dynamic>) {
+      final metrics = json['metrics'] as Map<String, dynamic>;
+      // Copy json to avoid modifying the original unmodifiable map
+      final modifiedJson = Map<String, dynamic>.from(json);
+      
+      modifiedJson['totalTrades'] ??= metrics['totalTrades'];
+      modifiedJson['netProfitLoss'] ??= metrics['netProfitLoss'];
+      modifiedJson['netProfitLossPercentage'] ??= metrics['netProfitLossPercentage'];
+      modifiedJson['winRate'] ??= metrics['winRate'];
+      modifiedJson['winningTrades'] ??= metrics['winningTrades'];
+      modifiedJson['losingTrades'] ??= metrics['losingTrades'];
+      modifiedJson['openPositions'] ??= metrics['openPositions'];
+      
+      modifiedJson['totalValue'] ??= metrics['totalValue'];
+      modifiedJson['totalGainLoss'] ??= metrics['netProfitLoss'];
+      modifiedJson['totalGainLossPercentage'] ??= metrics['netProfitLossPercentage'];
+      
+      return _$TradePortfolioDtoFromJson(modifiedJson);
+    }
+    return _$TradePortfolioDtoFromJson(json);
+  }
 
   final String portfolioId;
   final String? name;

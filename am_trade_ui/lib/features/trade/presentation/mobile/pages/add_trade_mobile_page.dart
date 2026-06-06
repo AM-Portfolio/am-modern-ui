@@ -11,11 +11,18 @@ import '../../cubit/trade_controller_state.dart';
 /// Mobile page for adding new trades
 /// Optimized for small screens with a vertical layout
 class AddTradeMobilePage extends StatefulWidget {
-  const AddTradeMobilePage({required this.portfolioId, super.key, this.portfolioName, this.onTradeAdded});
+  const AddTradeMobilePage({
+    required this.portfolioId,
+    super.key,
+    this.portfolioName,
+    this.onTradeAdded,
+    this.onCancel,
+  });
 
   final String portfolioId;
   final String? portfolioName;
   final VoidCallback? onTradeAdded;
+  final VoidCallback? onCancel;
 
   @override
   State<AddTradeMobilePage> createState() => _AddTradeMobilePageState();
@@ -45,7 +52,15 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
 
   void _handleCancel() {
     AppLogger.info('❌ Trade creation cancelled', tag: 'AddTradeMobilePage');
-    Navigator.of(context).pop();
+    if (widget.onCancel != null) {
+      widget.onCancel!();
+    } else {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        Navigator.of(context).pushReplacementNamed('/');
+      }
+    }
   }
 
   @override
@@ -110,8 +125,15 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
               );
 
               // Call callback and navigate back
-              widget.onTradeAdded?.call();
-              Navigator.of(context).pop(true);
+              if (widget.onTradeAdded != null) {
+                widget.onTradeAdded!();
+              } else {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop(true);
+                } else {
+                  Navigator.of(context).pushReplacementNamed('/');
+                }
+              }
             },
             orElse: () {},
           );

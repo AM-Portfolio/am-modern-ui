@@ -17,7 +17,7 @@ class JournalFormHeader extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
         decoration: InputDecoration(
-          label: Container(padding: const EdgeInsets.symmetric(horizontal: 4), child: const Text('Entry Date')),
+          labelText: 'Entry Date',
           floatingLabelBehavior: FloatingLabelBehavior.always,
           prefixIcon: const Icon(Icons.calendar_today, size: 18),
           border: OutlineInputBorder(

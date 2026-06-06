@@ -268,7 +268,7 @@ class _AppShellState extends State<AppShell> {
       case 1:
         return PortfolioScreen(userId: userId);
       case 2:
-        return const TradeWebScreen();
+        return const TradeResponsiveLayout();
       case 3:
         return MarketPage(userId: userId);
       case 4:

@@ -5,8 +5,12 @@ import 'package:am_common/am_common.dart';
 import 'package:am_trade_ui/am_trade_ui.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'features/trade/providers/trade_controller_providers.dart';
 import 'features/trade/presentation/cubit/trade_controller_cubit.dart';
+import 'features/trade/presentation/trade_responsive_layout.dart';
+import 'features/trade/presentation/mobile/pages/add_trade_mobile_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,8 +49,17 @@ void main() async {
                       theme: themeState.lightTheme,
                       darkTheme: themeState.darkTheme,
                       themeMode: themeState.themeMode,
+                      localizationsDelegates: const [
+                        GlobalMaterialLocalizations.delegate,
+                        GlobalWidgetsLocalizations.delegate,
+                        GlobalCupertinoLocalizations.delegate,
+                        FlutterQuillLocalizations.delegate,
+                      ],
+                      supportedLocales: const [
+                        Locale('en', 'US'),
+                      ],
                       home: const AuthWrapper(
-                        child: TradeWebScreen(),
+                        child: TradeResponsiveLayout(),
                       ),
                       onGenerateRoute: (settings) {
                         if (settings.name == '/trade/add') {
@@ -58,9 +71,19 @@ void main() async {
                                 BlocProvider<AuthCubit>.value(value: authCubit),
                                 BlocProvider<ThemeCubit>.value(value: themeCubit),
                               ],
-                              child: AddTradeWebPage(
-                                portfolioId: (args?['portfolioId'] as String?) ?? '',
-                                portfolioName: args?['portfolioName'] as String?,
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  if (constraints.maxWidth < 1100) {
+                                    return AddTradeMobilePage(
+                                      portfolioId: (args?['portfolioId'] as String?) ?? '',
+                                      portfolioName: args?['portfolioName'] as String?,
+                                    );
+                                  }
+                                  return AddTradeWebPage(
+                                    portfolioId: (args?['portfolioId'] as String?) ?? '',
+                                    portfolioName: args?['portfolioName'] as String?,
+                                  );
+                                },
                               ),
                             ),
                           );

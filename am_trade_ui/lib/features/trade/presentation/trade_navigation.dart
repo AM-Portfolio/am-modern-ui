@@ -6,6 +6,19 @@ import '../providers/trade_controller_providers.dart';
 import 'cubit/trade_controller_cubit.dart';
 import 'add_trade/pages/add_trade_web_page.dart';
 
+class OpenAddTradeNotification extends Notification {
+  final String? portfolioId;
+  final String? portfolioName;
+  final VoidCallback? onTradeAdded;
+  bool handled = false;
+
+  OpenAddTradeNotification({
+    this.portfolioId,
+    this.portfolioName,
+    this.onTradeAdded,
+  });
+}
+
 /// Opens [AddTradeWebPage] with a scoped [TradeControllerCubit].
 ///
 /// Navigation stays inside the trade module so the host app (`am_app`) does not
@@ -20,6 +33,18 @@ Future<void> openAddTradeWebPage(
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Select a portfolio before adding a trade.')),
     );
+    return Future.value();
+  }
+
+  final notification = OpenAddTradeNotification(
+    portfolioId: portfolioId,
+    portfolioName: portfolioName,
+    onTradeAdded: onTradeAdded,
+  );
+  
+  notification.dispatch(context);
+  
+  if (notification.handled) {
     return Future.value();
   }
 

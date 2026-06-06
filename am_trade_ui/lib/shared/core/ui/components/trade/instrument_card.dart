@@ -142,26 +142,32 @@ class _InstrumentCardState extends State<InstrumentCard> {
                     textCapitalization: TextCapitalization.characters,
                   ),
                   const SizedBox(height: 12),
-                  CustomDropdown<ExchangeTypes>(
-                    value: widget.selectedExchange,
-                    hint: 'Select Exchange',
-                    items: ExchangeTypes.values
-                        .map(
-                          (exchange) => exchange.toSimpleDropdownItem(text: exchange.toString().split('.').last.toUpperCase()),
-                        )
-                        .toList(),
-                    onChanged: widget.onExchangeChanged,
-                    icon: Icons.account_balance,
-                  ),
-                  const SizedBox(height: 8),
-                  CustomDropdown<MarketSegments>(
-                    value: widget.selectedSegment,
-                    hint: 'Select Segment',
-                    items: MarketSegments.values
-                        .map((segment) => segment.toSimpleDropdownItem(text: segment.toString().split('.').last.toUpperCase()))
-                        .toList(),
-                    onChanged: widget.onSegmentChanged,
-                    icon: Icons.pie_chart,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomDropdown<ExchangeTypes>(
+                          value: widget.selectedExchange,
+                          hint: 'Exchange',
+                          items: ExchangeTypes.values
+                              .map((exchange) => exchange.toSimpleDropdownItem(text: exchange.toString().split('.').last.toUpperCase()))
+                              .toList(),
+                          onChanged: widget.onExchangeChanged,
+                          icon: Icons.account_balance,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: CustomDropdown<MarketSegments>(
+                          value: widget.selectedSegment,
+                          hint: 'Segment',
+                          items: MarketSegments.values
+                              .map((segment) => segment.toSimpleDropdownItem(text: segment.toString().split('.').last.toUpperCase()))
+                              .toList(),
+                          onChanged: widget.onSegmentChanged,
+                          icon: Icons.pie_chart,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
