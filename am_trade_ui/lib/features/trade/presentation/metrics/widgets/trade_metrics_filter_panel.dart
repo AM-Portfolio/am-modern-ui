@@ -339,12 +339,17 @@ class _TradeMetricsFilterPanelState extends ConsumerState<TradeMetricsFilterPane
                           ),
                       ],
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     
                     // Action Buttons
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                         PopupMenuButton<MetricsFilterGroupType>(
                           itemBuilder: (context) => [
                             if (!_activeGroups.any((g) => g is DateRangeFilterGroup))
@@ -445,6 +450,9 @@ class _TradeMetricsFilterPanelState extends ConsumerState<TradeMetricsFilterPane
                           child: Icon(Icons.expand_more_rounded, size: 20, color: theme.hintColor),
                         ),
                       ],
+                            ),
+                          ),
+                        ),
                     ),
                   ],
                 ),

@@ -52,6 +52,7 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final journalCubit = await ref.read(journalCubitProvider.future);
       final notebookCubit = await ref.read(notebookCubitProvider.future);
+      if (!mounted) return;
       journalCubit.loadJournalEntries();
       notebookCubit.loadNotebook();
     });

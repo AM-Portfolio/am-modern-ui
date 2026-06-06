@@ -71,6 +71,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
         // Fetch available metric types if not already loaded
         final getMetricTypes = await ref.read(getMetricTypesUseCaseProvider.future);
         final availableTypes = await getMetricTypes();
+        if (!mounted) return;
         metricTypesToUse = availableTypes;
       } catch (e) {
         // If fetching fails, pass null (backend will use defaults)
@@ -88,7 +89,10 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
       instruments: config.instrumentFilters?.baseSymbols,
     );
     
+    if (!mounted) return;
+    
     final cubit = await ref.read(tradeMetricsCubitProvider.future);
+    if (!mounted) return;
     cubit.loadMetrics(request);
   }
 

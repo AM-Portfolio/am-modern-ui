@@ -36,6 +36,7 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
     // Load favorite filters when page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cubit = await ref.read(favoriteFilterCubitProvider.future);
+      if (!mounted) return;
       cubit.loadFilters();
     });
 
@@ -103,19 +104,26 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
 
         return Stack(
           children: [
-            // Holdings List (full screen now) - wrapped in NotificationListener to detect scroll
-            NotificationListener<ScrollNotification>(
-              onNotification: (notification) {
-                if (notification is ScrollUpdateNotification) {
-                  _onScroll();
-                }
-                return false;
+            // Holdings List (full screen now) - wrapped in RefreshIndicator and NotificationListener
+            RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(tradeHoldingsStreamProvider(widget.portfolioId));
+                // Optional small delay for better UX
+                await Future.delayed(const Duration(milliseconds: 500));
               },
-              child: TradeHoldingsTemplate(
-                holdings: filteredHoldings,
-                isLoading: false,
-                isWebView: false,
-                onHoldingSelected: (holding) => _navigateToHoldingDetails(context, holding),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollUpdateNotification) {
+                    _onScroll();
+                  }
+                  return false;
+                },
+                child: TradeHoldingsTemplate(
+                  holdings: filteredHoldings,
+                  isLoading: false,
+                  isWebView: false,
+                  onHoldingSelected: (holding) => _navigateToHoldingDetails(context, holding),
+                ),
               ),
             ),
             // Floating Filter Button (shows on scroll, auto-hides)

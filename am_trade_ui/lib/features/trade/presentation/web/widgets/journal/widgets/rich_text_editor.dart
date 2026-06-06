@@ -77,7 +77,7 @@ class RichTextEditor extends StatelessWidget {
         controller: controller,
         config: const quill.QuillEditorConfig(
           scrollable: true,
-          expands: true,
+          expands: false,
           padding: EdgeInsets.zero,
           placeholder: 'Write about your trade, what happened, lessons learned...',
         ),

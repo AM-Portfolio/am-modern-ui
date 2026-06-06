@@ -53,59 +53,45 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
   Widget _buildDesktopLayout(BuildContext context, Color statusColor, bool isProfit) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white, // Clean white background for the header section
+        color: Theme.of(context).colorScheme.surface, // Clean background for the header section
         borderRadius: BorderRadius.circular(16), // Rounded corners
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
         boxShadow: [
            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Padding(
-           padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-           child: Column(
-             mainAxisSize: MainAxisSize.min,
-             children: [
-               // Top Row: Back Button and Main Info
-               Row(
-                 children: [
-                   // Back Button with Animation
-                   _buildBackButton(context),
-                   const SizedBox(width: 20),
-
-                // Main Trade Info Card
-                Expanded(
-                  child: _buildDesktopInfoCard(context, statusColor),
-                ),
-                const SizedBox(width: 20),
-
-                // P&L Showcase Card with Shine Effect
-                _buildDesktopPnLCard(context, isProfit),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Bottom Row: Filter and Details Toggle
-            Row(
+           padding: const EdgeInsets.all(24),
+           child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Filter by Symbol
-                Expanded(
-                  child: _buildSearchBar(context),
-                ),
-                const SizedBox(width: 16),
-
-                // Details Toggle Button
-                _buildDetailsToggle(context),
+                 Expanded(
+                    child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                          _buildBackButton(context),
+                          const SizedBox(height: 24),
+                          _buildDesktopInfoCard(context, statusColor, isProfit),
+                       ],
+                    ),
+                 ),
+                 Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                       _buildDesktopPnLCard(context, isProfit),
+                       const SizedBox(height: 24),
+                       _buildDetailsToggle(context),
+                    ],
+                 )
               ],
-            ),
-          ],
-        ),
+           )
       ),
     );
   }
 
   Widget _buildMobileLayout(BuildContext context, Color statusColor, bool isProfit) {
     return Container(
-      color: const Color(0xFFF5F5F5), // Background color match
+      color: Colors.transparent, // Background color match
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -128,10 +114,10 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
                  Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.nightlight_round, size: 20, color: Colors.black54),
+                  child: Icon(Icons.nightlight_round, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -140,8 +126,9 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
             // Main Compact Card (White Theme)
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -291,9 +278,9 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
             Container(
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
               ),
               child: TextField(
                 decoration: InputDecoration(
@@ -327,29 +314,27 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
         color: Colors.transparent,
         child: InkWell(
           onTap: widget.onClose,
-          borderRadius: BorderRadius.circular(isCompact ? 20 : 12),
+          borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: isCompact ? 10 : 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: isCompact ? Colors.grey.shade100 : Theme.of(context).colorScheme.surface.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(isCompact ? 20 : 12),
-              border: isCompact ? null : Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.arrow_back_rounded, size: isCompact ? 22 : 18, color: Theme.of(context).colorScheme.onSurface),
-                if (!isCompact) ...[
-                   const SizedBox(width: 6),
-                   Text(
-                    'Back',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                Icon(Icons.arrow_back_rounded, size: 16, color: Theme.of(context).colorScheme.onSurface),
+                const SizedBox(width: 6),
+                Text(
+                  'Back',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
-                ]
+                ),
               ],
             ),
           ),
@@ -357,9 +342,9 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
       ).animate().fadeIn(duration: const Duration(milliseconds: 300)).scale(begin: const Offset(0.8, 0.8));
   }
 
-  Widget _buildDesktopInfoCard(BuildContext context, Color statusColor) {
+  Widget _buildDesktopInfoCard(BuildContext context, Color statusColor, bool isProfit) {
      return Container(
-        padding: const EdgeInsets.all(0), // Clean, no container padding needed if we use columns directly, or minimal
+        padding: const EdgeInsets.all(0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -376,9 +361,9 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
                     child: Text(
                       widget.trade.displaySymbol,
                       style: const TextStyle(
-                        fontSize: 28, // Larger font
+                        fontSize: 32, // Larger font like screenshot
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF7C4DFF), // Purple accent from image
+                        color: Colors.white,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -387,31 +372,32 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
                 Text(
                   widget.trade.displaySymbol,
                   style: const TextStyle(
-                    fontSize: 28,
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF7C4DFF),
+                    color: Colors.white,
                     letterSpacing: 0.5,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 
-                // Status Badge (Breakeven - Grey Pill)
+                // Status Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(6),
+                    color: isProfit ? Colors.green.withOpacity(0.15) : Colors.red.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: isProfit ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
-                      Container(width: 6, height: 6, decoration: BoxDecoration(color: Colors.grey.shade500, shape: BoxShape.circle)),
+                      Container(width: 6, height: 6, decoration: BoxDecoration(color: isProfit ? Colors.greenAccent : Colors.redAccent, shape: BoxShape.circle)),
                       const SizedBox(width: 6),
                       Text(
                         widget.trade.displayStatus.toUpperCase(),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade600,
+                          color: isProfit ? Colors.greenAccent : Colors.redAccent,
                         ),
                       ),
                     ],
@@ -419,48 +405,48 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             
             // Company Name
             Text(
-              "${widget.trade.displaySymbol} - ${widget.trade.displayCompanyName} Corp.", // Formatting like image
+              "${widget.trade.displaySymbol} - ${widget.trade.displayCompanyName} Corp.",
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w400,
-                color: Colors.grey.shade600,
+                color: Colors.grey.shade400,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             
             // Tags Row (Long, Equity, etc)
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                // Position Type (Red for Long)
+                // Position Type
                  if (widget.trade.tradePositionType != null)
                   _buildSpecificTag(
                     context, 
                     widget.trade.tradePositionType == 'LONG' ? Icons.trending_up : Icons.trending_down, 
                     widget.trade.tradePositionType!, 
-                    widget.trade.tradePositionType == 'LONG' ? const Color(0xFFFFEBEE) : const Color(0xFFE8F5E9), // Light Red/Green
-                    widget.trade.tradePositionType == 'LONG' ? const Color(0xFFD32F2F) : const Color(0xFF388E3C), // Dark Red/Green
+                    widget.trade.tradePositionType == 'LONG' ? Colors.green.withOpacity(0.15) : Colors.red.withOpacity(0.15), 
+                    widget.trade.tradePositionType == 'LONG' ? Colors.greenAccent : Colors.redAccent, 
                   ),
 
-                // Asset Class (Equity - Blue)
-                _buildSpecificTag(context, Icons.pie_chart, "Equity", const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
+                // Asset Class 
+                _buildSpecificTag(context, Icons.pie_chart, "Equity", Colors.blue.withOpacity(0.15), Colors.lightBlueAccent),
 
-                // Market / Exchange (Purple)
+                // Market / Exchange
                 if (widget.trade.exchange != null)
-                   _buildSpecificTag(context, Icons.account_balance, widget.trade.exchange!, const Color(0xFFF3E5F5), const Color(0xFF7B1FA2)),
+                   _buildSpecificTag(context, Icons.account_balance, widget.trade.exchange!, Colors.brown.withOpacity(0.2), Colors.orangeAccent),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             
             // Entry Date
             Row(
               children: [
-                Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey.shade400),
+                Icon(Icons.calendar_month_outlined, size: 14, color: Colors.grey.shade400),
                 const SizedBox(width: 6),
                 Text(
                   widget.trade.entryTimestamp != null
@@ -468,7 +454,7 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
                       : 'Entry date unavailable',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade500,
+                    color: Colors.grey.shade400,
                   ),
                 ),
               ],
@@ -483,7 +469,8 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: textColor.withOpacity(0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -491,7 +478,7 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
               Icon(icon, size: 14, color: textColor),
               const SizedBox(width: 6),
               Text(
-                label, // Title case?
+                label,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -512,9 +499,12 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                   const Color(0xFF00C853), // Material Green A700
-                   const Color(0xFF00E676), // Material Green A400
+              colors: isProfit ? [
+                   const Color(0xFF00C853).withOpacity(0.9), // Material Green A700
+                   const Color(0xFF00E676).withOpacity(0.8), // Material Green A400
+              ] : [
+                   Colors.redAccent.shade700.withOpacity(0.9),
+                   Colors.redAccent.shade400.withOpacity(0.8),
               ],
             ),
             borderRadius: BorderRadius.circular(14),
@@ -535,16 +525,16 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
                 children: [
                   Icon(
                     isProfit ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                    color: Colors.white,
-                    size: 22,
+                    color: Colors.black87,
+                    size: 20,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     widget.trade.displayProfitLossPercentage,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Colors.black87,
                       letterSpacing: 0.3,
                     ),
                   ),
@@ -553,19 +543,20 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
               const SizedBox(height: 4),
               Text(
                 widget.trade.displayProfitLoss,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withOpacity(0.9),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
               ),
               const SizedBox(height: 4),
-               Text(
-                "Unrealized P/L",
+               const Text(
+                "UNREALIZED P/L",
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white.withOpacity(0.8),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black54,
+                  letterSpacing: 1.0,
                 ),
               ),
             ],

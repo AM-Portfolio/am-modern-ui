@@ -198,7 +198,24 @@ class AuthRemoteDataSource implements AuthDataSource {
 
   @override
   Future<AuthResultModel> demoLogin() async {
-    // Demo login might still call backend or use mock
+    const devUserId = String.fromEnvironment('AM_DEV_USER_ID');
+    if (devUserId.isNotEmpty) {
+      AppLogger.info('🔵 [AuthRemoteDataSource] Bypassing remote login for local dev');
+      return AuthResultModel(
+        user: UserModel(
+          id: devUserId,
+          email: AuthConstants.demoEmail,
+          displayName: 'Local Dev User',
+          authMethod: 'demo',
+        ),
+        tokens: AuthTokensModel(
+          accessToken: const String.fromEnvironment('AM_DEV_AUTH_TOKEN', defaultValue: 'mock_token'),
+          expiresAt: DateTime.now().add(const Duration(days: 1)),
+        ),
+      );
+    }
+    
+    // Fallback to real remote login if not running in local dev mode
     return emailLogin(AuthConstants.demoEmail, AuthConstants.demoPassword);
   }
 
