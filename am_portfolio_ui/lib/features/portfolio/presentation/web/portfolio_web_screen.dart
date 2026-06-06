@@ -53,6 +53,19 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     _initializeSwipeController();
   }
 
+  void _onSwipeControllerChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _swipeController?.removeListener(_onSwipeControllerChanged);
+    _swipeController?.dispose();
+    super.dispose();
+  }
+
   void _syncPortfolioSelection() {
     _currentPortfolioId = widget.selectedPortfolioId ??
         widget.portfolios?.firstOrNull?.portfolioId;
@@ -85,6 +98,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     final items = _buildNavigationItems();
     if (_swipeController == null) {
       _swipeController = SwipeNavigationController(items: items);
+      _swipeController!.addListener(_onSwipeControllerChanged);
     } else {
       _swipeController!.updateItems(items);
     }
