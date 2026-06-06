@@ -29,7 +29,8 @@ class PortfolioItemHiveModel extends HiveObject {
   }
 }
 
-class PortfolioItemHiveModelAdapter extends TypeAdapter<PortfolioItemHiveModel> {
+class PortfolioItemHiveModelAdapter
+    extends TypeAdapter<PortfolioItemHiveModel> {
   @override
   final int typeId = 6;
 
@@ -58,9 +59,6 @@ class PortfolioItemHiveModelAdapter extends TypeAdapter<PortfolioItemHiveModel> 
 
 @HiveType(typeId: 7)
 class PortfolioListHiveModel extends HiveObject {
-  @HiveField(0)
-  final String userId;
-
   @HiveField(1)
   final DateTime lastUpdated;
 
@@ -68,14 +66,12 @@ class PortfolioListHiveModel extends HiveObject {
   final List<PortfolioItemHiveModel> portfolios;
 
   PortfolioListHiveModel({
-    required this.userId,
     required this.lastUpdated,
     required this.portfolios,
   });
 
   factory PortfolioListHiveModel.fromDomain(PortfolioList entity) {
     return PortfolioListHiveModel(
-      userId: entity.userId,
       lastUpdated: entity.lastUpdated,
       portfolios: entity.portfolios
           .map((e) => PortfolioItemHiveModel.fromDomain(e))
@@ -85,14 +81,14 @@ class PortfolioListHiveModel extends HiveObject {
 
   PortfolioList toDomain() {
     return PortfolioList(
-      userId: userId,
       lastUpdated: lastUpdated,
       portfolios: portfolios.map((e) => e.toDomain()).toList(),
     );
   }
 }
 
-class PortfolioListHiveModelAdapter extends TypeAdapter<PortfolioListHiveModel> {
+class PortfolioListHiveModelAdapter
+    extends TypeAdapter<PortfolioListHiveModel> {
   @override
   final int typeId = 7;
 
@@ -103,9 +99,8 @@ class PortfolioListHiveModelAdapter extends TypeAdapter<PortfolioListHiveModel> 
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return PortfolioListHiveModel(
-      userId: fields[0] as String,
-      lastUpdated: fields[1] as DateTime,
-      portfolios: (fields[2] as List).cast<PortfolioItemHiveModel>(),
+      lastUpdated: fields[1] as DateTime? ?? DateTime.now(),
+      portfolios: (fields[2] as List?)?.cast<PortfolioItemHiveModel>() ?? [],
     );
   }
 
@@ -114,7 +109,7 @@ class PortfolioListHiveModelAdapter extends TypeAdapter<PortfolioListHiveModel> 
     writer
       ..writeByte(3)
       ..writeByte(0)
-      ..write(obj.userId)
+      
       ..writeByte(1)
       ..write(obj.lastUpdated)
       ..writeByte(2)

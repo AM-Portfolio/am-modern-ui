@@ -7,11 +7,9 @@ import '../../../providers/portfolio_providers.dart';
 /// Portfolio holdings widget with comprehensive display controller at bottom
 class PortfolioHoldingsWidget extends ConsumerStatefulWidget {
   const PortfolioHoldingsWidget({
-    required this.userId,
     super.key,
     this.portfolioId,
   });
-  final String userId;
   final String? portfolioId;
 
   @override
@@ -29,16 +27,14 @@ class _PortfolioHoldingsWidgetState
   @override
   Widget build(BuildContext context) {
     CommonLogger.debug(
-      'Building PortfolioHoldingsWidget for userId: ${widget.userId}, portfolioId: ${widget.portfolioId}',
+      'Building PortfolioHoldingsWidget for portfolioId: ${widget.portfolioId}',
       tag: 'PortfolioHoldingsWidget',
     );
 
     // Use the appropriate provider based on whether portfolioId is provided
     final portfolioHoldingsAsync = widget.portfolioId != null
-        ? ref.watch(
-            portfolioHoldingsByIdProvider(widget.userId, widget.portfolioId!),
-          )
-        : ref.watch(portfolioHoldingsProvider(widget.userId));
+        ? ref.watch(portfolioHoldingsProvider(widget.portfolioId!))
+        : ref.watch(portfolioHoldingsProvider(''));
 
     return Column(
       children: [
@@ -58,13 +54,10 @@ class _PortfolioHoldingsWidgetState
                   // Invalidate the appropriate provider based on portfolioId
                   if (widget.portfolioId != null) {
                     ref.invalidate(
-                      portfolioHoldingsByIdProvider(
-                        widget.userId,
-                        widget.portfolioId!,
-                      ),
+                      portfolioHoldingsProvider(widget.portfolioId!),
                     );
                   } else {
-                    ref.invalidate(portfolioHoldingsProvider(widget.userId));
+                    ref.invalidate(portfolioHoldingsProvider(''));
                   }
                 },
                 child: ListView.builder(
@@ -77,7 +70,8 @@ class _PortfolioHoldingsWidgetState
                     final changeValue = _changeType == HoldingsChangeType.daily
                         ? holding.todayChange
                         : holding.totalGainLoss;
-                    final changePercent = _changeType == HoldingsChangeType.daily
+                    final changePercent =
+                        _changeType == HoldingsChangeType.daily
                         ? holding.todayChangePercentage
                         : holding.totalGainLossPercentage;
                     final isPositive = changeValue >= 0;
@@ -141,14 +135,11 @@ class _PortfolioHoldingsWidgetState
                         // Invalidate the appropriate provider based on portfolioId
                         if (widget.portfolioId != null) {
                           ref.invalidate(
-                            portfolioHoldingsByIdProvider(
-                              widget.userId,
-                              widget.portfolioId!,
-                            ),
+                            portfolioHoldingsProvider(widget.portfolioId!),
                           );
                         } else {
                           ref.invalidate(
-                            portfolioHoldingsProvider(widget.userId),
+                            portfolioHoldingsProvider(''),
                           );
                         }
                       },
@@ -349,4 +340,3 @@ class _PortfolioHoldingsWidgetState
     return sortedList;
   }
 }
-

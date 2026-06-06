@@ -66,7 +66,7 @@ class GmailConnectButton extends ConsumerWidget {
     try {
       final authUrl = await ref.read(gmailConnectUrlProvider.future);
       final uri = Uri.parse(authUrl);
-      
+
       if (await launcher.canLaunchUrl(uri)) {
         await launcher.launchUrl(
           uri,
@@ -89,10 +89,6 @@ class GmailConnectButton extends ConsumerWidget {
   }
 
   void _showSyncModal(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const GmailSyncModal(),
-    );
+    showDialog(context: context, builder: (context) => const GmailSyncModal());
   }
 }
-

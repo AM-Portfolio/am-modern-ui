@@ -25,9 +25,9 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
     required PortfolioRemoteDataSource remoteDataSource,
     required PortfolioLocalDataSource localDataSource,
     AmStompClient? stompClient,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource,
-        _stompClient = stompClient;
+  }) : _remoteDataSource = remoteDataSource,
+       _localDataSource = localDataSource,
+       _stompClient = stompClient;
 
   final PortfolioRemoteDataSource _remoteDataSource;
   final PortfolioLocalDataSource _localDataSource;
@@ -44,19 +44,19 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   PortfolioHoldings? _cachedHoldings;
   PortfolioSummary? _cachedSummary;
   PortfolioList? _cachedPortfolioList;
-  String? _lastUserId;
+  
 
   @override
-  Future<PortfolioHoldings> getPortfolioHoldings(String userId) async {
+  Future<PortfolioHoldings> getPortfolioHoldings() async {
     CommonLogger.methodEntry(
       'getPortfolioHoldings',
       tag: 'PortfolioRepository',
-      metadata: {'userId': userId},
+      metadata: {},
     );
 
     // 1. Try Local Cache (Instant Load)
     try {
-      final cached = await _localDataSource.getLastHoldings(userId);
+      final cached = await _localDataSource.getLastHoldings();
       if (cached != null) {
         CommonLogger.info(
           'Loaded holdings from local cache',
@@ -66,7 +66,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         _holdingsController.add(cached);
         // Update in-memory cache
         _cachedHoldings = cached;
-        _lastUserId = userId;
+        
       }
     } catch (e) {
       CommonLogger.warning(
@@ -79,21 +79,20 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
     // 2. Fetch Fresh Data (Network)
     try {
       // Fetch data from remote source
-      final holdingsDto = await _remoteDataSource.getPortfolioHoldings(userId);
+      final holdingsDto = await _remoteDataSource.getPortfolioHoldings();
 
       // Map DTO to domain entity using holdings mapper
       final holdings = PortfolioHoldingsMapper.fromApiModel(
         holdingsDto,
-        userId,
       );
 
       // 3. Update Stream & Caches
       _cachedHoldings = holdings;
-      _lastUserId = userId;
+      
       _holdingsController.add(holdings);
 
       // 4. Persist to Local Cache
-      await _localDataSource.cacheHoldings(userId, holdings);
+      await _localDataSource.cacheHoldings(holdings);
 
       CommonLogger.info(
         'Portfolio holdings fetched successfully',
@@ -120,50 +119,51 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       );
 
       // Return cached data if available (Double fallback: In-memory or Local)
-      if (_cachedHoldings != null && _lastUserId == userId) {
-        return _cachedHoldings!;
-      }
-
-      // If we had local cache earlier but no in-memory, try to return that (conceptually covered by step 1 & 3 update)
-      // But if standard return is expected:
+      // Note: Removed silent fallback to stale cache. The UI needs to know
+      // when network fetch fails so it can show appropriate error state.
+      // Stream has already emitted cached data if it existed.
       rethrow;
     }
   }
 
   @override
-  Future<PortfolioSummary> getPortfolioSummary(String userId) async {
+  Future<PortfolioSummary> getPortfolioSummary() async {
     CommonLogger.methodEntry(
       'getPortfolioSummary',
       tag: 'PortfolioRepository',
-      metadata: {'userId': userId},
+      metadata: {},
     );
 
     // 1. Try Local Cache
     try {
-      final cached = await _localDataSource.getLastSummary(userId);
+      final cached = await _localDataSource.getLastSummary();
       if (cached != null) {
         _summaryController.add(cached);
         _cachedSummary = cached;
-        _lastUserId = userId;
+        
       }
     } catch (e) {
-      CommonLogger.warning('Failed to read local summary cache', error: e, tag: 'PortfolioRepository');
+      CommonLogger.warning(
+        'Failed to read local summary cache',
+        error: e,
+        tag: 'PortfolioRepository',
+      );
     }
 
     try {
       // 2. Fetch Fresh Data
-      final summaryDto = await _remoteDataSource.getPortfolioSummary(userId);
+      final summaryDto = await _remoteDataSource.getPortfolioSummary();
 
       // Map DTO to domain entity using summary mapper
-      final summary = PortfolioSummaryMapper.fromApiModel(summaryDto, userId);
+      final summary = PortfolioSummaryMapper.fromApiModel(summaryDto);
 
       // 3. Update Stream & Caches
       _cachedSummary = summary;
-      _lastUserId = userId;
+      
       _summaryController.add(summary);
 
       // 4. Persist to Local Cache
-      await _localDataSource.cacheSummary(userId, summary);
+      await _localDataSource.cacheSummary(summary);
 
       CommonLogger.info(
         'Portfolio summary fetched successfully',
@@ -189,47 +189,42 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         metadata: {'status': 'error'},
       );
 
-      if (_cachedSummary != null && _lastUserId == userId) {
-        return _cachedSummary!;
-      }
-
+      // Note: Removed silent fallback to stale cache. The UI needs to know
+      // when network fetch fails so it can show appropriate error state.
       rethrow;
     }
   }
 
   @override
   Future<PortfolioHoldings> getPortfolioHoldingsById(
-    String userId,
     String portfolioId,
   ) async {
     CommonLogger.methodEntry(
       'getPortfolioHoldingsById',
       tag: 'PortfolioRepository',
-      metadata: {'userId': userId, 'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId},
     );
 
     try {
       // Fetch from remote data source using specific portfolio ID
       final holdingsDto = await _remoteDataSource.getPortfolioHoldingsById(
-        userId,
         portfolioId,
       );
 
       // Map DTO to domain entity using holdings mapper
       final holdings = PortfolioHoldingsMapper.fromApiModel(
         holdingsDto,
-        userId,
       );
 
       // Cache the result
       _cachedHoldings = holdings;
-      _lastUserId = userId;
+      
 
       // Emit to stream for real-time updates
       _holdingsController.add(holdings);
 
       // Persist to Local Cache (Added Fix)
-      await _localDataSource.cacheHoldings(userId, holdings);
+      await _localDataSource.cacheHoldings(holdings);
 
       CommonLogger.info(
         'Portfolio holdings fetched successfully by ID',
@@ -256,42 +251,36 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       );
 
       // Return cached data if available, otherwise rethrow
-      if (_cachedHoldings != null && _lastUserId == userId) {
-        CommonLogger.info(
-          'Returning cached portfolio holdings due to error',
-          tag: 'PortfolioRepository',
-        );
-        return _cachedHoldings!;
-      }
-
+      // Note: Removed silent fallback to stale cache. The UI needs to know
+      // when network fetch fails so it can show appropriate error state.
       rethrow;
     }
   }
 
   @override
-  Stream<PortfolioHoldings> watchPortfolioHoldings(String userId) {
+  Stream<PortfolioHoldings> watchPortfolioHoldings() {
     CommonLogger.methodEntry(
       'watchPortfolioHoldings',
       tag: 'PortfolioRepository',
-      metadata: {'userId': userId},
+      metadata: {},
     );
 
-    _ensureWebSocketSubscribed(userId);
+    _ensureWebSocketSubscribed();
 
     // Emit cached data immediately if available
-    if (_cachedHoldings != null && _lastUserId == userId) {
+    if (_cachedHoldings != null) {
       Future.microtask(() => _holdingsController.add(_cachedHoldings!));
     }
-    
+
     // Always fetch fresh data via REST for the "First Frame"
-    getPortfolioHoldings(userId).catchError((error) {
+    getPortfolioHoldings().catchError((error) {
       CommonLogger.error(
         'Failed to fetch initial holdings for stream',
         tag: 'PortfolioRepository',
         error: error,
       );
       _holdingsController.addError(error);
-      return PortfolioHoldings.empty(userId);
+      return PortfolioHoldings.empty();
     });
 
     return _holdingsController.stream;
@@ -299,34 +288,32 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
   @override
   Future<PortfolioSummary> getPortfolioSummaryById(
-    String userId,
     String portfolioId,
   ) async {
     CommonLogger.methodEntry(
       'getPortfolioSummaryById',
       tag: 'PortfolioRepository',
-      metadata: {'userId': userId, 'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId},
     );
 
     try {
       // Fetch from remote data source using specific portfolio ID
       final summaryDto = await _remoteDataSource.getPortfolioSummaryById(
-        userId,
         portfolioId,
       );
 
       // Map DTO to domain entity using summary mapper
-      final summary = PortfolioSummaryMapper.fromApiModel(summaryDto, userId);
+      final summary = PortfolioSummaryMapper.fromApiModel(summaryDto);
 
       // Cache the result
       _cachedSummary = summary;
-      _lastUserId = userId;
+      
 
       // Emit to stream for real-time updates
       _summaryController.add(summary);
 
       // Persist to Local Cache (Added Fix)
-      await _localDataSource.cacheSummary(userId, summary);
+      await _localDataSource.cacheSummary(summary);
 
       CommonLogger.info(
         'Portfolio summary fetched successfully by ID',
@@ -353,42 +340,36 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       );
 
       // Return cached data if available, otherwise rethrow
-      if (_cachedSummary != null && _lastUserId == userId) {
-        CommonLogger.info(
-          'Returning cached portfolio summary due to error',
-          tag: 'PortfolioRepository',
-        );
-        return _cachedSummary!;
-      }
-
+      // Note: Removed silent fallback to stale cache. The UI needs to know
+      // when network fetch fails so it can show appropriate error state.
       rethrow;
     }
   }
 
   @override
-  Stream<PortfolioSummary> watchPortfolioSummary(String userId) {
+  Stream<PortfolioSummary> watchPortfolioSummary() {
     CommonLogger.methodEntry(
       'watchPortfolioSummary',
       tag: 'PortfolioRepository',
-      metadata: {'userId': userId},
+      metadata: {},
     );
 
-    _ensureWebSocketSubscribed(userId);
+    _ensureWebSocketSubscribed();
 
     // Emit cached data immediately if available
-    if (_cachedSummary != null && _lastUserId == userId) {
+    if (_cachedSummary != null) {
       Future.microtask(() => _summaryController.add(_cachedSummary!));
     }
-    
+
     // Always fetch fresh data via REST for the "First Frame"
-    getPortfolioSummary(userId).catchError((error) {
+    getPortfolioSummary().catchError((error) {
       CommonLogger.error(
         'Failed to fetch initial summary for stream',
         tag: 'PortfolioRepository',
         error: error,
       );
       _summaryController.addError(error);
-      return PortfolioSummary.empty(userId);
+      return PortfolioSummary.empty();
     });
 
     return _summaryController.stream;
@@ -396,24 +377,26 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
   @override
   Future<PortfolioHolding?> getHoldingDetails(
-    String userId,
     String symbol,
   ) async {
     CommonLogger.methodEntry(
       'getHoldingDetails',
       tag: 'PortfolioRepository',
-      metadata: {'userId': userId, 'symbol': symbol},
+      metadata: {'symbol': symbol},
     );
 
     try {
       // First try to get from cached holdings
-      if (_cachedHoldings != null && _lastUserId == userId) {
+      if (_cachedHoldings != null) {
         final holding = _cachedHoldings!.holdings
             .where((h) => h.symbol.toLowerCase() == symbol.toLowerCase())
             .firstOrNull;
 
         if (holding != null) {
-          CommonLogger.info('Found holding in cache', tag: 'PortfolioRepository');
+          CommonLogger.info(
+            'Found holding in cache',
+            tag: 'PortfolioRepository',
+          );
           CommonLogger.methodExit(
             'getHoldingDetails',
             tag: 'PortfolioRepository',
@@ -424,7 +407,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       }
 
       // If not in cache, fetch fresh holdings
-      final holdings = await getPortfolioHoldings(userId);
+      final holdings = await getPortfolioHoldings();
       final holding = holdings.holdings
           .where((h) => h.symbol.toLowerCase() == symbol.toLowerCase())
           .firstOrNull;
@@ -453,16 +436,16 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<List<SectorAllocation>> getSectorAllocation(String userId) async {
+  Future<List<SectorAllocation>> getSectorAllocation() async {
     CommonLogger.methodEntry(
       'getSectorAllocation',
       tag: 'PortfolioRepository',
-      metadata: {'userId': userId},
+      metadata: {},
     );
 
     try {
       // Get portfolio summary which contains sector allocation
-      final summary = await getPortfolioSummary(userId);
+      final summary = await getPortfolioSummary();
 
       CommonLogger.info(
         'Sector allocation retrieved successfully',
@@ -492,19 +475,18 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<List<TopPerformer>> getTopPerformers(
-    String userId, {
+  Future<List<TopPerformer>> getTopPerformers({
     int limit = 5,
   }) async {
     CommonLogger.methodEntry(
       'getTopPerformers',
       tag: 'PortfolioRepository',
-      metadata: {'userId': userId, 'limit': limit},
+      metadata: {'limit': limit},
     );
 
     try {
       // Get portfolio summary which contains top performers
-      final summary = await getPortfolioSummary(userId);
+      final summary = await getPortfolioSummary();
 
       // Return limited results
       final topPerformers = summary.topPerformers.take(limit).toList();
@@ -537,19 +519,18 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<List<TopPerformer>> getWorstPerformers(
-    String userId, {
+  Future<List<TopPerformer>> getWorstPerformers({
     int limit = 5,
   }) async {
     CommonLogger.methodEntry(
       'getWorstPerformers',
       tag: 'PortfolioRepository',
-      metadata: {'userId': userId, 'limit': limit},
+      metadata: {'limit': limit},
     );
 
     try {
       // Get portfolio summary which contains worst performers
-      final summary = await getPortfolioSummary(userId);
+      final summary = await getPortfolioSummary();
 
       // Return limited results
       final worstPerformers = summary.worstPerformers.take(limit).toList();
@@ -582,42 +563,43 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<PortfolioList> getPortfoliosList(String userId) async {
+  Future<PortfolioList> getPortfoliosList() async {
     CommonLogger.methodEntry(
       'getPortfoliosList',
       tag: 'PortfolioRepository',
-      metadata: {'userId': userId},
+      metadata: {},
     );
 
     // 1. Try Local Cache
     try {
-      final cached = await _localDataSource.getLastPortfolioList(userId);
+      final cached = await _localDataSource.getLastPortfolioList();
       if (cached != null) {
         _cachedPortfolioList = cached;
-        _lastUserId = userId;
+        
       }
     } catch (e) {
-      CommonLogger.warning('Failed to read local portfolio list cache', error: e, tag: 'PortfolioRepository');
+      CommonLogger.warning(
+        'Failed to read local portfolio list cache',
+        error: e,
+        tag: 'PortfolioRepository',
+      );
     }
 
     try {
       // 2. Fetch Fresh Data
-      final portfolioListDto = await _remoteDataSource.getPortfoliosList(
-        userId,
-      );
+      final portfolioListDto = await _remoteDataSource.getPortfoliosList();
 
       // Map DTO to domain entity using portfolio list mapper
       final portfolioList = PortfolioListMapper.fromApiModel(
         portfolioListDto,
-        userId,
       );
 
       // 3. Cache the result
       _cachedPortfolioList = portfolioList;
-      _lastUserId = userId;
       
+
       // 4. Persist to Local Cache
-      await _localDataSource.cachePortfolioList(userId, portfolioList);
+      await _localDataSource.cachePortfolioList(portfolioList);
 
       CommonLogger.info(
         'Portfolio list fetched successfully',
@@ -643,15 +625,8 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         metadata: {'status': 'error'},
       );
 
-      if (_cachedPortfolioList != null && _lastUserId == userId) {
-        return _cachedPortfolioList!;
-      }
-
-      // If we found local data in step 1 but fetch failed, return it if we have it in memory
-       if (_cachedPortfolioList != null) {
-          return _cachedPortfolioList!;
-       }
-
+      // Note: Removed silent fallback to stale cache. The UI needs to know
+      // when network fetch fails so it can show appropriate error state.
       rethrow;
     }
   }
@@ -660,43 +635,64 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   // V2 Approach: WebSocket Real-Time Streaming
   // ============================================================================
 
-  void _ensureWebSocketSubscribed(String userId) {
+  void _ensureWebSocketSubscribed() {
     if (_stompClient == null) {
-      CommonLogger.warning('AmStompClient is null. WebSocket features disabled.', tag: 'PortfolioRepository');
+      CommonLogger.warning(
+        'AmStompClient is null. WebSocket features disabled.',
+        tag: 'PortfolioRepository',
+      );
       return;
     }
-    
+
     final destination = '/user/queue/portfolio';
-    
+
     if (_stompSubscription == null) {
-      CommonLogger.info('📡 Subscribing to: $destination', tag: 'PortfolioRepository');
+      CommonLogger.info(
+        '📡 Subscribing to: $destination',
+        tag: 'PortfolioRepository',
+      );
       _stompClient!.subscribe(destination);
 
       _stompSubscription = _stompClient!.messages
           .where((frame) => frame.headers['destination'] == destination)
           .listen(
-        (frame) {
-          if (frame.body == null) return;
-          try {
-            final json = jsonDecode(frame.body!);
-            CommonLogger.info('Received real-time portfolio update via WebSocket', tag: 'PortfolioRepository');
+            (frame) {
+              if (frame.body == null) return;
+              try {
+                final json = jsonDecode(frame.body!);
+                CommonLogger.info(
+                  'Received real-time portfolio update via WebSocket',
+                  tag: 'PortfolioRepository',
+                );
 
-            if (json.containsKey('holdings')) {
-              final holdings = PortfolioHoldingsMapper.fromApiModel(json, userId);
-              _cachedHoldings = holdings;
-              _holdingsController.add(holdings);
-            }
-            if (json.containsKey('summary')) {
-              final summary = PortfolioSummaryMapper.fromApiModel(json['summary'], userId);
-              _cachedSummary = summary;
-              _summaryController.add(summary);
-            }
-          } catch (e) {
-            CommonLogger.error('Failed to parse portfolio STOMP message', error: e, tag: 'PortfolioRepository');
-          }
-        },
-        onError: (err) => CommonLogger.error('STOMP Subscription error', error: err, tag: 'PortfolioRepository'),
-      );
+                if (json.containsKey('holdings')) {
+                  final holdings = PortfolioHoldingsMapper.fromApiModel(
+                    json,
+                  );
+                  _cachedHoldings = holdings;
+                  _holdingsController.add(holdings);
+                }
+                if (json.containsKey('summary')) {
+                  final summary = PortfolioSummaryMapper.fromApiModel(
+                    json['summary'],
+                  );
+                  _cachedSummary = summary;
+                  _summaryController.add(summary);
+                }
+              } catch (e) {
+                CommonLogger.error(
+                  'Failed to parse portfolio STOMP message',
+                  error: e,
+                  tag: 'PortfolioRepository',
+                );
+              }
+            },
+            onError: (err) => CommonLogger.error(
+              'STOMP Subscription error',
+              error: err,
+              tag: 'PortfolioRepository',
+            ),
+          );
     }
   }
 
@@ -704,7 +700,10 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   void dispose() {
     CommonLogger.methodEntry('dispose', tag: 'PortfolioRepository');
 
-    CommonLogger.info('Unwatching /user/queue/portfolio', tag: 'PortfolioRepository');
+    CommonLogger.info(
+      'Unwatching /user/queue/portfolio',
+      tag: 'PortfolioRepository',
+    );
     _stompClient?.unsubscribe('/user/queue/portfolio');
     _stompSubscription?.cancel();
 
@@ -713,9 +712,12 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
     _cachedHoldings = null;
     _cachedSummary = null;
     _cachedPortfolioList = null;
-    _lastUserId = null;
+    
 
-    CommonLogger.info('PortfolioRepository disposed', tag: 'PortfolioRepository');
+    CommonLogger.info(
+      'PortfolioRepository disposed',
+      tag: 'PortfolioRepository',
+    );
   }
 }
 
@@ -729,4 +731,3 @@ extension IterableExtensions<T> on Iterable<T> {
     return null;
   }
 }
-
