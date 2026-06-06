@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
-import '../package:am_design_system/am_design_system.dart';
+import 'package:am_design_system/am_design_system.dart';
 import '../../../providers/portfolio_providers.dart';
 import 'package:am_common/am_common.dart';
 
@@ -12,7 +12,6 @@ import 'package:am_common/am_common.dart';
 class PortfolioHoldingsWebCard extends ConsumerStatefulWidget {
   /// Constructor
   const PortfolioHoldingsWebCard({
-    required this.userId,
     super.key,
     this.portfolioId,
     this.showDetails = false,
@@ -23,8 +22,6 @@ class PortfolioHoldingsWebCard extends ConsumerStatefulWidget {
   });
 
   /// User ID for fetching portfolio data
-  final String userId;
-
   /// Portfolio ID - if null, uses default portfolio for user
   final String? portfolioId;
 
@@ -56,7 +53,7 @@ class _PortfolioHoldingsWebCardState
 
   void _sortHoldingsByAllocation(PortfolioHoldings holdings) {
     CommonLogger.debug(
-      'Sorting ${holdings.holdings.length} holdings by allocation for userId: ${widget.userId}, portfolioId: ${widget.portfolioId}',
+      'Sorting ${holdings.holdings.length} holdings by allocation for portfolioId: ${widget.portfolioId}',
       tag: 'PortfolioHoldingsWebCard',
     );
 
@@ -105,16 +102,16 @@ class _PortfolioHoldingsWebCardState
     final theme = Theme.of(context);
 
     CommonLogger.debug(
-      'Building PortfolioHoldingsWebCard for userId: ${widget.userId}, portfolioId: ${widget.portfolioId}',
+      'Building PortfolioHoldingsWebCard for portfolioId: ${widget.portfolioId}',
       tag: 'PortfolioHoldingsWebCard',
     );
 
     // Use the appropriate provider based on whether portfolioId is provided
     final portfolioHoldingsAsync = widget.portfolioId != null
         ? ref.watch(
-            portfolioHoldingsByIdProvider(widget.userId, widget.portfolioId!),
+            portfolioHoldingsProvider(widget.portfolioId!),
           )
-        : ref.watch(portfolioHoldingsProvider(widget.userId));
+        : ref.watch(portfolioHoldingsProvider(''));
 
     return portfolioHoldingsAsync.when(
       data: (holdings) {
@@ -147,7 +144,7 @@ class _PortfolioHoldingsWebCardState
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
-                  color: theme.colorScheme.outline.withOpacity(0.2),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.2),
                 ),
               ),
               child: LayoutBuilder(
@@ -195,7 +192,8 @@ class _PortfolioHoldingsWebCardState
                             columns: _buildColumns(),
                             initialSortColumnIndex:
                                 2, // Sort by current value initially
-                            onItemTap: (holding) => widget.onHoldingTap?.call(holding),
+                            onItemTap: (holding) =>
+                                widget.onHoldingTap?.call(holding),
                             rowHeight: rowHeight,
                           ),
                         ),
@@ -212,7 +210,7 @@ class _PortfolioHoldingsWebCardState
                                     : '${startIndex + 1}-$endIndex of ${_sortedHoldings.length}',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurface
-                                      .withOpacity(0.6),
+                                      .withValues(alpha: 0.6),
                                   fontSize: cardConstraints.maxWidth * 0.015,
                                 ),
                               ),
@@ -233,7 +231,7 @@ class _PortfolioHoldingsWebCardState
                                     tooltip: 'Previous page',
                                     color: theme.colorScheme.primary,
                                     disabledColor: theme.colorScheme.onSurface
-                                        .withOpacity(0.3),
+                                        .withValues(alpha: 0.3),
                                     padding: EdgeInsets.zero,
                                     visualDensity: VisualDensity.compact,
                                     constraints:
@@ -261,7 +259,7 @@ class _PortfolioHoldingsWebCardState
                                     tooltip: 'Next page',
                                     color: theme.colorScheme.primary,
                                     disabledColor: theme.colorScheme.onSurface
-                                        .withOpacity(0.3),
+                                        .withValues(alpha: 0.3),
                                     padding: EdgeInsets.zero,
                                     visualDensity: VisualDensity.compact,
                                     constraints:
@@ -309,13 +307,12 @@ class _PortfolioHoldingsWebCardState
                   // Invalidate the appropriate provider based on portfolioId
                   if (widget.portfolioId != null) {
                     ref.invalidate(
-                      portfolioHoldingsByIdProvider(
-                        widget.userId,
+                      portfolioHoldingsProvider(
                         widget.portfolioId!,
                       ),
                     );
                   } else {
-                    ref.invalidate(portfolioHoldingsProvider(widget.userId));
+                    ref.invalidate(portfolioHoldingsProvider(''));
                   }
                 },
                 child: const Text('Retry'),
@@ -354,7 +351,7 @@ class _PortfolioHoldingsWebCardState
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
@@ -368,7 +365,7 @@ class _PortfolioHoldingsWebCardState
                   'Total Investment',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 Text(
@@ -391,7 +388,7 @@ class _PortfolioHoldingsWebCardState
                   'Current Value',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 Text(
@@ -414,7 +411,7 @@ class _PortfolioHoldingsWebCardState
                   'Gain/Loss',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 Row(
@@ -472,7 +469,7 @@ class _PortfolioHoldingsWebCardState
               Text(
                 holding.sector,
                 style: TextStyle(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   fontSize: 11,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -542,4 +539,3 @@ class _PortfolioHoldingsWebCardState
     ];
   }
 }
-

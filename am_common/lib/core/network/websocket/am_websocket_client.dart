@@ -17,6 +17,7 @@ class AMWebSocketClient {
   WebSocketChannel? _channel;
   StreamSubscription? _subscription;
   Timer? _reconnectTimer;
+  Timer? _pingTimer;
   
   // Configuration
   bool _autoReconnect = true;
@@ -60,6 +61,18 @@ class AMWebSocketClient {
       _statusSubject.add(SocketStatus.connected);
       AppLogger.info('AMWebSocketClient: Connected.');
 
+      // Start periodic 30-second ping heartbeat to keep connection alive through reverse proxies
+      _pingTimer?.cancel();
+      _pingTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+        if (isConnected) {
+          try {
+            send("ping");
+          } catch (e) {
+            AppLogger.error('AMWebSocketClient: Error sending ping heartbeat', error: e);
+          }
+        }
+      });
+
       _subscription = _channel!.stream.listen(
         _onMessage,
         onError: _onError,
@@ -74,6 +87,7 @@ class AMWebSocketClient {
   }
 
   void _onMessage(dynamic message) {
+    if (message == "pong") return; // Ignore pong replies from backend
     _messageSubject.add(message);
   }
 
@@ -91,6 +105,8 @@ class AMWebSocketClient {
   }
 
   void _cleanup() {
+    _pingTimer?.cancel();
+    _pingTimer = null;
     _subscription?.cancel();
     _subscription = null;
     _channel = null;

@@ -37,16 +37,13 @@ class PortfolioExampleApp extends StatelessWidget {
       home: AuthWrapper(
         child: BlocBuilder<AuthCubit, AuthState>(
           builder: (context, state) {
-            String userId = '';
-            if (state is Authenticated) {
-              userId = state.user.id;
-            }
+                        if (state is Authenticated) {
+                          }
             // Fallback or loading state might be handled by AuthWrapper, 
             // but we need a valid string for the constructor if it's rendered.
             // AuthWrapper only renders child if authenticated, so state should be Authenticated.
             return PortfolioScreen(
-              userId: userId,
-            );
+              );
           },
         ),
       ),

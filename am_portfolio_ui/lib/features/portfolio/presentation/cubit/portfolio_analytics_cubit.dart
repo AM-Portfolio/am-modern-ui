@@ -10,8 +10,30 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     : super(PortfolioAnalyticsInitial());
   final PortfolioAnalyticsService _analyticsService;
 
+  Future<void>? _loadingFuture;
+  String? _currentPortfolioId;
+
   /// Load all analytics data for a portfolio
   Future<void> loadAnalytics(String portfolioId) async {
+    if (_loadingFuture != null && _currentPortfolioId == portfolioId) {
+      CommonLogger.debug(
+        '🔍 PortfolioAnalyticsCubit: loadAnalytics already in progress for portfolioId: $portfolioId',
+        tag: 'PortfolioAnalyticsCubit',
+      );
+      return _loadingFuture;
+    }
+
+    _currentPortfolioId = portfolioId;
+    _loadingFuture = _doLoadAnalytics(portfolioId);
+
+    try {
+      await _loadingFuture;
+    } finally {
+      _loadingFuture = null;
+    }
+  }
+
+  Future<void> _doLoadAnalytics(String portfolioId) async {
     CommonLogger.debug(
       '🔍 PortfolioAnalyticsCubit: loadAnalytics called with portfolioId: $portfolioId',
       tag: 'PortfolioAnalyticsCubit',
@@ -256,4 +278,3 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     }
   }
 }
-

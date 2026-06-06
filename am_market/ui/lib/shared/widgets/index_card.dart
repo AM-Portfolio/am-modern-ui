@@ -14,7 +14,7 @@ class IndexCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPositive = data.pChange >= 0;
-    final accentColor = isPositive 
+    final accentColor = isPositive
         ? const Color(0xFF00FF88) // Green
         : const Color(0xFFFF6B6B); // Red
 
@@ -55,10 +55,10 @@ class IndexCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
-          
+
           // Price
           Text(
-            '₹${numberFormat.format(data.lastPrice)}',
+            '${numberFormat.format(data.lastPrice)}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -66,7 +66,7 @@ class IndexCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          
+
           // Change Amount
           Row(
             children: [
@@ -87,7 +87,7 @@ class IndexCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 2),
-          
+
           // Percentage
           Text(
             '${isPositive ? '+' : ''}${data.pChange.toStringAsFixed(2)}%',

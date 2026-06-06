@@ -12,13 +12,11 @@ import '../../cubit/portfolio_cubit.dart';
 /// It uses the global [PortfolioCubit] provided by GlobalPortfolioWrapper.
 class PortfolioOverviewWebPage extends ConsumerWidget {
   const PortfolioOverviewWebPage({
-    required this.userId,
     super.key,
     this.portfolioId,
     this.portfolioName,
   });
 
-  final String userId;
   final String? portfolioId;
   final String? portfolioName;
 
@@ -36,7 +34,6 @@ class PortfolioOverviewWebPage extends ConsumerWidget {
               return cubit;
             },
             child: _PortfolioOverviewView(
-              userId: userId,
               portfolioId: portfolioId,
               portfolioName: portfolioName,
             ),
@@ -48,7 +45,6 @@ class PortfolioOverviewWebPage extends ConsumerWidget {
     }
 
     return _PortfolioOverviewView(
-      userId: userId,
       portfolioId: portfolioId,
       portfolioName: portfolioName,
     );
@@ -57,19 +53,16 @@ class PortfolioOverviewWebPage extends ConsumerWidget {
 
 class _PortfolioOverviewView extends StatelessWidget {
   const _PortfolioOverviewView({
-    required this.userId,
     this.portfolioId,
     this.portfolioName,
   });
 
-  final String userId;
   final String? portfolioId;
   final String? portfolioName;
 
   @override
   Widget build(BuildContext context) {
     return PortfolioOverviewWidget(
-      userId: userId,
       portfolioId: portfolioId,
     );
   }

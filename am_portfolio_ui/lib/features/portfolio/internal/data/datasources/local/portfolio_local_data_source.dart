@@ -11,115 +11,129 @@ import 'package:am_design_system/am_design_system.dart';
 /// Local data source for caching portfolio data using Hive
 class PortfolioLocalDataSource {
   static const String _holdingsBoxName = 'portfolio_holdings';
-  static const String _summaryBoxName = 'portfolio_summary';
+  static const String _summaryBoxName = 'portfolio_summary_v2';
   static const String _listBoxName = 'user_portfolios';
 
-  /// Initialize Hive and open boxes with dynamic recovery from corruption
+  /// Initialize Hive and open boxes
   Future<void> init() async {
     await Hive.initFlutter();
-    
-    // Register adapters individually to ensure they are all registered safely
-    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(BrokerHoldingHiveModelAdapter());
-    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(PortfolioHoldingHiveModelAdapter());
-    if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(PortfolioHoldingsHiveModelAdapter());
-    if (!Hive.isAdapterRegistered(3)) Hive.registerAdapter(SectorAllocationHiveModelAdapter());
-    if (!Hive.isAdapterRegistered(4)) Hive.registerAdapter(TopPerformerHiveModelAdapter());
-    if (!Hive.isAdapterRegistered(5)) Hive.registerAdapter(PortfolioSummaryHiveModelAdapter());
-    if (!Hive.isAdapterRegistered(6)) Hive.registerAdapter(PortfolioItemHiveModelAdapter());
-    if (!Hive.isAdapterRegistered(7)) Hive.registerAdapter(PortfolioListHiveModelAdapter());
 
-    // Open boxes with robust error handling / auto-recovery from corruption
-    try {
-      await Hive.openBox<PortfolioHoldingsHiveModel>(_holdingsBoxName);
-    } catch (e) {
-      CommonLogger.error('Failed to open holdings box. Deleting and recreating...', error: e, tag: 'PortfolioLocalDataSource');
-      await Hive.deleteBoxFromDisk(_holdingsBoxName);
-      await Hive.openBox<PortfolioHoldingsHiveModel>(_holdingsBoxName);
+    // Only register adapters if not already registered to avoid errors during hot restart
+    if (!Hive.isAdapterRegistered(0)) {
+      Hive.registerAdapter(BrokerHoldingHiveModelAdapter());
+      Hive.registerAdapter(PortfolioHoldingHiveModelAdapter());
+      Hive.registerAdapter(PortfolioHoldingsHiveModelAdapter());
+      Hive.registerAdapter(SectorAllocationHiveModelAdapter());
+      Hive.registerAdapter(TopPerformerHiveModelAdapter());
+      Hive.registerAdapter(PortfolioSummaryHiveModelAdapter());
+      Hive.registerAdapter(PortfolioItemHiveModelAdapter());
+      Hive.registerAdapter(PortfolioListHiveModelAdapter());
     }
 
-    try {
-      await Hive.openBox<PortfolioSummaryHiveModel>(_summaryBoxName);
-    } catch (e) {
-      CommonLogger.error('Failed to open summary box. Deleting and recreating...', error: e, tag: 'PortfolioLocalDataSource');
-      await Hive.deleteBoxFromDisk(_summaryBoxName);
-      await Hive.openBox<PortfolioSummaryHiveModel>(_summaryBoxName);
-    }
-
-    try {
-      await Hive.openBox<PortfolioListHiveModel>(_listBoxName);
-    } catch (e) {
-      CommonLogger.error('Failed to open list box. Deleting and recreating...', error: e, tag: 'PortfolioLocalDataSource');
-      await Hive.deleteBoxFromDisk(_listBoxName);
-      await Hive.openBox<PortfolioListHiveModel>(_listBoxName);
-    }
+    await Hive.openBox<PortfolioHoldingsHiveModel>(_holdingsBoxName);
+    await Hive.openBox<PortfolioSummaryHiveModel>(_summaryBoxName);
+    await Hive.openBox<PortfolioListHiveModel>(_listBoxName);
   }
 
   /// Get cached holdings
-  Future<PortfolioHoldings?> getLastHoldings(String userId) async {
+  Future<PortfolioHoldings?> getLastHoldings() async {
     try {
       final box = Hive.box<PortfolioHoldingsHiveModel>(_holdingsBoxName);
-      final hiveModel = box.get(userId);
+      final hiveModel = box.get('current_user');
       return hiveModel?.toDomain();
     } catch (e) {
-      CommonLogger.error('Failed to get cached holdings', error: e, tag: 'PortfolioLocalDataSource');
+      CommonLogger.error(
+        'Failed to get cached holdings',
+        error: e,
+        tag: 'PortfolioLocalDataSource',
+      );
       return null;
     }
   }
 
   /// Cache holdings
-  Future<void> cacheHoldings(String userId, PortfolioHoldings data) async {
+  Future<void> cacheHoldings(PortfolioHoldings data) async {
     try {
       final box = Hive.box<PortfolioHoldingsHiveModel>(_holdingsBoxName);
-      await box.put(userId, PortfolioHoldingsHiveModel.fromDomain(data));
-      CommonLogger.info('Cached holdings for user: $userId', tag: 'PortfolioLocalDataSource');
+      await box.put('current_user', PortfolioHoldingsHiveModel.fromDomain(data));
+      CommonLogger.info(
+        'Cached holdings for current_user',
+        tag: 'PortfolioLocalDataSource',
+      );
     } catch (e) {
-      CommonLogger.error('Failed to cache holdings', error: e, tag: 'PortfolioLocalDataSource');
+      CommonLogger.error(
+        'Failed to cache holdings',
+        error: e,
+        tag: 'PortfolioLocalDataSource',
+      );
     }
   }
 
   /// Get cached summary
-  Future<PortfolioSummary?> getLastSummary(String userId) async {
+  Future<PortfolioSummary?> getLastSummary() async {
     try {
       final box = Hive.box<PortfolioSummaryHiveModel>(_summaryBoxName);
-      final hiveModel = box.get(userId);
+      final hiveModel = box.get('current_user');
       return hiveModel?.toDomain();
     } catch (e) {
-      CommonLogger.error('Failed to get cached summary', error: e, tag: 'PortfolioLocalDataSource');
+      CommonLogger.error(
+        'Failed to get cached summary',
+        error: e,
+        tag: 'PortfolioLocalDataSource',
+      );
       return null;
     }
   }
 
   /// Cache summary
-  Future<void> cacheSummary(String userId, PortfolioSummary data) async {
+  Future<void> cacheSummary(PortfolioSummary data) async {
     try {
       final box = Hive.box<PortfolioSummaryHiveModel>(_summaryBoxName);
-      await box.put(userId, PortfolioSummaryHiveModel.fromDomain(data));
-      CommonLogger.info('Cached summary for user: $userId', tag: 'PortfolioLocalDataSource');
+      await box.put('current_user', PortfolioSummaryHiveModel.fromDomain(data));
+      CommonLogger.info(
+        'Cached summary for current_user',
+        tag: 'PortfolioLocalDataSource',
+      );
     } catch (e) {
-      CommonLogger.error('Failed to cache summary', error: e, tag: 'PortfolioLocalDataSource');
+      CommonLogger.error(
+        'Failed to cache summary',
+        error: e,
+        tag: 'PortfolioLocalDataSource',
+      );
     }
   }
 
   /// Get cached portfolio list
-  Future<PortfolioList?> getLastPortfolioList(String userId) async {
+  Future<PortfolioList?> getLastPortfolioList() async {
     try {
       final box = Hive.box<PortfolioListHiveModel>(_listBoxName);
-      final hiveModel = box.get(userId);
+      final hiveModel = box.get('current_user');
       return hiveModel?.toDomain();
     } catch (e) {
-      CommonLogger.error('Failed to get cached portfolio list', error: e, tag: 'PortfolioLocalDataSource');
+      CommonLogger.error(
+        'Failed to get cached portfolio list',
+        error: e,
+        tag: 'PortfolioLocalDataSource',
+      );
       return null;
     }
   }
 
   /// Cache portfolio list
-  Future<void> cachePortfolioList(String userId, PortfolioList data) async {
+  Future<void> cachePortfolioList(PortfolioList data) async {
     try {
       final box = Hive.box<PortfolioListHiveModel>(_listBoxName);
-      await box.put(userId, PortfolioListHiveModel.fromDomain(data));
-      CommonLogger.info('Cached portfolio list for user: $userId', tag: 'PortfolioLocalDataSource');
+      await box.put('current_user', PortfolioListHiveModel.fromDomain(data));
+      CommonLogger.info(
+        'Cached portfolio list for current_user',
+        tag: 'PortfolioLocalDataSource',
+      );
     } catch (e) {
-      CommonLogger.error('Failed to cache portfolio list', error: e, tag: 'PortfolioLocalDataSource');
+      CommonLogger.error(
+        'Failed to cache portfolio list',
+        error: e,
+        tag: 'PortfolioLocalDataSource',
+      );
     }
   }
 }

@@ -23,25 +23,22 @@ class PortfolioAnalysisWidget extends StatefulWidget {
 }
 
 class _PortfolioAnalysisWidgetState extends State<PortfolioAnalysisWidget> {
-  // Hardcoded portfolio ID for testing
-  String get effectivePortfolioId => '163d0143-4fcb-480c-ac20-622f14e0e293';
-
   @override
   void initState() {
     super.initState();
     CommonLogger.info(
-      'Portfolio analysis widget initialized for portfolio: $effectivePortfolioId',
+      'Portfolio analysis widget initialized for portfolio: ${widget.portfolioId}',
       tag: 'PortfolioAnalysisWidget',
     );
 
     // Load analytics data when widget initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       CommonLogger.debug(
-        '🔍 PortfolioAnalysisWidget: About to call loadAnalytics with portfolioId: $effectivePortfolioId',
+        '🔍 PortfolioAnalysisWidget: About to call loadAnalytics with portfolioId: ${widget.portfolioId}',
         tag: 'PortfolioAnalysisWidget',
       );
       context.read<PortfolioAnalyticsCubit>().loadAnalytics(
-        effectivePortfolioId,
+        widget.portfolioId,
       );
     });
   }
@@ -50,11 +47,11 @@ class _PortfolioAnalysisWidgetState extends State<PortfolioAnalysisWidget> {
   Widget build(BuildContext context) => RefreshIndicator(
     onRefresh: () async {
       CommonLogger.info(
-        'Auto-refreshing portfolio analytics for portfolio: $effectivePortfolioId',
+        'Auto-refreshing portfolio analytics for portfolio: ${widget.portfolioId}',
         tag: 'PortfolioAnalysisWidget',
       );
       context.read<PortfolioAnalyticsCubit>().refreshAnalytics(
-        effectivePortfolioId,
+        widget.portfolioId,
       );
       // Wait a bit for the refresh to complete
       await Future.delayed(const Duration(milliseconds: 500));
@@ -172,4 +169,3 @@ class _PortfolioAnalysisWidgetState extends State<PortfolioAnalysisWidget> {
         },
       );
 }
-
