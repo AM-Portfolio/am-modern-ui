@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../widgets/billing_toggle.dart';
 import '../widgets/pricing_card.dart';
 import '../cubit/subscription_cubit.dart';
 import '../../domain/entities/plan.dart';
 
+const Map<String, String> _stripePaymentLinks = {
+  'am_pro': 'https://buy.stripe.com/test_am_pro',
+  'am_pro_annual': 'https://buy.stripe.com/test_am_pro_annual',
+  'am_premium': 'https://buy.stripe.com/test_am_premium',
+  'am_premium_annual': 'https://buy.stripe.com/test_am_premium_annual',
+};
+
 class SubscriptionPricingScreen extends StatefulWidget {
+
   const SubscriptionPricingScreen({super.key});
 
   @override
@@ -104,15 +113,42 @@ class _SubscriptionPricingScreenState extends State<SubscriptionPricingScreen> {
     });
   }
 
+  Future<void> _launchUrl(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $url');
+    }
+  }
+
   void _handlePlanAction(BuildContext context, SubscriptionState state, Plan plan) {
     final subscription = (state is SubscriptionLoaded)
         ? state.subscription
         : (state is SubscriptionActionInProgress
-            ? (state as SubscriptionActionInProgress).subscription
+            ? state.subscription
             : null);
 
     if (subscription != null && subscription.planCode == plan.code) {
       return;
+    }
+
+    // Bare-minimum funnel: Redirect paid plans to Stripe Payment Link
+    if (plan.code != 'am_free') {
+      final paymentLink = _stripePaymentLinks[plan.code];
+      if (paymentLink != null) {
+        final userId = subscription?.userId ?? '';
+        final urlString = userId.isNotEmpty
+            ? '$paymentLink?client_reference_id=$userId'
+            : paymentLink;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Redirecting to secure payment checkout...'),
+            backgroundColor: const Color(0xFF1B64F2),
+          ),
+        );
+        _launchUrl(urlString);
+        return;
+      }
     }
 
     if (subscription != null) {
