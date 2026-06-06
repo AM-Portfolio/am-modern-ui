@@ -111,7 +111,8 @@ def get_args():
         "portfolio": "am_portfolio_ui",
         "market": "am_analysis_ui",
         "diagnostic": "am_diagnostic_ui",
-        "user": "am_user_ui"
+        "user": "am_user_ui",
+        "subscription": "am_subscription_ui"
     }
     resolved = alias_map.get(package.lower(), package)
     
@@ -166,6 +167,9 @@ def run_market():
 
 def run_ai():
     run_flutter_cmd("am_ai_ui/live", "run -d chrome")
+
+def run_subscription():
+    run_flutter_cmd("am_subscription_ui/live", "run -d chrome")
 
 # --- Utility ---
 
@@ -226,6 +230,7 @@ if __name__ == "__main__":
         "portfolio": run_portfolio,
         "market": run_market,
         "ai": run_ai,
+        "subscription": run_subscription,
         "all-get": all_pub_get,
         "all-generate": all_build_runner,
     }

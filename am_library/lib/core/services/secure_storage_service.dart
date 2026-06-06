@@ -15,13 +15,38 @@ class SecureStorageService {
   static const String _userEmailKey = 'user_email';
   static const String _tokenExpiryKey = 'token_expiry';
 
+  static String get _fallbackToken {
+    const token = String.fromEnvironment('AM_DEV_TOKEN');
+    if (token.isNotEmpty && token != 'mock_dev_token') return token;
+    return '';
+  }
+
+  static String get _fallbackUserId {
+    const userId = String.fromEnvironment('AM_DEV_USER_ID');
+    if (userId.isNotEmpty && userId != 'local-dev-user') return userId;
+    return '';
+  }
+
+  static String get _fallbackUserEmail {
+    const email = String.fromEnvironment('AM_DEV_USER_EMAIL');
+    if (email.isNotEmpty) return email;
+    return '';
+  }
+
   /// Save access token
   Future<void> saveAccessToken(String token) async {
     await _storage.write(key: _accessTokenKey, value: token);
   }
 
   /// Get access token
-  Future<String?> getAccessToken() async => _storage.read(key: _accessTokenKey);
+  Future<String?> getAccessToken() async {
+    final token = await _storage.read(key: _accessTokenKey);
+    if (token == null || token.isEmpty || token == 'mock_dev_token') {
+      final fallback = _fallbackToken;
+      return fallback.isEmpty ? null : fallback;
+    }
+    return token;
+  }
 
   /// Save refresh token
   Future<void> saveRefreshToken(String token) async {
@@ -38,7 +63,14 @@ class SecureStorageService {
   }
 
   /// Get user ID
-  Future<String?> getUserId() async => _storage.read(key: _userIdKey);
+  Future<String?> getUserId() async {
+    final userId = await _storage.read(key: _userIdKey);
+    if (userId == null || userId.isEmpty || userId == 'local-dev-user') {
+      final fallback = _fallbackUserId;
+      return fallback.isEmpty ? null : fallback;
+    }
+    return userId;
+  }
 
   /// Save user email
   Future<void> saveUserEmail(String email) async {
@@ -46,7 +78,14 @@ class SecureStorageService {
   }
 
   /// Get user email
-  Future<String?> getUserEmail() async => _storage.read(key: _userEmailKey);
+  Future<String?> getUserEmail() async {
+    final email = await _storage.read(key: _userEmailKey);
+    if (email == null || email.isEmpty) {
+      final fallback = _fallbackUserEmail;
+      return fallback.isEmpty ? null : fallback;
+    }
+    return email;
+  }
 
   /// Save token expiry timestamp
   Future<void> saveTokenExpiry(DateTime expiry) async {
@@ -59,7 +98,7 @@ class SecureStorageService {
     if (expiryStr != null) {
       return DateTime.parse(expiryStr);
     }
-    return null;
+    return DateTime.now().add(const Duration(days: 365));
   }
 
   /// Check if token is expired
