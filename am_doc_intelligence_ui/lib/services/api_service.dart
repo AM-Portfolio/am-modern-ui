@@ -85,10 +85,8 @@ class ApiService {
         ? GetIt.I<ApiClient>() 
         : ApiClient();
 
-    final headers = await _getHeaders();
     return apiClient.get<List<String>>(
       url,
-      headers: headers,
       parser: (data) => List<String>.from(data),
     );
   }
@@ -161,10 +159,8 @@ class ApiService {
           ? GetIt.I<ApiClient>() 
           : ApiClient();
           
-      final headers = await _getHeaders();
       await apiClient.get<dynamic>(
         url,
-        headers: headers,
         parser: (data) => data,
       );
       return true;
