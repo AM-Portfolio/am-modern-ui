@@ -39,7 +39,10 @@ class SecureStorageService {
   }
 
   /// Get access token
-  Future<String?> getAccessToken() async {
+  Future<String?> getAccessToken({bool checkExpiry = true}) async {
+    if (checkExpiry && await isTokenExpired()) {
+      return null;
+    }
     final token = await _storage.read(key: _accessTokenKey);
     if (token == null || token.isEmpty || token == 'mock_dev_token') {
       final fallback = _fallbackToken;
