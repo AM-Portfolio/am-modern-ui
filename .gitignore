@@ -73,3 +73,15 @@ Thumbs.db
 # Runtime logs
 logs/
 *.log
+
+# Machine-specific UI config (copy from config.local.json and edit ports)
+am_app/web/config.local.json
+
+# Environment and Secret configurations
+.env
+.env.local
+.env.dev
+.env.preprod
+.env.prod
+.env.*
+!.env.example

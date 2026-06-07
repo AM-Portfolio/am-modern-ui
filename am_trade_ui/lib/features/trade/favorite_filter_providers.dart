@@ -20,7 +20,31 @@ import 'package:am_common/core/di/network_providers.dart';
 final _favoriteFilterRemoteDataSourceProvider = FutureProvider<FavoriteFilterRemoteDataSource>((ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
   final apiConfig = await ref.watch(appConfigProvider.future);
-  return FavoriteFilterRemoteDataSourceImpl(apiClient: apiClient, tradeConfig: apiConfig.api.trade);
+  
+  TradeApiConfig tradeConfig = apiConfig.api.trade;
+
+  // Local environment override for the Trade API
+  const localTradeUrl = String.fromEnvironment('AM_TRADE_BASE_URL');
+  if (localTradeUrl.isNotEmpty) {
+    tradeConfig = TradeApiConfig(
+      baseUrl: localTradeUrl,
+      portfolioListResource: tradeConfig.portfolioListResource,
+      portfolioSummaryResource: tradeConfig.portfolioSummaryResource,
+      holdingsResource: tradeConfig.holdingsResource,
+      tradeDetailsResource: tradeConfig.tradeDetailsResource,
+      calendarMonthResource: tradeConfig.calendarMonthResource,
+      calendarDayResource: tradeConfig.calendarDayResource,
+      calendarQuarterResource: tradeConfig.calendarQuarterResource,
+      calendarFinancialYearResource: tradeConfig.calendarFinancialYearResource,
+      searchResource: tradeConfig.searchResource,
+      connectTimeout: tradeConfig.connectTimeout,
+      receiveTimeout: tradeConfig.receiveTimeout,
+      sendTimeout: tradeConfig.sendTimeout,
+      enabled: tradeConfig.enabled,
+    );
+  }
+  
+  return FavoriteFilterRemoteDataSourceImpl(apiClient: apiClient, tradeConfig: tradeConfig);
 });
 
 /// Provider for FavoriteFilterRepository
@@ -31,25 +55,22 @@ final _favoriteFilterRepositoryProvider = FutureProvider<FavoriteFilterRepositor
 
 // Public Providers for UI
 
-/// Provider to get all favorite filters for a user
-final favoriteFiltersProvider = FutureProvider.family<FavoriteFilterList, String>((ref, userId) async {
+/// Provider to get all favorite filters for the current user (JWT)
+final favoriteFiltersProvider = FutureProvider<FavoriteFilterList>((ref) async {
   final repository = await ref.watch(_favoriteFilterRepositoryProvider.future);
-  return repository.getFavoriteFilters(userId);
+  return repository.getFavoriteFilters();
 });
 
 /// Provider to get a specific favorite filter by ID
-final favoriteFilterByIdProvider = FutureProvider.family<FavoriteFilter, ({String userId, String filterId})>((
-  ref,
-  params,
-) async {
+final favoriteFilterByIdProvider = FutureProvider.family<FavoriteFilter, String>((ref, filterId) async {
   final repository = await ref.watch(_favoriteFilterRepositoryProvider.future);
-  return repository.getFavoriteFilterById(params.userId, params.filterId);
+  return repository.getFavoriteFilterById(filterId);
 });
 
 /// Provider to watch favorite filters stream for real-time updates
-final watchFavoriteFiltersProvider = StreamProvider.family<FavoriteFilterList, String>((ref, userId) async* {
+final watchFavoriteFiltersProvider = StreamProvider<FavoriteFilterList>((ref) async* {
   final repository = await ref.watch(_favoriteFilterRepositoryProvider.future);
-  yield* repository.watchFavoriteFilters(userId);
+  yield* repository.watchFavoriteFilters();
 });
 
 /// Provider to get the repository instance for direct method calls

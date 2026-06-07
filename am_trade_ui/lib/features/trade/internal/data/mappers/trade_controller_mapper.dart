@@ -5,6 +5,9 @@ import '../dtos/trade_controller_dtos.dart';
 class TradeControllerMapper {
   TradeControllerMapper._();
 
+  static TradeDetailsDto toTradeDetailsDtoFromJson(Map<String, dynamic> json) =>
+      TradeDetailsDto.fromJson(json);
+
   // DerivativeInfo mappings
   static DerivativeInfo toDerivativeInfoEntity(DerivativeInfoDto dto) => DerivativeInfo(
     derivativeType: dto.derivativeType,

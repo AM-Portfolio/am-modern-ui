@@ -38,33 +38,29 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
   // Cache for performance optimization
   entities.TradeCalendar? _cachedEntityData;
   String? _currentPortfolioId;
-  String? _currentUserId;
-
+  
   // Navigation state
   view_models.CalendarNavigationState _navigationState = view_models.CalendarNavigationState.initial();
 
   /// Get current cached parameters for comparison
-  bool _isSameParameters(String userId, String portfolioId) =>
-      _currentUserId == userId && _currentPortfolioId == portfolioId;
+  bool _isSameParameters(String portfolioId) =>
+      _currentPortfolioId == portfolioId;
 
   /// Update cache with new data
-  void _updateCache(String userId, String portfolioId, entities.TradeCalendar data) {
-    _currentUserId = userId;
-    _currentPortfolioId = portfolioId;
+  void _updateCache(String portfolioId, entities.TradeCalendar data) {
+        _currentPortfolioId = portfolioId;
     _cachedEntityData = data;
   }
 
   /// Clear cache when parameters change
   void _clearCache() {
     _cachedEntityData = null;
-    _currentUserId = null;
     _currentPortfolioId = null;
   }
 
   /// Load trade calendar data for a specific user and portfolio with caching
   Future<void> loadTradeCalendar({
-    required String userId,
-    required String portfolioId,
+        required String portfolioId,
     DateSelection? dateFilter,
     int? year,
     int? month,
@@ -75,7 +71,6 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
       'loadTradeCalendar',
       tag: 'TradeCalendarCubit',
       params: {
-        'userId': userId,
         'portfolioId': portfolioId,
         'dateFilter': dateFilter?.description,
         'year': year,
@@ -86,14 +81,14 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
     );
 
     // Check if we can use cached data
-    if (!forceReload && !isRefresh && _cachedEntityData != null && _isSameParameters(userId, portfolioId)) {
+    if (!forceReload && !isRefresh && _cachedEntityData != null && _isSameParameters(portfolioId)) {
       AppLogger.info('Using cached trade calendar data', tag: 'TradeCalendarCubit');
-      await _processTradeCalendarData(_cachedEntityData!, userId, portfolioId, dateFilter, isRefresh: false);
+      await _processTradeCalendarData(_cachedEntityData!, portfolioId, dateFilter, isRefresh: false);
       return;
     }
 
     // Clear cache if parameters changed
-    if (!_isSameParameters(userId, portfolioId)) {
+    if (!_isSameParameters(portfolioId)) {
       _clearCache();
     }
 
@@ -107,12 +102,12 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
       AppLogger.info('Fetching trade calendar data via service', tag: 'TradeCalendarCubit');
 
       // Fetch trade calendar data from usecase
-      final tradeCalendar = await _getTradeCalendar(userId, portfolioId, year: year, month: month);
+      final tradeCalendar = await _getTradeCalendar(portfolioId, year: year, month: month);
 
       // Update cache
-      _updateCache(userId, portfolioId, tradeCalendar);
+      _updateCache(portfolioId, tradeCalendar);
 
-      await _processTradeCalendarData(tradeCalendar, userId, portfolioId, dateFilter, isRefresh: isRefresh);
+      await _processTradeCalendarData(tradeCalendar, portfolioId, dateFilter, isRefresh: isRefresh);
     } catch (error, stackTrace) {
       AppLogger.error(
         'Failed to load trade calendar data',
@@ -128,7 +123,6 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
   /// Process trade calendar data and emit loaded state
   Future<void> _processTradeCalendarData(
     entities.TradeCalendar tradeCalendar,
-    String userId,
     String portfolioId,
     DateSelection? dateFilter, {
     required bool isRefresh,
@@ -162,8 +156,7 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
 
   /// Apply date filter to current trade calendar data
   Future<void> applyDateFilter({
-    required String userId,
-    required String portfolioId,
+        required String portfolioId,
     required DateSelection dateSelection,
   }) async {
     final currentState = state;
@@ -217,18 +210,18 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
   }
 
   /// Clear current date filter
-  Future<void> clearDateFilter({required String userId, required String portfolioId}) async {
+  Future<void> clearDateFilter({required String portfolioId}) async {
     final currentState = state;
     if (currentState is! TradeCalendarLoaded) return;
 
     AppLogger.methodEntry('clearDateFilter', tag: 'TradeCalendarCubit');
 
     // Reload data without filter
-    await loadTradeCalendar(userId: userId, portfolioId: portfolioId, isRefresh: true);
+    await loadTradeCalendar(portfolioId: portfolioId, isRefresh: true);
   }
 
   /// Refresh trade calendar data with current filter preserved
-  Future<void> refresh({required String userId, required String portfolioId, bool forceReload = false}) async {
+  Future<void> refresh({required String portfolioId, bool forceReload = false}) async {
     final currentState = state;
     DateSelection? currentFilter;
 
@@ -237,7 +230,6 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
     }
 
     await loadTradeCalendar(
-      userId: userId,
       portfolioId: portfolioId,
       dateFilter: currentFilter,
       isRefresh: true,
@@ -247,8 +239,7 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
 
   /// Initialize trade calendar with optimal default settings
   Future<void> initialize({
-    required String userId,
-    required String portfolioId,
+        required String portfolioId,
     DateSelection? initialFilter,
     int? year,
     int? month,
@@ -257,7 +248,6 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
       'initialize',
       tag: 'TradeCalendarCubit',
       params: {
-        'userId': userId,
         'portfolioId': portfolioId,
         'hasInitialFilter': initialFilter != null,
         'year': year,
@@ -276,7 +266,6 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
         );
 
     await loadTradeCalendar(
-      userId: userId,
       portfolioId: portfolioId,
       dateFilter: defaultFilter,
       year: year,
@@ -285,7 +274,7 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
   }
 
   /// Retry loading after error with exponential backoff
-  Future<void> retryLoad({required String userId, required String portfolioId, int attempt = 1}) async {
+  Future<void> retryLoad({required String portfolioId, int attempt = 1}) async {
     const maxAttempts = 3;
     final backoffDelay = Duration(seconds: attempt * 2);
 
@@ -300,7 +289,7 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
     await Future.delayed(backoffDelay);
 
     try {
-      await loadTradeCalendar(userId: userId, portfolioId: portfolioId, forceReload: true);
+      await loadTradeCalendar(portfolioId: portfolioId, forceReload: true);
     } catch (error) {
       AppLogger.warning(
         'Retry attempt $attempt failed, scheduling next attempt',
@@ -308,7 +297,7 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
         error: error,
       );
 
-      await retryLoad(userId: userId, portfolioId: portfolioId, attempt: attempt + 1);
+      await retryLoad(portfolioId: portfolioId, attempt: attempt + 1);
     }
   }
 
@@ -431,77 +420,76 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
   view_models.CalendarNavigationState get navigationState => _navigationState;
 
   /// Navigate to yearly view
-  Future<void> navigateToYearly({required String userId, required String portfolioId, int? year}) async {
+  Future<void> navigateToYearly({required String portfolioId, int? year}) async {
     AppLogger.methodEntry('navigateToYearly', tag: 'TradeCalendarCubit');
 
     _navigationState = _navigationService.navigateToYearly(currentState: _navigationState, year: year);
 
-    await _loadDataForCurrentView(userId, portfolioId);
+    await _loadDataForCurrentView(portfolioId);
   }
 
   /// Navigate to monthly view
-  Future<void> navigateToMonthly({required String userId, required String portfolioId, required int month}) async {
+  Future<void> navigateToMonthly({required String portfolioId, required int month}) async {
     AppLogger.methodEntry('navigateToMonthly', tag: 'TradeCalendarCubit', params: {'month': month});
 
     _navigationState = _navigationService.navigateToMonthly(currentState: _navigationState, month: month);
 
-    await _loadDataForCurrentView(userId, portfolioId);
+    await _loadDataForCurrentView(portfolioId);
   }
 
   /// Navigate to daily view
-  Future<void> navigateToDaily({required String userId, required String portfolioId, required int day}) async {
+  Future<void> navigateToDaily({required String portfolioId, required int day}) async {
     AppLogger.methodEntry('navigateToDaily', tag: 'TradeCalendarCubit', params: {'day': day});
 
     _navigationState = _navigationService.navigateToDaily(currentState: _navigationState, day: day);
 
-    await _loadDataForCurrentView(userId, portfolioId);
+    await _loadDataForCurrentView(portfolioId);
   }
 
   /// Navigate back one level
-  Future<void> navigateBack({required String userId, required String portfolioId}) async {
+  Future<void> navigateBack({required String portfolioId}) async {
     AppLogger.methodEntry('navigateBack', tag: 'TradeCalendarCubit');
 
     _navigationState = _navigationService.navigateBack(currentState: _navigationState);
 
-    await _loadDataForCurrentView(userId, portfolioId);
+    await _loadDataForCurrentView(portfolioId);
   }
 
   /// Navigate to specific breadcrumb
   Future<void> navigateToBreadcrumb({
-    required String userId,
-    required String portfolioId,
+        required String portfolioId,
     required view_models.CalendarBreadcrumb breadcrumb,
   }) async {
     AppLogger.methodEntry('navigateToBreadcrumb', tag: 'TradeCalendarCubit');
 
     _navigationState = _navigationService.navigateToBreadcrumb(currentState: _navigationState, breadcrumb: breadcrumb);
 
-    await _loadDataForCurrentView(userId, portfolioId);
+    await _loadDataForCurrentView(portfolioId);
   }
 
   /// Change year in yearly view
-  Future<void> changeYear({required String userId, required String portfolioId, required int year}) async {
+  Future<void> changeYear({required String portfolioId, required int year}) async {
     AppLogger.methodEntry('changeYear', tag: 'TradeCalendarCubit', params: {'year': year});
 
     _navigationState = _navigationState.changeYear(year);
 
-    await _loadDataForCurrentView(userId, portfolioId);
+    await _loadDataForCurrentView(portfolioId);
   }
 
   /// Navigate to previous year
-  Future<void> navigateToPreviousYear({required String userId, required String portfolioId}) async {
+  Future<void> navigateToPreviousYear({required String portfolioId}) async {
     _navigationState = _navigationService.navigateToPreviousYear(currentState: _navigationState);
-    await _loadDataForCurrentView(userId, portfolioId);
+    await _loadDataForCurrentView(portfolioId);
   }
 
   /// Navigate to next year
-  Future<void> navigateToNextYear({required String userId, required String portfolioId}) async {
+  Future<void> navigateToNextYear({required String portfolioId}) async {
     _navigationState = _navigationService.navigateToNextYear(currentState: _navigationState);
-    await _loadDataForCurrentView(userId, portfolioId);
+    await _loadDataForCurrentView(portfolioId);
   }
 
   /// Load data appropriate for current view type
-  Future<void> _loadDataForCurrentView(String userId, String portfolioId) async {
+  Future<void> _loadDataForCurrentView(String portfolioId) async {
     AppLogger.info(
       '[Cubit] Loading data for view: ${_navigationState.viewType}, portfolioId: $portfolioId, year: ${_navigationState.year}',
       tag: 'TradeCalendarCubit',
@@ -522,7 +510,6 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
             tag: 'TradeCalendarCubit',
           );
           calendarData = await _getTradeCalendarByDateRange(
-            userId,
             portfolioId,
             startDate: dateRange.startDate,
             endDate: dateRange.endDate,
@@ -531,29 +518,23 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
 
         case view_models.CalendarViewType.monthly:
           // Load specific month
-          calendarData = await _getTradeCalendarByMonth(
-            userId,
-            portfolioId,
-            year: _navigationState.year,
+          calendarData = await _getTradeCalendarByMonth(portfolioId, year: _navigationState.year,
             month: _navigationState.month!,
           );
           break;
 
         case view_models.CalendarViewType.daily:
           // Load specific day
-          calendarData = await _getTradeCalendarByDay(
-            userId,
-            portfolioId,
-            date: DateTime(_navigationState.year, _navigationState.month!, _navigationState.day!),
+          calendarData = await _getTradeCalendarByDay(portfolioId, date: DateTime(_navigationState.year, _navigationState.month!, _navigationState.day!),
           );
           break;
       }
 
       // Update cache
-      _updateCache(userId, portfolioId, calendarData);
+      _updateCache(portfolioId, calendarData);
 
       // Convert to view models and emit state
-      await _emitHierarchicalCalendarState(calendarData, userId, portfolioId);
+      await _emitHierarchicalCalendarState(calendarData, portfolioId);
     } catch (error, stackTrace) {
       AppLogger.error(
         'Failed to load calendar data for current view',
@@ -569,7 +550,6 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
   /// Emit hierarchical calendar state based on view type
   Future<void> _emitHierarchicalCalendarState(
     entities.TradeCalendar calendarData,
-    String userId,
     String portfolioId,
   ) async {
     AppLogger.info(

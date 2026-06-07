@@ -1,10 +1,9 @@
 import 'config_service.dart';
 
 /// Central domain registry.
-/// 
-/// Cluster URLs include the gateway/path prefix (e.g., /market, /auth).
-/// Local Overrides (localhost) typically do NOT have the prefix, 
-/// as they hit the service port directly.
+///
+/// Cluster URLs use the gateway path prefix (e.g. /market, /auth).
+/// Local [config.*.json] `services` entries are full base URLs (no prefix).
 /// 
 /// All module paths should start with '/v1' or the relative resource path.
 class EnvDomains {
@@ -23,6 +22,7 @@ class EnvDomains {
   static String get docs      => ConfigService.override('docs')      ?? '$apiBase/doc/processor';
   static String get gmail     => ConfigService.override('gmail')     ?? '$apiBase/gmail';
   static String get etf       => ConfigService.override('etf')       ?? '$apiBase/api/etf';
+  static String get subscription => ConfigService.override('subscription') ?? const String.fromEnvironment('AM_SUBSCRIPTION_BASE_URL', defaultValue: 'http://localhost:8110');
   
   // WebSocket
   static String get wsStream  => ConfigService.override('wsStream')  ?? '$wsBase/v1/streams';

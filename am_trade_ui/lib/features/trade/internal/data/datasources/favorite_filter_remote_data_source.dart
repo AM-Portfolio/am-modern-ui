@@ -3,33 +3,30 @@ import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/am_common.dart';
 import '../dtos/favorite_filter_dto.dart';
+import 'trade_api_request_util.dart';
 
 /// Abstract data source for favorite filter operations
 abstract class FavoriteFilterRemoteDataSource {
   /// Get all favorite filters for a user
-  Future<List<FavoriteFilterResponseDto>> getFavoriteFilters(String userId);
+  Future<List<FavoriteFilterResponseDto>> getFavoriteFilters();
 
   /// Get a specific favorite filter by ID
-  Future<FavoriteFilterResponseDto> getFavoriteFilterById(String userId, String filterId);
+  Future<FavoriteFilterResponseDto> getFavoriteFilterById(String filterId);
 
   /// Create a new favorite filter
-  Future<FavoriteFilterResponseDto> createFavoriteFilter(String userId, FavoriteFilterRequestDto request);
+  Future<FavoriteFilterResponseDto> createFavoriteFilter(FavoriteFilterRequestDto request);
 
   /// Update an existing favorite filter
-  Future<FavoriteFilterResponseDto> updateFavoriteFilter(
-    String userId,
-    String filterId,
-    FavoriteFilterRequestDto request,
-  );
+  Future<FavoriteFilterResponseDto> updateFavoriteFilter(String filterId, FavoriteFilterRequestDto request);
 
   /// Delete a favorite filter
-  Future<void> deleteFavoriteFilter(String userId, String filterId);
+  Future<void> deleteFavoriteFilter(String filterId);
 
   /// Bulk delete favorite filters
   Future<BulkDeleteResponseDto> bulkDeleteFavoriteFilters(BulkDeleteRequestDto request);
 
   /// Set a filter as default
-  Future<FavoriteFilterResponseDto> setDefaultFilter(String userId, String filterId);
+  Future<FavoriteFilterResponseDto> setDefaultFilter(String filterId);
 }
 
 /// Concrete implementation of favorite filter remote data source
@@ -55,13 +52,13 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<List<FavoriteFilterResponseDto>> getFavoriteFilters(String userId) async {
-    AppLogger.methodEntry('getFavoriteFilters', tag: 'FavoriteFilterRemoteDataSource', params: {'userId': userId});
+  Future<List<FavoriteFilterResponseDto>> getFavoriteFilters() async {
+    AppLogger.methodEntry('getFavoriteFilters', tag: 'FavoriteFilterRemoteDataSource', params: {});
 
     try {
      
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/filters');
-      final fullUri = '$baseUri?userId=$userId';
+      final fullUri = baseUri;
 
       final response = await _apiClient.get<List<FavoriteFilterResponseDto>>(
         fullUri,
@@ -89,16 +86,16 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<FavoriteFilterResponseDto> getFavoriteFilterById(String userId, String filterId) async {
+  Future<FavoriteFilterResponseDto> getFavoriteFilterById(String filterId) async {
     AppLogger.methodEntry(
       'getFavoriteFilterById',
       tag: 'FavoriteFilterRemoteDataSource',
-      params: {'userId': userId, 'filterId': filterId},
+      params: {},
     );
 
     try {
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/filters');
-      final fullUri = '$baseUri/$filterId?userId=$userId';
+      final fullUri = '$baseUri/$filterId';
 
       final response = await _apiClient.get<FavoriteFilterResponseDto>(
         fullUri,
@@ -121,21 +118,21 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<FavoriteFilterResponseDto> createFavoriteFilter(String userId, FavoriteFilterRequestDto request) async {
+  Future<FavoriteFilterResponseDto> createFavoriteFilter(FavoriteFilterRequestDto request) async {
     AppLogger.methodEntry(
       'createFavoriteFilter',
       tag: 'FavoriteFilterRemoteDataSource',
-      params: {'userId': userId, 'name': request.name},
+      params: {},
     );
 
     try {
       // API Spec: POST /v1/filters?userId={userId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/filters');
-      final fullUri = '$baseUri?userId=$userId';
+      final fullUri = baseUri;
 
       final response = await _apiClient.post<FavoriteFilterResponseDto>(
         fullUri,
-        body: request.toJson(),
+        body: tradeRequestBodyWithoutUserId(request.toJson()),
         parser: (data) => FavoriteFilterResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
@@ -156,24 +153,23 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
 
   @override
   Future<FavoriteFilterResponseDto> updateFavoriteFilter(
-    String userId,
     String filterId,
     FavoriteFilterRequestDto request,
   ) async {
     AppLogger.methodEntry(
       'updateFavoriteFilter',
       tag: 'FavoriteFilterRemoteDataSource',
-      params: {'userId': userId, 'filterId': filterId},
+      params: {},
     );
 
     try {
       // API Spec: PUT /v1/filters/{filterId}?userId={userId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/filters');
-      final fullUri = '$baseUri/$filterId?userId=$userId';
+      final fullUri = '$baseUri/$filterId';
 
       final response = await _apiClient.put<FavoriteFilterResponseDto>(
         fullUri,
-        body: request.toJson(),
+        body: tradeRequestBodyWithoutUserId(request.toJson()),
         parser: (data) => FavoriteFilterResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
@@ -193,17 +189,17 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<void> deleteFavoriteFilter(String userId, String filterId) async {
+  Future<void> deleteFavoriteFilter(String filterId) async {
     AppLogger.methodEntry(
       'deleteFavoriteFilter',
       tag: 'FavoriteFilterRemoteDataSource',
-      params: {'userId': userId, 'filterId': filterId},
+      params: {},
     );
 
     try {
       // API Spec: DELETE /v1/filters/{filterId}?userId={userId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/filters');
-      final fullUri = '$baseUri/$filterId?userId=$userId';
+      final fullUri = '$baseUri/$filterId';
 
       await _apiClient.delete<void>(fullUri, parser: (_) {});
 
@@ -234,7 +230,7 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
 
       final response = await _apiClient.delete<BulkDeleteResponseDto>(
         fullUri,
-        body: request.toJson(),
+        body: tradeRequestBodyWithoutUserId(request.toJson()),
         parser: (data) => BulkDeleteResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
@@ -254,17 +250,17 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<FavoriteFilterResponseDto> setDefaultFilter(String userId, String filterId) async {
+  Future<FavoriteFilterResponseDto> setDefaultFilter(String filterId) async {
     AppLogger.methodEntry(
       'setDefaultFilter',
       tag: 'FavoriteFilterRemoteDataSource',
-      params: {'userId': userId, 'filterId': filterId},
+      params: {},
     );
 
     try {
       // API Spec: PUT /v1/filters/{filterId}/set-default?userId={userId}
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/filters');
-      final fullUri = '$baseUri/$filterId/set-default?userId=$userId';
+      final fullUri = '$baseUri/$filterId/default';
 
       final response = await _apiClient.put<FavoriteFilterResponseDto>(
         fullUri,

@@ -17,6 +17,7 @@ class JournalNavigationSidebar extends StatelessWidget {
     this.folders = const [],
     this.tags = const [],
     this.onAddFolder,
+    this.onNewTradeTap,
     this.onEntryDropped,
     super.key,
   });
@@ -28,6 +29,7 @@ class JournalNavigationSidebar extends StatelessWidget {
   final List<NotebookItem> folders;
   final List<NotebookTag> tags;
   final VoidCallback? onAddFolder;
+  final VoidCallback? onNewTradeTap;
   final Function(JournalEntry entry, String folderId)? onEntryDropped;
 
   @override
@@ -223,7 +225,11 @@ class JournalNavigationSidebar extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            // Navigate to NEW TRADE
+            if (onNewTradeTap != null) {
+              onNewTradeTap!();
+            } else {
+              Navigator.of(context).pushNamed('/trade/add');
+            }
           },
           borderRadius: BorderRadius.circular(12),
           child: Row(
@@ -746,14 +752,8 @@ class _EntryCardState extends State<_EntryCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      // PNL Placeholder
-                      Text(
-                        '+\$1,330',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
-                            ),
-                      ),
+                      // PNL Placeholder removed as it requires fetching trade stats
+                      const SizedBox.shrink(),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -768,13 +768,17 @@ class _EntryCardState extends State<_EntryCard> {
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                         ),
-                      // Stats
-                      Row(
-                        children: [
-                          _buildMiniStat(context, '54% Win'),
-                          const SizedBox(width: 6),
-                          _buildMiniStat(context, '11 Trades'),
-                        ],
+                      // Dynamic Trade Stats
+                      Builder(
+                        builder: (context) {
+                          final tradeCount = (widget.entry.metadata?['relatedTradeIds'] as List?)?.length ?? 0;
+                          if (tradeCount == 0) return const SizedBox.shrink();
+                          return Row(
+                            children: [
+                              _buildMiniStat(context, '$tradeCount Trades'),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),

@@ -67,9 +67,9 @@ class _StockDetailPageState extends State<StockDetailPage> {
       backgroundColor: const Color(0xFF1E1E2E), // Dark Theme Background
       appBar: AppBar(
         title: StreamBuilder<Map<String, dynamic>>(
-          stream: marketProvider.livePriceStream.where((event) => event['symbol'] == widget.symbol),
+          stream: marketProvider.livePriceStream,
           builder: (context, snapshot) {
-            final liveData = marketProvider.livePrices[widget.symbol];
+            final liveData = marketProvider.getPrice(widget.symbol);
             
             double? ltp;
             double? change;

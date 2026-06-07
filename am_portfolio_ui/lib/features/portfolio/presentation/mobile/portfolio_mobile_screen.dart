@@ -16,7 +16,6 @@ import 'package:am_common/am_common.dart';
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
 class PortfolioMobileScreen extends ConsumerWidget {
   const PortfolioMobileScreen({
-    required this.userId,
     super.key,
     this.selectedPortfolioId,
     this.selectedPortfolioName,
@@ -24,7 +23,6 @@ class PortfolioMobileScreen extends ConsumerWidget {
     this.onPortfolioChanged,
     this.onBack,
   });
-  final String userId;
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final List<PortfolioItem>? portfolios;
@@ -34,13 +32,12 @@ class PortfolioMobileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     CommonLogger.info(
-      'Building PortfolioMobileScreen for userId: $userId',
+      'Building PortfolioMobileScreen',
       tag: 'PortfolioMobileScreen',
     );
     CommonLogger.userAction(
       'Navigate to Mobile Portfolio',
       tag: 'PortfolioMobileScreen',
-      metadata: {'userId': userId},
     );
 
     // Watch the portfolio service provider
@@ -58,17 +55,9 @@ class PortfolioMobileScreen extends ConsumerWidget {
         );
 
         return analyticsServiceAsync.when(
-          data: (analyticsService) => MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create: (context) => PortfolioCubit(portfolioService),
-              ),
-              BlocProvider(
-                create: (context) => PortfolioAnalyticsCubit(analyticsService),
-              ),
-            ],
+          data: (analyticsService) => BlocProvider(
+            create: (context) => PortfolioAnalyticsCubit(analyticsService),
             child: PortfolioMobileView(
-              userId: userId,
               selectedPortfolioId: selectedPortfolioId,
               selectedPortfolioName: selectedPortfolioName,
               portfolios: portfolios,
@@ -143,7 +132,6 @@ class PortfolioMobileScreen extends ConsumerWidget {
 /// Internal mobile portfolio view with tab-based navigation and portfolio selection
 class PortfolioMobileView extends StatefulWidget {
   const PortfolioMobileView({
-    required this.userId,
     super.key,
     this.selectedPortfolioId,
     this.selectedPortfolioName,
@@ -151,7 +139,6 @@ class PortfolioMobileView extends StatefulWidget {
     this.onPortfolioChanged,
     this.onBack,
   });
-  final String userId;
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final List<PortfolioItem>? portfolios;
@@ -171,17 +158,33 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    _currentPortfolioId = widget.selectedPortfolioId ?? widget.userId;
+    _currentPortfolioId = widget.selectedPortfolioId;
 
     // Load portfolio data
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_currentPortfolioId != null) {
-        context.read<PortfolioCubit>().loadPortfolioById(
-          widget.userId,
-          _currentPortfolioId!,
-        );
+      if (_currentPortfolioId != null && mounted) {
+        final cubit = context.read<PortfolioCubit>();
+        final currentState = cubit.state;
+        
+        if (currentState is PortfolioLoaded && 
+            currentState.portfolioId == _currentPortfolioId) {
+          // Data is already loaded for this portfolio, skip reloading
+          return;
+        }
+        
+        cubit.loadPortfolioById(_currentPortfolioId!);
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant PortfolioMobileView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedPortfolioId != null &&
+        widget.selectedPortfolioId != _currentPortfolioId) {
+      setState(() => _currentPortfolioId = widget.selectedPortfolioId);
+      context.read<PortfolioCubit>().loadPortfolioById(widget.selectedPortfolioId!);
+    }
   }
 
   @override
@@ -197,10 +200,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     });
 
     // Load new portfolio data
-    context.read<PortfolioCubit>().loadPortfolioById(
-      widget.userId,
-      portfolioId,
-    );
+    context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
 
     // Notify parent if callback is provided
     widget.onPortfolioChanged?.call(portfolioId, portfolioName);
@@ -209,9 +209,15 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   @override
   Widget build(BuildContext context) {
     CommonLogger.debug(
-      'Building PortfolioMobileView - userId: ${widget.userId}',
+      'Building PortfolioMobileView - portfolioId: $_currentPortfolioId',
       tag: 'PortfolioMobileView',
     );
+
+    if (_currentPortfolioId == null) {
+      return const Scaffold(
+        body: Center(child: Text('Select a portfolio to continue')),
+      );
+    }
 
     return BlocListener<PortfolioCubit, PortfolioState>(
       listener: (context, state) {
@@ -228,13 +234,11 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         body: SafeArea(
           child: Column(
             children: [
-              // Content Area
               Expanded(
                 child: PortfolioTabContentWidget(
                   tabController: _tabController,
                   currentPortfolioId: _currentPortfolioId!,
-                  userId: widget.userId,
-                ),
+                  ),
               ),
             ],
           ),
@@ -247,12 +251,27 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   Widget _buildBottomNavigationBar(BuildContext context) {
     // Standard Portfolio Tabs
     final tabs = [
-      const BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Overview'),
-      const BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'Holdings'),
-      const BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), label: 'Analysis'),
-      const BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: 'Heatmap'),
-      const BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: 'Trade'),
-       // We add 'Menu' as the last functional item
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.dashboard_outlined),
+        label: 'Overview',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.wallet),
+        label: 'Holdings',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.analytics_outlined),
+        label: 'Analysis',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.grid_view),
+        label: 'Heatmap',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.show_chart),
+        label: 'Trade',
+      ),
+      // We add 'Menu' as the last functional item
       const BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
     ];
 
@@ -268,8 +287,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             _tabController.animateTo(index);
           });
         } else {
-           // Menu
-           _showMenuBottomSheet(context);
+          // Menu
+          _showMenuBottomSheet(context);
         }
       },
       // Using generic styling, no special FAB here strictly needed unless we want 'Trade' to be FAB?
@@ -293,9 +312,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 'Portfolio Menu',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 24),
@@ -313,26 +332,36 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             ),
             const SizedBox(height: 8),
             if (widget.portfolios != null)
-              ...widget.portfolios!.map((p) => ListTile(
-                leading: Icon(
-                  Icons.account_balance_wallet, 
-                  color: p.portfolioId == _currentPortfolioId ? Theme.of(context).primaryColor : Colors.grey,
-                ),
-                title: Text(
-                  p.portfolioName,
-                  style: TextStyle(
-                    fontWeight: p.portfolioId == _currentPortfolioId ? FontWeight.bold : FontWeight.normal,
-                    color: p.portfolioId == _currentPortfolioId ? Theme.of(context).primaryColor : null,
+              ...widget.portfolios!.map(
+                (p) => ListTile(
+                  leading: Icon(
+                    Icons.account_balance_wallet,
+                    color: p.portfolioId == _currentPortfolioId
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey,
                   ),
+                  title: Text(
+                    p.portfolioName,
+                    style: TextStyle(
+                      fontWeight: p.portfolioId == _currentPortfolioId
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: p.portfolioId == _currentPortfolioId
+                          ? Theme.of(context).primaryColor
+                          : null,
+                    ),
+                  ),
+                  trailing: p.portfolioId == _currentPortfolioId
+                      ? Icon(Icons.check, color: Theme.of(context).primaryColor)
+                      : null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _onPortfolioChanged(p.portfolioId, p.portfolioName);
+                  },
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                  dense: true,
                 ),
-                trailing: p.portfolioId == _currentPortfolioId ? Icon(Icons.check, color: Theme.of(context).primaryColor) : null,
-                onTap: () {
-                  Navigator.pop(context);
-                  _onPortfolioChanged(p.portfolioId, p.portfolioName);
-                },
-                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                dense: true,
-              )),
+              ),
 
             const Divider(height: 32),
 
@@ -346,12 +375,14 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                 if (widget.onBack != null) {
                   widget.onBack!();
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Use system back to return')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Use system back to return')),
+                  );
                 }
               },
             ),
 
-             ListTile(
+            ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text('Logout', style: TextStyle(color: Colors.red)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 24),
@@ -367,4 +398,3 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     );
   }
 }
-

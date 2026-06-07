@@ -16,20 +16,18 @@ import 'portfolio_mock_data_helper.dart';
 /// Abstract data source for portfolio data
 abstract class PortfolioRemoteDataSource {
   /// Get portfolio holdings from remote API (legacy - uses default portfolio)
-  Future<PortfolioHoldingsDto> getPortfolioHoldings(String userId);
+  Future<PortfolioHoldingsDto> getPortfolioHoldings();
 
   /// Get portfolio holdings from remote API for specific portfolio
   Future<PortfolioHoldingsDto> getPortfolioHoldingsById(
-    String userId,
     String portfolioId,
   );
 
   /// Get portfolio summary from remote API (legacy - uses default portfolio)
-  Future<PortfolioSummaryDto> getPortfolioSummary(String userId);
+  Future<PortfolioSummaryDto> getPortfolioSummary();
 
   /// Get portfolio summary from remote API for specific portfolio
   Future<PortfolioSummaryDto> getPortfolioSummaryById(
-    String userId,
     String portfolioId,
   );
 
@@ -40,7 +38,7 @@ abstract class PortfolioRemoteDataSource {
   );
 
   /// Get portfolios list from remote API
-  Future<PortfolioListDto> getPortfoliosList(String userId);
+  Future<PortfolioListDto> getPortfoliosList();
 }
 
 /// Concrete implementation of portfolio remote data source
@@ -49,8 +47,13 @@ abstract class PortfolioRemoteDataSource {
 class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   const PortfolioRemoteDataSourceImpl({
     required ApiClient apiClient,
-  }) : _apiClient = apiClient;
+    bool useMockData = false,
+  }) : _apiClient = apiClient,
+       _useMockData = useMockData;
+
   final ApiClient _apiClient;
+  final bool _useMockData;
+
 
   // Use localized endpoints
   String get _baseUrl => PortfolioEndpoints.baseUrl;
@@ -61,32 +64,29 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     final cleanBase = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
         : baseUrl;
-    
+
     // Ensure resource starts with /
-    var cleanResource = resource.startsWith('/')
-        ? resource
-        : '/$resource';
-        
+    var cleanResource = resource.startsWith('/') ? resource : '/$resource';
+
     return '$cleanBase$cleanResource';
   }
 
   @override
-  Future<PortfolioHoldingsDto> getPortfolioHoldings(String userId) async {
+  Future<PortfolioHoldingsDto> getPortfolioHoldings() async {
     CommonLogger.methodEntry(
       'getPortfolioHoldings',
       tag: 'PortfolioRemoteDataSource',
-      metadata: {'userId': userId},
     );
 
     try {
       CommonLogger.debug(
-        'API request prepared for portfolio holdings with userId query param',
+        'API request prepared for portfolio holdings',
         tag: 'PortfolioRemoteDataSource',
       );
 
-      // Construct full URI from portfolio config with userId query parameter
+      // Construct full URI from portfolio config without userId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.holdings);
-      final fullUri = '$baseUri?userId=$userId';
+      final fullUri = baseUri;
 
       // Use ApiClient for consistent error handling and logging
       final holdingsResponse = await _apiClient.get<PortfolioHoldingsDto>(
@@ -119,8 +119,11 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         tag: 'PortfolioRemoteDataSource',
         metadata: {'status': 'error'},
       );
-      
+
       // Fallback to mock data when API is unavailable
+      if (!_useMockData) {
+        rethrow;
+      }
       try {
         CommonLogger.info(
           'Loading mock portfolio holdings',
@@ -140,24 +143,25 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
   @override
   Future<PortfolioHoldingsDto> getPortfolioHoldingsById(
-    String userId,
     String portfolioId,
   ) async {
     CommonLogger.methodEntry(
       'getPortfolioHoldingsById',
       tag: 'PortfolioRemoteDataSource',
-      metadata: {'userId': userId, 'portfolioId': portfolioId},
+      metadata: {
+        'portfolioId': portfolioId,
+      },
     );
 
     try {
       CommonLogger.debug(
-        'API request prepared for portfolio holdings with userId and portfolioId query params',
+        'API request prepared for portfolio holdings with portfolioId query param',
         tag: 'PortfolioRemoteDataSource',
       );
 
-      // Construct full URI from portfolio config with userId and portfolioId query parameters
+      // Construct full URI from portfolio config with portfolioId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.holdings);
-      final fullUri = '$baseUri?userId=$userId&portfolioId=$portfolioId';
+      final fullUri = '$baseUri?portfolioId=$portfolioId';
 
       // Use ApiClient for consistent error handling and logging
       final holdingsResponse = await _apiClient.get<PortfolioHoldingsDto>(
@@ -180,18 +184,38 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       return holdingsResponse;
     } catch (e) {
       CommonLogger.error(
-        'Failed to fetch portfolio holdings by ID',
+        'Failed to fetch portfolio holdings by ID from API. Attempting mock fallback.',
         tag: 'PortfolioRemoteDataSource',
         error: e,
         stackTrace: StackTrace.current,
       );
+
+      if (e is TypeError) {
+        CommonLogger.error(
+          'Parsing error in portfolio response. Check if DTO fields match API JSON.',
+          tag: 'PortfolioRemoteDataSource',
+          error: e,
+        );
+        // Log the raw data keys to help identify the missing or wrong type field
+        try {
+          final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.holdings);
+          final fullUri = '$baseUri?&portfolioId=$portfolioId';
+          CommonLogger.debug(
+            'Failed JSON structure keys: ${e.toString()}',
+            tag: 'PortfolioRemoteDataSource',
+          );
+        } catch (_) {}
+      }
       CommonLogger.methodExit(
         'getPortfolioHoldingsById',
         tag: 'PortfolioRemoteDataSource',
         metadata: {'status': 'error'},
       );
-      
+
       // Fallback to mock data when API is unavailable
+      if (!_useMockData) {
+        rethrow;
+      }
       try {
         CommonLogger.info(
           'Loading mock portfolio holdings',
@@ -210,22 +234,21 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   }
 
   @override
-  Future<PortfolioSummaryDto> getPortfolioSummary(String userId) async {
+  Future<PortfolioSummaryDto> getPortfolioSummary() async {
     CommonLogger.methodEntry(
       'getPortfolioSummary',
       tag: 'PortfolioRemoteDataSource',
-      metadata: {'userId': userId},
     );
 
     try {
       CommonLogger.debug(
-        'API request prepared for portfolio summary with userId query param',
+        'API request prepared for portfolio summary',
         tag: 'PortfolioRemoteDataSource',
       );
 
-      // Construct full URI from portfolio config with userId query parameter
+      // Construct full URI from portfolio config without userId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.summary);
-      final fullUri = '$baseUri?userId=$userId';
+      final fullUri = baseUri;
 
       // Use ApiClient for consistent error handling and logging
       final summaryResponse = await _apiClient.get<PortfolioSummaryDto>(
@@ -258,8 +281,11 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         tag: 'PortfolioRemoteDataSource',
         metadata: {'status': 'error'},
       );
-      
+
       // Fallback to mock data when API is unavailable
+      if (!_useMockData) {
+        rethrow;
+      }
       try {
         CommonLogger.info(
           'Loading mock portfolio summary',
@@ -279,24 +305,25 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
   @override
   Future<PortfolioSummaryDto> getPortfolioSummaryById(
-    String userId,
     String portfolioId,
   ) async {
     CommonLogger.methodEntry(
       'getPortfolioSummaryById',
       tag: 'PortfolioRemoteDataSource',
-      metadata: {'userId': userId, 'portfolioId': portfolioId},
+      metadata: {
+        'portfolioId': portfolioId,
+      },
     );
 
     try {
       CommonLogger.debug(
-        'API request prepared for portfolio summary with userId and portfolioId query params',
+        'API request prepared for portfolio summary with portfolioId query param',
         tag: 'PortfolioRemoteDataSource',
       );
 
-      // Construct full URI from portfolio config with userId and portfolioId query parameters
+      // Construct full URI from portfolio config with portfolioId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.summary);
-      final fullUri = '$baseUri?userId=$userId&portfolioId=$portfolioId';
+      final fullUri = '$baseUri?portfolioId=$portfolioId';
 
       // Use ApiClient for consistent error handling and logging
       final summaryResponse = await _apiClient.get<PortfolioSummaryDto>(
@@ -329,8 +356,11 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         tag: 'PortfolioRemoteDataSource',
         metadata: {'status': 'error'},
       );
-      
+
       // Fallback to mock data when API is unavailable
+      if (!_useMockData) {
+        rethrow;
+      }
       try {
         CommonLogger.info(
           'Loading mock portfolio summary',
@@ -366,7 +396,10 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
 
       // Construct full URI for analytics endpoint
-      final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.advancedAnalytics(portfolioId));
+      final baseUri = _buildUri(
+        _baseUrl,
+        PortfolioEndpoints.advancedAnalytics(portfolioId),
+      );
 
       // Use ApiClient for consistent error handling and logging with POST request
       final analyticsResponse = await _apiClient.post<PortfolioAnalyticsResponseDto>(
@@ -453,8 +486,11 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         tag: 'PortfolioRemoteDataSource',
         metadata: {'status': 'error'},
       );
-      
+
       // Fallback to mock data when API is unavailable
+      if (!_useMockData) {
+        rethrow;
+      }
       try {
         CommonLogger.info(
           'Loading mock portfolio analytics',
@@ -473,22 +509,21 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   }
 
   @override
-  Future<PortfolioListDto> getPortfoliosList(String userId) async {
+  Future<PortfolioListDto> getPortfoliosList() async {
     CommonLogger.methodEntry(
       'getPortfoliosList',
       tag: 'PortfolioRemoteDataSource',
-      metadata: {'userId': userId},
     );
 
     try {
       CommonLogger.debug(
-        'API request prepared for portfolios list with userId query param',
+        'API request prepared for portfolios list',
         tag: 'PortfolioRemoteDataSource',
       );
 
-      // Construct full URI from portfolio config with userId query parameter
+      // Construct full URI from portfolio config without userId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.list);
-      final fullUri = '$baseUri?userId=$userId';
+      final fullUri = baseUri;
 
       // Use ApiClient for consistent error handling and logging
       final listResponse = await _apiClient.get<PortfolioListDto>(
@@ -561,8 +596,25 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         tag: 'PortfolioRemoteDataSource',
         metadata: {'status': 'error'},
       );
-      rethrow;
+
+      // Fallback to mock data when API is unavailable
+      if (!_useMockData) {
+        rethrow;
+      }
+      try {
+        CommonLogger.info(
+          'Loading mock portfolios list',
+          tag: 'PortfolioRemoteDataSource',
+        );
+        return await PortfolioMockDataHelper.getMockPortfolioList();
+      } catch (mockError) {
+        CommonLogger.error(
+          'Failed to load mock data',
+          tag: 'PortfolioRemoteDataSource',
+          error: mockError,
+        );
+        rethrow;
+      }
     }
   }
 }
-

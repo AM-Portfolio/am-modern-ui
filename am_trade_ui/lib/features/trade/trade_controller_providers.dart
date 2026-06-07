@@ -91,7 +91,6 @@ final filterTradeDetailsProvider =
     FutureProvider.family<
       FilterTradeDetailsResponse,
       ({
-        String userId,
         String? favoriteFilterId,
         MetricsFilterConfigDto? metricsConfig,
         int page,
@@ -101,7 +100,6 @@ final filterTradeDetailsProvider =
     >((ref, params) async {
       final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
       return repository.filterTradeDetails(
-        userId: params.userId,
         favoriteFilterId: params.favoriteFilterId,
         metricsConfig: params.metricsConfig,
         page: params.page,

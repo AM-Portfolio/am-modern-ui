@@ -67,7 +67,12 @@ class PriceService {
   }
 
   /// Subscribe to symbols (initiates stream via REST)
-  Future<void> subscribe(List<String> symbols, {String provider = 'UPSTOX'}) async {
+  Future<void> subscribe(
+    List<String> symbols, {
+    String provider = 'UPSTOX',
+    bool isIndexSymbol = false,
+    bool mockMode = false,
+  }) async {
     final baseUrl = _config.api.marketData?.baseUrl;
     final endpoint = _config.api.marketData?.connectEndpoint;
     
@@ -78,18 +83,18 @@ class PriceService {
 
     try {
        final url = Uri.parse('$baseUrl$endpoint');
-       AppLogger.info('PriceService: Subscribing to $symbols via $url');
+       AppLogger.info('PriceService: Subscribing to $symbols via $url (isIndexSymbol: $isIndexSymbol, provider: ${mockMode ? 'MOCK' : provider})');
        
        final response = await http.post(
          url,
          headers: {'Content-Type': 'application/json'},
          body: jsonEncode({
            'instrumentKeys': symbols,
-           'provider': provider,
+           'provider': mockMode ? 'MOCK' : provider,
            'timeFrame': '1D',
            'stream': true,
            'expandIndices': false, 
-           'isIndexSymbol': true 
+           'isIndexSymbol': isIndexSymbol
          }),
        );
        

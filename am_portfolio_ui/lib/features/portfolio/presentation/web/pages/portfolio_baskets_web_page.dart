@@ -4,12 +4,10 @@ import '../../../../basket/presentation/widgets/basket_explorer.dart';
 /// Web-specific baskets page
 class PortfolioBasketsWebPage extends StatelessWidget {
   const PortfolioBasketsWebPage({
-    required this.userId,
     super.key,
     this.portfolioId,
   });
 
-  final String userId;
   final String? portfolioId;
 
   @override
@@ -29,10 +27,7 @@ class PortfolioBasketsWebPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: BasketExplorer(
-              userId: userId,
-              portfolioId: portfolioId!,
-            ),
+            child: BasketExplorer(portfolioId: portfolioId!),
           ),
         ],
       ),

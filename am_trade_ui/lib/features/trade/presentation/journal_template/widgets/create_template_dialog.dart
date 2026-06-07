@@ -1,19 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../internal/domain/enums/journal_template_category.dart';
+import '../../../internal/domain/enums/journal_template_category.dart';
 import '../../../journal_template_providers.dart';
 
 /// Dialog for creating custom templates
 class CreateTemplateDialog extends ConsumerStatefulWidget {
   const CreateTemplateDialog({
-    required this.userId,
-    super.key,
+        super.key,
   });
 
-  final String userId;
-
-  @override
+    @override
   ConsumerState<CreateTemplateDialog> createState() =>
       _CreateTemplateDialogState();
 }
@@ -283,13 +280,12 @@ class _CreateTemplateDialogState extends ConsumerState<CreateTemplateDialog> {
     );
   }
 
-  void _createTemplate() {
+  void _createTemplate() async {
     if (_formKey.currentState!.validate()) {
-      final cubit = ref.read(journalTemplateCubitProvider);
+      final cubit = await ref.read(journalTemplateCubitProvider.future);
       cubit.createTemplate(
         name: _nameController.text,
         category: _selectedCategory,
-        createdBy: widget.userId,
         description: _descriptionController.text.isEmpty
             ? null
             : _descriptionController.text,

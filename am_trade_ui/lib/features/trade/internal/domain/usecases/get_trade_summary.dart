@@ -8,19 +8,19 @@ class GetTradeSummary {
   final TradeRepository _repository;
 
   /// Execute the use case
-  Future<TradeSummary> call(String userId, String portfolioId) async {
+  Future<TradeSummary> call(String portfolioId) async {
     AppLogger.methodEntry(
       'GetTradeSummary.call',
       tag: 'GetTradeSummary',
-      params: {'userId': userId, 'portfolioId': portfolioId},
+      params: {},
     );
 
-    if (userId.isEmpty || portfolioId.isEmpty) {
+    if (portfolioId.isEmpty) {
       AppLogger.error(
         'Validation failed - empty userId or portfolioId',
         tag: 'GetTradeSummary',
       );
-      throw ArgumentError('User ID and Portfolio ID cannot be empty');
+      throw ArgumentError('Portfolio ID cannot be empty');
     }
 
     try {
@@ -29,7 +29,7 @@ class GetTradeSummary {
         tag: 'GetTradeSummary',
       );
 
-      final result = await _repository.getTradeSummary(userId, portfolioId);
+      final result = await _repository.getTradeSummary(portfolioId);
 
       AppLogger.info(
         'Trade summary use case completed successfully',
@@ -59,26 +59,26 @@ class GetTradeSummary {
   }
 
   /// Execute with stream for real-time updates
-  Stream<TradeSummary> watch(String userId, String portfolioId) {
+  Stream<TradeSummary> watch(String portfolioId) {
     AppLogger.methodEntry(
       'GetTradeSummary.watch',
       tag: 'GetTradeSummary',
-      params: {'userId': userId, 'portfolioId': portfolioId},
+      params: {},
     );
 
-    if (userId.isEmpty || portfolioId.isEmpty) {
+    if (portfolioId.isEmpty) {
       AppLogger.error(
         'Validation failed for stream',
         tag: 'GetTradeSummary',
       );
-      throw ArgumentError('User ID and Portfolio ID cannot be empty');
+      throw ArgumentError('Portfolio ID cannot be empty');
     }
 
     AppLogger.info(
       'Starting trade summary stream',
       tag: 'GetTradeSummary',
     );
-    return _repository.watchTradeSummary(userId, portfolioId);
+    return _repository.watchTradeSummary(portfolioId);
   }
 }
 

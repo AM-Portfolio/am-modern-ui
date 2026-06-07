@@ -5,6 +5,7 @@ import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard;
 import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart' as common;
+import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
 
 // ── DISABLED MODULES (re-enable one at a time as each module is fixed) ─────
 import 'package:am_portfolio_ui/am_portfolio_ui.dart';
@@ -26,14 +27,37 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0; // Default to Dashboard
+  bool _sessionRestored = false;
 
   @override
   void initState() {
     super.initState();
-    // Trigger initial connection check
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialAuthAndConnect();
+      _restoreSessionNav();
     });
+  }
+
+  Future<void> _restoreSessionNav() async {
+    if (_sessionRestored) return;
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! Authenticated) return;
+    _sessionRestored = true;
+
+    final session =
+        await common.SessionPersistenceService.instance.load(authState.user.id);
+    if (session != null && mounted && _navMap.containsKey(session.globalNav)) {
+      setState(() => _selectedIndex = _navMap[session.globalNav]!);
+    }
+  }
+
+  void _onGlobalNavigate(String title, String userId) {
+    if (!_navMap.containsKey(title)) return;
+    setState(() => _selectedIndex = _navMap[title]!);
+    common.SessionPersistenceService.instance.patch(
+      userId,
+      (s) => s.copyWith(globalNav: title, clearBasket: title != 'Portfolio'),
+    );
   }
 
   Future<void> _checkInitialAuthAndConnect() async {
@@ -78,6 +102,7 @@ class _AppShellState extends State<AppShell> {
     'Analysis': 6,
     'Doc Intel': 7,
     'Profile': 8,
+    'Subscription': 9,
   };
 
   String get _activeNavItem {
@@ -164,11 +189,7 @@ class _AppShellState extends State<AppShell> {
                         onLogout: () => context.read<AuthCubit>().logout(),
                         onProfileTap: () =>
                             setState(() => _selectedIndex = 8),
-                        onNavigate: (title) {
-                          if (_navMap.containsKey(title)) {
-                            setState(() => _selectedIndex = _navMap[title]!);
-                          }
-                        },
+                        onNavigate: (title) => _onGlobalNavigate(title, userId),
                         items: const [
                           SidebarItem(
                               title: 'Dashboard',
@@ -191,11 +212,12 @@ class _AppShellState extends State<AppShell> {
                               title: 'Analysis', icon: Icons.analytics_outlined),
                           SidebarItem(
                               title: 'Doc Intel', icon: Icons.psychology_outlined),
+                          SidebarItem(
+                              title: 'Subscription', icon: Icons.subscriptions_rounded),
                         ],
                       ),
                     Expanded(
                       child: GlobalPortfolioWrapper(
-                        userId: userId,
                         child: _buildPage(userId, isDesktop),
                       ),
                     ),
@@ -208,11 +230,7 @@ class _AppShellState extends State<AppShell> {
                         userName: authState.user.displayName,
                         onProfileTap: () =>
                             setState(() => _selectedIndex = 8),
-                        onNavigate: (title) {
-                          if (_navMap.containsKey(title)) {
-                            setState(() => _selectedIndex = _navMap[title]!);
-                          }
-                        },
+                        onNavigate: (title) => _onGlobalNavigate(title, userId),
                         items: const [
                           SidebarItem(
                               title: 'Dashboard',
@@ -235,6 +253,8 @@ class _AppShellState extends State<AppShell> {
                               title: 'Analysis', icon: Icons.analytics_outlined),
                           SidebarItem(
                               title: 'Doc Intel', icon: Icons.psychology_outlined),
+                          SidebarItem(
+                              title: 'Subscription', icon: Icons.subscriptions_rounded),
                         ],
                       )
                     : null,
@@ -251,9 +271,9 @@ class _AppShellState extends State<AppShell> {
       case 0:
         return dashboard.DashboardPage(userId: userId);
       case 1:
-        return PortfolioScreen(userId: userId);
+        return const PortfolioScreen();
       case 2:
-        return TradeWebScreen(userId: userId);
+        return const TradeResponsiveLayout();
       case 3:
         return MarketPage(userId: userId);
       case 4:
@@ -270,6 +290,11 @@ class _AppShellState extends State<AppShell> {
         return DocIntelligenceScreen(userId: userId);
       case 8:
         return ProfileSettingsPage(userId: userId);
+      case 9:
+        return BlocProvider<am_sub.SubscriptionCubit>.value(
+          value: GetIt.instance<am_sub.SubscriptionCubit>(),
+          child: const am_sub.SubscriptionPricingScreen(),
+        );
       default:
         return dashboard.DashboardPage(userId: userId);
     }

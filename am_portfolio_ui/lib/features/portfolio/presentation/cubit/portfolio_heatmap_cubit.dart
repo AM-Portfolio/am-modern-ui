@@ -2,7 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/shared/models/heatmap/heatmap_ui_data.dart';
-import 'package:am_design_system/am_design_system.dart' hide MarketCapType, MetricType, TimeFrame, SectorType;
+import 'package:am_design_system/am_design_system.dart'
+    hide MarketCapType, MetricType, TimeFrame, SectorType;
 import '../mappers/sector_heatmap_converter.dart';
 import 'portfolio_analytics_cubit.dart';
 import 'portfolio_analytics_state.dart';
@@ -55,6 +56,14 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             showSubCards: true,
             subtitle: 'Sector Performance Analysis',
           );
+        } else if (analyticsState is PortfolioAnalyticsError) {
+          CommonLogger.warning(
+            'Analytics data failed to load: ${analyticsState.message}',
+            tag: 'PortfolioHeatmapCubit',
+          );
+          if (isClosed) return;
+          emit(const PortfolioHeatmapError(message: 'Failed to load portfolio data. Please retry.'));
+          return;
         } else {
           CommonLogger.warning(
             'Analytics data not loaded or no heatmap data available',
@@ -111,6 +120,11 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
         ),
       );
     }
+  }
+
+  /// Explicitly show an error state
+  void showError(String message) {
+    emit(PortfolioHeatmapError(message: message));
   }
 
   Future<void> updateTimeFrame(TimeFrame timeFrame) async {
@@ -208,4 +222,3 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
     }
   }
 }
-

@@ -37,6 +37,14 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
   String? chartError;
   String selectedTimeframe = '1Y'; // Default 1 year
   bool isBarChart = false; // Chart type toggle
+  
+  final ScrollController _indicesScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _indicesScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -203,36 +211,45 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                 
                 // Index Cards Carousel  
                 SizedBox(
-                  height: 140,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: provider.allIndicesData.length,
-                    itemBuilder: (context, index) {
-                      final data = provider.allIndicesData[index];
-                      final isSelected = data.indexSymbol == selectedIndexForMovers;
-                      
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedIndexForMovers = data.indexSymbol;
-                          });
-                          _loadTopMovers();
-                        },
-                        child: Container(
-                          decoration: isSelected
-                              ? BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: const Color(0xFF00D1FF),
-                                    width: 2,
-                                  ),
-                                )
-                              : null,
-                          child: IndexCard(data: data),
-                        ),
-                      );
-                    },
+                  height: 156, // Increased height to accommodate scrollbar
+                  child: RawScrollbar(
+                    controller: _indicesScrollController,
+                    thumbVisibility: true,
+                    thumbColor: const Color(0xFF00D1FF).withOpacity(0.5),
+                    radius: const Radius.circular(8),
+                    thickness: 6,
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: ListView.builder(
+                      controller: _indicesScrollController,
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      itemCount: provider.allIndicesData.length,
+                      itemBuilder: (context, index) {
+                        final data = provider.allIndicesData[index];
+                        final isSelected = data.indexSymbol == selectedIndexForMovers;
+                        
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedIndexForMovers = data.indexSymbol;
+                            });
+                            _loadTopMovers();
+                          },
+                          child: Container(
+                            decoration: isSelected
+                                ? BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFF00D1FF),
+                                      width: 2,
+                                    ),
+                                  )
+                                : null,
+                            child: IndexCard(data: data),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
                 

@@ -7,7 +7,7 @@ class GetFavoriteFiltersUseCase {
 
   final FavoriteFilterRepository _repository;
 
-  Future<FavoriteFilterList> call(String userId) async => _repository.getFavoriteFilters(userId);
+  Future<FavoriteFilterList> call() async => _repository.getFavoriteFilters();
 
-  Stream<FavoriteFilterList> watch(String userId) => _repository.watchFavoriteFilters(userId);
+  Stream<FavoriteFilterList> watch() => _repository.watchFavoriteFilters();
 }

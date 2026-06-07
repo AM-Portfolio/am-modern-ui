@@ -72,8 +72,20 @@ class AuthRemoteDataSource implements AuthDataSource {
       var errorMessage = AuthConstants.serverError;
       if (e.response?.data != null && e.response!.data is Map) {
         final data = e.response!.data;
-        errorMessage =
-            data['message'] ?? data['detail'] ?? data['error'] ?? errorMessage;
+        final detail = data['detail'];
+        
+        if (detail is Map) {
+          errorMessage = detail['error_description']?.toString() ?? 
+                         detail['message']?.toString() ?? 
+                         detail['error']?.toString() ?? 
+                         errorMessage;
+        } else if (detail != null) {
+          errorMessage = detail.toString();
+        } else {
+          errorMessage = data['message']?.toString() ?? 
+                         data['error']?.toString() ?? 
+                         errorMessage;
+        }
       }
 
       throw ServerException(
@@ -160,8 +172,20 @@ class AuthRemoteDataSource implements AuthDataSource {
       var errorMessage = AuthConstants.serverError;
       if (e.response?.data != null && e.response!.data is Map) {
         final data = e.response!.data;
-        errorMessage =
-            data['message'] ?? data['detail'] ?? data['error'] ?? errorMessage;
+        final detail = data['detail'];
+        
+        if (detail is Map) {
+          errorMessage = detail['error_description']?.toString() ?? 
+                         detail['message']?.toString() ?? 
+                         detail['error']?.toString() ?? 
+                         errorMessage;
+        } else if (detail != null) {
+          errorMessage = detail.toString();
+        } else {
+          errorMessage = data['message']?.toString() ?? 
+                         data['error']?.toString() ?? 
+                         errorMessage;
+        }
         AppLogger.error('🔴 [BACKEND] Error detail: $errorMessage');
       }
 
@@ -174,7 +198,24 @@ class AuthRemoteDataSource implements AuthDataSource {
 
   @override
   Future<AuthResultModel> demoLogin() async {
-    // Demo login might still call backend or use mock
+    const devUserId = String.fromEnvironment('AM_DEV_USER_ID');
+    if (devUserId.isNotEmpty) {
+      AppLogger.info('🔵 [AuthRemoteDataSource] Bypassing remote login for local dev');
+      return AuthResultModel(
+        user: UserModel(
+          id: devUserId,
+          email: AuthConstants.demoEmail,
+          displayName: 'Local Dev User',
+          authMethod: 'demo',
+        ),
+        tokens: AuthTokensModel(
+          accessToken: const String.fromEnvironment('AM_DEV_AUTH_TOKEN', defaultValue: 'mock_token'),
+          expiresAt: DateTime.now().add(const Duration(days: 1)),
+        ),
+      );
+    }
+    
+    // Fallback to real remote login if not running in local dev mode
     return emailLogin(AuthConstants.demoEmail, AuthConstants.demoPassword);
   }
 
@@ -316,8 +357,20 @@ class AuthRemoteDataSource implements AuthDataSource {
       var errorMessage = 'Registration failed';
       if (e.response?.data != null && e.response!.data is Map) {
         final data = e.response!.data;
-        errorMessage =
-            data['message'] ?? data['detail'] ?? data['error'] ?? errorMessage;
+        final detail = data['detail'];
+        
+        if (detail is Map) {
+          errorMessage = detail['error_description']?.toString() ?? 
+                         detail['message']?.toString() ?? 
+                         detail['error']?.toString() ?? 
+                         errorMessage;
+        } else if (detail != null) {
+          errorMessage = detail.toString();
+        } else {
+          errorMessage = data['message']?.toString() ?? 
+                         data['error']?.toString() ?? 
+                         errorMessage;
+        }
       }
 
       throw ServerException(

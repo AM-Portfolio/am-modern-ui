@@ -2,6 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/shared/models/heatmap/heatmap_ui_data.dart';
@@ -59,11 +60,13 @@ class SectorHeatmapConverter {
       lastUpdated: DateTime.now(),
       additionalInfo: {},
     ),
-    configuration: _mapConfig(PortfolioHeatmapConfig.getHeatmapConfig(
-      title: title,
-      showSubCards: showSubCards,
-      accentColor: accentColor,
-    )),
+    configuration: _mapConfig(
+      PortfolioHeatmapConfig.getHeatmapConfig(
+        title: title,
+        showSubCards: showSubCards,
+        accentColor: accentColor,
+      ),
+    ),
   );
 
   /// Creates hierarchical tiles with sectors and their stocks as children
@@ -178,7 +181,8 @@ class SectorHeatmapConverter {
     );
   }
 
-  /// Logs the heatmap data building parameters and builds the final HeatmapData object
+  /// Logs the heatmap data building parameters and builds the final HeatmapData object.
+  /// In release/profile mode, all logging is skipped and only the build step runs.
   static HeatmapData _logAndBuildHeatmapData({
     required Heatmap heatmap,
     required String title,
@@ -188,169 +192,130 @@ class SectorHeatmapConverter {
     String? subtitle,
     Color? accentColor,
   }) {
-    try {
-      // Log comprehensive heatmap building parameters as JSON
-      CommonLogger.info(
-        '================ SECTOR HEATMAP CONVERTER LOG ================',
-        tag: 'SectorHeatmapConverter.Build',
-      );
+    // Always build the data – logging is debug-only
+    final result = _buildHeatmapData(
+      heatmap: heatmap,
+      title: title,
+      subtitle: subtitle,
+      tiles: tiles,
+      totalValue: totalValue,
+      showSubCards: showSubCards,
+      accentColor: accentColor,
+    );
 
-      // Build parameters JSON
-      final buildParameters = {
-        'title': title,
-        'subtitle': subtitle,
-        'totalValue': totalValue,
-        'totalTiles': tiles.length,
-        'showSubCards': showSubCards,
-        'accentColor': accentColor?.toString(),
-        'heatmapHash': heatmap.hashCode,
-        'sectorsCount': heatmap.sectors.length,
-        'timestamp': DateTime.now().toIso8601String(),
-      };
+    // All expensive JSON serialisation only happens in debug builds
+    if (kDebugMode) {
+      try {
+        CommonLogger.info(
+          '================ SECTOR HEATMAP CONVERTER LOG ================',
+          tag: 'SectorHeatmapConverter.Build',
+        );
 
-      CommonLogger.debug(
-        'Building HeatmapData Parameters: ${jsonEncode(buildParameters)}',
-        tag: 'SectorHeatmapConverter.Parameters',
-      );
+        final buildParameters = {
+          'title': title,
+          'subtitle': subtitle,
+          'totalValue': totalValue,
+          'totalTiles': tiles.length,
+          'showSubCards': showSubCards,
+          'accentColor': accentColor?.toString(),
+          'heatmapHash': heatmap.hashCode,
+          'sectorsCount': heatmap.sectors.length,
+          'timestamp': DateTime.now().toIso8601String(),
+        };
 
-      // Log tiles summary as JSON
-      final tilesSummary = tiles
-          .map(
-            (tile) => {
-              'id': tile.id,
-              'name': tile.name,
-              'displayName': tile.displayName,
-              'weightage': double.parse(tile.weightage.toStringAsFixed(2)),
-              'performance': double.parse(tile.performance.toStringAsFixed(2)),
-              'value': tile.value != null
-                  ? double.parse(tile.value!.toStringAsFixed(2))
-                  : null,
-              'childrenCount': tile.children?.length ?? 0,
-              'hasChildren': tile.hasChildren,
-            },
-          )
-          .toList();
-
-      CommonLogger.debug(
-        'Tiles Summary: ${jsonEncode(tilesSummary)}',
-        tag: 'SectorHeatmapConverter.Tiles',
-      );
-
-      // Log detailed children information as JSON
-      final childrenDetails = <String, List<Map<String, dynamic>>>{};
-      for (var i = 0; i < tiles.length; i++) {
-        final tile = tiles[i];
-        if (tile.children != null && tile.children!.isNotEmpty) {
-          childrenDetails[tile.id] = tile.children!
-              .map(
-                (child) => {
-                  'name': child.name,
-                  'displayName': child.displayName,
-                  'performance': double.parse(
-                    child.performance.toStringAsFixed(2),
-                  ),
-                  'weightage': double.parse(child.weightage.toStringAsFixed(2)),
-                  'value': child.value != null
-                      ? double.parse(child.value!.toStringAsFixed(2))
-                      : null,
-                  'id': child.id,
-                },
-              )
-              .toList();
-        }
-      }
-
-      if (childrenDetails.isNotEmpty) {
         CommonLogger.debug(
-          'Children Details: ${jsonEncode(childrenDetails)}',
-          tag: 'SectorHeatmapConverter.Children',
+          'Building HeatmapData Parameters: ${jsonEncode(buildParameters)}',
+          tag: 'SectorHeatmapConverter.Parameters',
+        );
+
+        final tilesSummary = tiles
+            .map(
+              (tile) => {
+                'id': tile.id,
+                'name': tile.name,
+                'displayName': tile.displayName,
+                'weightage': double.parse(tile.weightage.toStringAsFixed(2)),
+                'performance': double.parse(tile.performance.toStringAsFixed(2)),
+                'value': tile.value != null
+                    ? double.parse(tile.value!.toStringAsFixed(2))
+                    : null,
+                'childrenCount': tile.children?.length ?? 0,
+                'hasChildren': tile.hasChildren,
+              },
+            )
+            .toList();
+
+        CommonLogger.debug(
+          'Tiles Summary: ${jsonEncode(tilesSummary)}',
+          tag: 'SectorHeatmapConverter.Tiles',
+        );
+
+        final childrenDetails = <String, List<Map<String, dynamic>>>{};
+        for (var i = 0; i < tiles.length; i++) {
+          final tile = tiles[i];
+          if (tile.children != null && tile.children!.isNotEmpty) {
+            childrenDetails[tile.id] = tile.children!
+                .map(
+                  (child) => {
+                    'name': child.name,
+                    'displayName': child.displayName,
+                    'performance': double.parse(
+                      child.performance.toStringAsFixed(2),
+                    ),
+                    'weightage': double.parse(child.weightage.toStringAsFixed(2)),
+                    'value': child.value != null
+                        ? double.parse(child.value!.toStringAsFixed(2))
+                        : null,
+                    'id': child.id,
+                  },
+                )
+                .toList();
+          }
+        }
+
+        if (childrenDetails.isNotEmpty) {
+          CommonLogger.debug(
+            'Children Details: ${jsonEncode(childrenDetails)}',
+            tag: 'SectorHeatmapConverter.Children',
+          );
+        }
+
+        final totalWeightage = tiles.fold(0.0, (sum, tile) => sum + tile.weightage);
+        final avgPerformance = tiles.isNotEmpty
+            ? tiles.fold(0.0, (sum, tile) => sum + tile.performance) / tiles.length
+            : 0.0;
+        final totalChildren = tiles.fold(0, (sum, tile) => sum + (tile.children?.length ?? 0));
+
+        final statistics = {
+          'totalWeightage': double.parse(totalWeightage.toStringAsFixed(2)),
+          'averagePerformance': double.parse(avgPerformance.toStringAsFixed(2)),
+          'totalChildren': totalChildren,
+          'bestPerformer': _findBestTile(tiles),
+          'worstPerformer': _findWorstTile(tiles),
+          'tilesCount': tiles.length,
+          'hasHierarchicalData': tiles.any((tile) => tile.hasChildren),
+        };
+
+        CommonLogger.info(
+          'Heatmap Statistics: ${jsonEncode(statistics)}',
+          tag: 'SectorHeatmapConverter.Statistics',
+        );
+
+        CommonLogger.info(
+          '================ END SECTOR HEATMAP CONVERTER LOG ================',
+          tag: 'SectorHeatmapConverter.Build',
+        );
+      } catch (e, stackTrace) {
+        CommonLogger.error(
+          'Failed to log heatmap data: $e',
+          tag: 'SectorHeatmapConverter.Error',
+          error: e,
+          stackTrace: stackTrace,
         );
       }
-
-      // Calculate and log statistics as JSON
-      final totalWeightage = tiles.fold(
-        0.0,
-        (sum, tile) => sum + tile.weightage,
-      );
-      final avgPerformance = tiles.isNotEmpty
-          ? tiles.fold(0.0, (sum, tile) => sum + tile.performance) /
-                tiles.length
-          : 0.0;
-      final totalChildren = tiles.fold(
-        0,
-        (sum, tile) => sum + (tile.children?.length ?? 0),
-      );
-
-      final statistics = {
-        'totalWeightage': double.parse(totalWeightage.toStringAsFixed(2)),
-        'averagePerformance': double.parse(avgPerformance.toStringAsFixed(2)),
-        'totalChildren': totalChildren,
-        'bestPerformer': _findBestTile(tiles),
-        'worstPerformer': _findWorstTile(tiles),
-        'tilesCount': tiles.length,
-        'hasHierarchicalData': tiles.any((tile) => tile.hasChildren),
-      };
-
-      CommonLogger.info(
-        'Heatmap Statistics: ${jsonEncode(statistics)}',
-        tag: 'SectorHeatmapConverter.Statistics',
-      );
-
-      CommonLogger.debug(
-        'Building HeatmapData object...',
-        tag: 'SectorHeatmapConverter.Build',
-      );
-
-      // Call the original build method
-      final result = _buildHeatmapData(
-        heatmap: heatmap,
-        title: title,
-        subtitle: subtitle,
-        tiles: tiles,
-        totalValue: totalValue,
-        showSubCards: showSubCards,
-        accentColor: accentColor,
-      );
-
-      // Log successful completion
-      final completionInfo = {
-        'resultId': 'heatmap-${result.hashCode}',
-        'resultTitle': result.title,
-        'resultTilesCount': result.tiles.length,
-        'buildSuccess': true,
-        'timestamp': DateTime.now().toIso8601String(),
-      };
-
-      CommonLogger.info(
-        'HeatmapData Build Completed: ${jsonEncode(completionInfo)}',
-        tag: 'SectorHeatmapConverter.Completion',
-      );
-
-      CommonLogger.info(
-        '================ END SECTOR HEATMAP CONVERTER LOG ================',
-        tag: 'SectorHeatmapConverter.Build',
-      );
-
-      return result;
-    } catch (e, stackTrace) {
-      CommonLogger.error(
-        'Error in _logAndBuildHeatmapData: $e',
-        tag: 'SectorHeatmapConverter.Error',
-        error: e,
-        stackTrace: stackTrace,
-      );
-
-      // Fallback to original build method without logging
-      return _buildHeatmapData(
-        heatmap: heatmap,
-        title: title,
-        subtitle: subtitle,
-        tiles: tiles,
-        totalValue: totalValue,
-        showSubCards: showSubCards,
-        accentColor: accentColor,
-      );
     }
+
+    return result;
   }
 
   /// Helper method to find the best performing tile
@@ -392,14 +357,18 @@ class SectorHeatmapConverter {
           (sum, tile) => sum + (tile.children?.length ?? 0),
         ),
         'hierarchicalData': true,
-        'hasChildren': tiles.any((tile) => tile.children != null && tile.children!.isNotEmpty),
+        'hasChildren': tiles.any(
+          (tile) => tile.children != null && tile.children!.isNotEmpty,
+        ),
       },
     ),
-    configuration: _mapConfig(PortfolioHeatmapConfig.getHeatmapConfig(
-      title: title,
-      showSubCards: showSubCards,
-      accentColor: accentColor,
-    )),
+    configuration: _mapConfig(
+      PortfolioHeatmapConfig.getHeatmapConfig(
+        title: title,
+        showSubCards: showSubCards,
+        accentColor: accentColor,
+      ),
+    ),
   );
 
   static HeatmapConfig _mapConfig(dynamic widgetConfig) {
@@ -507,4 +476,3 @@ class SectorHeatmapConverter {
             : sectorName);
   }
 }
-

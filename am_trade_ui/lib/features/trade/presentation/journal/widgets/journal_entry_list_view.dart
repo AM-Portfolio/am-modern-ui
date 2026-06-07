@@ -10,11 +10,13 @@ class JournalEntryListView extends StatelessWidget {
     required this.entries,
     required this.selectedEntryId,
     required this.onEntrySelected,
+    required this.onLogDayPressed,
   });
 
   final List<JournalEntry> entries;
   final String? selectedEntryId;
   final ValueChanged<JournalEntry> onEntrySelected;
+  final VoidCallback onLogDayPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -72,9 +74,7 @@ class JournalEntryListView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: ElevatedButton.icon(
-              onPressed: () {
-                // TODO: Implement Log Day action
-              },
+              onPressed: onLogDayPressed,
               icon: const Icon(Icons.add),
               label: const Text('Log Day'),
               style: ElevatedButton.styleFrom(
@@ -333,14 +333,8 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                             ),
                       ),
                     ),
-                    // PNL Placeholder
-                    Text(
-                      '+\$1,330', // Placeholder
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
-                    ),
+                    // PNL Placeholder removed as it requires fetching trade stats
+                    const SizedBox.shrink(),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -353,12 +347,11 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
-                    // Stats Placeholder
+                    // Dynamic Trade Stats
                     Row(
                       children: [
-                        _buildMiniStat(context, '54% Win'),
-                        const SizedBox(width: 8),
-                        _buildMiniStat(context, '11 Trades'),
+                        if (widget.entry.relatedTradeIds.isNotEmpty)
+                          _buildMiniStat(context, '${widget.entry.relatedTradeIds.length} Trades'),
                       ],
                     ),
                   ],

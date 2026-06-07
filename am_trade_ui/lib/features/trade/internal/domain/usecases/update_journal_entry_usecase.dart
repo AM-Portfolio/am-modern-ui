@@ -8,7 +8,6 @@ class UpdateJournalEntryUseCase {
 
   Future<JournalEntry> call({
     required String entryId,
-    required String userId,
     required String title,
     required String content,
     required DateTime entryDate,
@@ -21,7 +20,6 @@ class UpdateJournalEntryUseCase {
     List<String>? tagIds,
   }) => _repository.updateJournalEntry(
     entryId: entryId,
-    userId: userId,
     title: title,
     content: content,
     entryDate: entryDate,

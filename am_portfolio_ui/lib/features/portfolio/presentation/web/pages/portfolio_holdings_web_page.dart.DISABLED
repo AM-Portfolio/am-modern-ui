@@ -6,13 +6,11 @@ import '../package:am_design_system/am_design_system.dart';
 /// Web-specific portfolio holdings page with template-based architecture
 class PortfolioHoldingsWebPage extends StatelessWidget {
   const PortfolioHoldingsWebPage({
-    required this.userId,
     required this.portfolioId,
     super.key,
     this.portfolioName,
   });
 
-  final String userId;
   final String portfolioId;
   final String? portfolioName;
 
@@ -22,7 +20,6 @@ class PortfolioHoldingsWebPage extends StatelessWidget {
       body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: UniversalHoldingsWidget(
-            userId: userId,
             portfolioId: portfolioId,
             config: HoldingsDisplayConfig.web(),
             templateType: HoldingsTemplateType.full,

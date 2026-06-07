@@ -73,7 +73,6 @@ class JournalTemplateMapper {
       fields: template.fields.map(toFieldRequestDto).toList(),
       isSystemTemplate: template.isSystemTemplate,
       isRecommended: template.isRecommended,
-      createdBy: template.createdBy,
       tags: template.tags,
       thumbnailUrl: template.thumbnailUrl,
     );

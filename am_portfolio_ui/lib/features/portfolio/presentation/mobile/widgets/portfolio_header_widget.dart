@@ -26,7 +26,9 @@ class PortfolioHeaderWidget extends StatelessWidget {
     // Find current portfolio name
     String currentName = 'Select Portfolio';
     if (currentPortfolioId != null && portfolios != null) {
-      final match = portfolios!.where((p) => p.portfolioId == currentPortfolioId);
+      final match = portfolios!.where(
+        (p) => p.portfolioId == currentPortfolioId,
+      );
       if (match.isNotEmpty) {
         currentName = match.first.portfolioName;
       }
@@ -37,7 +39,7 @@ class PortfolioHeaderWidget extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -51,7 +53,7 @@ class PortfolioHeaderWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                   // Portfolio Switcher Trigger (Bottom Sheet)
+                  // Portfolio Switcher Trigger (Bottom Sheet)
                   Expanded(
                     child: GestureDetector(
                       onTap: () => _showPortfolioBottomSheet(context),
@@ -60,7 +62,9 @@ class PortfolioHeaderWidget extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor.withOpacity(0.1),
+                              color: Theme.of(
+                                context,
+                              ).primaryColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
@@ -75,22 +79,30 @@ class PortfolioHeaderWidget extends StatelessWidget {
                             children: [
                               Text(
                                 'Current Portfolio',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey,
-                                  fontSize: 10,
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Colors.grey,
+                                      fontSize: 10,
+                                    ),
                               ),
                               Row(
                                 children: [
                                   Text(
                                     currentName,
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
                                   ),
                                   const SizedBox(width: 4),
-                                  const Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.grey),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    size: 16,
+                                    color: Colors.grey,
+                                  ),
                                 ],
                               ),
                             ],
@@ -105,7 +117,7 @@ class PortfolioHeaderWidget extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Tab bar
             _buildTabBar(context),
           ],
@@ -130,35 +142,45 @@ class PortfolioHeaderWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 'Select Portfolio',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 16),
             if (portfolios != null)
-              ...portfolios!.map((p) => ListTile(
-                leading: Icon(
-                  Icons.account_balance_wallet, 
-                  color: p.portfolioId == currentPortfolioId ? Theme.of(context).primaryColor : Colors.grey,
-                ),
-                title: Text(
-                  p.portfolioName,
-                  style: TextStyle(
-                    fontWeight: p.portfolioId == currentPortfolioId ? FontWeight.bold : FontWeight.normal,
-                    color: p.portfolioId == currentPortfolioId ? Theme.of(context).primaryColor : null,
+              ...portfolios!.map(
+                (p) => ListTile(
+                  leading: Icon(
+                    Icons.account_balance_wallet,
+                    color: p.portfolioId == currentPortfolioId
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey,
                   ),
+                  title: Text(
+                    p.portfolioName,
+                    style: TextStyle(
+                      fontWeight: p.portfolioId == currentPortfolioId
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: p.portfolioId == currentPortfolioId
+                          ? Theme.of(context).primaryColor
+                          : null,
+                    ),
+                  ),
+                  trailing: p.portfolioId == currentPortfolioId
+                      ? Icon(Icons.check, color: Theme.of(context).primaryColor)
+                      : null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _handlePortfolioChange(p.portfolioId);
+                  },
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24),
                 ),
-                trailing: p.portfolioId == currentPortfolioId ? Icon(Icons.check, color: Theme.of(context).primaryColor) : null,
-                onTap: () {
-                  Navigator.pop(context);
-                  _handlePortfolioChange(p.portfolioId);
-                },
-                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-              )),
-            
+              ),
+
             const Divider(height: 32),
-            
+
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text('Logout', style: TextStyle(color: Colors.red)),
@@ -188,15 +210,9 @@ class PortfolioHeaderWidget extends StatelessWidget {
       fontWeight: FontWeight.w600,
     ),
     tabs: const [
-      Tab(
-        icon: Icon(Icons.dashboard_outlined, size: 20),
-        text: 'Overview',
-      ),
+      Tab(icon: Icon(Icons.dashboard_outlined, size: 20), text: 'Overview'),
       Tab(icon: Icon(Icons.wallet, size: 20), text: 'Holdings'),
-      Tab(
-        icon: Icon(Icons.analytics_outlined, size: 20),
-        text: 'Analysis',
-      ),
+      Tab(icon: Icon(Icons.analytics_outlined, size: 20), text: 'Analysis'),
       Tab(icon: Icon(Icons.grid_view, size: 20), text: 'Heatmap'),
       Tab(icon: Icon(Icons.show_chart, size: 20), text: 'Trade'),
     ],
@@ -221,4 +237,3 @@ class PortfolioHeaderWidget extends StatelessWidget {
     }
   }
 }
-

@@ -8,26 +8,19 @@ class GetTradeCalendarByDateRange {
   final TradeRepository _repository;
 
   /// Execute the use case to get trade calendar for a specific portfolio by date range
-  Future<TradeCalendar> call(
-    String userId,
-    String portfolioId, {
+  Future<TradeCalendar> call(String portfolioId, {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
     AppLogger.methodEntry(
       'GetTradeCalendarByDateRange.call',
       tag: 'GetTradeCalendarByDateRange',
-      params: {
-        'userId': userId,
-        'portfolioId': portfolioId,
-        'startDate': startDate.toIso8601String(),
-        'endDate': endDate.toIso8601String(),
-      },
+      params: {},
     );
 
-    if (userId.isEmpty || portfolioId.isEmpty) {
+    if (portfolioId.isEmpty) {
       AppLogger.error('Validation failed - empty userId or portfolioId', tag: 'GetTradeCalendarByDateRange');
-      throw ArgumentError('User ID and Portfolio ID cannot be empty');
+      throw ArgumentError('Portfolio ID cannot be empty');
     }
 
     if (startDate.isAfter(endDate)) {
@@ -38,9 +31,7 @@ class GetTradeCalendarByDateRange {
     try {
       AppLogger.info('Executing get trade calendar by date range use case', tag: 'GetTradeCalendarByDateRange');
 
-      final result = await _repository.getTradeCalendarByDateRange(
-        userId,
-        portfolioId,
+      final result = await _repository.getTradeCalendarByDateRange(portfolioId,
         startDate: startDate,
         endDate: endDate,
       );

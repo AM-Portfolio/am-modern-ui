@@ -10,6 +10,9 @@ import '../internal/domain/entities/trade_holding.dart';
 import '../internal/domain/entities/trade_portfolio.dart';
 import '../internal/domain/entities/trade_summary.dart';
 import '../internal/domain/repositories/trade_repository.dart';
+import 'package:get_it/get_it.dart';
+import 'package:am_common/core/di/network_providers.dart';
+import 'package:am_library/am_library.dart';
 import '../internal/domain/usecases/get_trade_calendar.dart';
 import '../internal/domain/usecases/get_trade_calendar_by_date_range.dart';
 import '../internal/domain/usecases/get_trade_calendar_by_day.dart';
@@ -20,21 +23,47 @@ import '../internal/domain/usecases/get_trade_summary.dart';
 import '../presentation/models/trade_calendar_view_model.dart';
 import '../presentation/models/trade_holding_view_model.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
-import 'package:am_common/core/di/network_providers.dart';
 
 /// Provider for trade remote data source
 final _tradeRemoteDataSourceProvider = FutureProvider<TradeRemoteDataSource>((ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
   final apiConfig = await ref.watch(appConfigProvider.future);
+  
+  TradeApiConfig tradeConfig = apiConfig.api.trade;
 
-  return TradeRemoteDataSourceImpl(apiClient: apiClient, tradeConfig: apiConfig.api.trade);
+  // Local environment override for the Trade API
+  const localTradeUrl = String.fromEnvironment('AM_TRADE_BASE_URL');
+  if (localTradeUrl.isNotEmpty) {
+    tradeConfig = TradeApiConfig(
+      baseUrl: localTradeUrl,
+      portfolioListResource: tradeConfig.portfolioListResource,
+      portfolioSummaryResource: tradeConfig.portfolioSummaryResource,
+      holdingsResource: tradeConfig.holdingsResource,
+      tradeDetailsResource: tradeConfig.tradeDetailsResource,
+      calendarMonthResource: tradeConfig.calendarMonthResource,
+      calendarDayResource: tradeConfig.calendarDayResource,
+      calendarQuarterResource: tradeConfig.calendarQuarterResource,
+      calendarFinancialYearResource: tradeConfig.calendarFinancialYearResource,
+      searchResource: tradeConfig.searchResource,
+      connectTimeout: tradeConfig.connectTimeout,
+      receiveTimeout: tradeConfig.receiveTimeout,
+      sendTimeout: tradeConfig.sendTimeout,
+      enabled: tradeConfig.enabled,
+    );
+  }
+
+  return TradeRemoteDataSourceImpl(apiClient: apiClient, tradeConfig: tradeConfig);
 });
 
 /// Provider for trade repository
 final _tradeRepositoryProvider = FutureProvider<TradeRepository>((ref) async {
   final remoteDataSource = await ref.watch(_tradeRemoteDataSourceProvider.future);
+  final stompClient = GetIt.I<AmStompClient>();
 
-  return TradeRepositoryImpl(remoteDataSource: remoteDataSource);
+  return TradeRepositoryImpl(
+    remoteDataSource: remoteDataSource,
+    stompClient: stompClient,
+  );
 });
 
 /// Provider for GetTradePortfolios use case
@@ -86,75 +115,75 @@ final getTradeCalendarByDateRangeProvider = FutureProvider<GetTradeCalendarByDat
 });
 
 /// Provider for trade portfolios list
-final tradePortfoliosProvider = FutureProvider.family<TradePortfolioList, String>((ref, userId) async {
+final tradePortfoliosProvider = FutureProvider<TradePortfolioList>((ref) async {
   final useCase = await ref.watch(_getTradePortfoliosProvider.future);
-  return useCase(userId);
+  return useCase();
 });
 
 /// Provider for trade holdings
-final tradeHoldingsProvider = FutureProvider.family<TradeHoldings, ({String userId, String portfolioId})>((
+final tradeHoldingsProvider = FutureProvider.family<TradeHoldings, String>((
   ref,
   params,
 ) async {
   final useCase = await ref.watch(_getTradeHoldingsProvider.future);
-  return useCase(params.userId, params.portfolioId);
+  return useCase(params);
 });
 
 /// Provider for trade summary
-final tradeSummaryProvider = FutureProvider.family<TradeSummary, ({String userId, String portfolioId})>((
+final tradeSummaryProvider = FutureProvider.family<TradeSummary, String>((
   ref,
   params,
 ) async {
   final useCase = await ref.watch(_getTradeSummaryProvider.future);
-  return useCase(params.userId, params.portfolioId);
+  return useCase(params);
 });
 
 /// Provider for trade calendar
-final tradeCalendarProvider = FutureProvider.family<TradeCalendar, ({String userId, String portfolioId})>((
+final tradeCalendarProvider = FutureProvider.family<TradeCalendar, String>((
   ref,
   params,
 ) async {
   final useCase = await ref.watch(_getTradeCalendarProvider.future);
-  final result = await useCase(params.userId, params.portfolioId);
+  final result = await useCase(params);
   return result;
 });
 
 /// Provider for watching trade holdings (stream) - returns view models
 final tradeHoldingsStreamProvider =
-    StreamProvider.family<TradeHoldingsViewModel, ({String userId, String portfolioId})>((ref, params) async* {
+    StreamProvider.family<TradeHoldingsViewModel, String>((ref, portfolioId) async* {
       final useCase = await ref.watch(_getTradeHoldingsProvider.future);
-      yield* useCase.watch(params.userId, params.portfolioId).map(TradeHoldingsViewModel.fromEntity);
+      yield* useCase.watch(portfolioId).map(TradeHoldingsViewModel.fromEntity);
     });
 
 /// Provider for watching trade summary (stream)
-final tradeSummaryStreamProvider = StreamProvider.family<TradeSummary, ({String userId, String portfolioId})>((
+final tradeSummaryStreamProvider = StreamProvider.family<TradeSummary, String>((
   ref,
-  params,
+  portfolioId,
 ) async* {
   final useCase = await ref.watch(_getTradeSummaryProvider.future);
-  yield* useCase.watch(params.userId, params.portfolioId);
+  yield* useCase.watch(portfolioId);
 });
 
 /// Provider for watching trade portfolios (stream) - returns view models
-final tradePortfoliosStreamProvider = StreamProvider.family<List<TradePortfolioViewModel>, String>((ref, userId) async* {
+final tradePortfoliosStreamProvider = StreamProvider<List<TradePortfolioViewModel>>((ref) async* {
   final useCase = await ref.watch(_getTradePortfoliosProvider.future);
-  yield* useCase.watch(userId).map((list) => TradePortfolioViewModel.fromEntityList(list.portfolios));
+  yield* useCase.watch().map((list) => TradePortfolioViewModel.fromEntityList(list.portfolios));
 });
 
 /// Provider for watching trade calendar (stream) - returns view models
 final tradeCalendarStreamProvider =
-    StreamProvider.family<TradeCalendarViewModel, ({String userId, String portfolioId})>((ref, params) async* {
+    StreamProvider.family<TradeCalendarViewModel, String>((ref, portfolioId) async* {
       final useCase = await ref.watch(_getTradeCalendarProvider.future);
-      yield* useCase.watch(params.userId, params.portfolioId).map(TradeCalendarViewModel.fromEntity);
+      yield* useCase.watch(portfolioId).map(TradeCalendarViewModel.fromEntity);
     });
 
 /// Provider for trade calendar by month - returns view model
 final tradeCalendarByMonthProvider =
-    FutureProvider.family<TradeCalendarViewModel, ({String userId, String portfolioId, int year, int month})>((
+    FutureProvider.family<TradeCalendarViewModel, ({String portfolioId, int year, int month})>((
       ref,
       params,
     ) async {
       final useCase = await ref.watch(getTradeCalendarByMonthProvider.future);
-      final result = await useCase(params.userId, params.portfolioId, year: params.year, month: params.month);
+      final result = await useCase(params.portfolioId, year: params.year, month: params.month);
       return TradeCalendarViewModel.fromEntity(result);
     });

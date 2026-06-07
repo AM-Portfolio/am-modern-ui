@@ -37,13 +37,7 @@ class TradeExampleApp extends StatelessWidget {
       home: AuthWrapper(
         child: BlocBuilder<AuthCubit, AuthState>(
           builder: (context, state) {
-            String userId = '';
-            if (state is Authenticated) {
-              userId = state.user.id;
-            }
-            return TradeWebScreen(
-              userId: userId,
-            );
+            return const TradeWebScreen();
           },
         ),
       ),

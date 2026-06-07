@@ -3,9 +3,10 @@ class FeatureFlags {
   factory FeatureFlags() => _instance;
   FeatureFlags._internal();
   // API Configuration
-  bool useRealGoogleAuth = false;
+  bool useRealGoogleAuth = true;
   bool useRealBackendAPI = true;
   bool useRealEmailService = false;
+  bool useIdentityAuth = true;
 
   // Development Features
   bool enableMockDelays = true;
@@ -31,6 +32,7 @@ class FeatureFlags {
     useRealGoogleAuth = false;
     useRealBackendAPI = false;
     useRealEmailService = false;
+    useIdentityAuth = false;
     enableMockDelays = true;
     enableErrorSimulation = false;
     enableDebugLogging = true;
@@ -48,6 +50,7 @@ class FeatureFlags {
     'useRealGoogleAuth': useRealGoogleAuth,
     'useRealBackendAPI': useRealBackendAPI,
     'useRealEmailService': useRealEmailService,
+    'useIdentityAuth': useIdentityAuth,
     'enableMockDelays': enableMockDelays,
     'enableErrorSimulation': enableErrorSimulation,
     'enableDebugLogging': enableDebugLogging,
@@ -65,6 +68,7 @@ class FeatureFlags {
     useRealGoogleAuth = json['useRealGoogleAuth'] ?? false;
     useRealBackendAPI = json['useRealBackendAPI'] ?? false;
     useRealEmailService = json['useRealEmailService'] ?? false;
+    useIdentityAuth = json['useIdentityAuth'] ?? false;
     enableMockDelays = json['enableMockDelays'] ?? true;
     enableErrorSimulation = json['enableErrorSimulation'] ?? false;
     enableDebugLogging = json['enableDebugLogging'] ?? true;

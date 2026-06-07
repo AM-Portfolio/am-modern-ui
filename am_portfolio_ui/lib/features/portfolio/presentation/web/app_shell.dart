@@ -10,12 +10,10 @@ import '../../internal/domain/entities/portfolio_list.dart';
 
 class AppShell extends StatelessWidget {
   final Widget child;
-  final String userId;
   final VoidCallback onLogout;
 
   const AppShell({
     required this.child,
-    required this.userId,
     required this.onLogout,
     super.key,
   });
@@ -26,11 +24,10 @@ class AppShell extends StatelessWidget {
     final String location = GoRouterState.of(context).uri.toString();
 
     return BlocBuilder<PortfolioCubit, PortfolioState>(
+      buildWhen: (previous, current) =>
+          previous.portfolioList != current.portfolioList,
       builder: (context, state) {
-        List<PortfolioItem>? portfolios;
-        if (state is PortfolioListLoaded) {
-          portfolios = state.portfolioList.portfolios;
-        }
+        final portfolios = state.portfolioList?.portfolios;
 
         return UnifiedSidebarScaffold(
           module: ModuleType.portfolio,
@@ -38,7 +35,7 @@ class AppShell extends StatelessWidget {
           title: null,
           subtitle: null,
           header: const SizedBox(height: 16),
-          
+
           onThemeToggle: () {
             context.read<ThemeCubit>().toggleTheme();
           },
@@ -46,7 +43,7 @@ class AppShell extends StatelessWidget {
             // Profile logic
           },
           onLogout: onLogout,
-          
+
           footer: Padding(
             padding: const EdgeInsets.all(16),
             child: SidebarPrimaryAction(
@@ -55,11 +52,11 @@ class AppShell extends StatelessWidget {
               accentColor: ModuleColors.portfolio,
               onTap: () {
                 // Navigate to Basket Creator or Trade
-                context.go('/portfolio/basket/creator'); 
+                context.go('/portfolio/basket/creator');
               },
             ),
           ),
-          
+
           sections: [
             // 1. Portfolio Selector
             if (portfolios != null && portfolios.isNotEmpty)
@@ -87,7 +84,9 @@ class AppShell extends StatelessWidget {
                 SecondarySidebarItem(
                   title: 'Overview',
                   icon: Icons.dashboard_outlined,
-                  isSelected: location == '/portfolio/overview' || location == '/portfolio',
+                  isSelected:
+                      location == '/portfolio/overview' ||
+                      location == '/portfolio',
                   onTap: () => context.go('/portfolio/overview'),
                   accentColor: ModuleColors.portfolio,
                 ),
@@ -112,19 +111,21 @@ class AppShell extends StatelessWidget {
                   onTap: () => context.go('/portfolio/heatmap'),
                   accentColor: ModuleColors.portfolio,
                 ),
-                 // Added manual link for debugging/access if needed, 
-                 // though usually accessed via "New Trade" or flow
-                 SecondarySidebarItem(
+                // Added manual link for debugging/access if needed,
+                // though usually accessed via "New Trade" or flow
+                SecondarySidebarItem(
                   title: 'Baskets',
                   icon: Icons.shopping_basket_outlined,
-                  isSelected: location.contains('/portfolio/basket') && !location.contains('/creator'), 
+                  isSelected:
+                      location.contains('/portfolio/basket') &&
+                      !location.contains('/creator'),
                   onTap: () => context.go('/portfolio/baskets'),
                   accentColor: ModuleColors.portfolio,
                 ),
               ],
             ),
           ],
-          
+
           body: child, // Render specific page content here
         );
       },
