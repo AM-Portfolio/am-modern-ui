@@ -88,13 +88,17 @@ class ApiService {
     return apiClient.get<List<String>>(
       url,
       parser: (data) => List<String>.from(data),
+      requireAuth: false,
     );
   }
 
   Future<Map<String, dynamic>> processDocument(
       Uint8List fileBytes, String filename, String docType,
       {String brokerType = 'ZERODHA'}) async {
-    final url = '$_docBase/documents/process';
+    // Always route through the API Gateway – even when running locally the
+    // document-processor on the dev cluster requires a service-JWT (generated
+    // by the gateway). Sending a user-JWT directly causes 401.
+    final url = '${EnvDomains.apiBase}/am/document/v1/documents/process';
     debugPrint('[ApiService] POST $url (type=$docType, broker=$brokerType)');
     var request = http.MultipartRequest('POST', Uri.parse(url));
     final headers = await _getHeaders();
@@ -162,6 +166,7 @@ class ApiService {
       await apiClient.get<dynamic>(
         url,
         parser: (data) => data,
+        requireAuth: false,
       );
       return true;
     } catch (e) {

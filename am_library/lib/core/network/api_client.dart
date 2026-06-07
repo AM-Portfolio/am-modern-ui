@@ -91,13 +91,14 @@ class ApiClient {
   /// Create headers with authentication token
   Future<Map<String, String>> _createHeaders({
     Map<String, String>? additionalHeaders,
+    bool requireAuth = true,
   }) async {
-    final token = await _getAuthToken();
+    final token = requireAuth ? await _getAuthToken() : null;
 
     if (token != null) {
       AppLogger.debug('Attach token to header (length: ${token.length})');
     } else {
-      AppLogger.debug('No auth token available for request headers');
+      AppLogger.debug('No auth token available for request headers (requireAuth: $requireAuth)');
     }
 
     return {
@@ -179,6 +180,7 @@ class ApiClient {
     required T Function(dynamic data) parser,
     Map<String, String>? headers,
     Map<String, dynamic>? queryParams,
+    bool requireAuth = true,
   }) async {
     return _requestWithRetry((attempt) async {
       Uri? uri;
@@ -186,7 +188,10 @@ class ApiClient {
       try {
         uri = _buildUri(endpoint, queryParams: queryParams);
 
-        final requestHeaders = await _createHeaders(additionalHeaders: headers);
+        final requestHeaders = await _createHeaders(
+          additionalHeaders: headers,
+          requireAuth: requireAuth,
+        );
 
         AppLogger.info(
           '🚀 GET Request - Full endpoint: ${uri.toString()}',
@@ -245,6 +250,7 @@ class ApiClient {
     Map<String, String>? headers,
     Map<String, dynamic>? queryParams,
     body,
+    bool requireAuth = true,
   }) async {
     return _requestWithRetry((attempt) async {
       final stopwatch = Stopwatch()..start();
@@ -252,7 +258,10 @@ class ApiClient {
       try {
         uri = _buildUri(endpoint, queryParams: queryParams);
 
-        final requestHeaders = await _createHeaders(additionalHeaders: headers);
+        final requestHeaders = await _createHeaders(
+          additionalHeaders: headers,
+          requireAuth: requireAuth,
+        );
 
         AppLogger.info(
           '🚀 POST Request - Full endpoint: ${uri.toString()}',
@@ -317,12 +326,16 @@ class ApiClient {
     Map<String, String>? headers,
     Map<String, dynamic>? queryParams,
     body,
+    bool requireAuth = true,
   }) async {
     return _requestWithRetry((attempt) async {
       try {
         final uri = _buildUri(endpoint, queryParams: queryParams);
 
-        final requestHeaders = await _createHeaders(additionalHeaders: headers);
+        final requestHeaders = await _createHeaders(
+          additionalHeaders: headers,
+          requireAuth: requireAuth,
+        );
 
         final stopwatch = Stopwatch()..start();
         final response = await _client.put(
@@ -359,12 +372,16 @@ class ApiClient {
     Map<String, String>? headers,
     Map<String, dynamic>? queryParams,
     body,
+    bool requireAuth = true,
   }) async {
     return _requestWithRetry((attempt) async {
       try {
         final uri = _buildUri(endpoint, queryParams: queryParams);
 
-        final requestHeaders = await _createHeaders(additionalHeaders: headers);
+        final requestHeaders = await _createHeaders(
+          additionalHeaders: headers,
+          requireAuth: requireAuth,
+        );
 
         final stopwatch = Stopwatch()..start();
         final response = await _client.delete(
