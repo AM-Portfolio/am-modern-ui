@@ -54,15 +54,43 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     }
   }
 
+  String _getDocTypeDisplayName(String type) {
+    switch (type) {
+      case 'COMBINE_PORTFOLIO':
+        return 'Combined Portfolio';
+      case 'MUTUAL_FUND':
+        return 'Mutual Funds';
+      case 'NPS_STATEMENT':
+        return 'NPS Statement';
+      case 'COMPANY_FINANCIAL_REPORT':
+        return 'Financial Report';
+      case 'STOCK_PORTFOLIO':
+        return 'Stock Portfolio';
+      case 'TRADE_FNO':
+        return 'F&O Tradebook';
+      case 'TRADE_EQ':
+        return 'Stock Trading History';
+      case 'TRADE_MF':
+        return 'Mutual Fund Transaction History';
+      case 'NSE_INDICES':
+        return 'NSE Indices';
+      default:
+        return type.split('_').map((word) {
+          if (word.isEmpty) return '';
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        }).join(' ');
+    }
+  }
+
   List<String> _getFilteredDocTypes() {
     if (_selectedBrokerType == null) {
       return _docTypes;
     }
     switch (_selectedBrokerType) {
       case 'ZERODHA':
-        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO').toList();
+        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
       case 'GROWW':
-        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'MUTUAL_FUND').toList();
+        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'MUTUAL_FUND' || t == 'TRADE_EQ' || t == 'TRADE_MF').toList();
       case 'DHAN':
         return ['PORTFOLIO_EQUITY', 'PORTFOLIO_ETF'];
       case 'MSTOCK':
@@ -409,7 +437,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                         ? const ShimmerLoading(child: SkeletonBox(height: 42, width: double.infinity))
                         : CustomDropdown<String>(
                             value: _selectedDocType,
-                            items: _getFilteredDocTypes().map((e) => e.toSimpleDropdownItem(text: e)).toList(),
+                            items: _getFilteredDocTypes().map((e) => e.toSimpleDropdownItem(text: _getDocTypeDisplayName(e))).toList(),
                             hint: 'Select Doc Type',
                             onChanged: (v) => setState(() => _selectedDocType = v),
                           ),
