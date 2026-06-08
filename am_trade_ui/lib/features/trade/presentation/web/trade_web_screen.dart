@@ -359,7 +359,13 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
           SecondarySidebarSection(
             title: '',
             items: _swipeController.items.asMap().entries
-              .where((entry) => entry.value.title != 'Add Trade')
+              .where((entry) {
+                final title = entry.value.title;
+                return title != 'Add Trade' && 
+                       title != 'Market' && 
+                       title != 'Report' && 
+                       title != 'Unified';
+              })
               .map((entry) {
               final index = entry.key;
               final item = entry.value;
