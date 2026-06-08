@@ -85,3 +85,6 @@ am_app/web/config.local.json
 .env.prod
 .env.*
 !.env.example
+
+# Flutter desktop generated plugin configuration
+**/generated_plugins.cmake
