@@ -35,13 +35,7 @@ class ApiClient {
     final secureStorage = SecureStorageService();
     final token = await secureStorage.getAccessToken();
     AppLogger.debug('🔐 Auth Token Check: "${token ?? 'null'}"', tag: 'ApiClient');
-    
-    // If token exists and is NOT a mock token, use it. Otherwise fall back to hardcoded JWT.
-    if (token != null && token.isNotEmpty && !token.startsWith('mock_')) return token;
-    
-    // Fallback to debug token provided by user
-    AppLogger.debug('🔐 Using HARDCODED fallback token (Stored token was null or mock)', tag: 'ApiClient');
-    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Njc2MzU0MDUsImlhdCI6MTc2NzU0OTAwNSwic3ViIjoiZTFmZDI5MTgtNDg0Zi00NzE2LWFkNWItZDQ2MDkwODkxZTAxIiwidXNlcm5hbWUiOiJzc2QyNjU4QGdtYWlsLmNvbSIsImVtYWlsIjoic3NkMjY1OEBnbWFpbC5jb20iLCJzY29wZXMiOlsicmVhZCIsIndyaXRlIl19.RwnyRwlF_DMx4U28gTwhyEK-kW-OxTiqbe3MnQPI0-w';
+    return token;
   }
 
   /// Build URI from endpoint, handling both complete URLs and relative paths

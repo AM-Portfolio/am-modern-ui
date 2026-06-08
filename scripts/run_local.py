@@ -39,7 +39,7 @@ def run_with_logging(cmd, cwd, env, log_name):
     os.makedirs(logs_dir, exist_ok=True)
     log_file = os.path.join(logs_dir, f"{log_name}.log")
     
-    print(f"📖 Logging output to {log_file}")
+    print(f"Logging output to {log_file}")
     with open(log_file, "a") as f:
         f.write("\n\n--- NEW EXECUTION ---\n")
         is_windows = os.name == "nt"
@@ -63,7 +63,7 @@ def run_flutter_cmd(package, command):
     
     package_dir = os.path.join(workspace_root, package)
     if not os.path.exists(package_dir):
-        print(f"❌ Error: Package directory '{package}' not found in {workspace_root}")
+        print(f"Error: Package directory '{package}' not found in {workspace_root}")
         return False
         
     # Append port if starting the app
@@ -73,14 +73,14 @@ def run_flutter_cmd(package, command):
         if "-d chrome" in command:
             device = get_available_device()
             if device != "chrome":
-                print(f"💡 Default device 'chrome' not found. Using '{device}' instead.")
+                print(f"Default device 'chrome' not found. Using '{device}' instead.")
                 command = command.replace("-d chrome", f"-d {device}")
                 
         port = os.getenv("FLUTTER_WEB_PORT")
         if port:
             command += f" --web-port={port}"
 
-    print(f"🚀 Running 'flutter {command}' in {package}...")
+    print(f"Running 'flutter {command}' in {package}...")
     is_windows = os.name == "nt"
     env = dict(os.environ)
 
@@ -89,7 +89,7 @@ def run_flutter_cmd(package, command):
             result = subprocess.run(["flutter"] + command.split(), cwd=package_dir, shell=is_windows)
             return result.returncode == 0
         except Exception as e:
-            print(f"❌ Execution failed: {e}")
+            print(f"Execution failed: {e}")
             return False
     else:
         log_safe_name = package.replace("/", "-").replace("\\", "-")
@@ -98,7 +98,7 @@ def run_flutter_cmd(package, command):
 
 def get_args():
     if len(sys.argv) < 2:
-        print("❌ Error: Missing package name argument.")
+        print("Error: Missing package name argument.")
         print("Usage: poetry run <cmd> <package_name>")
         sys.exit(1)
     package = sys.argv[1]
@@ -111,7 +111,8 @@ def get_args():
         "portfolio": "am_portfolio_ui",
         "market": "am_analysis_ui",
         "diagnostic": "am_diagnostic_ui",
-        "user": "am_user_ui"
+        "user": "am_user_ui",
+        "subscription": "am_subscription_ui"
     }
     resolved = alias_map.get(package.lower(), package)
     
@@ -147,7 +148,7 @@ def generate_package():
 # --- Short Aliases ---
 
 def run_app():
-    run_flutter_cmd("am_app", "run -d chrome")
+    run_flutter_cmd("am_app", "run -d chrome --web-browser-flag=--disable-web-security")
 
 def run_auth():
     run_flutter_cmd("am_auth_ui/live", "run -d chrome")
@@ -167,11 +168,14 @@ def run_market():
 def run_ai():
     run_flutter_cmd("am_ai_ui/live", "run -d chrome")
 
+def run_subscription():
+    run_flutter_cmd("am_subscription_ui/live", "run -d chrome")
+
 # --- Utility ---
 
 def all_pub_get():
     """Run flutter pub get on all subdirectories containing pubspec.yaml"""
-    print("🚀 Running 'flutter pub get' on all modules...")
+    print("Running 'flutter pub get' on all modules...")
     for item in os.listdir(workspace_root):
         item_path = os.path.join(workspace_root, item)
         if os.path.isdir(item_path):
@@ -184,11 +188,11 @@ def all_pub_get():
             if os.path.exists(os.path.join(live_path, "pubspec.yaml")):
                 run_flutter_cmd(os.path.join(item, "live"), "pub get")
                 print("-" * 40)
-    print("✅ Finished resolving all packages.")
+    print("Finished resolving all packages.")
 
 def all_build_runner():
     """Run flutter pub run build_runner build on all subdirectories containing pubspec.yaml"""
-    print("🚀 Running 'flutter pub run build_runner build' on all modules...")
+    print("Running 'flutter pub run build_runner build' on all modules...")
     for item in os.listdir(workspace_root):
         item_path = os.path.join(workspace_root, item)
         if os.path.isdir(item_path):
@@ -201,7 +205,7 @@ def all_build_runner():
             if os.path.exists(os.path.join(live_path, "pubspec.yaml")):
                 run_flutter_cmd(os.path.join(item, "live"), "pub run build_runner build --delete-conflicting-outputs")
                 print("-" * 40)
-    print("✅ Finished building all packages.")
+    print("Finished building all packages.")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -226,6 +230,7 @@ if __name__ == "__main__":
         "portfolio": run_portfolio,
         "market": run_market,
         "ai": run_ai,
+        "subscription": run_subscription,
         "all-get": all_pub_get,
         "all-generate": all_build_runner,
     }
@@ -233,5 +238,5 @@ if __name__ == "__main__":
     if cmd in commands:
         commands[cmd]()
     else:
-        print(f"❌ Unknown command: {cmd}")
+        print(f"Unknown command: {cmd}")
         print(f"Available: {', '.join(commands.keys())}")

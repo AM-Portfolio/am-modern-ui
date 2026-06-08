@@ -10,6 +10,7 @@ abstract class PortfolioHolding with _$PortfolioHolding implements Holding {
   const factory PortfolioHolding({
     required String id,
     required String symbol,
+    required String name,
     required String companyName,
     required String sector,
     required String industry,
@@ -63,7 +64,6 @@ abstract class BrokerHolding with _$BrokerHolding {
 @freezed
 abstract class PortfolioHoldings with _$PortfolioHoldings {
   const factory PortfolioHoldings({
-    required String userId,
     required List<PortfolioHolding> holdings,
     required DateTime lastUpdated,
   }) = _PortfolioHoldings;
@@ -72,8 +72,7 @@ abstract class PortfolioHoldings with _$PortfolioHoldings {
   factory PortfolioHoldings.fromJson(Map<String, dynamic> json) =>
       _$PortfolioHoldingsFromJson(json);
 
-  factory PortfolioHoldings.empty(String userId) => PortfolioHoldings(
-    userId: userId,
+  factory PortfolioHoldings.empty() => PortfolioHoldings(
     holdings: const [],
     lastUpdated: DateTime.now(),
   );

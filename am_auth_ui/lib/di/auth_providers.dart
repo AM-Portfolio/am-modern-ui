@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/network/auth_interceptor.dart';
 import '../core/services/secure_storage_service.dart';
 import '../features/authentication/data/datasources/auth_remote_datasource.dart';
+import '../features/authentication/data/datasources/identity_auth_remote_datasource.dart';
 import '../features/authentication/data/datasources/mock_auth_datasource.dart';
 import '../features/authentication/data/repositories/auth_repository_impl.dart';
 import '../features/authentication/data/services/google_signin_service.dart';
@@ -24,6 +25,7 @@ class AuthProviders {
   static Dio? _dio;
   static MockAuthDataSource? _mockAuthDataSource;
   static AuthRemoteDataSource? _authRemoteDataSource;
+  static IdentityAuthRemoteDataSource? _identityAuthRemoteDataSource;
   static AuthRepository? _authRepository;
 
   static SecureStorageService get secureStorageService {
@@ -57,10 +59,16 @@ class AuthProviders {
     return _authRemoteDataSource!;
   }
 
+  static IdentityAuthRemoteDataSource get identityAuthRemoteDataSource {
+    _identityAuthRemoteDataSource ??= IdentityAuthRemoteDataSource(dio);
+    return _identityAuthRemoteDataSource!;
+  }
+
   static AuthRepository get authRepository {
     _authRepository ??= AuthRepositoryImpl(
       mockAuthDataSource,
       authRemoteDataSource,
+      identityAuthRemoteDataSource,
       secureStorageService,
       GoogleSignInService(),
     );

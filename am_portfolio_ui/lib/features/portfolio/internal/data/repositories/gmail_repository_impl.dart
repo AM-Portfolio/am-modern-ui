@@ -6,9 +6,8 @@ import '../datasources/gmail_remote_data_source.dart';
 
 /// Concrete implementation of GmailRepository
 class GmailRepositoryImpl implements GmailRepository {
-  const GmailRepositoryImpl({
-    required GmailRemoteDataSource remoteDataSource,
-  }) : _remoteDataSource = remoteDataSource;
+  const GmailRepositoryImpl({required GmailRemoteDataSource remoteDataSource})
+    : _remoteDataSource = remoteDataSource;
 
   final GmailRemoteDataSource _remoteDataSource;
 
@@ -62,4 +61,3 @@ class GmailRepositoryImpl implements GmailRepository {
     }
   }
 }
-

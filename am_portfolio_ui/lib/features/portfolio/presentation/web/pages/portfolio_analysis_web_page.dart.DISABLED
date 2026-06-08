@@ -10,12 +10,10 @@ import '../../../providers/portfolio_providers.dart';
 /// Web-specific portfolio analysis page with comprehensive analytics
 class PortfolioAnalysisWebPage extends ConsumerStatefulWidget {
   const PortfolioAnalysisWebPage({
-    required this.userId,
     required this.portfolioId,
     super.key,
     this.portfolioName,
   });
-  final String userId;
   final String portfolioId;
   final String? portfolioName;
 

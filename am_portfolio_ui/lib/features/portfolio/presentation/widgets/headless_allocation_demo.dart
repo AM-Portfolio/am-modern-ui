@@ -6,17 +6,14 @@ import 'package:am_design_system/am_design_system.dart' as ds;
 import 'package:am_common/am_common.dart';
 
 /// Demonstration widget showcasing the headless architecture.
-/// 
+///
 /// This widget uses AllocationCubit from am_analysis_core directly
 /// to build a completely custom UI, demonstrating full control over
 /// appearance and layout without being constrained by pre-built widgets.
 class HeadlessAllocationDemo extends StatefulWidget {
   final String portfolioId;
-  
-  const HeadlessAllocationDemo({
-    required this.portfolioId,
-    super.key,
-  });
+
+  const HeadlessAllocationDemo({required this.portfolioId, super.key});
 
   @override
   State<HeadlessAllocationDemo> createState() => _HeadlessAllocationDemoState();
@@ -36,16 +33,18 @@ class _HeadlessAllocationDemoState extends State<HeadlessAllocationDemo> {
     // Get auth token from secure storage (CRITICAL!)
     final storage = SecureStorageService();
     final token = await storage.getAccessToken();
-    
-    print('[HeadlessDemo] Initializing with portfolioId=${widget.portfolioId}, token=${token != null ? "present" : "MISSING"}');
-    
+
+    print(
+      '[HeadlessDemo] Initializing with portfolioId=${widget.portfolioId}, token=${token != null ? "present" : "MISSING"}',
+    );
+
     // Create the service with auth token
     final realService = RealAnalysisService(
       baseUrl: AnalysisConfig.instance.baseUrl,
       authToken: token != null ? 'Bearer $token' : null,
     );
     final service = AnalysisServiceAdapter(realService);
-    
+
     // Create the cubit
     _cubit = AllocationCubit(
       portfolioId: widget.portfolioId,
@@ -74,9 +73,7 @@ class _HeadlessAllocationDemoState extends State<HeadlessAllocationDemo> {
     if (!_isInitialized) {
       return Card(
         elevation: 4,
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -104,9 +101,9 @@ class _HeadlessAllocationDemoState extends State<HeadlessAllocationDemo> {
       children: [
         Text(
           '🎨 Headless Architecture Demo',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const Spacer(),
         BlocBuilder<AllocationCubit, AllocationState>(
@@ -140,15 +137,15 @@ class _HeadlessAllocationDemoState extends State<HeadlessAllocationDemo> {
     return BlocBuilder<AllocationCubit, AllocationState>(
       builder: (context, state) {
         if (state is AllocationInitial) {
-          return const Center(
-            child: Text('Press refresh to load data'),
-          );
+          return const Center(child: Text('Press refresh to load data'));
         } else if (state is AllocationLoading) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         } else if (state is AllocationLoaded) {
-          return _buildAllocationList(context, state.allocations, state.groupBy);
+          return _buildAllocationList(
+            context,
+            state.allocations,
+            state.groupBy,
+          );
         } else if (state is AllocationError) {
           return Center(
             child: Column(
@@ -163,9 +160,9 @@ class _HeadlessAllocationDemoState extends State<HeadlessAllocationDemo> {
                 const SizedBox(height: 8),
                 Text(
                   state.message.replaceAll('Exception:', '').trim(),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.red.shade300,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.red.shade300),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -188,9 +185,7 @@ class _HeadlessAllocationDemoState extends State<HeadlessAllocationDemo> {
     GroupBy groupBy,
   ) {
     if (allocations.isEmpty) {
-      return const Center(
-        child: Text('No allocation data available'),
-      );
+      return const Center(child: Text('No allocation data available'));
     }
 
     return ListView.builder(
@@ -204,7 +199,7 @@ class _HeadlessAllocationDemoState extends State<HeadlessAllocationDemo> {
 
   Widget _buildAllocationCard(BuildContext context, AllocationItem item) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -244,9 +239,9 @@ class _HeadlessAllocationDemoState extends State<HeadlessAllocationDemo> {
                   const SizedBox(height: 4),
                   Text(
                     '₹${_formatValue(item.value)}',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.primary,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyLarge?.copyWith(color: colorScheme.primary),
                   ),
                 ],
               ),

@@ -5,6 +5,7 @@ import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard;
 import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart' as common;
+import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
 
 // ── DISABLED MODULES (re-enable one at a time as each module is fixed) ─────
 import 'package:am_portfolio_ui/am_portfolio_ui.dart';
@@ -101,6 +102,7 @@ class _AppShellState extends State<AppShell> {
     'Analysis': 6,
     'Doc Intel': 7,
     'Profile': 8,
+    'Subscription': 9,
   };
 
   String get _activeNavItem {
@@ -210,11 +212,12 @@ class _AppShellState extends State<AppShell> {
                               title: 'Analysis', icon: Icons.analytics_outlined),
                           SidebarItem(
                               title: 'Doc Intel', icon: Icons.psychology_outlined),
+                          SidebarItem(
+                              title: 'Subscription', icon: Icons.subscriptions_rounded),
                         ],
                       ),
                     Expanded(
                       child: GlobalPortfolioWrapper(
-                        userId: userId,
                         child: _buildPage(userId, isDesktop),
                       ),
                     ),
@@ -250,6 +253,8 @@ class _AppShellState extends State<AppShell> {
                               title: 'Analysis', icon: Icons.analytics_outlined),
                           SidebarItem(
                               title: 'Doc Intel', icon: Icons.psychology_outlined),
+                          SidebarItem(
+                              title: 'Subscription', icon: Icons.subscriptions_rounded),
                         ],
                       )
                     : null,
@@ -266,7 +271,7 @@ class _AppShellState extends State<AppShell> {
       case 0:
         return dashboard.DashboardPage(userId: userId);
       case 1:
-        return PortfolioScreen(userId: userId);
+        return const PortfolioScreen();
       case 2:
         return const TradeResponsiveLayout();
       case 3:
@@ -285,6 +290,11 @@ class _AppShellState extends State<AppShell> {
         return DocIntelligenceScreen(userId: userId);
       case 8:
         return ProfileSettingsPage(userId: userId);
+      case 9:
+        return BlocProvider<am_sub.SubscriptionCubit>.value(
+          value: GetIt.instance<am_sub.SubscriptionCubit>(),
+          child: const am_sub.SubscriptionPricingScreen(),
+        );
       default:
         return dashboard.DashboardPage(userId: userId);
     }
