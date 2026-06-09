@@ -23,6 +23,7 @@ class UniversalHeatmapTemplateFactory {
     String? error,
     VoidCallback? onTilePressed,
     SectorType? selectedSector,
+    MetricType? selectedMetric,
   }) {
     CommonLogger.debug(
       'Creating display template with layout=${config.layoutType}, '
@@ -38,6 +39,7 @@ class UniversalHeatmapTemplateFactory {
       onTilePressed: onTilePressed,
       layout: _convertToDisplayLayoutType(config.layoutType),
       selectedSector: selectedSector,
+      selectedMetric: selectedMetric,
     );
   }
 
@@ -53,6 +55,11 @@ class UniversalHeatmapTemplateFactory {
       HeatmapLayoutType? layout,
     })?
     onFiltersChanged,
+    TimeFrame? selectedTimeFrame,
+    MetricType? selectedMetric,
+    SectorType? selectedSector,
+    MarketCapType? selectedMarketCap,
+    HeatmapLayoutType? selectedLayout,
   }) {
     if (!_shouldShowSelectors(config)) {
       CommonLogger.debug(
@@ -70,19 +77,19 @@ class UniversalHeatmapTemplateFactory {
     );
 
     return HeatmapSelectorTemplate(
-      initialTimeFrame: UniversalHeatmapConfigManager.getInitialTimeFrame(
+      initialTimeFrame: selectedTimeFrame ?? UniversalHeatmapConfigManager.getInitialTimeFrame(
         investmentType,
       ),
-      initialMetric: UniversalHeatmapConfigManager.getInitialMetric(
+      initialMetric: selectedMetric ?? UniversalHeatmapConfigManager.getInitialMetric(
         investmentType,
       ),
-      initialSector: UniversalHeatmapConfigManager.getInitialSector(
+      initialSector: selectedSector ?? UniversalHeatmapConfigManager.getInitialSector(
         investmentType,
       ),
-      initialMarketCap: UniversalHeatmapConfigManager.getInitialMarketCap(
+      initialMarketCap: selectedMarketCap ?? UniversalHeatmapConfigManager.getInitialMarketCap(
         investmentType,
       ),
-      initialLayout: HeatmapLayoutType.treemap,
+      initialLayout: selectedLayout ?? HeatmapLayoutType.treemap,
       onFiltersChanged: onFiltersChanged,
       showTimeFrame: config.showTimeFrameSelector,
       showMetric: config.showMetricSelector,

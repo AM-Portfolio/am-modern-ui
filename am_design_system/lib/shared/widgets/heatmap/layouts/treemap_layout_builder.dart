@@ -21,6 +21,7 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     VoidCallback? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
     SectorType? selectedSector,
+    MetricType? selectedMetric,
   }) {
     // Get tiles based on selected sector using common base class method (includes centralized sorting)
     final sortedTiles = getTilesBasedOnSector(data, selectedSector);
@@ -63,6 +64,7 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
                 effectiveHeight,
                 onTilePressed: onTilePressed,
                 customTileBuilder: customTileBuilder,
+                selectedMetric: selectedMetric,
               ),
             ),
           ),
@@ -91,6 +93,7 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     double height, {
     VoidCallback? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
+    MetricType? selectedMetric,
   }) {
     if (tiles.isEmpty) return [];
 
@@ -109,63 +112,25 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
       final constrainedWidth = rect.width.clamp(1.0, maxWidth);
       final constrainedHeight = rect.height.clamp(1.0, maxHeight);
 
-      // Calculate minimum size requirements for readable cards
-      const minCardWidth = 80.0; // Minimum width for readable content
-      const minCardHeight = 40.0; // Minimum height for readable content
-
-      // Only add widget if it meets minimum size requirements
-      if (constrainedWidth >= minCardWidth &&
-          constrainedHeight >= minCardHeight) {
-        // Calculate internal padding to ensure card content fits perfectly
-        final cardPadding = _calculateCardPadding(
-          constrainedWidth,
-          constrainedHeight,
-        );
-        final contentWidth = (constrainedWidth - cardPadding * 2).clamp(
-          1.0,
-          constrainedWidth,
-        );
-        final contentHeight = (constrainedHeight - cardPadding * 2).clamp(
-          1.0,
-          constrainedHeight,
-        );
-
-        widgets.add(
-          Positioned(
-            left: constrainedLeft,
-            top: constrainedTop,
+      widgets.add(
+        Positioned(
+          left: constrainedLeft,
+          top: constrainedTop,
+          width: constrainedWidth,
+          height: constrainedHeight,
+          child: buildUnifiedHeatmapTileCard(
+            context,
+            tile,
+            data,
+            HeatmapTileCardType.treemap,
             width: constrainedWidth,
             height: constrainedHeight,
-            child: Container(
-              width: constrainedWidth,
-              height: constrainedHeight,
-              padding: EdgeInsets.all(cardPadding),
-              child: ClipRect(
-                child: SizedBox(
-                  width: contentWidth,
-                  height: contentHeight,
-                  child: FittedBox(
-                    child: SizedBox(
-                      width: contentWidth,
-                      height: contentHeight,
-                      child: buildUnifiedHeatmapTileCard(
-                        context,
-                        tile,
-                        data,
-                        HeatmapTileCardType.treemap,
-                        width: contentWidth,
-                        height: contentHeight,
-                        onTilePressed: onTilePressed,
-                        customTileBuilder: customTileBuilder,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            onTilePressed: onTilePressed,
+            customTileBuilder: customTileBuilder,
+            selectedMetric: selectedMetric,
           ),
-        );
-      }
+        ),
+      );
     }
 
     return widgets;
@@ -193,8 +158,7 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     return 1.0; // Very small screens - tiny spacing
   }
 
-  /// Calculates treemap layout using a guaranteed space allocation algorithm
-  /// Ensures tiles are sized exactly according to weightage and fit perfectly within viewport
+  /// Calculates treemap layout using a squarified treemap algorithm
   List<TreemapRectangle> _calculateTreemapLayout(
     List<HeatmapTileData> tiles,
     double width,
@@ -203,243 +167,132 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
   ) {
     if (tiles.isEmpty) return [];
 
-    final totalWeight = tiles.fold<double>(
-      0,
-      (sum, tile) => sum + tile.weightage,
-    );
-
-    if (totalWeight == 0) {
+    final totalWeight = tiles.fold<double>(0, (sum, tile) => sum + tile.weightage);
+    if (totalWeight <= 0) {
       // If all weights are 0, distribute equally
-      return _distributeEqually(tiles, width, height);
+      return _squarify(tiles, width, height, tiles.length.toDouble(), true);
     }
 
-    // Use simple grid-based allocation that guarantees perfect fitting
-    return _calculateGridBasedLayout(tiles, width, height, totalWeight);
+    // Sort tiles descending by weight
+    final sortedTiles = List<HeatmapTileData>.from(tiles)
+      ..sort((a, b) => b.weightage.compareTo(a.weightage));
+      
+    return _squarify(sortedTiles, width, height, totalWeight, false);
   }
 
-  /// Distributes tiles equally when all weights are zero
-  List<TreemapRectangle> _distributeEqually(
-    List<HeatmapTileData> tiles,
-    double width,
-    double height,
-  ) => _calculateGridBasedLayout(tiles, width, height, tiles.length.toDouble());
-
-  /// Calculates layout using a simple grid-based approach that guarantees perfect viewport fitting
-  List<TreemapRectangle> _calculateGridBasedLayout(
+  List<TreemapRectangle> _squarify(
     List<HeatmapTileData> tiles,
     double width,
     double height,
     double totalWeight,
+    bool equalWeights,
   ) {
-    if (tiles.isEmpty) return [];
-
     final rectangles = <TreemapRectangle>[];
-
-    // Calculate optimal grid dimensions to minimize wasted space
-    final optimalColumns = _calculateOptimalColumns(
-      tiles.length,
+    final totalArea = width * height;
+    
+    double getArea(HeatmapTileData tile) => equalWeights 
+      ? (1.0 / totalWeight) * totalArea 
+      : (tile.weightage / totalWeight) * totalArea;
+    
+    _squarifyRecursive(
+      tiles,
+      0,
       width,
       height,
-    );
-    final optimalRows = (tiles.length / optimalColumns).ceil();
-
-    // Calculate base cell dimensions
-    final cellWidth = width / optimalColumns;
-    var cellHeight = height / optimalRows;
-
-    // Sort tiles by weightage (largest first) for better visual hierarchy
-    final sortedTiles = [...tiles];
-    sortedTiles.sort((a, b) => b.weightage.compareTo(a.weightage));
-
-    var currentX = 0.0;
-    var currentY = 0.0;
-    var currentColumn = 0;
-
-    for (var i = 0; i < sortedTiles.length; i++) {
-      final tile = sortedTiles[i];
-      final weightRatio = totalWeight > 0
-          ? tile.weightage / totalWeight
-          : 1.0 / tiles.length;
-
-      // Calculate tile size based on weightage while ensuring grid alignment
-      var tileWidth = cellWidth;
-      var tileHeight = cellHeight;
-
-      // For larger weightages, allow tiles to span multiple cells
-      if (weightRatio > 0.15) {
-        // Tiles with >15% weightage can span multiple columns
-        final spanColumns = (weightRatio * optimalColumns * 2)
-            .clamp(1.0, optimalColumns.toDouble())
-            .round();
-        tileWidth = cellWidth * spanColumns;
-
-        // Ensure we don't exceed row boundary
-        if (currentColumn + spanColumns > optimalColumns) {
-          // Move to next row
-          currentX = 0.0;
-          currentY += cellHeight;
-          currentColumn = 0;
-        }
-      }
-
-      // Adjust height based on weightage for better proportion
-      final heightMultiplier = (weightRatio * 3).clamp(0.5, 2.0);
-      tileHeight = (cellHeight * heightMultiplier).clamp(
-        cellHeight * 0.5,
-        height - currentY,
-      );
-
-      // Ensure tile fits within remaining space and meets minimum size requirements
-      const minimumTileWidth = 85.0; // Minimum width for card content + padding
-      const minimumTileHeight =
-          45.0; // Minimum height for card content + padding
-
-      tileWidth = tileWidth.clamp(minimumTileWidth, width - currentX);
-      tileHeight = tileHeight.clamp(minimumTileHeight, height - currentY);
-
-      // Add small spacing between tiles for visual separation
-      final spacing = _calculateTileSpacing(width, height);
-      final adjustedWidth = (tileWidth - spacing).clamp(
-        minimumTileWidth,
-        tileWidth,
-      );
-      final adjustedHeight = (tileHeight - spacing).clamp(
-        minimumTileHeight,
-        tileHeight,
-      );
-
-      rectangles.add(
-        TreemapRectangle(currentX, currentY, adjustedWidth, adjustedHeight),
-      );
-
-      // Update position for next tile (using original tileWidth for positioning)
-      currentX += tileWidth;
-      currentColumn += (tileWidth / cellWidth).ceil();
-
-      // Move to next row if we've reached the end of current row
-      if (currentColumn >= optimalColumns) {
-        currentX = 0.0;
-        currentY += tileHeight; // Use original tileHeight for row positioning
-        currentColumn = 0;
-      }
-
-      // If we're running out of vertical space, make remaining tiles smaller
-      if (currentY + cellHeight > height && i < sortedTiles.length - 1) {
-        final remainingTiles = sortedTiles.length - i - 1;
-        final remainingHeight = height - currentY;
-        final dynamicCellHeight =
-            remainingHeight / (remainingTiles / optimalColumns).ceil();
-        cellHeight = dynamicCellHeight;
-      }
-    }
-
-    // Final pass: ensure we use all available space
-    _fillRemainingSpace(rectangles, width, height);
-
-    // Debug: Log space utilization
-    final totalAllocatedArea = rectangles.fold<double>(
       0,
-      (sum, rect) => sum + rect.area,
+      0,
+      getArea,
+      rectangles,
     );
-    final utilization = (totalAllocatedArea / (width * height) * 100)
-        .toStringAsFixed(1);
-    CommonLogger.debug(
-      'TreemapLayout: Generated ${rectangles.length} rectangles, $utilization% space utilization',
-      tag: 'Heatmap.Treemap',
-    );
-
+    
+    // Add small spacing between tiles for visual separation
+    final spacing = _calculateTileSpacing(width, height);
+    for (int i = 0; i < rectangles.length; i++) {
+       final r = rectangles[i];
+       rectangles[i] = TreemapRectangle(
+         r.left, r.top, 
+         (r.width - spacing).clamp(1.0, r.width), 
+         (r.height - spacing).clamp(1.0, r.height)
+       );
+    }
+    
     return rectangles;
   }
 
-  /// Fills any remaining space by expanding the last tiles to use full viewport
-  void _fillRemainingSpace(
-    List<TreemapRectangle> rectangles,
+  void _squarifyRecursive(
+    List<HeatmapTileData> tiles,
+    int startIndex,
     double width,
     double height,
+    double offsetX,
+    double offsetY,
+    double Function(HeatmapTileData) getArea,
+    List<TreemapRectangle> rectangles,
   ) {
-    if (rectangles.isEmpty) return;
-
-    // Find the maximum bounds of current rectangles
-    var maxRight = 0.0;
-    var maxBottom = 0.0;
-
-    for (final rect in rectangles) {
-      if (rect.right > maxRight) maxRight = rect.right;
-      if (rect.bottom > maxBottom) maxBottom = rect.bottom;
-    }
-
-    // If there's unused horizontal space, expand the rightmost tiles
-    if (maxRight < width) {
-      final extraWidth = width - maxRight;
-      final rightmostRects = rectangles
-          .where((rect) => rect.right == maxRight)
-          .toList();
-
-      for (var i = 0; i < rectangles.length; i++) {
-        if (rightmostRects.contains(rectangles[i])) {
-          final rect = rectangles[i];
-          rectangles[i] = TreemapRectangle(
-            rect.left,
-            rect.top,
-            rect.width + (extraWidth / rightmostRects.length),
-            rect.height,
-          );
-        }
+    if (startIndex >= tiles.length) return;
+    if (width <= 0 || height <= 0) return;
+    
+    final isHorizontal = width > height;
+    final shortSide = isHorizontal ? height : width;
+    
+    int endIndex = startIndex + 1;
+    double rowArea = getArea(tiles[startIndex]);
+    double bestAspectRatio = _worstAspectRatio(tiles.sublist(startIndex, endIndex), rowArea, shortSide, getArea);
+    
+    for (int i = startIndex + 1; i < tiles.length; i++) {
+      final newRowArea = rowArea + getArea(tiles[i]);
+      final newAspectRatio = _worstAspectRatio(tiles.sublist(startIndex, i + 1), newRowArea, shortSide, getArea);
+      
+      if (newAspectRatio <= bestAspectRatio) {
+        bestAspectRatio = newAspectRatio;
+        rowArea = newRowArea;
+        endIndex = i + 1;
+      } else {
+        break; // Adding more makes aspect ratio worse, stop here
       }
     }
-
-    // If there's unused vertical space, expand the bottom tiles
-    if (maxBottom < height) {
-      final extraHeight = height - maxBottom;
-      final bottomRects = rectangles
-          .where((rect) => rect.bottom == maxBottom)
-          .toList();
-
-      for (var i = 0; i < rectangles.length; i++) {
-        if (bottomRects.contains(rectangles[i])) {
-          final rect = rectangles[i];
-          rectangles[i] = TreemapRectangle(
-            rect.left,
-            rect.top,
-            rect.width,
-            rect.height + (extraHeight / bottomRects.length),
-          );
-        }
+    
+    final rowItems = tiles.sublist(startIndex, endIndex);
+    double currentX = offsetX;
+    double currentY = offsetY;
+    
+    if (isHorizontal) {
+      final rowWidth = rowArea / height;
+      for (final item in rowItems) {
+        final itemArea = getArea(item);
+        final itemHeight = itemArea / rowWidth;
+        rectangles.add(TreemapRectangle(currentX, currentY, rowWidth, itemHeight));
+        currentY += itemHeight;
       }
+      _squarifyRecursive(tiles, endIndex, width - rowWidth, height, offsetX + rowWidth, offsetY, getArea, rectangles);
+    } else {
+      final rowHeight = rowArea / width;
+      for (final item in rowItems) {
+        final itemArea = getArea(item);
+        final itemWidth = itemArea / rowHeight;
+        rectangles.add(TreemapRectangle(currentX, currentY, itemWidth, rowHeight));
+        currentX += itemWidth;
+      }
+      _squarifyRecursive(tiles, endIndex, width, height - rowHeight, offsetX, offsetY + rowHeight, getArea, rectangles);
     }
   }
 
-  /// Calculates optimal number of columns for the grid based on tile count and dimensions
-  int _calculateOptimalColumns(int tileCount, double width, double height) {
-    // Ensure minimum tile dimensions can be met
-    const minimumTileWidth = 85.0;
-    const minimumTileHeight = 45.0;
-
-    // Calculate maximum possible columns based on minimum width requirement
-    final maxPossibleColumns = (width / minimumTileWidth).floor();
-
-    // Calculate maximum possible rows based on minimum height requirement
-    final maxPossibleRows = (height / minimumTileHeight).floor();
-
-    // Ensure we can fit all tiles within the constraints
-    final maxTilesWithConstraints = maxPossibleColumns * maxPossibleRows;
-
-    if (tileCount > maxTilesWithConstraints) {
-      // If we can't fit all tiles with minimum sizes, use maximum possible
-      return maxPossibleColumns.clamp(1, 6);
+  double _worstAspectRatio(List<HeatmapTileData> items, double totalArea, double shortSide, double Function(HeatmapTileData) getArea) {
+    if (items.isEmpty || totalArea <= 0) return double.maxFinite;
+    
+    double minArea = getArea(items.first);
+    double maxArea = minArea;
+    
+    for (int i = 1; i < items.length; i++) {
+      final area = getArea(items[i]);
+      if (area < minArea) minArea = area;
+      if (area > maxArea) maxArea = area;
     }
-
-    // Standard column calculation for tiles that fit comfortably
-    if (tileCount <= 1) return 1;
-    if (tileCount <= 4) return 2.clamp(1, maxPossibleColumns);
-    if (tileCount <= 9) return 3.clamp(1, maxPossibleColumns);
-    if (tileCount <= 16) return 4.clamp(1, maxPossibleColumns);
-
-    // For larger tile counts, calculate based on aspect ratio
-    final aspectRatio = width / height;
-    final baseColumns = (sqrt(tileCount.toDouble()) * aspectRatio).round();
-
-    return baseColumns.clamp(2, maxPossibleColumns.clamp(1, 6));
+    
+    final lengthSquared = shortSide * shortSide;
+    final areaSquared = totalArea * totalArea;
+    
+    return max((lengthSquared * maxArea) / areaSquared, areaSquared / (lengthSquared * minArea));
   }
 }
 

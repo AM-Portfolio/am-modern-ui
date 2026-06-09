@@ -25,7 +25,11 @@ class UniversalHeatmapWidget extends StatelessWidget {
     this.isLoading = false,
     this.error,
     this.templateType = UniversalTemplateType.adaptive,
+    this.selectedTimeFrame,
+    this.selectedMetric,
     this.selectedSector,
+    this.selectedMarketCap,
+    this.selectedLayout,
   });
 
   /// Investment type (portfolio, index, mutual funds, ETF)
@@ -68,8 +72,19 @@ class UniversalHeatmapWidget extends StatelessWidget {
   /// Template composition type
   final UniversalTemplateType templateType;
 
+  /// Currently selected timeframe for filtering
+  final TimeFrame? selectedTimeFrame;
+
+  /// Currently selected metric for filtering
+  final MetricType? selectedMetric;
+
   /// Currently selected sector for filtering
   final SectorType? selectedSector;
+
+  /// Currently selected market cap for filtering
+  final MarketCapType? selectedMarketCap;
+  /// Currently selected layout
+  final HeatmapLayoutType? selectedLayout;
 
   @override
   Widget build(BuildContext context) {
@@ -144,6 +159,7 @@ class UniversalHeatmapWidget extends StatelessWidget {
           error: error,
           onTilePressed: onTilePressed,
           selectedSector: selectedSector,
+          selectedMetric: selectedMetric,
         );
 
     CommonLogger.debug(
@@ -157,6 +173,11 @@ class UniversalHeatmapWidget extends StatelessWidget {
           config: effectiveConfig,
           investmentType: investmentType,
           onFiltersChanged: onFiltersChanged,
+          selectedTimeFrame: selectedTimeFrame,
+          selectedMetric: selectedMetric,
+          selectedSector: selectedSector,
+          selectedMarketCap: selectedMarketCap,
+          selectedLayout: selectedLayout,
         );
 
     // 3. Create Layout Template (handles overall structure)

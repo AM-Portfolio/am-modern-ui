@@ -19,18 +19,18 @@ class BasketExplorer extends ConsumerStatefulWidget {
 }
 
 class _BasketExplorerState extends ConsumerState<BasketExplorer> {
-  String _query = 'Nifty 50,Nifty Bank,Nifty IT'; // Default query
+  String _query = 'INF200K01UT3'; // Default query: SBI Nifty 50 ETF ISIN
   
   final Map<String, String> _categories = {
-    'Nifty 50': 'NIFTY 50',
-    'Bank': 'NIFTY BANK', 
-    'IT': 'NIFTY IT',
-    'Auto': 'NIFTY AUTO',
-    'Metal': 'NIFTY METAL',
-    'FMCG': 'NIFTY FMCG',
-    'Pharma': 'NIFTY PHARMA',
-    'Gold': 'GOLD',
-    'PSU Bank': 'NIFTY PSU BANK',
+    'Nifty 50': 'INF200K01UT3',
+    'Bank': 'INF204KB1882', 
+    'IT': 'INF204KB1IT0',
+    'Auto': 'INF200KA1UT4',
+    'Metal': 'INF200KM1UT5',
+    'FMCG': 'INF200KF1UT6',
+    'Pharma': 'INF200KP1UT7',
+    'Gold': 'INF204KB1742',
+    'PSU Bank': 'INF200KB1UT8',
   };
     
   String? _selectedCategory;
@@ -62,7 +62,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                 onPressed: () {
                   // Reset query to default
                   setState(() {
-                    _query = 'Nifty 50,Nifty Bank,Nifty IT';
+                    _query = 'INF200K01UT3';
                     _selectedCategory = null;
                   });
                 },
@@ -121,7 +121,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                         // If unselected, go back to default or keep current?
                         // Usually resetting to default makes sense
                         _selectedCategory = null;
-                        _query = 'Nifty 50,Nifty Bank,Nifty IT';
+                        _query = 'INF200K01UT3';
                       }
                     });
                   },

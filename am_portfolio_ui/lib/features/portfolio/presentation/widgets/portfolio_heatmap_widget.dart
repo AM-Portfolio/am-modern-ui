@@ -50,7 +50,7 @@ class PortfolioHeatmapConfig {
 
   /// Web configuration
   static const web = PortfolioHeatmapConfig(
-    defaultLayout: HeatmapLayoutType.grid,
+    defaultLayout: HeatmapLayoutType.treemap,
     compactMode: false,
     showSelectors: true,
     templateType: UniversalTemplateType.full,
@@ -275,28 +275,7 @@ class _PortfolioHeatmapWidgetState
       tag: '${widget.config.logTag}.UI',
     );
 
-    // Get analytics data from the cubit
-    final portfolioAnalyticsCubit = context.read<PortfolioAnalyticsCubit>();
-    final analyticsState = portfolioAnalyticsCubit.state;
-
-    // Check if analytics data is available
-    if (analyticsState is! PortfolioAnalyticsLoaded ||
-        analyticsState.heatmap == null) {
-      CommonLogger.warning(
-        'Analytics data not available for heatmap display',
-        tag: '${widget.config.logTag}.UI',
-      );
-      return const Center(child: Text('Analytics data is loading...'));
-    }
-
-    // Use sector heatmap converter to convert analytics data
-    final convertedHeatmapData = SectorHeatmapConverter.convertToHeatmapData(
-      heatmap: analyticsState.heatmap,
-      showSubCards: widget.config.showSubCards,
-      title: widget.config.title,
-      subtitle: widget.config.subtitle,
-      accentColor: Theme.of(context).primaryColor,
-    );
+    final convertedHeatmapData = state.heatmapData;
 
     CommonLogger.debug(
       'Converted heatmap data: ${convertedHeatmapData.tiles.length} tiles',
@@ -350,7 +329,11 @@ class _PortfolioHeatmapWidgetState
               title: widget.config.title,
               showSelectors: widget.config.showSelectors,
               compactMode: widget.config.compactMode,
+              selectedTimeFrame: _selectedTimeframe,
+              selectedMetric: _selectedMetric,
               selectedSector: _selectedSector,
+              selectedMarketCap: _selectedMarketCap,
+              selectedLayout: _selectedLayout,
               onTilePressed: () {
                   CommonLogger.userAction(
                     'Heatmap stock tile pressed',
@@ -455,16 +438,24 @@ class _PortfolioHeatmapWidgetState
 
     // Update local state
     if (timeFrame != null) {
-      _selectedTimeframe = timeFrame;
+      setState(() {
+        _selectedTimeframe = timeFrame;
+      });
     }
     if (metric != null) {
-      _selectedMetric = metric;
+      setState(() {
+        _selectedMetric = metric;
+      });
     }
     if (sector != null) {
-      _selectedSector = sector;
+      setState(() {
+        _selectedSector = sector;
+      });
     }
     if (marketCap != null) {
-      _selectedMarketCap = marketCap;
+      setState(() {
+        _selectedMarketCap = marketCap;
+      });
     }
     if (layout != null) {
       setState(() {
