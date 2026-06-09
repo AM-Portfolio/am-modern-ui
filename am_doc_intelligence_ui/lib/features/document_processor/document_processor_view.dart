@@ -94,11 +94,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       case 'DHAN':
         return ['PORTFOLIO_EQUITY', 'PORTFOLIO_ETF'];
       case 'MSTOCK':
-      case 'ANGEL_ONE':
       case 'UPSTOX':
       case 'ICICI_DIRECT':
       case 'HDFC_SECURITIES':
         return _docTypes.where((t) => t == 'STOCK_PORTFOLIO').toList();
+      case 'ANGEL_ONE':
+        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
       case 'OTHER':
       default:
         return _docTypes;
