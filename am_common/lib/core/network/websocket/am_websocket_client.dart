@@ -18,6 +18,9 @@ class AMWebSocketClient {
   StreamSubscription? _subscription;
   Timer? _reconnectTimer;
   Timer? _pingTimer;
+
+  // Callback to dynamically provide connection headers (e.g. auth token)
+  Future<Map<String, dynamic>> Function()? headersProvider;
   
   // Configuration
   bool _autoReconnect = true;
@@ -42,7 +45,7 @@ class AMWebSocketClient {
   }
 
   /// Connect to the WebSocket
-  void connect() {
+  void connect() async {
     if (_url == null || _url!.isEmpty) {
       AppLogger.warning('AMWebSocketClient: No URL configured.');
       return;
@@ -57,7 +60,16 @@ class AMWebSocketClient {
     AppLogger.info('AMWebSocketClient: Connecting to $_url ...');
 
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(_url!));
+      Map<String, dynamic>? headers;
+      if (headersProvider != null) {
+        try {
+          headers = await headersProvider!();
+        } catch (e) {
+          AppLogger.error('AMWebSocketClient: Error generating headers', error: e);
+        }
+      }
+
+      _channel = WebSocketChannel.connect(Uri.parse(_url!), headers: headers);
       
       // Wait for the connection to be established
       _channel!.ready.then((_) {

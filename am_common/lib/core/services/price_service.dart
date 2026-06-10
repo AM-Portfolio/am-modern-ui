@@ -49,6 +49,12 @@ class PriceService {
       AppLogger.warning('PriceService: No WS URL configured in MarketDataConfig.');
     }
 
+    // Supply the dynamic Authorization token to the WebSocket client
+    _wsClient.headersProvider = () async {
+      final token = await SecureStorageService().getAccessToken();
+      return token != null ? {'Authorization': 'Bearer $token'} : <String, dynamic>{};
+    };
+
     // When the WS (re)connects, re-send the subscription request so the
     // backend restarts its Upstox stream for the tracked symbols.
     _statusSubscription = _wsClient.status.listen((status) {
@@ -196,7 +202,31 @@ class PriceService {
         if (update.quotes != null && update.quotes!.isNotEmpty) {
           bool cacheChanged = false;
           update.quotes!.forEach((symbol, quote) {
-            _priceCache[symbol] = quote;
+            final existing = _priceCache[symbol];
+            if (existing != null) {
+              final lastPrice = quote.lastPrice ?? existing.lastPrice;
+              final previousClose = quote.previousClose ?? existing.previousClose;
+              double? change = quote.change ?? existing.change;
+              double? changePercent = quote.changePercent ?? existing.changePercent;
+              
+              if (lastPrice != null && previousClose != null && previousClose != 0) {
+                change = lastPrice - previousClose;
+                changePercent = (change / previousClose) * 100;
+              }
+
+              _priceCache[symbol] = QuoteChange(
+                lastPrice: lastPrice,
+                open: quote.open ?? existing.open,
+                high: quote.high ?? existing.high,
+                low: quote.low ?? existing.low,
+                close: quote.close ?? existing.close,
+                previousClose: previousClose,
+                change: change,
+                changePercent: changePercent,
+              );
+            } else {
+              _priceCache[symbol] = quote;
+            }
             cacheChanged = true;
           });
           if (cacheChanged) {
