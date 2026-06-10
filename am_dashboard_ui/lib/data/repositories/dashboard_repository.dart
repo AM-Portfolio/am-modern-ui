@@ -18,7 +18,6 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/summary',
-        queryParams: {'userId': userId},
         parser: (data) => DashboardSummary.fromJson(data),
       );
     } catch (e) {
@@ -31,7 +30,6 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/portfolio-overviews',
-        queryParams: {'userId': userId},
         parser: (data) => (data as List).map((e) => PortfolioOverview.fromJson(e)).toList(),
       );
     } catch (e) {
@@ -44,7 +42,7 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/PORTFOLIO/ALL/allocation',
-        queryParams: {'userId': userId, 'groupBy': groupBy},
+        queryParams: {'groupBy': groupBy},
         parser: (data) => AllocationResponse.fromJson(data),
       );
     } catch (e) {
@@ -57,7 +55,7 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/top-movers',
-        queryParams: {'userId': userId, 'timeFrame': timeFrame},
+        queryParams: {'timeFrame': timeFrame},
         parser: (data) => TopMoversResponse.fromJson(data),
       );
     } catch (e) {
@@ -70,7 +68,7 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/performance',
-        queryParams: {'userId': userId, 'timeFrame': timeFrame},
+        queryParams: {'timeFrame': timeFrame},
         parser: (data) {
           // Provide defaults for required fields if backend returns null
           final sanitized = Map<String, dynamic>.from(data);
@@ -91,7 +89,6 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/recent-activity',
-        queryParams: {'userId': userId},
         parser: (data) {
           // The backend returns a RecentActivityResponse object containing an 'items' list
           final items = data['items'] as List?;

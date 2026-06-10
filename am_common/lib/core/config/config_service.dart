@@ -7,7 +7,7 @@ import 'app_config.dart';
 /// then [config.json] (env selector locally, domain override in Kubernetes).
 class ConfigService {
   static AppConfig? _config;
-  static String _domain = 'am-dev.asrax.in';
+  static String _domain = const String.fromEnvironment('AM_DOMAIN', defaultValue: 'am-dev.asrax.in');
   static Map<String, String> _services = {};
   static String _googleClientId = '';
 

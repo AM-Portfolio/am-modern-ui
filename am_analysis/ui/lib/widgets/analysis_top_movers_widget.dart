@@ -38,9 +38,7 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
   }
 
   Future<void> _initService() async {
-    final storage = SecureStorageService();
-    final token = await storage.getAccessToken();
-    _service = RealAnalysisService(authToken: token != null ? 'Bearer $token' : null);
+    _service = RealAnalysisService();
     _loadData();
   }
 
