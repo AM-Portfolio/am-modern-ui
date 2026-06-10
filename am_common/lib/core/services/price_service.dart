@@ -49,12 +49,6 @@ class PriceService {
       AppLogger.warning('PriceService: No WS URL configured in MarketDataConfig.');
     }
 
-    // Supply the dynamic Authorization token to the WebSocket client
-    _wsClient.headersProvider = () async {
-      final token = await SecureStorageService().getAccessToken();
-      return token != null ? {'Authorization': 'Bearer $token'} : <String, dynamic>{};
-    };
-
     // When the WS (re)connects, re-send the subscription request so the
     // backend restarts its Upstox stream for the tracked symbols.
     _statusSubscription = _wsClient.status.listen((status) {
