@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:am_design_system/core/theme/app_colors.dart';
 
 import '../../models/trade_portfolio_view_model.dart';
 import '../loaders/trade_portfolio_skeleton_loader.dart';
@@ -9,30 +8,13 @@ import '../mobile/trade_portfolio_mobile_card.dart';
 import '../mobile/trade_portfolio_mobile_filter.dart';
 import '../mobile/trade_portfolio_mobile_header.dart';
 
-extension ThemeColors on BuildContext {
-  ThemeData get _theme => Theme.of(this);
-  ColorScheme get _colors => _theme.colorScheme;
-  bool get isDark => _theme.brightness == Brightness.dark;
-  
-  Color get cardBorder => _colors.outline;
-  Color get cardHoverBorder => _colors.primary;
-  
-  Color get badgeBg => _colors.surfaceContainerHighest;
-  Color get badgeBorder => _colors.outline;
-  
-  Color get searchBg => _colors.surfaceContainerHighest;
-  Color get searchBorder => _colors.outline;
-  
-  // Custom dark gradient matching Experimental UI Redesign
-  Color get cardBg1 => isDark ? const Color(0xFF1E1B4B) : _colors.surface;
-  Color get cardBg2 => isDark ? const Color(0xFF1C1C2E) : _colors.surface;
-  
-  Color get textPrimary => _colors.onSurface;
-  Color get textSecondary => _colors.onSurface.withValues(alpha: 0.6);
-  
-  Color get divider => _theme.dividerColor;
-  Color get statBg => isDark ? Colors.black.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.03);
-}
+// Dark theme constants matching the app's existing dark palette
+const _kCardBorder = Color(0xFF2A2A45);
+const _kCardHoverBorder = Color(0xFF7C3AED);
+const _kBadgeBg = Color(0xFF1E1E30);
+const _kBadgeBorder = Color(0xFF2D2D45);
+const _kSearchBg = Color(0xFF1E1E30);
+const _kSearchBorder = Color(0xFF2D2D45);
 
 class TradePortfolioDiscoveryTemplate extends StatefulWidget {
   const TradePortfolioDiscoveryTemplate({
@@ -396,19 +378,19 @@ class _TradePortfolioDiscoveryTemplateState
                               )
                             : null,
                         filled: true,
-                        fillColor: context.searchBg,
+                        fillColor: _kSearchBg,
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 0),
                         isDense: true,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide:
-                              BorderSide(color: context.searchBorder, width: 1),
+                              const BorderSide(color: _kSearchBorder, width: 1),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide:
-                              BorderSide(color: context.searchBorder, width: 1),
+                              const BorderSide(color: _kSearchBorder, width: 1),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -430,9 +412,9 @@ class _TradePortfolioDiscoveryTemplateState
                   height: 42,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: context.searchBg,
+                    color: _kSearchBg,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: context.searchBorder),
+                    border: Border.all(color: _kSearchBorder),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
@@ -448,9 +430,9 @@ class _TradePortfolioDiscoveryTemplateState
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: context.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
-                      dropdownColor: context.searchBg,
+                      dropdownColor: const Color(0xFF1E1E30),
                       items: const [
                         DropdownMenuItem(
                             value: 'name', child: Text('Name')),
@@ -486,12 +468,12 @@ class _TradePortfolioDiscoveryTemplateState
                     decoration: BoxDecoration(
                       color: _showOnlyProfit
                           ? const Color(0xFF7C3AED).withValues(alpha: 0.15)
-                          : context.searchBg,
+                          : _kSearchBg,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: _showOnlyProfit
                             ? const Color(0xFF7C3AED)
-                            : context.searchBorder,
+                            : _kSearchBorder,
                         width: 1,
                       ),
                     ),
@@ -681,15 +663,15 @@ class _TradePortfolioDiscoveryTemplateState
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: context.badgeBg,
+            color: _kBadgeBg,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: context.badgeBorder),
+            border: Border.all(color: _kBadgeBorder),
           ),
           child: Icon(
             icon,
             size: 18,
             color: enabled
-                ? context.textPrimary.withValues(alpha: 0.7)
+                ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)
                 : Colors.grey.withValues(alpha: 0.25),
           ),
         ),
@@ -712,12 +694,12 @@ class _TradePortfolioDiscoveryTemplateState
             height: 32,
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
-              color: isCurrent ? const Color(0xFF7C3AED) : context.badgeBg,
+              color: isCurrent ? const Color(0xFF7C3AED) : _kBadgeBg,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: isCurrent
                     ? const Color(0xFF7C3AED)
-                    : context.badgeBorder,
+                    : _kBadgeBorder,
               ),
             ),
             alignment: Alignment.center,
@@ -766,9 +748,9 @@ class _StatBadge extends StatelessWidget {
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: context.badgeBg,
+        color: _kBadgeBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: context.badgeBorder),
+        border: Border.all(color: _kBadgeBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -806,7 +788,7 @@ class _StatBadge extends StatelessWidget {
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: valueColor ??
-                      context.textPrimary,
+                      Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -850,15 +832,15 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                context.cardBg1,
-                context.cardBg2,
+                const Color(0xFF1E1B4B),
+                const Color(0xFF1C1C2E),
               ],
             ),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: _isHovered
-                  ? context.cardHoverBorder.withValues(alpha: 0.7)
-                  : context.cardBorder,
+                  ? _kCardHoverBorder.withValues(alpha: 0.7)
+                  : _kCardBorder,
               width: 1,
             ),
             boxShadow: _isHovered
@@ -871,7 +853,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                   ]
                 : [
                     BoxShadow(
-                      color: context.isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -910,7 +892,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                         isProfit
                             ? Icons.trending_up_rounded
                             : Icons.assessment_rounded,
-                        color: context.textPrimary,
+                        color: Colors.white,
                         size: 17,
                       ),
                     ),
@@ -921,8 +903,8 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                         children: [
                           Text(
                             p.displayName,
-                            style: TextStyle(
-                              color: context.textPrimary,
+                            style: const TextStyle(
+                              color: Colors.white,
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                             ),
@@ -933,7 +915,8 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                           Text(
                             p.description ?? 'No description',
                             style: TextStyle(
-                              color: context.textSecondary,
+                              color:
+                                  Colors.white.withValues(alpha: 0.5),
                               fontSize: 11,
                             ),
                             maxLines: 1,
@@ -946,15 +929,15 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: context.divider,
+                        color: Colors.white.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(5),
                         border: Border.all(
-                            color: context.divider),
+                            color: Colors.white.withValues(alpha: 0.12)),
                       ),
-                      child: Text(
+                      child: const Text(
                         'TRADE',
                         style: TextStyle(
-                          color: context.textSecondary,
+                          color: Colors.white70,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
@@ -971,7 +954,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                   padding: const EdgeInsets.symmetric(
                       vertical: 14, horizontal: 16),
                   decoration: BoxDecoration(
-                    color: context.statBg,
+                    color: Colors.black.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -986,7 +969,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                       Container(
                           width: 1,
                           height: 28,
-                          color: context.divider),
+                          color: Colors.white.withValues(alpha: 0.08)),
                       _metric(
                         icon: Icons.trending_up_rounded,
                         iconColor: p.isTradeProfit
@@ -1001,7 +984,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                       Container(
                           width: 1,
                           height: 28,
-                          color: context.divider),
+                          color: Colors.white.withValues(alpha: 0.08)),
                       _metric(
                         icon: Icons.check_circle_outline_rounded,
                         iconColor: const Color(0xFF7C3AED),
@@ -1014,7 +997,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
 
                 const SizedBox(height: 18),
                 Divider(
-                    color: context.divider, height: 1),
+                    color: Colors.white.withValues(alpha: 0.07), height: 1),
                 const SizedBox(height: 18),
 
                 // ── Bottom: value + sparkline ────────────────────────
@@ -1029,7 +1012,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                             'Portfolio Value',
                             style: TextStyle(
                               fontSize: 11,
-                              color: context.textSecondary,
+                              color: Colors.white.withValues(alpha: 0.45),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1038,8 +1021,8 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                             children: [
                               Text(
                                 p.displayValue,
-                                style: TextStyle(
-                                  color: context.textPrimary,
+                                style: const TextStyle(
+                                  color: Colors.white,
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1130,7 +1113,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                 label,
                 style: TextStyle(
                   fontSize: 10,
-                  color: context.textSecondary,
+                  color: Colors.white.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -1141,7 +1124,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: valueColor ?? context.textPrimary,
+              color: valueColor ?? Colors.white,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

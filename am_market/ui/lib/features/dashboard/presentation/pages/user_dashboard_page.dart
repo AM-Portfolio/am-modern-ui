@@ -55,6 +55,9 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
     Future.delayed(Duration.zero, () {
       _loadTopMovers();
       _loadHistoricalData();
+      if (mounted) {
+        context.read<MarketProvider>().setIndicesTimeframe(selectedTimeframe);
+      }
     });
   }
 
@@ -286,6 +289,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                               setState(() {
                                 selectedTimeframe = tf;
                               });
+                              provider.setIndicesTimeframe(tf);
                               _loadHistoricalData();
                               _loadTopMovers();
                             },

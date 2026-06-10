@@ -119,6 +119,88 @@ class MarketProvider with ChangeNotifier {
   Map<String, double>? _heatmapValues;
   Map<String, double>? get heatmapValues => _heatmapValues;
 
+  // Timeframe Based Base Prices
+  String _selectedIndicesTimeframe = '1D';
+  Map<String, double> _timeframeBasePrices = {};
+  bool _isLoadingBasePrices = false;
+
+  String get selectedIndicesTimeframe => _selectedIndicesTimeframe;
+  Map<String, double> get timeframeBasePrices => _timeframeBasePrices;
+  bool get isLoadingBasePrices => _isLoadingBasePrices;
+
+  Future<void> setIndicesTimeframe(String timeframe) async {
+    if (_selectedIndicesTimeframe == timeframe) return;
+    
+    _selectedIndicesTimeframe = timeframe;
+    
+    if (timeframe == '1D') {
+      _timeframeBasePrices.clear();
+      _isLoadingBasePrices = false;
+      notifyListeners();
+      return;
+    }
+
+    _isLoadingBasePrices = true;
+    notifyListeners();
+
+    try {
+      final now = DateTime.now();
+      DateTime fromDate;
+      switch (timeframe) {
+        case '1W': fromDate = now.subtract(const Duration(days: 7)); break;
+        case '1M': fromDate = DateTime(now.year, now.month - 1, now.day); break;
+        case '3M': fromDate = DateTime(now.year, now.month - 3, now.day); break;
+        case '6M': fromDate = DateTime(now.year, now.month - 6, now.day); break;
+        case '1Y': fromDate = DateTime(now.year - 1, now.month, now.day); break;
+        case '5Y': fromDate = DateTime(now.year - 5, now.month, now.day); break;
+        default: fromDate = now.subtract(const Duration(days: 7));
+      }
+
+      final fromStr = fromDate.toIso8601String().split('T')[0];
+      final toStr = now.toIso8601String().split('T')[0];
+      
+      final symbols = _allIndicesData.map((e) => e.indexSymbol).toList();
+      
+      if (symbols.isNotEmpty) {
+        final history = await _apiService.fetchHistoricalData(
+          symbols: symbols,
+          from: fromStr,
+          to: toStr,
+          interval: '1d',
+          isIndexSymbol: true,
+        );
+
+        _timeframeBasePrices.clear();
+        
+        if (history.containsKey('data')) {
+           final dataMap = history['data'] as Map<String, dynamic>;
+           dataMap.forEach((sym, val) {
+              if (val is Map && val.containsKey('dataPoints')) {
+                 final points = List.from(val['dataPoints']);
+                 if (points.isNotEmpty) {
+                    // Data is descending (newest first). 
+                    // To find the oldest valid price, we scan from the end of the array (oldest) to the start (newest).
+                    for (int i = points.length - 1; i >= 0; i--) {
+                       final point = points[i];
+                       final p = point['close'] ?? point['lastPrice'] ?? point['price'];
+                       if (p != null && (p as num) > 0) {
+                          _timeframeBasePrices[sym] = p.toDouble();
+                          break;
+                       }
+                    }
+                 }
+              }
+           });
+        }
+      }
+    } catch (e) {
+      CommonLogger.error("Error fetching base prices for $timeframe", tag: "MarketProvider.setIndicesTimeframe", error: e);
+    } finally {
+      _isLoadingBasePrices = false;
+      notifyListeners();
+    }
+  }
+
   void toggleForceRefresh(bool value) {
     _forceRefresh = value;
     notifyListeners();
@@ -188,11 +270,13 @@ class MarketProvider with ChangeNotifier {
         if (_allIndicesData[i].indexSymbol.toUpperCase() == updateSymbolBase.toUpperCase()) {
              final current = _allIndicesData[i];
              final double? newLtp = data['lastPrice']?.toDouble();
+             final double? newChange = data['change']?.toDouble() ?? data['netChange']?.toDouble();
              final double? newPChange = data['changePercent']?.toDouble(); 
              
              if (newLtp != null) {
                  _allIndicesData[i] = current.copyWith(
                      lastPrice: newLtp,
+                     change: newChange ?? current.change,
                      pChange: newPChange ?? current.pChange 
                  );
                  notifyListeners();
@@ -352,13 +436,20 @@ class MarketProvider with ChangeNotifier {
       
       CommonLogger.info("Successfully loaded ${_allIndicesData.length} indices", tag: "MarketProvider.loadAllIndicesData");
 
-      // STEP 4: Initiate Stream - REMOVED per user request
-      // Global PriceService is relied upon. No explicit connect call.
+      // STEP 4: Initiate Real-Time Stream for UI Updates
+      // We must explicitly dispatch a subscribe request to tell the backend which symbols
+      // the dashboard is actively monitoring. While the WebSocket connection is managed globally 
+      // by the PriceService, the Upstox scraper pipeline on the backend requires this explicit 
+      // payload to begin streaming live ticks for these specific indices (e.g., NIFTY 50).
+      // Without this, the UI would remain stuck on the initial REST snapshot until a page refresh.
       
       // Attempt to sync from PriceService Cache if available
       _syncWithPriceService();
       
-      // Explicit subscription removed per user request (expecting firehose)
+      if (_priceService != null && allSymbols.isNotEmpty) {
+        CommonLogger.info("Subscribing to real-time stream for ${allSymbols.length} indices to prevent stale dashboard prices", tag: "MarketProvider.loadAllIndicesData");
+        _priceService!.subscribe(allSymbols, isIndexSymbol: true);
+      }
 
     } catch (e) {
       CommonLogger.error("Error loading all indices data", tag: "MarketProvider.loadAllIndicesData", error: e);

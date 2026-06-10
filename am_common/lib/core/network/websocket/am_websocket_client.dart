@@ -58,19 +58,16 @@ class AMWebSocketClient {
 
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_url!));
-      _statusSubject.add(SocketStatus.connected);
-      AppLogger.info('AMWebSocketClient: Connected.');
-
-      // Start periodic 30-second ping heartbeat to keep connection alive through reverse proxies
-      _pingTimer?.cancel();
-      _pingTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-        if (isConnected) {
-          try {
-            send("ping");
-          } catch (e) {
-            AppLogger.error('AMWebSocketClient: Error sending ping heartbeat', error: e);
-          }
+      
+      // Wait for the connection to be established
+      _channel!.ready.then((_) {
+        if (_statusSubject.value != SocketStatus.connected) {
+          _statusSubject.add(SocketStatus.connected);
+          AppLogger.info('AMWebSocketClient: Connected.');
+          _startPingTimer();
         }
+      }).catchError((error) {
+        _onError(error);
       });
 
       _subscription = _channel!.stream.listen(
@@ -84,6 +81,20 @@ class AMWebSocketClient {
       _statusSubject.add(SocketStatus.error);
       _scheduleReconnect();
     }
+  }
+
+  void _startPingTimer() {
+    // Start periodic 30-second ping heartbeat to keep connection alive through reverse proxies
+    _pingTimer?.cancel();
+    _pingTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (isConnected) {
+        try {
+          send("ping");
+        } catch (e) {
+          AppLogger.error('AMWebSocketClient: Error sending ping heartbeat', error: e);
+        }
+      }
+    });
   }
 
   void _onMessage(dynamic message) {
