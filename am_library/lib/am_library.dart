@@ -11,6 +11,9 @@ export 'core/network/websocket/am_stomp_client.dart';
 // Core Services
 export 'core/services/secure_storage_service.dart';
 
+// Auth Context — single source of truth for current user identity
+export 'core/auth/user_context.dart';
+
 // Errors
 export 'core/errors/api_exception.dart';
 

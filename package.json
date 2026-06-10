@@ -12,7 +12,6 @@
     "run:diagnostic": "npm run run:diagnostic:local",
     "run:subscription": "npm run run:subscription:local",
     "build:app": "npm run build:app:local",
-
     "─── RUN LOCAL ───": "echo",
     "run:app:local": "python scripts/manage.py run app local",
     "run:auth:local": "python scripts/manage.py run auth local",
@@ -21,7 +20,6 @@
     "run:market:local": "python scripts/manage.py run market local",
     "run:diagnostic:local": "python scripts/manage.py run diagnostic local",
     "run:subscription:local": "python scripts/manage.py run subscription local",
-
     "─── RUN DEV ───": "echo",
     "run:app:dev": "python scripts/manage.py run app dev",
     "run:auth:dev": "python scripts/manage.py run auth dev",
@@ -30,7 +28,6 @@
     "run:market:dev": "python scripts/manage.py run market dev",
     "run:diagnostic:dev": "python scripts/manage.py run diagnostic dev",
     "run:subscription:dev": "python scripts/manage.py run subscription dev",
-
     "─── RUN PREPROD ───": "echo",
     "run:app:preprod": "python scripts/manage.py run app preprod",
     "run:auth:preprod": "python scripts/manage.py run auth preprod",
@@ -39,7 +36,6 @@
     "run:market:preprod": "python scripts/manage.py run market preprod",
     "run:diagnostic:preprod": "python scripts/manage.py run diagnostic preprod",
     "run:subscription:preprod": "python scripts/manage.py run subscription preprod",
-
     "─── RUN PROD ───": "echo",
     "run:app:prod": "python scripts/manage.py run app prod",
     "run:auth:prod": "python scripts/manage.py run auth prod",
@@ -48,7 +44,6 @@
     "run:market:prod": "python scripts/manage.py run market prod",
     "run:diagnostic:prod": "python scripts/manage.py run diagnostic prod",
     "run:subscription:prod": "python scripts/manage.py run subscription prod",
-
     "─── BUILD LOCAL ───": "echo",
     "build:app:local": "python scripts/manage.py build app local",
     "build:auth:local": "python scripts/manage.py build auth local",
@@ -56,7 +51,6 @@
     "build:portfolio:local": "python scripts/manage.py build portfolio local",
     "build:market:local": "python scripts/manage.py build market local",
     "build:subscription:local": "python scripts/manage.py build subscription local",
-
     "─── BUILD DEV ───": "echo",
     "build:app:dev": "python scripts/manage.py build app dev",
     "build:auth:dev": "python scripts/manage.py build auth dev",
@@ -64,7 +58,6 @@
     "build:portfolio:dev": "python scripts/manage.py build portfolio dev",
     "build:market:dev": "python scripts/manage.py build market dev",
     "build:subscription:dev": "python scripts/manage.py build subscription dev",
-
     "─── BUILD PREPROD ───": "echo",
     "build:app:preprod": "python scripts/manage.py build app preprod",
     "build:auth:preprod": "python scripts/manage.py build auth preprod",
@@ -72,7 +65,6 @@
     "build:portfolio:preprod": "python scripts/manage.py build portfolio preprod",
     "build:market:preprod": "python scripts/manage.py build market preprod",
     "build:subscription:preprod": "python scripts/manage.py build subscription preprod",
-
     "─── BUILD PROD ───": "echo",
     "build:app:prod": "python scripts/manage.py build app prod",
     "build:auth:prod": "python scripts/manage.py build auth prod",
@@ -80,13 +72,12 @@
     "build:portfolio:prod": "python scripts/manage.py build portfolio prod",
     "build:market:prod": "python scripts/manage.py build market prod",
     "build:subscription:prod": "python scripts/manage.py build subscription prod",
-
     "─── GLOBAL UTILITIES ───": "echo",
     "clean:all": "python scripts/manage.py clean-all",
     "get:all": "python scripts/manage.py get-all",
     "gen:all": "python scripts/manage.py gen-all",
     "test:all": "python scripts/manage.py test-all"
   },
-  "author": "Antigravity",
+  "author": "AsraX Tech",
   "license": "ISC"
 }

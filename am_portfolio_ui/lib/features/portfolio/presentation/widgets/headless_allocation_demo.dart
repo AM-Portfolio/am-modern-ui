@@ -30,18 +30,13 @@ class _HeadlessAllocationDemoState extends State<HeadlessAllocationDemo> {
   }
 
   Future<void> _initializeService() async {
-    // Get auth token from secure storage (CRITICAL!)
-    final storage = SecureStorageService();
-    final token = await storage.getAccessToken();
-
-    print(
-      '[HeadlessDemo] Initializing with portfolioId=${widget.portfolioId}, token=${token != null ? "present" : "MISSING"}',
+    AppLogger.info(
+      '[HeadlessDemo] Initializing with portfolioId=${widget.portfolioId}',
+      tag: 'HeadlessAllocationDemo',
     );
 
-    // Create the service with auth token
     final realService = RealAnalysisService(
       baseUrl: AnalysisConfig.instance.baseUrl,
-      authToken: token != null ? 'Bearer $token' : null,
     );
     final service = AnalysisServiceAdapter(realService);
 

@@ -14,15 +14,13 @@ import 'package:am_market_sdk/market/api.dart' as sdk;
 import 'package:am_market_common/core/constants/market_endpoints.dart';
 
 class ApiService {
-  static String get baseUrl => MarketEndpoints.baseUrl; 
- 
-  
+  static String get baseUrl => MarketEndpoints.baseUrl;
+
   final _storage = GetIt.I<SecureStorageService>();
 
   Future<Map<String, String>> _getHeaders() async {
     final token = await _storage.getAccessToken();
-    CommonLogger.debug("Token present: ${token != null}", tag: "ApiService");
-
+    CommonLogger.debug('Token present: ${token != null}', tag: 'ApiService');
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -51,7 +49,7 @@ class ApiService {
     try {
       // Initialize SDK Client
       // Note: In a real app, ApiClient should be a singleton or provided via DI
-      final client = sdk.ApiClient(basePath: baseUrl); 
+      final client = sdk.ApiClient(basePath: baseUrl);
       final token = await _storage.getAccessToken();
       if (token != null) {
         client.addDefaultHeader('Authorization', 'Bearer $token');
