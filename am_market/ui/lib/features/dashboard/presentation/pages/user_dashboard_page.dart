@@ -35,7 +35,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
   Map<String, List<Map<String, dynamic>>> historicalData = {};
   bool isLoadingChart = false;
   String? chartError;
-  String selectedTimeframe = '1Y'; // Default 1 year
+  String selectedTimeframe = '1D'; // Default 1D
   bool isBarChart = false; // Chart type toggle
   
   final ScrollController _indicesScrollController = ScrollController();
