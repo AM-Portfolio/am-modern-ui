@@ -7,7 +7,12 @@ import 'app_config.dart';
 /// then [config.json] (env selector locally, domain override in Kubernetes).
 class ConfigService {
   static AppConfig? _config;
-  static String _domain = const String.fromEnvironment('AM_DOMAIN', defaultValue: 'am-dev.asrax.in');
+  static const _envFromDefine = String.fromEnvironment('AM_ENV');
+  static const _domainFromDefine = String.fromEnvironment('AM_DOMAIN');
+  static String _domain = _domainFromDefine.isNotEmpty
+      ? _domainFromDefine
+      : 'am-dev.asrax.in';
+  static String _resolvedEnv = _envFromDefine;
   static Map<String, String> _services = {};
   static String _googleClientId = '';
 
@@ -38,19 +43,22 @@ class ConfigService {
     };
 
     final bootstrap = await _fetchJson('/config.json');
-    if (bootstrap != null) {
-      final env = bootstrap['env'] as String?;
-      if (env != null && env.isNotEmpty) {
-        final envConfig = await _fetchJson('/config.$env.json');
-        if (envConfig != null) {
-          merged = _deepMerge(merged, envConfig);
-        } else {
-          AppLogger.warning(
-            'config.$env.json not found — using template only',
-            tag: 'ConfigService',
-          );
-        }
+    final env = _envFromDefine.isNotEmpty
+        ? _envFromDefine
+        : bootstrap?['env'] as String?;
+    _resolvedEnv = env ?? _resolvedEnv;
+    if (env != null && env.isNotEmpty) {
+      final envConfig = await _fetchJson('/config.$env.json');
+      if (envConfig != null) {
+        merged = _deepMerge(merged, envConfig);
+      } else {
+        AppLogger.warning(
+          'config.$env.json not found — using template only',
+          tag: 'ConfigService',
+        );
       }
+    }
+    if (bootstrap != null) {
       merged = _deepMerge(merged, bootstrap);
     }
 
@@ -59,6 +67,9 @@ class ConfigService {
 
   static void _applyMergedConfig(Map<String, dynamic> json) {
     _domain = json['domain'] as String? ?? _domain;
+    if (_domainFromDefine.isNotEmpty) {
+      _domain = _domainFromDefine;
+    }
 
     final raw = json['services'] as Map<String, dynamic>? ??
         json['overrides'] as Map<String, dynamic>? ??
@@ -75,14 +86,15 @@ class ConfigService {
       _googleClientId = json['googleWebClientId'].toString();
     }
 
+    final envLabel = _resolvedEnv.isNotEmpty ? _resolvedEnv : 'default';
     if (_services.isEmpty) {
       AppLogger.info(
-        'Config resolved: cluster domain $_domain (gateway paths)',
+        'Config resolved: env=$envLabel, domain=$_domain (gateway paths)',
         tag: 'ConfigService',
       );
     } else {
       AppLogger.info(
-        'Config resolved: domain $_domain, ${_services.length} local service URL(s)',
+        'Config resolved: env=$envLabel, domain=$_domain, ${_services.length} local service URL(s)',
         tag: 'ConfigService',
       );
     }

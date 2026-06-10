@@ -179,6 +179,7 @@ def get_web_port(package, env_vars):
 def handle_run(pkg, env_name):
     package = resolve_package(pkg)
     env_vars = load_env(env_name)
+    env_vars['AM_ENV'] = env_name
     defines = construct_dart_defines(env_vars)
     
     device = get_available_device()
@@ -190,6 +191,7 @@ def handle_run(pkg, env_name):
 def handle_build(pkg, env_name):
     package = resolve_package(pkg)
     env_vars = load_env(env_name)
+    env_vars['AM_ENV'] = env_name
     defines = construct_dart_defines(env_vars)
     
     cmd = ["flutter", "build", "web", "--release", "--no-wasm-dry-run"] + defines
