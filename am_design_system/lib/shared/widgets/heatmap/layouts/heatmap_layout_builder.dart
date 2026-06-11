@@ -378,25 +378,26 @@ abstract class HeatmapLayoutBuilder {
     }
   }
 
-  /// Gets color based on performance value
+  /// Gets color based on performance value — Obsidian Pulse palette
   Color getPerformanceColor(double changePercent) {
-    // Professional diverging color scale
-    final intensity = (changePercent.abs() / 3.0).clamp(0.0, 1.0);
+    final intensity = (changePercent.abs() / 5.0).clamp(0.0, 1.0);
 
     if (changePercent > 0.05) {
+      // Emerald greens from Stitch design
       return Color.lerp(
-        const Color(0xFF2E7D32), // Dark green
-        const Color(0xFF00E676), // Bright green
+        const Color(0xFF005236), // Deep emerald (dark)
+        const Color(0xFF0BA95B), // Bright emerald (light)
         intensity,
       )!;
     } else if (changePercent < -0.05) {
+      // Crimson reds from Stitch design
       return Color.lerp(
-        const Color(0xFFC62828), // Dark red
-        const Color(0xFFFF1744), // Bright red
+        const Color(0xFF68000A), // Deep crimson (dark)
+        const Color(0xFFB22222), // Bright crimson (light)
         intensity,
       )!;
     } else {
-      return const Color(0xFF424242); // Neutral grey for zero
+      return const Color(0xFF2B273B); // Neutral dark purple/slate
     }
   }
 
@@ -549,7 +550,7 @@ abstract class HeatmapLayoutBuilder {
     );
   }
 
-  /// Builds a card optimized for treemap layout
+  /// Builds a card optimized for treemap layout — Stitch Obsidian Pulse design
   Widget _buildTreemapCard(
     BuildContext context,
     HeatmapTileData tile,
@@ -559,35 +560,108 @@ abstract class HeatmapLayoutBuilder {
     VoidCallback? onTilePressed,
     MetricType? selectedMetric,
   ) {
-    // Treemap uses the standard tile with subtle hierarchy indication
-    final hierarchyLevel = _calculateHierarchyLevel(tile, data);
+    final tileColor = getTileColor(tile, data);
+    final isPositive = tile.performance >= 0;
+    // Always white text — all tile colors (green, red, neutral) are dark enough
+    const textColor = Colors.white;
+    final effectiveW = width ?? 100.0;
+    final effectiveH = height ?? 80.0;
 
-    return Stack(
-      children: [
-        buildHeatmapTile(
-          context,
-          tile,
-          data,
-          width: width,
-          height: height,
-          onTilePressed: onTilePressed,
-          selectedMetric: selectedMetric,
-        ),
-        // Subtle hierarchy indicator for treemap
-        if (hierarchyLevel > 0)
-          Positioned(
-            bottom: 2,
-            right: 2,
-            child: Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.6),
-                shape: BoxShape.circle,
-              ),
+    // Determine padding & font sizes responsively
+    final pad = effectiveW < 100 ? 8.0 : 12.0;
+    final titleSize = effectiveW < 100
+        ? 9.0
+        : effectiveW < 180
+        ? 11.0
+        : 13.0;
+    final perfSize = effectiveW < 100
+        ? 13.0
+        : effectiveW < 180
+        ? 18.0
+        : 24.0;
+    final weightSize = effectiveW < 100 ? 8.0 : 10.0;
+    final trendIcon = isPositive ? Icons.trending_up : Icons.trending_down;
+
+    return GestureDetector(
+      onTap: onTilePressed,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          margin: const EdgeInsets.all(1.5),
+          decoration: BoxDecoration(
+            color: tileColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.08),
+              width: 1,
             ),
           ),
-      ],
+          child: Padding(
+            padding: EdgeInsets.all(pad),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // ── TOP: Sector name + trend icon ──
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        tile.name,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: titleSize,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                        ),
+                        maxLines: effectiveH > 120 ? 2 : 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (effectiveW > 120)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Icon(
+                          trendIcon,
+                          color: textColor.withOpacity(0.7),
+                          size: titleSize + 2,
+                        ),
+                      ),
+                  ],
+                ),
+
+                // ── BOTTOM: Performance % + Weight label ──
+                if (effectiveH > 60)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${isPositive ? '+' : ''}${tile.performance.toStringAsFixed(2)}%',
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: perfSize,
+                          fontWeight: FontWeight.bold,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${tile.weightage.toStringAsFixed(1)}% Weight',
+                        style: TextStyle(
+                          color: textColor.withOpacity(0.65),
+                          fontSize: weightSize,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

@@ -7,8 +7,11 @@ import 'package:am_design_system/am_design_system.dart'
     hide MarketCapType, MetricType, TimeFrame, SectorType;
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
+import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_heatmap_cubit.dart';
 import '../cubit/portfolio_heatmap_state.dart';
+import '../cubit/portfolio_state.dart';
+import '../../internal/domain/entities/portfolio_analytics.dart' as analytics_entities;
 import '../mappers/sector_heatmap_converter.dart';
 
 /// Configuration class for platform-specific heatmap settings
@@ -183,12 +186,8 @@ class _PortfolioHeatmapWidgetState
       Padding(padding: widget.config.padding, child: _buildHeatmapContent());
 
   /// Main heatmap content with state handling using dual cubit approach
-  Widget _buildHeatmapContent() => StreamBuilder<PortfolioHeatmapState>(
-    stream: context.read<PortfolioHeatmapCubit>().stream,
-    initialData: PortfolioHeatmapInitial(),
-    builder: (context, snapshot) {
-      final state = snapshot.data ?? PortfolioHeatmapInitial();
-
+  Widget _buildHeatmapContent() => BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
+    builder: (context, state) {
       CommonLogger.debug(
         'State update: ${state.runtimeType}',
         tag: '${widget.config.logTag}.State',
@@ -277,13 +276,11 @@ class _PortfolioHeatmapWidgetState
 
     final convertedHeatmapData = state.heatmapData;
 
-    CommonLogger.debug(
-      'Converted heatmap data: ${convertedHeatmapData.tiles.length} tiles',
-      tag: '${widget.config.logTag}.UI',
-    );
-
     // Create configuration with selected layout
     final customConfig = convertedHeatmapData.configuration.copyWith(
+      display: convertedHeatmapData.configuration.display?.copyWith(
+        showPerformance: false, // Hides old default legend
+      ),
       layout: convertedHeatmapData.configuration.layout?.copyWith(
         layoutType: _selectedLayout,
       ),
@@ -297,13 +294,21 @@ class _PortfolioHeatmapWidgetState
       );
     }
 
-    // Return UniversalHeatmapWidget with configuration
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── SUMMARY CARDS ROW ──
+        _buildSummaryCardsRow(),
+        const SizedBox(height: 16),
+
+        // ── EQUITY DISTRIBUTION HEADER ──
+        _buildEquityDistributionHeader(),
+        const SizedBox(height: 12),
+
+        // ── DRILLDOWN BREADCRUMB ──
         if (_drillDownTile != null)
           Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
+            padding: const EdgeInsets.only(bottom: 8.0),
             child: InkWell(
               onTap: () => setState(() => _drillDownTile = null),
               child: Row(
@@ -319,6 +324,8 @@ class _PortfolioHeatmapWidgetState
               ),
             ),
           ),
+
+        // ── MAIN TREEMAP ──
         Expanded(
           child: SizedBox(
             width: double.infinity,
@@ -326,8 +333,8 @@ class _PortfolioHeatmapWidgetState
               investmentType: InvestmentType.portfolio,
               heatmapData: displayData,
               config: _mapToWidgetConfig(customConfig),
-              title: widget.config.title,
-              showSelectors: widget.config.showSelectors,
+              title: '', // Replaced with custom Equity Distribution header
+              showSelectors: false, // Hidden for custom sleek layout
               compactMode: widget.config.compactMode,
               selectedTimeFrame: _selectedTimeframe,
               selectedMetric: _selectedMetric,
@@ -335,25 +342,324 @@ class _PortfolioHeatmapWidgetState
               selectedMarketCap: _selectedMarketCap,
               selectedLayout: _selectedLayout,
               onTilePressed: () {
-                  CommonLogger.userAction(
-                    'Heatmap stock tile pressed',
-                    tag: '${widget.config.logTag}.Action',
-                  );
+                CommonLogger.userAction(
+                  'Heatmap stock tile pressed',
+                  tag: '${widget.config.logTag}.Action',
+                );
               },
               onFiltersChanged: ({timeFrame, metric, sector, marketCap, layout}) {
-          _onFiltersChanged(
-            timeFrame: timeFrame,
-            metric: metric,
-            sector: sector,
-            marketCap: marketCap,
-            layout: layout,
-          );
-        },
+                _onFiltersChanged(
+                  timeFrame: timeFrame,
+                  metric: metric,
+                  sector: sector,
+                  marketCap: marketCap,
+                  layout: layout,
+                );
+              },
               templateType: widget.config.templateType,
             ),
           ),
         ),
+
+        // ── FOOTER STATUS BAR ──
+        const SizedBox(height: 12),
+        _buildFooterStatusBar(),
       ],
+    );
+  }
+
+  /// Builds the 4 summary stat cards row
+  Widget _buildSummaryCardsRow() {
+    return BlocBuilder<PortfolioCubit, PortfolioState>(
+      builder: (context, portfolioState) {
+        // Derive values from portfolio state
+        String totalValue = '--';
+        String todayChange = '--';
+        double todayChangePct = 0;
+        bool isTodayPositive = true;
+
+        if (portfolioState is PortfolioLoaded) {
+          final summary = portfolioState.summary;
+          totalValue = summary.formattedTotalValue;
+          todayChange = summary.formattedTodayChange;
+          todayChangePct = summary.todayChangePercentage;
+          isTodayPositive = summary.isTodayPositive;
+        }
+
+        // Derive top/worst sectors from analytics
+        return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+          builder: (context, analyticsState) {
+            String topSector = '--';
+            String topSectorChange = '';
+            String worstSector = '--';
+            String worstSectorChange = '';
+
+            if (analyticsState is PortfolioAnalyticsLoaded &&
+                analyticsState.heatmap != null &&
+                analyticsState.heatmap!.sectors.isNotEmpty) {
+              final sectors = List<analytics_entities.Sector>.from(
+                analyticsState.heatmap!.sectors,
+              )..sort((a, b) => b.changePercent.compareTo(a.changePercent));
+              topSector = sectors.first.sectorName;
+              topSectorChange = sectors.first.formattedChangePercent;
+              worstSector = sectors.last.sectorName;
+              worstSectorChange = sectors.last.formattedChangePercent;
+            }
+
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 700;
+                final cards = [
+                  _buildStatCard(
+                    label: 'TOTAL VALUE',
+                    value: totalValue,
+                    icon: Icons.account_balance_wallet_outlined,
+                    accentColor: const Color(0xFF0BA95B),
+                  ),
+                  _buildStatCard(
+                    label: '24H CHANGE',
+                    value: todayChange,
+                    trailing:
+                        '${isTodayPositive ? '+' : ''}${todayChangePct.toStringAsFixed(2)}%',
+                    icon: isTodayPositive
+                        ? Icons.trending_up
+                        : Icons.trending_down,
+                    accentColor: isTodayPositive
+                        ? const Color(0xFF0BA95B)
+                        : const Color(0xFFB22222),
+                  ),
+                  _buildStatCard(
+                    label: 'TOP SECTOR',
+                    value: topSector,
+                    trailing: topSectorChange,
+                    icon: Icons.emoji_events_outlined,
+                    accentColor: const Color(0xFF0BA95B),
+                  ),
+                  _buildStatCard(
+                    label: 'WEAKEST SECTOR',
+                    value: worstSector,
+                    trailing: worstSectorChange,
+                    icon: Icons.warning_amber_outlined,
+                    accentColor: const Color(0xFFB22222),
+                  ),
+                ];
+
+                if (isWide) {
+                  return Row(
+                    children: cards
+                        .map((c) => Expanded(child: c))
+                        .toList()
+                        .expand((w) => [w, const SizedBox(width: 12)])
+                        .toList()
+                      ..removeLast(),
+                  );
+                } else {
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: cards
+                        .map(
+                          (c) => SizedBox(
+                            width: (constraints.maxWidth - 12) / 2,
+                            child: c,
+                          ),
+                        )
+                        .toList(),
+                  );
+                }
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Builds a single stat card with the Obsidian Pulse glassmorphic style
+  Widget _buildStatCard({
+    required String label,
+    required String value,
+    String? trailing,
+    required IconData icon,
+    required Color accentColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C192C),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.45),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              Icon(icon, color: accentColor, size: 16),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (trailing != null && trailing.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                trailing,
+                style: TextStyle(
+                  color: accentColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the "Equity Distribution" header with pill tag and legend
+  Widget _buildEquityDistributionHeader() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const Text(
+          'Equity Distribution',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            'MARKET CAP WEIGHTED',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.55),
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        const Spacer(),
+        // Legend
+        _buildLegendDot(const Color(0xFF0BA95B), 'Outperform'),
+        const SizedBox(width: 12),
+        _buildLegendDot(const Color(0xFF2B273B), 'Neutral'),
+        const SizedBox(width: 12),
+        _buildLegendDot(const Color(0xFFB22222), 'Underperform'),
+      ],
+    );
+  }
+
+  Widget _buildLegendDot(Color color, String label) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+        ),
+      ),
+      const SizedBox(width: 5),
+      Text(
+        label,
+        style: TextStyle(
+          color: Colors.white.withOpacity(0.55),
+          fontSize: 11,
+        ),
+      ),
+    ],
+  );
+
+  /// Builds the bottom status bar
+  Widget _buildFooterStatusBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C192C),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Row(
+        children: [
+          // Connected indicator
+          Container(
+            width: 7,
+            height: 7,
+            decoration: const BoxDecoration(
+              color: Color(0xFF0BA95B),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'CONNECTED TO EXCHANGE',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.55),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Icon(Icons.access_time, color: Colors.white.withOpacity(0.4), size: 12),
+          const SizedBox(width: 4),
+          Text(
+            'Live Feed',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.4),
+              fontSize: 10,
+            ),
+          ),
+          const Spacer(),
+          // Sentiment pill
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0BA95B).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFF0BA95B).withOpacity(0.5)),
+            ),
+            child: const Text(
+              'BULLISH SENTIMENT',
+              style: TextStyle(
+                color: Color(0xFF0BA95B),
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
