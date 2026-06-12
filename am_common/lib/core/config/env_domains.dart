@@ -22,7 +22,7 @@ class EnvDomains {
   static String get docs      => ConfigService.override('docs')      ?? '$apiBase/doc/processor';
   static String get gmail     => ConfigService.override('gmail')     ?? '$apiBase/gmail';
   static String get etf       => ConfigService.override('etf')       ?? '$apiBase/api/etf';
-  static String get subscription => ConfigService.override('subscription') ?? const String.fromEnvironment('AM_SUBSCRIPTION_BASE_URL', defaultValue: 'http://localhost:8110');
+  static String get subscription => ConfigService.override('subscription') ?? '$apiBase/subscriptions';
   
   // WebSocket
   static String get wsStream  => ConfigService.override('wsStream')  ?? '$wsBase/v1/streams';

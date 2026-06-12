@@ -138,7 +138,7 @@ def run_cmd(package, cmd_parts, env_vars=None):
         print(f"[Logs] Streaming output to logs/{log_name}.log")
         with open(log_file, "a", encoding="utf-8") as f:
             f.write(f"\n\n--- EXECUTION: {' '.join(cmd_parts)} ---\n")
-            p = subprocess.Popen(cmd_parts, cwd=package_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=is_windows)
+            p = subprocess.Popen(cmd_parts, cwd=package_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", shell=is_windows)
             try:
                 for line in p.stdout:
                     sys.stdout.write(line)
