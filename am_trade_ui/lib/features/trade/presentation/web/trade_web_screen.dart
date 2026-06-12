@@ -56,10 +56,10 @@ class TradeWebScreen extends ConsumerStatefulWidget {
   final void Function(String id, String name)? onPortfolioChanged;
 
   @override
-  ConsumerState<TradeWebScreen> createState() => _TradeWebScreenState();
+  ConsumerState<TradeWebScreen> createState() => TradeWebScreenState();
 }
 
-class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
+class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   late SwipeNavigationController _swipeController;
   String? _currentPortfolioId;
   String? _currentPortfolioName;
@@ -90,6 +90,13 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         widget.onTabChanged?.call(_swipeController.currentIndex);
       }
     });
+  }
+
+  void openAddTrade() {
+    final addTradeIndex = _swipeController.items.indexWhere((item) => item.title == 'Add Trade');
+    if (addTradeIndex != -1) {
+      _swipeController.navigateTo(addTradeIndex);
+    }
   }
 
   int _getInitialIndex() {

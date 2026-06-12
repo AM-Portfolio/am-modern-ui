@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard;
@@ -28,6 +29,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0; // Default to Dashboard
   bool _sessionRestored = false;
+  final GlobalKey<dynamic> _tradeLayoutKey = GlobalKey();
 
   @override
   void initState() {
@@ -271,9 +273,31 @@ class _AppShellState extends State<AppShell> {
       case 0:
         return dashboard.DashboardPage(userId: userId);
       case 1:
-        return const PortfolioScreen();
+        return PortfolioScreen(
+          addTradeBuilder: (context, portfolioId, portfolioName, onComplete) {
+            return Consumer(
+              builder: (context, ref, _) {
+                final cubitAsync = ref.watch(tradeControllerCubitProvider);
+
+                return cubitAsync.when(
+                  data: (cubit) => BlocProvider<TradeControllerCubit>.value(
+                    value: cubit,
+                    child: AddTradeWebPage(
+                      portfolioId: portfolioId,
+                      portfolioName: portfolioName,
+                      onTradeAdded: onComplete,
+                      onCancel: onComplete,
+                    ),
+                  ),
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (error, _) => Center(child: Text('Error: $error')),
+                );
+              },
+            );
+          },
+        );
       case 2:
-        return const TradeResponsiveLayout();
+        return TradeResponsiveLayout(key: _tradeLayoutKey);
       case 3:
         return MarketPage(userId: userId);
       case 4:
