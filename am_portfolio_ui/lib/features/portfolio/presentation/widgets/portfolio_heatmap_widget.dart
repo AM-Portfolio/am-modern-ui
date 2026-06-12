@@ -13,6 +13,7 @@ import '../cubit/portfolio_heatmap_state.dart';
 import '../cubit/portfolio_state.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart' as analytics_entities;
 import '../mappers/sector_heatmap_converter.dart';
+import 'portfolio_metric_card.dart';
 
 /// Configuration class for platform-specific heatmap settings
 class PortfolioHeatmapConfig {
@@ -100,7 +101,7 @@ class _PortfolioHeatmapWidgetState
 
     // Initialize with config defaults
     _selectedMetric = MetricType.changePercent;
-    _selectedTimeframe = TimeFrame.oneYear;
+    _selectedTimeframe = TimeFrame.oneDay;
     _selectedLayout = widget.config.defaultLayout;
 
     CommonLogger.info(
@@ -111,7 +112,9 @@ class _PortfolioHeatmapWidgetState
       'Parameters: portfolioId=${widget.portfolioId}, portfolioName=${widget.portfolioName ?? 'null'}',
       tag: '${widget.config.logTag}.Init',
     );
-    _loadHeatmapData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadHeatmapData();
+    });
   }
 
   void _loadHeatmapData() {
@@ -132,7 +135,7 @@ class _PortfolioHeatmapWidgetState
 
     // Load analytics data first
     portfolioAnalyticsCubit
-        .loadAnalytics(widget.portfolioId)
+        .loadAnalytics(widget.portfolioId, timeFrame: _selectedTimeframe)
         .then((_) {
           final analyticsState = portfolioAnalyticsCubit.state;
           if (analyticsState is PortfolioAnalyticsError) {
@@ -186,15 +189,39 @@ class _PortfolioHeatmapWidgetState
       Padding(padding: widget.config.padding, child: _buildHeatmapContent());
 
   /// Main heatmap content with state handling using dual cubit approach
-  Widget _buildHeatmapContent() => BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
-    builder: (context, state) {
-      CommonLogger.debug(
-        'State update: ${state.runtimeType}',
-        tag: '${widget.config.logTag}.State',
-      );
+  Widget _buildHeatmapContent() => MultiBlocListener(
+    listeners: [
+      BlocListener<PortfolioCubit, PortfolioState>(
+        listenWhen: (previous, current) {
+          if (previous is PortfolioLoaded && current is PortfolioLoaded) {
+            // Only trigger if live data is active and todayChange has updated
+            return current.isLiveDataActive && 
+                   previous.summary.todayChangePercentage != current.summary.todayChangePercentage;
+          }
+          return false;
+        },
+        listener: (context, state) {
+          if (state is PortfolioLoaded && state.isLiveDataActive) {
+            // Live data updated, refresh the heatmap UI
+            CommonLogger.info('Live data update detected, refreshing heatmap', tag: widget.config.logTag);
+            // Re-trigger the heatmap load. We don't need to fetch new analytics,
+            // we just need the cubit to emit a new state so the UI updates.
+            final portfolioHeatmapCubit = context.read<PortfolioHeatmapCubit>();
+            portfolioHeatmapCubit.refresh();
+          }
+        },
+      ),
+    ],
+    child: BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
+      builder: (context, state) {
+        CommonLogger.debug(
+          'State update: ${state.runtimeType}',
+          tag: '${widget.config.logTag}.State',
+        );
 
-      return _buildStateWidget(state);
-    },
+        return _buildStateWidget(state);
+      },
+    ),
   );
 
   /// Routes to appropriate widget based on current state
@@ -409,38 +436,44 @@ class _PortfolioHeatmapWidgetState
             return LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 700;
+                final isSmallMobile = constraints.maxWidth < 600;
                 final cards = [
-                  _buildStatCard(
-                    label: 'TOTAL VALUE',
+                  PortfolioMetricCard(
+                    title: 'TOTAL VALUE',
                     value: totalValue,
+                    subtitle: '',
                     icon: Icons.account_balance_wallet_outlined,
                     accentColor: const Color(0xFF0BA95B),
+                    compact: isSmallMobile,
                   ),
-                  _buildStatCard(
-                    label: '24H CHANGE',
+                  PortfolioMetricCard(
+                    title: '24H CHANGE',
                     value: todayChange,
-                    trailing:
-                        '${isTodayPositive ? '+' : ''}${todayChangePct.toStringAsFixed(2)}%',
+                    subtitle: '${isTodayPositive ? '+' : ''}${todayChangePct.toStringAsFixed(2)}%',
                     icon: isTodayPositive
                         ? Icons.trending_up
                         : Icons.trending_down,
                     accentColor: isTodayPositive
                         ? const Color(0xFF0BA95B)
                         : const Color(0xFFB22222),
+                    isPositive: isTodayPositive,
+                    compact: isSmallMobile,
                   ),
-                  _buildStatCard(
-                    label: 'TOP SECTOR',
+                  PortfolioMetricCard(
+                    title: 'TOP SECTOR',
                     value: topSector,
-                    trailing: topSectorChange,
+                    subtitle: topSectorChange,
                     icon: Icons.emoji_events_outlined,
                     accentColor: const Color(0xFF0BA95B),
+                    compact: isSmallMobile,
                   ),
-                  _buildStatCard(
-                    label: 'WEAKEST SECTOR',
+                  PortfolioMetricCard(
+                    title: 'WEAKEST SECTOR',
                     value: worstSector,
-                    trailing: worstSectorChange,
+                    subtitle: worstSectorChange,
                     icon: Icons.warning_amber_outlined,
                     accentColor: const Color(0xFFB22222),
+                    compact: isSmallMobile,
                   ),
                 ];
 
@@ -475,67 +508,6 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Builds a single stat card with the Obsidian Pulse glassmorphic style
-  Widget _buildStatCard({
-    required String label,
-    required String value,
-    String? trailing,
-    required IconData icon,
-    required Color accentColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C192C),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.45),
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              Icon(icon, color: accentColor, size: 16),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (trailing != null && trailing.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                trailing,
-                style: TextStyle(
-                  color: accentColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
   /// Builds the "Equity Distribution" header with pill tag and legend
   Widget _buildEquityDistributionHeader() {
     return Row(
@@ -553,13 +525,13 @@ class _PortfolioHeatmapWidgetState
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
+            color: Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(
             'MARKET CAP WEIGHTED',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.55),
+              color: Colors.white.withValues(alpha: 0.55),
               fontSize: 9,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.8,
@@ -592,7 +564,7 @@ class _PortfolioHeatmapWidgetState
       Text(
         label,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.55),
+          color: Colors.white.withValues(alpha: 0.55),
           fontSize: 11,
         ),
       ),
@@ -601,65 +573,97 @@ class _PortfolioHeatmapWidgetState
 
   /// Builds the bottom status bar
   Widget _buildFooterStatusBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C192C),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
-      ),
-      child: Row(
-        children: [
-          // Connected indicator
-          Container(
-            width: 7,
-            height: 7,
-            decoration: const BoxDecoration(
-              color: Color(0xFF0BA95B),
-              shape: BoxShape.circle,
-            ),
+    return BlocBuilder<PortfolioCubit, PortfolioState>(
+      builder: (context, state) {
+        bool isConnected = false;
+        double todayChangePct = 0.0;
+        
+        if (state is PortfolioLoaded) {
+          isConnected = state.isLiveDataActive;
+          todayChangePct = state.summary.todayChangePercentage;
+        }
+        
+        final statusColor = isConnected ? const Color(0xFF0BA95B) : const Color(0xFFB22222);
+        final statusText = isConnected ? 'LIVE FEED ACTIVE' : 'CONNECTING...';
+        
+        final isPositive = todayChangePct >= 0;
+        final sentimentColor = isPositive ? const Color(0xFF0BA95B) : const Color(0xFFB22222);
+        final sentimentText = isPositive ? 'BULLISH SENTIMENT' : 'BEARISH SENTIMENT';
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C192C),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
-          const SizedBox(width: 6),
-          Text(
-            'CONNECTED TO EXCHANGE',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.55),
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Icon(Icons.access_time, color: Colors.white.withOpacity(0.4), size: 12),
-          const SizedBox(width: 4),
-          Text(
-            'Live Feed',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
-              fontSize: 10,
-            ),
-          ),
-          const Spacer(),
-          // Sentiment pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0BA95B).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF0BA95B).withOpacity(0.5)),
-            ),
-            child: const Text(
-              'BULLISH SENTIMENT',
-              style: TextStyle(
-                color: Color(0xFF0BA95B),
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
+          child: Row(
+            children: [
+              // Connected indicator
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
+              const SizedBox(width: 6),
+              Text(
+                statusText,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Icon(Icons.access_time, color: Colors.white.withValues(alpha: 0.4), size: 12),
+              const SizedBox(width: 4),
+              BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
+                builder: (context, heatmapState) {
+                  String timeText = 'Just now';
+                  if (heatmapState is PortfolioHeatmapLoaded) {
+                    final diff = DateTime.now().difference(heatmapState.lastUpdated);
+                    if (diff.inMinutes > 0) {
+                      timeText = '\${diff.inMinutes}m ago';
+                    } else if (diff.inSeconds > 0) {
+                      timeText = '\${diff.inSeconds}s ago';
+                    }
+                  }
+                  return Text(
+                    'Updated: $timeText',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.4),
+                      fontSize: 10,
+                    ),
+                  );
+                },
+              ),
+              const Spacer(),
+              // Sentiment pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: sentimentColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: sentimentColor.withValues(alpha: 0.5)),
+                ),
+                child: Text(
+                  sentimentText,
+                  style: TextStyle(
+                    color: sentimentColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

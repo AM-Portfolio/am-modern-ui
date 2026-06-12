@@ -10,6 +10,9 @@ class PortfolioAnalyticsRequestDto {
     required this.featureToggles,
     required this.featureConfiguration,
     required this.pagination,
+    this.fromDate,
+    this.toDate,
+    this.timeFrame,
   });
 
   factory PortfolioAnalyticsRequestDto.fromJson(Map<String, dynamic> json) =>
@@ -18,6 +21,9 @@ class PortfolioAnalyticsRequestDto {
   final FeatureTogglesDto featureToggles;
   final FeatureConfigurationDto featureConfiguration;
   final PaginationDto pagination;
+  final String? fromDate;
+  final String? toDate;
+  final String? timeFrame;
 
   Map<String, dynamic> toJson() => _$PortfolioAnalyticsRequestDtoToJson(this);
 }

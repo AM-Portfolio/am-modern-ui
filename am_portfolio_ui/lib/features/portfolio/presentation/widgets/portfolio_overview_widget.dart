@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import 'package:am_common/am_common.dart';
+import 'portfolio_metric_card.dart';
 
 /// Portfolio overview widget showing summary and key metrics
 class PortfolioOverviewWidget extends StatefulWidget {
@@ -162,9 +163,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
                     onPressed: () {
-                      if (portfolioId != null) {
-                        context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
-                      }
+                      context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text('Try Again'),
@@ -194,7 +193,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (portfolioId != null) ...[
+                    // Header with Global Time Frame Selector
                       // Header with Global Time Frame Selector
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -218,50 +217,46 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                           mainAxisSpacing: 12,
                           crossAxisSpacing: 12,
                           children: [
-                            _buildMetricCard(
-                              context,
-                              'Total Return',
-                              _formatCurrency(state.summary.totalGainLoss),
-                              '${state.summary.totalGainLossPercentage >= 0 ? "+" : ""}${state.summary.totalGainLossPercentage.toStringAsFixed(2)}% total',
-                              state.summary.totalGainLoss == 0
+                            PortfolioMetricCard(
+                              title: 'Total Return',
+                              value: _formatCurrency(state.summary.totalGainLoss),
+                              subtitle: '${state.summary.totalGainLossPercentage >= 0 ? "+" : ""}${state.summary.totalGainLossPercentage.toStringAsFixed(2)}% total',
+                              accentColor: state.summary.totalGainLoss == 0
                                   ? Colors.grey
                                   : (state.summary.totalGainLoss > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
-                              Icons.show_chart,
+                              icon: Icons.show_chart,
                               isPositive: state.summary.totalGainLoss == 0 ? null : state.summary.totalGainLoss > 0,
                               compact: isSmallMobile,
                               tooltip: 'Total unrealized profit or loss across all holdings',
                             ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
-                            _buildMetricCard(
-                              context,
-                              'Today\'s P&L',
-                              _formatCurrency(state.summary.todayChange),
-                              '${state.summary.todayChangePercentage >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}% today',
-                              state.summary.todayChange == 0
+                            PortfolioMetricCard(
+                              title: 'Today\'s P&L',
+                              value: _formatCurrency(state.summary.todayChange),
+                              subtitle: '${state.summary.todayChangePercentage >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}% today',
+                              accentColor: state.summary.todayChange == 0
                                   ? Colors.grey
                                   : (state.summary.todayChange > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
-                              Icons.trending_up,
+                              icon: Icons.trending_up,
                               isPositive: state.summary.todayChange == 0 ? null : state.summary.todayChange > 0,
                               compact: isSmallMobile,
                               tooltip: 'Unrealized profit or loss for today',
                             ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0),
-                            _buildMetricCard(
-                              context,
-                              'Total Balance',
-                              _formatCurrency(state.summary.totalValue),
-                              '${state.summary.totalAssets} Active Holdings',
-                              const Color(0xFF6C5DD3),
-                              Icons.account_balance_wallet,
+                            PortfolioMetricCard(
+                              title: 'Total Balance',
+                              value: _formatCurrency(state.summary.totalValue),
+                              subtitle: '${state.summary.totalAssets} Active Holdings',
+                              accentColor: const Color(0xFF6C5DD3),
+                              icon: Icons.account_balance_wallet,
                               isPositive: null,
                               compact: isSmallMobile,
                               tooltip: 'Total value of all holdings based on current market price',
                             ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0),
-                            _buildMetricCard(
-                              context,
-                              'Invested Amount',
-                              _formatCurrency(state.summary.investmentValue),
-                              'Total Principal',
-                              const Color(0xFF4A90E2),
-                              Icons.savings_outlined,
+                            PortfolioMetricCard(
+                              title: 'Invested Amount',
+                              value: _formatCurrency(state.summary.investmentValue),
+                              subtitle: 'Total Principal',
+                              accentColor: const Color(0xFF4A90E2),
+                              icon: Icons.savings_outlined,
                               isHighlight: true,
                               compact: isSmallMobile,
                               tooltip: 'Total principal amount invested',
@@ -272,56 +267,52 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                         Row(
                           children: [
                             Expanded(
-                              child: _buildMetricCard(
-                                context,
-                                'Total Return',
-                                _formatCurrency(state.summary.totalGainLoss),
-                                '${state.summary.totalGainLossPercentage >= 0 ? "+" : ""}${state.summary.totalGainLossPercentage.toStringAsFixed(2)}% total',
-                                state.summary.totalGainLoss == 0
+                              child: PortfolioMetricCard(
+                                title: 'Total Return',
+                                value: _formatCurrency(state.summary.totalGainLoss),
+                                subtitle: '${state.summary.totalGainLossPercentage >= 0 ? "+" : ""}${state.summary.totalGainLossPercentage.toStringAsFixed(2)}% total',
+                                accentColor: state.summary.totalGainLoss == 0
                                     ? Colors.grey
                                     : (state.summary.totalGainLoss > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
-                                Icons.show_chart,
+                                icon: Icons.show_chart,
                                 isPositive: state.summary.totalGainLoss == 0 ? null : state.summary.totalGainLoss > 0,
                                 tooltip: 'Total unrealized profit or loss across all holdings',
                               ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: _buildMetricCard(
-                                context,
-                                'Today\'s P&L',
-                                _formatCurrency(state.summary.todayChange),
-                                '${state.summary.todayChangePercentage >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}% today',
-                                state.summary.todayChange == 0
+                              child: PortfolioMetricCard(
+                                title: 'Today\'s P&L',
+                                value: _formatCurrency(state.summary.todayChange),
+                                subtitle: '${state.summary.todayChangePercentage >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}% today',
+                                accentColor: state.summary.todayChange == 0
                                     ? Colors.grey
                                     : (state.summary.todayChange > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
-                                Icons.trending_up,
+                                icon: Icons.trending_up,
                                 isPositive: state.summary.todayChange == 0 ? null : state.summary.todayChange > 0,
                                 tooltip: 'Unrealized profit or loss for today',
                               ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: _buildMetricCard(
-                                context,
-                                'Total Balance',
-                                _formatCurrency(state.summary.totalValue),
-                                '${state.summary.totalAssets} Active Holdings',
-                                const Color(0xFF6C5DD3),
-                                Icons.account_balance_wallet,
+                              child: PortfolioMetricCard(
+                                title: 'Total Balance',
+                                value: _formatCurrency(state.summary.totalValue),
+                                subtitle: '${state.summary.totalAssets} Active Holdings',
+                                accentColor: const Color(0xFF6C5DD3),
+                                icon: Icons.account_balance_wallet,
                                 isPositive: null,
                                 tooltip: 'Total value of all holdings based on current market price',
                               ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: _buildMetricCard(
-                                context,
-                                'Invested Amount',
-                                _formatCurrency(state.summary.investmentValue),
-                                'Total Principal',
-                                const Color(0xFF4A90E2),
-                                Icons.savings_outlined,
+                              child: PortfolioMetricCard(
+                                title: 'Invested Amount',
+                                value: _formatCurrency(state.summary.investmentValue),
+                                subtitle: 'Total Principal',
+                                accentColor: const Color(0xFF4A90E2),
+                                icon: Icons.savings_outlined,
                                 isHighlight: true,
                                 tooltip: 'Total principal amount invested',
                               ).animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.2, end: 0),
@@ -337,7 +328,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                           height: isSmallMobile ? 280 : 340,
                           child: AnalysisPerformanceWidget(
                             key: ValueKey('perf_${_selectedTimeFrame.code}'),
-                            portfolioId: portfolioId!,
+                            portfolioId: portfolioId,
                             initialTimeFrame: _selectedTimeFrame,
                             showTimeFrameSelector: false,
                             height: isSmallMobile ? 280 : 340,
@@ -348,7 +339,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                           height: isSmallMobile ? 280 : 340,
                           child: AnalysisAllocationWidget(
                             key: ValueKey('alloc_${_selectedTimeFrame.code}'),
-                            portfolioId: portfolioId!,
+                            portfolioId: portfolioId,
                             initialTimeFrame: _selectedTimeFrame,
                             groupBy: GroupBy.sector,
                             height: isSmallMobile ? 280 : 340,
@@ -364,7 +355,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                                 height: 420,
                                 child: AnalysisPerformanceWidget(
                                   key: ValueKey('perf_${_selectedTimeFrame.code}'),
-                                  portfolioId: portfolioId!,
+                                  portfolioId: portfolioId,
                                   initialTimeFrame: _selectedTimeFrame,
                                   showTimeFrameSelector: false,
                                   height: 420,
@@ -378,7 +369,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                                 height: 420,
                                 child: AnalysisAllocationWidget(
                                   key: ValueKey('alloc_${_selectedTimeFrame.code}'),
-                                  portfolioId: portfolioId!,
+                                  portfolioId: portfolioId,
                                   initialTimeFrame: _selectedTimeFrame,
                                   groupBy: GroupBy.sector,
                                   height: 420,
@@ -392,20 +383,13 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                       SizedBox(
                         height: isSmallMobile ? 260 : 300,
                         child: PortfolioTopMoversPanel(
-                          portfolioId: portfolioId!,
+                          portfolioId: portfolioId,
                           timeFrame: _selectedTimeFrame,
                           showTimeFrameSelector: false,
                           height: isSmallMobile ? 260 : 300,
                         ),
                       ),
-                    ] else ...[
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32.0),
-                          child: Text('Please select a portfolio to view details'),
-                        ),
-                      ),
-                    ],
+
                   ],
                 ),
               );
@@ -417,173 +401,6 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
         return _buildOverviewSkeleton(context);
       },
     );
-  }
-
-  // Helper method for metrics and UI
-  Widget _buildMetricCard(
-    BuildContext context,
-    String title,
-    String value,
-    String subtitle,
-    Color accentColor,
-    IconData icon, {
-    bool? isPositive,
-    bool isHighlight = false,
-    bool compact = false,
-    String? tooltip,
-  }) {
-    // Use theme colors
-    final cardColor = Theme.of(context).cardColor;
-    final textTheme = Theme.of(context).textTheme;
-
-    final verticalPadding = compact ? 12.0 : 16.0;
-    final horizontalPadding = compact ? 12.0 : 16.0;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Tooltip(
-      message: tooltip ?? title,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: verticalPadding,
-          ),
-          decoration: BoxDecoration(
-            gradient: isHighlight
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      accentColor.withValues(alpha: 0.8),
-                      accentColor.withValues(alpha: 0.6),
-                    ],
-                  )
-                : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      cardColor.withValues(alpha: isDark ? 0.4 : 0.6),
-                      cardColor.withValues(alpha: isDark ? 0.2 : 0.4),
-                    ],
-                  ),
-            borderRadius: BorderRadius.circular(16), // Softer corners
-        border: Border.all(
-          color: isHighlight
-              ? Colors.white.withValues(alpha: 0.2)
-              : Theme.of(context).dividerColor.withValues(alpha: 0.1),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isHighlight
-                ? accentColor.withValues(alpha: 0.3)
-                : Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header Row: Title + Icon
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodySmall?.copyWith(
-                    fontSize: compact ? 10 : 11,
-                    color: isHighlight
-                        ? Colors.white.withValues(alpha: 0.85)
-                        : Theme.of(
-                            context,
-                          ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
-                    fontWeight: FontWeight.w600, // Slightly bolder
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.all(compact ? 4 : 6),
-                decoration: BoxDecoration(
-                  color: isHighlight
-                      ? Colors.white.withValues(alpha: 0.2)
-                      : accentColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(
-                  icon,
-                  size: compact ? 12 : 14,
-                  color: isHighlight ? Colors.white : accentColor,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: compact ? 8 : 12),
-          // Main Value
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                value,
-                style: textTheme.headlineSmall?.copyWith(
-                  fontSize: compact ? 18 : 22,
-                  fontWeight: FontWeight.bold,
-                  color: isHighlight
-                      ? Colors.white
-                      : Theme.of(context).textTheme.bodyLarge?.color,
-                  height: 1.1,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: compact ? 6 : 8),
-          // Subtitle with change indicator
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isPositive != null) ...[
-                Icon(
-                  isPositive ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                  size: compact ? 10 : 12,
-                  color: isHighlight
-                      ? Colors.white.withValues(alpha: 0.9)
-                      : accentColor,
-                ),
-                const SizedBox(width: 2),
-              ],
-              Flexible(
-                child: Text(
-                  subtitle,
-                  style: textTheme.bodySmall?.copyWith(
-                    fontSize: compact ? 9 : 11,
-                    color: isHighlight
-                        ? Colors.white.withValues(alpha: 0.75)
-                        : ((isPositive != null)
-                              ? accentColor
-                              : Theme.of(context).textTheme.bodySmall?.color
-                                    ?.withValues(alpha: 0.5)),
-                    fontWeight: (isPositive != null && isPositive) ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ))));
   }
 
   // Helper to format currency

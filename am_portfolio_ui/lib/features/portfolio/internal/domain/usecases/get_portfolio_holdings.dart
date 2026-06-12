@@ -23,6 +23,11 @@ class GetPortfolioHoldings {
     String portfolioId,
   ) async => call(portfolioId);
 
+  /// Gets cached portfolio holdings directly (synchronous return via future)
+  Future<PortfolioHoldings?> getCached(String portfolioId) async {
+    return _repository.getCachedPortfolioHoldingsById(portfolioId);
+  }
+
   /// Execute with stream for real-time updates
   Stream<PortfolioHoldings> watchHoldings() {
     CommonLogger.methodEntry(

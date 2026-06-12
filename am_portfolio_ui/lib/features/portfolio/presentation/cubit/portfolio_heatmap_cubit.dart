@@ -5,6 +5,7 @@ import 'package:am_design_system/shared/models/heatmap/heatmap_ui_data.dart';
 import 'package:am_design_system/am_design_system.dart'
     hide MarketCapType, MetricType, TimeFrame, SectorType;
 import '../mappers/sector_heatmap_converter.dart';
+import '../../internal/domain/entities/portfolio_analytics.dart';
 import 'portfolio_analytics_cubit.dart';
 import 'portfolio_analytics_state.dart';
 import 'portfolio_heatmap_state.dart';
@@ -57,24 +58,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             subtitle: 'Sector Performance Analysis',
           );
 
-          // Apply timeframe scaling to simulate data changes
-          double scaleFactor = 1.0;
-          switch (timeFrame) {
-            case TimeFrame.oneDay: scaleFactor = 1.0; break;
-            case TimeFrame.oneWeek: scaleFactor = 1.5; break;
-            case TimeFrame.oneMonth: scaleFactor = 2.5; break;
-            case TimeFrame.threeMonths: scaleFactor = 5.0; break;
-            case TimeFrame.sixMonths: scaleFactor = 8.0; break;
-            case TimeFrame.oneYear: scaleFactor = 12.0; break;
-            case TimeFrame.ytd: scaleFactor = 7.0; break;
-            case TimeFrame.threeYears: scaleFactor = 25.0; break;
-            case TimeFrame.fiveYears: scaleFactor = 40.0; break;
-            case TimeFrame.all: scaleFactor = 50.0; break;
-          }
-          
-          if (scaleFactor != 1.0) {
-            heatmapData = _scaleHeatmapData(heatmapData, scaleFactor);
-          }
+
 
           // Apply Sector filtering
           if (sector != SectorType.all && sector != SectorType.noGroup) {
@@ -91,18 +75,55 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             );
           }
 
-          // Apply Market Cap filtering (Simulated since backend doesn't provide it)
+          // Apply Market Cap filtering
           if (marketCap != MarketCapType.all) {
-            // To prevent squarified treemap layout math errors (parent value != sum of children),
-            // we simulate market cap filtering by completely hiding certain sector tiles 
-            // instead of removing random children and breaking the math.
-            int seed = marketCap.index;
-            heatmapData = heatmapData.copyWith(
-              tiles: heatmapData.uiTiles.where((tile) {
-                // simple deterministic pseudo-random filter based on hash code and market cap index
-                return (tile.name.hashCode + seed) % 3 != 0; 
-              }).toList(),
+            final targetCapName = marketCap.displayName.toLowerCase();
+            
+            // Try to find the matching segment in marketCapAllocation
+            final segments = analyticsState.marketCapAllocation?.segments ?? [];
+            final targetSegment = segments.cast<MarketCapSegment?>().firstWhere(
+              (s) => s != null && (s.segmentName.toLowerCase().contains(targetCapName) || 
+                     targetCapName.contains(s.segmentName.toLowerCase())),
+              orElse: () => null,
             );
+
+            if (targetSegment != null && targetSegment.topStocks.isNotEmpty) {
+              // Filter the children of each tile to only include stocks in the target segment
+              final List<HeatmapTileData> filteredTiles = [];
+              
+              for (final tile in heatmapData.uiTiles) {
+                if (tile.children == null || tile.children!.isEmpty) {
+                  filteredTiles.add(tile);
+                  continue;
+                }
+                
+                final filteredChildren = tile.children!.where((child) {
+                  return targetSegment.topStocks.contains(child.id);
+                }).toList();
+                
+                if (filteredChildren.isNotEmpty) {
+                  // Recalculate sector value based on remaining children to prevent layout errors
+                  final newSectorValue = filteredChildren.fold<double>(
+                    0.0, 
+                    (sum, child) => sum + (child.value ?? 0.0)
+                  );
+                  
+                  filteredTiles.add(tile.copyWith(
+                    children: filteredChildren,
+                    value: newSectorValue,
+                  ));
+                }
+              }
+              
+              heatmapData = heatmapData.copyWith(tiles: filteredTiles);
+            } else {
+              // No stocks match this market cap segment — show empty state
+              if (isClosed) return;
+              emit(const PortfolioHeatmapEmpty(
+                message: 'No holdings found for the selected market cap segment.',
+              ));
+              return;
+            }
           }
         } else if (analyticsState is PortfolioAnalyticsError) {
           CommonLogger.warning(
@@ -270,23 +291,4 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
     }
   }
 
-  HeatmapData _scaleHeatmapData(HeatmapData data, double factor) {
-    if (factor == 1.0) return data;
-    
-    List<HeatmapTileData> scaleTiles(List<HeatmapTileData> tiles) {
-      return tiles.map((t) {
-        final newPerformance = t.performance * factor;
-        List<HeatmapTileData>? newChildren;
-        if (t.children != null && t.children!.isNotEmpty) {
-           newChildren = scaleTiles(t.children!.cast<HeatmapTileData>());
-        }
-        return t.copyWith(
-          performance: newPerformance,
-          children: newChildren,
-        );
-      }).toList();
-    }
-    
-    return data.copyWith(tiles: scaleTiles(data.uiTiles));
-  }
 }

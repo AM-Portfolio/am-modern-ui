@@ -23,6 +23,11 @@ class GetPortfolioSummary {
     String portfolioId,
   ) async => call(portfolioId);
 
+  /// Gets cached portfolio summary directly (synchronous return via future)
+  Future<PortfolioSummary?> getCached(String portfolioId) async {
+    return _repository.getCachedPortfolioSummaryById(portfolioId);
+  }
+
   /// Execute with stream for real-time updates
   Stream<PortfolioSummary> watchSummary() {
     
