@@ -28,7 +28,10 @@ class MarketCapView extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black45, blurRadius: 12, offset: const Offset(0, 6)),
+          BoxShadow(
+              color: Colors.black45,
+              blurRadius: 12,
+              offset: const Offset(0, 6)),
         ],
       ),
       child: Column(
@@ -55,9 +58,11 @@ class MarketCapView extends StatelessWidget {
               final category = item['category'] ?? 'Unknown';
               final change = (item['change'] ?? 0.0).toDouble();
               final name = item['name'] ?? '';
-              
-              final color = change >= 0 ? const Color(0xFF4CAF50) : const Color(0xFFEF5350);
-              
+
+              final color = change >= 0
+                  ? const Color(0xFF4CAF50)
+                  : const Color(0xFFEF5350);
+
               Color categoryColor;
               if (category.contains('Large')) {
                 categoryColor = Colors.blue;
@@ -66,7 +71,7 @@ class MarketCapView extends StatelessWidget {
               } else {
                 categoryColor = Colors.purple;
               }
-              
+
               return Expanded(
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -130,3 +135,4 @@ class MarketCapView extends StatelessWidget {
     );
   }
 }
+// test
