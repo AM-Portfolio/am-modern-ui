@@ -7,12 +7,10 @@ import '../../domain/models/basket_opportunity.dart';
 import 'etf_search_bar.dart';
 
 class BasketExplorer extends ConsumerStatefulWidget {
-  final String userId;
   final String portfolioId;
 
   const BasketExplorer({
     super.key,
-    required this.userId,
     required this.portfolioId,
   });
 
@@ -41,7 +39,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
   Widget build(BuildContext context) {
     // Use the current query state
     final opportunitiesAsync = ref.watch(basketOpportunitiesProvider(
-      userId: widget.userId,
+      userId: 'default_user',
       portfolioId: widget.portfolioId,
       query: _query,
     ));
@@ -89,7 +87,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                   BasketNavigation.openPreview(
                     context,
                     etfIsin: selection.isin!,
-                    userId: widget.userId,
+                    userId: 'default_user',
                     portfolioId: widget.portfolioId,
                   );
                 }
@@ -173,7 +171,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                       BasketNavigation.openPreview(
                         context,
                         etfIsin: opp.etfIsin,
-                        userId: widget.userId,
+                        userId: 'default_user',
                         portfolioId: widget.portfolioId,
                       );
                     },

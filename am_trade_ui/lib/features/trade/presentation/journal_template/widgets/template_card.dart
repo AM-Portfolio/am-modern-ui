@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../../../internal/domain/entities/journal_template.dart';
+import '../../../internal/domain/entities/journal_template.dart';
 
 /// Animated template card with glassmorphism design
 class TemplateCard extends StatefulWidget {

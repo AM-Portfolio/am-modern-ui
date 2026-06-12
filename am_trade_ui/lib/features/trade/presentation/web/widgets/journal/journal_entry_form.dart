@@ -23,15 +23,13 @@ import 'hover_input_field.dart';
 
 class JournalEntryForm extends ConsumerStatefulWidget {
   const JournalEntryForm({
-    required this.userId,
-    required this.cubit,
+        required this.cubit,
     required this.portfolioId,
     super.key,
     this.entry,
   });
 
-  final String userId;
-  final JournalCubit cubit;
+    final JournalCubit cubit;
   final String portfolioId;
   final JournalEntry? entry;
 
@@ -82,61 +80,17 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     // Set edit mode: true for new entries, false for existing (view mode)
     _isEditMode = widget.entry == null;
 
-    _titleController = TextEditingController(text: widget.entry?.title ?? '');
-
-    // Initialize Quill controller with existing content or empty
-    final doc = widget.entry?.content != null && widget.entry!.content.isNotEmpty
-        ? quill.Document.fromJson(jsonDecode(widget.entry!.content))
-        : quill.Document();
-    _quillController = quill.QuillController(document: doc, selection: const TextSelection.collapsed(offset: 0));
-
-    _tradeIdController = TextEditingController(text: widget.entry?.tradeId ?? '');
+    _titleController = TextEditingController();
+    _quillController = quill.QuillController(document: quill.Document(), selection: const TextSelection.collapsed(offset: 0));
+    _tradeIdController = TextEditingController();
     _urlController = TextEditingController();
-    _entryDate = widget.entry?.entryDate ?? DateTime.now();
+    _planningBehaviorController = TextEditingController();
+    _midBehaviorController = TextEditingController();
+    _endBehaviorController = TextEditingController();
 
-    // Initialize planning phase from customFields
-    _planningBehaviorController = TextEditingController(text: widget.entry?.customFields['planningBehavior'] ?? '');
-    _planningMood = widget.entry?.customFields['planningMood'];
-    _planningSentiment = widget.entry?.customFields['planningSentiment'];
+    _initFormFields();
 
-    // Initialize mid phase from customFields
-    _midBehaviorController = TextEditingController(text: widget.entry?.customFields['midBehavior'] ?? '');
-    _midMood = widget.entry?.customFields['midMood'];
-    _midSentiment = widget.entry?.customFields['midSentiment'];
-
-    // Initialize end phase from customFields (with legacy fallback)
-  
-
-    _endBehaviorController = TextEditingController(text: widget.entry?.customFields['endBehavior'] ?? '');
-    _endMood =
-        widget.entry?.customFields['endMood'] ??
-        (widget.entry?.behaviorPatternSummaries.isNotEmpty == true
-            ? JournalHelpers.mapMoodFromEntry(widget.entry!.behaviorPatternSummaries.first.mood)
-            : null);
-    _endSentiment =
-        widget.entry?.customFields['endSentiment'] ??
-        (widget.entry?.behaviorPatternSummaries.isNotEmpty == true
-            ? JournalHelpers.mapSentimentFromValue(widget.entry!.behaviorPatternSummaries.first.marketSentiment)
-            : null);
-
-    if (widget.entry?.behaviorPatternSummaries.isNotEmpty == true) {
-      _selectedTags.addAll(widget.entry!.behaviorPatternSummaries.expand((pattern) => pattern.tags).toSet());
-    }
-
-    // Load image URLs from either attachments or imageUrls
-    if (widget.entry?.attachments != null && widget.entry!.attachments.isNotEmpty) {
-      // Prefer attachments field (new schema)
-      _imageUrls = widget.entry!.attachments.map((a) => a.fileUrl).toList();
-    } else if (widget.entry?.imageUrls != null) {
-      // Fallback to imageUrls (legacy)
-      _imageUrls = List.from(widget.entry!.imageUrls);
-    }
-
-    if (widget.entry?.relatedTradeIds != null) {
-      _relatedTradeIds = List.from(widget.entry!.relatedTradeIds);
-    }
-
-    _tradeOverviewDate = widget.entry?.entryDate ?? DateTime.now();
+    _urlController.addListener(_onUrlChanged);
 
     _urlController.addListener(_onUrlChanged);
 
@@ -144,6 +98,59 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadTradesForPeriod(_tradeOverviewDate, _tradePeriod);
     });
+  }
+
+  void _initFormFields() {
+    _titleController.text = widget.entry?.title ?? '';
+
+    final doc = widget.entry?.content != null && widget.entry!.content.isNotEmpty
+        ? quill.Document.fromJson(jsonDecode(widget.entry!.content))
+        : quill.Document();
+    _quillController.document = doc;
+
+    _tradeIdController.text = widget.entry?.tradeId ?? '';
+    _entryDate = widget.entry?.entryDate ?? DateTime.now();
+
+    final customFields = widget.entry?.customFields ?? {};
+    
+    _planningBehaviorController.text = customFields['planningBehavior'] ?? '';
+    _planningMood = customFields['planningMood'];
+    _planningSentiment = customFields['planningSentiment'];
+
+    _midBehaviorController.text = customFields['midBehavior'] ?? '';
+    _midMood = customFields['midMood'];
+    _midSentiment = customFields['midSentiment'];
+
+    _endBehaviorController.text = customFields['endBehavior'] ?? '';
+    _endMood = customFields['endMood'] ??
+        (widget.entry?.behaviorPatternSummaries.isNotEmpty == true
+            ? JournalHelpers.mapMoodFromEntry(widget.entry!.behaviorPatternSummaries.first.mood)
+            : null);
+    _endSentiment = customFields['endSentiment'] ??
+        (widget.entry?.behaviorPatternSummaries.isNotEmpty == true
+            ? JournalHelpers.mapSentimentFromValue(widget.entry!.behaviorPatternSummaries.first.marketSentiment)
+            : null);
+
+    _selectedTags.clear();
+    if (widget.entry?.behaviorPatternSummaries.isNotEmpty == true) {
+      _selectedTags.addAll(widget.entry!.behaviorPatternSummaries.expand((pattern) => pattern.tags).toSet());
+    }
+
+    if (widget.entry?.attachments != null && widget.entry!.attachments.isNotEmpty) {
+      _imageUrls = widget.entry!.attachments.map((a) => a.fileUrl).toList();
+    } else if (widget.entry?.imageUrls != null) {
+      _imageUrls = List.from(widget.entry!.imageUrls!);
+    } else {
+      _imageUrls = [];
+    }
+
+    if (widget.entry?.relatedTradeIds != null) {
+      _relatedTradeIds = List.from(widget.entry!.relatedTradeIds!);
+    } else {
+      _relatedTradeIds = [];
+    }
+
+    _tradeOverviewDate = widget.entry?.entryDate ?? DateTime.now();
   }
 
   @override
@@ -160,12 +167,9 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
   void _onUrlChanged() {
     final text = _urlController.text.trim();
-    print('URL Changed: $text'); // Debug
     if (text.isNotEmpty && (text.startsWith('http://') || text.startsWith('https://'))) {
-      print('Setting preview for: $text'); // Debug
       setState(() => _urlPreview = text);
     } else {
-      print('Clearing preview'); // Debug
       setState(() => _urlPreview = null);
     }
   }
@@ -178,11 +182,13 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       switch (period) {
         case TradePeriodType.daily:
           final getTradeCalendarByDay = await ref.read(getTradeCalendarByDayProvider.future);
-          final calendar = await getTradeCalendarByDay(widget.userId, widget.portfolioId, date: date);
+          final calendar = await getTradeCalendarByDay(widget.portfolioId, date: date);
           final trades = calendar.allTrades;
-          setState(() {
-            _availableTrades = TradeHoldingViewModel.fromEntityList(trades);
-          });
+          if (mounted) {
+            setState(() {
+              _availableTrades = TradeHoldingViewModel.fromEntityList(trades);
+            });
+          }
           return;
 
         case TradePeriodType.weekly:
@@ -192,16 +198,15 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
         case TradePeriodType.monthly:
           final getTradeCalendarByMonth = await ref.read(getTradeCalendarByMonthProvider.future);
-          final calendar = await getTradeCalendarByMonth(
-            widget.userId,
-            widget.portfolioId,
-            year: date.year,
+          final calendar = await getTradeCalendarByMonth(widget.portfolioId, year: date.year,
             month: date.month,
           );
           final trades = calendar.allTrades;
-          setState(() {
-            _availableTrades = TradeHoldingViewModel.fromEntityList(trades);
-          });
+          if (mounted) {
+            setState(() {
+              _availableTrades = TradeHoldingViewModel.fromEntityList(trades);
+            });
+          }
           return;
 
         case TradePeriodType.yearly:
@@ -213,22 +218,25 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       // For weekly and yearly, use date range
       final getTradeCalendarByDateRange = await ref.read(getTradeCalendarByDateRangeProvider.future);
       final calendar = await getTradeCalendarByDateRange(
-        widget.userId,
         widget.portfolioId,
         startDate: startDate,
         endDate: endDate,
       );
 
       final trades = calendar.allTrades;
-      setState(() {
-        _availableTrades = TradeHoldingViewModel.fromEntityList(trades);
-      });
-    } catch (e, stackTrace) {
-      print('Error loading trades for period: $e');
-      print('Stack trace: $stackTrace');
-      setState(() {
-        _availableTrades = [];
-      });
+      if (mounted) {
+        setState(() {
+          _availableTrades = TradeHoldingViewModel.fromEntityList(trades);
+        });
+      }
+    } catch (e) {
+      // Log error silently for debugging if needed but don't leak to console
+      // AppLogger.error('Error loading trades for period', error: e);
+      if (mounted) {
+        setState(() {
+          _availableTrades = [];
+        });
+      }
 
       // Show error message to user
       if (mounted) {
@@ -323,13 +331,10 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       setState(() => _isSubmitting = true);
       try {
         final content = _getQuillContent();
-
-        // Build behavior pattern summaries from the form data
         final behaviorPatternSummaries = _buildBehaviorPatternSummaries();
 
         if (widget.entry == null) {
           await widget.cubit.addJournalEntry(
-            userId: widget.userId,
             title: _titleController.text,
             content: content,
             entryDate: _entryDate,
@@ -350,10 +355,35 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
               endSentiment: _endSentiment,
             ),
           );
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Journal entry created successfully'), backgroundColor: Colors.green),
+            );
+            // Reset form for a new entry
+            _titleController.clear();
+            _quillController.document = quill.Document();
+            _tradeIdController.clear();
+            _urlController.clear();
+            _planningBehaviorController.clear();
+            _midBehaviorController.clear();
+            _endBehaviorController.clear();
+            setState(() {
+              _planningMood = null;
+              _planningSentiment = null;
+              _midMood = null;
+              _midSentiment = null;
+              _endMood = null;
+              _endSentiment = null;
+              _selectedTags.clear();
+              _imageUrls = [];
+              _relatedTradeIds = [];
+              _entryDate = DateTime.now();
+            });
+          }
         } else {
           await widget.cubit.editJournalEntry(
             entryId: widget.entry!.id,
-            userId: widget.userId,
             title: _titleController.text,
             content: content,
             entryDate: _entryDate,
@@ -373,6 +403,19 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
               endMood: _endMood,
               endSentiment: _endSentiment,
             ),
+          );
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Journal entry updated successfully'), backgroundColor: Colors.green),
+            );
+            setState(() => _isEditMode = false);
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save entry: $e'), backgroundColor: Colors.red),
           );
         }
       } finally {
@@ -431,22 +474,50 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   @override
   Widget build(BuildContext context) => Form(
     key: _formKey,
-    child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 8, 24, 16), child: _buildMainContent()),
-  );
-
-  Widget _buildMainContent() => Builder(
-    builder: (context) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 2, child: _buildLeftColumn(context)),
-            const SizedBox(width: 20),
-            Expanded(child: _buildRightColumn()),
-          ],
-        ),
-      ],
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 650;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isWide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 2, child: _buildLeftColumn(context)),
+                    const SizedBox(width: 20),
+                    Expanded(child: _buildRightColumn()),
+                  ],
+                )
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildLeftColumn(context),
+                    const SizedBox(height: 24),
+                    _buildRightColumn(),
+                  ],
+                ),
+              const SizedBox(height: 24),
+              JournalFormActions(
+                isEditMode: _isEditMode,
+                isSubmitting: _isSubmitting,
+                isNewEntry: widget.entry == null,
+                onSubmit: _submit,
+                onToggleEditMode: () => setState(() => _isEditMode = !_isEditMode),
+                onCancel: () {
+                  if (widget.entry != null) {
+                    _initFormFields(); // Revert to original entry values
+                  }
+                  setState(() => _isEditMode = false);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     ),
   );
 
@@ -458,15 +529,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       _buildBehaviorTracking(),
       const SizedBox(height: 12),
       RichTextEditor(controller: _quillController, readOnly: !_isEditMode),
-      const SizedBox(height: 16),
-      JournalFormActions(
-        isEditMode: _isEditMode,
-        isSubmitting: _isSubmitting,
-        isNewEntry: widget.entry == null,
-        onSubmit: _submit,
-        onToggleEditMode: () => setState(() => _isEditMode = !_isEditMode),
-        onCancel: () => setState(() => _isEditMode = false),
-      ),
     ],
   );
 
@@ -481,7 +543,7 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           color: _isEditMode ? null : theme.colorScheme.onSurface.withOpacity(0.9),
         ),
         decoration: InputDecoration(
-          label: Container(padding: const EdgeInsets.symmetric(horizontal: 4), child: const Text('Title')),
+          labelText: 'Title',
           floatingLabelBehavior: FloatingLabelBehavior.always,
           floatingLabelAlignment: FloatingLabelAlignment.start,
           hintText: 'e.g., "AAPL Breakout" or "Lesson: Don\'t Chase"',
@@ -528,7 +590,6 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         imageUrls: _imageUrls,
         onAttachmentsChanged: (urls) => setState(() => _imageUrls = urls),
         featureName: 'journal',
-        userId: widget.userId,
         isEditMode: _isEditMode,
       ),
     ],

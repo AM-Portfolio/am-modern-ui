@@ -18,12 +18,10 @@ import '../../internal/domain/entities/metrics/trade_metrics_response.dart';
 import '../../internal/domain/enums/metric_types.dart';
 
 class TradeMetricsPage extends ConsumerStatefulWidget {
-  final String userId;
-  final String? portfolioId;
+    final String? portfolioId;
 
   const TradeMetricsPage({
-    required this.userId,
-    this.portfolioId,
+        this.portfolioId,
     super.key,
   });
 
@@ -73,6 +71,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
         // Fetch available metric types if not already loaded
         final getMetricTypes = await ref.read(getMetricTypesUseCaseProvider.future);
         final availableTypes = await getMetricTypes();
+        if (!mounted) return;
         metricTypesToUse = availableTypes;
       } catch (e) {
         // If fetching fails, pass null (backend will use defaults)
@@ -90,7 +89,10 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
       instruments: config.instrumentFilters?.baseSymbols,
     );
     
+    if (!mounted) return;
+    
     final cubit = await ref.read(tradeMetricsCubitProvider.future);
+    if (!mounted) return;
     cubit.loadMetrics(request);
   }
 
@@ -107,7 +109,6 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
             children: [
               // Filter Panel
               TradeMetricsFilterPanel(
-                userId: widget.userId,
                 initialConfig: _currentConfig,
                 onApplyFilter: _applyFilter,
                 onReset: () => _applyFilter(MetricsFilterConfig.empty()),

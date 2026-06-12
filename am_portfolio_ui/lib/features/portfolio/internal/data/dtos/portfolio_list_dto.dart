@@ -12,7 +12,8 @@ class PortfolioItemDto {
   factory PortfolioItemDto.fromJson(Map<String, dynamic> json) =>
       PortfolioItemDto(
         portfolioId: json['portfolioId'] as String,
-        portfolioName: (json['portfolioName'] as String?) ?? 'Unnamed Portfolio',
+        portfolioName:
+            (json['portfolioName'] as String?) ?? 'Unnamed Portfolio',
       );
   final String portfolioId;
   final String portfolioName;

@@ -149,36 +149,33 @@ class TradeOverviewSelector extends StatelessWidget {
     ),
   );
 
-  Widget _buildPeriodSelector(ThemeData theme) => Row(
-    children: [
-      Expanded(
-        child: SegmentedButton<TradePeriodType>(
-          segments: const [
-            ButtonSegment(value: TradePeriodType.daily, label: Text('Day'), icon: Icon(Icons.today, size: 14)),
-            ButtonSegment(value: TradePeriodType.weekly, label: Text('Week'), icon: Icon(Icons.view_week, size: 14)),
-            ButtonSegment(
-              value: TradePeriodType.monthly,
-              label: Text('Month'),
-              icon: Icon(Icons.calendar_month, size: 14),
-            ),
-            ButtonSegment(
-              value: TradePeriodType.yearly,
-              label: Text('Year'),
-              icon: Icon(Icons.calendar_today_outlined, size: 14),
-            ),
-          ],
-          selected: {selectedPeriod},
-          onSelectionChanged: (newSelection) {
-            onPeriodChanged(newSelection.first);
-          },
-          style: ButtonStyle(
-            textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 10)),
-            padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 6, vertical: 4)),
-            visualDensity: VisualDensity.compact,
-          ),
+  Widget _buildPeriodSelector(ThemeData theme) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: SegmentedButton<TradePeriodType>(
+      segments: const [
+        ButtonSegment(value: TradePeriodType.daily, label: Text('Day'), icon: Icon(Icons.today, size: 14)),
+        ButtonSegment(value: TradePeriodType.weekly, label: Text('Week'), icon: Icon(Icons.view_week, size: 14)),
+        ButtonSegment(
+          value: TradePeriodType.monthly,
+          label: Text('Month'),
+          icon: Icon(Icons.calendar_month, size: 14),
         ),
+        ButtonSegment(
+          value: TradePeriodType.yearly,
+          label: Text('Year'),
+          icon: Icon(Icons.calendar_today_outlined, size: 14),
+        ),
+      ],
+      selected: {selectedPeriod},
+      onSelectionChanged: (newSelection) {
+        onPeriodChanged(newSelection.first);
+      },
+      style: ButtonStyle(
+        textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 10)),
+        padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 6, vertical: 4)),
+        visualDensity: VisualDensity.compact,
       ),
-    ],
+    ),
   );
 
   String _getDateRangeText() {

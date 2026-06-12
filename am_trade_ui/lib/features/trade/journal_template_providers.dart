@@ -12,11 +12,13 @@ import 'internal/domain/usecases/toggle_favorite_template_usecase.dart';
 import 'internal/domain/usecases/use_template_usecase.dart';
 import 'presentation/cubit/journal_template/journal_template_cubit.dart';
 
+import 'package:am_common/core/di/network_providers.dart';
+
 /// Provider for journal template remote data source
 final journalTemplateRemoteDataSourceProvider =
-    Provider<JournalTemplateRemoteDataSource>((ref) {
-  final apiClient = ref.watch(apiClientProvider);
-  final config = ref.watch(appConfigProvider);
+    FutureProvider<JournalTemplateRemoteDataSource>((ref) async {
+  final apiClient = await ref.watch(apiClientProvider.future);
+  final config = await ref.watch(appConfigProvider.future);
   return JournalTemplateRemoteDataSourceImpl(
     apiClient: apiClient,
     tradeConfig: config.api.trade,
@@ -25,51 +27,51 @@ final journalTemplateRemoteDataSourceProvider =
 
 /// Provider for journal template repository
 final journalTemplateRepositoryProvider =
-    Provider<JournalTemplateRepository>((ref) {
-  final remoteDataSource = ref.watch(journalTemplateRemoteDataSourceProvider);
+    FutureProvider<JournalTemplateRepository>((ref) async {
+  final remoteDataSource = await ref.watch(journalTemplateRemoteDataSourceProvider.future);
   return JournalTemplateRepositoryImpl(remoteDataSource: remoteDataSource);
 });
 
 /// Provider for get templates use case
-final getTemplatesUseCaseProvider = Provider<GetTemplatesUseCase>((ref) {
-  final repository = ref.watch(journalTemplateRepositoryProvider);
+final getTemplatesUseCaseProvider = FutureProvider<GetTemplatesUseCase>((ref) async {
+  final repository = await ref.watch(journalTemplateRepositoryProvider.future);
   return GetTemplatesUseCase(repository);
 });
 
 /// Provider for create template use case
-final createTemplateUseCaseProvider = Provider<CreateTemplateUseCase>((ref) {
-  final repository = ref.watch(journalTemplateRepositoryProvider);
+final createTemplateUseCaseProvider = FutureProvider<CreateTemplateUseCase>((ref) async {
+  final repository = await ref.watch(journalTemplateRepositoryProvider.future);
   return CreateTemplateUseCase(repository);
 });
 
 /// Provider for use template use case
-final useTemplateUseCaseProvider = Provider<UseTemplateUseCase>((ref) {
-  final repository = ref.watch(journalTemplateRepositoryProvider);
+final useTemplateUseCaseProvider = FutureProvider<UseTemplateUseCase>((ref) async {
+  final repository = await ref.watch(journalTemplateRepositoryProvider.future);
   return UseTemplateUseCase(repository);
 });
 
 /// Provider for toggle favorite template use case
 final toggleFavoriteTemplateUseCaseProvider =
-    Provider<ToggleFavoriteTemplateUseCase>((ref) {
-  final repository = ref.watch(journalTemplateRepositoryProvider);
+    FutureProvider<ToggleFavoriteTemplateUseCase>((ref) async {
+  final repository = await ref.watch(journalTemplateRepositoryProvider.future);
   return ToggleFavoriteTemplateUseCase(repository);
 });
 
 /// Provider for delete template use case
-final deleteTemplateUseCaseProvider = Provider<DeleteTemplateUseCase>((ref) {
-  final repository = ref.watch(journalTemplateRepositoryProvider);
+final deleteTemplateUseCaseProvider = FutureProvider<DeleteTemplateUseCase>((ref) async {
+  final repository = await ref.watch(journalTemplateRepositoryProvider.future);
   return DeleteTemplateUseCase(repository);
 });
 
 /// Provider for journal template cubit
 final journalTemplateCubitProvider =
-    Provider.autoDispose<JournalTemplateCubit>((ref) {
+    FutureProvider.autoDispose<JournalTemplateCubit>((ref) async {
   return JournalTemplateCubit(
-    getTemplatesUseCase: ref.watch(getTemplatesUseCaseProvider),
-    createTemplateUseCase: ref.watch(createTemplateUseCaseProvider),
-    useTemplateUseCase: ref.watch(useTemplateUseCaseProvider),
+    getTemplatesUseCase: await ref.watch(getTemplatesUseCaseProvider.future),
+    createTemplateUseCase: await ref.watch(createTemplateUseCaseProvider.future),
+    useTemplateUseCase: await ref.watch(useTemplateUseCaseProvider.future),
     toggleFavoriteTemplateUseCase:
-        ref.watch(toggleFavoriteTemplateUseCaseProvider),
-    deleteTemplateUseCase: ref.watch(deleteTemplateUseCaseProvider),
+        await ref.watch(toggleFavoriteTemplateUseCaseProvider.future),
+    deleteTemplateUseCase: await ref.watch(deleteTemplateUseCaseProvider.future),
   );
 });

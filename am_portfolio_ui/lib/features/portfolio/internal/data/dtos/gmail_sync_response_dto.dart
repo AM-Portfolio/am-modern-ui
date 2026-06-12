@@ -20,10 +20,10 @@ class GmailSyncResponseDto {
   final bool success;
   final String broker;
   final int count;
-  
+
   @JsonKey(name: 'db_id')
   final String? dbId;
-  
+
   // Reuse existing EquityHoldingDto
   final List<EquityHoldingDto> holdings;
 

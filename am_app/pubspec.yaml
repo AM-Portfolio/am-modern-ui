@@ -23,6 +23,8 @@ dependencies:
     path: ../am_auth_ui
   am_dashboard_ui:
     path: ../am_dashboard_ui
+  am_subscription_ui:
+    path: ../am_subscription_ui
 
   # ── DISABLED (re-enable one at a time as each module is fixed) ──────────────
   am_user_ui:
@@ -59,6 +61,9 @@ dependencies:
   dio: ^5.4.0
   webview_flutter: ^4.9.0
   webview_flutter_web: ^0.2.3+4
+  flutter_localizations:
+    sdk: flutter
+  flutter_quill: ^11.5.0
 
 dev_dependencies:
   flutter_test:
@@ -67,3 +72,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+dependency_overrides:
+  path_provider_foundation: 2.3.2

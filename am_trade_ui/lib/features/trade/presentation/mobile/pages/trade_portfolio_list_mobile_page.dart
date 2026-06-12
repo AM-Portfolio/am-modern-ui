@@ -6,12 +6,10 @@ import '../../components/templates/trade_portfolio_discovery_template.dart';
 import '../../models/trade_portfolio_view_model.dart';
 
 class TradePortfolioListMobilePage extends ConsumerWidget {
-  const TradePortfolioListMobilePage({required this.userId, super.key});
-  final String userId;
-
-  @override
+  const TradePortfolioListMobilePage({super.key});
+    @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider(userId));
+    final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -20,7 +18,7 @@ class TradePortfolioListMobilePage extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              ref.invalidate(tradePortfoliosStreamProvider(userId));
+              ref.invalidate(tradePortfoliosStreamProvider);
             },
           ),
         ],
@@ -31,7 +29,7 @@ class TradePortfolioListMobilePage extends ConsumerWidget {
           isLoading: false,
           onPortfolioSelected: (portfolio) => _navigateToHoldings(context, portfolio),
           onRefresh: () {
-            ref.invalidate(tradePortfoliosStreamProvider(userId));
+            ref.invalidate(tradePortfoliosStreamProvider);
           },
           isWebView: false,
         ),
@@ -47,7 +45,7 @@ class TradePortfolioListMobilePage extends ConsumerWidget {
           errorMessage: error.toString(),
           onPortfolioSelected: (_) {},
           onRefresh: () {
-            ref.invalidate(tradePortfoliosStreamProvider(userId));
+            ref.invalidate(tradePortfoliosStreamProvider);
           },
           isWebView: false,
         ),
@@ -59,7 +57,7 @@ class TradePortfolioListMobilePage extends ConsumerWidget {
     Navigator.pushNamed(
       context,
       '/trade/holdings/${portfolio.id}',
-      arguments: {'userId': userId, 'portfolioName': portfolio.name},
+      arguments: {'portfolioName': portfolio.name},
     );
   }
 }

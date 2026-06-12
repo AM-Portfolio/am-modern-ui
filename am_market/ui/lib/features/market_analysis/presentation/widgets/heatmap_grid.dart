@@ -37,7 +37,7 @@ class HeatmapGrid extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final stock = stocks[index];
                   // Merge with live data
-                  final liveData = provider.livePrices[stock.symbol];
+                  final liveData = provider.getPrice(stock.symbol);
                   
                   double price = stock.lastPrice;
                   double pChange = stock.pChange;

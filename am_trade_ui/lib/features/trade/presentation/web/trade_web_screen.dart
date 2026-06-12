@@ -21,6 +21,9 @@ import 'package:am_market_ui/am_market_ui.dart';
 import '../pages/trade_market_page.dart';
 import '../pages/trade_unified_view_page.dart';
 import '../trade_navigation.dart';
+import '../../providers/trade_controller_providers.dart';
+import '../cubit/trade_controller_cubit.dart';
+import '../add_trade/pages/add_trade_web_page.dart';
 
 /// Trade view types for navigation
 enum TradeViewType { portfolios, holdings, calendar, analysis, report, trades, journal, marketAnalysis, unified }
@@ -28,7 +31,6 @@ enum TradeViewType { portfolios, holdings, calendar, analysis, report, trades, j
 /// Web-specific trade screen implementation with sidebar navigation
 class TradeWebScreen extends ConsumerStatefulWidget {
   const TradeWebScreen({
-    required this.userId,
     super.key,
     this.selectedPortfolioId,
     this.selectedPortfolioName,
@@ -36,15 +38,22 @@ class TradeWebScreen extends ConsumerStatefulWidget {
     this.isSidebarVisible = true,
     this.onToggleSidebar,
     this.onBack,
+    this.onTabChanged,
+    this.onPortfolioChanged,
   });
 
-  final String userId;
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final TradeViewType initialView;
   final bool isSidebarVisible;
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
+
+  /// Called whenever the active tab index changes (for cross-layout state sync)
+  final void Function(int index)? onTabChanged;
+
+  /// Called whenever a portfolio is selected (for cross-layout state sync)
+  final void Function(String id, String name)? onPortfolioChanged;
 
   @override
   ConsumerState<TradeWebScreen> createState() => _TradeWebScreenState();
@@ -64,13 +73,6 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     _symbolController = TextEditingController(text: '');
 
     _initializeSwipeController();
-
-    if (widget.userId.isEmpty) {
-      AppLogger.error(
-        '🚨 CRITICAL: TradeWebScreen initialized with EMPTY userId! This should NOT happen!',
-        tag: 'TradeWebScreen',
-      );
-    }
   }
 
   void _initializeSwipeController() {
@@ -82,7 +84,11 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
 
     // Listen to controller changes to update sidebar selection
     _swipeController.addListener(() {
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {});
+        // Notify parent about tab changes for cross-layout state sync
+        widget.onTabChanged?.call(_swipeController.currentIndex);
+      }
     });
   }
 
@@ -121,7 +127,6 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               )
             : TradeHoldingsDashboardWebPage(
                 key: ValueKey('holdings_$_currentPortfolioId'),
-                userId: widget.userId,
                 portfolioId: _currentPortfolioId!,
                 onNavigateToChart: (symbol) {
                   ref.read(marketAnalysisSymbolProvider.notifier).updateSymbol(symbol);
@@ -142,7 +147,6 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               )
             : TradeCalendarAnalyticsWebPage(
                 key: ValueKey('calendar_$_currentPortfolioId'),
-                userId: widget.userId,
                 portfolioId: _currentPortfolioId!,
               ),
         accentColor: ModuleColors.trade,
@@ -159,7 +163,6 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               )
             : TradeListWebPage(
                 key: ValueKey('trades_$_currentPortfolioId'),
-                userId: widget.userId,
                 portfolioId: _currentPortfolioId!,
                 onNavigateToChart: (symbol) {
                   ref.read(marketAnalysisSymbolProvider.notifier).updateSymbol(symbol);
@@ -172,7 +175,7 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         title: 'Journal',
         subtitle: 'Trade journal',
         icon: Icons.book_outlined,
-        page: JournalWebPage(userId: widget.userId, portfolioId: _currentPortfolioId),
+        page: JournalWebPage( portfolioId: _currentPortfolioId),
         accentColor: ModuleColors.trade,
       ),
       NavigationItem(
@@ -187,7 +190,6 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               )
             : TradeMetricsPage(
                 key: ValueKey('metrics_$_currentPortfolioId'),
-                userId: widget.userId,
                 portfolioId: _currentPortfolioId!,
               ),
         accentColor: ModuleColors.trade,
@@ -211,7 +213,6 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               )
             : TradeReportPage(
                 key: ValueKey('report_$_currentPortfolioId'),
-                userId: widget.userId,
                 portfolioId: _currentPortfolioId!,
               ),
         accentColor: ModuleColors.trade,
@@ -220,16 +221,49 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         title: 'Unified',
         subtitle: 'Trade Dashboard',
         icon: Icons.view_quilt_outlined,
-        page: TradeUnifiedViewPage(userId: widget.userId),
+        page: const TradeUnifiedViewPage(),
+        accentColor: ModuleColors.trade,
+      ),
+      NavigationItem(
+        title: 'Add Trade',
+        subtitle: 'New Trade Entry',
+        icon: Icons.add,
+        page: _currentPortfolioId == null
+            ? PortfolioSelectionPrompt(
+                title: 'Add Trade',
+                icon: Icons.add_circle_outline,
+                onViewPortfolioList: () => _swipeController.navigateTo(0),
+              )
+            : Consumer(
+                builder: (context, ref, _) {
+                  final cubitAsync = ref.watch(tradeControllerCubitProvider);
+
+                  return cubitAsync.when(
+                    data: (cubit) => BlocProvider<TradeControllerCubit>.value(
+                      value: cubit,
+                      child: AddTradeWebPage(
+                        portfolioId: _currentPortfolioId!,
+                        portfolioName: _currentPortfolioName,
+                        onTradeAdded: () {
+                           _swipeController.navigateTo(3); // Navigate to trades on success
+                        },
+                        onCancel: () {
+                           _swipeController.navigateTo(3); // Navigate to trades on cancel
+                        },
+                      ),
+                    ),
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, _) => Center(child: Text('Error loading trade service: $error')),
+                  );
+                },
+              ),
         accentColor: ModuleColors.trade,
       ),
     ];
   }
 
   void _onPortfolioSelected(String portfolioId, String portfolioName) {
-    final previousPortfolioId = _currentPortfolioId;
     final currentIndex = _swipeController.currentIndex;
-    final wasOnPortfolioSpecificPage = [1, 2, 3, 5, 7].contains(currentIndex); // Holdings, Calendar, Trades, Analysis, Report
 
     setState(() {
       _currentPortfolioId = portfolioId;
@@ -246,16 +280,28 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
       }
     });
 
+    // Notify parent for cross-layout state sync
+    widget.onPortfolioChanged?.call(portfolioId, portfolioName);
+
     AppLogger.info('Portfolio selected: $portfolioName ($portfolioId)', tag: 'TradeWebScreen');
   }
 
   @override
   Widget build(BuildContext context) {
     // Watch portfolios stream
-    final portfoliosAsyncValue = ref.watch(tradePortfoliosStreamProvider(widget.userId));
+    final portfoliosAsyncValue = ref.watch(tradePortfoliosStreamProvider);
     final portfolios = portfoliosAsyncValue.asData?.value ?? const [];
 
-      return UnifiedSidebarScaffold(
+    return NotificationListener<OpenAddTradeNotification>(
+      onNotification: (notification) {
+        notification.handled = true;
+        final addTradeIndex = _swipeController.items.indexWhere((item) => item.title == 'Add Trade');
+        if (addTradeIndex != -1) {
+          _swipeController.navigateTo(addTradeIndex);
+        }
+        return true;
+      },
+      child: UnifiedSidebarScaffold(
         module: ModuleType.trade,
         // Removed title/subtitle as requested
         title: null, 
@@ -280,11 +326,11 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 );
                 return;
               }
-              openAddTradeWebPage(
-                context,
-                portfolioId: _currentPortfolioId!,
-                portfolioName: _currentPortfolioName,
-              );
+              // Dispatch directly via _swipeController since NotificationListener is below this context
+              final addTradeIndex = _swipeController.items.indexWhere((item) => item.title == 'Add Trade');
+              if (addTradeIndex != -1) {
+                _swipeController.navigateTo(addTradeIndex);
+              }
             },
           ),
         ),
@@ -312,7 +358,15 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
           // Navigation Section (No Title)
           SecondarySidebarSection(
             title: '',
-            items: _swipeController.items.asMap().entries.map((entry) {
+            items: _swipeController.items.asMap().entries
+              .where((entry) {
+                final title = entry.value.title;
+                return title != 'Add Trade' && 
+                       title != 'Market' && 
+                       title != 'Report' && 
+                       title != 'Unified';
+              })
+              .map((entry) {
               final index = entry.key;
               final item = entry.value;
               return SecondarySidebarItem(
@@ -324,18 +378,15 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             }).toList(),
           ),
         ],
-      );
+      ),
+    );
   }
 
   /// Build portfolios view with integrated navigation
   Widget _buildPortfoliosView() {
-    if (widget.userId.isEmpty) {
-      return Center(child: Text('User ID missing'));
-    }
-
     return Consumer(
       builder: (context, ref, child) {
-        final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider(widget.userId));
+        final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider);
 
         return portfoliosAsync.when(
           data: (portfolios) {
@@ -354,7 +405,7 @@ class _TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 _onPortfolioSelected(portfolio.id, portfolio.name);
               },
               onRefresh: () {
-                ref.invalidate(tradePortfoliosStreamProvider(widget.userId));
+                ref.invalidate(tradePortfoliosStreamProvider);
               },
             );
           },

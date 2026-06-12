@@ -11,9 +11,8 @@ import '../../widgets/filter_panel.dart';
 import '../components/trade_holdings_advanced_template.dart';
 
 class TradeHoldingsDashboardWebPage extends ConsumerStatefulWidget {
-  const TradeHoldingsDashboardWebPage({required this.userId, required this.portfolioId, this.onNavigateToChart, super.key});
-  final String userId;
-  final String portfolioId;
+  const TradeHoldingsDashboardWebPage({ required this.portfolioId, this.onNavigateToChart, super.key});
+    final String portfolioId;
   final Function(String symbol)? onNavigateToChart;
 
   @override
@@ -30,10 +29,9 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
     super.initState();
     // Load favorite filters when page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (mounted) {
-        final cubit = await ref.read(favoriteFilterCubitProvider.future);
-        cubit.loadFilters(widget.userId);
-      }
+      final cubit = await ref.read(favoriteFilterCubitProvider.future);
+      if (!mounted) return;
+      cubit.loadFilters();
     });
   }
 
@@ -42,8 +40,8 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
       Scaffold(body: _selectedTrade != null ? _buildDetailView() : _buildHoldingsTab());
 
   Widget _buildHoldingsTab() {
-    final params = (userId: widget.userId, portfolioId: widget.portfolioId);
-    final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(params));
+    final portfolioId = widget.portfolioId;
+    final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(portfolioId));
 
     return Column(
       children: [
@@ -54,7 +52,6 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
                 data: (cubit) => BlocProvider.value(
                   value: cubit,
                   child: FilterPanel(
-                    userId: widget.userId,
                     initialConfig: _currentFilter,
                     onApplyFilter: (config) {
                       setState(() {
@@ -94,7 +91,7 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
                 onHoldingSelected: (holding) => _showHoldingDetails(context, holding),
                 onSymbolTap: widget.onNavigateToChart,
                 onRefresh: () {
-                  ref.invalidate(tradeHoldingsStreamProvider(params));
+                  ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
                 },
               );
             },
@@ -104,7 +101,7 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
               isLoading: false,
               errorMessage: error.toString(),
               onRefresh: () {
-                ref.invalidate(tradeHoldingsStreamProvider(params));
+                ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
               },
             ),
           ),
@@ -286,7 +283,6 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
         Expanded(
           child: TradeDetailViewPage(
             trade: _selectedTrade!,
-            userId: widget.userId,
             portfolioId: widget.portfolioId,
             onClose: () {
               setState(() {

@@ -6,13 +6,11 @@ import '../../components/templates/trade_portfolio_discovery_template.dart';
 import '../../models/trade_portfolio_view_model.dart';
 
 class TradePortfolioListWebPage extends ConsumerWidget {
-  final String userId;
-
-  const TradePortfolioListWebPage({super.key, required this.userId});
+  const TradePortfolioListWebPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider(userId));
+    final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -21,7 +19,7 @@ class TradePortfolioListWebPage extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              ref.invalidate(tradePortfoliosStreamProvider(userId));
+              ref.invalidate(tradePortfoliosStreamProvider);
             },
           ),
         ],
@@ -32,7 +30,7 @@ class TradePortfolioListWebPage extends ConsumerWidget {
           isLoading: false,
           onPortfolioSelected: (portfolio) => _navigateToHoldings(context, portfolio),
           onRefresh: () {
-            ref.invalidate(tradePortfoliosStreamProvider(userId));
+            ref.invalidate(tradePortfoliosStreamProvider);
           },
           isWebView: true,
         ),
@@ -43,7 +41,7 @@ class TradePortfolioListWebPage extends ConsumerWidget {
           errorMessage: error.toString(),
           onPortfolioSelected: (_) {},
           onRefresh: () {
-            ref.invalidate(tradePortfoliosStreamProvider(userId));
+            ref.invalidate(tradePortfoliosStreamProvider);
           },
           isWebView: true,
         ),
@@ -55,7 +53,7 @@ class TradePortfolioListWebPage extends ConsumerWidget {
     Navigator.pushNamed(
       context,
       '/trade/holdings/${portfolio.id}',
-      arguments: {'userId': userId, 'portfolioId': portfolio.id},
+      arguments: {'portfolioId': portfolio.id},
     );
   }
 }

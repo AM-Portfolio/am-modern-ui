@@ -13,13 +13,11 @@ import '../widgets/mobile_filter_panel.dart';
 
 class TradeHoldingsDashboardMobilePage extends ConsumerStatefulWidget {
   const TradeHoldingsDashboardMobilePage({
-    required this.userId,
-    required this.portfolioId,
+        required this.portfolioId,
     super.key,
     this.portfolioName,
   });
-  final String userId;
-  final String portfolioId;
+    final String portfolioId;
   final String? portfolioName;
 
   @override
@@ -38,7 +36,8 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
     // Load favorite filters when page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cubit = await ref.read(favoriteFilterCubitProvider.future);
-      cubit.loadFilters(widget.userId);
+      if (!mounted) return;
+      cubit.loadFilters();
     });
 
     // Listen to scroll events
@@ -74,7 +73,6 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
     MobileFilterPanel.show(
       context: context,
       ref: ref,
-      userId: widget.userId,
       initialConfig: _currentFilter,
       onApplyFilter: (filter) {
         setState(() => _currentFilter = filter);
@@ -96,7 +94,7 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
 
   Widget _buildHoldingsTab() {
     final holdingsAsync = ref.watch(
-      tradeHoldingsStreamProvider((userId: widget.userId, portfolioId: widget.portfolioId)),
+      tradeHoldingsStreamProvider(widget.portfolioId),
     );
 
     return holdingsAsync.when(
@@ -106,19 +104,26 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
 
         return Stack(
           children: [
-            // Holdings List (full screen now) - wrapped in NotificationListener to detect scroll
-            NotificationListener<ScrollNotification>(
-              onNotification: (notification) {
-                if (notification is ScrollUpdateNotification) {
-                  _onScroll();
-                }
-                return false;
+            // Holdings List (full screen now) - wrapped in RefreshIndicator and NotificationListener
+            RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(tradeHoldingsStreamProvider(widget.portfolioId));
+                // Optional small delay for better UX
+                await Future.delayed(const Duration(milliseconds: 500));
               },
-              child: TradeHoldingsTemplate(
-                holdings: filteredHoldings,
-                isLoading: false,
-                isWebView: false,
-                onHoldingSelected: (holding) => _navigateToHoldingDetails(context, holding),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollUpdateNotification) {
+                    _onScroll();
+                  }
+                  return false;
+                },
+                child: TradeHoldingsTemplate(
+                  holdings: filteredHoldings,
+                  isLoading: false,
+                  isWebView: false,
+                  onHoldingSelected: (holding) => _navigateToHoldingDetails(context, holding),
+                ),
               ),
             ),
             // Floating Filter Button (shows on scroll, auto-hides)
@@ -164,7 +169,7 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
         isWebView: false,
         errorMessage: 'Error loading holdings: $error',
         onRefresh: () =>
-            ref.refresh(tradeHoldingsStreamProvider((userId: widget.userId, portfolioId: widget.portfolioId))),
+            ref.refresh(tradeHoldingsStreamProvider(widget.portfolioId)),
       ),
     );
   }
@@ -279,7 +284,7 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          body: TradeDetailViewPage(trade: holding, userId: widget.userId, portfolioId: widget.portfolioId),
+          body: TradeDetailViewPage(trade: holding,  portfolioId: widget.portfolioId),
         ),
       ),
     );

@@ -7,7 +7,6 @@ part 'portfolio_summary.g.dart';
 @freezed
 abstract class PortfolioSummary with _$PortfolioSummary {
   const factory PortfolioSummary({
-    required String userId,
     required double totalValue,
     required double totalInvested,
     required double investmentValue,
@@ -32,8 +31,7 @@ abstract class PortfolioSummary with _$PortfolioSummary {
   factory PortfolioSummary.fromJson(Map<String, dynamic> json) =>
       _$PortfolioSummaryFromJson(json);
 
-  factory PortfolioSummary.empty(String userId) => PortfolioSummary(
-    userId: userId,
+  factory PortfolioSummary.empty() => PortfolioSummary(
     totalValue: 0.0,
     totalInvested: 0.0,
     investmentValue: 0.0,

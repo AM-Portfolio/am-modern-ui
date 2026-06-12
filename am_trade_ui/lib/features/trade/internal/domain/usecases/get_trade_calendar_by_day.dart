@@ -8,22 +8,22 @@ class GetTradeCalendarByDay {
   final TradeRepository _repository;
 
   /// Execute the use case to get trade calendar for a specific portfolio by day
-  Future<TradeCalendar> call(String userId, String portfolioId, {required DateTime date}) async {
+  Future<TradeCalendar> call(String portfolioId, {required DateTime date}) async {
     AppLogger.methodEntry(
       'GetTradeCalendarByDay.call',
       tag: 'GetTradeCalendarByDay',
-      params: {'userId': userId, 'portfolioId': portfolioId, 'date': date.toIso8601String()},
+      params: {},
     );
 
-    if (userId.isEmpty || portfolioId.isEmpty) {
+    if (portfolioId.isEmpty) {
       AppLogger.error('Validation failed - empty userId or portfolioId', tag: 'GetTradeCalendarByDay');
-      throw ArgumentError('User ID and Portfolio ID cannot be empty');
+      throw ArgumentError('Portfolio ID cannot be empty');
     }
 
     try {
       AppLogger.info('Executing get trade calendar by day use case', tag: 'GetTradeCalendarByDay');
 
-      final result = await _repository.getTradeCalendarByDay(userId, portfolioId, date: date);
+      final result = await _repository.getTradeCalendarByDay(portfolioId, date: date);
 
       AppLogger.info('Trade calendar by day use case completed successfully', tag: 'GetTradeCalendarByDay');
       AppLogger.methodExit('GetTradeCalendarByDay.call', tag: 'GetTradeCalendarByDay', result: 'success');

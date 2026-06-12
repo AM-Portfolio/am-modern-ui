@@ -12,6 +12,7 @@ class RichTextEditor extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
+      height: 350, // Added proper size to container to prevent infinite scroll
       decoration: BoxDecoration(
         border: Border.all(color: theme.dividerColor.withOpacity(0.5)),
         borderRadius: BorderRadius.circular(12),
@@ -31,7 +32,7 @@ class RichTextEditor extends StatelessWidget {
             ),
           ),
           if (!readOnly) ...[_buildToolbar(theme), const Divider(height: 1)],
-          _buildEditor(),
+          Expanded(child: _buildEditor(theme)),
         ],
       ),
     );
@@ -64,13 +65,22 @@ class RichTextEditor extends StatelessWidget {
     ),
   );
 
-  Widget _buildEditor() => SizedBox(
-    height: 250,
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: AbsorbPointer(
-        absorbing: readOnly,
-        child: quill.QuillEditor.basic(controller: controller),
+  Widget _buildEditor(ThemeData theme) => Container(
+    decoration: BoxDecoration(
+      color: theme.colorScheme.surface,
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+    ),
+    padding: const EdgeInsets.all(16),
+    child: AbsorbPointer(
+      absorbing: readOnly,
+      child: quill.QuillEditor.basic(
+        controller: controller,
+        config: const quill.QuillEditorConfig(
+          scrollable: true,
+          expands: false,
+          padding: EdgeInsets.zero,
+          placeholder: 'Write about your trade, what happened, lessons learned...',
+        ),
       ),
     ),
   );

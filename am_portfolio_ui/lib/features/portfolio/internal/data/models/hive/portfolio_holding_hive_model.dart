@@ -53,7 +53,8 @@ class BrokerHoldingHiveModel extends HiveObject {
   }
 }
 
-class BrokerHoldingHiveModelAdapter extends TypeAdapter<BrokerHoldingHiveModel> {
+class BrokerHoldingHiveModelAdapter
+    extends TypeAdapter<BrokerHoldingHiveModel> {
   @override
   final int typeId = 0;
 
@@ -188,6 +189,7 @@ class PortfolioHoldingHiveModel extends HiveObject {
     return PortfolioHolding(
       id: id,
       symbol: symbol,
+      name: companyName,
       companyName: companyName,
       sector: sector,
       industry: industry,
@@ -206,7 +208,8 @@ class PortfolioHoldingHiveModel extends HiveObject {
   }
 }
 
-class PortfolioHoldingHiveModelAdapter extends TypeAdapter<PortfolioHoldingHiveModel> {
+class PortfolioHoldingHiveModelAdapter
+    extends TypeAdapter<PortfolioHoldingHiveModel> {
   @override
   final int typeId = 1;
 
@@ -278,8 +281,6 @@ class PortfolioHoldingHiveModelAdapter extends TypeAdapter<PortfolioHoldingHiveM
 @HiveType(typeId: 2)
 class PortfolioHoldingsHiveModel extends HiveObject {
   @HiveField(0)
-  final String userId;
-
   @HiveField(1)
   final List<PortfolioHoldingHiveModel> holdings;
 
@@ -287,14 +288,12 @@ class PortfolioHoldingsHiveModel extends HiveObject {
   final DateTime lastUpdated;
 
   PortfolioHoldingsHiveModel({
-    required this.userId,
     required this.holdings,
     required this.lastUpdated,
   });
 
   factory PortfolioHoldingsHiveModel.fromDomain(PortfolioHoldings entity) {
     return PortfolioHoldingsHiveModel(
-      userId: entity.userId,
       holdings: entity.holdings
           .map((e) => PortfolioHoldingHiveModel.fromDomain(e))
           .toList(),
@@ -304,14 +303,14 @@ class PortfolioHoldingsHiveModel extends HiveObject {
 
   PortfolioHoldings toDomain() {
     return PortfolioHoldings(
-      userId: userId,
       holdings: holdings.map((e) => e.toDomain()).toList(),
       lastUpdated: lastUpdated,
     );
   }
 }
 
-class PortfolioHoldingsHiveModelAdapter extends TypeAdapter<PortfolioHoldingsHiveModel> {
+class PortfolioHoldingsHiveModelAdapter
+    extends TypeAdapter<PortfolioHoldingsHiveModel> {
   @override
   final int typeId = 2;
 
@@ -322,7 +321,6 @@ class PortfolioHoldingsHiveModelAdapter extends TypeAdapter<PortfolioHoldingsHiv
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return PortfolioHoldingsHiveModel(
-      userId: fields[0] as String,
       holdings: (fields[1] as List).cast<PortfolioHoldingHiveModel>(),
       lastUpdated: fields[2] as DateTime,
     );
@@ -333,7 +331,7 @@ class PortfolioHoldingsHiveModelAdapter extends TypeAdapter<PortfolioHoldingsHiv
     writer
       ..writeByte(3)
       ..writeByte(0)
-      ..write(obj.userId)
+      ..write(<dynamic>[])
       ..writeByte(1)
       ..write(obj.holdings)
       ..writeByte(2)

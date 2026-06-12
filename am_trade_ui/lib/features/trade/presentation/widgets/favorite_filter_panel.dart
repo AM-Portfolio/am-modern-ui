@@ -7,10 +7,9 @@ import '../cubit/favorite_filter/favorite_filter_cubit.dart';
 /// Panel for managing and applying favorite filters
 /// Displays a compact dropdown with all saved filters
 class FavoriteFilterPanel extends StatelessWidget {
-  const FavoriteFilterPanel({required this.userId, super.key, this.onFilterSelected});
+  const FavoriteFilterPanel({ super.key, this.onFilterSelected});
 
-  final String userId;
-  final void Function(FavoriteFilter filter)? onFilterSelected;
+    final void Function(FavoriteFilter filter)? onFilterSelected;
 
   @override
   Widget build(BuildContext context) => BlocBuilder<FavoriteFilterCubit, FavoriteFilterState>(
@@ -173,7 +172,7 @@ class FavoriteFilterPanel extends StatelessWidget {
             if (!isDefault)
               IconButton(
                 icon: const Icon(Icons.star_outline),
-                onPressed: () => cubit.setAsDefault(userId, filter.id),
+                onPressed: () => cubit.setAsDefault( filter.id),
                 tooltip: 'Set as default',
               ),
             IconButton(
@@ -235,7 +234,7 @@ class FavoriteFilterPanel extends StatelessWidget {
           TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel')),
           TextButton(
             onPressed: () {
-              context.read<FavoriteFilterCubit>().deleteFilter(userId, filter.id);
+              context.read<FavoriteFilterCubit>().deleteFilter( filter.id);
               Navigator.of(dialogContext).pop();
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),

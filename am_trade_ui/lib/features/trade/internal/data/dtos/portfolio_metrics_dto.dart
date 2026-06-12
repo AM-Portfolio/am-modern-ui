@@ -24,8 +24,8 @@ abstract class PortfolioMetricsDto with _$PortfolioMetricsDto {
     double? maxDrawdownPercentage,
     double? sharpeRatio,
     double? sortinoRatio,
-    double? monthlyReturns,
-    double? weeklyReturns,
+    Map<String, double>? monthlyReturns,
+    Map<String, double>? weeklyReturns,
   }) = _PortfolioMetricsDto;
 
   factory PortfolioMetricsDto.fromJson(Map<String, dynamic> json) =>

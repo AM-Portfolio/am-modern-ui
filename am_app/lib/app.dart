@@ -3,7 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
+import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
 import 'package:am_common/am_common.dart' as common;
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 
 import 'features/shell/app_shell.dart';
 import 'core/di/injection.dart';
@@ -41,6 +44,15 @@ class AMApp extends ConsumerWidget {
             theme: themeState.lightTheme,
             darkTheme: themeState.darkTheme,
             themeMode: themeState.themeMode,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              FlutterQuillLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en', 'US'),
+            ],
             home: BlocListener<AuthCubit, AuthState>(
               listenWhen: (prev, curr) => curr is Authenticated,
               listener: (context, state) {
@@ -56,6 +68,7 @@ class AMApp extends ConsumerWidget {
               '/register': (context) => const RegisterPage(),
               '/forgot-password': (context) => const ForgotPasswordPage(),
               '/reset-password': (context) => const ResetPasswordPage(),
+              '/subscription': (context) => const am_sub.SubscriptionPricingScreen(),
             },
           );
         },

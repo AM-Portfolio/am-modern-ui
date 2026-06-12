@@ -49,6 +49,13 @@ class StompConnectionCubit extends Cubit<StompConnectionState> {
   void updateToken(String? token, {String? userId}) {
     _currentUserId = userId;
     if (token != null && token.isNotEmpty) {
+      // Prevent connecting to remote STOMP servers with a local mock token
+      // which results in repeated authentication STOMP Errors.
+      if (token == 'mock_dev_token') {
+        AppLogger.info('StompConnectionCubit: Skipping STOMP connection for mock_dev_token (Local Dev Mode)');
+        return;
+      }
+      
       if (!_stompClient.isConnected) {
         _stompClient.connect(headers: {'Authorization': 'Bearer $token'});
       }

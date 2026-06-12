@@ -18,8 +18,7 @@ class MobileFilterPanel {
   static Future<void> show({
     required BuildContext context,
     required WidgetRef ref,
-    required String userId,
-    required MetricsFilterConfig initialConfig,
+        required MetricsFilterConfig initialConfig,
     required Function(MetricsFilterConfig) onApplyFilter,
     VoidCallback? onReset,
   }) async {
@@ -34,7 +33,6 @@ class MobileFilterPanel {
         value: cubit,
         child: _FilterBottomSheetContent(
           ref: ref,
-          userId: userId,
           initialConfig: initialConfig,
           onApplyFilter: onApplyFilter,
           onReset: onReset,
@@ -48,15 +46,13 @@ class MobileFilterPanel {
 class _FilterBottomSheetContent extends ConsumerStatefulWidget {
   const _FilterBottomSheetContent({
     required this.ref,
-    required this.userId,
-    required this.initialConfig,
+        required this.initialConfig,
     required this.onApplyFilter,
     this.onReset,
   });
 
   final WidgetRef ref;
-  final String userId;
-  final MetricsFilterConfig initialConfig;
+    final MetricsFilterConfig initialConfig;
   final Function(MetricsFilterConfig) onApplyFilter;
   final VoidCallback? onReset;
 
@@ -266,7 +262,6 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
     final description = descriptionController.text.trim();
 
     cubit.createFilter(
-      userId: widget.userId,
       name: name,
       filterConfig: config,
       description: description.isEmpty ? null : description,
@@ -637,7 +632,7 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
 
   void _setAsDefault(FavoriteFilter filter) {
     if (!mounted) return;
-    context.read<FavoriteFilterCubit>().setAsDefault(widget.userId, filter.id);
+    context.read<FavoriteFilterCubit>().setAsDefault( filter.id);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('"${filter.name}" set as default')));
   }
 
@@ -653,7 +648,7 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
           TextButton(
             onPressed: () {
               if (mounted) {
-                context.read<FavoriteFilterCubit>().deleteFilter(widget.userId, filter.id);
+                context.read<FavoriteFilterCubit>().deleteFilter( filter.id);
                 Navigator.of(dialogContext).pop();
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('"${filter.name}" deleted')));
               }

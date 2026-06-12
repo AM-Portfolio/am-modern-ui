@@ -13,16 +13,14 @@ import '../widgets/trade_detail_widgets/vertical_attachments_feed.dart';
 class TradeDetailViewPage extends ConsumerStatefulWidget {
   const TradeDetailViewPage({
     required this.trade,
-    required this.userId,
-    required this.portfolioId,
+        required this.portfolioId,
     this.onClose,
     this.onNavigateToChart,
     super.key,
   });
 
   final TradeHoldingViewModel trade;
-  final String userId;
-  final String portfolioId;
+    final String portfolioId;
   final VoidCallback? onClose;
   final Function(String symbol)? onNavigateToChart;
 
@@ -72,7 +70,6 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
                         // Similar Trades Section
                         SimilarTradesSection(
                           trade: widget.trade,
-                          userId: widget.userId,
                           portfolioId: widget.portfolioId,
                           symbolFilter: _symbolFilter,
                         ),

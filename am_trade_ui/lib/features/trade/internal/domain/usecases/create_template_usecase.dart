@@ -11,7 +11,6 @@ class CreateTemplateUseCase {
   Future<JournalTemplate> call({
     required String name,
     required JournalTemplateCategory category,
-    required String createdBy,
     String? description,
     List<Map<String, dynamic>>? fields,
     bool isSystemTemplate = false,
@@ -22,7 +21,6 @@ class CreateTemplateUseCase {
     return _repository.createTemplate(
       name: name,
       category: category,
-      createdBy: createdBy,
       description: description,
       fields: fields,
       isSystemTemplate: isSystemTemplate,

@@ -57,7 +57,6 @@ class JournalEntryMapper {
 
   /// Convert JournalEntry entity to TradeJournalEntryRequestDto
   static TradeJournalEntryRequestDto toRequestDto(JournalEntry entry) => TradeJournalEntryRequestDto(
-    userId: entry.userId,
     title: entry.title,
     content: entry.content,
     entryDate: entry.entryDate.toIso8601String(),

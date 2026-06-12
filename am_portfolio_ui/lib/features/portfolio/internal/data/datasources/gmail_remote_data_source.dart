@@ -31,25 +31,22 @@ class GmailRemoteDataSourceImpl implements GmailRemoteDataSource {
 
   @override
   Future<GmailStatusDto> checkStatus() async {
-    CommonLogger.methodEntry(
-      'checkStatus',
-      tag: 'GmailRemoteDataSource',
-    );
+    CommonLogger.methodEntry('checkStatus', tag: 'GmailRemoteDataSource');
 
     try {
       final fullUri = '${_config.baseUrl}${_config.statusEndpoint}';
 
       final response = await _apiClient.get<GmailStatusDto>(
         fullUri,
-        parser:
-            (data) => GmailStatusDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            GmailStatusDto.fromJson(data! as Map<String, dynamic>),
       );
 
       CommonLogger.info(
         'Gmail status checked successfully',
         tag: 'GmailRemoteDataSource',
       );
-      
+
       return response;
     } catch (e) {
       CommonLogger.error(
@@ -64,10 +61,7 @@ class GmailRemoteDataSourceImpl implements GmailRemoteDataSource {
 
   @override
   Future<String> getConnectUrl() async {
-    CommonLogger.methodEntry(
-      'getConnectUrl',
-      tag: 'GmailRemoteDataSource',
-    );
+    CommonLogger.methodEntry('getConnectUrl', tag: 'GmailRemoteDataSource');
 
     try {
       final fullUri = '${_config.baseUrl}${_config.connectEndpoint}';
@@ -78,7 +72,7 @@ class GmailRemoteDataSourceImpl implements GmailRemoteDataSource {
       );
 
       final authUrl = response['auth_url'] as String;
-      
+
       CommonLogger.info(
         'Gmail auth URL fetched successfully',
         tag: 'GmailRemoteDataSource',
@@ -106,14 +100,14 @@ class GmailRemoteDataSourceImpl implements GmailRemoteDataSource {
 
     try {
       final baseUri = '${_config.baseUrl}${_config.extractEndpoint}/$broker';
-      
+
       // Append PAN query param if provided
       final fullUri = pan != null ? '$baseUri?pan=$pan' : baseUri;
 
       final response = await _apiClient.get<GmailSyncResponseDto>(
         fullUri,
-        parser:
-            (data) => GmailSyncResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            GmailSyncResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
       CommonLogger.info(
@@ -133,4 +127,3 @@ class GmailRemoteDataSourceImpl implements GmailRemoteDataSource {
     }
   }
 }
-

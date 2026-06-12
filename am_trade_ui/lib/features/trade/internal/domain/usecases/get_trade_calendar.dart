@@ -8,22 +8,22 @@ class GetTradeCalendar {
   final TradeRepository _repository;
 
   /// Execute the use case to get trade calendar for a specific portfolio
-  Future<TradeCalendar> call(String userId, String portfolioId, {int? year, int? month}) async {
+  Future<TradeCalendar> call(String portfolioId, {int? year, int? month}) async {
     AppLogger.methodEntry(
       'GetTradeCalendar.call',
       tag: 'GetTradeCalendar',
-      params: {'userId': userId, 'portfolioId': portfolioId, 'year': year, 'month': month},
+      params: {},
     );
 
-    if (userId.isEmpty || portfolioId.isEmpty) {
+    if (portfolioId.isEmpty) {
       AppLogger.error('Validation failed - empty userId or portfolioId', tag: 'GetTradeCalendar');
-      throw ArgumentError('User ID and Portfolio ID cannot be empty');
+      throw ArgumentError('Portfolio ID cannot be empty');
     }
 
     try {
       AppLogger.info('Executing get trade calendar use case', tag: 'GetTradeCalendar');
 
-      final result = await _repository.getTradeCalendar(userId, portfolioId, year: year, month: month);
+      final result = await _repository.getTradeCalendar(portfolioId, year: year, month: month);
 
       AppLogger.info('Trade calendar use case completed successfully', tag: 'GetTradeCalendar');
       AppLogger.methodExit('GetTradeCalendar.call', tag: 'GetTradeCalendar', result: 'success');
@@ -42,20 +42,20 @@ class GetTradeCalendar {
   }
 
   /// Execute with stream for real-time updates
-  Stream<TradeCalendar> watch(String userId, String portfolioId) {
+  Stream<TradeCalendar> watch(String portfolioId) {
     AppLogger.methodEntry(
       'GetTradeCalendar.watch',
       tag: 'GetTradeCalendar',
-      params: {'userId': userId, 'portfolioId': portfolioId},
+      params: {},
     );
 
-    if (userId.isEmpty || portfolioId.isEmpty) {
+    if (portfolioId.isEmpty) {
       AppLogger.error('Validation failed for stream', tag: 'GetTradeCalendar');
-      throw ArgumentError('User ID and Portfolio ID cannot be empty');
+      throw ArgumentError('Portfolio ID cannot be empty');
     }
 
     AppLogger.info('Starting trade calendar stream', tag: 'GetTradeCalendar');
-    return _repository.watchTradeCalendar(userId, portfolioId);
+    return _repository.watchTradeCalendar(portfolioId);
   }
 }
 

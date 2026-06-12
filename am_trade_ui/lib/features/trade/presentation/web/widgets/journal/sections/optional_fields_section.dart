@@ -177,8 +177,8 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
     ),
     child: TextFormField(
       controller: widget.tradeIdController,
-      decoration: InputDecoration(
-        label: Container(padding: const EdgeInsets.symmetric(horizontal: 4), child: const Text('Trade ID (optional)')),
+      decoration: const InputDecoration(
+        labelText: 'Trade ID (optional)',
         floatingLabelBehavior: FloatingLabelBehavior.always,
         floatingLabelAlignment: FloatingLabelAlignment.start,
         hintText: 'Optional',
@@ -206,19 +206,7 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
       child: TextFormField(
         controller: widget.urlController,
         decoration: InputDecoration(
-          label: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Add URL (optional)'),
-                if (hasUrl) ...[
-                  const SizedBox(width: 6),
-                  Icon(Icons.check_circle, size: 14, color: theme.colorScheme.primary),
-                ],
-              ],
-            ),
-          ),
+          labelText: 'Add URL (optional)',
           floatingLabelBehavior: FloatingLabelBehavior.always,
           floatingLabelAlignment: FloatingLabelAlignment.start,
           hintText: 'https://tradingview.com/chart/...',

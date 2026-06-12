@@ -10,6 +10,7 @@ export 'core/network/auth_interceptor.dart';
 // Data layer
 export 'features/authentication/data/datasources/auth_data_source.dart';
 export 'features/authentication/data/datasources/auth_remote_datasource.dart';
+export 'features/authentication/data/datasources/identity_auth_remote_datasource.dart';
 export 'features/authentication/data/datasources/mock_auth_datasource.dart';
 export 'features/authentication/data/repositories/auth_repository_impl.dart';
 export 'features/authentication/data/services/google_signin_service.dart';
