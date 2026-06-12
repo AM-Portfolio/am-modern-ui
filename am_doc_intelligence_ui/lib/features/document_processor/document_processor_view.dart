@@ -93,12 +93,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'MUTUAL_FUND' || t == 'TRADE_EQ' || t == 'TRADE_MF').toList();
       case 'DHAN':
         return ['PORTFOLIO_EQUITY', 'PORTFOLIO_ETF'];
-      case 'MSTOCK':
-      case 'UPSTOX':
-      case 'ICICI_DIRECT':
-      case 'HDFC_SECURITIES':
-        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO').toList();
+
       case 'ANGEL_ONE':
+        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
+      case 'MSTOCK':
         return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
       case 'OTHER':
       default:
@@ -542,29 +540,42 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         ],
       ),
     );
-  }
-
-  Widget _buildResultSection() {
+  }  Widget _buildResultSection() {
     if (_lastResult == null) return const SizedBox.shrink();
 
     final List<dynamic> parsedDataList = _lastResult!['data'] ?? [];
+    
+    final bool isTrade = (_selectedDocType != null && _selectedDocType!.startsWith('TRADE_')) ||
+        (parsedDataList.isNotEmpty && parsedDataList.first is Map && (parsedDataList.first as Map).containsKey('basicInfo'));
+
     double totalValuation = 0.0;
     
-    // Sum total assets dynamically using same fallback logic as datatable rows
-    for (var item in parsedDataList) {
-      if (item is Map) {
-        final double quantity = (item['quantity'] ?? item['qty'] ?? 0.0).toDouble();
-        final double currentPrice = (item['currentPrice'] ?? 
-                                     (item['marketData'] != null ? item['marketData']['marketPrice'] : null) ?? 
-                                     (item['currentValue'] != null && quantity > 0 ? (item['currentValue'] / quantity) : null) ?? 
-                                     item['avgBuyingPrice'] ?? 
-                                     item['averagePrice'] ??
-                                     item['buyPrice'] ??
-                                     item['nav'] ?? 
-                                     item['price'] ?? 
-                                     0.0).toDouble();
-        final double totalValue = item['currentValue'] != null ? (item['currentValue'] as num).toDouble() : quantity * currentPrice;
-        totalValuation += totalValue;
+    if (isTrade) {
+      for (var item in parsedDataList) {
+        if (item is Map) {
+          final exec = item['executionInfo'] is Map ? item['executionInfo'] : {};
+          final double quantity = (exec['quantity'] ?? exec['qty'] ?? item['quantity'] ?? 0.0).toDouble();
+          final double price = (exec['price'] ?? item['price'] ?? 0.0).toDouble();
+          totalValuation += quantity * price;
+        }
+      }
+    } else {
+      // Sum total assets dynamically using same fallback logic as datatable rows
+      for (var item in parsedDataList) {
+        if (item is Map) {
+          final double quantity = (item['quantity'] ?? item['qty'] ?? 0.0).toDouble();
+          final double currentPrice = (item['currentPrice'] ?? 
+                                       (item['marketData'] != null ? item['marketData']['marketPrice'] : null) ?? 
+                                       (item['currentValue'] != null && quantity > 0 ? (item['currentValue'] / quantity) : null) ?? 
+                                       item['avgBuyingPrice'] ?? 
+                                       item['averagePrice'] ??
+                                       item['buyPrice'] ??
+                                       item['nav'] ?? 
+                                       item['price'] ?? 
+                                       0.0).toDouble();
+          final double totalValue = item['currentValue'] != null ? (item['currentValue'] as num).toDouble() : quantity * currentPrice;
+          totalValuation += totalValue;
+        }
       }
     }
 
@@ -579,7 +590,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                 Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary, size: 22),
                 const SizedBox(width: 12),
                 Text(
-                  'Extracted Holdings Details', 
+                  isTrade ? 'Extracted Trade Log Details' : 'Extracted Holdings Details', 
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)
                 ),
               ],
@@ -599,7 +610,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         
         Row(
           children: [
-            _buildResultStatCard('TOTAL VALUATION', currencyFormatter.format(totalValuation), Icons.account_balance_wallet_outlined, Colors.green),
+            _buildResultStatCard(isTrade ? 'TOTAL VOLUME' : 'TOTAL VALUATION', currencyFormatter.format(totalValuation), Icons.account_balance_wallet_outlined, Colors.green),
             const SizedBox(width: 16),
             _buildResultStatCard('PARSED RECORDS', '${parsedDataList.length} Items', Icons.format_list_bulleted_outlined, Colors.blue),
             const SizedBox(width: 16),
@@ -635,15 +646,15 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           const SizedBox(height: 24),
         ],
 
-        // Beautiful Interactive holdings datatable
+        // Beautiful Interactive holdings/trade datatable
         GlassCard(
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             child: parsedDataList.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Center(child: Text('No holding assets found in this statement file.')),
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: Text(isTrade ? 'No trade records found in this file.' : 'No holding assets found in this statement file.')),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,7 +662,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       Padding(
                         padding: const EdgeInsets.only(left: 8.0, bottom: 12.0),
                         child: Text(
-                          'HOLDING ASSETS BREAKDOWN',
+                          isTrade ? 'TRADE LOG BREAKDOWN' : 'HOLDING ASSETS BREAKDOWN',
                           style: TextStyle(
                             fontSize: 11, 
                             fontWeight: FontWeight.bold, 
@@ -665,57 +676,128 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                         child: DataTable(
                           columnSpacing: 38.0,
                           horizontalMargin: 8.0,
-                          columns: const [
-                            DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('IDENTIFIER', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(numeric: true, label: Text('BUY PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(numeric: true, label: Text('CURRENT PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(numeric: true, label: Text('TOTAL VALUATION', style: TextStyle(fontWeight: FontWeight.bold))),
-                          ],
+                          columns: isTrade
+                              ? const [
+                                  DataColumn(label: Text('DATE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('TRADE ID', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('TYPE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(numeric: true, label: Text('PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(numeric: true, label: Text('TOTAL AMOUNT', style: TextStyle(fontWeight: FontWeight.bold))),
+                                ]
+                              : const [
+                                  DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('IDENTIFIER', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(numeric: true, label: Text('BUY PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(numeric: true, label: Text('CURRENT PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(numeric: true, label: Text('TOTAL VALUATION', style: TextStyle(fontWeight: FontWeight.bold))),
+                                ],
                           rows: parsedDataList.map((item) {
                             final map = item is Map ? item : {};
                             
-                            final String assetName = map['name'] ?? map['securityName'] ?? map['schemeName'] ?? map['symbol'] ?? 'Unknown Asset';
-                            final String identifier = map['isin'] ?? map['amfiCode'] ?? map['symbol'] ?? 'N/A';
-                            final double quantity = (map['quantity'] ?? map['qty'] ?? 0.0).toDouble();
-                            final double buyPrice = (map['avgBuyingPrice'] ?? map['averagePrice'] ?? map['buyPrice'] ?? map['price'] ?? 0.0).toDouble();
-                            final double currentPrice = (map['currentPrice'] ?? 
-                                                        (map['marketData'] != null ? map['marketData']['marketPrice'] : null) ?? 
-                                                        (map['currentValue'] != null && quantity > 0 ? (map['currentValue'] / quantity) : null) ?? 
-                                                        map['avgBuyingPrice'] ?? 
-                                                        map['nav'] ?? 
-                                                        map['price'] ?? 
-                                                        0.0).toDouble();
-                            final double totalValue = map['currentValue'] != null ? (map['currentValue'] as num).toDouble() : quantity * currentPrice;
+                            if (isTrade) {
+                              final basic = map['basicInfo'] is Map ? map['basicInfo'] : {};
+                              final instrument = map['instrumentInfo'] is Map ? map['instrumentInfo'] : {};
+                              final exec = map['executionInfo'] is Map ? map['executionInfo'] : {};
+                              
+                              final String tradeDate = basic['tradeDate'] ?? basic['orderExecutionTime']?.toString().split('T').first ?? 'N/A';
+                              final String assetName = instrument['symbol'] ?? instrument['name'] ?? map['symbol'] ?? 'Unknown Asset';
+                              final String tradeId = basic['tradeId'] ?? map['tradeId'] ?? 'N/A';
+                              final String tradeType = (exec['tradeType'] ?? basic['tradeType'] ?? map['type'] ?? 'BUY').toString().toUpperCase();
+                              final double quantity = (exec['quantity'] ?? exec['qty'] ?? map['quantity'] ?? 0.0).toDouble();
+                              final double price = (exec['price'] ?? map['price'] ?? 0.0).toDouble();
+                              final double totalValue = quantity * price;
 
-                            return DataRow(
-                              cells: [
-                                DataCell(
-                                  Container(
-                                    constraints: const BoxConstraints(maxWidth: 220),
-                                    child: Text(
-                                      assetName, 
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                      overflow: TextOverflow.ellipsis,
+                              final Color typeColor = tradeType.contains('BUY') ? Colors.green : Colors.red;
+
+                              return DataRow(
+                                cells: [
+                                  DataCell(Text(tradeDate, style: const TextStyle(fontSize: 13))),
+                                  DataCell(
+                                    Container(
+                                      constraints: const BoxConstraints(maxWidth: 220),
+                                      child: Text(
+                                        assetName, 
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                DataCell(Text(identifier, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
-                                DataCell(Text(quantity.toStringAsFixed(2))),
-                                DataCell(Text(currencyFormatter.format(buyPrice))),
-                                DataCell(Text(currencyFormatter.format(currentPrice), style: const TextStyle(fontWeight: FontWeight.bold))),
-                                DataCell(
-                                  Text(
-                                    currencyFormatter.format(totalValue),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.primary,
+                                  DataCell(Text(tradeId, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
+                                  DataCell(
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: typeColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        tradeType,
+                                        style: TextStyle(
+                                          color: typeColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            );
+                                  DataCell(Text(quantity.toStringAsFixed(0))),
+                                  DataCell(Text(currencyFormatter.format(price))),
+                                  DataCell(
+                                    Text(
+                                      currencyFormatter.format(totalValue),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            } else {
+                              final String assetName = map['name'] ?? map['securityName'] ?? map['schemeName'] ?? map['symbol'] ?? 'Unknown Asset';
+                              final String identifier = map['isin'] ?? map['amfiCode'] ?? map['symbol'] ?? 'N/A';
+                              final double quantity = (map['quantity'] ?? map['qty'] ?? 0.0).toDouble();
+                              final double buyPrice = (map['avgBuyingPrice'] ?? map['averagePrice'] ?? map['buyPrice'] ?? map['price'] ?? 0.0).toDouble();
+                              final double currentPrice = (map['currentPrice'] ?? 
+                                                          (map['marketData'] != null ? map['marketData']['marketPrice'] : null) ?? 
+                                                          (map['currentValue'] != null && quantity > 0 ? (map['currentValue'] / quantity) : null) ?? 
+                                                          map['avgBuyingPrice'] ?? 
+                                                          map['nav'] ?? 
+                                                          map['price'] ?? 
+                                                          0.0).toDouble();
+                              final double totalValue = map['currentValue'] != null ? (map['currentValue'] as num).toDouble() : quantity * currentPrice;
+
+                              return DataRow(
+                                cells: [
+                                  DataCell(
+                                    Container(
+                                      constraints: const BoxConstraints(maxWidth: 220),
+                                      child: Text(
+                                        assetName, 
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(Text(identifier, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
+                                  DataCell(Text(quantity.toStringAsFixed(2))),
+                                  DataCell(Text(currencyFormatter.format(buyPrice))),
+                                  DataCell(Text(currencyFormatter.format(currentPrice), style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataCell(
+                                    Text(
+                                      currencyFormatter.format(totalValue),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
                           }).toList(),
                         ),
                       ),
