@@ -128,15 +128,15 @@ class ConfigService {
     final api = 'https://$_domain';
     final ws = 'wss://$_domain';
 
-    final authUrl = _services['auth'] ?? '$api/identity';
-    final usersUrl = _services['users'] ?? '$api/identity';
+    final authUrl = _services['auth'] ?? '$api/auth';
+    final usersUrl = _services['users'] ?? '$api/users';
     final portfolioUrl = _services['portfolio'] ?? '$api/portfolio';
     final marketUrl = _services['market'] ?? '$api/market';
     final tradesUrl = _services['trades'] ?? '$api/trades';
     final analysisUrl = _services['analysis'] ?? '$api/analysis';
     final gmailUrl = _services['gmail'] ?? '$api/gmail';
     final marketWsUrl =
-        _services['marketWs'] ?? '$ws/v1/streams';
+        _services['marketWs'] ?? '$ws/market/ws/market-data-stream';
 
     return AppConfig(
       google: GoogleConfig(webClientId: _googleClientId),
@@ -147,16 +147,16 @@ class ConfigService {
         useMockData: false,
         auth: AuthApiConfig(
           baseUrl: authUrl,
-          loginEndpoint: '/auth/login',
-          logoutEndpoint: '/auth/logout',
-          refreshTokenEndpoint: '/auth/refresh',
-          googleLoginEndpoint: '/auth/google/callback',
+          loginEndpoint: '/v1/tokens',
+          logoutEndpoint: '/v1/auth/logout',
+          refreshTokenEndpoint: '/v1/auth/refresh',
+          googleLoginEndpoint: '/v1/auth/google/token',
         ),
         user: UserApiConfig(
           baseUrl: usersUrl,
-          registerEndpoint: '/auth/register',
-          forgotPasswordEndpoint: '/auth/request-reset',
-          resetPasswordEndpoint: '/auth/confirm-reset',
+          registerEndpoint: '/v1/auth/register',
+          forgotPasswordEndpoint: '/v1/auth/request-reset',
+          resetPasswordEndpoint: '/v1/auth/confirm-reset',
         ),
         portfolio: PortfolioApiConfig(
           baseUrl: portfolioUrl,

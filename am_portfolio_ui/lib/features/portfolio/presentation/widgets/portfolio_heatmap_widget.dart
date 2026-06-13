@@ -627,9 +627,9 @@ class _PortfolioHeatmapWidgetState
                   if (heatmapState is PortfolioHeatmapLoaded) {
                     final diff = DateTime.now().difference(heatmapState.lastUpdated);
                     if (diff.inMinutes > 0) {
-                      timeText = '\${diff.inMinutes}m ago';
+                      timeText = '${diff.inMinutes}m ago';
                     } else if (diff.inSeconds > 0) {
-                      timeText = '\${diff.inSeconds}s ago';
+                      timeText = '${diff.inSeconds}s ago';
                     }
                   }
                   return Text(

@@ -4,37 +4,32 @@ import 'package:am_common/am_common.dart';
 class AuthEndpoints {
   // Base URLs (Standardized via Traefik rewriters)
   static String get authBaseUrl =>
-      ConfigService.config.api.auth?.baseUrl ?? 'https://am-dev.asrax.in/auth';
+      ConfigService.config.api.auth?.baseUrl ?? 'https://am.asrax.in/auth';
   static String get userBaseUrl =>
-      ConfigService.config.api.user?.baseUrl ?? 'https://am-dev.asrax.in/users';
+      ConfigService.config.api.user?.baseUrl ?? 'https://am.asrax.in/users';
+  static String get identityBaseUrl =>
+      ConfigService.override('identity') ?? 'https://${ConfigService.domain}/identity';
+
+  // Identity authentication endpoints
+  static String get identityLogin => '$identityBaseUrl/auth/login';
+  static String get identityRegister => '$identityBaseUrl/auth/register';
+  static String get identityLogout => '$identityBaseUrl/auth/logout';
+  static String get identityRefreshToken => '$identityBaseUrl/auth/refresh';
+  static String get identityGoogleLogin => '$identityBaseUrl/auth/google/token';
 
   // Authentication endpoints
   static String get login =>
-      '$authBaseUrl${ConfigService.config.api.auth?.loginEndpoint ?? '/v1/auth/login'}';
-  static String get identityLogin => login;
-  
-  static String get logout => 
-      '$authBaseUrl${ConfigService.config.api.auth?.logoutEndpoint ?? '/v1/auth/logout'}';
-  static String get identityLogout => logout;
-  
-  static String get refreshToken => 
-      '$authBaseUrl${ConfigService.config.api.auth?.refreshTokenEndpoint ?? '/v1/auth/refresh'}';
-  static String get identityRefreshToken => refreshToken;
-  
-  static String get googleLogin => 
-      '$authBaseUrl${ConfigService.config.api.auth?.googleLoginEndpoint ?? '/v1/auth/google'}';
-  static String get identityGoogleLogin => googleLogin;
+      '$authBaseUrl/v1/tokens'; // Centralized Token Service (am-auth-tokens)
+  static String get logout => '$authBaseUrl/v1/auth/logout';
+  static String get refreshToken => '$authBaseUrl/v1/auth/refresh';
+  static String get googleLogin => '$authBaseUrl/v1/auth/google/token';
 
   // User Management endpoints
-  static String get register => 
-      '$userBaseUrl${ConfigService.config.api.user?.registerEndpoint ?? '/v1/user/register'}';
-  static String get identityRegister => register;
-  static String get forgotPassword => 
-      '$userBaseUrl${ConfigService.config.api.user?.forgotPasswordEndpoint ?? '/v1/user/forgot-password'}';
-  static String get resetPassword => 
-      '$userBaseUrl${ConfigService.config.api.user?.resetPasswordEndpoint ?? '/v1/user/reset-password'}';
-  static String get userProfile => '$userBaseUrl/profile';
-  static String get updateProfile => '$userBaseUrl/profile';
+  static String get register => '$userBaseUrl/v1/auth/register';
+  static String get forgotPassword => '$userBaseUrl/v1/auth/request-reset';
+  static String get resetPassword => '$userBaseUrl/v1/auth/confirm-reset';
+  static String get userProfile => '$userBaseUrl/v1/auth/status';
+  static String get updateProfile => '$userBaseUrl/v1/auth/status';
 
   /// Get user status endpoint (for activation/status check)
   static String userStatus(String userId) => '$userBaseUrl/v1/users/$userId/status';

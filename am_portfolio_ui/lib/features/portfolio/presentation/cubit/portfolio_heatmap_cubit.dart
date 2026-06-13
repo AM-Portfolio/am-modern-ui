@@ -68,9 +68,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
                 final tileName = tile.name.toLowerCase();
                 final tileDisplay = tile.displayName.toLowerCase();
                 return tileName.contains(targetSectorName) || 
-                       tileDisplay.contains(targetSectorName) ||
-                       targetSectorName.contains(tileName) ||
-                       targetSectorName.contains(tileDisplay);
+                       tileDisplay.contains(targetSectorName);
               }).toList(),
             );
           }
@@ -82,8 +80,8 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             // Try to find the matching segment in marketCapAllocation
             final segments = analyticsState.marketCapAllocation?.segments ?? [];
             final targetSegment = segments.cast<MarketCapSegment?>().firstWhere(
-              (s) => s != null && (s.segmentName.toLowerCase().contains(targetCapName) || 
-                     targetCapName.contains(s.segmentName.toLowerCase())),
+              (s) => s!.segmentName.toLowerCase().contains(targetCapName) || 
+                     targetCapName.contains(s.segmentName.toLowerCase()),
               orElse: () => null,
             );
 
