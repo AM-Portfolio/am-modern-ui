@@ -178,9 +178,9 @@ class MarketProvider with ChangeNotifier {
               if (val is Map && val.containsKey('dataPoints')) {
                  final points = List.from(val['dataPoints']);
                  if (points.isNotEmpty) {
-                     // Data is ascending (oldest first). 
-                     // To find the oldest valid price, we scan from the start of the array (oldest) to the end (newest).
-                     for (int i = 0; i < points.length; i++) {
+                     // Data is descending (newest first). 
+                     // To find the oldest valid price, we scan from the end of the array (oldest) to the start (newest).
+                     for (int i = points.length - 1; i >= 0; i--) {
                         final point = points[i];
                         final p = point['close'] ?? point['lastPrice'] ?? point['price'];
                         if (p != null && (p as num) > 0) {
