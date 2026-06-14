@@ -79,7 +79,7 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
 
     return provider_pkg.Consumer<MarketProvider>(
       builder: (context, provider, child) {
-        if (provider.isLoading) {
+        if (provider.isLoading || provider.isLoadingBasePrices) {
           return const Center(child: CircularProgressIndicator());
         }
 
@@ -101,10 +101,20 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
           );
         }
 
+        final timeframe = provider.selectedIndicesTimeframe;
+        final basePrices = provider.timeframeBasePrices;
+
+        double getPChange(StockIndicesMarketData data) {
+          if (timeframe == '1D') return data.pChange;
+          final basePrice = basePrices[data.indexSymbol];
+          if (basePrice == null || basePrice == 0) return data.pChange;
+          return ((data.lastPrice - basePrice) / basePrice) * 100;
+        }
+
         final allIndices = provider.allIndicesData
             .map((data) => _withLivePrice(provider, data))
             .toList();
-        allIndices.sort((a, b) => b.pChange.compareTo(a.pChange));
+        allIndices.sort((a, b) => getPChange(b).compareTo(getPChange(a)));
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Container(
@@ -142,6 +152,8 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
                   child: _AutoScrollingTicker(
                     indices: allIndices, 
                     isDark: isDark,
+                    timeframe: timeframe,
+                    basePrices: basePrices,
                     onTap: (symbol) => provider.selectIndex(symbol),
                   ),
                 ),
@@ -172,7 +184,8 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
                   itemCount: allIndices.length,
                   itemBuilder: (context, index) {
                     final data = allIndices[index];
-                    final isPositive = data.pChange >= 0;
+                    final pChange = getPChange(data);
+                    final isPositive = pChange >= 0;
                     
                     // Cycle schemes for visual variety in White Mode
                     final schemes = ['primary', 'accent', 'neutral', 'info', 'success'];
@@ -205,7 +218,7 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
                               ),
                               Icon(
                                 isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-                                color: isDark ? _getColorSchemeForChange(data.pChange) : colors[0],
+                                color: isDark ? _getColorSchemeForChange(pChange) : colors[0],
                                 size: 16,
                               ),
                             ],
@@ -219,9 +232,9 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
                             ),
                           ),
                           Text(
-                            '${isPositive ? '+' : ''}${data.pChange.toStringAsFixed(2)}%',
+                            '${isPositive ? '+' : ''}${pChange.toStringAsFixed(2)}%',
                             style: TextStyle(
-                              color: isDark ? _getColorSchemeForChange(data.pChange) : colors[0],
+                              color: isDark ? _getColorSchemeForChange(pChange) : colors[0],
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -243,11 +256,15 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
 class _AutoScrollingTicker extends StatefulWidget {
   final List<StockIndicesMarketData> indices;
   final bool isDark;
+  final String timeframe;
+  final Map<String, double> basePrices;
   final Function(String) onTap;
 
   const _AutoScrollingTicker({
     required this.indices,
     required this.isDark,
+    required this.timeframe,
+    required this.basePrices,
     required this.onTap,
   });
 
@@ -332,6 +349,15 @@ class _AutoScrollingTickerState extends State<_AutoScrollingTicker> {
         itemCount: displayList.length,
         itemBuilder: (context, index) {
           final data = displayList[index];
+          
+          double pChange = data.pChange;
+          if (widget.timeframe != '1D') {
+            final basePrice = widget.basePrices[data.indexSymbol];
+            if (basePrice != null && basePrice > 0) {
+              pChange = ((data.lastPrice - basePrice) / basePrice) * 100;
+            }
+          }
+          
           // Cycle schemes
           final schemes = ['primary', 'accent', 'neutral', 'info', 'success'];
           // Use original index to keep scheme consistent for same item
@@ -345,18 +371,18 @@ class _AutoScrollingTickerState extends State<_AutoScrollingTicker> {
             child: MetricCard(
               label: data.indexSymbol,
               value: data.lastPrice.toStringAsFixed(2),
-              icon: data.pChange >= 0 ? Icons.trending_up : Icons.trending_down,
-              accentColor: widget.isDark ? _getColorSchemeForChange(data.pChange) : colors[0],
+              icon: pChange >= 0 ? Icons.trending_up : Icons.trending_down,
+              accentColor: widget.isDark ? _getColorSchemeForChange(pChange) : colors[0],
               trailing: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: (widget.isDark ? _getColorSchemeForChange(data.pChange) : colors[0]).withOpacity(0.2),
+                  color: (widget.isDark ? _getColorSchemeForChange(pChange) : colors[0]).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${data.pChange >= 0 ? '+' : ''}${data.pChange.toStringAsFixed(2)}%',
+                  '${pChange >= 0 ? '+' : ''}${pChange.toStringAsFixed(2)}%',
                   style: TextStyle(
-                    color: widget.isDark ? _getColorSchemeForChange(data.pChange) : colors[0],
+                    color: widget.isDark ? _getColorSchemeForChange(pChange) : colors[0],
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),

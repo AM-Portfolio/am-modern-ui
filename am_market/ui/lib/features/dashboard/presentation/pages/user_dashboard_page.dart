@@ -4,7 +4,12 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_common/models/market_data.dart';
 import 'package:am_market_common/models/top_mover_stock.dart';
-import 'package:am_market_ui/shared/widgets/index_card.dart';
+// REMOVED: import 'package:am_market_ui/shared/widgets/index_card.dart';
+import 'package:am_market_ui/features/market/widgets/market_header.dart';
+import 'package:am_market_ui/features/market/widgets/timeframe_selector.dart';
+import 'package:am_market_ui/features/market/widgets/pinned_indices_grid.dart';
+import 'package:am_market_ui/features/market/widgets/all_indices_drawer.dart';
+import 'package:am_market_ui/features/market/widgets/all_indices_bottom_sheet.dart';
 import '../widgets/top_movers_widget_v2.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/multi_index_chart.dart';
 import 'package:am_market_common/services/api_service.dart';
@@ -17,7 +22,7 @@ class UserDashboardPage extends StatefulWidget {
   State<UserDashboardPage> createState() => _UserDashboardPageState();
 }
 
-class _UserDashboardPageState extends State<UserDashboardPage> {
+class _UserDashboardPageState extends State<UserDashboardPage> with TickerProviderStateMixin {
   late final ApiService _apiService;
   
   // Selected index for top movers (default: NIFTY 50)
@@ -35,14 +40,152 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
   Map<String, List<Map<String, dynamic>>> historicalData = {};
   bool isLoadingChart = false;
   String? chartError;
-  String selectedTimeframe = '1Y'; // Default 1 year
+  String selectedTimeframe = '1D'; // Default 1D
   bool isBarChart = false; // Chart type toggle
   
-  final ScrollController _indicesScrollController = ScrollController();
+  // REMOVED: final ScrollController _indicesScrollController = ScrollController();
+  
+  // Desktop drawer animation state
+  late AnimationController _drawerController;
+  bool _isDrawerVisible = false;
+
+  // Cache for all timeframe base prices
+  final Map<String, Map<String, double>> allTimeframeBasePrices = {
+    '1D': {}, // Empty, since 1D uses data.pChange directly
+  };
+  bool isLoadingAllTimeframes = false;
+
+  void _triggerBasePricesLoadingIfNeeded(MarketProvider provider) {
+    if (provider.allIndicesData.isNotEmpty && allTimeframeBasePrices.length <= 1 && !isLoadingAllTimeframes) {
+      final symbols = provider.allIndicesData.map((e) => e.indexSymbol).toList();
+      _loadAllTimeframeBasePrices(symbols);
+    }
+  }
+
+  Future<void> _loadAllTimeframeBasePrices(List<String> symbols) async {
+    if (symbols.isEmpty) return;
+    if (mounted) {
+      setState(() {
+        isLoadingAllTimeframes = true;
+      });
+    }
+    try {
+      final now = DateTime.now();
+      final timeframes = ['1W', '1M', '3M', '6M', '1Y', '5Y'];
+      for (final tf in timeframes) {
+        DateTime fromDate;
+        switch (tf) {
+          case '1W': fromDate = now.subtract(const Duration(days: 7)); break;
+          case '1M': fromDate = DateTime(now.year, now.month - 1, now.day); break;
+          case '3M': fromDate = DateTime(now.year, now.month - 3, now.day); break;
+          case '6M': fromDate = DateTime(now.year, now.month - 6, now.day); break;
+          case '1Y': fromDate = DateTime(now.year - 1, now.month, now.day); break;
+          case '5Y': fromDate = DateTime(now.year - 5, now.month, now.day); break;
+          default: fromDate = now.subtract(const Duration(days: 7));
+        }
+
+        DateTime toDate;
+        switch (tf) {
+          case '1W': toDate = fromDate.add(const Duration(days: 3)); break;
+          case '1M': toDate = fromDate.add(const Duration(days: 5)); break;
+          case '3M': toDate = fromDate.add(const Duration(days: 7)); break;
+          case '6M': toDate = fromDate.add(const Duration(days: 7)); break;
+          case '1Y': toDate = fromDate.add(const Duration(days: 10)); break;
+          case '5Y': toDate = fromDate.add(const Duration(days: 10)); break;
+          default: toDate = fromDate.add(const Duration(days: 3));
+        }
+
+        if (toDate.isAfter(now)) {
+          toDate = now;
+        }
+
+        final fromStr = fromDate.toIso8601String().split('T')[0];
+        final toStr = toDate.toIso8601String().split('T')[0];
+
+        final history = await _apiService.fetchHistoricalData(
+          symbols: symbols,
+          from: fromStr,
+          to: toStr,
+          interval: '1d',
+          isIndexSymbol: true,
+        );
+
+        final Map<String, double> basePrices = {};
+        if (history.containsKey('data')) {
+          final dataMap = history['data'] as Map<String, dynamic>;
+          dataMap.forEach((sym, val) {
+            if (val is Map && val.containsKey('dataPoints')) {
+              final points = List.from(val['dataPoints']);
+              if (points.isNotEmpty) {
+                for (int i = points.length - 1; i >= 0; i--) {
+                  final point = points[i];
+                  final p = point['close'] ?? point['lastPrice'] ?? point['price'];
+                  if (p != null && (p as num) > 0) {
+                    basePrices[sym] = p.toDouble();
+                    break;
+                  }
+                }
+              }
+            }
+          });
+        }
+        allTimeframeBasePrices[tf] = basePrices;
+      }
+    } catch (e) {
+      CommonLogger.error('Error loading all timeframe base prices', tag: 'UserDashboardPage', error: e);
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoadingAllTimeframes = false;
+        });
+      }
+    }
+  }
+
+  void _openDrawer() {
+    setState(() {
+      _isDrawerVisible = true;
+    });
+    _drawerController.forward();
+  }
+
+  void _closeDrawer() {
+    _drawerController.reverse();
+  }
+
+  void _showMobileAllIndicesBottomSheet(BuildContext context, MarketProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x8C000000),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (context, scrollController) => AllIndicesBottomSheet(
+          scrollController: scrollController,
+          initialTimeframe: selectedTimeframe,
+          indices: provider.allIndicesData,
+          selectedIndexSymbol: selectedIndexForMovers,
+          onIndexSelected: (data) {
+            setState(() {
+              selectedIndexForMovers = data.indexSymbol;
+            });
+            _loadTopMovers();
+            Navigator.pop(context);
+          },
+          allTimeframeBasePrices: allTimeframeBasePrices,
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
-    _indicesScrollController.dispose();
+    // REMOVED: _indicesScrollController.dispose();
+    _drawerController.dispose();
     super.dispose();
   }
 
@@ -51,10 +194,29 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
     super.initState();
     _apiService = ApiService();
     
+    _drawerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _drawerController.addStatusListener((status) {
+      if (status == AnimationStatus.dismissed) {
+        if (mounted) {
+          setState(() {
+            _isDrawerVisible = false;
+          });
+        }
+      }
+    });
+
     // Load initial data
     Future.delayed(Duration.zero, () {
       _loadTopMovers();
       _loadHistoricalData();
+      if (mounted) {
+        final provider = context.read<MarketProvider>();
+        provider.setIndicesTimeframe(selectedTimeframe);
+        _triggerBasePricesLoadingIfNeeded(provider);
+      }
     });
   }
 
@@ -191,129 +353,187 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
           );
         }
 
+        // Trigger pre-fetching of base prices if needed
+        _triggerBasePricesLoadingIfNeeded(provider);
+
         // Main content
-        return Container(
-          decoration: AppGlassmorphismV2.techBackground(isDark: isDark),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Section
-                InfoLayerCard(
-                  title: 'Market Dashboard',
-                  subtitle: 'Real-time market overview',
-                  icon: Icons.dashboard_rounded,
-                  colorScheme: 'primary',
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // Index Cards Carousel  
-                SizedBox(
-                  height: 156, // Increased height to accommodate scrollbar
-                  child: RawScrollbar(
-                    controller: _indicesScrollController,
-                    thumbVisibility: true,
-                    thumbColor: const Color(0xFF00D1FF).withOpacity(0.5),
-                    radius: const Radius.circular(8),
-                    thickness: 6,
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: ListView.builder(
-                      controller: _indicesScrollController,
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      itemCount: provider.allIndicesData.length,
-                      itemBuilder: (context, index) {
-                        final data = provider.allIndicesData[index];
-                        final isSelected = data.indexSymbol == selectedIndexForMovers;
-                        
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedIndexForMovers = data.indexSymbol;
-                            });
-                            _loadTopMovers();
-                          },
-                          child: Container(
-                            decoration: isSelected
-                                ? BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: const Color(0xFF00D1FF),
-                                      width: 2,
-                                    ),
-                                  )
-                                : null,
-                            child: IndexCard(data: data),
-                          ),
-                        );
+        return Stack(
+          children: [
+            Container(
+              decoration: AppGlassmorphismV2.techBackground(isDark: isDark),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Section
+                    MarketHeader(
+                      selectedTimeframe: selectedTimeframe,
+                      onTimeframeChanged: (tf) {
+                        setState(() {
+                          selectedTimeframe = tf;
+                        });
+                        provider.setIndicesTimeframe(tf);
+                        _loadHistoricalData();
+                        _loadTopMovers();
+                      },
+                      onAllIndicesPressed: () {
+                        if (MediaQuery.of(context).size.width < 768) {
+                          _showMobileAllIndicesBottomSheet(context, provider);
+                        } else {
+                          _openDrawer();
+                        }
                       },
                     ),
-                  ),
-                ),
-                
-                const SizedBox(height: 32),
 
-                // --- GLOBAL FILTER BAR ---
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Timeframe: ',
-                      style: TextStyle(
-                        color: isDark ? Colors.white70 : Colors.black54,
-                        fontSize: 12, 
-                        fontWeight: FontWeight.bold
-                      ),
+                    /* // REMOVED:
+                    InfoLayerCard(
+                      title: 'Market Dashboard',
+                      subtitle: 'Real-time market overview',
+                      icon: Icons.dashboard_rounded,
+                      colorScheme: 'primary',
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.1),
+                    */
+                    
+                    const SizedBox(height: 24),
+
+                    if (MediaQuery.of(context).size.width < 768) ...[
+                      TimeframeSelector(
+                        selectedTimeframe: selectedTimeframe,
+                        onTimeframeChanged: (tf) {
+                          setState(() {
+                            selectedTimeframe = tf;
+                          });
+                          provider.setIndicesTimeframe(tf);
+                          _loadHistoricalData();
+                          _loadTopMovers();
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Pinned Index Cards Grid
+                    PinnedIndicesGrid(
+                      indices: provider.allIndicesData,
+                      selectedIndexSymbol: selectedIndexForMovers,
+                      onIndexSelected: (data) {
+                        setState(() {
+                          selectedIndexForMovers = data.indexSymbol;
+                        });
+                        _loadTopMovers();
+                      },
+                    ),
+
+                    /* // REMOVED:
+                    // Index Cards Carousel  
+                    SizedBox(
+                      height: 156, // Increased height to accommodate scrollbar
+                      child: RawScrollbar(
+                        controller: _indicesScrollController,
+                        thumbVisibility: true,
+                        thumbColor: const Color(0xFF00D1FF).withOpacity(0.5),
+                        radius: const Radius.circular(8),
+                        thickness: 6,
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: ListView.builder(
+                          controller: _indicesScrollController,
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          itemCount: provider.allIndicesData.length,
+                          itemBuilder: (context, index) {
+                            final data = provider.allIndicesData[index];
+                            final isSelected = data.indexSymbol == selectedIndexForMovers;
+                            
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedIndexForMovers = data.indexSymbol;
+                                });
+                                _loadTopMovers();
+                              },
+                              child: Container(
+                                decoration: isSelected
+                                    ? BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: const Color(0xFF00D1FF),
+                                          width: 2,
+                                        ),
+                                      )
+                                    : null,
+                                child: IndexCard(data: data),
+                              ),
+                            );
+                          },
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y'].map((tf) {
-                          final isSelected = tf == selectedTimeframe;
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                selectedTimeframe = tf;
-                              });
-                              _loadHistoricalData();
-                              _loadTopMovers();
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? const Color(0xFF00D1FF).withOpacity(0.2)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                tf,
-                                style: TextStyle(
-                                  color: isSelected ? const Color(0xFF00D1FF) : Colors.white.withOpacity(0.6),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
                     ),
-                  ],
-                ),
-                
-                const SizedBox(height: 24),
+                    */
+                    
+                    const SizedBox(height: 32),
+
+                    /* // REMOVED:
+                    // --- GLOBAL FILTER BAR ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Timeframe: ',
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : Colors.black54,
+                            fontSize: 12, 
+                            fontWeight: FontWeight.bold
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.1),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y'].map((tf) {
+                              final isSelected = tf == selectedTimeframe;
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    selectedTimeframe = tf;
+                                  });
+                                  provider.setIndicesTimeframe(tf);
+                                  _loadHistoricalData();
+                                  _loadTopMovers();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFF00D1FF).withOpacity(0.2)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    tf,
+                                    style: TextStyle(
+                                      color: isSelected ? const Color(0xFF00D1FF) : Colors.white.withOpacity(0.6),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    */
+                    
+                    const SizedBox(height: 24),
 
                 // --- INDICES COMPARISON SECTION (Moved Up) ---
                 Column(
@@ -461,8 +681,58 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
               ],
             ),
           ),
-        );
-      },
+        ),
+
+        // Drawer Overlay (semi-transparent background)
+        if (_isDrawerVisible)
+          Positioned.fill(
+            child: FadeTransition(
+              opacity: _drawerController,
+              child: GestureDetector(
+                onTap: _closeDrawer,
+                child: Container(
+                  color: const Color(0x80000000), // rgba(0,0,0,0.50)
+                ),
+              ),
+            ),
+          ),
+
+        // Drawer Container (slides in from right)
+        if (_isDrawerVisible)
+          Positioned(
+            top: 0,
+            bottom: 0,
+            right: 0,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(1.0, 0.0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  parent: _drawerController,
+                  curve: Curves.easeOut,
+                  reverseCurve: Curves.easeIn,
+                ),
+              ),
+              child: AllIndicesDrawer(
+                indices: provider.allIndicesData,
+                initialTimeframe: selectedTimeframe,
+                selectedIndexSymbol: selectedIndexForMovers,
+                onIndexSelected: (data) {
+                  setState(() {
+                    selectedIndexForMovers = data.indexSymbol;
+                  });
+                  _loadTopMovers();
+                  _closeDrawer();
+                },
+                onClose: _closeDrawer,
+                allTimeframeBasePrices: allTimeframeBasePrices,
+              ),
+            ),
+          ),
+      ],
     );
-  }
+  },
+);
+}
 }
