@@ -314,16 +314,5 @@ class UniversalHeatmapTemplateFactory {
       },
       tooltip: 'Refresh Data',
     ),
-    IconButton(
-      icon: const Icon(Icons.share),
-      onPressed: () {
-        CommonLogger.userAction(
-          'Share button pressed in heatmap header',
-          tag: 'UniversalHeatmapTemplateFactory.Interaction',
-          metadata: {'action': 'share_pressed', 'component': 'header'},
-        );
-      },
-      tooltip: 'Share Heatmap',
-    ),
   ];
 }

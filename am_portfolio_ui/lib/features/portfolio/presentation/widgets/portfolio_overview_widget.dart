@@ -12,6 +12,8 @@ import 'package:intl/intl.dart';
 
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
+import '../cubit/portfolio_analytics_cubit.dart';
+import '../cubit/portfolio_analytics_state.dart';
 import 'package:am_common/am_common.dart';
 import 'portfolio_metric_card.dart';
 
@@ -35,6 +37,18 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
     setState(() {
       _selectedTimeFrame = timeFrame;
     });
+    
+    // Refresh analytics when timeframe changes
+    if (widget.portfolioId != null) {
+      try {
+        context.read<PortfolioAnalyticsCubit>().loadAnalytics(
+          widget.portfolioId!,
+          timeFrame: timeFrame,
+        );
+      } catch (_) {
+        // Cubit may not be in tree, safe to ignore
+      }
+    }
   }
 
   @override
@@ -60,6 +74,15 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
     if (widget.portfolioId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
+          try {
+            context.read<PortfolioAnalyticsCubit>().loadAnalytics(
+              widget.portfolioId!,
+              timeFrame: _selectedTimeFrame,
+            );
+          } catch (_) {
+            // Cubit may not be in tree, safe to ignore
+          }
+
           if (currentState is PortfolioLoaded && 
               currentState.portfolioId == widget.portfolioId) {
             // Data is already loaded for this portfolio, skip reloading
@@ -380,15 +403,12 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                         ),
                       ],
                       const SizedBox(height: 16),
-                      SizedBox(
-                        height: isSmallMobile ? 260 : 300,
-                        child: PortfolioTopMoversPanel(
-                          portfolioId: portfolioId,
-                          timeFrame: _selectedTimeFrame,
-                          showTimeFrameSelector: false,
-                          height: isSmallMobile ? 260 : 300,
-                        ),
+                      PortfolioTopMoversPanel(
+                        portfolioId: portfolioId,
+                        timeFrame: _selectedTimeFrame,
+                        showTimeFrameSelector: false,
                       ),
+                      const SizedBox(height: 16),
 
                   ],
                 ),

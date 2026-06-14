@@ -382,7 +382,6 @@ class _PortfolioHeatmapWidgetState
               investmentType: InvestmentType.portfolio,
               heatmapData: displayData,
               config: _mapToWidgetConfig(customConfig),
-              title: '',
               showSelectors: false,
               compactMode: widget.config.compactMode,
               selectedTimeFrame: _selectedTimeframe,
@@ -416,7 +415,7 @@ class _PortfolioHeatmapWidgetState
                 final heatmapH = heatmapConstraints.maxHeight.isFinite &&
                         heatmapConstraints.maxHeight > 60
                     ? heatmapConstraints.maxHeight
-                    : 420.0; // sensible fallback if parent has no height
+                    : 700.0; // Increased fallback height to show more stocks
                 return SizedBox(
                   width: double.infinity,
                   height: heatmapH,
@@ -424,7 +423,6 @@ class _PortfolioHeatmapWidgetState
                     investmentType: InvestmentType.portfolio,
                     heatmapData: displayData,
                     config: _mapToWidgetConfig(customConfig),
-                    title: '',
                     showSelectors: false,
                     compactMode: widget.config.compactMode,
                     selectedTimeFrame: _selectedTimeframe,

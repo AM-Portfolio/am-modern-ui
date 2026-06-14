@@ -99,6 +99,7 @@ class HeatmapLayoutTemplate extends StatelessWidget {
     final effectiveSubtitle = subtitle ?? data.subtitle;
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Icon
         if (icon != null) ...[
@@ -111,14 +112,15 @@ class HeatmapLayoutTemplate extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                effectiveTitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              if (effectiveSubtitle != null) ...[
-                const SizedBox(height: 4),
+              if (effectiveTitle.isNotEmpty)
+                Text(
+                  effectiveTitle,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              if (effectiveSubtitle != null && effectiveSubtitle != effectiveTitle) ...[
+                if (effectiveTitle.isNotEmpty) const SizedBox(height: 4),
                 Text(
                   effectiveSubtitle,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(

@@ -413,13 +413,14 @@ class _HoverTileState extends State<_HoverTile>
           horizontal: w > 120 ? 10 : 6,
           vertical: h > 80 ? 10 : 6,
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Sector / tile name
-            Flexible(
-              child: Text(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Sector / tile name
+              Text(
                 widget.tile.name,
                 style: TextStyle(
                   color: textColor,
@@ -428,61 +429,54 @@ class _HoverTileState extends State<_HoverTile>
                   letterSpacing: -0.2,
                 ),
                 textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
                 maxLines: nameMaxLines,
               ),
-            ),
 
-            // Primary metric: performance %
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                '${widget.tile.performance >= 0 ? '+' : ''}${widget.tile.performance.toStringAsFixed(2)}%',
-                style: TextStyle(
-                  color: textColor.withValues(alpha: 0.95),
-                  fontSize: primaryFontSize,
-                  fontWeight: FontWeight.w800,
-                ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ),
-
-            // Secondary: weight
-            if (showSecondary)
+              // Primary metric: performance %
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
-                  '${widget.tile.weightage.toStringAsFixed(1)}% Weight',
+                  '${widget.tile.performance >= 0 ? '+' : ''}${widget.tile.performance.toStringAsFixed(2)}%',
                   style: TextStyle(
-                    color: textColor.withValues(alpha: 0.75),
-                    fontSize: secondaryFontSize,
-                    fontWeight: FontWeight.w500,
+                    color: textColor.withValues(alpha: 0.95),
+                    fontSize: primaryFontSize,
+                    fontWeight: FontWeight.w800,
                   ),
                   textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
                 ),
               ),
 
-            // Tertiary: market value if available
-            if (showTertiary && widget.tile.value != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 1),
-                child: Text(
-                  '₹${_formatValue(widget.tile.value!)}',
-                  style: TextStyle(
-                    color: textColor.withValues(alpha: 0.6),
-                    fontSize: secondaryFontSize,
-                    fontWeight: FontWeight.w400,
+              // Secondary: weight
+              if (showSecondary)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '${widget.tile.weightage.toStringAsFixed(1)}% Weight',
+                    style: TextStyle(
+                      color: textColor.withValues(alpha: 0.75),
+                      fontSize: secondaryFontSize,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
                 ),
-              ),
-          ],
+
+              // Tertiary: market value if available
+              if (showTertiary && widget.tile.value != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: Text(
+                    '₹${_formatValue(widget.tile.value!)}',
+                    style: TextStyle(
+                      color: textColor.withValues(alpha: 0.6),
+                      fontSize: secondaryFontSize,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
