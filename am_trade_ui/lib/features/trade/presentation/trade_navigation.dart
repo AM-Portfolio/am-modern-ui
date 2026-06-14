@@ -6,18 +6,7 @@ import '../providers/trade_controller_providers.dart';
 import 'cubit/trade_controller_cubit.dart';
 import 'add_trade/pages/add_trade_web_page.dart';
 
-class OpenAddTradeNotification extends Notification {
-  final String? portfolioId;
-  final String? portfolioName;
-  final VoidCallback? onTradeAdded;
-  bool handled = false;
-
-  OpenAddTradeNotification({
-    this.portfolioId,
-    this.portfolioName,
-    this.onTradeAdded,
-  });
-}
+import 'package:am_common/am_common.dart';
 
 /// Opens [AddTradeWebPage] with a scoped [TradeControllerCubit].
 ///

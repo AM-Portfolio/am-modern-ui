@@ -36,12 +36,23 @@ class TradeResponsiveLayout extends StatefulWidget {
   static const int _webAddTradeIndex = 9;
 
   @override
-  State<TradeResponsiveLayout> createState() => _TradeResponsiveLayoutState();
+  State<TradeResponsiveLayout> createState() => TradeResponsiveLayoutState();
 }
 
-class _TradeResponsiveLayoutState extends State<TradeResponsiveLayout> {
+class TradeResponsiveLayoutState extends State<TradeResponsiveLayout> {
   /// Raw SwipeNavigationController index from the active screen.
   int _currentTabIndex = 0;
+  final GlobalKey<TradeWebScreenState> _webScreenKey = GlobalKey<TradeWebScreenState>();
+
+  void openAddTrade() {
+    setState(() {
+      _currentTabIndex = TradeResponsiveLayout._webAddTradeIndex;
+    });
+    // Give it a frame to mount TradeWebScreen if it was on mobile
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _webScreenKey.currentState?.openAddTrade();
+    });
+  }
 
   String? _currentPortfolioId;
   String? _currentPortfolioName;
@@ -98,6 +109,7 @@ class _TradeResponsiveLayoutState extends State<TradeResponsiveLayout> {
         }
 
         return TradeWebScreen(
+          key: _webScreenKey,
           initialView: webView,
           selectedPortfolioId: _currentPortfolioId,
           selectedPortfolioName: _currentPortfolioName,
