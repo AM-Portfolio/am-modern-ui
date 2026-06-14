@@ -156,8 +156,23 @@ class MarketProvider with ChangeNotifier {
         default: fromDate = now.subtract(const Duration(days: 7));
       }
 
+      DateTime toDate;
+      switch (timeframe) {
+        case '1W': toDate = fromDate.add(const Duration(days: 3)); break;
+        case '1M': toDate = fromDate.add(const Duration(days: 5)); break;
+        case '3M': toDate = fromDate.add(const Duration(days: 7)); break;
+        case '6M': toDate = fromDate.add(const Duration(days: 7)); break;
+        case '1Y': toDate = fromDate.add(const Duration(days: 10)); break;
+        case '5Y': toDate = fromDate.add(const Duration(days: 10)); break;
+        default: toDate = fromDate.add(const Duration(days: 3));
+      }
+      
+      if (toDate.isAfter(now)) {
+        toDate = now;
+      }
+
       final fromStr = fromDate.toIso8601String().split('T')[0];
-      final toStr = now.toIso8601String().split('T')[0];
+      final toStr = toDate.toIso8601String().split('T')[0];
       
       final symbols = _allIndicesData.map((e) => e.indexSymbol).toList();
       

@@ -45,7 +45,7 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
       decoration: const BoxDecoration(
         color: MarketColors.drawerBg,
         border: Border(
-          left: BorderSide(color: MarketColors.border, width: 0.5),
+          left: BorderSide(color: MarketColors.border, width: 1.0),
         ),
       ),
       padding: const EdgeInsets.all(20),
@@ -68,7 +68,7 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  border: Border.all(color: MarketColors.border, width: 0.5),
+                  border: Border.all(color: MarketColors.border, width: 1.0),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: IconButton(

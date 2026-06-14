@@ -52,9 +52,12 @@ class IndexCard extends StatelessWidget {
         final prefix = isPositive ? '↑' : '↓';
         final sign = isPositive ? '+' : '';
 
+        final displayPChangeFormatted = displayPChange.toStringAsFixed(2);
+        final displayChangeFormatted = numberFormat.format(displayChange.abs());
+
         final cardContent = Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // Index Name (All Caps, 0.04em letter-spacing)
             Text(
@@ -68,6 +71,8 @@ class IndexCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+            
+            const SizedBox(height: 4),
 
             // Index Value
             Text(
@@ -75,21 +80,68 @@ class IndexCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: isMobile ? 14 : 15,
                 color: MarketColors.textPrimary,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.bold,
               ),
             ),
+            
+            const SizedBox(height: 3),
 
-            // Change Amount & Percentage
-            Text(
-              isLoading
-                  ? 'Loading...'
-                  : '$prefix $sign${displayPChange.toStringAsFixed(2)}%$timeframeLabel',
-              style: TextStyle(
-                fontSize: isMobile ? 10 : 11,
-                color: changeColor,
-                fontWeight: FontWeight.w500,
+            // Change Amount & Percentage (stacked vertically)
+            if (isLoading)
+              Text(
+                'Loading...',
+                style: TextStyle(
+                  fontSize: isMobile ? 10 : 11,
+                  color: changeColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            else
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Row 1: Native Arrow Icon + Absolute Point Change
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                        size: isMobile ? 11.0 : 12.0,
+                        color: isPositive ? const Color(0xFF00C896) : const Color(0xFFF87171),
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        isPositive
+                            ? '+$displayChangeFormatted'
+                            : '-$displayChangeFormatted',
+                        style: TextStyle(
+                          fontSize: isMobile ? 10.0 : 11.0,
+                          color: isPositive ? const Color(0xFF00C896) : const Color(0xFFF87171),
+                          fontWeight: FontWeight.w600,
+                          height: 1.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 3),
+
+                  // Row 2: Percentage Change + Timeframe Label
+                  Text(
+                    isPositive
+                        ? '+$displayPChangeFormatted%$timeframeLabel'
+                        : '$displayPChangeFormatted%$timeframeLabel',
+                    style: TextStyle(
+                      fontSize: isMobile ? 9.5 : 10.5,
+                      color: isPositive ? const Color(0xFF00C896) : const Color(0xFFF87171),
+                      fontWeight: FontWeight.w400,
+                      height: 1.0,
+                    ),
+                  ),
+                ],
               ),
-            ),
           ],
         );
 
@@ -105,33 +157,45 @@ class IndexCard extends StatelessWidget {
                   curve: Curves.easeInOut,
                   width: double.infinity,
                   height: double.infinity,
-                  padding: EdgeInsets.symmetric(
-                    vertical: isMobile ? 10 : 12,
-                    horizontal: isMobile ? 12 : 14,
+                  padding: EdgeInsets.only(
+                    top: isMobile ? 10 : 12,
+                    bottom: isMobile ? 10 : 12,
+                    left: isMobile ? 12 : 14,
+                    right: isMobile ? 12 : 14,
                   ),
                   decoration: BoxDecoration(
                     color: MarketColors.surface,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isSelected ? MarketColors.accent : MarketColors.border,
-                      width: 0.5,
+                      width: 1.0,
                     ),
+                    boxShadow: isSelected ? [
+                      BoxShadow(
+                        color: const Color(0xFF00C896).withOpacity(0.15),
+                        blurRadius: 8,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 0),
+                      )
+                    ] : [],
                   ),
                   child: cardContent,
                 ),
 
                 // Selected Indicator (Desktop only)
-                if (!isMobile && isSelected)
+                if (!isMobile)
                   Positioned(
                     bottom: 0,
                     left: 0,
                     right: 0,
                     child: Center(
-                      child: Container(
-                        width: 24,
-                        height: 2,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        width: isSelected ? 24.0 : 0.0,
+                        height: 2.0,
                         decoration: const BoxDecoration(
-                          color: MarketColors.accent,
+                          color: Color(0xFF00C896),
                           borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(2),
                             topRight: Radius.circular(2),

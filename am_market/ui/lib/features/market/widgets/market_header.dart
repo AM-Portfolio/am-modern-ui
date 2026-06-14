@@ -146,24 +146,16 @@ class _AllIndicesButtonState extends State<_AllIndicesButton> {
   @override
   Widget build(BuildContext context) {
     if (widget.isMobile) {
-      return Tooltip(
-        message: 'All indices',
-        child: InkWell(
-          onTap: widget.onPressed,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              border: Border.all(color: MarketColors.border, width: 0.5),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.grid_view_rounded,
-              size: 14,
-              color: MarketColors.textSecondary,
-            ),
-          ),
+      return IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        icon: const Icon(
+          Icons.grid_view_rounded,
+          size: 18,
+          color: Color(0xFF94A3B8),
         ),
+        tooltip: 'All indices',
+        onPressed: widget.onPressed,
       );
     }
 
@@ -180,7 +172,7 @@ class _AllIndicesButtonState extends State<_AllIndicesButton> {
             color: Colors.transparent,
             border: Border.all(
               color: _isHovered ? MarketColors.accent : MarketColors.border,
-              width: 0.5,
+              width: 1.0,
             ),
             borderRadius: BorderRadius.circular(8),
           ),

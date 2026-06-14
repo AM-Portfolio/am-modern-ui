@@ -52,7 +52,7 @@ class DrawerIndexCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected ? MarketColors.accent : MarketColors.border,
-              width: 0.5,
+              width: 1.0,
             ),
           ),
           child: Column(
@@ -83,13 +83,28 @@ class DrawerIndexCard extends StatelessWidget {
                       color: badgeBgColor,
                       borderRadius: BorderRadius.circular(99),
                     ),
-                    child: Text(
-                      '$prefix $sign${displayPChange.toStringAsFixed(2)}%',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: accentColor,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                          size: 11.0,
+                          color: accentColor,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          isPositive
+                              ? '+${displayPChange.toStringAsFixed(2)}%'
+                              : '${displayPChange.toStringAsFixed(2)}%',
+                          style: TextStyle(
+                            fontSize: 10.0,
+                            color: accentColor,
+                            fontWeight: FontWeight.w400,
+                            height: 1.0,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -103,7 +118,7 @@ class DrawerIndexCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: isMobile ? 14 : 17,
                   color: MarketColors.textPrimary,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
 
@@ -115,7 +130,7 @@ class DrawerIndexCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: isMobile ? 10 : 12,
                   color: accentColor,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.bold,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

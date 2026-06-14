@@ -24,9 +24,9 @@ class PinnedIndicesGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: isMobile ? 2 : 6,
-        crossAxisSpacing: isMobile ? 8 : 10,
-        mainAxisSpacing: isMobile ? 8 : 10,
-        childAspectRatio: isMobile ? 1.45 : 1.3,
+        crossAxisSpacing: isMobile ? 8.0 : 10.0,
+        mainAxisSpacing: isMobile ? 8.0 : 10.0,
+        childAspectRatio: isMobile ? 1.6 : 1.8,
       ),
       itemCount: itemsToShow.length,
       itemBuilder: (context, index) {

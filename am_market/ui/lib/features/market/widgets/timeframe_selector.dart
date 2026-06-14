@@ -28,6 +28,10 @@ class TimeframeSelector extends StatelessWidget {
       decoration: BoxDecoration(
         color: MarketColors.surface,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: MarketColors.border,
+          width: 1.0,
+        ),
       ),
       child: isMobile
           ? SingleChildScrollView(

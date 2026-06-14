@@ -47,7 +47,7 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
           topRight: Radius.circular(20),
         ),
         border: Border(
-          top: BorderSide(color: MarketColors.border, width: 0.5),
+          top: BorderSide(color: MarketColors.border, width: 1.0),
         ),
       ),
       child: Column(
@@ -84,7 +84,7 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    border: Border.all(color: MarketColors.border, width: 0.5),
+                    border: Border.all(color: MarketColors.border, width: 1.0),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: IconButton(
