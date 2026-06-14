@@ -60,7 +60,7 @@ class PortfolioHeatmapConfig {
     templateType: UniversalTemplateType.full,
     showSubCards: true,
     padding: EdgeInsets.all(16.0),
-    title: 'Web: Portfolio Heatmap',
+    title: '',
     subtitle: 'Performance by sector',
     logTag: 'PortfolioHeatmap.Web',
   );
@@ -271,7 +271,7 @@ class _PortfolioHeatmapWidgetState
       tag: '${widget.config.logTag}.UI',
     );
 
-    return const HeatmapSkeletonLoader();
+    return const Center(child: CircularProgressIndicator());
   }
 
   /// Builds error state UI
@@ -381,6 +381,7 @@ class _PortfolioHeatmapWidgetState
             child: UniversalHeatmapWidget(
               investmentType: InvestmentType.portfolio,
               heatmapData: displayData,
+              title: widget.config.title,
               config: _mapToWidgetConfig(customConfig),
               showSelectors: false,
               compactMode: widget.config.compactMode,
@@ -422,6 +423,7 @@ class _PortfolioHeatmapWidgetState
                   child: UniversalHeatmapWidget(
                     investmentType: InvestmentType.portfolio,
                     heatmapData: displayData,
+                    title: widget.config.title,
                     config: _mapToWidgetConfig(customConfig),
                     showSelectors: false,
                     compactMode: widget.config.compactMode,

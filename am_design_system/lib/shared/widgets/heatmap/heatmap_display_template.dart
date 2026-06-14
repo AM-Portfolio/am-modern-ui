@@ -97,41 +97,44 @@ class HeatmapDisplayTemplate extends StatelessWidget {
 
   Widget _buildEmptyState(BuildContext context) => Center(
     child: Container(
-      padding: const EdgeInsets.all(32),
-      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      margin: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.grid_view_rounded,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-            size: 48,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Heatmap Data Unavailable',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.grid_view_rounded,
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+              size: 40,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'No sector performance data is currently available.',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 14,
+            const SizedBox(height: 12),
+            Text(
+              'Heatmap Data Unavailable',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'No sector performance data is currently available.',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     ),
   );

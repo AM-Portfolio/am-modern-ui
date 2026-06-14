@@ -187,6 +187,8 @@ class PortfolioHeatmapConfig {
     // Hide all selectors except market cap, sector, and layout
     showTimeFrameSelector: true,
     showMetricSelector: false,
+    showSectorSelector: true,
+    showMarketCapSelector: true,
     showLayoutSelector: true, // Enable layout selector
     // Custom market cap options including "no group" equivalent (all)
     availableMarketCaps: portfolioMarketCapOptions,
@@ -211,7 +213,7 @@ class PortfolioHeatmapConfig {
     SectorType.technology, // Technology sector
     SectorType.healthcare, // Healthcare sector
     SectorType.finance, // Finance sector
-    SectorType.noGroup, // Consumer discretionary sector
+    SectorType.consumer, // Consumer discretionary sector
   ];
 
   /// Custom layout options for portfolio heatmap

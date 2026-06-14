@@ -76,12 +76,6 @@ class HeatmapLayoutTemplate extends StatelessWidget {
                       const SizedBox(height: 12),
                     ],
 
-                    // Legend section
-                    if (showLegend && data.configuration.showPerformance) ...[
-                      _buildColorLegend(context),
-                      const SizedBox(height: 12),
-                    ],
-
                     // Main display content — fills remaining card space.
                     Expanded(child: displayWidget),
                   ],
@@ -132,6 +126,11 @@ class HeatmapLayoutTemplate extends StatelessWidget {
           ),
         ),
 
+        // Legend inline
+        if (showLegend && data.configuration.showPerformance) ...[
+          _buildColorLegend(context),
+        ],
+
         // Header actions
         if (headerActions != null && headerActions!.isNotEmpty) ...[
           const SizedBox(width: 8),
@@ -147,19 +146,14 @@ class HeatmapLayoutTemplate extends StatelessWidget {
     }
 
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text('Performance: ', style: Theme.of(context).textTheme.bodySmall),
-        Expanded(
-          child: Row(
-            children: [
-              _buildLegendItem(context, 'Loss', Colors.red.shade300),
-              const SizedBox(width: 16),
-              _buildLegendItem(context, 'Neutral', Colors.grey.shade300),
-              const SizedBox(width: 16),
-              _buildLegendItem(context, 'Gain', Colors.green.shade300),
-            ],
-          ),
-        ),
+        _buildLegendItem(context, 'Loss', Colors.red.shade300),
+        const SizedBox(width: 16),
+        _buildLegendItem(context, 'Neutral', Colors.grey.shade300),
+        const SizedBox(width: 16),
+        _buildLegendItem(context, 'Gain', Colors.green.shade300),
       ],
     );
   }
