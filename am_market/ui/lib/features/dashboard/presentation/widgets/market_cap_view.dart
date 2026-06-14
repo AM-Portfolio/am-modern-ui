@@ -117,9 +117,9 @@ class MarketCapView extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${change >= 0 ? '+' : ''}${change.toStringAsFixed(2)}%',
+                        change == 0.0 ? 'N/A' : '${change > 0 ? '+' : ''}${change.toStringAsFixed(2)}%',
                         style: TextStyle(
-                          color: color,
+                          color: change == 0.0 ? Colors.grey : color,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
