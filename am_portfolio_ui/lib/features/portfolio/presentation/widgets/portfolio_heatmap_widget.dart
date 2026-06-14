@@ -12,8 +12,8 @@ import '../cubit/portfolio_heatmap_cubit.dart';
 import '../cubit/portfolio_heatmap_state.dart';
 import '../cubit/portfolio_state.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart' as analytics_entities;
-import '../mappers/sector_heatmap_converter.dart';
 import 'portfolio_metric_card.dart';
+
 
 /// Configuration class for platform-specific heatmap settings
 class PortfolioHeatmapConfig {
@@ -43,7 +43,7 @@ class PortfolioHeatmapConfig {
   static const mobile = PortfolioHeatmapConfig(
     defaultLayout: HeatmapLayoutType.list,
     compactMode: true,
-    showSelectors: false,
+    showSelectors: true,
     templateType: UniversalTemplateType.compact,
     showSubCards: false,
     padding: EdgeInsets.all(12.0),
@@ -185,8 +185,27 @@ class _PortfolioHeatmapWidgetState
   }
 
   @override
-  Widget build(BuildContext context) =>
-      Padding(padding: widget.config.padding, child: _buildHeatmapContent());
+  Widget build(BuildContext context) {
+    // Wrap in LayoutBuilder so _buildLoadedWidget always receives a bounded
+    // height constraint — without this, Expanded inside the Column gets 0.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final content = Padding(
+          padding: widget.config.padding,
+          child: _buildHeatmapContent(),
+        );
+        return widget.config.compactMode
+            ? SingleChildScrollView(child: content)
+            : SizedBox(
+                width: constraints.maxWidth,
+                height: constraints.maxHeight.isFinite
+                    ? constraints.maxHeight
+                    : double.infinity,
+                child: content,
+              );
+      },
+    );
+  }
 
   /// Main heatmap content with state handling using dual cubit approach
   Widget _buildHeatmapContent() => MultiBlocListener(
@@ -352,16 +371,19 @@ class _PortfolioHeatmapWidgetState
             ),
           ),
 
-        // ── MAIN TREEMAP ──
-        Expanded(
-          child: SizedBox(
+        // ── MAIN HEATMAP ──
+        if (widget.config.compactMode)
+          SizedBox(
             width: double.infinity,
+            // Adaptive height: 45% of screen height, clamped between 320–600px.
+            height: (MediaQuery.of(context).size.height * 0.45)
+                .clamp(320.0, 600.0),
             child: UniversalHeatmapWidget(
               investmentType: InvestmentType.portfolio,
               heatmapData: displayData,
               config: _mapToWidgetConfig(customConfig),
-              title: '', // Replaced with custom Equity Distribution header
-              showSelectors: false, // Hidden for custom sleek layout
+              title: '',
+              showSelectors: false,
               compactMode: widget.config.compactMode,
               selectedTimeFrame: _selectedTimeframe,
               selectedMetric: _selectedMetric,
@@ -385,8 +407,52 @@ class _PortfolioHeatmapWidgetState
               },
               templateType: widget.config.templateType,
             ),
+          )
+        else
+          // Web: fill all remaining vertical space dynamically.
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, heatmapConstraints) {
+                final heatmapH = heatmapConstraints.maxHeight.isFinite &&
+                        heatmapConstraints.maxHeight > 60
+                    ? heatmapConstraints.maxHeight
+                    : 420.0; // sensible fallback if parent has no height
+                return SizedBox(
+                  width: double.infinity,
+                  height: heatmapH,
+                  child: UniversalHeatmapWidget(
+                    investmentType: InvestmentType.portfolio,
+                    heatmapData: displayData,
+                    config: _mapToWidgetConfig(customConfig),
+                    title: '',
+                    showSelectors: false,
+                    compactMode: widget.config.compactMode,
+                    selectedTimeFrame: _selectedTimeframe,
+                    selectedMetric: _selectedMetric,
+                    selectedSector: _selectedSector,
+                    selectedMarketCap: _selectedMarketCap,
+                    selectedLayout: _selectedLayout,
+                    onTilePressed: () {
+                      CommonLogger.userAction(
+                        'Heatmap stock tile pressed',
+                        tag: '${widget.config.logTag}.Action',
+                      );
+                    },
+                    onFiltersChanged: ({timeFrame, metric, sector, marketCap, layout}) {
+                      _onFiltersChanged(
+                        timeFrame: timeFrame,
+                        metric: metric,
+                        sector: sector,
+                        marketCap: marketCap,
+                        layout: layout,
+                      );
+                    },
+                    templateType: widget.config.templateType,
+                  ),
+                );
+              },
+            ),
           ),
-        ),
 
         // ── FOOTER STATUS BAR ──
         const SizedBox(height: 12),
@@ -510,42 +576,73 @@ class _PortfolioHeatmapWidgetState
 
   /// Builds the "Equity Distribution" header with pill tag and legend
   Widget _buildEquityDistributionHeader() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const Text(
-          'Equity Distribution',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            'MARKET CAP WEIGHTED',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 500;
+
+        final titleRow = Row(
+          children: [
+            const Text(
+              'Equity Distribution',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-        ),
-        const Spacer(),
-        // Legend
-        _buildLegendDot(const Color(0xFF0BA95B), 'Outperform'),
-        const SizedBox(width: 12),
-        _buildLegendDot(const Color(0xFF2B273B), 'Neutral'),
-        const SizedBox(width: 12),
-        _buildLegendDot(const Color(0xFFB22222), 'Underperform'),
-      ],
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'MARKET CAP WEIGHTED',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+          ],
+        );
+
+        final legendRow = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildLegendDot(const Color(0xFF0BA95B), 'Outperform'),
+            const SizedBox(width: 12),
+            _buildLegendDot(const Color(0xFF2B273B), 'Neutral'),
+            const SizedBox(width: 12),
+            _buildLegendDot(const Color(0xFFB22222), 'Underperform'),
+          ],
+        );
+
+        if (isNarrow) {
+          // Stack vertically on narrow screens
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              titleRow,
+              const SizedBox(height: 8),
+              legendRow,
+            ],
+          );
+        } else {
+          // Side-by-side on wide screens
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              titleRow,
+              const Spacer(),
+              legendRow,
+            ],
+          );
+        }
+      },
     );
   }
 
@@ -577,18 +674,22 @@ class _PortfolioHeatmapWidgetState
       builder: (context, state) {
         bool isConnected = false;
         double todayChangePct = 0.0;
-        
+
         if (state is PortfolioLoaded) {
           isConnected = state.isLiveDataActive;
           todayChangePct = state.summary.todayChangePercentage;
         }
-        
-        final statusColor = isConnected ? const Color(0xFF0BA95B) : const Color(0xFFB22222);
-        final statusText = isConnected ? 'LIVE FEED ACTIVE' : 'CONNECTING...';
-        
+
+        final statusColor =
+            isConnected ? const Color(0xFF0BA95B) : const Color(0xFFB22222);
+        final statusText =
+            isConnected ? 'LIVE FEED ACTIVE' : 'CONNECTING...';
+
         final isPositive = todayChangePct >= 0;
-        final sentimentColor = isPositive ? const Color(0xFF0BA95B) : const Color(0xFFB22222);
-        final sentimentText = isPositive ? 'BULLISH SENTIMENT' : 'BEARISH SENTIMENT';
+        final sentimentColor =
+            isPositive ? const Color(0xFF0BA95B) : const Color(0xFFB22222);
+        final sentimentText =
+            isPositive ? 'BULLISH SENTIMENT' : 'BEARISH SENTIMENT';
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -597,58 +698,73 @@ class _PortfolioHeatmapWidgetState
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
-          child: Row(
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 6,
             children: [
-              // Connected indicator
-              Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                statusText,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Icon(Icons.access_time, color: Colors.white.withValues(alpha: 0.4), size: 12),
-              const SizedBox(width: 4),
-              BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
-                builder: (context, heatmapState) {
-                  String timeText = 'Just now';
-                  if (heatmapState is PortfolioHeatmapLoaded) {
-                    final diff = DateTime.now().difference(heatmapState.lastUpdated);
-                    if (diff.inMinutes > 0) {
-                      timeText = '${diff.inMinutes}m ago';
-                    } else if (diff.inSeconds > 0) {
-                      timeText = '${diff.inSeconds}s ago';
-                    }
-                  }
-                  return Text(
-                    'Updated: $timeText',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      fontSize: 10,
+              // Live status + timestamp group
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
                     ),
-                  );
-                },
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.55),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Icon(
+                    Icons.access_time,
+                    color: Colors.white.withValues(alpha: 0.4),
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
+                    builder: (context, heatmapState) {
+                      String timeText = 'Just now';
+                      if (heatmapState is PortfolioHeatmapLoaded) {
+                        final diff = DateTime.now()
+                            .difference(heatmapState.lastUpdated);
+                        if (diff.inMinutes > 0) {
+                          timeText = '${diff.inMinutes}m ago';
+                        } else if (diff.inSeconds > 0) {
+                          timeText = '${diff.inSeconds}s ago';
+                        }
+                      }
+                      return Text(
+                        'Updated: $timeText',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          fontSize: 10,
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-              const Spacer(),
               // Sentiment pill
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
                   color: sentimentColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: sentimentColor.withValues(alpha: 0.5)),
+                  border:
+                      Border.all(color: sentimentColor.withValues(alpha: 0.5)),
                 ),
                 child: Text(
                   sentimentText,

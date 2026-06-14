@@ -72,10 +72,22 @@ class _PortfolioHeatmapView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PortfolioHeatmapWidget(
-      portfolioId: portfolioId,
-      portfolioName: portfolioName,
-      config: PortfolioHeatmapConfig.web,
+    // LayoutBuilder ensures PortfolioHeatmapWidget always has a bounded height.
+    // Without this the `Expanded` inside it resolves to 0 on the web scaffold.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          width: constraints.maxWidth,
+          height: constraints.maxHeight.isFinite
+              ? constraints.maxHeight
+              : MediaQuery.of(context).size.height,
+          child: PortfolioHeatmapWidget(
+            portfolioId: portfolioId,
+            portfolioName: portfolioName,
+            config: PortfolioHeatmapConfig.web,
+          ),
+        );
+      },
     );
   }
 }

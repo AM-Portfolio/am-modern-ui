@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_common/am_common.dart';
-import 'package:am_design_system/shared/models/heatmap/heatmap_ui_data.dart';
 import 'package:am_design_system/am_design_system.dart'
     hide MarketCapType, MetricType, TimeFrame, SectorType;
 import '../mappers/sector_heatmap_converter.dart';
@@ -9,6 +8,28 @@ import '../../internal/domain/entities/portfolio_analytics.dart';
 import 'portfolio_analytics_cubit.dart';
 import 'portfolio_analytics_state.dart';
 import 'portfolio_heatmap_state.dart';
+
+/// Strict matching: ensures 'tech' does NOT match 'biotech'.
+/// It matches whole words using regex word boundaries (\b).
+bool _matchesStrictly(String source, String target) {
+  final s = source.toLowerCase().trim();
+  final t = target.toLowerCase().trim();
+  if (s == t) return true;
+  // Allow matching when spaces are removed (e.g. 'healthcare' vs 'health care')
+  if (s.replaceAll(' ', '') == t.replaceAll(' ', '')) return true;
+  try {
+    // Word boundary regex: 'tech' in 'information technology' matches,
+    // but 'tech' in 'biotech' does NOT match because 'tech' ends at a
+    // word boundary in 'technology' but not in 'biotech'.
+    if (RegExp('\\b${RegExp.escape(t)}', caseSensitive: false).hasMatch(s)) {
+      return true;
+    }
+    if (RegExp('\\b${RegExp.escape(s)}', caseSensitive: false).hasMatch(t)) {
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
 
 /// Portfolio Heatmap Cubit
 class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
@@ -60,28 +81,26 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
 
 
 
-          // Apply Sector filtering
+          // Apply Sector filtering — strict word-boundary match prevents
+          // 'tech' from matching 'biotech' etc.
           if (sector != SectorType.all && sector != SectorType.noGroup) {
-            final targetSectorName = sector.displayName.toLowerCase();
+            final targetSectorName = sector.displayName;
             heatmapData = heatmapData.copyWith(
               tiles: heatmapData.uiTiles.where((tile) {
-                final tileName = tile.name.toLowerCase();
-                final tileDisplay = tile.displayName.toLowerCase();
-                return tileName.contains(targetSectorName) || 
-                       tileDisplay.contains(targetSectorName);
+                return _matchesStrictly(tile.name, targetSectorName) ||
+                       _matchesStrictly(tile.displayName, targetSectorName);
               }).toList(),
             );
           }
 
-          // Apply Market Cap filtering
+          // Apply Market Cap filtering — strict word-boundary match
           if (marketCap != MarketCapType.all) {
-            final targetCapName = marketCap.displayName.toLowerCase();
-            
+            final targetCapName = marketCap.displayName;
+
             // Try to find the matching segment in marketCapAllocation
             final segments = analyticsState.marketCapAllocation?.segments ?? [];
             final targetSegment = segments.cast<MarketCapSegment?>().firstWhere(
-              (s) => s!.segmentName.toLowerCase().contains(targetCapName) || 
-                     targetCapName.contains(s.segmentName.toLowerCase()),
+              (s) => s != null && _matchesStrictly(s.segmentName, targetCapName),
               orElse: () => null,
             );
 

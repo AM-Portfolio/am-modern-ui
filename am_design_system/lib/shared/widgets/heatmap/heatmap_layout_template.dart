@@ -49,14 +49,18 @@ class HeatmapLayoutTemplate extends StatelessWidget {
       color: backgroundColor,
       padding: padding ?? const EdgeInsets.all(8),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Selectors section
+          // Selectors section — uses intrinsic height only, never steals from heatmap.
           if (showSelectors && selectorWidget != null) ...[
-            selectorWidget!,
-            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: selectorWidget!,
+            ),
+            const SizedBox(height: 8),
           ],
 
-          // Main heatmap card
+          // Main heatmap card — takes all remaining vertical space.
           Expanded(
             child: Card(
               elevation: 4,
@@ -64,20 +68,21 @@ class HeatmapLayoutTemplate extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Header section
                     if (showHeader) ...[
                       customHeader ?? _buildHeader(context),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                     ],
 
                     // Legend section
                     if (showLegend && data.configuration.showPerformance) ...[
                       _buildColorLegend(context),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                     ],
 
-                    // Main display content
+                    // Main display content — fills remaining card space.
                     Expanded(child: displayWidget),
                   ],
                 ),
