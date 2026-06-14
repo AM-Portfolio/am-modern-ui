@@ -29,7 +29,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0; // Default to Dashboard
   bool _sessionRestored = false;
-  final GlobalKey<dynamic> _tradeLayoutKey = GlobalKey();
+  final GlobalKey<TradeResponsiveLayoutState> _tradeLayoutKey = GlobalKey();
 
   @override
   void initState() {
@@ -274,27 +274,7 @@ class _AppShellState extends State<AppShell> {
         return dashboard.DashboardPage(userId: userId);
       case 1:
         return PortfolioScreen(
-          addTradeBuilder: (context, portfolioId, portfolioName, onComplete) {
-            return Consumer(
-              builder: (context, ref, _) {
-                final cubitAsync = ref.watch(tradeControllerCubitProvider);
-
-                return cubitAsync.when(
-                  data: (cubit) => BlocProvider<TradeControllerCubit>.value(
-                    value: cubit,
-                    child: AddTradeWebPage(
-                      portfolioId: portfolioId,
-                      portfolioName: portfolioName,
-                      onTradeAdded: onComplete,
-                      onCancel: onComplete,
-                    ),
-                  ),
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => Center(child: Text('Error: $error')),
-                );
-              },
-            );
-          },
+          addTradeBuilder: TradeUIHelper.buildAddTradeOverlay,
         );
       case 2:
         return TradeResponsiveLayout(key: _tradeLayoutKey);

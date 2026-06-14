@@ -60,6 +60,7 @@ class TradeWebScreen extends ConsumerStatefulWidget {
 }
 
 class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
+  static const String addTradeTitle = 'Add Trade';
   late SwipeNavigationController _swipeController;
   String? _currentPortfolioId;
   String? _currentPortfolioName;
@@ -93,7 +94,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   }
 
   void openAddTrade() {
-    final addTradeIndex = _swipeController.items.indexWhere((item) => item.title == 'Add Trade');
+    final addTradeIndex = _swipeController.items.indexWhere((item) => item.title == addTradeTitle);
     if (addTradeIndex != -1) {
       _swipeController.navigateTo(addTradeIndex);
     }
@@ -232,7 +233,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         accentColor: ModuleColors.trade,
       ),
       NavigationItem(
-        title: 'Add Trade',
+        title: addTradeTitle,
         subtitle: 'New Trade Entry',
         icon: Icons.add,
         page: _currentPortfolioId == null
@@ -302,7 +303,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     return NotificationListener<OpenAddTradeNotification>(
       onNotification: (notification) {
         notification.handled = true;
-        final addTradeIndex = _swipeController.items.indexWhere((item) => item.title == 'Add Trade');
+        final addTradeIndex = _swipeController.items.indexWhere((item) => item.title == addTradeTitle);
         if (addTradeIndex != -1) {
           _swipeController.navigateTo(addTradeIndex);
         }
@@ -323,18 +324,12 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         footer: Padding(
           padding: const EdgeInsets.all(16),
           child: SidebarPrimaryAction(
-            title: 'Add Trade',
+            title: addTradeTitle,
             icon: Icons.add,
             accentColor: ModuleColors.trade,
             onTap: () {
-              if (_currentPortfolioId == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please select a portfolio first')),
-                );
-                return;
-              }
               // Dispatch directly via _swipeController since NotificationListener is below this context
-              final addTradeIndex = _swipeController.items.indexWhere((item) => item.title == 'Add Trade');
+              final addTradeIndex = _swipeController.items.indexWhere((item) => item.title == addTradeTitle);
               if (addTradeIndex != -1) {
                 _swipeController.navigateTo(addTradeIndex);
               }
@@ -368,7 +363,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             items: _swipeController.items.asMap().entries
               .where((entry) {
                 final title = entry.value.title;
-                return title != 'Add Trade' && 
+                return title != addTradeTitle && 
                        title != 'Market' && 
                        title != 'Report' && 
                        title != 'Unified';

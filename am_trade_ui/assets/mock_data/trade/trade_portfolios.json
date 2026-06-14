@@ -1,0 +1,45 @@
+{
+  "portfolios": [
+    {
+      "portfolioId": "mock-pf-001",
+      "name": "Day Trading Crypto",
+      "ownerId": "local-dev-user",
+      "totalValue": 15000.0,
+      "totalGainLoss": 2500.0,
+      "totalGainLossPercentage": 20.0,
+      "holdingsCount": 5,
+      "description": "High-risk crypto day trading portfolio",
+      "lastUpdated": "2026-06-12T10:00:00Z",
+      "metrics": {
+        "totalTrades": 45,
+        "netProfitLoss": 2500.0,
+        "netProfitLossPercentage": 20.0,
+        "winRate": 0.65,
+        "winningTrades": 29,
+        "losingTrades": 16,
+        "openPositions": 3
+      }
+    },
+    {
+      "portfolioId": "mock-pf-002",
+      "name": "Long Term Stocks",
+      "ownerId": "local-dev-user",
+      "totalValue": 125000.0,
+      "totalGainLoss": 15000.0,
+      "totalGainLossPercentage": 13.6,
+      "holdingsCount": 12,
+      "description": "Safe long-term index and bluechip stocks",
+      "lastUpdated": "2026-06-12T10:00:00Z",
+      "metrics": {
+        "totalTrades": 12,
+        "netProfitLoss": 15000.0,
+        "netProfitLossPercentage": 13.6,
+        "winRate": 0.83,
+        "winningTrades": 10,
+        "losingTrades": 2,
+        "openPositions": 12
+      }
+    }
+  ],
+  "totalCount": 2
+}

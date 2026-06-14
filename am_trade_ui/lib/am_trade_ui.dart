@@ -1,7 +1,8 @@
 library am_trade_ui;
 
-// Exports temporarily disabled for Phase 1 to focus on Market UI
+// Exports enabled for Phase 1
 export 'features/trade/presentation/web/trade_web_screen.dart';
+export 'features/trade/presentation/trade_ui_helper.dart';
 export 'features/trade/presentation/mobile/trade_mobile_screen.dart';
 export 'features/trade/presentation/trade_responsive_layout.dart';
 export 'features/trade/presentation/add_trade/pages/add_trade_web_page.dart';
