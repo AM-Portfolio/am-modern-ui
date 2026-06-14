@@ -16,6 +16,7 @@ class UniversalHeatmapWidget extends StatelessWidget {
     required this.investmentType,
     required this.heatmapData,
     required this.title,
+    this.subtitle,
     super.key,
     this.config,
     this.onTilePressed,
@@ -43,6 +44,9 @@ class UniversalHeatmapWidget extends StatelessWidget {
 
   /// Custom title (required)
   final String title;
+
+  /// Custom subtitle (optional)
+  final String? subtitle;
 
   /// Callback when a tile is pressed
   final VoidCallback? onTilePressed;
@@ -190,6 +194,7 @@ class UniversalHeatmapWidget extends StatelessWidget {
       displayWidget: displayTemplate,
       selectorWidget: selectorTemplate,
       customTitle: title,
+      customSubtitle: subtitle,
     );
   }
 }

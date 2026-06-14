@@ -46,9 +46,9 @@ class PortfolioHeatmapConfig {
     showSelectors: true,
     templateType: UniversalTemplateType.compact,
     showSubCards: false,
-    padding: EdgeInsets.all(12.0),
-    title: 'Mobile: Portfolio Heatmap',
-    subtitle: 'Performance by sector',
+    padding: EdgeInsets.all(8.0),
+    title: 'Heatmap Overview',
+    subtitle: '', // Completely removed the down side text
     logTag: 'PortfolioHeatmap.Mobile',
   );
 
@@ -60,8 +60,8 @@ class PortfolioHeatmapConfig {
     templateType: UniversalTemplateType.full,
     showSubCards: true,
     padding: EdgeInsets.all(16.0),
-    title: '',
-    subtitle: 'Performance by sector',
+    title: 'Heatmap Overview',
+    subtitle: '',
     logTag: 'PortfolioHeatmap.Web',
   );
 }
@@ -382,6 +382,7 @@ class _PortfolioHeatmapWidgetState
               investmentType: InvestmentType.portfolio,
               heatmapData: displayData,
               title: widget.config.title,
+              subtitle: widget.config.subtitle,
               config: _mapToWidgetConfig(customConfig),
               showSelectors: false,
               compactMode: widget.config.compactMode,
@@ -424,6 +425,7 @@ class _PortfolioHeatmapWidgetState
                     investmentType: InvestmentType.portfolio,
                     heatmapData: displayData,
                     title: widget.config.title,
+                    subtitle: widget.config.subtitle,
                     config: _mapToWidgetConfig(customConfig),
                     showSelectors: false,
                     compactMode: widget.config.compactMode,

@@ -123,6 +123,7 @@ class UniversalHeatmapTemplateFactory {
     required Widget displayWidget,
     Widget? selectorWidget,
     String? customTitle,
+    String? customSubtitle,
   }) {
     CommonLogger.methodEntry(
       'createLayoutTemplate',
@@ -137,7 +138,7 @@ class UniversalHeatmapTemplateFactory {
     final title =
         customTitle ??
         UniversalHeatmapConfigManager.getDefaultTitle(investmentType);
-    final subtitle = UniversalHeatmapConfigManager.getDefaultSubtitle(
+    final subtitle = customSubtitle ?? UniversalHeatmapConfigManager.getDefaultSubtitle(
       investmentType,
     );
     final icon = UniversalHeatmapConfigManager.getInvestmentIcon(
@@ -155,6 +156,7 @@ class UniversalHeatmapTemplateFactory {
           data: data,
           displayWidget: displayWidget,
           title: title,
+          subtitle: subtitle,
           showLegend: false,
           showSelectors: false,
           icon: icon,
@@ -171,6 +173,7 @@ class UniversalHeatmapTemplateFactory {
           displayWidget: displayWidget,
           selectorWidget: selectorWidget,
           title: title,
+          subtitle: subtitle,
           showSelectors: selectorWidget != null,
           icon: icon,
           padding: const EdgeInsets.all(12),
@@ -205,6 +208,7 @@ class UniversalHeatmapTemplateFactory {
           displayWidget: displayWidget,
           selectorWidget: selectorWidget,
           title: title,
+          subtitle: subtitle,
           showLegend: false,
           showSelectors: selectorWidget != null,
           icon: icon,

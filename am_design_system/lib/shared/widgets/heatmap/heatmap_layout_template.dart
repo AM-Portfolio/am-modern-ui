@@ -113,7 +113,9 @@ class HeatmapLayoutTemplate extends StatelessWidget {
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
-              if (effectiveSubtitle != null && effectiveSubtitle != effectiveTitle) ...[
+              if (effectiveSubtitle != null &&
+                  effectiveSubtitle.isNotEmpty &&
+                  effectiveSubtitle != effectiveTitle) ...[
                 if (effectiveTitle.isNotEmpty) const SizedBox(height: 4),
                 Text(
                   effectiveSubtitle,
