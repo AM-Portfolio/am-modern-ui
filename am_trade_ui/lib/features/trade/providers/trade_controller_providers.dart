@@ -64,12 +64,16 @@ final tradeControllerCubitProvider = FutureProvider.autoDispose<TradeControllerC
   final deleteTrade = await ref.watch(_deleteTradeProvider.future);
   final getTradesByPortfolio = await ref.watch(_getTradesByPortfolioProvider.future);
 
-  return TradeControllerCubit(
+  final cubit = TradeControllerCubit(
     addTrade: addTrade,
     updateTrade: updateTrade,
     deleteTrade: deleteTrade,
     getTradesByPortfolio: getTradesByPortfolio,
   );
+
+  ref.onDispose(() => cubit.close());
+
+  return cubit;
 });
 
 /// Provider for TradeControllerCubit with portfolio ID parameter

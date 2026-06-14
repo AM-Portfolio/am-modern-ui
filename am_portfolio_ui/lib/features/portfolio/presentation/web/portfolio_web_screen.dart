@@ -28,6 +28,7 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
     this.isSidebarVisible = true,
     this.onToggleSidebar,
     this.onBack,
+    this.addTradeBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -36,6 +37,7 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
   final bool isSidebarVisible;
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
+  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
 
   @override
   ConsumerState<PortfolioWebScreen> createState() => _PortfolioWebScreenState();
@@ -45,6 +47,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   SwipeNavigationController? _swipeController;
   String? _currentPortfolioId;
   String? _currentPortfolioName;
+  bool _isAddingTrade = false;
 
   @override
   void initState() {
@@ -215,7 +218,18 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return UnifiedSidebarScaffold(
+    return NotificationListener<OpenAddTradeNotification>(
+      onNotification: (notification) {
+        if (widget.addTradeBuilder != null) {
+          setState(() {
+            _isAddingTrade = true;
+          });
+          notification.handled = true;
+          return true;
+        }
+        return false;
+      },
+      child: UnifiedSidebarScaffold(
       module: ModuleType.portfolio,
       // Removed title/subtitle as requested
       title: null,
@@ -242,13 +256,24 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         context.read<AuthCubit>().logout();
         widget.onBack?.call();
       },
-      body: _swipeController == null 
-        ? const Center(child: CircularProgressIndicator())
-        : SwipeablePageView(
-            controller: _swipeController!,
-            showIndicator: true,
-            indicatorPosition: IndicatorPosition.bottom,
-          ),
+      body: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
+          ? widget.addTradeBuilder!(
+              context,
+              _currentPortfolioId!,
+              _currentPortfolioName ?? widget.selectedPortfolioName,
+              () {
+                setState(() {
+                  _isAddingTrade = false;
+                });
+              }
+            )
+          : (_swipeController == null 
+              ? const Center(child: CircularProgressIndicator())
+              : SwipeablePageView(
+                  controller: _swipeController!,
+                  showIndicator: true,
+                  indicatorPosition: IndicatorPosition.bottom,
+                )),
       footer: Padding(
         padding: const EdgeInsets.all(16),
         child: SidebarPrimaryAction(
@@ -256,7 +281,15 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           icon: Icons.add,
           accentColor: ModuleColors.portfolio,
           onTap: () {
-            // Navigate to NEW TRADE
+            if (widget.addTradeBuilder != null && _currentPortfolioId != null) {
+              setState(() {
+                _isAddingTrade = true;
+              });
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Select a portfolio first')),
+              );
+            }
           },
         ),
       ),
@@ -292,6 +325,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           }).toList(),
         ),
       ],
+      ),
     );
   }
 }

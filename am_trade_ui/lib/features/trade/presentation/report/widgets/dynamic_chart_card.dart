@@ -40,6 +40,14 @@ class _DynamicChartCardState extends ConsumerState<DynamicChartCard> {
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _dropdownOverlay;
   final GlobalKey _metricsButtonKey = GlobalKey();
+
+  /// IN-MEMORY CACHE FOR CHART DATA POINTS:
+  /// This cache prevents redundant aggregations and calculations when the user
+  /// toggles back and forth between different timeframes or metrics.
+  /// Keys are generated as `"${timeframe.name}_${metric.name}"`.
+  /// The cache is cleared in `didUpdateWidget` if the underlying performance 
+  /// data or timing analysis data changes (e.g., due to user filtering changes).
+  final Map<String, List<ChartDataPoint>> _calculationCache = {};
   
   // Define colors for metrics
   final Map<ChartMetric, Color> _metricColors = {
@@ -69,6 +77,14 @@ class _DynamicChartCardState extends ConsumerState<DynamicChartCard> {
               _selectedTimeFrame = widget.initialTimeFrame;
           });
       }
+      
+      // CACHE INVALIDATION:
+      // If the underlying data lists have changed (different reference or contents),
+      // we must clear our cached calculations so they get recomputed with the new data.
+      if (oldWidget.dailyPerformance != widget.dailyPerformance || 
+          oldWidget.timingAnalysis != widget.timingAnalysis) {
+          _calculationCache.clear();
+      }
   }
 
   Map<ChartMetric, List<ChartDataPoint>> _getAllData() {
@@ -80,6 +96,13 @@ class _DynamicChartCardState extends ConsumerState<DynamicChartCard> {
   }
 
   List<ChartDataPoint> _getDataForMetric(ChartMetric metric) {
+    // Check if the calculation for this timeframe and metric was already performed
+    final String cacheKey = '${_selectedTimeFrame.name}_${metric.name}';
+    if (_calculationCache.containsKey(cacheKey)) {
+      // Return the cached data directly, saving processing cycles and preventing UI jank
+      return _calculationCache[cacheKey]!;
+    }
+
     List<ChartDataPoint> points = [];
     
     switch (_selectedTimeFrame) {
@@ -147,6 +170,9 @@ class _DynamicChartCardState extends ConsumerState<DynamicChartCard> {
         }
         break;
     }
+
+    // Cache the completed calculation results
+    _calculationCache[cacheKey] = points;
     return points;
   }
 
