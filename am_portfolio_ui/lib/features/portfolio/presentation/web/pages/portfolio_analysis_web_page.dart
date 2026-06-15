@@ -202,6 +202,10 @@ class _PortfolioAnalysisWebPageState
             setState(() {
               _selectedTimeframe = value;
             });
+            // Refresh data to simulate timeframe change
+            ref.invalidate(portfolioSummaryProvider(widget.portfolioId));
+            ref.invalidate(portfolioAnalyticsProvider(_analyticsRequest));
+            ref.invalidate(portfolioHoldingsProvider(widget.portfolioId));
           }
         },
       ),
@@ -270,9 +274,10 @@ class _PortfolioAnalysisWebPageState
       border: Border.all(color: Colors.grey.shade300),
     ),
     child: Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
           Icon(Icons.bar_chart, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
@@ -295,6 +300,7 @@ class _PortfolioAnalysisWebPageState
             ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
           ),
         ],
+        ),
       ),
     ),
   );

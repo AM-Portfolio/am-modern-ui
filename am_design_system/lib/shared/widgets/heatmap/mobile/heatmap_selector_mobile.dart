@@ -465,6 +465,14 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
     padding: const EdgeInsets.all(12),
     child: Column(
       children: [
+        if (widget.showTimeFrame) ...[
+          _buildCompactFilterSection(
+            context,
+            title: 'Time Period',
+            child: _buildCompactTimeFrameRow(context),
+          ),
+          const SizedBox(height: 12),
+        ],
         if (widget.showMetric) ...[
           _buildCompactFilterSection(
             context,

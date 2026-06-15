@@ -5,11 +5,17 @@ class PortfolioAnalyticsRequest {
     required this.featureToggles,
     required this.featureConfiguration,
     required this.pagination,
+    this.fromDate,
+    this.toDate,
+    this.timeFrame,
   });
   final CoreIdentifiers coreIdentifiers;
   final FeatureToggles featureToggles;
   final FeatureConfiguration featureConfiguration;
   final Pagination pagination;
+  final String? fromDate;
+  final String? toDate;
+  final String? timeFrame;
 }
 
 /// Core identifiers for analytics request

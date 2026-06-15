@@ -56,7 +56,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
     // 1. Try Local Cache (Instant Load)
     try {
-      final cached = await _localDataSource.getLastHoldings();
+      final cached = await _localDataSource.getLastHoldings('GLOBAL');
       if (cached != null) {
         CommonLogger.info(
           'Loaded holdings from local cache',
@@ -92,7 +92,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       _holdingsController.add(holdings);
 
       // 4. Persist to Local Cache
-      await _localDataSource.cacheHoldings(holdings);
+      await _localDataSource.cacheHoldings('GLOBAL', holdings);
 
       CommonLogger.info(
         'Portfolio holdings fetched successfully',
@@ -134,9 +134,8 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       metadata: {},
     );
 
-    // 1. Try Local Cache
     try {
-      final cached = await _localDataSource.getLastSummary();
+      final cached = await _localDataSource.getLastSummary('GLOBAL');
       if (cached != null) {
         _summaryController.add(cached);
         _cachedSummary = cached;
@@ -163,7 +162,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       _summaryController.add(summary);
 
       // 4. Persist to Local Cache
-      await _localDataSource.cacheSummary(summary);
+      await _localDataSource.cacheSummary('GLOBAL', summary);
 
       CommonLogger.info(
         'Portfolio summary fetched successfully',
@@ -224,7 +223,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       _holdingsController.add(holdings);
 
       // Persist to Local Cache (Added Fix)
-      await _localDataSource.cacheHoldings(holdings);
+      await _localDataSource.cacheHoldings(portfolioId, holdings);
 
       CommonLogger.info(
         'Portfolio holdings fetched successfully by ID',
@@ -254,6 +253,24 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       // Note: Removed silent fallback to stale cache. The UI needs to know
       // when network fetch fails so it can show appropriate error state.
       rethrow;
+    }
+  }
+
+  @override
+  Future<PortfolioHoldings?> getCachedPortfolioHoldingsById(String portfolioId) async {
+    try {
+      final cached = await _localDataSource.getLastHoldings(portfolioId);
+      if (cached != null) {
+        _cachedHoldings = cached;
+      }
+      return cached;
+    } catch (e) {
+      CommonLogger.warning(
+        'Failed to read local holdings cache for ID $portfolioId',
+        error: e,
+        tag: 'PortfolioRepository',
+      );
+      return null;
     }
   }
 
@@ -313,7 +330,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       _summaryController.add(summary);
 
       // Persist to Local Cache (Added Fix)
-      await _localDataSource.cacheSummary(summary);
+      await _localDataSource.cacheSummary(portfolioId, summary);
 
       CommonLogger.info(
         'Portfolio summary fetched successfully by ID',
@@ -343,6 +360,24 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       // Note: Removed silent fallback to stale cache. The UI needs to know
       // when network fetch fails so it can show appropriate error state.
       rethrow;
+    }
+  }
+
+  @override
+  Future<PortfolioSummary?> getCachedPortfolioSummaryById(String portfolioId) async {
+    try {
+      final cached = await _localDataSource.getLastSummary(portfolioId);
+      if (cached != null) {
+        _cachedSummary = cached;
+      }
+      return cached;
+    } catch (e) {
+      CommonLogger.warning(
+        'Failed to read local summary cache for ID $portfolioId',
+        error: e,
+        tag: 'PortfolioRepository',
+      );
+      return null;
     }
   }
 

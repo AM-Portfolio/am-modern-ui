@@ -7,9 +7,13 @@ import 'package:am_design_system/am_design_system.dart'
     hide MarketCapType, MetricType, TimeFrame, SectorType;
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
+import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_heatmap_cubit.dart';
 import '../cubit/portfolio_heatmap_state.dart';
-import '../mappers/sector_heatmap_converter.dart';
+import '../cubit/portfolio_state.dart';
+import '../../internal/domain/entities/portfolio_analytics.dart' as analytics_entities;
+import 'portfolio_metric_card.dart';
+
 
 /// Configuration class for platform-specific heatmap settings
 class PortfolioHeatmapConfig {
@@ -39,25 +43,25 @@ class PortfolioHeatmapConfig {
   static const mobile = PortfolioHeatmapConfig(
     defaultLayout: HeatmapLayoutType.list,
     compactMode: true,
-    showSelectors: false,
+    showSelectors: true,
     templateType: UniversalTemplateType.compact,
     showSubCards: false,
-    padding: EdgeInsets.all(12.0),
-    title: 'Mobile: Portfolio Heatmap',
-    subtitle: 'Performance by sector',
+    padding: EdgeInsets.all(8.0),
+    title: 'Heatmap Overview',
+    subtitle: '', // Completely removed the down side text
     logTag: 'PortfolioHeatmap.Mobile',
   );
 
   /// Web configuration
   static const web = PortfolioHeatmapConfig(
-    defaultLayout: HeatmapLayoutType.grid,
+    defaultLayout: HeatmapLayoutType.treemap,
     compactMode: false,
     showSelectors: true,
     templateType: UniversalTemplateType.full,
     showSubCards: true,
     padding: EdgeInsets.all(16.0),
-    title: 'Web: Portfolio Heatmap',
-    subtitle: 'Performance by sector',
+    title: 'Heatmap Overview',
+    subtitle: '',
     logTag: 'PortfolioHeatmap.Web',
   );
 }
@@ -97,7 +101,7 @@ class _PortfolioHeatmapWidgetState
 
     // Initialize with config defaults
     _selectedMetric = MetricType.changePercent;
-    _selectedTimeframe = TimeFrame.oneYear;
+    _selectedTimeframe = TimeFrame.oneDay;
     _selectedLayout = widget.config.defaultLayout;
 
     CommonLogger.info(
@@ -108,7 +112,9 @@ class _PortfolioHeatmapWidgetState
       'Parameters: portfolioId=${widget.portfolioId}, portfolioName=${widget.portfolioName ?? 'null'}',
       tag: '${widget.config.logTag}.Init',
     );
-    _loadHeatmapData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadHeatmapData();
+    });
   }
 
   void _loadHeatmapData() {
@@ -129,7 +135,7 @@ class _PortfolioHeatmapWidgetState
 
     // Load analytics data first
     portfolioAnalyticsCubit
-        .loadAnalytics(widget.portfolioId)
+        .loadAnalytics(widget.portfolioId, timeFrame: _selectedTimeframe)
         .then((_) {
           final analyticsState = portfolioAnalyticsCubit.state;
           if (analyticsState is PortfolioAnalyticsError) {
@@ -179,23 +185,62 @@ class _PortfolioHeatmapWidgetState
   }
 
   @override
-  Widget build(BuildContext context) =>
-      Padding(padding: widget.config.padding, child: _buildHeatmapContent());
+  Widget build(BuildContext context) {
+    // Wrap in LayoutBuilder so _buildLoadedWidget always receives a bounded
+    // height constraint — without this, Expanded inside the Column gets 0.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final content = Padding(
+          padding: widget.config.padding,
+          child: _buildHeatmapContent(),
+        );
+        return widget.config.compactMode
+            ? SingleChildScrollView(child: content)
+            : SizedBox(
+                width: constraints.maxWidth,
+                height: constraints.maxHeight.isFinite
+                    ? constraints.maxHeight
+                    : double.infinity,
+                child: content,
+              );
+      },
+    );
+  }
 
   /// Main heatmap content with state handling using dual cubit approach
-  Widget _buildHeatmapContent() => StreamBuilder<PortfolioHeatmapState>(
-    stream: context.read<PortfolioHeatmapCubit>().stream,
-    initialData: PortfolioHeatmapInitial(),
-    builder: (context, snapshot) {
-      final state = snapshot.data ?? PortfolioHeatmapInitial();
+  Widget _buildHeatmapContent() => MultiBlocListener(
+    listeners: [
+      BlocListener<PortfolioCubit, PortfolioState>(
+        listenWhen: (previous, current) {
+          if (previous is PortfolioLoaded && current is PortfolioLoaded) {
+            // Only trigger if live data is active and todayChange has updated
+            return current.isLiveDataActive && 
+                   previous.summary.todayChangePercentage != current.summary.todayChangePercentage;
+          }
+          return false;
+        },
+        listener: (context, state) {
+          if (state is PortfolioLoaded && state.isLiveDataActive) {
+            // Live data updated, refresh the heatmap UI
+            CommonLogger.info('Live data update detected, refreshing heatmap', tag: widget.config.logTag);
+            // Re-trigger the heatmap load. We don't need to fetch new analytics,
+            // we just need the cubit to emit a new state so the UI updates.
+            final portfolioHeatmapCubit = context.read<PortfolioHeatmapCubit>();
+            portfolioHeatmapCubit.refresh();
+          }
+        },
+      ),
+    ],
+    child: BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
+      builder: (context, state) {
+        CommonLogger.debug(
+          'State update: ${state.runtimeType}',
+          tag: '${widget.config.logTag}.State',
+        );
 
-      CommonLogger.debug(
-        'State update: ${state.runtimeType}',
-        tag: '${widget.config.logTag}.State',
-      );
-
-      return _buildStateWidget(state);
-    },
+        return _buildStateWidget(state);
+      },
+    ),
   );
 
   /// Routes to appropriate widget based on current state
@@ -226,7 +271,7 @@ class _PortfolioHeatmapWidgetState
       tag: '${widget.config.logTag}.UI',
     );
 
-    return const HeatmapSkeletonLoader();
+    return const Center(child: CircularProgressIndicator());
   }
 
   /// Builds error state UI
@@ -275,36 +320,13 @@ class _PortfolioHeatmapWidgetState
       tag: '${widget.config.logTag}.UI',
     );
 
-    // Get analytics data from the cubit
-    final portfolioAnalyticsCubit = context.read<PortfolioAnalyticsCubit>();
-    final analyticsState = portfolioAnalyticsCubit.state;
-
-    // Check if analytics data is available
-    if (analyticsState is! PortfolioAnalyticsLoaded ||
-        analyticsState.heatmap == null) {
-      CommonLogger.warning(
-        'Analytics data not available for heatmap display',
-        tag: '${widget.config.logTag}.UI',
-      );
-      return const Center(child: Text('Analytics data is loading...'));
-    }
-
-    // Use sector heatmap converter to convert analytics data
-    final convertedHeatmapData = SectorHeatmapConverter.convertToHeatmapData(
-      heatmap: analyticsState.heatmap,
-      showSubCards: widget.config.showSubCards,
-      title: widget.config.title,
-      subtitle: widget.config.subtitle,
-      accentColor: Theme.of(context).primaryColor,
-    );
-
-    CommonLogger.debug(
-      'Converted heatmap data: ${convertedHeatmapData.tiles.length} tiles',
-      tag: '${widget.config.logTag}.UI',
-    );
+    final convertedHeatmapData = state.heatmapData;
 
     // Create configuration with selected layout
     final customConfig = convertedHeatmapData.configuration.copyWith(
+      display: convertedHeatmapData.configuration.display?.copyWith(
+        showPerformance: false, // Hides old default legend
+      ),
       layout: convertedHeatmapData.configuration.layout?.copyWith(
         layoutType: _selectedLayout,
       ),
@@ -318,13 +340,21 @@ class _PortfolioHeatmapWidgetState
       );
     }
 
-    // Return UniversalHeatmapWidget with configuration
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── SUMMARY CARDS ROW ──
+        _buildSummaryCardsRow(),
+        const SizedBox(height: 16),
+
+        // ── EQUITY DISTRIBUTION HEADER ──
+        _buildEquityDistributionHeader(),
+        const SizedBox(height: 12),
+
+        // ── DRILLDOWN BREADCRUMB ──
         if (_drillDownTile != null)
           Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
+            padding: const EdgeInsets.only(bottom: 8.0),
             child: InkWell(
               onTap: () => setState(() => _drillDownTile = null),
               child: Row(
@@ -340,37 +370,418 @@ class _PortfolioHeatmapWidgetState
               ),
             ),
           ),
-        Expanded(
-          child: SizedBox(
+
+        // ── MAIN HEATMAP ──
+        if (widget.config.compactMode)
+          SizedBox(
             width: double.infinity,
+            // Adaptive height: 45% of screen height, clamped between 320–600px.
+            height: (MediaQuery.of(context).size.height * 0.45)
+                .clamp(320.0, 600.0),
             child: UniversalHeatmapWidget(
               investmentType: InvestmentType.portfolio,
               heatmapData: displayData,
-              config: _mapToWidgetConfig(customConfig),
               title: widget.config.title,
-              showSelectors: widget.config.showSelectors,
+              subtitle: widget.config.subtitle,
+              config: _mapToWidgetConfig(customConfig),
+              showSelectors: false,
               compactMode: widget.config.compactMode,
+              selectedTimeFrame: _selectedTimeframe,
+              selectedMetric: _selectedMetric,
               selectedSector: _selectedSector,
+              selectedMarketCap: _selectedMarketCap,
+              selectedLayout: _selectedLayout,
               onTilePressed: () {
-                  CommonLogger.userAction(
-                    'Heatmap stock tile pressed',
-                    tag: '${widget.config.logTag}.Action',
-                  );
+                CommonLogger.userAction(
+                  'Heatmap stock tile pressed',
+                  tag: '${widget.config.logTag}.Action',
+                );
               },
               onFiltersChanged: ({timeFrame, metric, sector, marketCap, layout}) {
-          _onFiltersChanged(
-            timeFrame: timeFrame,
-            metric: metric,
-            sector: sector,
-            marketCap: marketCap,
-            layout: layout,
-          );
-        },
+                _onFiltersChanged(
+                  timeFrame: timeFrame,
+                  metric: metric,
+                  sector: sector,
+                  marketCap: marketCap,
+                  layout: layout,
+                );
+              },
               templateType: widget.config.templateType,
             ),
+          )
+        else
+          // Web: fill all remaining vertical space dynamically.
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, heatmapConstraints) {
+                final heatmapH = heatmapConstraints.maxHeight.isFinite &&
+                        heatmapConstraints.maxHeight > 60
+                    ? heatmapConstraints.maxHeight
+                    : 700.0; // Increased fallback height to show more stocks
+                return SizedBox(
+                  width: double.infinity,
+                  height: heatmapH,
+                  child: UniversalHeatmapWidget(
+                    investmentType: InvestmentType.portfolio,
+                    heatmapData: displayData,
+                    title: widget.config.title,
+                    subtitle: widget.config.subtitle,
+                    config: _mapToWidgetConfig(customConfig),
+                    showSelectors: false,
+                    compactMode: widget.config.compactMode,
+                    selectedTimeFrame: _selectedTimeframe,
+                    selectedMetric: _selectedMetric,
+                    selectedSector: _selectedSector,
+                    selectedMarketCap: _selectedMarketCap,
+                    selectedLayout: _selectedLayout,
+                    onTilePressed: () {
+                      CommonLogger.userAction(
+                        'Heatmap stock tile pressed',
+                        tag: '${widget.config.logTag}.Action',
+                      );
+                    },
+                    onFiltersChanged: ({timeFrame, metric, sector, marketCap, layout}) {
+                      _onFiltersChanged(
+                        timeFrame: timeFrame,
+                        metric: metric,
+                        sector: sector,
+                        marketCap: marketCap,
+                        layout: layout,
+                      );
+                    },
+                    templateType: widget.config.templateType,
+                  ),
+                );
+              },
+            ),
           ),
-        ),
+
+        // ── FOOTER STATUS BAR ──
+        const SizedBox(height: 12),
+        _buildFooterStatusBar(),
       ],
+    );
+  }
+
+  /// Builds the 4 summary stat cards row
+  Widget _buildSummaryCardsRow() {
+    return BlocBuilder<PortfolioCubit, PortfolioState>(
+      builder: (context, portfolioState) {
+        // Derive values from portfolio state
+        String totalValue = '--';
+        String todayChange = '--';
+        double todayChangePct = 0;
+        bool isTodayPositive = true;
+
+        if (portfolioState is PortfolioLoaded) {
+          final summary = portfolioState.summary;
+          totalValue = summary.formattedTotalValue;
+          todayChange = summary.formattedTodayChange;
+          todayChangePct = summary.todayChangePercentage;
+          isTodayPositive = summary.isTodayPositive;
+        }
+
+        // Derive top/worst sectors from analytics
+        return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+          builder: (context, analyticsState) {
+            String topSector = '--';
+            String topSectorChange = '';
+            String worstSector = '--';
+            String worstSectorChange = '';
+
+            if (analyticsState is PortfolioAnalyticsLoaded &&
+                analyticsState.heatmap != null &&
+                analyticsState.heatmap!.sectors.isNotEmpty) {
+              final sectors = List<analytics_entities.Sector>.from(
+                analyticsState.heatmap!.sectors,
+              )..sort((a, b) => b.changePercent.compareTo(a.changePercent));
+              topSector = sectors.first.sectorName;
+              topSectorChange = sectors.first.formattedChangePercent;
+              worstSector = sectors.last.sectorName;
+              worstSectorChange = sectors.last.formattedChangePercent;
+            }
+
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 700;
+                final isSmallMobile = constraints.maxWidth < 600;
+                final cards = [
+                  PortfolioMetricCard(
+                    title: 'TOTAL VALUE',
+                    value: totalValue,
+                    subtitle: '',
+                    icon: Icons.account_balance_wallet_outlined,
+                    accentColor: const Color(0xFF0BA95B),
+                    compact: isSmallMobile,
+                  ),
+                  PortfolioMetricCard(
+                    title: '24H CHANGE',
+                    value: todayChange,
+                    subtitle: '${isTodayPositive ? '+' : ''}${todayChangePct.toStringAsFixed(2)}%',
+                    icon: isTodayPositive
+                        ? Icons.trending_up
+                        : Icons.trending_down,
+                    accentColor: isTodayPositive
+                        ? const Color(0xFF0BA95B)
+                        : const Color(0xFFB22222),
+                    isPositive: isTodayPositive,
+                    compact: isSmallMobile,
+                  ),
+                  PortfolioMetricCard(
+                    title: 'TOP SECTOR',
+                    value: topSector,
+                    subtitle: topSectorChange,
+                    icon: Icons.emoji_events_outlined,
+                    accentColor: const Color(0xFF0BA95B),
+                    compact: isSmallMobile,
+                  ),
+                  PortfolioMetricCard(
+                    title: 'WEAKEST SECTOR',
+                    value: worstSector,
+                    subtitle: worstSectorChange,
+                    icon: Icons.warning_amber_outlined,
+                    accentColor: const Color(0xFFB22222),
+                    compact: isSmallMobile,
+                  ),
+                ];
+
+                if (isWide) {
+                  return Row(
+                    children: cards
+                        .map((c) => Expanded(child: c))
+                        .toList()
+                        .expand((w) => [w, const SizedBox(width: 12)])
+                        .toList()
+                      ..removeLast(),
+                  );
+                } else {
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: cards
+                        .map(
+                          (c) => SizedBox(
+                            width: (constraints.maxWidth - 12) / 2,
+                            child: c,
+                          ),
+                        )
+                        .toList(),
+                  );
+                }
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Builds the "Equity Distribution" header with pill tag and legend
+  Widget _buildEquityDistributionHeader() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 500;
+
+        final titleRow = Row(
+          children: [
+            const Text(
+              'Equity Distribution',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'MARKET CAP WEIGHTED',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+          ],
+        );
+
+        final legendRow = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildLegendDot(const Color(0xFF0BA95B), 'Outperform'),
+            const SizedBox(width: 12),
+            _buildLegendDot(const Color(0xFF2B273B), 'Neutral'),
+            const SizedBox(width: 12),
+            _buildLegendDot(const Color(0xFFB22222), 'Underperform'),
+          ],
+        );
+
+        if (isNarrow) {
+          // Stack vertically on narrow screens
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              titleRow,
+              const SizedBox(height: 8),
+              legendRow,
+            ],
+          );
+        } else {
+          // Side-by-side on wide screens
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              titleRow,
+              const Spacer(),
+              legendRow,
+            ],
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildLegendDot(Color color, String label) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+        ),
+      ),
+      const SizedBox(width: 5),
+      Text(
+        label,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.55),
+          fontSize: 11,
+        ),
+      ),
+    ],
+  );
+
+  /// Builds the bottom status bar
+  Widget _buildFooterStatusBar() {
+    return BlocBuilder<PortfolioCubit, PortfolioState>(
+      builder: (context, state) {
+        bool isConnected = false;
+        double todayChangePct = 0.0;
+
+        if (state is PortfolioLoaded) {
+          isConnected = state.isLiveDataActive;
+          todayChangePct = state.summary.todayChangePercentage;
+        }
+
+        final statusColor =
+            isConnected ? const Color(0xFF0BA95B) : const Color(0xFFB22222);
+        final statusText =
+            isConnected ? 'LIVE FEED ACTIVE' : 'CONNECTING...';
+
+        final isPositive = todayChangePct >= 0;
+        final sentimentColor =
+            isPositive ? const Color(0xFF0BA95B) : const Color(0xFFB22222);
+        final sentimentText =
+            isPositive ? 'BULLISH SENTIMENT' : 'BEARISH SENTIMENT';
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C192C),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          ),
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 6,
+            children: [
+              // Live status + timestamp group
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.55),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Icon(
+                    Icons.access_time,
+                    color: Colors.white.withValues(alpha: 0.4),
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
+                    builder: (context, heatmapState) {
+                      String timeText = 'Just now';
+                      if (heatmapState is PortfolioHeatmapLoaded) {
+                        final diff = DateTime.now()
+                            .difference(heatmapState.lastUpdated);
+                        if (diff.inMinutes > 0) {
+                          timeText = '${diff.inMinutes}m ago';
+                        } else if (diff.inSeconds > 0) {
+                          timeText = '${diff.inSeconds}s ago';
+                        }
+                      }
+                      return Text(
+                        'Updated: $timeText',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          fontSize: 10,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              // Sentiment pill
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: sentimentColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border:
+                      Border.all(color: sentimentColor.withValues(alpha: 0.5)),
+                ),
+                child: Text(
+                  sentimentText,
+                  style: TextStyle(
+                    color: sentimentColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -455,16 +866,24 @@ class _PortfolioHeatmapWidgetState
 
     // Update local state
     if (timeFrame != null) {
-      _selectedTimeframe = timeFrame;
+      setState(() {
+        _selectedTimeframe = timeFrame;
+      });
     }
     if (metric != null) {
-      _selectedMetric = metric;
+      setState(() {
+        _selectedMetric = metric;
+      });
     }
     if (sector != null) {
-      _selectedSector = sector;
+      setState(() {
+        _selectedSector = sector;
+      });
     }
     if (marketCap != null) {
-      _selectedMarketCap = marketCap;
+      setState(() {
+        _selectedMarketCap = marketCap;
+      });
     }
     if (layout != null) {
       setState(() {
