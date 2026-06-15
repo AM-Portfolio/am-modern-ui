@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:am_market_common/models/market_data.dart';
 import 'package:am_market_common/providers/market_provider.dart';
-import 'market_header.dart';
+import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 
 class IndexCard extends StatelessWidget {
   final StockIndicesMarketData data;
@@ -21,6 +21,7 @@ class IndexCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
     final numberFormat = NumberFormat('#,##,###.##', 'en_IN');
+    final mt = context.marketTheme;
 
     return Consumer<MarketProvider>(
       builder: (context, provider, child) {
@@ -47,8 +48,8 @@ class IndexCard extends StatelessWidget {
 
         final isPositive = displayChange >= 0;
         final changeColor = isLoading
-            ? MarketColors.textMuted
-            : (isPositive ? MarketColors.positive : MarketColors.negative);
+            ? mt.textMuted
+            : (isPositive ? mt.positive : mt.negative);
         final prefix = isPositive ? '↑' : '↓';
         final sign = isPositive ? '+' : '';
 
@@ -64,7 +65,7 @@ class IndexCard extends StatelessWidget {
               data.indexSymbol.toUpperCase(),
               style: TextStyle(
                 fontSize: isMobile ? 9 : 10,
-                color: MarketColors.textMuted,
+                color: mt.textMuted,
                 fontWeight: FontWeight.w500,
                 letterSpacing: 0.04 * (isMobile ? 9 : 10),
               ),
@@ -79,7 +80,7 @@ class IndexCard extends StatelessWidget {
               isLoading ? '...' : numberFormat.format(data.lastPrice),
               style: TextStyle(
                 fontSize: isMobile ? 14 : 15,
-                color: MarketColors.textPrimary,
+                color: mt.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -109,7 +110,7 @@ class IndexCard extends StatelessWidget {
                       Icon(
                         isPositive ? Icons.arrow_upward : Icons.arrow_downward,
                         size: isMobile ? 11.0 : 12.0,
-                        color: isPositive ? const Color(0xFF00C896) : const Color(0xFFF87171),
+                        color: isPositive ? mt.positive : mt.negative,
                       ),
                       const SizedBox(width: 3),
                       Text(
@@ -118,7 +119,7 @@ class IndexCard extends StatelessWidget {
                             : '-$displayChangeFormatted',
                         style: TextStyle(
                           fontSize: isMobile ? 10.0 : 11.0,
-                          color: isPositive ? const Color(0xFF00C896) : const Color(0xFFF87171),
+                          color: isPositive ? mt.positive : mt.negative,
                           fontWeight: FontWeight.w600,
                           height: 1.0,
                         ),
@@ -135,7 +136,7 @@ class IndexCard extends StatelessWidget {
                         : '$displayPChangeFormatted%$timeframeLabel',
                     style: TextStyle(
                       fontSize: isMobile ? 9.5 : 10.5,
-                      color: isPositive ? const Color(0xFF00C896) : const Color(0xFFF87171),
+                      color: isPositive ? mt.positive : mt.negative,
                       fontWeight: FontWeight.w400,
                       height: 1.0,
                     ),
@@ -164,15 +165,15 @@ class IndexCard extends StatelessWidget {
                     right: isMobile ? 12 : 14,
                   ),
                   decoration: BoxDecoration(
-                    color: MarketColors.surface,
+                    color: mt.surface,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isSelected ? MarketColors.accent : MarketColors.border,
+                      color: isSelected ? mt.accent : mt.border,
                       width: 1.0,
                     ),
                     boxShadow: isSelected ? [
                       BoxShadow(
-                        color: const Color(0xFF00C896).withOpacity(0.15),
+                        color: mt.accent.withOpacity(0.15),
                         blurRadius: 8,
                         spreadRadius: 0,
                         offset: const Offset(0, 0),

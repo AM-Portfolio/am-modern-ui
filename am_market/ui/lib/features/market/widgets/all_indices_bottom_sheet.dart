@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_market_common/models/market_data.dart';
-import 'market_header.dart';
+import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'timeframe_selector.dart';
 import 'drawer_index_card.dart';
 
@@ -38,16 +38,17 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final basePricesForTf = widget.allTimeframeBasePrices[_selectedTimeframe] ?? {};
+    final mt = context.marketTheme;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: MarketColors.drawerBg,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: mt.drawerBg,
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
         ),
         border: Border(
-          top: BorderSide(color: MarketColors.border, width: 1.0),
+          top: BorderSide(color: mt.border, width: 1.0),
         ),
       ),
       child: Column(
@@ -60,7 +61,7 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
               width: 36,
               height: 3,
               decoration: BoxDecoration(
-                color: MarketColors.border,
+                color: mt.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -72,11 +73,11 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'All indices',
                   style: TextStyle(
                     fontSize: 14,
-                    color: MarketColors.textPrimary,
+                    color: mt.textPrimary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -84,13 +85,13 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    border: Border.all(color: MarketColors.border, width: 1.0),
+                    border: Border.all(color: mt.border, width: 1.0),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: IconButton(
                     padding: EdgeInsets.zero,
                     icon: const Icon(Icons.close, size: 16),
-                    color: MarketColors.textMuted,
+                    color: mt.textMuted,
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
