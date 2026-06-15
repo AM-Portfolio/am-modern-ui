@@ -180,23 +180,106 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold> with Si
         final isTablet = width >= widget.tabletBreakpoint && width < widget.desktopBreakpoint;
         final isMobile = width < widget.tabletBreakpoint;
 
-        // Mobile Layout: Bottom Navigation
+        // Mobile Layout: Top Navigation Tabs (no bottom nav — global nav lives at shell level)
         if (isMobile) {
+          // Flatten items for mobile tabs
+          List<SecondarySidebarItem> flatItems = [];
+          if (widget.items != null) {
+            flatItems = widget.items!;
+          } else if (widget.sections != null) {
+            for (var section in widget.sections!) {
+              if (section.items != null) {
+                flatItems.addAll(section.items!);
+              }
+            }
+          }
+          final displayItems = flatItems.take(6).toList();
+          final isDarkMode = widget.isDark || Theme.of(context).brightness == Brightness.dark;
+          final accent = _resolvedColor;
+
           return Scaffold(
             appBar: AppBar(
               title: Text(_resolvedTitle ?? ''),
               backgroundColor: Colors.transparent,
               elevation: 0,
               centerTitle: true,
-              leading: widget.onBackToGlobal != null 
+              leading: widget.onBackToGlobal != null
                   ? IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: widget.onBackToGlobal,
                     )
                   : null,
+              bottom: displayItems.length > 1
+                  ? PreferredSize(
+                      preferredSize: const Size.fromHeight(46),
+                      child: Container(
+                        height: 42,
+                        margin: const EdgeInsets.only(left: 12, right: 12, bottom: 4),
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: displayItems.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 6),
+                          itemBuilder: (context, index) {
+                            final item = displayItems[index];
+                            final isActive = _mobileSelectedIndex == index;
+
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _mobileSelectedIndex = index;
+                                });
+                                item.onTap?.call();
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeOutCubic,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isActive
+                                      ? accent.withValues(alpha: isDarkMode ? 0.2 : 0.12)
+                                      : (isDarkMode
+                                          ? Colors.white.withValues(alpha: 0.05)
+                                          : Colors.grey.shade100),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isActive
+                                        ? accent.withValues(alpha: 0.4)
+                                        : Colors.transparent,
+                                    width: 1.2,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      item.icon,
+                                      size: 16,
+                                      color: isActive
+                                          ? accent
+                                          : (isDarkMode ? Colors.white54 : Colors.grey.shade500),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      item.title,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                                        color: isActive
+                                            ? accent
+                                            : (isDarkMode ? Colors.white54 : Colors.grey.shade600),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    )
+                  : null,
             ),
             body: widget.body,
-            bottomNavigationBar: _buildBottomNavigationBar(context),
             floatingActionButton: widget.floatingActionButton,
           );
         }

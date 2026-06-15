@@ -10,10 +10,13 @@ export 'data/repositories/dashboard_repository.dart';
 // Providers
 export 'presentation/providers/dashboard_provider.dart';
 
-// Pages
-export 'presentation/pages/dashboard_page.dart';
+// Pages (Router)
+export 'presentation/pages/dashboard_screen.dart';
 
-// Widgets
-export 'presentation/widgets/dashboard_summary_widget.dart';
-export 'presentation/widgets/dashboard_allocation_widget.dart';
-export 'presentation/widgets/portfolio_overview_card.dart';
+// Shared Widgets (used by both mobile and web screens)
+export 'presentation/shared/widgets/dashboard_summary_widget.dart';
+export 'presentation/shared/widgets/dashboard_allocation_widget.dart';
+export 'presentation/shared/widgets/dashboard_chart_widget.dart';
+export 'presentation/shared/widgets/dashboard_ranking_widget.dart';
+export 'presentation/shared/widgets/dashboard_recent_activity_widget.dart';
+export 'presentation/shared/widgets/dashboard_portfolio_overview_card.dart';

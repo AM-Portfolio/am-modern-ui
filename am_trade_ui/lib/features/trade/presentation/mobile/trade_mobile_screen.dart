@@ -131,7 +131,6 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
   Widget build(BuildContext context) => Scaffold(
     appBar: _buildAppBar(context),
     body: _buildMainContent(context),
-    bottomNavigationBar: _buildBottomNavigationBar(context),
     floatingActionButton: _buildFloatingActionButton(context),
   );
 
@@ -237,16 +236,13 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
     );
   }
 
-  /// Build app bar with context-aware title and actions
+  /// Build app bar with context-aware title, actions, and TOP navigation tabs
   PreferredSizeWidget? _buildAppBar(BuildContext context) {
-    // Let AddTradeMobilePage and Calendar handle their own headers
-    if (_selectedView == MobileTradeViewType.addTrade || _selectedView == MobileTradeViewType.calendar) {
-      return null;
-    }
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final hasPortfolio = _currentPortfolioId != null;
 
     String title;
-    var actions = <Widget>[];
-
     switch (_selectedView) {
       case MobileTradeViewType.portfolios:
         title = 'Trade Portfolios';
@@ -259,15 +255,21 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         break;
       case MobileTradeViewType.addTrade:
         title = _currentPortfolioName != null ? 'Add Trade - $_currentPortfolioName' : 'Add Trade';
-        actions = [];
         break;
     }
+
+    final tabDefs = [
+      _TradeTabDef(Icons.account_balance_wallet, 'Portfolios', true),
+      _TradeTabDef(Icons.dashboard_outlined, 'Holdings', hasPortfolio),
+      _TradeTabDef(Icons.calendar_today_outlined, 'Calendar', hasPortfolio),
+      _TradeTabDef(Icons.add_circle_outline, 'Add Trade', hasPortfolio),
+    ];
 
     return AppBar(
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.swap_horiz, color: Theme.of(context).colorScheme.primary, size: 20),
+          Icon(Icons.swap_horiz, color: theme.colorScheme.primary, size: 20),
           const SizedBox(width: 8),
           Flexible(
             child: Text(title, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 18)),
@@ -287,72 +289,81 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                   },
                 )
               : null,
-      actions: actions,
-      elevation: 1,
-    );
-  }
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.more_vert_rounded),
+          tooltip: 'More Options',
+          onPressed: () => _showMoreMenu(context),
+        ),
+      ],
+      elevation: 0,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(46),
+        child: Container(
+          height: 42,
+          margin: const EdgeInsets.only(left: 12, right: 12, bottom: 4),
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: tabDefs.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 6),
+            itemBuilder: (context, index) {
+              final tab = tabDefs[index];
+              final isActive = _selectedView.index == index;
+              final isEnabled = tab.enabled;
+              final accentColor = theme.colorScheme.primary;
 
-  /// Build bottom navigation bar for trade views
-  Widget _buildBottomNavigationBar(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasPortfolio = _currentPortfolioId != null;
-
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, -2))],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: _selectedView.index,
-        onTap: (index) {
-          if (index == 4) {
-            _showMoreMenu(context);
-          } else {
-            _onViewChanged(MobileTradeViewType.values[index]);
-          }
-        },
-        selectedItemColor: theme.colorScheme.primary,
-        unselectedItemColor: theme.colorScheme.onSurface.withOpacity(0.6),
-        backgroundColor: theme.cardColor,
-        elevation: 0,
-        type: BottomNavigationBarType.fixed,
-        selectedFontSize: 12,
-        unselectedFontSize: 11,
-        items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet),
-            activeIcon: Icon(Icons.account_balance_wallet),
-            label: 'Portfolios',
+              return GestureDetector(
+                onTap: () => _onViewChanged(MobileTradeViewType.values[index]),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? accentColor.withValues(alpha: isDark ? 0.2 : 0.12)
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.grey.shade100),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isActive
+                          ? accentColor.withValues(alpha: 0.4)
+                          : Colors.transparent,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        tab.icon,
+                        size: 16,
+                        color: isActive
+                            ? accentColor
+                            : (isEnabled
+                                ? (isDark ? Colors.white54 : Colors.grey.shade500)
+                                : (isDark ? Colors.white24 : Colors.grey.shade300)),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        tab.label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                          color: isActive
+                              ? accentColor
+                              : (isEnabled
+                                  ? (isDark ? Colors.white54 : Colors.grey.shade600)
+                                  : (isDark ? Colors.white24 : Colors.grey.shade300)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.dashboard_outlined,
-              color: hasPortfolio ? null : theme.colorScheme.onSurface.withOpacity(0.3),
-            ),
-            activeIcon: const Icon(Icons.dashboard),
-            label: 'Holdings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.calendar_today_outlined,
-              color: hasPortfolio ? null : theme.colorScheme.onSurface.withOpacity(0.3),
-            ),
-            activeIcon: const Icon(Icons.calendar_today),
-            label: 'Calendar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.add_circle_outline,
-              color: hasPortfolio ? null : theme.colorScheme.onSurface.withOpacity(0.3),
-            ),
-            activeIcon: const Icon(Icons.add_circle),
-            label: 'Add Trade',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.more_horiz),
-            activeIcon: Icon(Icons.more_horiz),
-            label: 'More',
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -496,3 +507,10 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
   }
 }
 
+/// Simple data holder for trade top tab definitions
+class _TradeTabDef {
+  const _TradeTabDef(this.icon, this.label, this.enabled);
+  final IconData icon;
+  final String label;
+  final bool enabled;
+}

@@ -219,6 +219,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       );
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = Theme.of(context).primaryColor;
+
     return BlocListener<PortfolioCubit, PortfolioState>(
       listener: (context, state) {
         if (state is PortfolioError) {
@@ -234,64 +237,139 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         body: SafeArea(
           child: Column(
             children: [
+              // ── Top Header Row ──────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.account_balance_wallet_rounded,
+                        color: accentColor, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        widget.selectedPortfolioName ?? 'Portfolio',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => _showMenuBottomSheet(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.menu_rounded,
+                            size: 20,
+                            color: isDark ? Colors.white70 : Colors.grey.shade600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Top Tab Bar (scrollable pills) ─────────────────
+              _buildTopTabBar(context, isDark, accentColor),
+
+              const SizedBox(height: 4),
+
+              // ── Main Content ────────────────────────────────────
               Expanded(
                 child: PortfolioTabContentWidget(
                   tabController: _tabController,
                   currentPortfolioId: _currentPortfolioId!,
-                  ),
+                ),
               ),
             ],
           ),
         ),
-        bottomNavigationBar: _buildBottomNavigationBar(context),
       ),
     );
   }
 
-  Widget _buildBottomNavigationBar(BuildContext context) {
-    // Standard Portfolio Tabs
+  Widget _buildTopTabBar(BuildContext context, bool isDark, Color accentColor) {
     final tabs = [
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.dashboard_outlined),
-        label: 'Overview',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.wallet),
-        label: 'Holdings',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.analytics_outlined),
-        label: 'Analysis',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.grid_view),
-        label: 'Heatmap',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.show_chart),
-        label: 'Trade',
-      ),
-      // We add 'Menu' as the last functional item
-      const BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
+      _TabDef(Icons.dashboard_outlined, 'Overview'),
+      _TabDef(Icons.wallet, 'Holdings'),
+      _TabDef(Icons.analytics_outlined, 'Analysis'),
+      _TabDef(Icons.grid_view, 'Heatmap'),
+      _TabDef(Icons.show_chart, 'Trade'),
     ];
 
-    return ModuleBottomNavigation(
-      items: tabs,
-      currentIndex: _tabController.index,
-      accentColor: Theme.of(context).primaryColor,
-      onBackToGlobal: widget.onBack,
-      onTap: (index) {
-        if (index < 5) {
-          // Tab Switch
-          setState(() {
-            _tabController.animateTo(index);
-          });
-        } else {
-          // Menu
-          _showMenuBottomSheet(context);
-        }
+    return AnimatedBuilder(
+      animation: _tabController,
+      builder: (context, _) {
+        return Container(
+          height: 42,
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: tabs.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 6),
+            itemBuilder: (context, index) {
+              final tab = tabs[index];
+              final isActive = _tabController.index == index;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _tabController.animateTo(index);
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? accentColor.withValues(alpha: isDark ? 0.2 : 0.12)
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.grey.shade100),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isActive
+                          ? accentColor.withValues(alpha: 0.4)
+                          : Colors.transparent,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        tab.icon,
+                        size: 16,
+                        color: isActive
+                            ? accentColor
+                            : (isDark ? Colors.white54 : Colors.grey.shade500),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        tab.label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                          color: isActive
+                              ? accentColor
+                              : (isDark ? Colors.white54 : Colors.grey.shade600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
       },
-      // Using generic styling, no special FAB here strictly needed unless we want 'Trade' to be FAB?
     );
   }
 
@@ -397,4 +475,11 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       ),
     );
   }
+}
+
+/// Simple data holder for top tab definitions
+class _TabDef {
+  const _TabDef(this.icon, this.label);
+  final IconData icon;
+  final String label;
 }

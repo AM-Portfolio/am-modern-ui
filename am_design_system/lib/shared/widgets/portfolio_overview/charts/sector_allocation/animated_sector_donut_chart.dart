@@ -12,11 +12,13 @@ class AnimatedSectorDonutChart extends StatefulWidget {
     super.key,
     this.onSectionTapped,
     this.showAnimation = true,
+    this.isMobile = false,
   });
 
   final List<AllocationItem> allocations;
   final ValueChanged<String>? onSectionTapped;
   final bool showAnimation;
+  final bool isMobile;
 
   @override
   State<AnimatedSectorDonutChart> createState() => _AnimatedSectorDonutChartState();
@@ -61,46 +63,52 @@ class _AnimatedSectorDonutChartState extends State<AnimatedSectorDonutChart>
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        return Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: PieChart(
-                    PieChartData(
-                      sections: _buildAnimatedSections(),
-                      centerSpaceRadius: 80,
-                      sectionsSpace: 2,
-                      pieTouchData: PieTouchData(
-                        touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                          setState(() {
-                            if (!event.isInterestedForInteractions ||
-                                pieTouchResponse == null ||
-                                pieTouchResponse.touchedSection == null) {
-                              _touchedIndex = -1;
-                              return;
-                            }
-                            _touchedIndex =
-                                pieTouchResponse.touchedSection!.touchedSectionIndex;
+        final chartWidget = Center(
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: PieChart(
+              PieChartData(
+                sections: _buildAnimatedSections(),
+                centerSpaceRadius: widget.isMobile ? 40 : 80,
+                sectionsSpace: 2,
+                pieTouchData: PieTouchData(
+                  touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                    setState(() {
+                      if (!event.isInterestedForInteractions ||
+                          pieTouchResponse == null ||
+                          pieTouchResponse.touchedSection == null) {
+                        _touchedIndex = -1;
+                        return;
+                      }
+                      _touchedIndex =
+                          pieTouchResponse.touchedSection!.touchedSectionIndex;
 
-                            if (event is FlTapUpEvent && _touchedIndex >= 0) {
-                              widget.onSectionTapped
-                                  ?.call(widget.allocations[_touchedIndex].label);
-                            }
-                          });
-                        },
-                      ),
-                    ),
-                  ),
+                      if (event is FlTapUpEvent && _touchedIndex >= 0) {
+                        widget.onSectionTapped
+                            ?.call(widget.allocations[_touchedIndex].label);
+                      }
+                    });
+                  },
                 ),
               ),
             ),
-            Expanded(
-              flex: 2,
-              child: _buildScrollableLegend(context),
-            ),
+          ),
+        );
+
+        if (widget.isMobile) {
+          return Column(
+            children: [
+              Expanded(flex: 3, child: chartWidget),
+              const SizedBox(height: 16),
+              Expanded(flex: 2, child: _buildScrollableLegend(context)),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(flex: 3, child: chartWidget),
+            Expanded(flex: 2, child: _buildScrollableLegend(context)),
           ],
         );
       },
@@ -118,7 +126,9 @@ class _AnimatedSectorDonutChartState extends State<AnimatedSectorDonutChart>
       final animatedValue = item.value * _animation.value;
       
       // Highlight touched section
-      final radius = isTouched ? 70.0 : 60.0;
+      final baseRadius = widget.isMobile ? 30.0 : 60.0;
+      final touchRadius = widget.isMobile ? 35.0 : 70.0;
+      final radius = isTouched ? touchRadius : baseRadius;
       final fontSize = isTouched ? 16.0 : 14.0;
 
       return PieChartSectionData(
