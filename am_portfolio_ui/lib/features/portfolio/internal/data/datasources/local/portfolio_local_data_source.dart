@@ -36,10 +36,10 @@ class PortfolioLocalDataSource {
   }
 
   /// Get cached holdings
-  Future<PortfolioHoldings?> getLastHoldings() async {
+  Future<PortfolioHoldings?> getLastHoldings(String portfolioId) async {
     try {
       final box = Hive.box<PortfolioHoldingsHiveModel>(_holdingsBoxName);
-      final hiveModel = box.get('current_user');
+      final hiveModel = box.get(portfolioId);
       return hiveModel?.toDomain();
     } catch (e) {
       CommonLogger.error(
@@ -52,12 +52,12 @@ class PortfolioLocalDataSource {
   }
 
   /// Cache holdings
-  Future<void> cacheHoldings(PortfolioHoldings data) async {
+  Future<void> cacheHoldings(String portfolioId, PortfolioHoldings data) async {
     try {
       final box = Hive.box<PortfolioHoldingsHiveModel>(_holdingsBoxName);
-      await box.put('current_user', PortfolioHoldingsHiveModel.fromDomain(data));
+      await box.put(portfolioId, PortfolioHoldingsHiveModel.fromDomain(data));
       CommonLogger.info(
-        'Cached holdings for current_user',
+        'Cached holdings for $portfolioId',
         tag: 'PortfolioLocalDataSource',
       );
     } catch (e) {
@@ -70,10 +70,10 @@ class PortfolioLocalDataSource {
   }
 
   /// Get cached summary
-  Future<PortfolioSummary?> getLastSummary() async {
+  Future<PortfolioSummary?> getLastSummary(String portfolioId) async {
     try {
       final box = Hive.box<PortfolioSummaryHiveModel>(_summaryBoxName);
-      final hiveModel = box.get('current_user');
+      final hiveModel = box.get(portfolioId);
       return hiveModel?.toDomain();
     } catch (e) {
       CommonLogger.error(
@@ -86,12 +86,12 @@ class PortfolioLocalDataSource {
   }
 
   /// Cache summary
-  Future<void> cacheSummary(PortfolioSummary data) async {
+  Future<void> cacheSummary(String portfolioId, PortfolioSummary data) async {
     try {
       final box = Hive.box<PortfolioSummaryHiveModel>(_summaryBoxName);
-      await box.put('current_user', PortfolioSummaryHiveModel.fromDomain(data));
+      await box.put(portfolioId, PortfolioSummaryHiveModel.fromDomain(data));
       CommonLogger.info(
-        'Cached summary for current_user',
+        'Cached summary for $portfolioId',
         tag: 'PortfolioLocalDataSource',
       );
     } catch (e) {

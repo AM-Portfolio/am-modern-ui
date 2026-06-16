@@ -14,7 +14,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
   String? _currentPortfolioId;
 
   /// Load all analytics data for a portfolio
-  Future<void> loadAnalytics(String portfolioId) async {
+  Future<void> loadAnalytics(String portfolioId, {TimeFrame? timeFrame}) async {
     if (_loadingFuture != null && _currentPortfolioId == portfolioId) {
       CommonLogger.debug(
         '🔍 PortfolioAnalyticsCubit: loadAnalytics already in progress for portfolioId: $portfolioId',
@@ -24,7 +24,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     }
 
     _currentPortfolioId = portfolioId;
-    _loadingFuture = _doLoadAnalytics(portfolioId);
+    _loadingFuture = _doLoadAnalytics(portfolioId, timeFrame: timeFrame);
 
     try {
       await _loadingFuture;
@@ -33,15 +33,15 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     }
   }
 
-  Future<void> _doLoadAnalytics(String portfolioId) async {
+  Future<void> _doLoadAnalytics(String portfolioId, {TimeFrame? timeFrame}) async {
     CommonLogger.debug(
-      '🔍 PortfolioAnalyticsCubit: loadAnalytics called with portfolioId: $portfolioId',
+      '🔍 PortfolioAnalyticsCubit: loadAnalytics called with portfolioId: $portfolioId, timeFrame: ${timeFrame?.name}',
       tag: 'PortfolioAnalyticsCubit',
     );
     CommonLogger.methodEntry(
       'loadAnalytics',
       tag: 'PortfolioAnalyticsCubit',
-      metadata: {'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId, 'timeFrame': timeFrame?.name},
     );
 
     emit(
@@ -63,7 +63,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
 
       // Load all analytics data with single API call (more efficient)
       final analytics = await _analyticsService
-          .getPortfolioAnalyticsWithDefaults(portfolioId);
+          .getPortfolioAnalyticsWithDefaults(portfolioId, timeFrame: timeFrame);
 
       CommonLogger.debug(
         '🔍 Analytics service call completed, processing results',

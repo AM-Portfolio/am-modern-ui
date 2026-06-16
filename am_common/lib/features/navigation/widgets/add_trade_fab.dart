@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../trade_navigation.dart';
+import '../notifications.dart';
 
 /// Smart floating action button for adding new trades
 /// Features:
@@ -51,20 +51,25 @@ class AddTradeFAB extends StatelessWidget {
 
 /// Positioned floating action button for consistent placement
 class PositionedAddTradeFAB extends StatelessWidget {
-  const PositionedAddTradeFAB({required this.portfolioId, required this.portfolioName, super.key});
+  const PositionedAddTradeFAB({required this.portfolioId, this.portfolioName, super.key});
 
   final String portfolioId;
   final String? portfolioName;
 
   @override
   Widget build(BuildContext context) =>
-      Positioned(right: 24, bottom: 24, child: AddTradeFAB(onPressed: () => _navigateToAddTrade(context)));
+      Positioned(
+        right: 24, 
+        bottom: 24, 
+        child: AddTradeFAB(
+          onPressed: () => _navigateToAddTrade(context),
+        ),
+      );
 
   void _navigateToAddTrade(BuildContext context) {
-    openAddTradeWebPage(
-      context,
+    OpenAddTradeNotification(
       portfolioId: portfolioId,
       portfolioName: portfolioName,
-    );
+    ).dispatch(context);
   }
 }

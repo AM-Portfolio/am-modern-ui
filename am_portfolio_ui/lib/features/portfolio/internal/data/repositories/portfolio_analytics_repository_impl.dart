@@ -191,6 +191,13 @@ class PortfolioAnalyticsRepositoryImpl implements PortfolioAnalyticsRepository {
       return false;
     }
 
+    // Compare timeframe and dates
+    if (request.timeFrame != _lastRequest!.timeFrame ||
+        request.fromDate != _lastRequest!.fromDate ||
+        request.toDate != _lastRequest!.toDate) {
+      return false;
+    }
+
     return true;
   }
 

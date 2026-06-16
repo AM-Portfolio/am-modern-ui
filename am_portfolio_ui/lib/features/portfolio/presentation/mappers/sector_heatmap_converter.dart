@@ -60,12 +60,10 @@ class SectorHeatmapConverter {
       lastUpdated: DateTime.now(),
       additionalInfo: {},
     ),
-    configuration: _mapConfig(
-      PortfolioHeatmapConfig.getHeatmapConfig(
-        title: title,
-        showSubCards: showSubCards,
-        accentColor: accentColor,
-      ),
+    configuration: PortfolioHeatmapConfig.getHeatmapConfig(
+      title: title,
+      showSubCards: showSubCards,
+      accentColor: accentColor,
     ),
   );
 
@@ -362,31 +360,12 @@ class SectorHeatmapConverter {
         ),
       },
     ),
-    configuration: _mapConfig(
-      PortfolioHeatmapConfig.getHeatmapConfig(
-        title: title,
-        showSubCards: showSubCards,
-        accentColor: accentColor,
-      ),
+    configuration: PortfolioHeatmapConfig.getHeatmapConfig(
+      title: title,
+      showSubCards: showSubCards,
+      accentColor: accentColor,
     ),
   );
-
-  static HeatmapConfig _mapConfig(dynamic widgetConfig) {
-    return HeatmapConfig(
-      visual: VisualConfig(
-        // colorScheme: widgetConfig.colorScheme,
-      ),
-      display: DisplayConfig(
-        showSubCards: widgetConfig.showSubCards,
-        showValue: widgetConfig.showValue,
-        showPerformance: widgetConfig.showPerformance,
-        showWeightage: widgetConfig.showWeightage,
-      ),
-      // interaction: InteractionConfig( // Using defaults
-      //   enableTileInteraction: true,
-      // ),
-    );
-  }
 
   /// Calculates the total value for a sector
   static double _calculateSectorValue(Sector sector) => sector.totalValue > 0

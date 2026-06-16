@@ -12,6 +12,9 @@ abstract class PortfolioRepository {
     String portfolioId,
   );
 
+  /// Gets cached portfolio holdings for the specified user and portfolio
+  Future<PortfolioHoldings?> getCachedPortfolioHoldingsById(String portfolioId);
+
   /// Get portfolio summary for a user
   Future<PortfolioSummary> getPortfolioSummary();
 
@@ -19,6 +22,9 @@ abstract class PortfolioRepository {
   Future<PortfolioSummary> getPortfolioSummaryById(
     String portfolioId,
   );
+
+  /// Gets cached portfolio summary for the specified user and portfolio
+  Future<PortfolioSummary?> getCachedPortfolioSummaryById(String portfolioId);
 
   /// Get holdings stream for real-time updates
   Stream<PortfolioHoldings> watchPortfolioHoldings();

@@ -66,7 +66,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -111,7 +111,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Icon(
@@ -158,12 +158,12 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
                       color: isDark
-                          ? Colors.white.withOpacity(0.05)
+                          ? Colors.white.withValues(alpha: 0.05)
                           : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isDark
-                            ? Colors.white.withOpacity(0.1)
+                            ? Colors.white.withValues(alpha: 0.1)
                             : Colors.grey.shade300,
                       ),
                     ),

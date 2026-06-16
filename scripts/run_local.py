@@ -19,7 +19,8 @@ def get_available_device():
     """Detect available flutter devices and return the best match."""
     try:
         is_windows = os.name == "nt"
-        result = subprocess.run(["flutter", "devices"], capture_output=True, encoding="utf-8", errors="ignore", shell=is_windows)
+<<<<<<< HEAD
+        result = subprocess.run(["flutter", "devices"], capture_output=True, text=True, encoding="utf-8", shell=is_windows)
         output = result.stdout.lower()
         
         if "chrome" in output:
@@ -43,7 +44,8 @@ def run_with_logging(cmd, cwd, env, log_name):
     with open(log_file, "a", encoding="utf-8", errors="ignore") as f:
         f.write("\n\n--- NEW EXECUTION ---\n")
         is_windows = os.name == "nt"
-        p = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8", errors="ignore", shell=is_windows)
+<<<<<<< HEAD
+        p = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", shell=is_windows)
         
         try:
             for line in p.stdout:

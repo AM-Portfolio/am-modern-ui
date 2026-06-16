@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:am_analysis_core/am_analysis_core.dart';
 import '../services/analysis_service.dart';
@@ -25,11 +26,24 @@ class _AnalysisDashboardState extends State<AnalysisDashboard> {
   late Future<List<AllocationItem>> _allocationFuture;
   late Future<List<PerformanceDataPoint>> _performanceFuture;
   late Future<List<MoverItem>> _moversFuture;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    // Fetch live data from am-analysis every 30 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      setState(() {
+        _loadData();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   void _loadData() {

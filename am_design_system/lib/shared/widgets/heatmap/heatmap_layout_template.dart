@@ -49,14 +49,18 @@ class HeatmapLayoutTemplate extends StatelessWidget {
       color: backgroundColor,
       padding: padding ?? const EdgeInsets.all(8),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Selectors section
+          // Selectors section — uses intrinsic height only, never steals from heatmap.
           if (showSelectors && selectorWidget != null) ...[
-            selectorWidget!,
-            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: selectorWidget!,
+            ),
+            const SizedBox(height: 8),
           ],
 
-          // Main heatmap card
+          // Main heatmap card — takes all remaining vertical space.
           Expanded(
             child: Card(
               elevation: 4,
@@ -64,20 +68,15 @@ class HeatmapLayoutTemplate extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Header section
                     if (showHeader) ...[
                       customHeader ?? _buildHeader(context),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                     ],
 
-                    // Legend section
-                    if (showLegend && data.configuration.showPerformance) ...[
-                      _buildColorLegend(context),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // Main display content
+                    // Main display content — fills remaining card space.
                     Expanded(child: displayWidget),
                   ],
                 ),
@@ -94,6 +93,7 @@ class HeatmapLayoutTemplate extends StatelessWidget {
     final effectiveSubtitle = subtitle ?? data.subtitle;
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Icon
         if (icon != null) ...[
@@ -106,14 +106,17 @@ class HeatmapLayoutTemplate extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                effectiveTitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              if (effectiveSubtitle != null) ...[
-                const SizedBox(height: 4),
+              if (effectiveTitle.isNotEmpty)
+                Text(
+                  effectiveTitle,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              if (effectiveSubtitle != null &&
+                  effectiveSubtitle.isNotEmpty &&
+                  effectiveSubtitle != effectiveTitle) ...[
+                if (effectiveTitle.isNotEmpty) const SizedBox(height: 4),
                 Text(
                   effectiveSubtitle,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -124,6 +127,11 @@ class HeatmapLayoutTemplate extends StatelessWidget {
             ],
           ),
         ),
+
+        // Legend inline
+        if (showLegend && data.configuration.showPerformance) ...[
+          _buildColorLegend(context),
+        ],
 
         // Header actions
         if (headerActions != null && headerActions!.isNotEmpty) ...[
@@ -140,19 +148,14 @@ class HeatmapLayoutTemplate extends StatelessWidget {
     }
 
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text('Performance: ', style: Theme.of(context).textTheme.bodySmall),
-        Expanded(
-          child: Row(
-            children: [
-              _buildLegendItem(context, 'Loss', Colors.red.shade300),
-              const SizedBox(width: 16),
-              _buildLegendItem(context, 'Neutral', Colors.grey.shade300),
-              const SizedBox(width: 16),
-              _buildLegendItem(context, 'Gain', Colors.green.shade300),
-            ],
-          ),
-        ),
+        _buildLegendItem(context, 'Loss', Colors.red.shade300),
+        const SizedBox(width: 16),
+        _buildLegendItem(context, 'Neutral', Colors.grey.shade300),
+        const SizedBox(width: 16),
+        _buildLegendItem(context, 'Gain', Colors.green.shade300),
       ],
     );
   }

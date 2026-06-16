@@ -111,6 +111,11 @@ class PortfolioService {
     }
   }
 
+  /// Gets cached portfolio holdings for the specified user and portfolio
+  Future<PortfolioHoldings?> getCachedPortfolioHoldingsById(String portfolioId) async {
+    return _getPortfolioHoldings.getCached(portfolioId);
+  }
+
   /// Retrieves portfolio summary for the specified user
   /// Returns summary data or throws an exception if retrieval fails
   Future<PortfolioSummary> getPortfolioSummary() async {
@@ -194,6 +199,11 @@ class PortfolioService {
       );
       rethrow;
     }
+  }
+
+  /// Gets cached portfolio summary for the specified user and portfolio
+  Future<PortfolioSummary?> getCachedPortfolioSummaryById(String portfolioId) async {
+    return _getPortfolioSummary.getCached(portfolioId);
   }
 
   /// Retrieves portfolios list for the specified user

@@ -67,18 +67,20 @@ class PortfolioAnalyticsService {
   /// Retrieves portfolio analytics with default configuration
   /// Convenience method for getting analytics with standard settings
   Future<PortfolioAnalytics> getPortfolioAnalyticsWithDefaults(
-    String portfolioId,
-  ) async {
+    String portfolioId, {
+    TimeFrame? timeFrame,
+  }) async {
     CommonLogger.methodEntry(
       'getPortfolioAnalyticsWithDefaults',
       tag: 'PortfolioAnalyticsService',
-      metadata: {'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId, 'timeFrame': timeFrame?.name},
     );
 
     try {
       // Create default request with all features enabled
       final request = PortfolioAnalyticsMapper.createDefaultRequest(
         portfolioId,
+        timeFrame: timeFrame,
       );
 
       CommonLogger.info(

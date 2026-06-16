@@ -2,6 +2,7 @@ import '../dtos/portfolio_analytics_request_dto.dart';
 import '../dtos/portfolio_analytics_response_dto.dart';
 import '../../domain/entities/portfolio_analytics_request.dart';
 import '../../domain/entities/portfolio_analytics.dart';
+import 'package:am_design_system/am_design_system.dart' show TimeFrame;
 
 /// Mapper for portfolio analytics data conversion between DTOs and entities
 class PortfolioAnalyticsMapper {
@@ -31,6 +32,9 @@ class PortfolioAnalyticsMapper {
       sortDirection: request.pagination.sortDirection,
       returnAllData: request.pagination.returnAllData,
     ),
+    fromDate: request.fromDate,
+    toDate: request.toDate,
+    timeFrame: request.timeFrame,
   );
 
   /// Convert analytics request DTO to entity
@@ -56,6 +60,9 @@ class PortfolioAnalyticsMapper {
       sortDirection: dto.pagination.sortDirection,
       returnAllData: dto.pagination.returnAllData,
     ),
+    fromDate: dto.fromDate,
+    toDate: dto.toDate,
+    timeFrame: dto.timeFrame,
   );
 
   // Response mapping methods
@@ -194,24 +201,86 @@ class PortfolioAnalyticsMapper {
   // Helper method to create default analytics request
 
   /// Create a default analytics request for a portfolio
-  static PortfolioAnalyticsRequest createDefaultRequest(String portfolioId) =>
-      PortfolioAnalyticsRequest(
-        coreIdentifiers: CoreIdentifiers(portfolioId: portfolioId),
-        featureToggles: const FeatureToggles(
-          includeHeatmap: true,
-          includeMovers: true,
-          includeSectorAllocation: true,
-          includeMarketCapAllocation: true,
-        ),
-        featureConfiguration: const FeatureConfiguration(moversLimit: 10),
-        pagination: const Pagination(
-          page: 1,
-          size: 20,
-          sortBy: 'performance',
-          sortDirection: 'DESC',
-          returnAllData: false,
-        ),
-      );
+  static PortfolioAnalyticsRequest createDefaultRequest(
+    String portfolioId, {
+    TimeFrame? timeFrame,
+  }) {
+    String? fromDateStr;
+    String? toDateStr;
+    String? backendTimeFrame;
+
+    if (timeFrame != null) {
+      final now = DateTime.now();
+      DateTime fromDate = now;
+
+      switch (timeFrame) {
+        case TimeFrame.oneDay:
+          fromDate = now;
+          backendTimeFrame = 'DAY';
+          break;
+        case TimeFrame.oneWeek:
+          fromDate = now.subtract(const Duration(days: 7));
+          backendTimeFrame = 'WEEK';
+          break;
+        case TimeFrame.oneMonth:
+          fromDate = now.subtract(const Duration(days: 30));
+          backendTimeFrame = 'MONTH';
+          break;
+        case TimeFrame.threeMonths:
+          fromDate = now.subtract(const Duration(days: 90));
+          backendTimeFrame = 'MONTH';
+          break;
+        case TimeFrame.sixMonths:
+          fromDate = now.subtract(const Duration(days: 180));
+          backendTimeFrame = 'MONTH';
+          break;
+        case TimeFrame.oneYear:
+          fromDate = now.subtract(const Duration(days: 365));
+          backendTimeFrame = 'YEAR';
+          break;
+        case TimeFrame.ytd:
+          fromDate = DateTime(now.year, 1, 1);
+          backendTimeFrame = 'YEAR';
+          break;
+        case TimeFrame.threeYears:
+          fromDate = now.subtract(const Duration(days: 1095));
+          backendTimeFrame = 'YEAR';
+          break;
+        case TimeFrame.fiveYears:
+          fromDate = now.subtract(const Duration(days: 1825));
+          backendTimeFrame = 'YEAR';
+          break;
+        case TimeFrame.all:
+          fromDate = now.subtract(const Duration(days: 3650));
+          backendTimeFrame = 'YEAR';
+          break;
+      }
+
+      fromDateStr = '${fromDate.year}-${fromDate.month.toString().padLeft(2, '0')}-${fromDate.day.toString().padLeft(2, '0')}';
+      toDateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    }
+
+    return PortfolioAnalyticsRequest(
+      coreIdentifiers: CoreIdentifiers(portfolioId: portfolioId),
+      featureToggles: const FeatureToggles(
+        includeHeatmap: true,
+        includeMovers: true,
+        includeSectorAllocation: true,
+        includeMarketCapAllocation: true,
+      ),
+      featureConfiguration: const FeatureConfiguration(moversLimit: 10),
+      pagination: const Pagination(
+        page: 1,
+        size: 20,
+        sortBy: 'performance',
+        sortDirection: 'DESC',
+        returnAllData: false,
+      ),
+      fromDate: fromDateStr,
+      toDate: toDateStr,
+      timeFrame: backendTimeFrame,
+    );
+  }
 
   /// Create empty analytics when DTO analytics is null
   static Analytics _createEmptyAnalytics() => const Analytics();

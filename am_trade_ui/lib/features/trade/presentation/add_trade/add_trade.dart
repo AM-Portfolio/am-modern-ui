@@ -19,7 +19,6 @@ export 'components/add_trade_form.dart';
 // Pages
 export 'pages/add_trade_web_page.dart';
 // Widgets
-export 'widgets/add_trade_fab.dart';
 export 'widgets/direction_selector.dart';
 export 'widgets/quick_selection_chips.dart';
 export 'widgets/status_selector.dart';
