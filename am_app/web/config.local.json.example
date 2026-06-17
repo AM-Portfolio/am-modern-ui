@@ -7,7 +7,7 @@
     "users":     "http://localhost:8002",
     "portfolio": "http://localhost:8003",
     "market":    "http://localhost:8092",
-    "marketWs":  "ws://localhost:8092",
+    "wsStream":  "ws://localhost:8000/v1/streams",
     "trades":    "http://localhost:8082",
     "analysis":  "http://localhost:8090",
     "docs":      "http://localhost:8085",

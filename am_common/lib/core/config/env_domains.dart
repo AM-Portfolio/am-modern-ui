@@ -24,7 +24,10 @@ class EnvDomains {
   static String get etf       => ConfigService.override('etf')       ?? '$apiBase/api/etf';
   static String get subscription => ConfigService.override('subscription') ?? '$apiBase/subscriptions';
   
-  // WebSocket
+  // WebSocket — all real-time UI uses am-gateway STOMP
   static String get wsStream  => ConfigService.override('wsStream')  ?? '$wsBase/v1/streams';
+
+  /// Deprecated: use [wsStream]. Market prices now relay via gateway `/topic/stock/{symbol}`.
+  @Deprecated('Use wsStream via AmStompClient instead of direct am-market WebSocket')
   static String get marketWs  => ConfigService.override('marketWs')  ?? '$wsBase/market/ws/market-data-stream';
 }

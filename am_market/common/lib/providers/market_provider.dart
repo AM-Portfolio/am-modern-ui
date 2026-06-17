@@ -10,6 +10,7 @@ import '../data/repositories/market_data_repository.dart';
 
 
 import 'package:am_common/core/services/price_service.dart';
+import 'package:am_common/core/models/price_update_model.dart';
 
 class MarketProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -31,8 +32,12 @@ class MarketProvider with ChangeNotifier {
 
   // PriceService Integration
   PriceService? _priceService;
-  
+  final Set<String> _subscribedSymbols = {};
+  StreamSubscription<MarketDataUpdate>? _priceUpdateSub;
+
   void setPriceService(PriceService service) {
+    if (_priceService == service) return;
+    _priceUpdateSub?.cancel();
     _priceService = service;
     CommonLogger.info("PriceService delegated to MarketProvider", tag: "MarketProvider");
     
@@ -40,18 +45,38 @@ class MarketProvider with ChangeNotifier {
     _syncWithPriceService();
     
     // Subscribe to price stream to sync internal state (allIndicesData)
-    // We use priceStream (full map) or updateStream (event).
-    // updateStream is better for individual processing logic we already have.
-    _priceService!.updateStream.listen((update) {
+    _priceUpdateSub = _priceService!.updateStream.listen((update) {
        if (update.quotes != null) {
-          // Convert QuoteChange to Map<String, dynamic>
           update.quotes!.forEach((symbol, quote) {
              final data = quote.toJson();
-             data['symbol'] = symbol; // Ensure symbol is present
+             data['symbol'] = symbol;
              _processSingleUpdate(symbol, data);
           });
        }
     });
+  }
+
+  Future<void> _ensurePriceSubscription(List<String> symbols) async {
+    if (_priceService == null || symbols.isEmpty) return;
+    final pending = symbols.where((s) => !_subscribedSymbols.contains(s)).toList();
+    if (pending.isEmpty) return;
+    await _priceService!.subscribe(pending, isIndexSymbol: _indexSymbol);
+    _subscribedSymbols.addAll(pending);
+    CommonLogger.info(
+      'Subscribed to ${pending.length} symbols via gateway STOMP',
+      tag: 'MarketProvider._ensurePriceSubscription',
+    );
+  }
+
+  Future<void> _releasePriceSubscription() async {
+    if (_priceService == null || _subscribedSymbols.isEmpty) return;
+    final symbols = _subscribedSymbols.toList();
+    await _priceService!.unsubscribe(symbols);
+    _subscribedSymbols.clear();
+    CommonLogger.info(
+      'Unsubscribed from ${symbols.length} market symbols',
+      tag: 'MarketProvider._releasePriceSubscription',
+    );
   }
 
   // Legacy Store Support (if needed, or just defer to PriceService)
@@ -232,6 +257,8 @@ class MarketProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _priceUpdateSub?.cancel();
+    unawaited(_releasePriceSubscription());
     _livePriceController.close();
     super.dispose();
   }
@@ -303,6 +330,10 @@ class MarketProvider with ChangeNotifier {
     try {
       _currentIndexData = await _apiService.fetchIndexData(_selectedIndex!, forceRefresh: _forceRefresh);
       CommonLogger.debug("Data refreshed for $_selectedIndex. Constituents: ${_currentIndexData?.stocks.length ?? 0}", tag: "MarketProvider.refreshIndexData");
+      if (_selectedIndex != null) {
+        await _ensurePriceSubscription([_selectedIndex!]);
+        _syncWithPriceService();
+      }
 
     } catch (e) {
       CommonLogger.error("Error refreshing $_selectedIndex", tag: "MarketProvider.refreshIndexData", error: e);
@@ -352,13 +383,8 @@ class MarketProvider with ChangeNotifier {
       
       CommonLogger.info("Successfully loaded ${_allIndicesData.length} indices", tag: "MarketProvider.loadAllIndicesData");
 
-      // STEP 4: Initiate Stream - REMOVED per user request
-      // Global PriceService is relied upon. No explicit connect call.
-      
-      // Attempt to sync from PriceService Cache if available
+      await _ensurePriceSubscription(allSymbols);
       _syncWithPriceService();
-      
-      // Explicit subscription removed per user request (expecting firehose)
 
     } catch (e) {
       CommonLogger.error("Error loading all indices data", tag: "MarketProvider.loadAllIndicesData", error: e);

@@ -1,12 +1,10 @@
 import 'package:am_design_system/am_design_system.dart';
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/market_provider.dart';
 import '../models/market_data.dart';
 import '../services/api_service.dart';
-import '../services/stream_service.dart';
 import '../widgets/multi_index_chart.dart';
 
 
@@ -19,8 +17,6 @@ class IndicesPerformanceView extends StatefulWidget {
 
 class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
   final ApiService _apiService = ApiService();
-  final StreamService _streamService = StreamService();
-  StreamSubscription? _streamSubscription;
 
   // State
   Map<String, List<Map<String, dynamic>>> _historicalDataCache = {};
@@ -42,10 +38,7 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
     _toDate = DateTime.now();
     _fromDate = _toDate.subtract(const Duration(days: 30));
 
-    _streamService.connect();
-    _setupStreamListener();
-    
-    // Pre-select default indices for chart
+    // Live prices flow via PriceService → am-gateway STOMP (/topic/stock/{symbol}).
     _selectedForChart = Set.from(_defaultIndices);
   }
 
@@ -66,23 +59,7 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
 
   @override
   void dispose() {
-    _streamSubscription?.cancel();
-    _streamService.dispose();
     super.dispose();
-  }
-
-  void _setupStreamListener() {
-    _streamSubscription = _streamService.stream.listen((message) {
-      if (!mounted) return;
-
-      if (message.containsKey('quotes')) {
-        final provider = context.read<MarketProvider>();
-        final newQuotes = message['quotes'] as Map<String, dynamic>;
-
-        // Use batch update to reduce logging noise
-        provider.updateLivePriceBatch(newQuotes);
-      }
-    });
   }
 
   Future<void> _fetchHistoricalDataForIndices(List<String> indicesToFetch) async {
@@ -112,9 +89,7 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
 
       final Map<String, List<Map<String, dynamic>>> newCache = Map.from(_historicalDataCache);
 
-      // Fetch historical data only for specified indices
       for (final indexSymbol in indicesToFetch) {
-        // Skip if already cached
         if (newCache.containsKey(indexSymbol)) {
           CommonLogger.info("IndicesPerformanceView.fetchHistorical", 
               "Skipping $indexSymbol (already cached)");

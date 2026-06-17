@@ -68,12 +68,7 @@ class _AppShellState extends State<AppShell> {
       final stompCubit = context.read<common.StompConnectionCubit>();
       
       stompCubit.onConnected = (userId) {
-        common.AppLogger.info('AppShell (Initial): STOMP Connected. Triggering global portfolio sync for $userId');
-        common.ServiceRegistry.stomp.send(
-          destination: '/app/portfolio/subscribe',
-          headers: {'content-type': 'application/json'},
-          body: '{"userId": "$userId"}',
-        );
+        common.AppLogger.info('AppShell (Initial): STOMP Connected for $userId');
       };
 
       final secureStorage = GetIt.instance<common.SecureStorageService>();
@@ -126,12 +121,7 @@ class _AppShellState extends State<AppShell> {
                
                // Register root-level sync trigger
                stompCubit.onConnected = (userId) {
-                 common.AppLogger.info('AppShell: STOMP Connected. Triggering global portfolio sync for $userId');
-                 common.ServiceRegistry.stomp.send(
-                   destination: '/app/portfolio/subscribe',
-                   headers: {'content-type': 'application/json'},
-                   body: '{"userId": "$userId"}',
-                 );
+                 common.AppLogger.info('AppShell: STOMP Connected for $userId');
                };
 
                final secureStorage = GetIt.instance<common.SecureStorageService>();

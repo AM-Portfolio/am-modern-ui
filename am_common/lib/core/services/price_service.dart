@@ -1,149 +1,203 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:get_it/get_it.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:am_common/core/config/app_config.dart';
+import 'package:stomp_dart_client/stomp_frame.dart';
+import 'package:am_common/core/models/equity_price_mapper.dart';
 import 'package:am_common/core/models/price_update_model.dart';
 import 'package:am_common/am_common.dart';
-import 'package:am_common/core/network/websocket/am_websocket_client.dart';
-import 'package:http/http.dart' as http;
+import 'package:am_library/core/network/websocket/am_stomp_client.dart';
 
-/// Singleton service to manage global WebSocket connection for real-time prices.
+/// Real-time prices via am-gateway STOMP only:
+/// - `/app/market/subscribe` → gateway proxies am-market upstream connect
+/// - `/topic/stock/{symbol}` → live price relay from Kafka
 class PriceService {
-  final AppConfig _config;
-  final AMWebSocketClient _wsClient;
-  
-  StreamSubscription? _subscription;
-  
-  // Cache of latest prices: Symbol -> QuoteChange
+  PriceService({AmStompClient? stompClient})
+      : _stompClient = stompClient ??
+            (GetIt.instance.isRegistered<AmStompClient>()
+                ? GetIt.instance<AmStompClient>()
+                : null);
+
+  final AmStompClient? _stompClient;
+
+  StreamSubscription<StompFrame>? _messageSub;
+  StreamSubscription<StompStatus>? _statusSub;
+
+  final Set<String> _subscribedSymbols = {};
+
   final Map<String, QuoteChange> _priceCache = {};
-  
-  // Subject to broadcast full price map updates
-  final BehaviorSubject<Map<String, QuoteChange>> _pricesSubject = 
+
+  final BehaviorSubject<Map<String, QuoteChange>> _pricesSubject =
       BehaviorSubject<Map<String, QuoteChange>>.seeded({});
 
-  // Subject to broadcast individual updates (for logs/feed)
-  final PublishSubject<MarketDataUpdate> _updatesSubject = PublishSubject<MarketDataUpdate>();
+  final PublishSubject<MarketDataUpdate> _updatesSubject =
+      PublishSubject<MarketDataUpdate>();
 
-  PriceService(this._config) : _wsClient = AMWebSocketClient() {
-    // Configure socket
-    final wsUrl = _config.api.marketData?.wsUrl;
-    if (wsUrl != null && wsUrl.isNotEmpty) {
-      _wsClient.configure(url: wsUrl);
-    }
-  }
-
-  /// Get stream of all price updates (full map)
   Stream<Map<String, QuoteChange>> get priceStream => _pricesSubject.stream;
 
-  /// Get stream of individual update events
   Stream<MarketDataUpdate> get updateStream => _updatesSubject.stream;
-  
-  /// Get current connection status stream
-  Stream<bool> get isConnectedStream => _wsClient.status.map((s) => s == SocketStatus.connected);
 
-  /// Get latest quote for a specific symbol
+  Stream<bool> get isConnectedStream {
+    final client = _stompClient;
+    if (client == null) return Stream.value(false);
+    return client.status.map((s) => s == StompStatus.connected);
+  }
+
+  Set<String> get subscribedSymbols => Set.unmodifiable(_subscribedSymbols);
+
   QuoteChange? getQuote(String symbol) => _priceCache[symbol];
-  
-  /// Get latest price for a specific symbol (convenience)
+
   double? getPrice(String symbol) => _priceCache[symbol]?.lastPrice;
 
-  /// Get latest quotes for a list of symbols
   Map<String, QuoteChange> getQuotes(List<String> symbols) {
-    final Map<String, QuoteChange> result = {};
+    final result = <String, QuoteChange>{};
     for (final symbol in symbols) {
-      if (_priceCache.containsKey(symbol)) {
-        result[symbol] = _priceCache[symbol]!;
+      final quote = _priceCache[symbol];
+      if (quote != null) {
+        result[symbol] = quote;
       }
     }
     return result;
   }
 
-  /// Connect to the WebSocket
+  /// Attach STOMP listeners. Connection is owned by [StompConnectionCubit] / AppShell.
   void connect() {
-     _wsClient.connect();
-     
-     _subscription ??= _wsClient.messages.listen(_onMessage);
+    final client = _stompClient;
+    if (client == null) {
+      AppLogger.warning('PriceService: AmStompClient not registered.');
+      return;
+    }
+
+    _messageSub ??= client.messages.listen(_onStompFrame);
+    _statusSub ??= client.status.listen((status) {
+      if (status == StompStatus.connected) {
+        _resubscribeStompTopics();
+      }
+    });
   }
 
-  /// Subscribe to symbols (initiates stream via REST)
+  /// Gateway upstream connect + STOMP topic subscriptions.
   Future<void> subscribe(
     List<String> symbols, {
     String provider = 'UPSTOX',
     bool isIndexSymbol = false,
     bool mockMode = false,
   }) async {
-    final baseUrl = _config.api.marketData?.baseUrl;
-    final endpoint = _config.api.marketData?.connectEndpoint;
-    
-    if (baseUrl == null || endpoint == null) {
-       AppLogger.warning('PriceService: Missing REST config for subscription.');
-       return;
-    }
+    if (symbols.isEmpty) return;
 
-    try {
-       final url = Uri.parse('$baseUrl$endpoint');
-       AppLogger.info('PriceService: Subscribing to $symbols via $url (isIndexSymbol: $isIndexSymbol, provider: ${mockMode ? 'MOCK' : provider})');
-       
-       final response = await http.post(
-         url,
-         headers: {'Content-Type': 'application/json'},
-         body: jsonEncode({
-           'instrumentKeys': symbols,
-           'provider': mockMode ? 'MOCK' : provider,
-           'timeFrame': '1D',
-           'stream': true,
-           'expandIndices': false, 
-           'isIndexSymbol': isIndexSymbol
-         }),
-       );
-       
-       if (response.statusCode == 200) {
-          AppLogger.info('PriceService: Subscription successful');
-       } else {
-          AppLogger.error('PriceService: Subscription failed ${response.statusCode}: ${response.body}');
-       }
-    } catch (e) {
-       AppLogger.error('PriceService: Subscription failed', error: e);
+    _gatewayConnect(
+      symbols,
+      provider: provider,
+      isIndexSymbol: isIndexSymbol,
+      mockMode: mockMode,
+    );
+    _stompSubscribe(symbols);
+  }
+
+  Future<void> unsubscribe(List<String> symbols) async {
+    final client = _stompClient;
+    for (final symbol in symbols) {
+      if (_subscribedSymbols.remove(symbol)) {
+        client?.unsubscribe(stockTopicDestination(symbol));
+      }
     }
   }
 
-  void _onMessage(dynamic message) {
-    try {
-      if (message is String) {
-        // Log sample of message (debug level)
-        // final preview = message.length > 50 ? "${message.substring(0, 50)}..." : message;
-        // AppLogger.debug('PriceService: Received: $preview');
-
-        final Map<String, dynamic> json = jsonDecode(message);
-        final update = MarketDataUpdate.fromJson(json);
-        
-        // Broadcast the event
-        _updatesSubject.add(update);
-        
-        if (update.quotes != null && update.quotes!.isNotEmpty) {
-          bool cacheChanged = false;
-          update.quotes!.forEach((symbol, quote) {
-             _priceCache[symbol] = quote;
-             cacheChanged = true;
-          });
-          
-          if (cacheChanged) {
-            _pricesSubject.add(Map.from(_priceCache));
-          }
-        }
-      }
-    } catch (e) {
-      AppLogger.error('PriceService: Error parsing message', error: e);
+  void _gatewayConnect(
+    List<String> symbols, {
+    required String provider,
+    required bool isIndexSymbol,
+    required bool mockMode,
+  }) {
+    final client = _stompClient;
+    if (client == null) {
+      AppLogger.warning('PriceService: Cannot send market subscribe — no AmStompClient.');
+      return;
     }
+
+    final body = jsonEncode({
+      'instrumentKeys': symbols,
+      'provider': mockMode ? 'MOCK' : provider,
+      'timeFrame': '1D',
+      'stream': true,
+      'expandIndices': false,
+      'isIndexSymbol': isIndexSymbol,
+      if (mockMode) 'mockMode': true,
+    });
+
+    AppLogger.info(
+      'PriceService: STOMP /app/market/subscribe for $symbols '
+      '(isIndexSymbol: $isIndexSymbol, provider: ${mockMode ? 'MOCK' : provider})',
+    );
+
+    client.send(
+      destination: '/app/market/subscribe',
+      headers: {'content-type': 'application/json'},
+      body: body,
+    );
+  }
+
+  void _stompSubscribe(List<String> symbols) {
+    final client = _stompClient;
+    if (client == null) {
+      AppLogger.warning('PriceService: Cannot STOMP subscribe — no AmStompClient.');
+      return;
+    }
+
+    for (final symbol in symbols) {
+      if (_subscribedSymbols.add(symbol)) {
+        client.subscribe(stockTopicDestination(symbol));
+      }
+    }
+  }
+
+  void _resubscribeStompTopics() {
+    final client = _stompClient;
+    if (client == null || _subscribedSymbols.isEmpty) return;
+
+    for (final symbol in _subscribedSymbols) {
+      client.subscribe(stockTopicDestination(symbol), forceResubscribe: true);
+    }
+  }
+
+  void _onStompFrame(StompFrame frame) {
+    final body = frame.body;
+    if (body == null || body.isEmpty) return;
+
+    try {
+      final json = jsonDecode(body) as Map<String, dynamic>;
+      final symbol = json['symbol'] as String?;
+      if (symbol == null || symbol.isEmpty) return;
+
+      _applyQuote(symbol, quoteChangeFromEquityPriceJson(json));
+    } catch (e) {
+      AppLogger.error('PriceService: Error parsing STOMP frame', error: e);
+    }
+  }
+
+  void _applyQuote(String symbol, QuoteChange quote) {
+    _priceCache[symbol] = quote;
+    _updatesSubject.add(MarketDataUpdate(quotes: {symbol: quote}));
+    _pricesSubject.add(Map.from(_priceCache));
   }
 
   void disconnect() {
-    _wsClient.disconnect();
-    _subscription?.cancel();
-    _subscription = null;
-    _pricesSubject.close();
-    _updatesSubject.close();
+    _messageSub?.cancel();
+    _messageSub = null;
+    _statusSub?.cancel();
+    _statusSub = null;
+
+    final client = _stompClient;
+    for (final symbol in _subscribedSymbols) {
+      client?.unsubscribe(stockTopicDestination(symbol));
+    }
+    _subscribedSymbols.clear();
+
+    if (!_pricesSubject.isClosed) {
+      _pricesSubject.close();
+    }
+    if (!_updatesSubject.isClosed) {
+      _updatesSubject.close();
+    }
   }
 }
-

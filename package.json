@@ -76,7 +76,10 @@
     "clean:all": "python scripts/manage.py clean-all",
     "get:all": "python scripts/manage.py get-all",
     "gen:all": "python scripts/manage.py gen-all",
-    "test:all": "python scripts/manage.py test-all"
+    "test:all": "python scripts/manage.py test-all",
+    "test:auth:preprod": "python testing/run_auth.py preprod --open-report",
+    "test:auth:local": "python testing/run_auth.py local --open-report",
+    "test:auth:mcp": "echo Use: POST http://localhost:8120/api/v1/tools/ui-test/run-auth"
   },
   "author": "AsraX Tech",
   "license": "ISC"
