@@ -52,7 +52,9 @@ class _GlobalPortfolioWrapperState
                   });
 
                   // Trigger real-time subscription
-                  context.read<PortfolioCubit>().subscribeToPortfolioUpdates();
+                  context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+                    portfolioId: first.portfolioId,
+                  );
 
                   // Trigger initial REST load for details
                   context.read<PortfolioCubit>().loadPortfolioById(first.portfolioId);
@@ -73,7 +75,9 @@ class _GlobalPortfolioWrapperState
                   _selectedPortfolioName = name;
                 });
                 // Trigger real-time subscription on manual selection
-                context.read<PortfolioCubit>().subscribeToPortfolioUpdates();
+                context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+                  portfolioId: id,
+                );
 
                 // Trigger REST load for details on manual selection
                 context.read<PortfolioCubit>().loadPortfolioById(id);

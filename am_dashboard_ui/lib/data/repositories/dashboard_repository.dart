@@ -57,15 +57,21 @@ class DashboardRepository {
     AppLogger.info('Dashboard STOMP subscribe sent; queues: ${DashboardQueueDestinations.all}');
   }
 
-  Future<void> trySubscribeToDashboard({int maxAttempts = 30}) async {
-    for (var i = 0; i < maxAttempts; i++) {
-      if (_stompClient.isConnected) {
-        await subscribeToDashboard();
-        return;
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+  Future<void> trySubscribeToDashboard({Duration timeout = const Duration(seconds: 30)}) async {
+    if (_stompClient.isConnected) {
+      await subscribeToDashboard();
+      return;
     }
-    AppLogger.warning('Dashboard STOMP subscribe timed out — REST widgets will still load');
+    try {
+      await _stompClient.status
+          .firstWhere((status) => status == StompStatus.connected)
+          .timeout(timeout);
+      await subscribeToDashboard();
+    } on TimeoutException {
+      AppLogger.warning(
+        'Dashboard STOMP subscribe timed out after ${timeout.inSeconds}s — REST widgets will still load',
+      );
+    }
   }
 
   void unsubscribeFromDashboard() {
