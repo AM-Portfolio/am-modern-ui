@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_market_common/models/market_data.dart';
-import 'package:am_market_ui/core/styles/market_theme_extension.dart';
+import 'package:am_market_ui/features/market/widgets/market_colors.dart';
 
 class DrawerIndexCard extends StatelessWidget {
   final StockIndicesMarketData data;
@@ -21,7 +21,6 @@ class DrawerIndexCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final mt = context.marketTheme;
 
     double displayChange = data.change;
     double displayPChange = data.pChange;
@@ -36,9 +35,8 @@ class DrawerIndexCard extends StatelessWidget {
 
     final isPositive = displayChange >= 0;
     final sign = isPositive ? '+' : '';
-    final prefix = isPositive ? '↑' : '↓';
-    final accentColor = isPositive ? mt.positive : mt.negative;
-    final badgeBgColor = isPositive ? mt.posBadgeBg : mt.negBadgeBg;
+    final accentColor = isPositive ? MarketColors.positive(context) : MarketColors.negative(context);
+    final badgeBgColor = isPositive ? MarketColors.posBadgeBg(context) : MarketColors.negBadgeBg(context);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -49,11 +47,11 @@ class DrawerIndexCard extends StatelessWidget {
           curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           decoration: BoxDecoration(
-            color: mt.surface,
+            color: MarketColors.cardSurface(context),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? mt.accent : mt.border,
-              width: 1.0,
+              color: isSelected ? MarketColors.borderSelected(context) : MarketColors.borderDefault(context),
+              width: MarketColors.borderWidth(context),
             ),
           ),
           child: Column(
@@ -69,7 +67,7 @@ class DrawerIndexCard extends StatelessWidget {
                       data.indexSymbol.toUpperCase(),
                       style: TextStyle(
                         fontSize: isMobile ? 9 : 10,
-                        color: mt.textMuted,
+                        color: MarketColors.textMuted(context),
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.04 * (isMobile ? 9 : 10),
                       ),
@@ -118,7 +116,7 @@ class DrawerIndexCard extends StatelessWidget {
                 data.lastPrice.toStringAsFixed(2),
                 style: TextStyle(
                   fontSize: isMobile ? 14 : 17,
-                  color: mt.textPrimary,
+                  color: MarketColors.textPrimary(context),
                   fontWeight: FontWeight.bold,
                 ),
               ),

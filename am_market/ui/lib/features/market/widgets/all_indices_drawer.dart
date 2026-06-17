@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_market_common/models/market_data.dart';
-import 'package:am_market_ui/core/styles/market_theme_extension.dart';
+import 'package:am_market_ui/features/market/widgets/market_colors.dart';
 import 'timeframe_selector.dart';
 import 'drawer_index_card.dart';
 
@@ -38,15 +38,17 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
   @override
   Widget build(BuildContext context) {
     final basePricesForTf = widget.allTimeframeBasePrices[_selectedTimeframe] ?? {};
-    final mt = context.marketTheme;
 
     return Container(
       width: 460,
       height: double.infinity,
       decoration: BoxDecoration(
-        color: mt.drawerBg,
+        color: MarketColors.drawerBg(context),
         border: Border(
-          left: BorderSide(color: mt.border, width: 1.0),
+          left: BorderSide(
+            color: MarketColors.borderDefault(context),
+            width: MarketColors.borderWidth(context),
+          ),
         ),
       ),
       padding: const EdgeInsets.all(20),
@@ -61,7 +63,7 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
                 'All indices',
                 style: TextStyle(
                   fontSize: 14,
-                  color: mt.textPrimary,
+                  color: MarketColors.textPrimary(context),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -69,13 +71,16 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  border: Border.all(color: mt.border, width: 1.0),
+                  border: Border.all(
+                    color: MarketColors.borderDefault(context),
+                    width: MarketColors.borderWidth(context),
+                  ),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: IconButton(
                   padding: EdgeInsets.zero,
                   icon: const Icon(Icons.close, size: 16),
-                  color: mt.textMuted,
+                  color: MarketColors.textMuted(context),
                   onPressed: widget.onClose,
                 ),
               ),

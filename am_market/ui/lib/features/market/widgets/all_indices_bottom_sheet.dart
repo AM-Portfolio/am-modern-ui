@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_market_common/models/market_data.dart';
-import 'package:am_market_ui/core/styles/market_theme_extension.dart';
+import 'package:am_market_ui/features/market/widgets/market_colors.dart';
 import 'timeframe_selector.dart';
 import 'drawer_index_card.dart';
 
@@ -38,17 +38,19 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final basePricesForTf = widget.allTimeframeBasePrices[_selectedTimeframe] ?? {};
-    final mt = context.marketTheme;
 
     return Container(
       decoration: BoxDecoration(
-        color: mt.drawerBg,
+        color: MarketColors.drawerBg(context),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
         ),
         border: Border(
-          top: BorderSide(color: mt.border, width: 1.0),
+          top: BorderSide(
+            color: MarketColors.borderDefault(context),
+            width: MarketColors.borderWidth(context),
+          ),
         ),
       ),
       child: Column(
@@ -61,7 +63,7 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
               width: 36,
               height: 3,
               decoration: BoxDecoration(
-                color: mt.border,
+                color: MarketColors.borderDefault(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -77,7 +79,7 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
                   'All indices',
                   style: TextStyle(
                     fontSize: 14,
-                    color: mt.textPrimary,
+                    color: MarketColors.textPrimary(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -85,13 +87,16 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    border: Border.all(color: mt.border, width: 1.0),
+                    border: Border.all(
+                      color: MarketColors.borderDefault(context),
+                      width: MarketColors.borderWidth(context),
+                    ),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: IconButton(
                     padding: EdgeInsets.zero,
                     icon: const Icon(Icons.close, size: 16),
-                    color: mt.textMuted,
+                    color: MarketColors.textMuted(context),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),

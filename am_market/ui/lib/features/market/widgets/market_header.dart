@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:am_market_ui/core/styles/market_theme_extension.dart';
+import 'package:am_market_ui/features/market/widgets/market_colors.dart';
 import 'timeframe_selector.dart';
 
 class MarketHeader extends StatelessWidget {
@@ -17,7 +17,6 @@ class MarketHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final mt = context.marketTheme;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -32,7 +31,7 @@ class MarketHeader extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: mt.textPrimary,
+                color: MarketColors.textPrimary(context),
               ),
             ),
             const SizedBox(height: 2),
@@ -40,7 +39,7 @@ class MarketHeader extends StatelessWidget {
               'Real-time market overview',
               style: TextStyle(
                 fontSize: 11,
-                color: mt.textMuted,
+                color: MarketColors.textMuted(context),
               ),
             ),
           ],
@@ -55,7 +54,7 @@ class MarketHeader extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 icon: const Icon(Icons.search, size: 20),
-                color: mt.textMuted,
+                color: MarketColors.textMuted(context),
                 onPressed: () {},
               ),
               const SizedBox(width: 12),
@@ -63,7 +62,7 @@ class MarketHeader extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 icon: const Icon(Icons.notifications_none, size: 20),
-                color: mt.textMuted,
+                color: MarketColors.textMuted(context),
                 onPressed: () {},
               ),
               const SizedBox(width: 12),
@@ -111,8 +110,6 @@ class _AllIndicesButtonState extends State<_AllIndicesButton> {
 
   @override
   Widget build(BuildContext context) {
-    final mt = context.marketTheme;
-
     if (widget.isMobile) {
       return IconButton(
         padding: EdgeInsets.zero,
@@ -120,7 +117,7 @@ class _AllIndicesButtonState extends State<_AllIndicesButton> {
         icon: Icon(
           Icons.grid_view_rounded,
           size: 18,
-          color: mt.textSecondary,
+          color: MarketColors.allIndicesBtnText(context),
         ),
         tooltip: 'All indices',
         onPressed: widget.onPressed,
@@ -139,8 +136,8 @@ class _AllIndicesButtonState extends State<_AllIndicesButton> {
           decoration: BoxDecoration(
             color: Colors.transparent,
             border: Border.all(
-              color: _isHovered ? mt.accent : mt.border,
-              width: 1.0,
+              color: _isHovered ? const Color(0xFF00C896) : MarketColors.borderStrong(context),
+              width: MarketColors.borderWidth(context),
             ),
             borderRadius: BorderRadius.circular(8),
           ),
@@ -150,14 +147,14 @@ class _AllIndicesButtonState extends State<_AllIndicesButton> {
               Icon(
                 Icons.grid_view_rounded,
                 size: 14,
-                color: _isHovered ? mt.accent : mt.textSecondary,
+                color: _isHovered ? const Color(0xFF00C896) : MarketColors.allIndicesBtnText(context),
               ),
               const SizedBox(width: 6),
               Text(
                 'All indices',
                 style: TextStyle(
                   fontSize: 12,
-                  color: _isHovered ? mt.accent : mt.textSecondary,
+                  color: _isHovered ? const Color(0xFF00C896) : MarketColors.allIndicesBtnText(context),
                 ),
               ),
             ],
