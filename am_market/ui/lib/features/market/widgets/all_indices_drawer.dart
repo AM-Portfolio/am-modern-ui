@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_market_common/models/market_data.dart';
-import 'market_header.dart';
+import 'package:am_market_ui/features/market/widgets/market_colors.dart';
 import 'timeframe_selector.dart';
 import 'drawer_index_card.dart';
 
@@ -42,10 +42,13 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
     return Container(
       width: 460,
       height: double.infinity,
-      decoration: const BoxDecoration(
-        color: MarketColors.drawerBg,
+      decoration: BoxDecoration(
+        color: MarketColors.drawerBg(context),
         border: Border(
-          left: BorderSide(color: MarketColors.border, width: 1.0),
+          left: BorderSide(
+            color: MarketColors.borderDefault(context),
+            width: MarketColors.borderWidth(context),
+          ),
         ),
       ),
       padding: const EdgeInsets.all(20),
@@ -56,11 +59,11 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'All indices',
                 style: TextStyle(
                   fontSize: 14,
-                  color: MarketColors.textPrimary,
+                  color: MarketColors.textPrimary(context),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -68,13 +71,16 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  border: Border.all(color: MarketColors.border, width: 1.0),
+                  border: Border.all(
+                    color: MarketColors.borderDefault(context),
+                    width: MarketColors.borderWidth(context),
+                  ),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: IconButton(
                   padding: EdgeInsets.zero,
                   icon: const Icon(Icons.close, size: 16),
-                  color: MarketColors.textMuted,
+                  color: MarketColors.textMuted(context),
                   onPressed: widget.onClose,
                 ),
               ),
