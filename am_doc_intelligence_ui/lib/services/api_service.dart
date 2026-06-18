@@ -70,10 +70,7 @@ class ApiService {
     'GROWW',
     'DHAN',
     'MSTOCK',
-    'ICICI_DIRECT',
-    'HDFC_SECURITIES',
     'ANGEL_ONE',
-    'OTHER',
   ];
 
   // --- Document Processor endpoints ---
