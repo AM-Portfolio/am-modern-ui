@@ -5,8 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
 import 'package:am_doc_intelligence_ui/utils/file_downloader.dart';
-
-class DocumentProcessorView extends StatefulWidget {
+import 'package:url_launcher/url_launcher.dart';class DocumentProcessorView extends StatefulWidget {
   const DocumentProcessorView({super.key});
 
   @override
@@ -88,14 +87,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     }
     switch (_selectedBrokerType) {
       case 'ZERODHA':
-        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
+        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ' || t == 'TRADE_FNO').toList();
       case 'GROWW':
         return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'MUTUAL_FUND' || t == 'TRADE_EQ' || t == 'TRADE_MF').toList();
       case 'DHAN':
         return ['PORTFOLIO_EQUITY', 'PORTFOLIO_ETF'];
 
       case 'ANGEL_ONE':
-        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
+        return _docTypes.where((t) => t == 'COMBINE_PORTFOLIO' || t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
       case 'MSTOCK':
         return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
       case 'OTHER':
@@ -501,7 +500,41 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                     label: const Text('Download Sample Portfolio CSV', style: TextStyle(fontSize: 12)),
                   ),
                 ],
-              )
+              ),
+              if ((_selectedBrokerType == 'ZERODHA' && (_selectedDocType == 'STOCK_PORTFOLIO' || _selectedDocType == 'TRADE_FNO' || _selectedDocType == 'TRADE_EQ')) ||
+                  (_selectedBrokerType == 'GROWW' && _selectedDocType != null) ||
+                  (_selectedBrokerType == 'ANGEL_ONE' && _selectedDocType == 'COMBINE_PORTFOLIO'))
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      String url = '';
+                      if (_selectedBrokerType == 'ZERODHA') {
+                        url = _selectedDocType == 'STOCK_PORTFOLIO' 
+                            ? 'https://console.zerodha.com/portfolio/holdings' 
+                            : 'https://console.zerodha.com/reports/tradebook';
+                      } else if (_selectedBrokerType == 'GROWW') {
+                        url = 'https://groww.in/user/profile/report';
+                      } else if (_selectedBrokerType == 'ANGEL_ONE') {
+                        url = 'https://www.angelone.in/trade/reports/download-reports';
+                      }
+                      final uri = Uri.parse(url);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri);
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: Icon(Icons.open_in_new, size: 16, color: Colors.white.withOpacity(0.9)),
+                    label: Text(
+                      "Don't have the document? Download from ${_selectedBrokerType == 'ZERODHA' ? 'Zerodha Console' : _selectedBrokerType == 'ANGEL_ONE' ? 'Angel One' : 'Groww'}",
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white.withOpacity(0.9)),
+                    ),
+                  ),
+                )
             ],
           ),
         ),
@@ -671,134 +704,140 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                           ),
                         ),
                       ),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          columnSpacing: 38.0,
-                          horizontalMargin: 8.0,
-                          columns: isTrade
-                              ? const [
-                                  DataColumn(label: Text('DATE', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('TRADE ID', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('TYPE', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(numeric: true, label: Text('PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(numeric: true, label: Text('TOTAL AMOUNT', style: TextStyle(fontWeight: FontWeight.bold))),
-                                ]
-                              : const [
-                                  DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('IDENTIFIER', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(numeric: true, label: Text('BUY PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(numeric: true, label: Text('CURRENT PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(numeric: true, label: Text('TOTAL VALUATION', style: TextStyle(fontWeight: FontWeight.bold))),
-                                ],
-                          rows: parsedDataList.map((item) {
-                            final map = item is Map ? item : {};
-                            
-                            if (isTrade) {
-                              final basic = map['basicInfo'] is Map ? map['basicInfo'] : {};
-                              final instrument = map['instrumentInfo'] is Map ? map['instrumentInfo'] : {};
-                              final exec = map['executionInfo'] is Map ? map['executionInfo'] : {};
-                              
-                              final String tradeDate = basic['tradeDate'] ?? basic['orderExecutionTime']?.toString().split('T').first ?? 'N/A';
-                              final String assetName = instrument['symbol'] ?? instrument['name'] ?? map['symbol'] ?? 'Unknown Asset';
-                              final String tradeId = basic['tradeId'] ?? map['tradeId'] ?? 'N/A';
-                              final String tradeType = (exec['tradeType'] ?? basic['tradeType'] ?? map['type'] ?? 'BUY').toString().toUpperCase();
-                              final double quantity = (exec['quantity'] ?? exec['qty'] ?? map['quantity'] ?? 0.0).toDouble();
-                              final double price = (exec['price'] ?? map['price'] ?? 0.0).toDouble();
-                              final double totalValue = quantity * price;
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 500),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.vertical,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: DataTable(
+                              columnSpacing: 38.0,
+                              horizontalMargin: 8.0,
+                              columns: isTrade
+                                  ? const [
+                                      DataColumn(label: Text('DATE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(label: Text('TRADE ID', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(label: Text('TYPE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('TOTAL AMOUNT', style: TextStyle(fontWeight: FontWeight.bold))),
+                                    ]
+                                  : const [
+                                      DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(label: Text('IDENTIFIER', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('BUY PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('CURRENT PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('TOTAL VALUATION', style: TextStyle(fontWeight: FontWeight.bold))),
+                                    ],
+                              rows: parsedDataList.map((item) {
+                                final map = item is Map ? item : {};
+                                
+                                if (isTrade) {
+                                  final basic = map['basicInfo'] is Map ? map['basicInfo'] : {};
+                                  final instrument = map['instrumentInfo'] is Map ? map['instrumentInfo'] : {};
+                                  final exec = map['executionInfo'] is Map ? map['executionInfo'] : {};
+                                  
+                                  final String tradeDate = basic['tradeDate'] ?? basic['orderExecutionTime']?.toString().split('T').first ?? 'N/A';
+                                  final String assetName = instrument['symbol'] ?? instrument['name'] ?? map['symbol'] ?? 'Unknown Asset';
+                                  final String tradeId = basic['tradeId'] ?? map['tradeId'] ?? 'N/A';
+                                  final String tradeType = (exec['tradeType'] ?? basic['tradeType'] ?? map['type'] ?? 'BUY').toString().toUpperCase();
+                                  final double quantity = (exec['quantity'] ?? exec['qty'] ?? map['quantity'] ?? 0.0).toDouble();
+                                  final double price = (exec['price'] ?? map['price'] ?? 0.0).toDouble();
+                                  final double totalValue = quantity * price;
 
-                              final Color typeColor = tradeType.contains('BUY') ? Colors.green : Colors.red;
+                                  final Color typeColor = tradeType.contains('BUY') ? Colors.green : Colors.red;
 
-                              return DataRow(
-                                cells: [
-                                  DataCell(Text(tradeDate, style: const TextStyle(fontSize: 13))),
-                                  DataCell(
-                                    Container(
-                                      constraints: const BoxConstraints(maxWidth: 220),
-                                      child: Text(
-                                        assetName, 
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                  DataCell(Text(tradeId, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
-                                  DataCell(
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: typeColor.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        tradeType,
-                                        style: TextStyle(
-                                          color: typeColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 11,
+                                  return DataRow(
+                                    cells: [
+                                      DataCell(Text(tradeDate, style: const TextStyle(fontSize: 13))),
+                                      DataCell(
+                                        Container(
+                                          constraints: const BoxConstraints(maxWidth: 220),
+                                          child: Text(
+                                            assetName, 
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                  DataCell(Text(quantity.toStringAsFixed(0))),
-                                  DataCell(Text(currencyFormatter.format(price))),
-                                  DataCell(
-                                    Text(
-                                      currencyFormatter.format(totalValue),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(context).colorScheme.primary,
+                                      DataCell(Text(tradeId, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
+                                      DataCell(
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: typeColor.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            tradeType,
+                                            style: TextStyle(
+                                              color: typeColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            } else {
-                              final String assetName = map['name'] ?? map['securityName'] ?? map['schemeName'] ?? map['symbol'] ?? 'Unknown Asset';
-                              final String identifier = map['isin'] ?? map['amfiCode'] ?? map['symbol'] ?? 'N/A';
-                              final double quantity = (map['quantity'] ?? map['qty'] ?? 0.0).toDouble();
-                              final double buyPrice = (map['avgBuyingPrice'] ?? map['averagePrice'] ?? map['buyPrice'] ?? map['price'] ?? 0.0).toDouble();
-                              final double currentPrice = (map['currentPrice'] ?? 
-                                                          (map['marketData'] != null ? map['marketData']['marketPrice'] : null) ?? 
-                                                          (map['currentValue'] != null && quantity > 0 ? (map['currentValue'] / quantity) : null) ?? 
-                                                          map['avgBuyingPrice'] ?? 
-                                                          map['nav'] ?? 
-                                                          map['price'] ?? 
-                                                          0.0).toDouble();
-                              final double totalValue = map['currentValue'] != null ? (map['currentValue'] as num).toDouble() : quantity * currentPrice;
+                                      DataCell(Text(quantity.toStringAsFixed(0))),
+                                      DataCell(Text(currencyFormatter.format(price))),
+                                      DataCell(
+                                        Text(
+                                          currencyFormatter.format(totalValue),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                } else {
+                                  final String assetName = map['name'] ?? map['securityName'] ?? map['schemeName'] ?? map['symbol'] ?? 'Unknown Asset';
+                                  final String identifier = map['isin'] ?? map['amfiCode'] ?? map['symbol'] ?? 'N/A';
+                                  final double quantity = (map['quantity'] ?? map['qty'] ?? 0.0).toDouble();
+                                  final double buyPrice = (map['avgBuyingPrice'] ?? map['averagePrice'] ?? map['buyPrice'] ?? map['price'] ?? 0.0).toDouble();
+                                  final double currentPrice = (map['currentPrice'] ?? 
+                                                              (map['marketData'] != null ? map['marketData']['marketPrice'] : null) ?? 
+                                                              (map['currentValue'] != null && quantity > 0 ? (map['currentValue'] / quantity) : null) ?? 
+                                                              map['avgBuyingPrice'] ?? 
+                                                              map['nav'] ?? 
+                                                              map['price'] ?? 
+                                                              0.0).toDouble();
+                                  final double totalValue = map['currentValue'] != null ? (map['currentValue'] as num).toDouble() : quantity * currentPrice;
 
-                              return DataRow(
-                                cells: [
-                                  DataCell(
-                                    Container(
-                                      constraints: const BoxConstraints(maxWidth: 220),
-                                      child: Text(
-                                        assetName, 
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                        overflow: TextOverflow.ellipsis,
+                                  return DataRow(
+                                    cells: [
+                                      DataCell(
+                                        Container(
+                                          constraints: const BoxConstraints(maxWidth: 220),
+                                          child: Text(
+                                            assetName, 
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                  DataCell(Text(identifier, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
-                                  DataCell(Text(quantity.toStringAsFixed(2))),
-                                  DataCell(Text(currencyFormatter.format(buyPrice))),
-                                  DataCell(Text(currencyFormatter.format(currentPrice), style: const TextStyle(fontWeight: FontWeight.bold))),
-                                  DataCell(
-                                    Text(
-                                      currencyFormatter.format(totalValue),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(context).colorScheme.primary,
+                                      DataCell(Text(identifier, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
+                                      DataCell(Text(quantity.toStringAsFixed(2))),
+                                      DataCell(Text(currencyFormatter.format(buyPrice))),
+                                      DataCell(Text(currencyFormatter.format(currentPrice), style: const TextStyle(fontWeight: FontWeight.bold))),
+                                      DataCell(
+                                        Text(
+                                          currencyFormatter.format(totalValue),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }
-                          }).toList(),
+                                    ],
+                                  );
+                                }
+                              }).toList(),
+                            ),
+                          ),
                         ),
                       ),
                     ],
