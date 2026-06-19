@@ -1,6 +1,8 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
+const kAllPortfoliosId = '__ALL__';
+
 /// A reusable widget for selecting a portfolio, extracted from the Trade Sidebar logic.
 /// Designed to be flexible with different portfolio data models via extractors.
 class SharedPortfolioSelector<T> extends StatelessWidget {
@@ -76,14 +78,28 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                 ),
               ),
               onSelected: (portfolioId) {
-                final portfolio = portfolios.firstWhere(
-                  (p) => idExtractor(p) == portfolioId,
-                );
-                onPortfolioSelected(portfolioId, nameExtractor(portfolio));
+                if (portfolioId == kAllPortfoliosId) {
+                  onPortfolioSelected(kAllPortfoliosId, 'All Portfolios');
+                } else {
+                  final portfolio = portfolios.firstWhere(
+                    (p) => idExtractor(p) == portfolioId,
+                  );
+                  onPortfolioSelected(portfolioId, nameExtractor(portfolio));
+                }
               },
-              itemBuilder: (context) => portfolios
-                  .map(
-                    (portfolio) => PopupMenuItem<String>(
+              itemBuilder: (context) => [
+                    PopupMenuItem<String>(
+                      value: kAllPortfoliosId,
+                      child: Text(
+                        'All Portfolios',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    ...portfolios.map(
+                      (portfolio) => PopupMenuItem<String>(
                       value: idExtractor(portfolio),
                       child: Text(
                         nameExtractor(portfolio),
@@ -136,7 +152,9 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            currentPortfolioName ?? 'No Portfolio',
+                            currentPortfolioId == kAllPortfoliosId || currentPortfolioId == null
+                                ? 'All Portfolios'
+                                : (currentPortfolioName ?? 'No Portfolio'),
                             style: TextStyle(
                               color: isDark ? Colors.white : Colors.black87,
                               fontWeight: FontWeight.bold,
@@ -190,26 +208,40 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                             fontSize: 12,
                           ),
                         ),
-                        items: portfolios
-                            .map(
-                              (portfolio) => DropdownMenuItem<String>(
-                                value: idExtractor(portfolio),
-                                child: Text(
-                                  nameExtractor(portfolio),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                        items: [
+                          DropdownMenuItem<String>(
+                            value: kAllPortfoliosId,
+                            child: Row(
+                              children: [
+                                Icon(Icons.pie_chart_outline, size: 14, color: color),
+                                const SizedBox(width: 6),
+                                const Text('All Portfolios', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                          ...portfolios.map(
+                            (portfolio) => DropdownMenuItem<String>(
+                              value: idExtractor(portfolio),
+                              child: Text(
+                                nameExtractor(portfolio),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            )
-                            .toList(),
+                            ),
+                          ),
+                        ],
                         onChanged: (portfolioId) {
                           if (portfolioId != null) {
-                            final portfolio = portfolios.firstWhere(
-                              (p) => idExtractor(p) == portfolioId,
-                            );
-                            onPortfolioSelected(
-                              portfolioId,
-                              nameExtractor(portfolio),
-                            );
+                            if (portfolioId == kAllPortfoliosId) {
+                              onPortfolioSelected(kAllPortfoliosId, 'All Portfolios');
+                            } else {
+                              final portfolio = portfolios.firstWhere(
+                                (p) => idExtractor(p) == portfolioId,
+                              );
+                              onPortfolioSelected(
+                                portfolioId,
+                                nameExtractor(portfolio),
+                              );
+                            }
                           }
                         },
                       ),

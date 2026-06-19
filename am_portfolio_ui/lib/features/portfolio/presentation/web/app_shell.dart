@@ -67,9 +67,11 @@ class AppShell extends StatelessWidget {
                   currentPortfolioName: context.selectedPortfolioName,
                   portfolios: portfolios,
                   onPortfolioSelected: (id, name) {
-                    context.selectPortfolio(id, name);
-                    // Refresh current route? Usually needed if the route depends on ID.
-                    // Ideally, we force a refresh or the pages listen to the ID change via provider.
+                    if (id == '__ALL__') {
+                      context.read<PortfolioCubit>().clearSelectedPortfolio();
+                    } else {
+                      context.selectPortfolio(id, name);
+                    }
                   },
                   idExtractor: (p) => p.portfolioId,
                   nameExtractor: (p) => p.portfolioName,

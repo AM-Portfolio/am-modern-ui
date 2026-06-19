@@ -875,4 +875,11 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       );
     }
   }
+
+  void clearSelectedPortfolio() {
+    CommonLogger.info('Clearing selected portfolio (All Portfolios mode)', tag: 'PortfolioCubit');
+    _subPortfolioId = null;
+    unsubscribeFromPortfolioUpdates();
+    loadPortfolio();
+  }
 }
