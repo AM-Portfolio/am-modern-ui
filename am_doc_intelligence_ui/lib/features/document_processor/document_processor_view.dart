@@ -68,7 +68,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       case 'TRADE_FNO':
         return 'F&O Tradebook';
       case 'TRADE_EQ':
-        return 'Stock Trading History';
+        return _selectedBrokerType == 'ANGEL_ONE' ? 'Trading History' : 'Stock Trading History';
       case 'TRADE_MF':
         return 'Mutual Fund Transaction History';
       case 'NSE_INDICES':
@@ -503,25 +503,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               ),
               if ((_selectedBrokerType == 'ZERODHA' && (_selectedDocType == 'STOCK_PORTFOLIO' || _selectedDocType == 'TRADE_FNO' || _selectedDocType == 'TRADE_EQ')) ||
                   (_selectedBrokerType == 'GROWW' && _selectedDocType != null) ||
-                  (_selectedBrokerType == 'ANGEL_ONE' && _selectedDocType == 'COMBINE_PORTFOLIO'))
+                  (_selectedBrokerType == 'ANGEL_ONE' && (_selectedDocType == 'COMBINE_PORTFOLIO' || _selectedDocType == 'STOCK_PORTFOLIO' || _selectedDocType == 'TRADE_EQ')))
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: TextButton.icon(
-                    onPressed: () async {
-                      String url = '';
-                      if (_selectedBrokerType == 'ZERODHA') {
-                        url = _selectedDocType == 'STOCK_PORTFOLIO' 
-                            ? 'https://console.zerodha.com/portfolio/holdings' 
-                            : 'https://console.zerodha.com/reports/tradebook';
-                      } else if (_selectedBrokerType == 'GROWW') {
-                        url = 'https://groww.in/user/profile/report';
-                      } else if (_selectedBrokerType == 'ANGEL_ONE') {
-                        url = 'https://www.angelone.in/trade/reports/download-reports';
-                      }
-                      final uri = Uri.parse(url);
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(uri);
-                      }
+                    onPressed: () {
+                      _showDownloadStepsDialog(context, _selectedBrokerType!, _selectedDocType!);
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
@@ -884,6 +871,182 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             ],
           ),
         ),
+      ),
+    );
+  }
+  void _showDownloadStepsDialog(BuildContext context, String broker, String docType) {
+    String title = 'How to Download Document';
+    String url = '';
+    List<Widget> steps = [];
+
+    if (broker == 'ZERODHA') {
+      if (docType == 'STOCK_PORTFOLIO') {
+        url = 'https://console.zerodha.com/portfolio/holdings';
+        title = 'Download Zerodha Portfolio';
+        steps = [
+          _buildStep(1, 'Log in to Zerodha Console and go to Portfolio > Holdings', imagePath: 'assets/images/holdings_step1.png'),
+          _buildStep(2, 'Scroll down to the bottom of the page and click "Download: XLSX"', imagePath: 'assets/images/holdings_step2.png'),
+          _buildStep(3, 'Upload the downloaded file here'),
+        ];
+      } else if (docType == 'TRADE_FNO' || docType == 'TRADE_EQ') {
+        url = 'https://console.zerodha.com/reports/tradebook';
+        title = 'Download Zerodha Tradebook';
+        String segment = docType == 'TRADE_FNO' ? 'Futures & Options' : 'Equity';
+        steps = [
+          _buildStep(1, 'Go to Zerodha Console > Reports > Tradebook', imagePath: 'assets/images/step1.png'),
+          _buildStep(2, 'Under the Segment dropdown, select "$segment"', imagePath: 'assets/images/step2.png'),
+          _buildStep(3, 'Select your desired Date Range (e.g. current FY) and click the blue arrow (→) button', imagePath: 'assets/images/step3.png'),
+          _buildStep(4, 'Scroll down to the results and click "Download: XLSX"', imagePath: 'assets/images/step4.png'),
+          _buildStep(5, 'Upload the downloaded file here'),
+        ];
+      }
+    } else if (broker == 'GROWW') {
+      url = 'https://groww.in/user/profile/report';
+      title = 'Download Groww Report';
+      steps = [
+        _buildStep(1, 'Go to Groww > Profile > Reports'),
+        _buildStep(2, 'Download your Tax Report or P&L Report'),
+        _buildStep(3, 'Upload the downloaded file here'),
+      ];
+    } else if (broker == 'ANGEL_ONE') {
+      if (docType == 'COMBINE_PORTFOLIO') {
+        url = 'https://www.angelone.in/trade/reports/download-reports';
+        title = 'Download Angel One Portfolio';
+        steps = [
+          _buildStep(1, 'Log in to Angel One and go to your Profile section', imagePath: 'assets/images/angel_step1.png'),
+          _buildStep(2, 'Under Reports, select Statements (or any option) to open the reports page', imagePath: 'assets/images/angel_step2.png'),
+          _buildStep(3, 'Navigate to the "Download Reports" tab', imagePath: 'assets/images/angel_step3.png'),
+          _buildStep(4, 'In the Others section, click "DOWNLOAD REPORT" for "Combined Holding Statement"', imagePath: 'assets/images/angel_step4.png'),
+          _buildStep(5, 'Upload the downloaded file here'),
+        ];
+      } else if (docType == 'STOCK_PORTFOLIO') {
+        url = 'https://www.angelone.in/trade/reports/download-reports';
+        title = 'Download Angel One Portfolio';
+        steps = [
+          _buildStep(1, 'Log in to Angel One and go to your Profile section', imagePath: 'assets/images/angel_step1.png'),
+          _buildStep(2, 'Under Reports, select Statements (or any option) to open the reports page', imagePath: 'assets/images/angel_step2.png'),
+          _buildStep(3, 'Navigate to the "Download Reports" tab', imagePath: 'assets/images/angel_step3.png'),
+          _buildStep(4, 'In the Stocks, SGBs, Bonds and FnO section, click "DOWNLOAD REPORT" for "DP Transaction and Holding Statement"', imagePath: 'assets/images/angel_stock_step4.png'),
+          _buildStep(5, 'Upload the downloaded file here'),
+        ];
+      } else if (docType == 'TRADE_EQ') {
+        url = 'https://www.angelone.in/trade/reports/download-reports';
+        title = 'Download Angel One Trading History';
+        steps = [
+          _buildStep(1, 'Log in to Angel One and go to your Profile section', imagePath: 'assets/images/angel_step1.png'),
+          _buildStep(2, 'Under Reports, select Statements (or any option) to open the reports page', imagePath: 'assets/images/angel_step2.png'),
+          _buildStep(3, 'Navigate to the "Download Reports" tab', imagePath: 'assets/images/angel_step3.png'),
+          _buildStep(4, 'In the Stocks, SGBs, Bonds and FnO section, click "DOWNLOAD REPORT" for "DP Transaction and Holding Statement"', imagePath: 'assets/images/angel_trade_step4.png'),
+          _buildStep(5, 'Upload the downloaded file here'),
+        ];
+      } else {
+        url = 'https://www.angelone.in/trade/reports/download-reports';
+        title = 'Download Angel One Report';
+        steps = [
+          _buildStep(1, 'Go to Angel One > Reports > Download Reports'),
+          _buildStep(2, 'Download your Portfolio or Trade History'),
+          _buildStep(3, 'Upload the downloaded file here'),
+        ];
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        content: SizedBox(
+          width: 700,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...steps,
+                const SizedBox(height: 24),
+                Center(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final uri = Uri.parse(url);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri);
+                      }
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: Text('Open ${broker == 'ZERODHA' ? 'Zerodha Console' : broker == 'ANGEL_ONE' ? 'Angel One' : 'Groww'}'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep(int stepNumber, String text, {String? imagePath}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              stepNumber.toString(),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    text,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  if (imagePath != null) ...[
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        constraints: const BoxConstraints(maxHeight: 280),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Image.asset(
+                          imagePath,
+                          package: 'am_doc_intelligence_ui',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
