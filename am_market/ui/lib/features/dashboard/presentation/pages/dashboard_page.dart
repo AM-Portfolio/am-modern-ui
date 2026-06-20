@@ -79,6 +79,18 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   void initState() {
     super.initState();
     _initializeSwipeController();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bindPriceService());
+  }
+
+  Future<void> _bindPriceService() async {
+    if (!mounted) return;
+    try {
+      final service = await ref.read(priceServiceProvider.future);
+      if (!mounted) return;
+      context.read<MarketProvider>().setPriceService(service);
+    } catch (e) {
+      AppLogger.warning('MarketPage: Failed to bind PriceService', error: e);
+    }
   }
 
   void _initializeSwipeController() {

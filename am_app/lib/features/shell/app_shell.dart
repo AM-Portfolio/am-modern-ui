@@ -53,6 +53,10 @@ class _AppShellState extends State<AppShell> {
 
   void _onGlobalNavigate(String title, String userId) {
     if (!_navMap.containsKey(title)) return;
+    if (GetIt.instance.isRegistered<common.AmStompClient>()) {
+      common.StreamingTabCoordinator(GetIt.instance<common.AmStompClient>())
+          .onTabSelected(title);
+    }
     setState(() => _selectedIndex = _navMap[title]!);
     common.SessionPersistenceService.instance.patch(
       userId,

@@ -39,15 +39,16 @@ class MarketProvider with ChangeNotifier {
   StreamSubscription<MarketDataUpdate>? _priceUpdateSub;
 
   void setPriceService(PriceService service) {
-    if (_priceService == service) return;
+    if (_priceService == service) {
+      unawaited(_resubscribeActiveSymbols());
+      return;
+    }
     _priceUpdateSub?.cancel();
     _priceService = service;
     CommonLogger.info("PriceService delegated to MarketProvider", tag: "MarketProvider");
     
-    // Sync initial cache if available
     _syncWithPriceService();
     
-    // Subscribe to price stream to sync internal state (allIndicesData)
     _priceUpdateSub = _priceService!.updateStream.listen((update) {
        if (update.quotes != null) {
           update.quotes!.forEach((symbol, quote) {
@@ -57,6 +58,48 @@ class MarketProvider with ChangeNotifier {
           });
        }
     });
+
+    unawaited(_resubscribeActiveSymbols());
+  }
+
+  Future<void> _resubscribeActiveSymbols() async {
+    if (_priceService == null) return;
+
+    final symbols = <String>{..._subscribedSymbols};
+    if (symbols.isEmpty) {
+      symbols.addAll(_priceService!.subscribedSymbols);
+    }
+    if (_selectedIndex != null &&
+        _selectedIndex != 'All Indices' &&
+        _selectedIndex != 'Dashboard' &&
+        ![
+          'Streamer',
+          'Instrument Explorer',
+          'Security Explorer',
+          'Price Test',
+          'ETF Explorer',
+          'Admin Dashboard',
+          'Analysis Dashboard',
+          'Developer Dashboard',
+          'Market Analysis',
+          'Heatmap',
+          'Heatmap Explorer',
+        ].contains(_selectedIndex)) {
+      symbols.add(_selectedIndex!);
+    }
+    if (_allIndicesData.isNotEmpty) {
+      symbols.addAll(_allIndicesData.map((e) => e.indexSymbol));
+    }
+    if (symbols.isEmpty) return;
+
+    await _priceService!.subscribe(
+      symbols.toList(),
+      isIndexSymbol: _indexSymbol,
+      forceResubscribe: true,
+    );
+    _subscribedSymbols
+      ..clear()
+      ..addAll(symbols.take(_maxLiveStreamSymbols));
   }
 
   Future<void> _ensurePriceSubscription(List<String> symbols) async {
@@ -286,7 +329,6 @@ class MarketProvider with ChangeNotifier {
   @override
   void dispose() {
     _priceUpdateSub?.cancel();
-    unawaited(_releasePriceSubscription());
     _livePriceController.close();
     super.dispose();
   }

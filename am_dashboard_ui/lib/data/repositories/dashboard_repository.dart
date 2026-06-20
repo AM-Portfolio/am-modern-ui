@@ -28,6 +28,7 @@ class DashboardRepository {
   bool _dashboardSubscribed = false;
   bool _wantsDashboardStream = false;
   StreamSubscription<StompStatus>? _statusSubscription;
+  StreamingHeartbeatService? _heartbeat;
 
   DashboardRepository(this._apiClient, this._stompClient);
 
@@ -45,6 +46,7 @@ class DashboardRepository {
   }
 
   void dispose() {
+    _heartbeat?.dispose();
     _statusSubscription?.cancel();
     _statusSubscription = null;
   }
@@ -77,6 +79,8 @@ class DashboardRepository {
       body: '{}',
     );
     _dashboardSubscribed = true;
+    _heartbeat ??= StreamingHeartbeatService(_stompClient);
+    _heartbeat!.start();
     AppLogger.info('Dashboard STOMP subscribe sent; queues: ${DashboardQueueDestinations.all}');
   }
 
@@ -103,6 +107,7 @@ class DashboardRepository {
   void unsubscribeFromDashboard() {
     if (!_dashboardSubscribed && !_wantsDashboardStream) return;
     _wantsDashboardStream = false;
+    _heartbeat?.stop();
     for (final destination in DashboardQueueDestinations.all) {
       _stompClient.unsubscribe(destination);
     }

@@ -42,6 +42,13 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   void initState() {
     super.initState();
     _logInitialization();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final id = selectedPortfolioId ?? context.selectedPortfolioId;
+      if (id != null && mounted) {
+        _streamActivatedForId = null;
+        _ensureStreamActive(id);
+      }
+    });
   }
 
   /// Logs the initialization of the wrapper

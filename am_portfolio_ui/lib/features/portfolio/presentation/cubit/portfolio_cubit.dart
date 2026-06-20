@@ -24,7 +24,9 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       super(PortfolioInitial());
 
   final PortfolioService _portfolioService;
-  final AmStompClient _stompClient; // Use local instance
+  final AmStompClient _stompClient;
+
+  StreamingHeartbeatService? _heartbeat;
 
   // Subscription management
   bool _isSubscribed = false;
@@ -119,7 +121,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       tag: 'PortfolioCubit',
     );
 
-    // Trigger the backend to start calculating using the /app/portfolio/subscribe endpoint
+    // Trigger backend portfolio watch + stream
     if (_subPortfolioId != null &&
         (forceResubscribe || _lastSentPortfolioId != _subPortfolioId)) {
       final traceId = Uuid().v4();
@@ -141,6 +143,9 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       );
       _lastSentPortfolioId = _subPortfolioId;
     }
+
+    _heartbeat ??= StreamingHeartbeatService(_stompClient);
+    _heartbeat!.start();
 
     if (!_isSubscribed) {
       CommonLogger.info(
@@ -218,6 +223,16 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
   /// Unsubscribe from portfolio updates
   void unsubscribeFromPortfolioUpdates() {
+    _heartbeat?.stop();
+
+    if (_stompClient.isConnected) {
+      _stompClient.send(
+        destination: '/app/portfolio/unsubscribe',
+        headers: {'content-type': 'application/json'},
+        body: '{}',
+      );
+    }
+
     if (_isSubscribed) {
       CommonLogger.info(
         '[$_debugId] PortfolioCubit: Unsubscribing from updates',
@@ -236,6 +251,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   @override
   Future<void> close() {
     _statusSubscription?.cancel();
+    _heartbeat?.dispose();
     unsubscribeFromPortfolioUpdates();
     return super.close();
   }

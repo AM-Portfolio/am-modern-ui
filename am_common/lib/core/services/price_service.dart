@@ -86,21 +86,38 @@ class PriceService {
   }
 
   /// Register upstream + STOMP topics for [symbols]. Batches gateway connect calls.
-  /// Never removes existing subscriptions — use [unsubscribe] explicitly.
+  /// When [forceResubscribe] is true, re-binds STOMP topics and re-sends gateway connect.
   Future<void> subscribe(
     List<String> symbols, {
     String provider = 'UPSTOX',
     bool isIndexSymbol = false,
     bool mockMode = false,
+    bool forceResubscribe = false,
   }) async {
     if (symbols.isEmpty) return;
 
     final newSymbols = <String>[];
     for (final symbol in symbols) {
-      if (_subscribedSymbols.add(symbol)) {
+      if (forceResubscribe || _subscribedSymbols.add(symbol)) {
         newSymbols.add(symbol);
       }
     }
+
+    if (forceResubscribe) {
+      for (final symbol in symbols) {
+        _subscribedSymbols.add(symbol);
+      }
+      _stompSubscribe(symbols, forceResubscribe: true);
+      _queueGatewayConnect(
+        symbols,
+        provider: provider,
+        isIndexSymbol: isIndexSymbol,
+        mockMode: mockMode,
+        force: true,
+      );
+      return;
+    }
+
     if (newSymbols.isEmpty) return;
 
     _queueGatewayConnect(
@@ -110,6 +127,20 @@ class PriceService {
       mockMode: mockMode,
     );
     _stompSubscribe(newSymbols);
+  }
+
+  /// Re-bind all active symbol topics and re-send gateway connect (e.g. after tab return).
+  Future<void> resubscribeAll({
+    bool isIndexSymbol = false,
+    bool mockMode = false,
+  }) async {
+    if (_subscribedSymbols.isEmpty) return;
+    await subscribe(
+      _subscribedSymbols.toList(),
+      isIndexSymbol: isIndexSymbol,
+      mockMode: mockMode,
+      forceResubscribe: true,
+    );
   }
 
   Future<void> unsubscribe(List<String> symbols) async {
@@ -128,9 +159,10 @@ class PriceService {
     required String provider,
     required bool isIndexSymbol,
     required bool mockMode,
+    bool force = false,
   }) {
     for (final symbol in symbols) {
-      if (!_upstreamSymbols.contains(symbol)) {
+      if (force || !_upstreamSymbols.contains(symbol)) {
         _pendingGatewaySymbols.add(symbol);
       }
     }
@@ -178,17 +210,19 @@ class PriceService {
 
     final body = jsonEncode({
       'instrumentKeys': symbols,
-      'provider': mockMode ? 'MOCK' : provider,
       'timeFrame': '1D',
       'stream': true,
       'expandIndices': false,
       'isIndexSymbol': isIndexSymbol,
-      if (mockMode) 'mockMode': true,
+      if (mockMode) ...{
+        'provider': 'MOCK',
+        'mockMode': true,
+      },
     });
 
     AppLogger.info(
       'PriceService: STOMP /app/market/subscribe batch=${symbols.length} '
-      '(isIndexSymbol: $isIndexSymbol, provider: ${mockMode ? 'MOCK' : provider})',
+      '(isIndexSymbol: $isIndexSymbol, server-driven provider)',
     );
 
     client.send(
@@ -198,7 +232,7 @@ class PriceService {
     );
   }
 
-  void _stompSubscribe(List<String> symbols) {
+  void _stompSubscribe(List<String> symbols, {bool forceResubscribe = false}) {
     final client = _stompClient;
     if (client == null) {
       AppLogger.warning('PriceService: Cannot STOMP subscribe — no AmStompClient.');
@@ -206,7 +240,7 @@ class PriceService {
     }
 
     for (final symbol in symbols) {
-      client.subscribe(stockTopicDestination(symbol));
+      client.subscribe(stockTopicDestination(symbol), forceResubscribe: forceResubscribe);
     }
   }
 
@@ -226,7 +260,17 @@ class PriceService {
     );
 
     for (final symbol in _subscribedSymbols) {
-      client.subscribe(stockTopicDestination(symbol));
+      client.subscribe(stockTopicDestination(symbol), forceResubscribe: true);
+    }
+
+    if (_upstreamSymbols.isNotEmpty) {
+      _queueGatewayConnect(
+        _upstreamSymbols.toList(),
+        provider: 'UPSTOX',
+        isIndexSymbol: false,
+        mockMode: false,
+        force: true,
+      );
     }
   }
 
