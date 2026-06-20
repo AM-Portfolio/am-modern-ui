@@ -94,7 +94,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         return ['PORTFOLIO_EQUITY', 'PORTFOLIO_ETF'];
 
       case 'ANGEL_ONE':
-        return _docTypes.where((t) => t == 'COMBINE_PORTFOLIO' || t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
+        return _docTypes.where((t) => t == 'COMBINE_PORTFOLIO' || t == 'TRADE_EQ').toList();
       case 'MSTOCK':
         return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
       case 'OTHER':
@@ -503,7 +503,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               ),
               if ((_selectedBrokerType == 'ZERODHA' && (_selectedDocType == 'STOCK_PORTFOLIO' || _selectedDocType == 'TRADE_FNO' || _selectedDocType == 'TRADE_EQ')) ||
                   (_selectedBrokerType == 'GROWW' && _selectedDocType != null) ||
-                  (_selectedBrokerType == 'ANGEL_ONE' && (_selectedDocType == 'COMBINE_PORTFOLIO' || _selectedDocType == 'STOCK_PORTFOLIO' || _selectedDocType == 'TRADE_EQ')))
+                  (_selectedBrokerType == 'ANGEL_ONE' && (_selectedDocType == 'COMBINE_PORTFOLIO' || _selectedDocType == 'TRADE_EQ')))
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: TextButton.icon(
@@ -901,13 +901,24 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         ];
       }
     } else if (broker == 'GROWW') {
-      url = 'https://groww.in/user/profile/report';
-      title = 'Download Groww Report';
-      steps = [
-        _buildStep(1, 'Go to Groww > Profile > Reports'),
-        _buildStep(2, 'Download your Tax Report or P&L Report'),
-        _buildStep(3, 'Upload the downloaded file here'),
-      ];
+      if (docType == 'STOCK_PORTFOLIO') {
+        url = 'https://groww.in/user/profile/report';
+        title = 'Download Groww Stock Holdings';
+        steps = [
+          _buildStep(1, 'Log in to Groww and click on your Profile picture at the top right', imagePath: 'assets/images/groww_step1.png'),
+          _buildStep(2, 'Navigate to the "Holdings" section and select "Stocks - Holdings statement"'),
+          _buildStep(3, 'Select the current date and click the "Download" button', imagePath: 'assets/images/groww_step2.png'),
+          _buildStep(4, 'Upload the downloaded file here'),
+        ];
+      } else {
+        url = 'https://groww.in/user/profile/report';
+        title = 'Download Groww Report';
+        steps = [
+          _buildStep(1, 'Go to Groww > Profile > Reports'),
+          _buildStep(2, 'Download your Tax Report or P&L Report'),
+          _buildStep(3, 'Upload the downloaded file here'),
+        ];
+      }
     } else if (broker == 'ANGEL_ONE') {
       if (docType == 'COMBINE_PORTFOLIO') {
         url = 'https://www.angelone.in/trade/reports/download-reports';
@@ -917,16 +928,6 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           _buildStep(2, 'Under Reports, select Statements (or any option) to open the reports page', imagePath: 'assets/images/angel_step2.png'),
           _buildStep(3, 'Navigate to the "Download Reports" tab', imagePath: 'assets/images/angel_step3.png'),
           _buildStep(4, 'In the Others section, click "DOWNLOAD REPORT" for "Combined Holding Statement"', imagePath: 'assets/images/angel_step4.png'),
-          _buildStep(5, 'Upload the downloaded file here'),
-        ];
-      } else if (docType == 'STOCK_PORTFOLIO') {
-        url = 'https://www.angelone.in/trade/reports/download-reports';
-        title = 'Download Angel One Portfolio';
-        steps = [
-          _buildStep(1, 'Log in to Angel One and go to your Profile section', imagePath: 'assets/images/angel_step1.png'),
-          _buildStep(2, 'Under Reports, select Statements (or any option) to open the reports page', imagePath: 'assets/images/angel_step2.png'),
-          _buildStep(3, 'Navigate to the "Download Reports" tab', imagePath: 'assets/images/angel_step3.png'),
-          _buildStep(4, 'In the Stocks, SGBs, Bonds and FnO section, click "DOWNLOAD REPORT" for "DP Transaction and Holding Statement"', imagePath: 'assets/images/angel_stock_step4.png'),
           _buildStep(5, 'Upload the downloaded file here'),
         ];
       } else if (docType == 'TRADE_EQ') {
