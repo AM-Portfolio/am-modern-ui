@@ -24,6 +24,13 @@ class PriceService {
   StreamSubscription<StompStatus>? _statusSub;
 
   final Set<String> _subscribedSymbols = {};
+  final Set<String> _upstreamSymbols = {};
+  final Set<String> _pendingGatewaySymbols = {};
+  Timer? _gatewayConnectDebounce;
+  DateTime? _lastTopicResubscribe;
+
+  static const Duration _gatewayConnectDebounceDelay = Duration(milliseconds: 500);
+  static const Duration _topicResubscribeCooldown = Duration(seconds: 3);
 
   final Map<String, QuoteChange> _priceCache = {};
 
@@ -68,15 +75,18 @@ class PriceService {
       return;
     }
 
-    _messageSub ??= client.messages.listen(_onStompFrame);
-    _statusSub ??= client.status.listen((status) {
+    if (_messageSub != null) return;
+
+    _messageSub = client.messages.listen(_onStompFrame);
+    _statusSub = client.status.listen((status) {
       if (status == StompStatus.connected) {
         _resubscribeStompTopics();
       }
     });
   }
 
-  /// Gateway upstream connect + STOMP topic subscriptions.
+  /// Register upstream + STOMP topics for [symbols]. Batches gateway connect calls.
+  /// Never removes existing subscriptions — use [unsubscribe] explicitly.
   Future<void> subscribe(
     List<String> symbols, {
     String provider = 'UPSTOX',
@@ -85,13 +95,21 @@ class PriceService {
   }) async {
     if (symbols.isEmpty) return;
 
-    _gatewayConnect(
-      symbols,
+    final newSymbols = <String>[];
+    for (final symbol in symbols) {
+      if (_subscribedSymbols.add(symbol)) {
+        newSymbols.add(symbol);
+      }
+    }
+    if (newSymbols.isEmpty) return;
+
+    _queueGatewayConnect(
+      newSymbols,
       provider: provider,
       isIndexSymbol: isIndexSymbol,
       mockMode: mockMode,
     );
-    _stompSubscribe(symbols);
+    _stompSubscribe(newSymbols);
   }
 
   Future<void> unsubscribe(List<String> symbols) async {
@@ -100,7 +118,50 @@ class PriceService {
       if (_subscribedSymbols.remove(symbol)) {
         client?.unsubscribe(stockTopicDestination(symbol));
       }
+      _upstreamSymbols.remove(symbol);
+      _pendingGatewaySymbols.remove(symbol);
     }
+  }
+
+  void _queueGatewayConnect(
+    List<String> symbols, {
+    required String provider,
+    required bool isIndexSymbol,
+    required bool mockMode,
+  }) {
+    for (final symbol in symbols) {
+      if (!_upstreamSymbols.contains(symbol)) {
+        _pendingGatewaySymbols.add(symbol);
+      }
+    }
+    if (_pendingGatewaySymbols.isEmpty) return;
+
+    _gatewayConnectDebounce?.cancel();
+    _gatewayConnectDebounce = Timer(_gatewayConnectDebounceDelay, () {
+      _flushGatewayConnect(
+        provider: provider,
+        isIndexSymbol: isIndexSymbol,
+        mockMode: mockMode,
+      );
+    });
+  }
+
+  void _flushGatewayConnect({
+    required String provider,
+    required bool isIndexSymbol,
+    required bool mockMode,
+  }) {
+    final batch = _pendingGatewaySymbols.toList();
+    _pendingGatewaySymbols.clear();
+    if (batch.isEmpty) return;
+
+    _gatewayConnect(
+      batch,
+      provider: provider,
+      isIndexSymbol: isIndexSymbol,
+      mockMode: mockMode,
+    );
+    _upstreamSymbols.addAll(batch);
   }
 
   void _gatewayConnect(
@@ -126,7 +187,7 @@ class PriceService {
     });
 
     AppLogger.info(
-      'PriceService: STOMP /app/market/subscribe for $symbols '
+      'PriceService: STOMP /app/market/subscribe batch=${symbols.length} '
       '(isIndexSymbol: $isIndexSymbol, provider: ${mockMode ? 'MOCK' : provider})',
     );
 
@@ -145,9 +206,7 @@ class PriceService {
     }
 
     for (final symbol in symbols) {
-      if (_subscribedSymbols.add(symbol)) {
-        client.subscribe(stockTopicDestination(symbol));
-      }
+      client.subscribe(stockTopicDestination(symbol));
     }
   }
 
@@ -155,8 +214,19 @@ class PriceService {
     final client = _stompClient;
     if (client == null || _subscribedSymbols.isEmpty) return;
 
+    final now = DateTime.now();
+    if (_lastTopicResubscribe != null &&
+        now.difference(_lastTopicResubscribe!) < _topicResubscribeCooldown) {
+      return;
+    }
+    _lastTopicResubscribe = now;
+
+    AppLogger.info(
+      'PriceService: Resubscribing ${_subscribedSymbols.length} stock topics after STOMP reconnect',
+    );
+
     for (final symbol in _subscribedSymbols) {
-      client.subscribe(stockTopicDestination(symbol), forceResubscribe: true);
+      client.subscribe(stockTopicDestination(symbol));
     }
   }
 
@@ -181,14 +251,25 @@ class PriceService {
     _pricesSubject.add(Map.from(_priceCache));
   }
 
-  void disconnect() {
+  /// Stop listening; keeps STOMP topic subscriptions on the shared client.
+  void detach() {
+    _gatewayConnectDebounce?.cancel();
+    _gatewayConnectDebounce = null;
+
     _messageSub?.cancel();
     _messageSub = null;
     _statusSub?.cancel();
     _statusSub = null;
+  }
+
+  /// Full teardown (logout / app shutdown): detach + unsubscribe all topics.
+  void disconnect() {
+    detach();
+    _pendingGatewaySymbols.clear();
+    _upstreamSymbols.clear();
 
     final client = _stompClient;
-    for (final symbol in _subscribedSymbols) {
+    for (final symbol in _subscribedSymbols.toList()) {
       client?.unsubscribe(stockTopicDestination(symbol));
     }
     _subscribedSymbols.clear();

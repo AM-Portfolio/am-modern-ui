@@ -33,6 +33,9 @@ class MarketProvider with ChangeNotifier {
   // PriceService Integration
   PriceService? _priceService;
   final Set<String> _subscribedSymbols = {};
+  static const int _maxLiveStreamSymbols = 20;
+  DateTime? _lastNotify;
+  static const Duration _notifyThrottle = Duration(milliseconds: 300);
   StreamSubscription<MarketDataUpdate>? _priceUpdateSub;
 
   void setPriceService(PriceService service) {
@@ -58,12 +61,26 @@ class MarketProvider with ChangeNotifier {
 
   Future<void> _ensurePriceSubscription(List<String> symbols) async {
     if (_priceService == null || symbols.isEmpty) return;
-    final pending = symbols.where((s) => !_subscribedSymbols.contains(s)).toList();
+
+    final room = _maxLiveStreamSymbols - _subscribedSymbols.length;
+    if (room <= 0) {
+      CommonLogger.info(
+        'Live stream cap reached ($_maxLiveStreamSymbols symbols) — not adding more',
+        tag: 'MarketProvider._ensurePriceSubscription',
+      );
+      return;
+    }
+
+    final pending = symbols
+        .where((s) => !_subscribedSymbols.contains(s))
+        .take(room)
+        .toList();
     if (pending.isEmpty) return;
+
     await _priceService!.subscribe(pending, isIndexSymbol: _indexSymbol);
     _subscribedSymbols.addAll(pending);
     CommonLogger.info(
-      'Subscribed to ${pending.length} symbols via gateway STOMP',
+      'Subscribed to ${pending.length} symbols (${_subscribedSymbols.length}/$_maxLiveStreamSymbols active)',
       tag: 'MarketProvider._ensurePriceSubscription',
     );
   }
@@ -150,9 +167,10 @@ class MarketProvider with ChangeNotifier {
   }
 
   void toggleIndexSymbol(bool value) {
+    if (_indexSymbol == value) return;
     _indexSymbol = value;
     notifyListeners();
-    // Auto-reload data when toggle changes
+    // Auto-reload data when toggle changes (subscriptions stay — add-only)
     if (_selectedIndex == "All Indices") {
       loadAllIndicesData();
     }
@@ -220,7 +238,7 @@ class MarketProvider with ChangeNotifier {
                      lastPrice: newLtp,
                      pChange: newPChange ?? current.pChange 
                  );
-                 notifyListeners();
+                 _notifyThrottled();
              }
              break; 
         }
@@ -228,6 +246,16 @@ class MarketProvider with ChangeNotifier {
 
       // Emit event
       _livePriceController.add(data);
+  }
+
+  void _notifyThrottled() {
+    final now = DateTime.now();
+    if (_lastNotify != null &&
+        now.difference(_lastNotify!) < _notifyThrottle) {
+      return;
+    }
+    _lastNotify = now;
+    notifyListeners();
   }
 
   void _syncWithPriceService() {
@@ -284,6 +312,22 @@ class MarketProvider with ChangeNotifier {
   }
 
   Future<void> selectIndex(String indexSymbol) async {
+    final previous = _selectedIndex;
+    if (previous == indexSymbol) {
+      if (indexSymbol == "All Indices" && _allIndicesData.isNotEmpty && !_forceRefresh) {
+        return;
+      }
+      if (indexSymbol == "Dashboard" && _allIndicesData.isNotEmpty && !_forceRefresh) {
+        return;
+      }
+      if (!["All Indices", "Dashboard", "Streamer"].contains(indexSymbol) &&
+          _currentIndexData != null &&
+          previous == indexSymbol &&
+          !_forceRefresh) {
+        return;
+      }
+    }
+
     CommonLogger.info("Selecting: $indexSymbol", tag: "MarketProvider.selectIndex");
 
     _selectedIndex = indexSymbol;

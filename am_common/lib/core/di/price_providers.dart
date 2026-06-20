@@ -6,21 +6,20 @@ import 'package:am_common/core/di/network_providers.dart';
 import 'package:am_common/core/models/price_update_model.dart';
 
 final priceServiceProvider = FutureProvider<PriceService>((ref) async {
-  // Ensure app config is loaded before STOMP-backed price service starts.
   await ref.watch(appConfigProvider.future);
   final stompClient = GetIt.instance.isRegistered<AmStompClient>()
       ? GetIt.instance<AmStompClient>()
       : null;
   final service = PriceService(stompClient: stompClient);
-  
-  // Start connection immediately upon creation
+
+  // Keep one PriceService for the app session — avoids mass UNSUBSCRIBE on tab changes.
+  ref.keepAlive();
   service.connect();
-  
-  // Ensure we clean up when the provider is disposed (if ever)
+
   ref.onDispose(() {
-    service.disconnect();
+    service.detach();
   });
-  
+
   return service;
 });
 

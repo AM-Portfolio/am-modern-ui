@@ -54,6 +54,7 @@ class _GlobalPortfolioWrapperState
                   // Trigger real-time subscription
                   context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
                     portfolioId: first.portfolioId,
+                    forceResubscribe: true,
                   );
 
                   // Trigger initial REST load for details
@@ -77,6 +78,7 @@ class _GlobalPortfolioWrapperState
                 // Trigger real-time subscription on manual selection
                 context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
                   portfolioId: id,
+                  forceResubscribe: true,
                 );
 
                 // Trigger REST load for details on manual selection

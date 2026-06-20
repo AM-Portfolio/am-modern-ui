@@ -26,8 +26,28 @@ class DashboardRepository {
   final AmStompClient _stompClient;
 
   bool _dashboardSubscribed = false;
+  bool _wantsDashboardStream = false;
+  StreamSubscription<StompStatus>? _statusSubscription;
 
   DashboardRepository(this._apiClient, this._stompClient);
+
+  void _ensureReconnectListener() {
+    _statusSubscription ??= _stompClient.status.listen((status) {
+      if (status == StompStatus.disconnected || status == StompStatus.error) {
+        _dashboardSubscribed = false;
+        AppLogger.info('Dashboard STOMP disconnected — will resubscribe on reconnect');
+      } else if (status == StompStatus.connected &&
+          _wantsDashboardStream &&
+          !_dashboardSubscribed) {
+        unawaited(subscribeToDashboard(forceResubscribe: true));
+      }
+    });
+  }
+
+  void dispose() {
+    _statusSubscription?.cancel();
+    _statusSubscription = null;
+  }
 
   Future<void> ensureStompConnected({int maxAttempts = 30}) async {
     for (var i = 0; i < maxAttempts; i++) {
@@ -38,7 +58,10 @@ class DashboardRepository {
   }
 
   /// Registers dashboard watch channel when STOMP is up; logs and continues if not.
-  Future<void> subscribeToDashboard() async {
+  Future<void> subscribeToDashboard({bool forceResubscribe = false}) async {
+    _ensureReconnectListener();
+    _wantsDashboardStream = true;
+
     if (!_stompClient.isConnected) {
       AppLogger.warning(
         'Dashboard STOMP subscribe skipped — broker not connected yet',
@@ -46,7 +69,7 @@ class DashboardRepository {
       return;
     }
     for (final destination in DashboardQueueDestinations.all) {
-      _stompClient.subscribe(destination);
+      _stompClient.subscribe(destination, forceResubscribe: forceResubscribe);
     }
     _stompClient.send(
       destination: '/app/dashboard/subscribe',
@@ -58,15 +81,18 @@ class DashboardRepository {
   }
 
   Future<void> trySubscribeToDashboard({Duration timeout = const Duration(seconds: 30)}) async {
+    _ensureReconnectListener();
+    _wantsDashboardStream = true;
+
     if (_stompClient.isConnected) {
-      await subscribeToDashboard();
+      await subscribeToDashboard(forceResubscribe: true);
       return;
     }
     try {
       await _stompClient.status
           .firstWhere((status) => status == StompStatus.connected)
           .timeout(timeout);
-      await subscribeToDashboard();
+      await subscribeToDashboard(forceResubscribe: true);
     } on TimeoutException {
       AppLogger.warning(
         'Dashboard STOMP subscribe timed out after ${timeout.inSeconds}s — REST widgets will still load',
@@ -75,7 +101,8 @@ class DashboardRepository {
   }
 
   void unsubscribeFromDashboard() {
-    if (!_dashboardSubscribed) return;
+    if (!_dashboardSubscribed && !_wantsDashboardStream) return;
+    _wantsDashboardStream = false;
     for (final destination in DashboardQueueDestinations.all) {
       _stompClient.unsubscribe(destination);
     }
@@ -214,7 +241,9 @@ class DashboardRepository {
             if (decoded is! Map<String, dynamic>) {
               throw FormatException('Expected object on $destination');
             }
-            return parser(decoded);
+            final parsed = parser(decoded);
+            AppLogger.info('Dashboard widget update received: ${_widgetLabel(destination)}');
+            return parsed;
           } catch (e) {
             AppLogger.error('Failed to parse dashboard frame on $destination', error: e);
             rethrow;
@@ -223,6 +252,15 @@ class DashboardRepository {
         .handleError((Object error, StackTrace stack) {
           AppLogger.error('Error in dashboard stream $destination', error: error);
         });
+  }
+
+  String _widgetLabel(String destination) {
+    if (destination.contains('/summary')) return 'summary';
+    if (destination.contains('/activity')) return 'activity';
+    if (destination.contains('/allocation')) return 'allocation';
+    if (destination.contains('/movers')) return 'movers';
+    if (destination.contains('/history')) return 'history';
+    return destination;
   }
 
   bool _matchesDestination(String? actual, String expected) {

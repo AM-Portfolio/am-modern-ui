@@ -14,6 +14,7 @@ import 'package:am_market_ui/features/market_analysis/presentation/widgets/indic
 import 'package:provider/provider.dart' hide Consumer;
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 import 'package:am_common/core/di/price_providers.dart';
+import 'package:am_common/core/services/price_service.dart';
 
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/market_index_detail_view.dart';
 
@@ -56,35 +57,22 @@ class MarketPage extends StatelessWidget {
           create: (_) => view_mode.ViewModeProvider(),
         ),
       ],
-      child: Consumer(
-        builder: (context, ref, child) {
-           final priceServiceAsync = ref.watch(priceServiceProvider);
-           
-           // Inject PriceService into MarketProvider when available
-           priceServiceAsync.whenData((service) {
-              CommonLogger.info("Injecting PriceService into MarketProvider", tag: "MarketPage");
-              final marketProvider = Provider.of<MarketProvider>(context, listen: false);
-              marketProvider.setPriceService(service);
-           });
-           
-           return MarketContent(userId: userId, onBack: onBack);
-        },
-      ),
+      child: MarketContent(userId: userId, onBack: onBack),
     );
   }
 }
 
-class MarketContent extends StatefulWidget {
+class MarketContent extends ConsumerStatefulWidget {
   const MarketContent({required this.userId, this.onBack, super.key});
 
   final String userId;
   final VoidCallback? onBack;
 
   @override
-  State<MarketContent> createState() => _MarketContentState();
+  ConsumerState<MarketContent> createState() => _MarketContentState();
 }
 
-class _MarketContentState extends State<MarketContent> {
+class _MarketContentState extends ConsumerState<MarketContent> {
   late SwipeNavigationController _swipeController;
 
   @override
@@ -137,7 +125,15 @@ class _MarketContentState extends State<MarketContent> {
   }
 
   @override
-  Widget build(BuildContext context) => Consumer2<MarketProvider, view_mode.ViewModeProvider>(
+  Widget build(BuildContext context) {
+    ref.listen<AsyncValue<PriceService>>(priceServiceProvider, (previous, next) {
+      next.whenData((service) {
+        if (!context.mounted) return;
+        context.read<MarketProvider>().setPriceService(service);
+      });
+    });
+
+    return Consumer2<MarketProvider, view_mode.ViewModeProvider>(
     builder: (context, provider, viewModeProvider, _) {
       // Update controller items when provider updates (e.g. indices loaded)
       final newItems = _buildNavigationItems(provider, viewModeProvider);
@@ -162,7 +158,8 @@ class _MarketContentState extends State<MarketContent> {
         sections: _buildSidebarSections(provider, viewModeProvider),
       );
     },
-  );
+    );
+  }
 
   bool _hasItemsChanged(List<NavigationItem> newItems) {
     if (_swipeController.items.length != newItems.length) return true;

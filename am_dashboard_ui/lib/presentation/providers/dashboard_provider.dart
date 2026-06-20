@@ -25,7 +25,10 @@ Future<void> dashboardStreamingSession(Ref ref, String userId) async {
   if (userId.isEmpty) return;
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   await repository.trySubscribeToDashboard();
-  ref.onDispose(repository.unsubscribeFromDashboard);
+  ref.onDispose(() {
+    repository.unsubscribeFromDashboard();
+    repository.dispose();
+  });
 }
 
 @riverpod

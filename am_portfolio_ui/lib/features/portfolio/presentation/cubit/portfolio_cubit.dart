@@ -38,7 +38,10 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   bool isLiveDataActive = false;
 
   /// Subscribe to portfolio updates via WebSocket
-  void subscribeToPortfolioUpdates({String? portfolioId}) {
+  void subscribeToPortfolioUpdates({
+    String? portfolioId,
+    bool forceResubscribe = false,
+  }) {
     if (portfolioId != null) {
       _subPortfolioId = portfolioId;
     }
@@ -48,8 +51,10 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     if (_stompClient.isConnected) {
       final portfolioChanged =
           portfolioId != null && portfolioId != _lastSentPortfolioId;
-      if (!_isSubscribed || portfolioChanged) {
-        _performSubscription(forceResubscribe: portfolioChanged);
+      if (!_isSubscribed || portfolioChanged || forceResubscribe) {
+        _performSubscription(
+          forceResubscribe: forceResubscribe || portfolioChanged,
+        );
       }
       return;
     }
@@ -109,6 +114,10 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
     const destination = '/user/queue/portfolio';
     _stompClient.subscribe(destination, forceResubscribe: forceResubscribe);
+    CommonLogger.info(
+      '[$_debugId] Subscribed to $destination (forceResubscribe=$forceResubscribe)',
+      tag: 'PortfolioCubit',
+    );
 
     // Trigger the backend to start calculating using the /app/portfolio/subscribe endpoint
     if (_subPortfolioId != null &&
