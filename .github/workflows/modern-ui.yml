@@ -23,7 +23,9 @@ jobs:
       working_directory: "am_app"
       build_context: ".."
       image_name: "am-modern-ui"
+      dev_namespace: "am-apps-dev"
       preprod_namespace: "am-apps-preprod"
       prod_namespace: "am-apps-prod"
-      deploy_prod: true
+      deploy_dev: true
+      deploy_prod: false # DECOUPLED: Prod deployment is moved to a manual promotion workflow
     secrets: inherit
