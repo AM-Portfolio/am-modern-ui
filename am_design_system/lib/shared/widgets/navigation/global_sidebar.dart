@@ -1,4 +1,3 @@
-
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
@@ -7,6 +6,7 @@ import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
 import 'package:am_design_system/core/module/module_config.dart';
+import 'package:am_design_system/shared/widgets/share/share_link_button.dart';
 
 /// Global Sidebar - Thin Glass Strip Version
 ///
@@ -20,11 +20,12 @@ class GlobalSidebar extends StatelessWidget {
     super.key,
     this.onLogout,
     this.onThemeToggle,
-    this.onProfileTap, // New action
+    this.onProfileTap,
     this.userName,
     this.userEmail,
     this.userAvatarUrl,
     this.isDarkMode = false,
+    this.moduleShareUrls,
   });
 
   final String activeNavItem;
@@ -37,6 +38,7 @@ class GlobalSidebar extends StatelessWidget {
   final String? userEmail;
   final String? userAvatarUrl;
   final bool isDarkMode;
+  final Map<String, String>? moduleShareUrls;
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +72,13 @@ class GlobalSidebar extends StatelessWidget {
                         isActive: activeNavItem == item.title,
                         accentColor: _getIconColor(item.title) ?? const Color(0xFF6C5DD3),
                         onTap: () => onNavigate(item.title),
+                        onLongPress: moduleShareUrls?[item.title] == null
+                            ? null
+                            : () => copyShareLink(
+                                  context,
+                                  _fullShareUrl(context, moduleShareUrls![item.title]!),
+                                ),
+                        longPressTooltip: 'Copy link to ${item.title}',
                       ),
                     );
                   }).toList(),
@@ -263,7 +272,6 @@ class GlobalSidebar extends StatelessWidget {
   }
 
   Color? _getIconColor(String title) {
-    // Specific colors for modules
     switch (title.toLowerCase()) {
       case 'dashboard': return AppColors.primary;
       case 'market': return AppColors.marketAccent;
@@ -273,6 +281,14 @@ class GlobalSidebar extends StatelessWidget {
       default: return null;
     }
   }
+
+  String _fullShareUrl(BuildContext context, String path) {
+    final base = Uri.base;
+    if (base.hasScheme && base.host.isNotEmpty) {
+      return base.replace(path: path, query: '', fragment: '').toString();
+    }
+    return path;
+  }
 }
 
 class _GlobalSidebarItem extends StatefulWidget {
@@ -281,6 +297,8 @@ class _GlobalSidebarItem extends StatefulWidget {
   final bool isActive;
   final Color accentColor;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final String? longPressTooltip;
 
   const _GlobalSidebarItem({
     required this.item,
@@ -288,6 +306,8 @@ class _GlobalSidebarItem extends StatefulWidget {
     required this.isActive,
     required this.accentColor,
     required this.onTap,
+    this.onLongPress,
+    this.longPressTooltip,
   });
 
   @override
@@ -302,10 +322,11 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
     final isSelected = widget.isActive;
     
     return Tooltip(
-      message: widget.item.title,
+      message: widget.longPressTooltip ?? widget.item.title,
       preferBelow: false,
       child: GestureDetector(
         onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
         child: ConditionalMouseRegion(
           onEnter: (_) => setState(() => _isHovered = true),
           onExit: (_) => setState(() => _isHovered = false),

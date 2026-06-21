@@ -60,9 +60,10 @@ class UnifiedSidebarScaffold extends StatefulWidget {
     this.onThemeToggle,
     this.onProfileTap,
     this.onLogout,
-
     this.footer,
     this.enableGlass = false,
+    this.showModuleBottomNavigation = true,
+    this.headerActions,
   }) : assert((items != null) != (sections != null), 'Provide either items or sections, not both.');
 
   /// The main content of the page
@@ -121,6 +122,12 @@ class UnifiedSidebarScaffold extends StatefulWidget {
 
   /// Enable full-screen glassmorphism background
   final bool enableGlass;
+
+  /// When false, module bottom nav is hidden so AppShell global nav is visible.
+  final bool showModuleBottomNavigation;
+
+  /// Optional actions shown in the mobile app bar (e.g. ShareLinkButton).
+  final List<Widget>? headerActions;
 
   @override
   State<UnifiedSidebarScaffold> createState() => _UnifiedSidebarScaffoldState();
@@ -188,15 +195,26 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold> with Si
               backgroundColor: Colors.transparent,
               elevation: 0,
               centerTitle: true,
-              leading: widget.onBackToGlobal != null 
+              leading: widget.onBackToGlobal != null
                   ? IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: widget.onBackToGlobal,
                     )
                   : null,
+              actions: [
+                ...?widget.headerActions,
+                if (!widget.showModuleBottomNavigation)
+                  IconButton(
+                    icon: const Icon(Icons.menu_rounded),
+                    tooltip: 'Module menu',
+                    onPressed: () => _showMobileMenu(context),
+                  ),
+              ],
             ),
             body: widget.body,
-            bottomNavigationBar: _buildBottomNavigationBar(context),
+            bottomNavigationBar: widget.showModuleBottomNavigation
+                ? _buildBottomNavigationBar(context)
+                : null,
             floatingActionButton: widget.floatingActionButton,
           );
         }

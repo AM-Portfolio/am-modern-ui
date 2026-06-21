@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_portfolio_ui/am_portfolio_ui.dart';
 
 import 'mobile/trade_mobile_screen.dart';
 import 'web/trade_web_screen.dart';
@@ -25,7 +26,18 @@ import 'web/trade_web_screen.dart';
 /// special constant [_webAddTradeIndex]. When switching to mobile at this
 /// index, [TradeMobileScreen] shows its own "Add Trade" tab (index 3).
 class TradeResponsiveLayout extends StatefulWidget {
-  const TradeResponsiveLayout({super.key});
+  const TradeResponsiveLayout({
+    super.key,
+    this.initialPortfolioId,
+    this.initialTab = 'portfolios',
+    this.onTabChanged,
+    this.onPortfolioChanged,
+  });
+
+  final String? initialPortfolioId;
+  final String initialTab;
+  final ValueChanged<String>? onTabChanged;
+  final void Function(String portfolioId, String portfolioName)? onPortfolioChanged;
 
   /// Must match UnifiedSidebarScaffold.tabletBreakpoint so we don't render
   /// TradeWebScreen inside a width where the sidebar already collapses to mobile.
@@ -35,14 +47,56 @@ class TradeResponsiveLayout extends StatefulWidget {
   /// SwipeNavigationController (beyond the TradeViewType enum range).
   static const int _webAddTradeIndex = 9;
 
+  static const _tabSlugs = [
+    'portfolios',
+    'holdings',
+    'calendar',
+    'trades',
+    'journal',
+    'analysis',
+    'market-analysis',
+    'report',
+    'unified',
+  ];
+
+  static int tabIndexFromSlug(String slug) {
+    final index = _tabSlugs.indexOf(slug);
+    return index >= 0 ? index : 0;
+  }
+
+  static String slugFromIndex(int index) =>
+      _tabSlugs[index.clamp(0, _tabSlugs.length - 1)];
+
   @override
   State<TradeResponsiveLayout> createState() => TradeResponsiveLayoutState();
 }
 
 class TradeResponsiveLayoutState extends State<TradeResponsiveLayout> {
   /// Raw SwipeNavigationController index from the active screen.
-  int _currentTabIndex = 0;
+  late int _currentTabIndex;
   final GlobalKey<TradeWebScreenState> _webScreenKey = GlobalKey<TradeWebScreenState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _currentTabIndex = TradeResponsiveLayout.tabIndexFromSlug(widget.initialTab);
+    _currentPortfolioId = widget.initialPortfolioId;
+  }
+
+  @override
+  void didUpdateWidget(TradeResponsiveLayout oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTab != oldWidget.initialTab) {
+      final next = TradeResponsiveLayout.tabIndexFromSlug(widget.initialTab);
+      if (_currentTabIndex != next) {
+        setState(() => _currentTabIndex = next);
+      }
+    }
+    if (widget.initialPortfolioId != oldWidget.initialPortfolioId &&
+        widget.initialPortfolioId != null) {
+      setState(() => _currentPortfolioId = widget.initialPortfolioId);
+    }
+  }
 
   void openAddTrade() {
     setState(() {
@@ -61,6 +115,9 @@ class TradeResponsiveLayoutState extends State<TradeResponsiveLayout> {
     if (_currentTabIndex != index) {
       setState(() => _currentTabIndex = index);
     }
+    if (index != TradeResponsiveLayout._webAddTradeIndex) {
+      widget.onTabChanged?.call(TradeResponsiveLayout.slugFromIndex(index));
+    }
   }
 
   void _onPortfolioChanged(String id, String name) {
@@ -70,10 +127,18 @@ class TradeResponsiveLayoutState extends State<TradeResponsiveLayout> {
         _currentPortfolioName = name;
       });
     }
+    context.selectPortfolio(id, name);
+    widget.onPortfolioChanged?.call(id, name);
   }
 
   @override
   Widget build(BuildContext context) {
+    final inheritedPortfolioId = context.selectedPortfolioId;
+    final effectivePortfolioId = _currentPortfolioId ?? inheritedPortfolioId;
+    if (_currentPortfolioId == null && inheritedPortfolioId != null) {
+      _currentPortfolioId = inheritedPortfolioId;
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < TradeResponsiveLayout._mobileBreakpoint;
@@ -81,8 +146,8 @@ class TradeResponsiveLayoutState extends State<TradeResponsiveLayout> {
         if (isMobile) {
           return TradeMobileScreen(
             initialTabIndex: _currentTabIndex,
-            selectedPortfolioId: _currentPortfolioId,
-            selectedPortfolioName: _currentPortfolioName,
+            selectedPortfolioId: effectivePortfolioId,
+            selectedPortfolioName: _currentPortfolioName ?? context.selectedPortfolioName,
             onTabChanged: (index) {
               // Mobile index 3 is Add Trade, which is Web index 9.
               if (index == 3) {
@@ -111,8 +176,9 @@ class TradeResponsiveLayoutState extends State<TradeResponsiveLayout> {
         return TradeWebScreen(
           key: _webScreenKey,
           initialView: webView,
-          selectedPortfolioId: _currentPortfolioId,
-          selectedPortfolioName: _currentPortfolioName,
+          initialTabIndex: _currentTabIndex,
+          selectedPortfolioId: effectivePortfolioId,
+          selectedPortfolioName: _currentPortfolioName ?? context.selectedPortfolioName,
           onTabChanged: _onTabChanged,
           onPortfolioChanged: _onPortfolioChanged,
         );

@@ -11,11 +11,20 @@ import 'package:am_common/am_common.dart';
 class PortfolioScreen extends StatelessWidget {
   const PortfolioScreen({
     super.key,
+    this.initialPortfolioId,
+    this.initialTab = 'overview',
+    this.onTabChanged,
+    this.onPortfolioChanged,
     this.isSidebarVisible = true,
     this.onToggleSidebar,
     this.onBack,
     this.addTradeBuilder,
   });
+
+  final String? initialPortfolioId;
+  final String initialTab;
+  final ValueChanged<String>? onTabChanged;
+  final void Function(String portfolioId, String portfolioName)? onPortfolioChanged;
 
   final bool isSidebarVisible;
   final VoidCallback? onToggleSidebar;
@@ -41,7 +50,11 @@ class PortfolioScreen extends StatelessWidget {
 
         // Usage of PortfolioListWrapper handles platform-specific screen selection
         return PortfolioListWrapper(
-          isMobile: isMobileView, // Dynamic switch based on width
+          isMobile: isMobileView,
+          initialPortfolioId: initialPortfolioId,
+          initialTab: initialTab,
+          onTabChanged: onTabChanged,
+          onPortfolioChanged: onPortfolioChanged,
           isSidebarVisible: isSidebarVisible,
           onToggleSidebar: onToggleSidebar,
           onBack: onBack,
