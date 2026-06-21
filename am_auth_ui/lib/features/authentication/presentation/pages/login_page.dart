@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:am_design_system/core/constants/app_config.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
@@ -37,7 +38,18 @@ class LoginPage extends StatelessWidget {
         child: BlocConsumer<AuthCubit, AuthState>(
           listener: (context, state) {
             if (state is Authenticated) {
-              Navigator.of(context).pushReplacementNamed('/home');
+              final router = GoRouter.maybeOf(context);
+              if (router != null) {
+                final redirect =
+                    GoRouterState.of(context).uri.queryParameters['redirect'];
+                final target = redirect != null &&
+                        redirect.startsWith('/app')
+                    ? redirect
+                    : '/app/dashboard';
+                context.go(target);
+              } else {
+                Navigator.of(context).pushReplacementNamed('/home');
+              }
             } else if (state is AuthError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -177,7 +189,7 @@ class LoginPage extends StatelessWidget {
           children: [
             Flexible(
               child: TextButton(
-                onPressed: () => Navigator.of(context).pushNamed('/forgot-password'),
+                onPressed: () => context.push('/forgot-password'),
                 child: Text(
                   'Forgot Password?',
                   style: TextStyle(
@@ -203,7 +215,7 @@ class LoginPage extends StatelessWidget {
             ),
             Flexible(
               child: TextButton(
-                onPressed: () => Navigator.of(context).pushNamed('/register'),
+                onPressed: () => context.push('/register'),
                 child: Text(
                   'Create Account',
                   style: TextStyle(

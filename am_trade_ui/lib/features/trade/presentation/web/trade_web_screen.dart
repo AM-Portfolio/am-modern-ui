@@ -35,6 +35,7 @@ class TradeWebScreen extends ConsumerStatefulWidget {
     this.selectedPortfolioId,
     this.selectedPortfolioName,
     this.initialView = TradeViewType.portfolios,
+    this.initialTabIndex,
     this.isSidebarVisible = true,
     this.onToggleSidebar,
     this.onBack,
@@ -45,6 +46,7 @@ class TradeWebScreen extends ConsumerStatefulWidget {
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final TradeViewType initialView;
+  final int? initialTabIndex;
   final bool isSidebarVisible;
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
@@ -76,6 +78,16 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     _initializeSwipeController();
   }
 
+  @override
+  void didUpdateWidget(TradeWebScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTabIndex != null &&
+        widget.initialTabIndex != oldWidget.initialTabIndex &&
+        widget.initialTabIndex != _swipeController.currentIndex) {
+      _swipeController.navigateTo(widget.initialTabIndex!);
+    }
+  }
+
   void _initializeSwipeController() {
     final initialIndex = _getInitialIndex();
     _swipeController = SwipeNavigationController(
@@ -101,6 +113,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   }
 
   int _getInitialIndex() {
+    if (widget.initialTabIndex != null) return widget.initialTabIndex!;
     switch (widget.initialView) {
       case TradeViewType.portfolios: return 0;
       case TradeViewType.holdings: return 1;
@@ -311,11 +324,11 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
       },
       child: UnifiedSidebarScaffold(
         module: ModuleType.trade,
-        // Removed title/subtitle as requested
-        title: null, 
+        title: null,
         subtitle: null,
-        // CRITICAL: Pass an empty header to override the default "Trade Analysis" header
-        header: const SizedBox(height: 16), 
+        showModuleBottomNavigation: false,
+        headerActions: const [ShareLinkButton()],
+        header: const SizedBox(height: 16),
         onBackToGlobal: widget.onBack,
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();

@@ -145,6 +145,8 @@ class DashboardWebScreen extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(width: 12),
+                            const ShareLinkButton(),
+                            const SizedBox(width: 12),
                             Container(
                               decoration: BoxDecoration(
                                 color: btnBgColor,
