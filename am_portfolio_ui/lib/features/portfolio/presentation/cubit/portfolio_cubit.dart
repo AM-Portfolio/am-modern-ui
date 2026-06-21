@@ -352,7 +352,32 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       tag: 'PortfolioCubit',
     );
 
-    emit(PortfolioLoading(portfolioList: state.portfolioList));
+    try {
+      final cachedHoldings = await _portfolioService.getCachedPortfolioHoldingsById(portfolioId);
+      final cachedSummary = await _portfolioService.getCachedPortfolioSummaryById(portfolioId);
+
+      if (cachedHoldings != null && cachedSummary != null) {
+        if (!isClosed) {
+          emit(
+            PortfolioLoaded(
+              portfolioId: portfolioId,
+              summary: cachedSummary,
+              holdings: cachedHoldings.holdings,
+              portfolioList: state.portfolioList,
+              isStale: true,
+            ),
+          );
+        }
+      } else {
+        if (!isClosed) {
+          emit(PortfolioLoading(portfolioList: state.portfolioList));
+        }
+      }
+    } catch (e) {
+      if (!isClosed) {
+        emit(PortfolioLoading(portfolioList: state.portfolioList));
+      }
+    }
 
     try {
       CommonLogger.info(

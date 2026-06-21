@@ -19,6 +19,7 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
     VoidCallback? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
     SectorType? selectedSector,
+    MetricType? selectedMetric,
   }) {
     // Get tiles based on selected sector using common base class method (includes centralized sorting)
     final displayTiles = getTilesBasedOnSector(data, selectedSector);

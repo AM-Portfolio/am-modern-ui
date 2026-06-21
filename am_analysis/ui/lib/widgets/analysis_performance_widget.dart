@@ -273,8 +273,15 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
       return FlSpot(entry.key.toDouble(), entry.value.value);
     }).toList();
 
-    final minY = _dataPoints.map((p) => p.value).reduce((a, b) => a < b ? a : b);
-    final maxY = _dataPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    final minYData = _dataPoints.map((p) => p.value).reduce((a, b) => a < b ? a : b);
+    final maxYData = _dataPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    final range = maxYData - minYData;
+    
+    // Dynamic volatility padding (15% breathing room)
+    final padding = range > 0.5 ? range * 0.15 : (minYData * 0.02 > 1.0 ? minYData * 0.02 : 1.0);
+    final minY = minYData - padding;
+    final maxY = maxYData + padding;
+    
     final isPositive = _dataPoints.last.value >= _dataPoints.first.value;
     
     final gainColor = Theme.of(context).brightness == Brightness.dark 

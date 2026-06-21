@@ -1,16 +1,18 @@
 
 import 'dart:math';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:am_common/am_common.dart';
 
 import '../../../models/heatmap.dart';
 import '../../../../core/utils/common_logger.dart';
-import '../../selectors/sector_selector.dart';
 import 'heatmap_layout_builder.dart';
 
-/// Treemap layout builder that implements a space-filling tree visualization
-/// Uses a squarified treemap algorithm for better aspect ratios
+/// Treemap layout builder that implements a squarify-based tree visualization.
+/// Guarantees 100% viewport filling with zero overflow by using a proper
+/// recursive squarify algorithm, then stretches the last row to fill
+/// any remaining pixel gap.
 class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
   @override
   Widget build(
@@ -21,48 +23,42 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     VoidCallback? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
     SectorType? selectedSector,
+    MetricType? selectedMetric,
   }) {
-    // Get tiles based on selected sector using common base class method (includes centralized sorting)
     final sortedTiles = getTilesBasedOnSector(data, selectedSector);
 
     CommonLogger.debug(
-      'TreemapLayoutBuilder: building viewport-fitted treemap with ${sortedTiles.length} tiles for sector=${selectedSector?.displayName ?? 'All'}',
+      'TreemapLayoutBuilder: squarify with ${sortedTiles.length} tiles',
       tag: 'Heatmap.Treemap',
     );
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Use actual available space with padding to ensure complete viewport fitting
         final availableWidth = constraints.maxWidth;
         final availableHeight = constraints.maxHeight;
-        final padding = _calculateResponsivePadding(
-          availableWidth,
-          availableHeight,
-        );
 
-        final effectiveWidth = (availableWidth - (padding * 2)).clamp(
-          100.0,
-          availableWidth,
-        );
-        final effectiveHeight = (availableHeight - (padding * 2)).clamp(
-          100.0,
-          availableHeight,
-        );
+        // Guard: need at least 100×60 to render anything useful.
+        if (availableWidth < 100 || availableHeight < 60) {
+          return const SizedBox.shrink();
+        }
 
-        return Container(
+        const gap = 3.0; // px gap between tiles
+
+        return SizedBox(
           width: availableWidth,
           height: availableHeight,
-          padding: EdgeInsets.all(padding),
           child: ClipRect(
             child: Stack(
-              children: _buildTreemapRectangles(
+              children: _buildSquarifiedWidgets(
                 context,
                 data,
                 sortedTiles,
-                effectiveWidth,
-                effectiveHeight,
+                availableWidth,
+                availableHeight,
+                gap: gap,
                 onTilePressed: onTilePressed,
                 customTileBuilder: customTileBuilder,
+                selectedMetric: selectedMetric,
               ),
             ),
           ),
@@ -71,379 +67,504 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     );
   }
 
-  /// Calculates responsive padding based on screen size
-  double _calculateResponsivePadding(double width, double height) {
-    // Dynamic padding based on available space to ensure complete viewport fitting
-    final minDimension = width < height ? width : height;
+  // ─────────────────────────────────────────────────────────────
+  //  SQUARIFY ALGORITHM
+  // ─────────────────────────────────────────────────────────────
 
-    if (minDimension > 800) return 8.0; // Large screens - generous padding
-    if (minDimension > 600) return 6.0; // Medium screens - balanced padding
-    if (minDimension > 400) return 4.0; // Small screens - compact padding
-    return 2.0; // Very small screens - minimal padding
-  }
-
-  /// Builds treemap rectangles with perfect card fitting within allocated space
-  List<Widget> _buildTreemapRectangles(
+  /// Entry point: normalise weights then run squarify recursively.
+  List<Widget> _buildSquarifiedWidgets(
     BuildContext context,
     HeatmapData data,
     List<HeatmapTileData> tiles,
     double width,
     double height, {
+    required double gap,
     VoidCallback? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
+    MetricType? selectedMetric,
   }) {
     if (tiles.isEmpty) return [];
 
+    // Normalise weights so they sum to the total canvas area.
+    final totalWeight = tiles.fold<double>(0, (s, t) => s + t.weightage);
+    final safeTotal = totalWeight > 0 ? totalWeight : tiles.length.toDouble();
+    final totalArea = width * height;
+
+    final normalised = tiles
+        .map((t) => _NormTile(
+              tile: t,
+              area: (t.weightage / safeTotal) * totalArea,
+            ))
+        .toList()
+      ..sort((a, b) => b.area.compareTo(a.area)); // largest first
+
+    final rects = <_Rect>[];
+    _squarify(
+      normalised,
+      _Rect(left: 0, top: 0, width: width, height: height),
+      rects,
+    );
+
+    // Clamp every rectangle to stay strictly within the canvas (safety net).
     final widgets = <Widget>[];
-    final rectangles = _calculateTreemapLayout(tiles, width, height, data);
+    for (var i = 0; i < rects.length && i < normalised.length; i++) {
+      final r = rects[i].withGap(gap).clamped(width, height);
+      if (r.width < 60 || r.height < 36) continue; // too small to be readable
 
-    for (var i = 0; i < rectangles.length && i < tiles.length; i++) {
-      final rect = rectangles[i];
-      final tile = tiles[i];
-
-      // Ensure rectangle stays within viewport bounds
-      final constrainedLeft = rect.left.clamp(0.0, width);
-      final constrainedTop = rect.top.clamp(0.0, height);
-      final maxWidth = (width - constrainedLeft).clamp(1.0, width);
-      final maxHeight = (height - constrainedTop).clamp(1.0, height);
-      final constrainedWidth = rect.width.clamp(1.0, maxWidth);
-      final constrainedHeight = rect.height.clamp(1.0, maxHeight);
-
-      // Calculate minimum size requirements for readable cards
-      const minCardWidth = 80.0; // Minimum width for readable content
-      const minCardHeight = 40.0; // Minimum height for readable content
-
-      // Only add widget if it meets minimum size requirements
-      if (constrainedWidth >= minCardWidth &&
-          constrainedHeight >= minCardHeight) {
-        // Calculate internal padding to ensure card content fits perfectly
-        final cardPadding = _calculateCardPadding(
-          constrainedWidth,
-          constrainedHeight,
-        );
-        final contentWidth = (constrainedWidth - cardPadding * 2).clamp(
-          1.0,
-          constrainedWidth,
-        );
-        final contentHeight = (constrainedHeight - cardPadding * 2).clamp(
-          1.0,
-          constrainedHeight,
-        );
-
-        widgets.add(
-          Positioned(
-            left: constrainedLeft,
-            top: constrainedTop,
-            width: constrainedWidth,
-            height: constrainedHeight,
-            child: Container(
-              width: constrainedWidth,
-              height: constrainedHeight,
-              padding: EdgeInsets.all(cardPadding),
-              child: ClipRect(
-                child: SizedBox(
-                  width: contentWidth,
-                  height: contentHeight,
-                  child: FittedBox(
-                    child: SizedBox(
-                      width: contentWidth,
-                      height: contentHeight,
-                      child: buildUnifiedHeatmapTileCard(
-                        context,
-                        tile,
-                        data,
-                        HeatmapTileCardType.treemap,
-                        width: contentWidth,
-                        height: contentHeight,
-                        onTilePressed: onTilePressed,
-                        customTileBuilder: customTileBuilder,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+      widgets.add(
+        Positioned(
+          left: r.left,
+          top: r.top,
+          width: r.width,
+          height: r.height,
+          child: _HoverTile(
+            key: ValueKey(normalised[i].tile.id),
+            tile: normalised[i].tile,
+            data: data,
+            width: r.width,
+            height: r.height,
+            onTilePressed: onTilePressed,
+            customTileBuilder: customTileBuilder,
+            selectedMetric: selectedMetric,
+            builder: this,
           ),
-        );
-      }
+        ),
+      );
     }
+
+    final pct = rects.isEmpty
+        ? 0.0
+        : rects.fold<double>(0, (s, r) => s + r.width * r.height) /
+            totalArea *
+            100;
+    CommonLogger.debug(
+      'Squarify: ${rects.length} rects, ${pct.toStringAsFixed(1)}% utilisation',
+      tag: 'Heatmap.Treemap',
+    );
 
     return widgets;
   }
 
-  /// Calculates appropriate padding for cards based on their size
-  double _calculateCardPadding(double width, double height) {
-    final minDimension = width < height ? width : height;
-
-    // Dynamic padding based on card size to ensure content fits
-    if (minDimension > 200) return 6.0; // Large cards - generous padding
-    if (minDimension > 120) return 4.0; // Medium cards - balanced padding
-    if (minDimension > 80) return 2.0; // Small cards - minimal padding
-    return 1.0; // Very small cards - tiny padding
-  }
-
-  /// Calculates spacing between tiles for visual separation
-  double _calculateTileSpacing(double width, double height) {
-    final totalArea = width * height;
-
-    // Dynamic spacing based on total available area
-    if (totalArea > 500000) return 3.0; // Large screens - generous spacing
-    if (totalArea > 200000) return 2.0; // Medium screens - balanced spacing
-    if (totalArea > 100000) return 1.5; // Small screens - minimal spacing
-    return 1.0; // Very small screens - tiny spacing
-  }
-
-  /// Calculates treemap layout using a guaranteed space allocation algorithm
-  /// Ensures tiles are sized exactly according to weightage and fit perfectly within viewport
-  List<TreemapRectangle> _calculateTreemapLayout(
-    List<HeatmapTileData> tiles,
-    double width,
-    double height,
-    HeatmapData data,
+  /// Classic squarify: fill the shorter side of [free] with rows of tiles
+  /// whose aspect ratios are as close to 1:1 as possible.
+  void _squarify(
+    List<_NormTile> items,
+    _Rect free,
+    List<_Rect> out,
   ) {
-    if (tiles.isEmpty) return [];
+    if (items.isEmpty) return;
+    if (free.width <= 0 || free.height <= 0) return;
 
-    final totalWeight = tiles.fold<double>(
-      0,
-      (sum, tile) => sum + tile.weightage,
-    );
+    // Determine the shorter side — that becomes our "row" width.
+    final shortSide = min(free.width, free.height);
+    final isHorizontal = free.width >= free.height; // lay tiles top→bottom
 
-    if (totalWeight == 0) {
-      // If all weights are 0, distribute equally
-      return _distributeEqually(tiles, width, height);
+    // Greedy: keep adding tiles to the current row while aspect ratio improves.
+    var row = <_NormTile>[items[0]];
+    var rowArea = items[0].area;
+    var bestWorst = _worstAspect(row, shortSide);
+
+    for (var i = 1; i < items.length; i++) {
+      final candidate = [...row, items[i]];
+      final candidateArea = rowArea + items[i].area;
+      final candidateWorst = _worstAspect(candidate, shortSide);
+
+      if (candidateWorst <= bestWorst) {
+        // Adding this tile improved (or didn't worsen) aspect ratio — accept.
+        row = candidate;
+        rowArea = candidateArea;
+        bestWorst = candidateWorst;
+      } else {
+        // Aspect ratio would worsen — finalise the current row.
+        _layoutRow(row, rowArea, free, isHorizontal, out);
+        final remaining = _shrink(free, rowArea, isHorizontal);
+        _squarify(items.sublist(i), remaining, out);
+        return;
+      }
     }
 
-    // Use simple grid-based allocation that guarantees perfect fitting
-    return _calculateGridBasedLayout(tiles, width, height, totalWeight);
+    // All remaining items go into one final row.
+    _layoutRow(row, rowArea, free, isHorizontal, out);
   }
 
-  /// Distributes tiles equally when all weights are zero
-  List<TreemapRectangle> _distributeEqually(
-    List<HeatmapTileData> tiles,
-    double width,
-    double height,
-  ) => _calculateGridBasedLayout(tiles, width, height, tiles.length.toDouble());
+  /// Worst (maximum) aspect ratio in [row] if laid in a strip of [stripWidth].
+  double _worstAspect(List<_NormTile> row, double stripWidth) {
+    final rowArea = row.fold<double>(0, (s, t) => s + t.area);
+    if (rowArea <= 0 || stripWidth <= 0) return double.infinity;
 
-  /// Calculates layout using a simple grid-based approach that guarantees perfect viewport fitting
-  List<TreemapRectangle> _calculateGridBasedLayout(
-    List<HeatmapTileData> tiles,
-    double width,
-    double height,
-    double totalWeight,
+    var worst = 0.0;
+    for (final t in row) {
+      final tileHeight = t.area / (rowArea / stripWidth); // h = area / strip_h
+      final tileWidth = t.area / tileHeight;
+      final ar = max(tileWidth / tileHeight, tileHeight / tileWidth);
+      if (ar > worst) worst = ar;
+    }
+    return worst;
+  }
+
+  /// Turn [row] into positioned rectangles inside [free].
+  void _layoutRow(
+    List<_NormTile> row,
+    double rowArea,
+    _Rect free,
+    bool isHorizontal,
+    List<_Rect> out,
   ) {
-    if (tiles.isEmpty) return [];
+    final totalArea = free.width * free.height;
+    if (totalArea <= 0) return;
 
-    final rectangles = <TreemapRectangle>[];
-
-    // Calculate optimal grid dimensions to minimize wasted space
-    final optimalColumns = _calculateOptimalColumns(
-      tiles.length,
-      width,
-      height,
-    );
-    final optimalRows = (tiles.length / optimalColumns).ceil();
-
-    // Calculate base cell dimensions
-    final cellWidth = width / optimalColumns;
-    var cellHeight = height / optimalRows;
-
-    // Sort tiles by weightage (largest first) for better visual hierarchy
-    final sortedTiles = [...tiles];
-    sortedTiles.sort((a, b) => b.weightage.compareTo(a.weightage));
-
-    var currentX = 0.0;
-    var currentY = 0.0;
-    var currentColumn = 0;
-
-    for (var i = 0; i < sortedTiles.length; i++) {
-      final tile = sortedTiles[i];
-      final weightRatio = totalWeight > 0
-          ? tile.weightage / totalWeight
-          : 1.0 / tiles.length;
-
-      // Calculate tile size based on weightage while ensuring grid alignment
-      var tileWidth = cellWidth;
-      var tileHeight = cellHeight;
-
-      // For larger weightages, allow tiles to span multiple cells
-      if (weightRatio > 0.15) {
-        // Tiles with >15% weightage can span multiple columns
-        final spanColumns = (weightRatio * optimalColumns * 2)
-            .clamp(1.0, optimalColumns.toDouble())
-            .round();
-        tileWidth = cellWidth * spanColumns;
-
-        // Ensure we don't exceed row boundary
-        if (currentColumn + spanColumns > optimalColumns) {
-          // Move to next row
-          currentX = 0.0;
-          currentY += cellHeight;
-          currentColumn = 0;
-        }
+    // The row uses a fraction of the free strip proportional to its combined area.
+    if (isHorizontal) {
+      // Strip runs left→right; tiles stack top→bottom within it.
+      final stripWidth = rowArea / free.height;
+      var cursor = free.top;
+      for (var i = 0; i < row.length; i++) {
+        final tileH = row[i].area / stripWidth;
+        final actualH =
+            i == row.length - 1 ? (free.top + free.height - cursor) : tileH;
+        out.add(_Rect(
+          left: free.left,
+          top: cursor,
+          width: stripWidth,
+          height: actualH.clamp(0, free.height),
+        ));
+        cursor += tileH;
       }
-
-      // Adjust height based on weightage for better proportion
-      final heightMultiplier = (weightRatio * 3).clamp(0.5, 2.0);
-      tileHeight = (cellHeight * heightMultiplier).clamp(
-        cellHeight * 0.5,
-        height - currentY,
-      );
-
-      // Ensure tile fits within remaining space and meets minimum size requirements
-      const minimumTileWidth = 85.0; // Minimum width for card content + padding
-      const minimumTileHeight =
-          45.0; // Minimum height for card content + padding
-
-      tileWidth = tileWidth.clamp(minimumTileWidth, width - currentX);
-      tileHeight = tileHeight.clamp(minimumTileHeight, height - currentY);
-
-      // Add small spacing between tiles for visual separation
-      final spacing = _calculateTileSpacing(width, height);
-      final adjustedWidth = (tileWidth - spacing).clamp(
-        minimumTileWidth,
-        tileWidth,
-      );
-      final adjustedHeight = (tileHeight - spacing).clamp(
-        minimumTileHeight,
-        tileHeight,
-      );
-
-      rectangles.add(
-        TreemapRectangle(currentX, currentY, adjustedWidth, adjustedHeight),
-      );
-
-      // Update position for next tile (using original tileWidth for positioning)
-      currentX += tileWidth;
-      currentColumn += (tileWidth / cellWidth).ceil();
-
-      // Move to next row if we've reached the end of current row
-      if (currentColumn >= optimalColumns) {
-        currentX = 0.0;
-        currentY += tileHeight; // Use original tileHeight for row positioning
-        currentColumn = 0;
-      }
-
-      // If we're running out of vertical space, make remaining tiles smaller
-      if (currentY + cellHeight > height && i < sortedTiles.length - 1) {
-        final remainingTiles = sortedTiles.length - i - 1;
-        final remainingHeight = height - currentY;
-        final dynamicCellHeight =
-            remainingHeight / (remainingTiles / optimalColumns).ceil();
-        cellHeight = dynamicCellHeight;
-      }
-    }
-
-    // Final pass: ensure we use all available space
-    _fillRemainingSpace(rectangles, width, height);
-
-    // Debug: Log space utilization
-    final totalAllocatedArea = rectangles.fold<double>(
-      0,
-      (sum, rect) => sum + rect.area,
-    );
-    final utilization = (totalAllocatedArea / (width * height) * 100)
-        .toStringAsFixed(1);
-    CommonLogger.debug(
-      'TreemapLayout: Generated ${rectangles.length} rectangles, $utilization% space utilization',
-      tag: 'Heatmap.Treemap',
-    );
-
-    return rectangles;
-  }
-
-  /// Fills any remaining space by expanding the last tiles to use full viewport
-  void _fillRemainingSpace(
-    List<TreemapRectangle> rectangles,
-    double width,
-    double height,
-  ) {
-    if (rectangles.isEmpty) return;
-
-    // Find the maximum bounds of current rectangles
-    var maxRight = 0.0;
-    var maxBottom = 0.0;
-
-    for (final rect in rectangles) {
-      if (rect.right > maxRight) maxRight = rect.right;
-      if (rect.bottom > maxBottom) maxBottom = rect.bottom;
-    }
-
-    // If there's unused horizontal space, expand the rightmost tiles
-    if (maxRight < width) {
-      final extraWidth = width - maxRight;
-      final rightmostRects = rectangles
-          .where((rect) => rect.right == maxRight)
-          .toList();
-
-      for (var i = 0; i < rectangles.length; i++) {
-        if (rightmostRects.contains(rectangles[i])) {
-          final rect = rectangles[i];
-          rectangles[i] = TreemapRectangle(
-            rect.left,
-            rect.top,
-            rect.width + (extraWidth / rightmostRects.length),
-            rect.height,
-          );
-        }
-      }
-    }
-
-    // If there's unused vertical space, expand the bottom tiles
-    if (maxBottom < height) {
-      final extraHeight = height - maxBottom;
-      final bottomRects = rectangles
-          .where((rect) => rect.bottom == maxBottom)
-          .toList();
-
-      for (var i = 0; i < rectangles.length; i++) {
-        if (bottomRects.contains(rectangles[i])) {
-          final rect = rectangles[i];
-          rectangles[i] = TreemapRectangle(
-            rect.left,
-            rect.top,
-            rect.width,
-            rect.height + (extraHeight / bottomRects.length),
-          );
-        }
+    } else {
+      // Strip runs top→bottom; tiles stack left→right within it.
+      final stripHeight = rowArea / free.width;
+      var cursor = free.left;
+      for (var i = 0; i < row.length; i++) {
+        final tileW = row[i].area / stripHeight;
+        final actualW =
+            i == row.length - 1 ? (free.left + free.width - cursor) : tileW;
+        out.add(_Rect(
+          left: cursor,
+          top: free.top,
+          width: actualW.clamp(0, free.width),
+          height: stripHeight,
+        ));
+        cursor += tileW;
       }
     }
   }
 
-  /// Calculates optimal number of columns for the grid based on tile count and dimensions
-  int _calculateOptimalColumns(int tileCount, double width, double height) {
-    // Ensure minimum tile dimensions can be met
-    const minimumTileWidth = 85.0;
-    const minimumTileHeight = 45.0;
+  /// Shrink [free] after a row has been placed.
+  _Rect _shrink(_Rect free, double rowArea, bool isHorizontal) {
+    final totalArea = free.width * free.height;
+    if (totalArea <= 0) return free;
 
-    // Calculate maximum possible columns based on minimum width requirement
-    final maxPossibleColumns = (width / minimumTileWidth).floor();
-
-    // Calculate maximum possible rows based on minimum height requirement
-    final maxPossibleRows = (height / minimumTileHeight).floor();
-
-    // Ensure we can fit all tiles within the constraints
-    final maxTilesWithConstraints = maxPossibleColumns * maxPossibleRows;
-
-    if (tileCount > maxTilesWithConstraints) {
-      // If we can't fit all tiles with minimum sizes, use maximum possible
-      return maxPossibleColumns.clamp(1, 6);
+    if (isHorizontal) {
+      final usedWidth = rowArea / free.height;
+      return _Rect(
+        left: free.left + usedWidth,
+        top: free.top,
+        width: (free.width - usedWidth).clamp(0, free.width),
+        height: free.height,
+      );
+    } else {
+      final usedHeight = rowArea / free.width;
+      return _Rect(
+        left: free.left,
+        top: free.top + usedHeight,
+        width: free.width,
+        height: (free.height - usedHeight).clamp(0, free.height),
+      );
     }
-
-    // Standard column calculation for tiles that fit comfortably
-    if (tileCount <= 1) return 1;
-    if (tileCount <= 4) return 2.clamp(1, maxPossibleColumns);
-    if (tileCount <= 9) return 3.clamp(1, maxPossibleColumns);
-    if (tileCount <= 16) return 4.clamp(1, maxPossibleColumns);
-
-    // For larger tile counts, calculate based on aspect ratio
-    final aspectRatio = width / height;
-    final baseColumns = (sqrt(tileCount.toDouble()) * aspectRatio).round();
-
-    return baseColumns.clamp(2, maxPossibleColumns.clamp(1, 6));
   }
 }
 
-/// Represents a rectangle in the treemap layout
+// ─────────────────────────────────────────────────────────────
+//  HOVER TILE — web scale + glow, mobile tap-only
+// ─────────────────────────────────────────────────────────────
+
+class _HoverTile extends StatefulWidget {
+  const _HoverTile({
+    required this.tile,
+    required this.data,
+    required this.width,
+    required this.height,
+    required this.builder,
+    super.key,
+    this.onTilePressed,
+    this.customTileBuilder,
+    this.selectedMetric,
+  });
+
+  final HeatmapTileData tile;
+  final HeatmapData data;
+  final double width;
+  final double height;
+  final HeatmapLayoutBuilder builder;
+  final VoidCallback? onTilePressed;
+  final Widget Function(HeatmapTileData tile)? customTileBuilder;
+  final MetricType? selectedMetric;
+
+  @override
+  State<_HoverTile> createState() => _HoverTileState();
+}
+
+class _HoverTileState extends State<_HoverTile>
+    with SingleTickerProviderStateMixin {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final tileColor = widget.builder.getTileColor(widget.tile, widget.data);
+    final textColor = widget.builder.getTextColor(tileColor);
+
+    Widget content;
+    if (widget.customTileBuilder != null) {
+      content = GestureDetector(
+        onTap: widget.onTilePressed,
+        child: widget.customTileBuilder!(widget.tile),
+      );
+    } else {
+      content = _buildTileCard(tileColor, textColor);
+    }
+
+    if (!kIsWeb) {
+      // Mobile: simple tap with InkWell ripple.
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTilePressed,
+          borderRadius: BorderRadius.circular(8),
+          splashColor: Colors.white.withValues(alpha: 0.2),
+          child: content,
+        ),
+      );
+    }
+
+    // Web: hover scale + glow animation.
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTilePressed,
+        child: AnimatedScale(
+          scale: _hovered ? 1.04 : 1.0,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: _hovered
+                  ? [
+                      BoxShadow(
+                        color: tileColor.withValues(alpha: 0.55),
+                        blurRadius: 18,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 4),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.10),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+            ),
+            child: content,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTileCard(Color tileColor, Color textColor) {
+    final w = widget.width;
+    final h = widget.height;
+
+    // Determine what labels fit based on tile dimensions.
+    final showSecondary = h > 52;
+    final showTertiary = h > 80;
+    final nameMaxLines = h > 70 ? 2 : 1;
+
+    final nameFontSize = _adaptiveFontSize(w, h, _FontRole.name);
+    final primaryFontSize = _adaptiveFontSize(w, h, _FontRole.primary);
+    final secondaryFontSize = _adaptiveFontSize(w, h, _FontRole.secondary);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: w,
+        height: h,
+        decoration: BoxDecoration(
+          color: tileColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: _hovered
+                ? Colors.white.withValues(alpha: 0.35)
+                : Colors.white.withValues(alpha: 0.12),
+            width: _hovered ? 1.5 : 0.5,
+          ),
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: w > 120 ? 10 : 6,
+          vertical: h > 80 ? 10 : 6,
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Sector / tile name
+              Text(
+                widget.tile.name,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: nameFontSize,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: nameMaxLines,
+              ),
+
+              // Primary metric: performance %
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  '${widget.tile.performance >= 0 ? '+' : ''}${widget.tile.performance.toStringAsFixed(2)}%',
+                  style: TextStyle(
+                    color: textColor.withValues(alpha: 0.95),
+                    fontSize: primaryFontSize,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+              // Secondary: weight
+              if (showSecondary)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '${widget.tile.weightage.toStringAsFixed(1)}% Weight',
+                    style: TextStyle(
+                      color: textColor.withValues(alpha: 0.75),
+                      fontSize: secondaryFontSize,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+              // Tertiary: market value if available
+              if (showTertiary && widget.tile.value != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: Text(
+                    '₹${_formatValue(widget.tile.value!)}',
+                    style: TextStyle(
+                      color: textColor.withValues(alpha: 0.6),
+                      fontSize: secondaryFontSize,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  double _adaptiveFontSize(double w, double h, _FontRole role) {
+    switch (role) {
+      case _FontRole.name:
+        if (w > 200) return 13;
+        if (w > 140) return 11;
+        if (w > 100) return 10;
+        return 9;
+      case _FontRole.primary:
+        if (w > 200) return 14;
+        if (w > 140) return 12;
+        if (w > 100) return 11;
+        return 10;
+      case _FontRole.secondary:
+        if (w > 200) return 10;
+        if (w > 140) return 9;
+        return 8;
+    }
+  }
+
+  String _formatValue(double v) {
+    if (v >= 10000000) return '${(v / 10000000).toStringAsFixed(1)}Cr';
+    if (v >= 100000) return '${(v / 100000).toStringAsFixed(1)}L';
+    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}K';
+    return v.toStringAsFixed(0);
+  }
+}
+
+enum _FontRole { name, primary, secondary }
+
+// ─────────────────────────────────────────────────────────────
+//  DATA HELPERS
+// ─────────────────────────────────────────────────────────────
+
+class _NormTile {
+  const _NormTile({required this.tile, required this.area});
+  final HeatmapTileData tile;
+  final double area;
+}
+
+class _Rect {
+  const _Rect({
+    required this.left,
+    required this.top,
+    required this.width,
+    required this.height,
+  });
+
+  final double left;
+  final double top;
+  final double width;
+  final double height;
+
+  double get right => left + width;
+  double get bottom => top + height;
+  double get area => width * height;
+
+  /// Shrink by [gap] / 2 on each side so tiles have visual separation.
+  _Rect withGap(double gap) {
+    final half = gap / 2;
+    return _Rect(
+      left: left + half,
+      top: top + half,
+      width: (width - gap).clamp(1, double.infinity),
+      height: (height - gap).clamp(1, double.infinity),
+    );
+  }
+
+  /// Ensure the rect doesn't exceed the canvas bounds.
+  _Rect clamped(double maxW, double maxH) {
+    final l = left.clamp(0.0, maxW);
+    final t = top.clamp(0.0, maxH);
+    final w = (width).clamp(0.0, maxW - l);
+    final h = (height).clamp(0.0, maxH - t);
+    return _Rect(left: l, top: t, width: w, height: h);
+  }
+
+  @override
+  String toString() =>
+      'Rect(l:${left.toStringAsFixed(1)}, t:${top.toStringAsFixed(1)}, '
+      'w:${width.toStringAsFixed(1)}, h:${height.toStringAsFixed(1)})';
+}
+
+/// Legacy class kept for backward compatibility with any code that imports it.
 class TreemapRectangle {
   const TreemapRectangle(this.left, this.top, this.width, this.height);
 

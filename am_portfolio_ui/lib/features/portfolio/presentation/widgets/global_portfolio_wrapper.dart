@@ -40,53 +40,51 @@ class _GlobalPortfolioWrapperState
             cubit.loadPortfoliosList();
             return cubit;
           },
-          child: BlocListener<PortfolioCubit, PortfolioState>(
-            listener: (context, state) {
-              if (state is PortfolioListLoaded &&
-                  _selectedPortfolioId == null) {
-                if (state.portfolioList!.portfolios.isNotEmpty) {
-                  final first = state.portfolioList!.portfolios.first;
-                  setState(() {
-                    _selectedPortfolioId = first.portfolioId;
-                    _selectedPortfolioName = first.portfolioName;
-                  });
+          child: Builder(
+            builder: (innerContext) => BlocListener<PortfolioCubit, PortfolioState>(
+              listener: (context, state) {
+                if (state is PortfolioListLoaded &&
+                    _selectedPortfolioId == null) {
+                  if (state.portfolioList!.portfolios.isNotEmpty) {
+                    final first = state.portfolioList!.portfolios.first;
+                    setState(() {
+                      _selectedPortfolioId = first.portfolioId;
+                      _selectedPortfolioName = first.portfolioName;
+                    });
 
-                  // Trigger real-time subscription
-                  context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
-                    portfolioId: first.portfolioId,
+                    innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+                      portfolioId: first.portfolioId,
+                      forceResubscribe: true,
+                    );
+
+                    innerContext.read<PortfolioCubit>().loadPortfolioById(first.portfolioId);
+
+                    widget.onPortfolioChanged?.call(
+                      first.portfolioId,
+                      first.portfolioName,
+                    );
+                  }
+                }
+              },
+              child: _SelectedPortfolioProvider(
+                selectedId: _selectedPortfolioId,
+                selectedName: _selectedPortfolioName,
+                onSelect: (id, name) {
+                  setState(() {
+                    _selectedPortfolioId = id;
+                    _selectedPortfolioName = name;
+                  });
+                  innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+                    portfolioId: id,
                     forceResubscribe: true,
                   );
 
-                  // Trigger initial REST load for details
-                  context.read<PortfolioCubit>().loadPortfolioById(first.portfolioId);
+                  innerContext.read<PortfolioCubit>().loadPortfolioById(id);
 
-                  widget.onPortfolioChanged?.call(
-                    first.portfolioId,
-                    first.portfolioName,
-                  );
-                }
-              }
-            },
-            child: _SelectedPortfolioProvider(
-              selectedId: _selectedPortfolioId,
-              selectedName: _selectedPortfolioName,
-              onSelect: (id, name) {
-                setState(() {
-                  _selectedPortfolioId = id;
-                  _selectedPortfolioName = name;
-                });
-                // Trigger real-time subscription on manual selection
-                context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
-                  portfolioId: id,
-                  forceResubscribe: true,
-                );
-
-                // Trigger REST load for details on manual selection
-                context.read<PortfolioCubit>().loadPortfolioById(id);
-
-                widget.onPortfolioChanged?.call(id, name);
-              },
-              child: widget.child,
+                  widget.onPortfolioChanged?.call(id, name);
+                },
+                child: widget.child,
+              ),
             ),
           ),
         );

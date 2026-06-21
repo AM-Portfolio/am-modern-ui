@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:am_common/am_common.dart';
 
 import '../../models/heatmap.dart';
 import '../../../core/utils/common_logger.dart';
@@ -19,6 +19,7 @@ class HeatmapDisplayTemplate extends StatelessWidget {
     this.customTileBuilder,
     this.layout = HeatmapLayoutType.treemap,
     this.selectedSector,
+    this.selectedMetric,
   });
 
   final HeatmapData data;
@@ -28,6 +29,7 @@ class HeatmapDisplayTemplate extends StatelessWidget {
   final Widget Function(HeatmapTileData tile)? customTileBuilder;
   final HeatmapLayoutType layout;
   final SectorType? selectedSector;
+  final MetricType? selectedMetric;
 
   @override
   Widget build(BuildContext context) {
@@ -94,23 +96,46 @@ class HeatmapDisplayTemplate extends StatelessWidget {
   );
 
   Widget _buildEmptyState(BuildContext context) => Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.data_usage_outlined,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          size: 48,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      margin: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.grid_view_rounded,
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+              size: 40,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Heatmap Data Unavailable',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No sector performance data is currently available.',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          'No data available',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 16,
-          ),
-        ),
-      ],
+      ),
     ),
   );
 
@@ -141,6 +166,7 @@ class HeatmapDisplayTemplate extends StatelessWidget {
         onTilePressed: onTilePressed,
         customTileBuilder: customTileBuilder,
         selectedSector: selectedSector,
+        selectedMetric: selectedMetric,
       );
     },
   );

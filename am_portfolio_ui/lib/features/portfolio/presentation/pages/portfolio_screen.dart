@@ -14,11 +14,13 @@ class PortfolioScreen extends StatelessWidget {
     this.isSidebarVisible = true,
     this.onToggleSidebar,
     this.onBack,
+    this.addTradeBuilder,
   });
 
   final bool isSidebarVisible;
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
+  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +45,7 @@ class PortfolioScreen extends StatelessWidget {
           isSidebarVisible: isSidebarVisible,
           onToggleSidebar: onToggleSidebar,
           onBack: onBack,
+          addTradeBuilder: addTradeBuilder,
         );
       },
     );

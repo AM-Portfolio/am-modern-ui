@@ -16,6 +16,7 @@ abstract class HeatmapLayoutBuilder {
     VoidCallback? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
     SectorType? selectedSector,
+    MetricType? selectedMetric,
   });
 
   /// Gets the display tiles from the heatmap data
@@ -36,6 +37,7 @@ abstract class HeatmapLayoutBuilder {
     double? height,
     VoidCallback? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
+    MetricType? selectedMetric,
   }) {
     if (customTileBuilder != null) {
       return GestureDetector(
@@ -50,12 +52,21 @@ abstract class HeatmapLayoutBuilder {
 
     return GestureDetector(
       onTap: onTilePressed,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
         margin: config.tileMargin ?? const EdgeInsets.all(1),
         decoration: BoxDecoration(
           color: tileColor,
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.5),
+          border: Border.all(color: Colors.white.withOpacity(0.15), width: 0.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            )
+          ],
         ),
         child: Padding(
           padding: config.tilePadding ?? const EdgeInsets.all(4.0),
@@ -66,6 +77,7 @@ abstract class HeatmapLayoutBuilder {
             width,
             height,
             textColor,
+            selectedMetric,
           ),
         ),
       ),
@@ -80,6 +92,7 @@ abstract class HeatmapLayoutBuilder {
     double? width,
     double? height,
     Color textColor,
+    MetricType? selectedMetric,
   ) {
     final config = data.configuration;
     final showSubCards = config.showSubCards;
@@ -106,37 +119,18 @@ abstract class HeatmapLayoutBuilder {
             ),
           ),
 
-        // Weightage
-        if (config.showWeightage && effectiveHeight > 40)
+        // Primary Metric (Dynamic based on selectedMetric)
+        if (effectiveHeight > 40)
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Text(
-              '${tile.weightage.toStringAsFixed(1)}%',
-              style: TextStyle(
-                color: textColor.withOpacity(0.8),
-                fontSize: calculateFontSize(
-                  effectiveWidth,
-                  showSubCards,
-                  isSecondary: true,
-                ),
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-
-        // Performance
-        if (config.showPerformance && showSubCards && effectiveHeight > 60)
-          Padding(
-            padding: const EdgeInsets.only(top: 1),
-            child: Text(
-              '${tile.performance >= 0 ? '+' : ''}${tile.performance.toStringAsFixed(1)}%',
+              _getPrimaryMetricText(tile, selectedMetric),
               style: TextStyle(
                 color: textColor.withOpacity(0.9),
                 fontSize: calculateFontSize(
                   effectiveWidth,
                   showSubCards,
-                  isSmall: true,
+                  isSecondary: true,
                 ),
                 fontWeight: FontWeight.w600,
               ),
@@ -144,15 +138,31 @@ abstract class HeatmapLayoutBuilder {
             ),
           ),
 
-        // Value
-        if (config.showValue &&
-            showSubCards &&
-            effectiveHeight > 80 &&
-            tile.value != null)
+        // Secondary Metric
+        if (effectiveHeight > 60)
           Padding(
             padding: const EdgeInsets.only(top: 1),
             child: Text(
-              '\$${tile.value!.toStringAsFixed(0)}',
+              _getSecondaryMetricText(tile, selectedMetric),
+              style: TextStyle(
+                color: textColor.withOpacity(0.8),
+                fontSize: calculateFontSize(
+                  effectiveWidth,
+                  showSubCards,
+                  isSmall: true,
+                ),
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+
+        // Tertiary Metric
+        if (effectiveHeight > 80 && tile.value != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Text(
+              _getTertiaryMetricText(tile, selectedMetric),
               style: TextStyle(
                 color: textColor.withOpacity(0.7),
                 fontSize: calculateFontSize(
@@ -167,6 +177,48 @@ abstract class HeatmapLayoutBuilder {
           ),
       ],
     );
+  }
+
+  String _getPrimaryMetricText(HeatmapTileData tile, MetricType? metric) {
+    switch (metric) {
+      case MetricType.marketValue:
+        return '\$${tile.value?.toStringAsFixed(0) ?? 0}';
+      case MetricType.allocationPercent:
+        return '${tile.weightage.toStringAsFixed(1)}%';
+      case MetricType.profitLoss:
+        final pnl = (tile.value ?? 0) * (tile.performance / 100);
+        return '${pnl >= 0 ? '+\$' : '-\$'}${pnl.abs().toStringAsFixed(0)}';
+      case MetricType.returns:
+      case MetricType.changePercent:
+      default:
+        return '${tile.performance >= 0 ? '+' : ''}${tile.performance.toStringAsFixed(1)}%';
+    }
+  }
+
+  String _getSecondaryMetricText(HeatmapTileData tile, MetricType? metric) {
+    switch (metric) {
+      case MetricType.marketValue:
+      case MetricType.profitLoss:
+      case MetricType.returns:
+      case MetricType.changePercent:
+        return '${tile.weightage.toStringAsFixed(1)}% Alloc';
+      case MetricType.allocationPercent:
+      default:
+        return '${tile.performance >= 0 ? '+' : ''}${tile.performance.toStringAsFixed(1)}%';
+    }
+  }
+
+  String _getTertiaryMetricText(HeatmapTileData tile, MetricType? metric) {
+    switch (metric) {
+      case MetricType.marketValue:
+        return '${tile.performance >= 0 ? '+' : ''}${tile.performance.toStringAsFixed(1)}%';
+      case MetricType.allocationPercent:
+      case MetricType.changePercent:
+      case MetricType.profitLoss:
+      case MetricType.returns:
+      default:
+        return '\$${tile.value?.toStringAsFixed(0) ?? 0}';
+    }
   }
 
   /// Calculates appropriate font size based on tile dimensions with mobile optimization
@@ -326,20 +378,26 @@ abstract class HeatmapLayoutBuilder {
     }
   }
 
-  /// Gets color based on performance value
+  /// Gets color based on performance value — Obsidian Pulse palette
   Color getPerformanceColor(double changePercent) {
-    final intensity = (changePercent.abs() / 5).clamp(0.3, 1.0);
+    final intensity = (changePercent.abs() / 5.0).clamp(0.0, 1.0);
 
-    if (changePercent > 0) {
+    if (changePercent > 0.05) {
+      // Emerald greens from Stitch design
       return Color.lerp(
-        Colors.green.shade100,
-        Colors.green.shade600,
+        const Color(0xFF005236), // Deep emerald (dark)
+        const Color(0xFF0BA95B), // Bright emerald (light)
         intensity,
       )!;
-    } else if (changePercent < 0) {
-      return Color.lerp(Colors.red.shade100, Colors.red.shade600, intensity)!;
+    } else if (changePercent < -0.05) {
+      // Crimson reds from Stitch design
+      return Color.lerp(
+        const Color(0xFF68000A), // Deep crimson (dark)
+        const Color(0xFFB22222), // Bright crimson (light)
+        intensity,
+      )!;
     } else {
-      return Colors.grey.shade300;
+      return const Color(0xFF2B273B); // Neutral dark purple/slate
     }
   }
 
@@ -366,6 +424,7 @@ abstract class HeatmapLayoutBuilder {
     double? height,
     VoidCallback? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
+    MetricType? selectedMetric,
   }) {
     if (customTileBuilder != null) {
       return GestureDetector(
@@ -401,6 +460,7 @@ abstract class HeatmapLayoutBuilder {
           width,
           height,
           onTilePressed,
+          selectedMetric,
         );
     }
   }
@@ -490,7 +550,7 @@ abstract class HeatmapLayoutBuilder {
     );
   }
 
-  /// Builds a card optimized for treemap layout
+  /// Builds a card optimized for treemap layout — Stitch Obsidian Pulse design
   Widget _buildTreemapCard(
     BuildContext context,
     HeatmapTileData tile,
@@ -498,35 +558,110 @@ abstract class HeatmapLayoutBuilder {
     double? width,
     double? height,
     VoidCallback? onTilePressed,
+    MetricType? selectedMetric,
   ) {
-    // Treemap uses the standard tile with subtle hierarchy indication
-    final hierarchyLevel = _calculateHierarchyLevel(tile, data);
+    final tileColor = getTileColor(tile, data);
+    final isPositive = tile.performance >= 0;
+    // Always white text — all tile colors (green, red, neutral) are dark enough
+    const textColor = Colors.white;
+    final effectiveW = width ?? 100.0;
+    final effectiveH = height ?? 80.0;
 
-    return Stack(
-      children: [
-        buildHeatmapTile(
-          context,
-          tile,
-          data,
-          width: width,
-          height: height,
-          onTilePressed: onTilePressed,
-        ),
-        // Subtle hierarchy indicator for treemap
-        if (hierarchyLevel > 0)
-          Positioned(
-            bottom: 2,
-            right: 2,
-            child: Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.6),
-                shape: BoxShape.circle,
-              ),
+    // Determine padding & font sizes responsively
+    final pad = effectiveW < 100 ? 8.0 : 12.0;
+    final titleSize = effectiveW < 100
+        ? 9.0
+        : effectiveW < 180
+        ? 11.0
+        : 13.0;
+    final perfSize = effectiveW < 100
+        ? 13.0
+        : effectiveW < 180
+        ? 18.0
+        : 24.0;
+    final weightSize = effectiveW < 100 ? 8.0 : 10.0;
+    final trendIcon = isPositive ? Icons.trending_up : Icons.trending_down;
+
+    return GestureDetector(
+      onTap: onTilePressed,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          margin: const EdgeInsets.all(1.5),
+          decoration: BoxDecoration(
+            color: tileColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.08),
+              width: 1,
             ),
           ),
-      ],
+          child: Padding(
+            padding: EdgeInsets.all(pad),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // ── TOP: Sector name + trend icon ──
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        tile.name,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: titleSize,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                        ),
+                        maxLines: effectiveH > 120 ? 2 : 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (effectiveW > 120)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Icon(
+                          trendIcon,
+                          color: textColor.withOpacity(0.7),
+                          size: titleSize + 2,
+                        ),
+                      ),
+                  ],
+                ),
+
+                // ── BOTTOM: Performance % + Weight label ──
+                if (effectiveH > 60)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${isPositive ? '+' : ''}${tile.performance.toStringAsFixed(2)}%',
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: perfSize,
+                          fontWeight: FontWeight.bold,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${tile.weightage.toStringAsFixed(1)}% Weight',
+                        style: TextStyle(
+                          color: textColor.withOpacity(0.65),
+                          fontSize: weightSize,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

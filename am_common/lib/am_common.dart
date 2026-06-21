@@ -57,6 +57,8 @@ export 'features/attachment/internal/presentation/models/pending_attachment.dart
 
 // Navigation Widgets
 export 'features/navigation/widgets/vertical_scroll_navigator.dart';
+export 'features/navigation/widgets/add_trade_fab.dart';
+export 'features/navigation/notifications.dart';
 
 // ============================================================================
 // CORE TECHNICAL INFRASTRUCTURE (From am_library)

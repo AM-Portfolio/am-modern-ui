@@ -36,8 +36,8 @@ class SelectorConfig {
     List<MetricType>? metrics,
     SelectorLayoutType? selectorLayout,
   }) => SelectorConfig(
-    showSectorSelector: false,
-    showMarketCapSelector: false,
+    showSectorSelector: true,
+    showMarketCapSelector: true,
     selectorLayout: selectorLayout ?? SelectorLayoutType.compact,
     availableTimeFrames: timeFrames ?? TimeFrame.mobileTimeFrames,
     availableMetrics: metrics ?? MetricType.mobileMetrics,

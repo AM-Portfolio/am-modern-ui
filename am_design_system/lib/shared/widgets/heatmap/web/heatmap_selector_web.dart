@@ -83,7 +83,7 @@ class _HeatmapSelectorWebState extends State<HeatmapSelectorWeb> {
   }
 
   Widget _buildCompactLayout(BuildContext context) => Container(
-    height: 60,
+    constraints: const BoxConstraints(minHeight: 60),
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     decoration: BoxDecoration(
       color: Theme.of(context).colorScheme.surface,
