@@ -16,14 +16,24 @@ class DashboardRepository {
 
   Future<DashboardSummary> getSummary(String userId) async {
     try {
-      return await _apiClient.get(
+      final summary = await _apiClient.get(
         '/v1/analysis/dashboard/summary',
-        queryParams: {'userId': userId},
+        queryParams: {'arg0': userId},
         parser: (data) => DashboardSummary.fromJson(data),
       );
+      AppLogger.info('✅ Dashboard Summary fetched: Value=${summary.totalValue}, Portfolios=${summary.totalPortfolios}');
+      return summary;
     } catch (e) {
-      AppLogger.error('Failed to fetch dashboard summary', error: e);
-      rethrow;
+      AppLogger.error('Failed to fetch dashboard summary, using empty fallback', error: e);
+      return const DashboardSummary(
+        totalValue: 0.0,
+        totalInvested: 0.0,
+        totalGainLoss: 0.0,
+        totalGainLossPercentage: 0.0,
+        dayChange: 0.0,
+        dayChangePercentage: 0.0,
+        totalPortfolios: 0,
+      );
     }
   }
 
@@ -31,25 +41,30 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/portfolio-overviews',
-        queryParams: {'userId': userId},
+        queryParams: {'arg0': userId},
         parser: (data) => (data as List).map((e) => PortfolioOverview.fromJson(e)).toList(),
       );
     } catch (e) {
-      AppLogger.error('Failed to fetch portfolio overviews', error: e);
-      rethrow;
+      AppLogger.error('Failed to fetch portfolio overviews, using empty fallback', error: e);
+      return [];
     }
   }
 
   Future<AllocationResponse> getAllocation(String userId, {String groupBy = 'SECTOR'}) async {
     try {
       return await _apiClient.get(
-        '/v1/analysis/PORTFOLIO/ALL/allocation',
-        queryParams: {'userId': userId, 'groupBy': groupBy},
+        '/v1/analysis/PORTFOLIO/$userId/allocation',
+        queryParams: {'groupBy': groupBy},
         parser: (data) => AllocationResponse.fromJson(data),
       );
     } catch (e) {
-      AppLogger.error('Failed to fetch dashboard allocation', error: e);
-      rethrow;
+      AppLogger.error('Failed to fetch dashboard allocation, using empty fallback', error: e);
+      return const AllocationResponse(
+        sectors: [],
+        assetClasses: [],
+        marketCaps: [],
+        stocks: [],
+      );
     }
   }
 
@@ -57,20 +72,23 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/top-movers',
-        queryParams: {'userId': userId, 'timeFrame': timeFrame},
+        queryParams: {'arg0': userId, 'arg1': timeFrame},
         parser: (data) => TopMoversResponse.fromJson(data),
       );
     } catch (e) {
-      AppLogger.error('Failed to fetch top movers', error: e);
-      rethrow;
+      AppLogger.error('Failed to fetch top movers, using empty fallback', error: e);
+      return const TopMoversResponse(
+        gainers: [],
+        losers: [],
+      );
     }
   }
 
   Future<PerformanceResponse> getPerformance(String userId, {String timeFrame = '1M'}) async {
     try {
       return await _apiClient.get(
-        '/v1/analysis/dashboard/performance',
-        queryParams: {'userId': userId, 'timeFrame': timeFrame},
+        '/v1/analysis/PORTFOLIO/$userId/performance',
+        queryParams: {'timeFrame': timeFrame},
         parser: (data) {
           // Provide defaults for required fields if backend returns null
           final sanitized = Map<String, dynamic>.from(data);
@@ -82,8 +100,14 @@ class DashboardRepository {
         },
       );
     } catch (e) {
-      AppLogger.error('Failed to fetch performance chart', error: e);
-      rethrow;
+      AppLogger.error('Failed to fetch performance chart, using empty fallback', error: e);
+      return PerformanceResponse(
+        portfolioId: '',
+        timeFrame: timeFrame,
+        totalReturnPercentage: 0.0,
+        totalReturnValue: 0.0,
+        chartData: [],
+      );
     }
   }
 
@@ -91,7 +115,7 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/recent-activity',
-        queryParams: {'userId': userId},
+        queryParams: {'arg0': userId},
         parser: (data) {
           // The backend returns a RecentActivityResponse object containing an 'items' list
           final items = data['items'] as List?;
@@ -116,8 +140,8 @@ class DashboardRepository {
         },
       );
     } catch (e) {
-      AppLogger.error('Failed to fetch recent activity', error: e);
-      rethrow;
+      AppLogger.error('Failed to fetch recent activity, using empty fallback', error: e);
+      return [];
     }
   }
 
