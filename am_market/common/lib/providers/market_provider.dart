@@ -204,6 +204,127 @@ class MarketProvider with ChangeNotifier {
   Map<String, double>? _heatmapValues;
   Map<String, double>? get heatmapValues => _heatmapValues;
 
+  // Indices timeframe selection (1D uses live day change; others use historical base prices)
+  String _selectedIndicesTimeframe = '1D';
+  Map<String, double> _timeframeBasePrices = {};
+  bool _isLoadingBasePrices = false;
+
+  String get selectedIndicesTimeframe => _selectedIndicesTimeframe;
+  Map<String, double> get timeframeBasePrices => _timeframeBasePrices;
+  bool get isLoadingBasePrices => _isLoadingBasePrices;
+
+  Future<void> setIndicesTimeframe(String timeframe) async {
+    if (_selectedIndicesTimeframe == timeframe) return;
+
+    _selectedIndicesTimeframe = timeframe;
+
+    if (timeframe == '1D') {
+      _timeframeBasePrices.clear();
+      _isLoadingBasePrices = false;
+      notifyListeners();
+      return;
+    }
+
+    _isLoadingBasePrices = true;
+    notifyListeners();
+
+    try {
+      final now = DateTime.now();
+      DateTime fromDate;
+      switch (timeframe) {
+        case '1W':
+          fromDate = now.subtract(const Duration(days: 7));
+          break;
+        case '1M':
+          fromDate = DateTime(now.year, now.month - 1, now.day);
+          break;
+        case '3M':
+          fromDate = DateTime(now.year, now.month - 3, now.day);
+          break;
+        case '6M':
+          fromDate = DateTime(now.year, now.month - 6, now.day);
+          break;
+        case '1Y':
+          fromDate = DateTime(now.year - 1, now.month, now.day);
+          break;
+        case '5Y':
+          fromDate = DateTime(now.year - 5, now.month, now.day);
+          break;
+        default:
+          fromDate = now.subtract(const Duration(days: 7));
+      }
+
+      DateTime toDate;
+      switch (timeframe) {
+        case '1W':
+          toDate = fromDate.add(const Duration(days: 3));
+          break;
+        case '1M':
+          toDate = fromDate.add(const Duration(days: 5));
+          break;
+        case '3M':
+        case '6M':
+          toDate = fromDate.add(const Duration(days: 7));
+          break;
+        case '1Y':
+        case '5Y':
+          toDate = fromDate.add(const Duration(days: 10));
+          break;
+        default:
+          toDate = fromDate.add(const Duration(days: 3));
+      }
+
+      if (toDate.isAfter(now)) {
+        toDate = now;
+      }
+
+      final fromStr = fromDate.toIso8601String().split('T')[0];
+      final toStr = toDate.toIso8601String().split('T')[0];
+
+      final symbols = _allIndicesData.map((e) => e.indexSymbol).toList();
+
+      if (symbols.isNotEmpty) {
+        final history = await _apiService.fetchHistoricalData(
+          symbols: symbols,
+          from: fromStr,
+          to: toStr,
+          interval: '1d',
+          isIndexSymbol: true,
+        );
+
+        _timeframeBasePrices.clear();
+
+        if (history.containsKey('data')) {
+          final dataMap = history['data'] as Map<String, dynamic>;
+          dataMap.forEach((sym, val) {
+            if (val is Map && val.containsKey('dataPoints')) {
+              final points = List.from(val['dataPoints']);
+              if (points.isNotEmpty) {
+                for (int i = points.length - 1; i >= 0; i--) {
+                  final point = points[i];
+                  final p = point['close'] ?? point['lastPrice'] ?? point['price'];
+                  if (p != null && (p as num) > 0) {
+                    _timeframeBasePrices[sym] = p.toDouble();
+                    break;
+                  }
+                }
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {
+      CommonLogger.error(
+        "Error fetching base prices for $timeframe",
+        tag: "MarketProvider.setIndicesTimeframe",
+        error: e,
+      );
+    } finally {
+      _isLoadingBasePrices = false;
+      notifyListeners();
+    }
+  }
+
   void toggleForceRefresh(bool value) {
     _forceRefresh = value;
     notifyListeners();

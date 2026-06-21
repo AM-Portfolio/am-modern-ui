@@ -93,7 +93,14 @@ def get_available_device():
     """Detect available flutter devices and return the best match."""
     try:
         is_windows = os.name == "nt"
-        result = subprocess.run(["flutter", "devices"], capture_output=True, text=True, shell=is_windows)
+        result = subprocess.run(
+            ["flutter", "devices"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            shell=is_windows,
+        )
         output = result.stdout.lower()
         if "chrome" in output:
             return "chrome"
