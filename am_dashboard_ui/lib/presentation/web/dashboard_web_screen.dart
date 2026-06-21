@@ -204,16 +204,18 @@ class DashboardWebScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
 
                     // ── Row 3: Performance (70%) & Market Movers (30%) ──
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 70,
-                          child: Consumer(
-                            builder: (context, ref, child) {
-                              final performanceAsync =
-                                  ref.watch(dashboardPerformanceProvider(userId));
-                              return performanceAsync.when(
+                    SizedBox(
+                      height: 380,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            flex: 70,
+                            child: Consumer(
+                              builder: (context, ref, child) {
+                                final performanceAsync =
+                                    ref.watch(dashboardPerformanceProvider(userId));
+                                return performanceAsync.when(
                                 data: (performance) => DashboardChartWidget(
                                   performance: performance,
                                   onTimeFrameChanged: (timeFrame) {
@@ -248,77 +250,55 @@ class DashboardWebScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                  ),
+                  const SizedBox(height: 24),
 
-                    // ── Row 4: Portfolios (70%) & Asset Allocation (30%) ──
+                    // ── Row 4: Recent Activity (70%) & Your Portfolios (30%) ──
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           flex: 70,
+                          child: Consumer(
+                            builder: (context, ref, child) {
+                              final activitiesAsync = ref.watch(recentActivityProvider(userId));
+                              return activitiesAsync.when(
+                                data: (activities) => DashboardRecentActivityWidget(activities: activities),
+                                loading: () => _buildLoadingCard(200),
+                                error: (err, stack) => AmErrorWidget(
+                                  message: 'Failed to load recent activity',
+                                  onRetry: () => ref.invalidate(recentActivityProvider(userId)),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          flex: 30,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Your Portfolios',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 20,
-                                      color: onSurface,
-                                      fontFamily: 'Inter',
-                                    ),
-                                  ),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'SORT BY: ',
-                                        style: TextStyle(
-                                          color: onSurfaceVariant,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          fontFamily: 'Inter',
-                                        ),
-                                      ),
-                                      Text(
-                                        'VALUE',
-                                        style: TextStyle(
-                                          color: onSurface,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          fontFamily: 'Inter',
-                                        ),
-                                      ),
-                                      Icon(Icons.keyboard_arrow_down, size: 16, color: onSurface),
-                                    ],
-                                  ),
-                                ],
+                              Text(
+                                'Your Portfolios',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 20,
+                                  color: onSurface,
+                                  fontFamily: 'Inter',
+                                ),
                               ),
                               const SizedBox(height: 16),
                               overviewsAsync.when(
-                                data: (overviews) => LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    // 3 cards per row if possible, otherwise 2
-                                    final cardsPerRow = constraints.maxWidth > 800 ? 3 : 2;
-                                    final cardWidth = (constraints.maxWidth - (16 * (cardsPerRow - 1))) / cardsPerRow;
-                                    return Wrap(
-                                      spacing: 16,
-                                      runSpacing: 16,
-                                      children: overviews
-                                          .map(
-                                            (overview) => SizedBox(
-                                              width: cardWidth,
-                                              child: DashboardPortfolioOverviewCard(
-                                                overview: overview,
-                                                onTap: () {},
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
-                                    );
-                                  },
+                                data: (overviews) => Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: overviews.map((overview) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 16.0),
+                                    child: DashboardPortfolioOverviewCard(
+                                      overview: overview,
+                                      onTap: () {},
+                                    ),
+                                  )).toList(),
                                 ),
                                 loading: () => _buildLoadingCard(100),
                                 error: (err, stack) => AmErrorWidget(
@@ -329,54 +309,7 @@ class DashboardWebScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 24),
-                        Expanded(
-                          flex: 30,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Give it a transparent title to match portfolios alignment
-                              Text(
-                                'Allocation',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 20,
-                                  color: Colors.transparent,
-                                  fontFamily: 'Inter',
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              ref.watch(dashboardAllocationProvider(userId)).when(
-                                data: (allocation) =>
-                                    DashboardAllocationWidget(allocation: allocation),
-                                loading: () => _buildLoadingCard(200),
-                                error: (err, stack) => AmErrorWidget(
-                                  message: 'Failed to load allocation',
-                                  onRetry: () => ref.invalidate(dashboardAllocationProvider(userId)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // ── Row 5: Recent Activity (Full Width) ──
-                    Consumer(
-                      builder: (context, ref, child) {
-                        final activitiesAsync =
-                            ref.watch(recentActivityProvider(userId));
-                        return activitiesAsync.when(
-                          data: (activities) =>
-                              DashboardRecentActivityWidget(activities: activities),
-                          loading: () => _buildLoadingCard(200),
-                          error: (err, stack) => AmErrorWidget(
-                            message: 'Failed to load recent activity',
-                            onRetry: () => ref.invalidate(recentActivityProvider(userId)),
-                          ),
-                        );
-                      },
                     ),
                   ],
                 ),

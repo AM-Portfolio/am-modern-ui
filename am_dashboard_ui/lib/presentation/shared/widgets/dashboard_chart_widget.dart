@@ -213,51 +213,53 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
           const SizedBox(height: 16),
           
           if (_mockDataPoints.isEmpty)
-            Container(
-              height: 220,
-              width: double.infinity, // Explicit bounds to prevent render box error
-              decoration: BoxDecoration(
-                color: emptyStateBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9)),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.show_chart, color: onSurfaceVariant.withValues(alpha: 0.5), size: 32),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Real-time charting active',
-                      style: TextStyle(
-                        color: onSurfaceVariant,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Inter',
+            Expanded(
+              child: Container(
+                width: double.infinity, // Explicit bounds to prevent render box error
+                decoration: BoxDecoration(
+                  color: emptyStateBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9)),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.show_chart, color: onSurfaceVariant.withValues(alpha: 0.5), size: 32),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Real-time charting active',
+                        style: TextStyle(
+                          color: onSurfaceVariant,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Inter',
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'AGGREGATING GLOBAL FEEDS',
-                      style: TextStyle(
-                        color: onSurfaceVariant.withValues(alpha: 0.7),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                        fontFamily: 'Inter',
+                      const SizedBox(height: 8),
+                      Text(
+                        'AGGREGATING GLOBAL FEEDS',
+                        style: TextStyle(
+                          color: onSurfaceVariant.withValues(alpha: 0.7),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          fontFamily: 'Inter',
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             )
           else
-            SizedBox(
-              height: 220,
-              width: double.infinity, // Explicit width for fl_chart to avoid crash
-              child: _showGraph 
-                  ? _buildGraphView() 
-                  : _buildTableView(onSurface, onSurfaceVariant, isDark),
+            Expanded(
+              child: SizedBox(
+                width: double.infinity, // Explicit width for fl_chart to avoid crash
+                child: _showGraph 
+                    ? _buildGraphView() 
+                    : _buildTableView(onSurface, onSurfaceVariant, isDark),
+              ),
             ),
         ],
       ),

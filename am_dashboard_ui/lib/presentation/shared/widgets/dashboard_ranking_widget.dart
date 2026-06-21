@@ -138,8 +138,7 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
           Divider(height: 1, color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F5F9)),
           const SizedBox(height: 8),
           
-          SizedBox(
-            height: 220,
+          Expanded(
             child: items.isEmpty
                 ? Center(
                     child: Text(
