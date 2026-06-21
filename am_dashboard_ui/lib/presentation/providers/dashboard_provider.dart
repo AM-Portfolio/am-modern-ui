@@ -47,8 +47,14 @@ Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
     repository.unsubscribeFromDashboardStream(userId);
   });
 
-  // Listen to WebSocket updates
-  yield* repository.getDashboardStream(userId);
+  // Listen to WebSocket updates, but don't let WebSocket errors kill the initial data
+  try {
+    yield* repository.getDashboardStream(userId).handleError((error) {
+      AppLogger.warning('Resilient Dashboard Stream: WebSocket error ignored after initial fetch', error: error);
+    });
+  } catch (e) {
+    AppLogger.warning('Resilient Dashboard Stream: Failed to start WebSocket stream', error: e);
+  }
 }
 
 @riverpod

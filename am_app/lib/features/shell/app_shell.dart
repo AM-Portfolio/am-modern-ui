@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard;
@@ -29,7 +28,16 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0; // Default to Dashboard
   bool _sessionRestored = false;
-  final GlobalKey<TradeResponsiveLayoutState> _tradeLayoutKey = GlobalKey();
+
+  // ── Secondary navigation items for the "More" bottom sheet ───────────────
+  static const List<_MoreMenuItem> _moreMenuItems = [
+    _MoreMenuItem(title: 'AI Chat', icon: Icons.auto_awesome_rounded, index: 4),
+    _MoreMenuItem(title: 'Lab', icon: Icons.science_rounded, index: 5),
+    _MoreMenuItem(title: 'Analysis', icon: Icons.analytics_outlined, index: 6),
+    _MoreMenuItem(title: 'Doc Intel', icon: Icons.psychology_outlined, index: 7),
+    _MoreMenuItem(title: 'Subscription', icon: Icons.subscriptions_rounded, index: 9),
+    _MoreMenuItem(title: 'Profile', icon: Icons.person_rounded, index: 8),
+  ];
 
   @override
   void initState() {
@@ -168,8 +176,7 @@ class _AppShellState extends State<AppShell> {
           return LayoutBuilder(
             builder: (context, constraints) {
               final isDesktop = constraints.maxWidth > 1100;
-              final showMobileGlobalBar =
-                  !isDesktop && (_selectedIndex == 0 || _selectedIndex == 5);
+              final showMobileGlobalBar = !isDesktop;
 
               return Scaffold(
                 body: Row(
@@ -230,8 +237,7 @@ class _AppShellState extends State<AppShell> {
                         activeNavItem: _activeNavItem,
                         isDarkMode: isDark,
                         userName: authState.user.displayName,
-                        onProfileTap: () =>
-                            setState(() => _selectedIndex = 8),
+                        onMenuTap: () => _showMoreMenu(context, userId, isDark),
                         onNavigate: (title) => _onGlobalNavigate(title, userId),
                         items: const [
                           SidebarItem(
@@ -247,16 +253,8 @@ class _AppShellState extends State<AppShell> {
                               title: 'Market',
                               icon: Icons.show_chart_rounded),
                           SidebarItem(
-                              title: 'AI Chat',
-                              icon: Icons.auto_awesome_rounded),
-                          SidebarItem(
-                              title: 'Lab', icon: Icons.science_rounded),
-                          SidebarItem(
-                              title: 'Analysis', icon: Icons.analytics_outlined),
-                          SidebarItem(
-                              title: 'Doc Intel', icon: Icons.psychology_outlined),
-                          SidebarItem(
-                              title: 'Subscription', icon: Icons.subscriptions_rounded),
+                              title: 'Menu',
+                              icon: Icons.menu_rounded),
                         ],
                       )
                     : null,
@@ -271,13 +269,11 @@ class _AppShellState extends State<AppShell> {
   Widget _buildPage(String userId, bool isDesktop) {
     switch (_selectedIndex) {
       case 0:
-        return dashboard.DashboardPage(userId: userId);
+        return dashboard.DashboardScreen(userId: userId);
       case 1:
-        return PortfolioScreen(
-          addTradeBuilder: TradeUIHelper.buildAddTradeOverlay,
-        );
+        return const PortfolioScreen();
       case 2:
-        return TradeResponsiveLayout(key: _tradeLayoutKey);
+        return const TradeResponsiveLayout();
       case 3:
         return MarketPage(userId: userId);
       case 4:
@@ -300,7 +296,204 @@ class _AppShellState extends State<AppShell> {
           child: const am_sub.SubscriptionPricingScreen(),
         );
       default:
-        return dashboard.DashboardPage(userId: userId);
+        return dashboard.DashboardScreen(userId: userId);
     }
   }
+
+  // ── Premium "More Menu" Bottom Sheet ────────────────────────────────────────
+  void _showMoreMenu(BuildContext context, String userId, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: false,
+      builder: (sheetContext) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1a1a2e) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(
+              top: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.05),
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+
+                // Title
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        'More',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : Colors.black87,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(sheetContext),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: isDark ? Colors.white54 : Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                // Grid of menu items
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: 1.15,
+                    ),
+                    itemCount: _moreMenuItems.length,
+                    itemBuilder: (ctx, i) {
+                      final item = _moreMenuItems[i];
+                      final isActive = _selectedIndex == item.index;
+                      final accentColor = _getMoreItemColor(item.title);
+
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          _onGlobalNavigate(item.title, userId);
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? accentColor.withValues(alpha: isDark ? 0.15 : 0.08)
+                                : (isDark
+                                    ? Colors.white.withValues(alpha: 0.04)
+                                    : Colors.grey.shade50),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isActive
+                                  ? accentColor.withValues(alpha: 0.3)
+                                  : (isDark
+                                      ? Colors.white.withValues(alpha: 0.06)
+                                      : Colors.grey.shade200),
+                              width: isActive ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: accentColor.withValues(alpha: isDark ? 0.15 : 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  item.icon,
+                                  color: accentColor,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                item.title,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                                  color: isActive
+                                      ? accentColor
+                                      : (isDark ? Colors.white70 : Colors.grey.shade700),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Color _getMoreItemColor(String title) {
+    switch (title) {
+      case 'AI Chat':
+        return const Color(0xFF6C5DD3);
+      case 'Lab':
+        return const Color(0xFF00B894);
+      case 'Analysis':
+        return const Color(0xFF0984E3);
+      case 'Doc Intel':
+        return const Color(0xFF00D2D3);
+      case 'Subscription':
+        return const Color(0xFFFF9F43);
+      case 'Profile':
+        return const Color(0xFF8B7EE0);
+      default:
+        return const Color(0xFF6C5DD3);
+    }
+  }
+}
+
+/// Data class for the "More Menu" items
+class _MoreMenuItem {
+  const _MoreMenuItem({
+    required this.title,
+    required this.icon,
+    required this.index,
+  });
+
+  final String title;
+  final IconData icon;
+  final int index;
 }
