@@ -9,11 +9,12 @@ enum TradeDirections {
 }
 
 /// Custom converter for TradeDirections to handle BUY/SELL and LONG/SHORT
-class TradeDirectionsConverter implements JsonConverter<TradeDirections, String> {
+class TradeDirectionsConverter implements JsonConverter<TradeDirections, String?> {
   const TradeDirectionsConverter();
 
   @override
-  TradeDirections fromJson(String json) {
+  TradeDirections fromJson(String? json) {
+    if (json == null || json.isEmpty) return TradeDirections.long;
     switch (json.toUpperCase()) {
       case 'LONG':
       case 'BUY':
