@@ -18,11 +18,13 @@ class DashboardPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(dashboardStreamingSessionProvider(userId));
+
     final dashboardAsync = ref.watch(dashboardStreamProvider(userId));
     final overviewsAsync = ref.watch(portfolioOverviewsProvider(userId));
 
     return Scaffold(
-      backgroundColor: AppColors.primary, // Using a valid color from AppColors
+      backgroundColor: AppColors.primary,
       appBar: AppBar(
         title: const Text('Dashboard'),
         backgroundColor: AppColors.primary,
@@ -31,7 +33,12 @@ class DashboardPage extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () {
+              ref.invalidate(dashboardStreamingSessionProvider(userId));
               ref.invalidate(dashboardStreamProvider(userId));
+              ref.invalidate(allocationStreamProvider(userId));
+              ref.invalidate(moversStreamProvider(userId));
+              ref.invalidate(activityStreamProvider(userId));
+              ref.invalidate(historyStreamProvider(userId));
               ref.invalidate(portfolioOverviewsProvider(userId));
             },
           ),
@@ -56,41 +63,15 @@ class DashboardPage extends ConsumerWidget {
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             sliver: SliverToBoxAdapter(
-              child: ref.watch(dashboardAllocationProvider(userId)).when(
-                  data: (allocation) => DashboardAllocationWidget(allocation: allocation),
-                  loading: () => const SkeletonBox(height: 250),
-                  error: (err, stack) => AmErrorWidget(
-                    message: 'Failed to load allocation data',
-                    onRetry: () => ref.invalidate(dashboardAllocationProvider(userId)),
+              child: ref.watch(allocationStreamProvider(userId)).when(
+                    data: (allocation) => DashboardAllocationWidget(allocation: allocation),
+                    loading: () => const SkeletonBox(height: 250),
+                    error: (err, stack) => AmErrorWidget(
+                      message: 'Failed to load allocation data',
+                      onRetry: () => ref.invalidate(allocationStreamProvider(userId)),
+                    ),
                   ),
-              ),
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-          SliverPadding(
-             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-             sliver: SliverToBoxAdapter(
-                child: Consumer(
-                   builder: (context, ref, child) {
-                      final performanceAsync = ref.watch(dashboardPerformanceProvider(userId));
-                      return performanceAsync.when(
-                         data: (performance) => DashboardChartWidget(
-                            performance: performance,
-                            onTimeFrameChanged: (timeFrame) {
-                               // Start simple: just re-fetch with new timeframe.
-                               // Ideally use a StateProvider for timeframe.
-                               ref.invalidate(dashboardPerformanceProvider(userId)); 
-                            },
-                         ),
-                         loading: () => const SkeletonBox(height: 250),
-                         error: (err, stack) => AmErrorWidget(
-                            message: 'Failed to load chart',
-                            onRetry: () => ref.invalidate(dashboardPerformanceProvider(userId)),
-                         ),
-                      );
-                   },
-                ),
-             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
           SliverPadding(
@@ -98,16 +79,18 @@ class DashboardPage extends ConsumerWidget {
             sliver: SliverToBoxAdapter(
               child: Consumer(
                 builder: (context, ref, child) {
-                  final topMoversAsync = ref.watch(topMoversProvider(userId));
-                  return topMoversAsync.when(
-                    data: (topMovers) => DashboardRankingWidget(
-                      gainers: topMovers.gainers,
-                      losers: topMovers.losers,
+                  final performanceAsync = ref.watch(historyStreamProvider(userId));
+                  return performanceAsync.when(
+                    data: (performance) => DashboardChartWidget(
+                      performance: performance,
+                      onTimeFrameChanged: (timeFrame) {
+                        ref.invalidate(historyStreamProvider(userId));
+                      },
                     ),
-                    loading: () => const SkeletonBox(height: 300),
+                    loading: () => const SkeletonBox(height: 250),
                     error: (err, stack) => AmErrorWidget(
-                      message: 'Failed to load top movers',
-                      onRetry: () => ref.invalidate(topMoversProvider(userId)),
+                      message: 'Failed to load chart',
+                      onRetry: () => ref.invalidate(historyStreamProvider(userId)),
                     ),
                   );
                 },
@@ -120,13 +103,35 @@ class DashboardPage extends ConsumerWidget {
             sliver: SliverToBoxAdapter(
               child: Consumer(
                 builder: (context, ref, child) {
-                  final activitiesAsync = ref.watch(recentActivityProvider(userId));
+                  final topMoversAsync = ref.watch(moversStreamProvider(userId));
+                  return topMoversAsync.when(
+                    data: (topMovers) => DashboardRankingWidget(
+                      gainers: topMovers.gainers,
+                      losers: topMovers.losers,
+                    ),
+                    loading: () => const SkeletonBox(height: 300),
+                    error: (err, stack) => AmErrorWidget(
+                      message: 'Failed to load top movers',
+                      onRetry: () => ref.invalidate(moversStreamProvider(userId)),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            sliver: SliverToBoxAdapter(
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final activitiesAsync = ref.watch(activityStreamProvider(userId));
                   return activitiesAsync.when(
                     data: (activities) => RecentActivityWidget(activities: activities),
                     loading: () => const SkeletonBox(height: 200),
                     error: (err, stack) => AmErrorWidget(
                       message: 'Failed to load recent activity',
-                      onRetry: () => ref.invalidate(recentActivityProvider(userId)),
+                      onRetry: () => ref.invalidate(activityStreamProvider(userId)),
                     ),
                   );
                 },
@@ -155,16 +160,14 @@ class DashboardPage extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
                     child: PortfolioOverviewCard(
                       overview: overview,
-                      onTap: () {
-                        // Navigate to details
-                      },
+                      onTap: () {},
                     ),
                   );
                 },
                 childCount: overviews.length,
               ),
             ),
-            loading: () => SliverToBoxAdapter(child: const SkeletonBox(height: 100)),
+            loading: () => const SliverToBoxAdapter(child: SkeletonBox(height: 100)),
             error: (err, stack) => SliverToBoxAdapter(
               child: AmErrorWidget(
                 message: 'Failed to load portfolios',
@@ -172,7 +175,6 @@ class DashboardPage extends ConsumerWidget {
               ),
             ),
           ),
-          // Add extra padding at bottom
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),

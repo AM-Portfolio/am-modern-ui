@@ -1,20 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_it/get_it.dart';
+import 'package:am_library/core/network/websocket/am_stomp_client.dart';
 import 'package:am_common/core/services/price_service.dart';
 import 'package:am_common/core/di/network_providers.dart';
 import 'package:am_common/core/models/price_update_model.dart';
 
 final priceServiceProvider = FutureProvider<PriceService>((ref) async {
-  final config = await ref.watch(appConfigProvider.future);
-  final service = PriceService(config);
-  
-  // Start connection immediately upon creation
+  await ref.watch(appConfigProvider.future);
+  final stompClient = GetIt.instance.isRegistered<AmStompClient>()
+      ? GetIt.instance<AmStompClient>()
+      : null;
+  final service = PriceService(stompClient: stompClient);
+
+  // Keep one PriceService for the app session — avoids mass UNSUBSCRIBE on tab changes.
+  ref.keepAlive();
   service.connect();
-  
-  // Ensure we clean up when the provider is disposed (if ever)
+
   ref.onDispose(() {
-    service.disconnect();
+    service.detach();
   });
-  
+
   return service;
 });
 

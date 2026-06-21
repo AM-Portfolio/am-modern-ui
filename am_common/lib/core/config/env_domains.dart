@@ -22,9 +22,12 @@ class EnvDomains {
   static String get docs      => ConfigService.override('docs')      ?? '$apiBase/doc/processor';
   static String get gmail     => ConfigService.override('gmail')     ?? '$apiBase/gmail';
   static String get etf       => ConfigService.override('etf')       ?? '$apiBase/api/etf';
-  static String get subscription => ConfigService.override('subscription') ?? const String.fromEnvironment('AM_SUBSCRIPTION_BASE_URL', defaultValue: 'http://localhost:8110');
+  static String get subscription => ConfigService.override('subscription') ?? '$apiBase/subscriptions';
   
-  // WebSocket
+  // WebSocket — all real-time UI uses am-gateway STOMP
   static String get wsStream  => ConfigService.override('wsStream')  ?? '$wsBase/v1/streams';
+
+  /// Deprecated: use [wsStream]. Market prices now relay via gateway `/topic/stock/{symbol}`.
+  @Deprecated('Use wsStream via AmStompClient instead of direct am-market WebSocket')
   static String get marketWs  => ConfigService.override('marketWs')  ?? '$wsBase/market/ws/market-data-stream';
 }

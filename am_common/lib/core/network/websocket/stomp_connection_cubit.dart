@@ -44,10 +44,12 @@ class StompConnectionCubit extends Cubit<StompConnectionState> {
   /// When a non-null token is received, it connects.
   /// When null is received, it disconnects.
   String? _currentUserId;
+  String? _lastToken;
   Function(String userId)? onConnected;
 
   void updateToken(String? token, {String? userId}) {
     _currentUserId = userId;
+    _lastToken = token;
     if (token != null && token.isNotEmpty) {
       // Prevent connecting to remote STOMP servers with a local mock token
       // which results in repeated authentication STOMP Errors.
@@ -60,6 +62,7 @@ class StompConnectionCubit extends Cubit<StompConnectionState> {
         _stompClient.connect(headers: {'Authorization': 'Bearer $token'});
       }
     } else {
+      _lastToken = null;
       _stompClient.disconnect();
     }
   }
@@ -77,11 +80,24 @@ class StompConnectionCubit extends Cubit<StompConnectionState> {
         break;
       case StompStatus.disconnected:
         emit(StompDisconnected());
+        _scheduleReconnectIfNeeded();
         break;
       case StompStatus.error:
         emit(const StompError("STOMP connection error"));
+        _scheduleReconnectIfNeeded();
         break;
     }
+  }
+
+  void _scheduleReconnectIfNeeded() {
+    final token = _lastToken;
+    if (token == null || token.isEmpty || token == 'mock_dev_token') return;
+    Future<void>.delayed(const Duration(seconds: 5), () {
+      if (!_stompClient.isConnected && _lastToken == token) {
+        AppLogger.info('StompConnectionCubit: Reconnecting after disconnect/error...');
+        _stompClient.connect(headers: {'Authorization': 'Bearer $token'});
+      }
+    });
   }
 
   @override

@@ -10,6 +10,7 @@ import '../data/repositories/market_data_repository.dart';
 
 
 import 'package:am_common/core/services/price_service.dart';
+import 'package:am_common/core/models/price_update_model.dart';
 
 class MarketProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -31,27 +32,111 @@ class MarketProvider with ChangeNotifier {
 
   // PriceService Integration
   PriceService? _priceService;
-  
+  final Set<String> _subscribedSymbols = {};
+  static const int _maxLiveStreamSymbols = 20;
+  DateTime? _lastNotify;
+  static const Duration _notifyThrottle = Duration(milliseconds: 300);
+  StreamSubscription<MarketDataUpdate>? _priceUpdateSub;
+
   void setPriceService(PriceService service) {
+    if (_priceService == service) {
+      unawaited(_resubscribeActiveSymbols());
+      return;
+    }
+    _priceUpdateSub?.cancel();
     _priceService = service;
     CommonLogger.info("PriceService delegated to MarketProvider", tag: "MarketProvider");
     
-    // Sync initial cache if available
     _syncWithPriceService();
     
-    // Subscribe to price stream to sync internal state (allIndicesData)
-    // We use priceStream (full map) or updateStream (event).
-    // updateStream is better for individual processing logic we already have.
-    _priceService!.updateStream.listen((update) {
+    _priceUpdateSub = _priceService!.updateStream.listen((update) {
        if (update.quotes != null) {
-          // Convert QuoteChange to Map<String, dynamic>
           update.quotes!.forEach((symbol, quote) {
              final data = quote.toJson();
-             data['symbol'] = symbol; // Ensure symbol is present
+             data['symbol'] = symbol;
              _processSingleUpdate(symbol, data);
           });
        }
     });
+
+    unawaited(_resubscribeActiveSymbols());
+  }
+
+  Future<void> _resubscribeActiveSymbols() async {
+    if (_priceService == null) return;
+
+    final symbols = <String>{..._subscribedSymbols};
+    if (symbols.isEmpty) {
+      symbols.addAll(_priceService!.subscribedSymbols);
+    }
+    if (_selectedIndex != null &&
+        _selectedIndex != 'All Indices' &&
+        _selectedIndex != 'Dashboard' &&
+        ![
+          'Streamer',
+          'Instrument Explorer',
+          'Security Explorer',
+          'Price Test',
+          'ETF Explorer',
+          'Admin Dashboard',
+          'Analysis Dashboard',
+          'Developer Dashboard',
+          'Market Analysis',
+          'Heatmap',
+          'Heatmap Explorer',
+        ].contains(_selectedIndex)) {
+      symbols.add(_selectedIndex!);
+    }
+    if (_allIndicesData.isNotEmpty) {
+      symbols.addAll(_allIndicesData.map((e) => e.indexSymbol));
+    }
+    if (symbols.isEmpty) return;
+
+    await _priceService!.subscribe(
+      symbols.toList(),
+      isIndexSymbol: _indexSymbol,
+      forceResubscribe: true,
+    );
+    _subscribedSymbols
+      ..clear()
+      ..addAll(symbols.take(_maxLiveStreamSymbols));
+  }
+
+  Future<void> _ensurePriceSubscription(List<String> symbols) async {
+    if (_priceService == null || symbols.isEmpty) return;
+
+    final room = _maxLiveStreamSymbols - _subscribedSymbols.length;
+    if (room <= 0) {
+      CommonLogger.info(
+        'Live stream cap reached ($_maxLiveStreamSymbols symbols) — not adding more',
+        tag: 'MarketProvider._ensurePriceSubscription',
+      );
+      return;
+    }
+
+    final pending = symbols
+        .where((s) => !_subscribedSymbols.contains(s))
+        .take(room)
+        .toList();
+    if (pending.isEmpty) return;
+
+    await _priceService!.subscribe(pending, isIndexSymbol: _indexSymbol);
+    _subscribedSymbols.addAll(pending);
+    CommonLogger.info(
+      'Subscribed to ${pending.length} symbols (${_subscribedSymbols.length}/$_maxLiveStreamSymbols active)',
+      tag: 'MarketProvider._ensurePriceSubscription',
+    );
+  }
+
+  Future<void> _releasePriceSubscription() async {
+    if (_priceService == null || _subscribedSymbols.isEmpty) return;
+    final symbols = _subscribedSymbols.toList();
+    await _priceService!.unsubscribe(symbols);
+    _subscribedSymbols.clear();
+    CommonLogger.info(
+      'Unsubscribed from ${symbols.length} market symbols',
+      tag: 'MarketProvider._releasePriceSubscription',
+    );
   }
 
   // Legacy Store Support (if needed, or just defer to PriceService)
@@ -119,7 +204,7 @@ class MarketProvider with ChangeNotifier {
   Map<String, double>? _heatmapValues;
   Map<String, double>? get heatmapValues => _heatmapValues;
 
-  // Timeframe Based Base Prices
+  // Indices timeframe selection (1D uses live day change; others use historical base prices)
   String _selectedIndicesTimeframe = '1D';
   Map<String, double> _timeframeBasePrices = {};
   bool _isLoadingBasePrices = false;
@@ -130,9 +215,9 @@ class MarketProvider with ChangeNotifier {
 
   Future<void> setIndicesTimeframe(String timeframe) async {
     if (_selectedIndicesTimeframe == timeframe) return;
-    
+
     _selectedIndicesTimeframe = timeframe;
-    
+
     if (timeframe == '1D') {
       _timeframeBasePrices.clear();
       _isLoadingBasePrices = false;
@@ -147,35 +232,57 @@ class MarketProvider with ChangeNotifier {
       final now = DateTime.now();
       DateTime fromDate;
       switch (timeframe) {
-        case '1W': fromDate = now.subtract(const Duration(days: 7)); break;
-        case '1M': fromDate = DateTime(now.year, now.month - 1, now.day); break;
-        case '3M': fromDate = DateTime(now.year, now.month - 3, now.day); break;
-        case '6M': fromDate = DateTime(now.year, now.month - 6, now.day); break;
-        case '1Y': fromDate = DateTime(now.year - 1, now.month, now.day); break;
-        case '5Y': fromDate = DateTime(now.year - 5, now.month, now.day); break;
-        default: fromDate = now.subtract(const Duration(days: 7));
+        case '1W':
+          fromDate = now.subtract(const Duration(days: 7));
+          break;
+        case '1M':
+          fromDate = DateTime(now.year, now.month - 1, now.day);
+          break;
+        case '3M':
+          fromDate = DateTime(now.year, now.month - 3, now.day);
+          break;
+        case '6M':
+          fromDate = DateTime(now.year, now.month - 6, now.day);
+          break;
+        case '1Y':
+          fromDate = DateTime(now.year - 1, now.month, now.day);
+          break;
+        case '5Y':
+          fromDate = DateTime(now.year - 5, now.month, now.day);
+          break;
+        default:
+          fromDate = now.subtract(const Duration(days: 7));
       }
 
       DateTime toDate;
       switch (timeframe) {
-        case '1W': toDate = fromDate.add(const Duration(days: 3)); break;
-        case '1M': toDate = fromDate.add(const Duration(days: 5)); break;
-        case '3M': toDate = fromDate.add(const Duration(days: 7)); break;
-        case '6M': toDate = fromDate.add(const Duration(days: 7)); break;
-        case '1Y': toDate = fromDate.add(const Duration(days: 10)); break;
-        case '5Y': toDate = fromDate.add(const Duration(days: 10)); break;
-        default: toDate = fromDate.add(const Duration(days: 3));
+        case '1W':
+          toDate = fromDate.add(const Duration(days: 3));
+          break;
+        case '1M':
+          toDate = fromDate.add(const Duration(days: 5));
+          break;
+        case '3M':
+        case '6M':
+          toDate = fromDate.add(const Duration(days: 7));
+          break;
+        case '1Y':
+        case '5Y':
+          toDate = fromDate.add(const Duration(days: 10));
+          break;
+        default:
+          toDate = fromDate.add(const Duration(days: 3));
       }
-      
+
       if (toDate.isAfter(now)) {
         toDate = now;
       }
 
       final fromStr = fromDate.toIso8601String().split('T')[0];
       final toStr = toDate.toIso8601String().split('T')[0];
-      
+
       final symbols = _allIndicesData.map((e) => e.indexSymbol).toList();
-      
+
       if (symbols.isNotEmpty) {
         final history = await _apiService.fetchHistoricalData(
           symbols: symbols,
@@ -186,30 +293,32 @@ class MarketProvider with ChangeNotifier {
         );
 
         _timeframeBasePrices.clear();
-        
+
         if (history.containsKey('data')) {
-           final dataMap = history['data'] as Map<String, dynamic>;
-           dataMap.forEach((sym, val) {
-              if (val is Map && val.containsKey('dataPoints')) {
-                 final points = List.from(val['dataPoints']);
-                 if (points.isNotEmpty) {
-                     // Data is descending (newest first). 
-                     // To find the oldest valid price, we scan from the end of the array (oldest) to the start (newest).
-                     for (int i = points.length - 1; i >= 0; i--) {
-                        final point = points[i];
-                        final p = point['close'] ?? point['lastPrice'] ?? point['price'];
-                        if (p != null && (p as num) > 0) {
-                           _timeframeBasePrices[sym] = p.toDouble();
-                           break;
-                        }
-                     }
-                 }
+          final dataMap = history['data'] as Map<String, dynamic>;
+          dataMap.forEach((sym, val) {
+            if (val is Map && val.containsKey('dataPoints')) {
+              final points = List.from(val['dataPoints']);
+              if (points.isNotEmpty) {
+                for (int i = points.length - 1; i >= 0; i--) {
+                  final point = points[i];
+                  final p = point['close'] ?? point['lastPrice'] ?? point['price'];
+                  if (p != null && (p as num) > 0) {
+                    _timeframeBasePrices[sym] = p.toDouble();
+                    break;
+                  }
+                }
               }
-           });
+            }
+          });
         }
       }
     } catch (e) {
-      CommonLogger.error("Error fetching base prices for $timeframe", tag: "MarketProvider.setIndicesTimeframe", error: e);
+      CommonLogger.error(
+        "Error fetching base prices for $timeframe",
+        tag: "MarketProvider.setIndicesTimeframe",
+        error: e,
+      );
     } finally {
       _isLoadingBasePrices = false;
       notifyListeners();
@@ -222,9 +331,10 @@ class MarketProvider with ChangeNotifier {
   }
 
   void toggleIndexSymbol(bool value) {
+    if (_indexSymbol == value) return;
     _indexSymbol = value;
     notifyListeners();
-    // Auto-reload data when toggle changes
+    // Auto-reload data when toggle changes (subscriptions stay — add-only)
     if (_selectedIndex == "All Indices") {
       loadAllIndicesData();
     }
@@ -285,16 +395,14 @@ class MarketProvider with ChangeNotifier {
         if (_allIndicesData[i].indexSymbol.toUpperCase() == updateSymbolBase.toUpperCase()) {
              final current = _allIndicesData[i];
              final double? newLtp = data['lastPrice']?.toDouble();
-             final double? newChange = data['change']?.toDouble() ?? data['netChange']?.toDouble();
              final double? newPChange = data['changePercent']?.toDouble(); 
              
              if (newLtp != null) {
                  _allIndicesData[i] = current.copyWith(
                      lastPrice: newLtp,
-                     change: newChange ?? current.change,
                      pChange: newPChange ?? current.pChange 
                  );
-                 notifyListeners();
+                 _notifyThrottled();
              }
              break; 
         }
@@ -302,6 +410,16 @@ class MarketProvider with ChangeNotifier {
 
       // Emit event
       _livePriceController.add(data);
+  }
+
+  void _notifyThrottled() {
+    final now = DateTime.now();
+    if (_lastNotify != null &&
+        now.difference(_lastNotify!) < _notifyThrottle) {
+      return;
+    }
+    _lastNotify = now;
+    notifyListeners();
   }
 
   void _syncWithPriceService() {
@@ -331,6 +449,7 @@ class MarketProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _priceUpdateSub?.cancel();
     _livePriceController.close();
     super.dispose();
   }
@@ -356,6 +475,22 @@ class MarketProvider with ChangeNotifier {
   }
 
   Future<void> selectIndex(String indexSymbol) async {
+    final previous = _selectedIndex;
+    if (previous == indexSymbol) {
+      if (indexSymbol == "All Indices" && _allIndicesData.isNotEmpty && !_forceRefresh) {
+        return;
+      }
+      if (indexSymbol == "Dashboard" && _allIndicesData.isNotEmpty && !_forceRefresh) {
+        return;
+      }
+      if (!["All Indices", "Dashboard", "Streamer"].contains(indexSymbol) &&
+          _currentIndexData != null &&
+          previous == indexSymbol &&
+          !_forceRefresh) {
+        return;
+      }
+    }
+
     CommonLogger.info("Selecting: $indexSymbol", tag: "MarketProvider.selectIndex");
 
     _selectedIndex = indexSymbol;
@@ -402,6 +537,10 @@ class MarketProvider with ChangeNotifier {
     try {
       _currentIndexData = await _apiService.fetchIndexData(_selectedIndex!, forceRefresh: _forceRefresh);
       CommonLogger.debug("Data refreshed for $_selectedIndex. Constituents: ${_currentIndexData?.stocks.length ?? 0}", tag: "MarketProvider.refreshIndexData");
+      if (_selectedIndex != null) {
+        await _ensurePriceSubscription([_selectedIndex!]);
+        _syncWithPriceService();
+      }
 
     } catch (e) {
       CommonLogger.error("Error refreshing $_selectedIndex", tag: "MarketProvider.refreshIndexData", error: e);
@@ -451,20 +590,8 @@ class MarketProvider with ChangeNotifier {
       
       CommonLogger.info("Successfully loaded ${_allIndicesData.length} indices", tag: "MarketProvider.loadAllIndicesData");
 
-      // STEP 4: Initiate Real-Time Stream for UI Updates
-      // We must explicitly dispatch a subscribe request to tell the backend which symbols
-      // the dashboard is actively monitoring. While the WebSocket connection is managed globally 
-      // by the PriceService, the Upstox scraper pipeline on the backend requires this explicit 
-      // payload to begin streaming live ticks for these specific indices (e.g., NIFTY 50).
-      // Without this, the UI would remain stuck on the initial REST snapshot until a page refresh.
-      
-      // Attempt to sync from PriceService Cache if available
+      await _ensurePriceSubscription(allSymbols);
       _syncWithPriceService();
-      
-      if (_priceService != null && allSymbols.isNotEmpty) {
-        CommonLogger.info("Subscribing to real-time stream for ${allSymbols.length} indices to prevent stale dashboard prices", tag: "MarketProvider.loadAllIndicesData");
-        _priceService!.subscribe(allSymbols, isIndexSymbol: true);
-      }
 
     } catch (e) {
       CommonLogger.error("Error loading all indices data", tag: "MarketProvider.loadAllIndicesData", error: e);

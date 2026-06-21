@@ -25,9 +25,8 @@ class MarketDataSdkService {
     marginApi = MarginCalculatorApi(_apiClient);
   }
 
-  /// Configure authentication if needed
+  /// Configure authentication — pass the Bearer token string.
   void setAuthentication(String token) {
-    // Add authentication headers if required
     _apiClient.addDefaultHeader('Authorization', 'Bearer $token');
   }
 }

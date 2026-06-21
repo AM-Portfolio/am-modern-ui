@@ -74,6 +74,17 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         widget.portfolios?.firstOrNull?.portfolioId;
     _currentPortfolioName = widget.selectedPortfolioName ??
         widget.portfolios?.firstOrNull?.portfolioName;
+
+    final portfolioId = _currentPortfolioId;
+    if (portfolioId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+              portfolioId: portfolioId,
+              forceResubscribe: true,
+            );
+      });
+    }
   }
 
   @override

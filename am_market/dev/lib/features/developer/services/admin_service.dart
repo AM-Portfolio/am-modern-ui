@@ -6,7 +6,6 @@ import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart';
 
 class AdminService {
-  // Use localhost for now, assume proxy or direct access
   static String get baseUrl => EnvDomains.market;
   final _storage = GetIt.I<SecureStorageService>();
 

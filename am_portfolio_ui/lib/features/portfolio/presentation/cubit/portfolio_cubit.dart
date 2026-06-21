@@ -24,35 +24,51 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       super(PortfolioInitial());
 
   final PortfolioService _portfolioService;
-  final AmStompClient _stompClient; // Use local instance
+  final AmStompClient _stompClient;
+
+  StreamingHeartbeatService? _heartbeat;
 
   // Subscription management
   bool _isSubscribed = false;
   StreamSubscription? _socketSubscription;
   
   String? _subPortfolioId;
+  String? _lastSentPortfolioId;
   DateTime? _lastStatusErrorTime;
+  StreamSubscription<StompStatus>? _statusSubscription;
 
   bool isLiveDataActive = false;
 
   /// Subscribe to portfolio updates via WebSocket
-  void subscribeToPortfolioUpdates({String? portfolioId}) {
-        _subPortfolioId = portfolioId;
-    if (_isSubscribed) {
-      CommonLogger.debug(
-        'Already subscribed (flag is true)',
-        tag: 'PortfolioCubit',
-      );
+  void subscribeToPortfolioUpdates({
+    String? portfolioId,
+    bool forceResubscribe = false,
+  }) {
+    if (portfolioId != null) {
+      _subPortfolioId = portfolioId;
+    }
+
+    _ensureStatusListener();
+
+    if (_stompClient.isConnected) {
+      final portfolioChanged =
+          portfolioId != null && portfolioId != _lastSentPortfolioId;
+      if (!_isSubscribed || portfolioChanged || forceResubscribe) {
+        _performSubscription(
+          forceResubscribe: forceResubscribe || portfolioChanged,
+        );
+      }
       return;
     }
 
     CommonLogger.info(
-      'PortfolioCubit: Initiating subscription',
+      'WebSocket not connected yet. Waiting for connection to subscribe...',
       tag: 'PortfolioCubit',
     );
+  }
 
-    // Listen to connection status to subscribe when ready
-    _stompClient.status.listen((status) {
+  void _ensureStatusListener() {
+    _statusSubscription ??= _stompClient.status.listen((status) {
       if (status == StompStatus.error) {
         // Throttle error logs to once every 30 seconds
         final now = DateTime.now();
@@ -71,61 +87,43 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         );
       }
       
-      if (status == StompStatus.connected && !_isSubscribed) {
+      if (status == StompStatus.connected) {
         CommonLogger.info(
           '[$_debugId] PortfolioCubit: Connected event received, calling _performSubscription',
           tag: 'PortfolioCubit',
         );
-        _performSubscription();
+        _performSubscription(
+          forceResubscribe: _lastSentPortfolioId != _subPortfolioId,
+        );
       }
 
       if (status == StompStatus.disconnected || status == StompStatus.error) {
-        _isSubscribed = false; // Reset so re-subscription fires on next connect
+        _isSubscribed = false;
+        _lastSentPortfolioId = null;
         isLiveDataActive = false;
         if (state is PortfolioLoaded) {
           emit((state as PortfolioLoaded).copyWith(isLiveDataActive: false));
         }
       }
     });
-
-    // If already connected, subscribe immediately
-    if (_stompClient.isConnected) {
-      CommonLogger.info(
-        'PortfolioCubit: Already connected, subscribing immediately',
-        tag: 'PortfolioCubit',
-      );
-      _performSubscription();
-    } else {
-      CommonLogger.info(
-        'WebSocket not connected yet. Waiting for connection to subscribe...',
-        tag: 'PortfolioCubit',
-      );
-
-      // Add a delayed retry in case the status listener was registered after connection
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!_isSubscribed && _stompClient.isConnected) {
-          CommonLogger.info(
-            'PortfolioCubit: Delayed retry - connection detected, subscribing now',
-            tag: 'PortfolioCubit',
-          );
-          _performSubscription();
-        }
-      });
-    }
   }
 
-  void _performSubscription() {
+  void _performSubscription({bool forceResubscribe = false}) {
     // AmStompClient handles idempotent subscriptions, but we can double check
     // effectively, we just want to ensure we call subscribe once valid.
 
     CommonLogger.info('[$_debugId] Hello', tag: 'PortfolioCubit');
 
-    // Store the destination for unsubscription
     const destination = '/user/queue/portfolio';
-    _stompClient.subscribe(destination);
+    _stompClient.subscribe(destination, forceResubscribe: forceResubscribe);
+    CommonLogger.info(
+      '[$_debugId] Subscribed to $destination (forceResubscribe=$forceResubscribe)',
+      tag: 'PortfolioCubit',
+    );
 
-    // Trigger the backend to start calculating using the /app/portfolio/subscribe endpoint
-    if (_subPortfolioId != null) {
+    // Trigger backend portfolio watch + stream
+    if (_subPortfolioId != null &&
+        (forceResubscribe || _lastSentPortfolioId != _subPortfolioId)) {
       final traceId = Uuid().v4();
       final body =
           '{"portfolioId": "$_subPortfolioId"}';
@@ -143,7 +141,11 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         },
         body: body,
       );
+      _lastSentPortfolioId = _subPortfolioId;
     }
+
+    _heartbeat ??= StreamingHeartbeatService(_stompClient);
+    _heartbeat!.start();
 
     if (!_isSubscribed) {
       CommonLogger.info(
@@ -221,6 +223,16 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
   /// Unsubscribe from portfolio updates
   void unsubscribeFromPortfolioUpdates() {
+    _heartbeat?.stop();
+
+    if (_stompClient.isConnected) {
+      _stompClient.send(
+        destination: '/app/portfolio/unsubscribe',
+        headers: {'content-type': 'application/json'},
+        body: '{}',
+      );
+    }
+
     if (_isSubscribed) {
       CommonLogger.info(
         '[$_debugId] PortfolioCubit: Unsubscribing from updates',
@@ -238,6 +250,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
   @override
   Future<void> close() {
+    _statusSubscription?.cancel();
+    _heartbeat?.dispose();
     unsubscribeFromPortfolioUpdates();
     return super.close();
   }

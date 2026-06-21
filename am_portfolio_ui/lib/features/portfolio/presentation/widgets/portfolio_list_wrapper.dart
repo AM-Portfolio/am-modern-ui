@@ -38,11 +38,19 @@ class PortfolioListWrapper extends ConsumerStatefulWidget {
 class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   String? selectedPortfolioId;
   String? selectedPortfolioName;
+  String? _streamActivatedForId;
 
   @override
   void initState() {
     super.initState();
     _logInitialization();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final id = selectedPortfolioId ?? context.selectedPortfolioId;
+      if (id != null && mounted) {
+        _streamActivatedForId = null;
+        _ensureStreamActive(id);
+      }
+    });
   }
 
   /// Logs the initialization of the wrapper
@@ -53,14 +61,30 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     );
   }
 
+  /// Ensures STOMP queue + backend watch are active for the selected portfolio.
+  void _ensureStreamActive(String portfolioId) {
+    if (_streamActivatedForId == portfolioId) return;
+    _streamActivatedForId = portfolioId;
+    context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+          portfolioId: portfolioId,
+          forceResubscribe: true,
+        );
+    CommonLogger.info(
+      'Portfolio stream activated for $portfolioId',
+      tag: 'PortfolioListWrapper',
+    );
+  }
+
   /// Handles portfolio selection change
   void _onPortfolioChanged(String portfolioId, String portfolioName) {
     setState(() {
       selectedPortfolioId = portfolioId;
       selectedPortfolioName = portfolioName;
+      _streamActivatedForId = null;
     });
     if (context.mounted) {
       context.selectPortfolio(portfolioId, portfolioName);
+      _ensureStreamActive(portfolioId);
     }
 
     CommonLogger.info(
@@ -82,12 +106,17 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
           break;
         }
       }
-      if (match != null && selectedPortfolioId != inheritedId) {
-        final selected = match;
-        setState(() {
-          selectedPortfolioId = selected.portfolioId;
-          selectedPortfolioName = selected.portfolioName;
-        });
+      if (match != null) {
+        if (selectedPortfolioId != inheritedId) {
+          setState(() {
+            selectedPortfolioId = match!.portfolioId;
+            selectedPortfolioName = match.portfolioName;
+          });
+        }
+        if (context.mounted) {
+          context.selectPortfolio(match.portfolioId, match.portfolioName);
+          _ensureStreamActive(match.portfolioId);
+        }
         return;
       }
     }
@@ -264,6 +293,11 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         if (!mounted || selectedPortfolioId != null) return;
         final name = _resolveSelectedPortfolioName(portfolios) ?? '';
         _onPortfolioChanged(effectiveId, name);
+      });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _ensureStreamActive(effectiveId);
       });
     }
 

@@ -52,10 +52,11 @@ class _GlobalPortfolioWrapperState
                       _selectedPortfolioName = first.portfolioName;
                     });
 
-                    // Trigger real-time subscription
-                    innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates();
+                    innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+                      portfolioId: first.portfolioId,
+                      forceResubscribe: true,
+                    );
 
-                    // Trigger initial REST load for details
                     innerContext.read<PortfolioCubit>().loadPortfolioById(first.portfolioId);
 
                     widget.onPortfolioChanged?.call(
@@ -73,10 +74,11 @@ class _GlobalPortfolioWrapperState
                     _selectedPortfolioId = id;
                     _selectedPortfolioName = name;
                   });
-                  // Trigger real-time subscription on manual selection
-                  innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates();
+                  innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+                    portfolioId: id,
+                    forceResubscribe: true,
+                  );
 
-                  // Trigger REST load for details on manual selection
                   innerContext.read<PortfolioCubit>().loadPortfolioById(id);
 
                   widget.onPortfolioChanged?.call(id, name);

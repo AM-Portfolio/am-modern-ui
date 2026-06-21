@@ -56,6 +56,9 @@ class AmStompClient {
       return;
     }
 
+    _client?.deactivate();
+    _client = null;
+
     _statusSubject.add(StompStatus.connecting);
     AppLogger.info('AmStompClient: Connecting to $_url ...');
 

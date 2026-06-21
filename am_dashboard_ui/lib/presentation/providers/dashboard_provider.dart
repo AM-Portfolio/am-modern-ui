@@ -19,6 +19,18 @@ Future<DashboardRepository> dashboardRepository(Ref ref) async {
   return DashboardRepository(apiClient, stompClient);
 }
 
+/// Starts dashboard STOMP session (subscribe + queue bindings). Watch from DashboardPage.
+@riverpod
+Future<void> dashboardStreamingSession(Ref ref, String userId) async {
+  if (userId.isEmpty) return;
+  final repository = await ref.watch(dashboardRepositoryProvider.future);
+  await repository.trySubscribeToDashboard();
+  ref.onDispose(() {
+    repository.unsubscribeFromDashboard();
+    repository.dispose();
+  });
+}
+
 @riverpod
 Future<DashboardSummary> dashboardSummary(Ref ref, String userId) async {
   final repository = await ref.watch(dashboardRepositoryProvider.future);
@@ -27,33 +39,76 @@ Future<DashboardSummary> dashboardSummary(Ref ref, String userId) async {
 
 @riverpod
 Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
-  if (userId.isEmpty) {
-    throw ArgumentError('User ID cannot be empty');
-  }
-  
-  final repository = await ref.watch(dashboardRepositoryProvider.future);
-  
-  // Yield initial data from REST to show something immediately
-  try {
-     final initial = await repository.getSummary(userId);
-     yield initial;
-  } catch (e) {
-     AppLogger.error('Failed to fetch initial dashboard summary, but continuing to stream', error: e);
-     // Rethrow if we want the UI to show an error immediately on first load failure
-     rethrow; 
-  }
-  
-  ref.onDispose(() {
-    repository.unsubscribeFromDashboardStream(userId);
-  });
+  if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
 
-  // Listen to WebSocket updates, but don't let WebSocket errors kill the initial data
+  final repository = await ref.watch(dashboardRepositoryProvider.future);
+  yield await repository.getSummary(userId);
+
   try {
-    yield* repository.getDashboardStream(userId).handleError((error) {
-      AppLogger.warning('Resilient Dashboard Stream: WebSocket error ignored after initial fetch', error: error);
-    });
+    await ref.watch(dashboardStreamingSessionProvider(userId).future);
+    yield* repository.watchSummary();
   } catch (e) {
-    AppLogger.warning('Resilient Dashboard Stream: Failed to start WebSocket stream', error: e);
+    AppLogger.warning('Dashboard summary live stream unavailable', error: e);
+  }
+}
+
+@riverpod
+Stream<List<ActivityItem>> activityStream(Ref ref, String userId) async* {
+  if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
+
+  final repository = await ref.watch(dashboardRepositoryProvider.future);
+  yield await repository.getRecentActivity(userId);
+
+  try {
+    await ref.watch(dashboardStreamingSessionProvider(userId).future);
+    yield* repository.watchActivity();
+  } catch (e) {
+    AppLogger.warning('Dashboard activity live stream unavailable', error: e);
+  }
+}
+
+@riverpod
+Stream<AllocationResponse> allocationStream(Ref ref, String userId) async* {
+  if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
+
+  final repository = await ref.watch(dashboardRepositoryProvider.future);
+  yield await repository.getAllocation(userId);
+
+  try {
+    await ref.watch(dashboardStreamingSessionProvider(userId).future);
+    yield* repository.watchAllocation();
+  } catch (e) {
+    AppLogger.warning('Dashboard allocation live stream unavailable', error: e);
+  }
+}
+
+@riverpod
+Stream<TopMoversResponse> moversStream(Ref ref, String userId, {String timeFrame = '1D'}) async* {
+  if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
+
+  final repository = await ref.watch(dashboardRepositoryProvider.future);
+  yield await repository.getTopMovers(userId, timeFrame: timeFrame);
+
+  try {
+    await ref.watch(dashboardStreamingSessionProvider(userId).future);
+    yield* repository.watchMovers();
+  } catch (e) {
+    AppLogger.warning('Dashboard movers live stream unavailable', error: e);
+  }
+}
+
+@riverpod
+Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFrame = '1M'}) async* {
+  if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
+
+  final repository = await ref.watch(dashboardRepositoryProvider.future);
+  yield await repository.getPerformance(userId, timeFrame: timeFrame);
+
+  try {
+    await ref.watch(dashboardStreamingSessionProvider(userId).future);
+    yield* repository.watchHistory();
+  } catch (e) {
+    AppLogger.warning('Dashboard history live stream unavailable', error: e);
   }
 }
 
@@ -63,6 +118,7 @@ Future<List<PortfolioOverview>> portfolioOverviews(Ref ref, String userId) async
   return repository.getPortfolioOverviews(userId);
 }
 
+// Legacy Future providers (REST-only fallbacks / refresh)
 @riverpod
 Future<AllocationResponse> dashboardAllocation(Ref ref, String userId) async {
   final repository = await ref.watch(dashboardRepositoryProvider.future);

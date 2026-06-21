@@ -6,7 +6,7 @@
     "users": "http://localhost:8002",
     "portfolio": "http://localhost:8072",
     "market": "http://localhost:8092",
-    "marketWs": "ws://localhost:8092",
+    "wsStream": "ws://localhost:8000/v1/streams",
     "etf": "http://localhost:8022",
     "trades": "http://localhost:8082",
     "analysis": "http://localhost:8090",

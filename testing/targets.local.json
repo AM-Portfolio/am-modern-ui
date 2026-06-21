@@ -1,0 +1,19 @@
+{
+  "module": "modern-ui",
+  "environment": "local",
+  "default_target": "main",
+  "targets": {
+    "main": {
+      "base_url": "http://localhost:9000",
+      "ui_mode": "main",
+      "auth_login_mode": "demo",
+      "profile": "AUTH_FLOW_MAIN"
+    },
+    "portfolio": {
+      "base_url": "http://localhost:8082",
+      "ui_mode": "portfolio",
+      "auth_login_mode": "demo",
+      "profile": "AUTH_FLOW_PORTFOLIO"
+    }
+  }
+}
