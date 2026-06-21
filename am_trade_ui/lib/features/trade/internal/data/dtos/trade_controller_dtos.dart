@@ -377,9 +377,7 @@ class TradeDetailsDto {
 
   factory TradeDetailsDto.fromJson(Map<String, dynamic> json) => _$TradeDetailsDtoFromJson(json);
 
-  @JsonKey(defaultValue: '')
   final String tradeId;
-  @JsonKey(defaultValue: '')
   final String portfolioId;
   final InstrumentInfoDto instrumentInfo;
   final String? symbol;

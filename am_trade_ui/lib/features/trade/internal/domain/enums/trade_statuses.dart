@@ -13,12 +13,11 @@ enum TradeStatuses {
 }
 
 /// Custom converter for TradeStatuses to handle both BREAKEVEN and BREAK_EVEN
-class TradeStatusesConverter implements JsonConverter<TradeStatuses, String?> {
+class TradeStatusesConverter implements JsonConverter<TradeStatuses, String> {
   const TradeStatusesConverter();
 
   @override
-  TradeStatuses fromJson(String? json) {
-    if (json == null || json.isEmpty) return TradeStatuses.open;
+  TradeStatuses fromJson(String json) {
     // Handle both BREAK_EVEN and BREAKEVEN formats
     final normalized = json.replaceAll('_', '');
     switch (normalized.toUpperCase()) {
