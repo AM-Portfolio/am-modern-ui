@@ -7,12 +7,10 @@ import 'package:flutter/material.dart';
 
 class DashboardChartWidget extends StatelessWidget {
   final PerformanceResponse performance;
-  final ValueChanged<String>? onTimeFrameChanged;
 
   const DashboardChartWidget({
     super.key,
     required this.performance,
-    this.onTimeFrameChanged,
   });
 
   @override
@@ -21,15 +19,9 @@ class DashboardChartWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Performance',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              _buildTimeFrameSelector(context),
-            ],
+          Text(
+            'Performance',
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -47,19 +39,6 @@ class DashboardChartWidget extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTimeFrameSelector(BuildContext context) {
-    if (onTimeFrameChanged == null) return const SizedBox.shrink();
-    
-    final timeFrames = ['1D', '1W', '1M', '3M', '1Y', 'YTD'];
-    return ToggleButtons(
-      isSelected: timeFrames.map((tf) => tf == performance.timeFrame).toList(),
-      onPressed: (index) => onTimeFrameChanged!(timeFrames[index]),
-      borderRadius: BorderRadius.circular(8),
-      constraints: const BoxConstraints(minHeight: 32, minWidth: 40),
-      children: timeFrames.map((tf) => Text(tf, style: const TextStyle(fontSize: 12))).toList(),
     );
   }
 

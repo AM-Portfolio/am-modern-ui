@@ -58,15 +58,20 @@ class _AppShellState extends State<AppShell> {
         await common.SessionPersistenceService.instance.load(authState.user.id);
     if (session != null && mounted && _navMap.containsKey(session.globalNav)) {
       setState(() => _selectedIndex = _navMap[session.globalNav]!);
+      _applyStreamingTabCoordinator(session.globalNav);
     }
+  }
+
+  void _applyStreamingTabCoordinator(String tabTitle) {
+    if (!GetIt.instance.isRegistered<common.AmStompClient>()) return;
+    if (tabTitle.isEmpty) return;
+    common.StreamingTabCoordinator(GetIt.instance<common.AmStompClient>())
+        .onTabSelected(tabTitle);
   }
 
   void _onGlobalNavigate(String title, String userId) {
     if (!_navMap.containsKey(title)) return;
-    if (GetIt.instance.isRegistered<common.AmStompClient>()) {
-      common.StreamingTabCoordinator(GetIt.instance<common.AmStompClient>())
-          .onTabSelected(title);
-    }
+    _applyStreamingTabCoordinator(title);
     setState(() => _selectedIndex = _navMap[title]!);
     common.SessionPersistenceService.instance.patch(
       userId,
@@ -83,6 +88,7 @@ class _AppShellState extends State<AppShell> {
       
       stompCubit.onConnected = (userId) {
         common.AppLogger.info('AppShell (Initial): STOMP Connected for $userId');
+        if (mounted) _applyStreamingTabCoordinator(_activeNavItem);
       };
 
       final secureStorage = GetIt.instance<common.SecureStorageService>();
@@ -136,6 +142,9 @@ class _AppShellState extends State<AppShell> {
                // Register root-level sync trigger
                stompCubit.onConnected = (userId) {
                  common.AppLogger.info('AppShell: STOMP Connected for $userId');
+                 if (context.mounted) {
+                   _applyStreamingTabCoordinator(_activeNavItem);
+                 }
                };
 
                final secureStorage = GetIt.instance<common.SecureStorageService>();
@@ -221,6 +230,9 @@ class _AppShellState extends State<AppShell> {
                       ),
                     Expanded(
                       child: GlobalPortfolioWrapper(
+                        streamingTab: _activeNavItem.isEmpty
+                            ? 'Dashboard'
+                            : _activeNavItem,
                         child: _buildPage(userId, isDesktop),
                       ),
                     ),
