@@ -14,6 +14,7 @@ import 'package:am_market_ui/features/market_analysis/presentation/widgets/indic
 import 'package:provider/provider.dart' hide Consumer;
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 import 'package:am_common/core/di/price_providers.dart';
+import 'package:am_common/core/services/price_service.dart';
 
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/market_index_detail_view.dart';
 
@@ -25,9 +26,17 @@ import 'package:am_common/am_common.dart';
 
 /// Market feature page with Swipe Navigation
 class MarketPage extends StatelessWidget {
-  const MarketPage({required this.userId, super.key, this.onBack});
+  const MarketPage({
+    required this.userId,
+    super.key,
+    this.initialTab = 'all-indices',
+    this.onTabChanged,
+    this.onBack,
+  });
 
   final String userId;
+  final String initialTab;
+  final ValueChanged<String>? onTabChanged;
   final VoidCallback? onBack;
 
   @override
@@ -56,41 +65,98 @@ class MarketPage extends StatelessWidget {
           create: (_) => view_mode.ViewModeProvider(),
         ),
       ],
-      child: Consumer(
-        builder: (context, ref, child) {
-           final priceServiceAsync = ref.watch(priceServiceProvider);
-           
-           // Inject PriceService into MarketProvider when available
-           priceServiceAsync.whenData((service) {
-              CommonLogger.info("Injecting PriceService into MarketProvider", tag: "MarketPage");
-              final marketProvider = Provider.of<MarketProvider>(context, listen: false);
-              marketProvider.setPriceService(service);
-           });
-           
-           return MarketContent(userId: userId, onBack: onBack);
-        },
+      child: MarketContent(
+        userId: userId,
+        initialTab: initialTab,
+        onTabChanged: onTabChanged,
+        onBack: onBack,
       ),
     );
   }
 }
 
-class MarketContent extends StatefulWidget {
-  const MarketContent({required this.userId, this.onBack, super.key});
+class MarketContent extends ConsumerStatefulWidget {
+  const MarketContent({
+    required this.userId,
+    super.key,
+    this.initialTab = 'all-indices',
+    this.onTabChanged,
+    this.onBack,
+  });
 
   final String userId;
+  final String initialTab;
+  final ValueChanged<String>? onTabChanged;
   final VoidCallback? onBack;
 
   @override
-  State<MarketContent> createState() => _MarketContentState();
+  ConsumerState<MarketContent> createState() => _MarketContentState();
 }
 
-class _MarketContentState extends State<MarketContent> {
+class _MarketContentState extends ConsumerState<MarketContent> {
   late SwipeNavigationController _swipeController;
+
+  static const _staticTitleToSlug = {
+    'All Indices': 'all-indices',
+    'Streamer': 'streamer',
+    'Instrument Explorer': 'instrument-explorer',
+    'Security Explorer': 'security-explorer',
+    'ETF Explorer': 'etf-explorer',
+    'Price Test': 'price-test',
+    'Market Analysis': 'market-analysis',
+    'Admin Dashboard': 'admin',
+    'Developer Dashboard': 'developer-dashboard',
+    'Dashboard': 'dashboard',
+    'Heatmap Explorer': 'heatmap-explorer',
+  };
+
+  String _slugForTitle(String title) {
+    return _staticTitleToSlug[title] ??
+        title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+  }
+
+  int _indexForSlug(String slug, List<NavigationItem> items) {
+    for (var i = 0; i < items.length; i++) {
+      if (_slugForTitle(items[i].title) == slug) return i;
+    }
+    return 0;
+  }
+
+  void _syncTabFromUrl({bool notify = false}) {
+    final items = _swipeController.items;
+    if (items.isEmpty) return;
+    final index = _indexForSlug(widget.initialTab, items);
+    if (_swipeController.currentIndex != index) {
+      _swipeController.navigateTo(index);
+    }
+    if (notify) {
+      widget.onTabChanged?.call(_slugForTitle(items[index].title));
+    }
+  }
+
+  void _notifyTabChanged() {
+    final items = _swipeController.items;
+    if (items.isEmpty) return;
+    final title = items[_swipeController.currentIndex].title;
+    widget.onTabChanged?.call(_slugForTitle(title));
+  }
 
   @override
   void initState() {
     super.initState();
     _initializeSwipeController();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bindPriceService());
+  }
+
+  Future<void> _bindPriceService() async {
+    if (!mounted) return;
+    try {
+      final service = await ref.read(priceServiceProvider.future);
+      if (!mounted) return;
+      context.read<MarketProvider>().setPriceService(service);
+    } catch (e) {
+      AppLogger.warning('MarketPage: Failed to bind PriceService', error: e);
+    }
   }
 
   void _initializeSwipeController() {
@@ -105,13 +171,23 @@ class _MarketContentState extends State<MarketContent> {
       if (!mounted) return;
       setState(() {});
 
-      // Sync provider with new selection
       final currentTitle = _swipeController.currentItem.title;
       final provider = context.read<MarketProvider>();
       if (provider.selectedIndex != currentTitle) {
         provider.selectIndex(currentTitle);
       }
+      _notifyTabChanged();
     });
+  }
+
+  @override
+  void didUpdateWidget(MarketContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTab != oldWidget.initialTab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _syncTabFromUrl();
+      });
+    }
   }
 
   void _navigateToNext() {
@@ -137,15 +213,23 @@ class _MarketContentState extends State<MarketContent> {
   }
 
   @override
-  Widget build(BuildContext context) => Consumer2<MarketProvider, view_mode.ViewModeProvider>(
+  Widget build(BuildContext context) {
+    ref.listen<AsyncValue<PriceService>>(priceServiceProvider, (previous, next) {
+      next.whenData((service) {
+        if (!context.mounted) return;
+        context.read<MarketProvider>().setPriceService(service);
+      });
+    });
+
+    return Consumer2<MarketProvider, view_mode.ViewModeProvider>(
     builder: (context, provider, viewModeProvider, _) {
       // Update controller items when provider updates (e.g. indices loaded)
       final newItems = _buildNavigationItems(provider, viewModeProvider);
       if (_hasItemsChanged(newItems)) {
-        // Defer update to avoid build cycle
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             _swipeController.updateItems(newItems);
+            _syncTabFromUrl();
           }
         });
       }
@@ -153,6 +237,8 @@ class _MarketContentState extends State<MarketContent> {
       return UnifiedSidebarScaffold(
         module: ModuleType.market,
         onBackToGlobal: widget.onBack,
+        showModuleBottomNavigation: false,
+        headerActions: const [ShareLinkButton()],
         body: SwipeablePageView(
           key: const PageStorageKey('market_page_info'), // Maintain state across layout rebuilds
           scrollDirection: Axis.vertical,
@@ -162,7 +248,8 @@ class _MarketContentState extends State<MarketContent> {
         sections: _buildSidebarSections(provider, viewModeProvider),
       );
     },
-  );
+    );
+  }
 
   bool _hasItemsChanged(List<NavigationItem> newItems) {
     if (_swipeController.items.length != newItems.length) return true;
@@ -342,7 +429,8 @@ class _MarketContentState extends State<MarketContent> {
     accentColor: ModuleColors.market,
     onTap: () {
       _swipeController.navigateTo(index);
-      context.read<MarketProvider>().selectIndex(title); // Sync provider
+      context.read<MarketProvider>().selectIndex(title);
+      widget.onTabChanged?.call(_slugForTitle(title));
     },
   );
 

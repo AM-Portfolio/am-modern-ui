@@ -98,7 +98,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final result = await loginCall();
       final entity = result.toEntity();
       
-      // Save tokens
+      // Save tokens to persistent storage
       await _storageService.saveAccessToken(entity.tokens.accessToken);
       if (entity.tokens.refreshToken != null) {
         await _storageService.saveRefreshToken(entity.tokens.refreshToken!);
@@ -106,6 +106,13 @@ class AuthRepositoryImpl implements AuthRepository {
       await _storageService.saveUserId(entity.user.id);
       await _storageService.saveUserEmail(entity.user.email);
       await _storageService.saveTokenExpiry(entity.tokens.expiresAt);
+
+      // Populate in-memory UserContext so all modules are immediately cache-hot
+      UserContext.instance.populate(
+        accessToken: entity.tokens.accessToken,
+        userId: entity.user.id,
+        email: entity.user.email,
+      );
       
       return Right(entity);
     } on AuthException catch (e) {
@@ -240,6 +247,7 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await _dataSource.logout();
       await _storageService.clearAuthData();
+      UserContext.instance.invalidate(); // evict in-memory cache
       if (userId != null && userId.isNotEmpty) {
         await SessionPersistenceService.instance.clear(userId);
       }
@@ -247,6 +255,7 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (e) {
       // Even if API call fails, clear local data
       await _storageService.clearAuthData();
+      UserContext.instance.invalidate();
       if (userId != null && userId.isNotEmpty) {
         await SessionPersistenceService.instance.clear(userId);
       }

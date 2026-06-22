@@ -44,6 +44,9 @@ export 'features/attachment/internal/presentation/cubits/attachment_state.dart';
 export 'features/attachment/internal/services/cloudinary_upload_service.dart';
 export 'features/attachment/internal/services/file_upload_service.dart';
 export 'core/services/price_service.dart';
+export 'core/services/streaming_heartbeat_service.dart';
+export 'core/services/streaming_tab_coordinator.dart';
+export 'core/models/equity_price_mapper.dart';
 export 'core/models/price_update_model.dart';
 
 // Widgets
@@ -72,8 +75,6 @@ export 'core/session/app_session_state.dart';
 export 'core/session/session_persistence_service.dart';
 export 'core/di/network_providers.dart';
 export 'core/constants/constants.dart';
-export 'core/services/price_service.dart';
-export 'core/models/price_update_model.dart';
 export 'core/network/websocket/am_websocket_client.dart';
 export 'core/network/websocket/websocket_cubit.dart';
 export 'core/network/websocket/stomp_connection_cubit.dart';

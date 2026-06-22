@@ -1,4 +1,5 @@
-import 'package:am_design_system/am_design_system.dart';
+/// Deprecated: Market streaming uses am-gateway STOMP via [AmStompClient] and
+/// `/topic/stock/{symbol}`. See [PriceService] in am_common.
 import 'package:am_auth_ui/core/services/secure_storage_service.dart';
 
 import 'dart:async';
@@ -7,13 +8,14 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'package:am_common/am_common.dart';
 
+@Deprecated('Use PriceService with AmStompClient instead')
 class StreamService {
   WebSocketChannel? _channel;
-  final StreamController<Map<String, dynamic>> _streamController = StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<Map<String, dynamic>> _streamController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<Map<String, dynamic>> get stream => _streamController.stream;
 
-  // Connection status
   bool _isConnected = false;
   bool get isConnected => _isConnected;
 
@@ -22,20 +24,20 @@ class StreamService {
 
   void connect() {
     if (_isConnected) return;
-    
+
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
       _isConnected = true;
       CommonLogger.info("WebSocket Connected", tag: "StreamService.connect");
 
-      // Periodic ping heartbeat to prevent connection from being closed as idle by proxy
       _pingTimer?.cancel();
       _pingTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
         if (_isConnected && _channel != null) {
           try {
             _channel!.sink.add("ping");
           } catch (e) {
-            CommonLogger.error("Error sending ping heartbeat", tag: "StreamService.connect", error: e);
+            CommonLogger.error("Error sending ping heartbeat",
+                tag: "StreamService.connect", error: e);
           }
         }
       });
@@ -43,18 +45,20 @@ class StreamService {
       _channel!.stream.listen(
         (message) {
           try {
-            if (message == "pong") return; // Ignore pong replies from backend
-            
+            if (message == "pong") return;
+
             final data = json.decode(message);
             if (data is Map<String, dynamic>) {
               _streamController.add(data);
             }
           } catch (e) {
-            CommonLogger.error("Error parsing WS message", tag: "StreamService.connect", error: e);
+            CommonLogger.error("Error parsing WS message",
+                tag: "StreamService.connect", error: e);
           }
         },
         onError: (error) {
-          CommonLogger.error("WebSocket Error", tag: "StreamService.connect", error: error);
+          CommonLogger.error("WebSocket Error",
+              tag: "StreamService.connect", error: error);
           _isConnected = false;
           _cleanupPingTimer();
         },
@@ -65,7 +69,8 @@ class StreamService {
         },
       );
     } catch (e) {
-      CommonLogger.error("Error connecting to WebSocket", tag: "StreamService.connect", error: e);
+      CommonLogger.error("Error connecting to WebSocket",
+          tag: "StreamService.connect", error: e);
       _isConnected = false;
       _cleanupPingTimer();
     }

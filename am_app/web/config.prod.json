@@ -1,0 +1,8 @@
+{
+  "_comment": "Cluster production gateway.",
+  "domain": "am.munish.org",
+  "services": {},
+  "google": {
+    "webClientId": ""
+  }
+}

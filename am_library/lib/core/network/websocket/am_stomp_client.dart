@@ -57,11 +57,13 @@ class AmStompClient {
       return;
     }
 
+    _client?.deactivate();
+    _client = null;
+
     var connectionUrl = _url!;
 
     // On Web, browsers do not support custom headers in the WebSocket handshake.
-    // We must pass the token as a query parameter for the handshake to succeed
-    // if the server/gateway requires authentication.
+    // Pass the token as a query parameter so the gateway can authenticate the upgrade.
     if (kIsWeb && headers != null && headers.containsKey('Authorization')) {
       final auth = headers['Authorization']!;
       if (auth.startsWith('Bearer ')) {

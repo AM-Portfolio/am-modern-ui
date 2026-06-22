@@ -761,11 +761,21 @@ class _StreamerPageState extends ConsumerState<StreamerPage> {
                         rows: currentItems.map((data) {
                           final key = data['symbol'] ?? 'UNKNOWN';
                           final ltp = (data['lastPrice'] as num?)?.toDouble() ?? 0.0;
-                          final change = (data['change'] as num?)?.toDouble() ?? 0.0;
-                          final pChange = (data['changePercent'] as num?)?.toDouble() ?? 0.0;
+                          final change = (data['change'] as num?)?.toDouble() ??
+                              ((data['lastPrice'] as num?)?.toDouble() != null &&
+                                      (data['previousClose'] as num?)?.toDouble() != null
+                                  ? (data['lastPrice'] as num).toDouble() -
+                                      (data['previousClose'] as num).toDouble()
+                                  : 0.0);
+                          final pChange = (data['changePercent'] as num?)?.toDouble() ??
+                              (change != 0 && (data['previousClose'] as num?)?.toDouble() != null &&
+                                      (data['previousClose'] as num).toDouble() != 0
+                                  ? (change / (data['previousClose'] as num).toDouble()) * 100
+                                  : 0.0);
                           final color = change >= 0 ? Colors.green : Colors.red;
                           final time = data['timestamp'] as DateTime? ?? DateTime.now();
-                          final prevClose = ltp - change;
+                          final prevClose = (data['previousClose'] as num?)?.toDouble() ??
+                              (ltp - change);
                           
                           // Improve Time Visibility
                           final timeStr = DateFormat('HH:mm:ss').format(time);

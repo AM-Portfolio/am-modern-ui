@@ -1,246 +1,328 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:get_it/get_it.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:am_common/core/config/app_config.dart';
+import 'package:stomp_dart_client/stomp_frame.dart';
+import 'package:am_common/core/models/equity_price_mapper.dart';
 import 'package:am_common/core/models/price_update_model.dart';
 import 'package:am_common/am_common.dart';
-import 'package:am_common/core/network/websocket/am_websocket_client.dart';
-import 'package:am_library/core/services/secure_storage_service.dart';
-import 'package:http/http.dart' as http;
+import 'package:am_library/core/network/websocket/am_stomp_client.dart';
 
-/// Singleton service to manage global WebSocket connection for real-time prices.
-///
-/// Flow:
-///   1. [connect()] opens a persistent WebSocket to the backend at [MarketDataConfig.wsUrl].
-///   2. [subscribe(symbols)] sends a REST POST to [MarketDataConfig.connectEndpoint] which
-///      tells the backend to start streaming those symbols from Upstox via its own WebSocket.
-///   3. Backend broadcasts [MarketDataUpdate] JSON frames to all connected WS clients.
-///   4. [_onMessage] parses frames and emits to [priceStream] / [updateStream].
-///   5. On WS reconnect, [subscribe] is automatically re-sent to restart the backend stream.
+/// Real-time prices via am-gateway STOMP only:
+/// - `/app/market/subscribe` → gateway proxies am-market upstream connect
+/// - `/topic/stock/{symbol}` → live price relay from Kafka
 class PriceService {
-  final AppConfig _config;
-  final AMWebSocketClient _wsClient;
+  PriceService({AmStompClient? stompClient})
+      : _stompClient = stompClient ??
+            (GetIt.instance.isRegistered<AmStompClient>()
+                ? GetIt.instance<AmStompClient>()
+                : null);
 
-  StreamSubscription? _subscription;
-  StreamSubscription? _statusSubscription;
+  final AmStompClient? _stompClient;
 
-  // ── Price cache ───────────────────────────────────────────────────────────
+  StreamSubscription<StompFrame>? _messageSub;
+  StreamSubscription<StompStatus>? _statusSub;
+
+  final Set<String> _subscribedSymbols = {};
+  final Set<String> _upstreamSymbols = {};
+  final Set<String> _pendingGatewaySymbols = {};
+  Timer? _gatewayConnectDebounce;
+  DateTime? _lastTopicResubscribe;
+
+  static const Duration _gatewayConnectDebounceDelay = Duration(milliseconds: 500);
+  static const Duration _topicResubscribeCooldown = Duration(seconds: 3);
+
   final Map<String, QuoteChange> _priceCache = {};
 
-  // ── Reactive streams ──────────────────────────────────────────────────────
   final BehaviorSubject<Map<String, QuoteChange>> _pricesSubject =
       BehaviorSubject<Map<String, QuoteChange>>.seeded({});
 
   final PublishSubject<MarketDataUpdate> _updatesSubject =
       PublishSubject<MarketDataUpdate>();
 
-  // ── Subscription state (persisted for auto-resubscribe on reconnect) ──────
-  List<String> _subscribedSymbols = [];
-  String _subscribedProvider = 'UPSTOX';
-  bool _subscribedIsIndex = false;
-  bool _subscribedMockMode = false;
-
-  PriceService(this._config) : _wsClient = AMWebSocketClient() {
-    final wsUrl = _config.api.marketData?.wsUrl;
-    if (wsUrl != null && wsUrl.isNotEmpty) {
-      _wsClient.configure(url: wsUrl);
-      AppLogger.info('PriceService: Configured WS URL: $wsUrl');
-    } else {
-      AppLogger.warning('PriceService: No WS URL configured in MarketDataConfig.');
-    }
-
-    // When the WS (re)connects, re-send the subscription request so the
-    // backend restarts its Upstox stream for the tracked symbols.
-    _statusSubscription = _wsClient.status.listen((status) {
-      if (status == SocketStatus.connected && _subscribedSymbols.isNotEmpty) {
-        AppLogger.info(
-            'PriceService: WS (re)connected — re-subscribing ${_subscribedSymbols.length} symbols.');
-        _sendSubscriptionRequest();
-      }
-    });
-  }
-
-  // ── Public API ────────────────────────────────────────────────────────────
-
-  /// Full price-map stream (Symbol → QuoteChange).
   Stream<Map<String, QuoteChange>> get priceStream => _pricesSubject.stream;
 
-  /// Individual update-event stream.
   Stream<MarketDataUpdate> get updateStream => _updatesSubject.stream;
 
-  /// True while the WebSocket is connected.
-  Stream<bool> get isConnectedStream =>
-      _wsClient.status.map((s) => s == SocketStatus.connected);
+  Stream<bool> get isConnectedStream {
+    final client = _stompClient;
+    if (client == null) return Stream.value(false);
+    return client.status.map((s) => s == StompStatus.connected);
+  }
 
-  /// Latest quote for a symbol.
+  Set<String> get subscribedSymbols => Set.unmodifiable(_subscribedSymbols);
+
   QuoteChange? getQuote(String symbol) => _priceCache[symbol];
 
-  /// Latest price for a symbol (convenience).
   double? getPrice(String symbol) => _priceCache[symbol]?.lastPrice;
 
-  /// Latest quotes for a list of symbols.
   Map<String, QuoteChange> getQuotes(List<String> symbols) {
     final result = <String, QuoteChange>{};
-    for (final s in symbols) {
-      if (_priceCache.containsKey(s)) result[s] = _priceCache[s]!;
+    for (final symbol in symbols) {
+      final quote = _priceCache[symbol];
+      if (quote != null) {
+        result[symbol] = quote;
+      }
     }
     return result;
   }
 
-  /// Open the WebSocket connection and start listening for messages.
+  /// Attach STOMP listeners. Connection is owned by [StompConnectionCubit] / AppShell.
   void connect() {
-    _wsClient.connect();
-    // Guard: only attach listener once.
-    _subscription ??= _wsClient.messages.listen(_onMessage);
+    final client = _stompClient;
+    if (client == null) {
+      AppLogger.warning('PriceService: AmStompClient not registered.');
+      return;
+    }
+
+    if (_messageSub != null) return;
+
+    _messageSub = client.messages.listen(_onStompFrame);
+    _statusSub = client.status.listen((status) {
+      if (status == StompStatus.connected) {
+        _resubscribeStompTopics();
+      }
+    });
   }
 
-  /// Subscribe to [symbols] for real-time price updates.
-  ///
-  /// This:
-  ///   1. Ensures the WebSocket is connected.
-  ///   2. Sends a REST POST to the backend to start Upstox streaming for these symbols.
-  ///   3. Stores params so they can be re-sent automatically on WS reconnect.
+  /// Register upstream + STOMP topics for [symbols]. Batches gateway connect calls.
+  /// When [forceResubscribe] is true, re-binds STOMP topics and re-sends gateway connect.
   Future<void> subscribe(
     List<String> symbols, {
     String provider = 'UPSTOX',
     bool isIndexSymbol = false,
     bool mockMode = false,
+    bool forceResubscribe = false,
   }) async {
-    _subscribedSymbols = symbols;
-    _subscribedProvider = provider;
-    _subscribedIsIndex = isIndexSymbol;
-    _subscribedMockMode = mockMode;
+    if (symbols.isEmpty) return;
 
-    AppLogger.info(
-        'PriceService: subscribe() called for ${symbols.length} symbols '
-        '(isIndexSymbol: $isIndexSymbol, provider: ${mockMode ? 'MOCK' : provider})');
-
-    // Ensure WS is open before sending the subscription REST call.
-    if (!_wsClient.isConnected) {
-      AppLogger.info('PriceService: WS not connected — connecting first and waiting.');
-      connect();
-      try {
-        await _wsClient.status
-            .firstWhere((s) => s == SocketStatus.connected)
-            .timeout(const Duration(seconds: 5));
-      } catch (e) {
-        AppLogger.warning('PriceService: WS connection timeout or error during subscribe.');
-        // We still proceed with the REST call as the WS might connect shortly after.
+    final newSymbols = <String>[];
+    for (final symbol in symbols) {
+      if (forceResubscribe || _subscribedSymbols.add(symbol)) {
+        newSymbols.add(symbol);
       }
     }
 
-    await _sendSubscriptionRequest();
-    }
-
-  // ── Internal ──────────────────────────────────────────────────────────────
-
-  /// POST to the backend connect endpoint to start backend Upstox streaming.
-  Future<void> _sendSubscriptionRequest() async {
-    if (_subscribedSymbols.isEmpty) return;
-
-    final baseUrl = _config.api.marketData?.baseUrl;
-    final endpoint = _config.api.marketData?.connectEndpoint;
-
-    if (baseUrl == null || endpoint == null) {
-      AppLogger.warning('PriceService: Missing REST config — cannot subscribe.');
+    if (forceResubscribe) {
+      for (final symbol in symbols) {
+        _subscribedSymbols.add(symbol);
+      }
+      _stompSubscribe(symbols, forceResubscribe: true);
+      _queueGatewayConnect(
+        symbols,
+        provider: provider,
+        isIndexSymbol: isIndexSymbol,
+        mockMode: mockMode,
+        force: true,
+      );
       return;
     }
 
-    try {
-      final url = Uri.parse('$baseUrl$endpoint');
-      final token = await SecureStorageService().getAccessToken();
+    if (newSymbols.isEmpty) return;
 
-      AppLogger.info(
-          'PriceService: Sending subscription request → $url '
-          '(${_subscribedSymbols.length} symbols, authPresent: ${token != null})');
+    _queueGatewayConnect(
+      newSymbols,
+      provider: provider,
+      isIndexSymbol: isIndexSymbol,
+      mockMode: mockMode,
+    );
+    _stompSubscribe(newSymbols);
+  }
 
-      final response = await http
-          .post(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              if (token != null) 'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode({
-              'instrumentKeys': _subscribedSymbols,
-              'provider': _subscribedMockMode ? 'MOCK' : _subscribedProvider,
-              'timeFrame': '1D',
-              'stream': true,
-              'expandIndices': false,
-              'isIndexSymbol': _subscribedIsIndex,
-            }),
-          )
-          .timeout(const Duration(seconds: 12));
+  /// Re-bind all active symbol topics and re-send gateway connect (e.g. after tab return).
+  Future<void> resubscribeAll({
+    bool isIndexSymbol = false,
+    bool mockMode = false,
+  }) async {
+    if (_subscribedSymbols.isEmpty) return;
+    await subscribe(
+      _subscribedSymbols.toList(),
+      isIndexSymbol: isIndexSymbol,
+      mockMode: mockMode,
+      forceResubscribe: true,
+    );
+  }
 
-      if (response.statusCode == 200) {
-        AppLogger.info('PriceService: Subscription successful (200 OK)');
-      } else {
-        AppLogger.error(
-            'PriceService: Subscription failed ${response.statusCode}: ${response.body}');
+  Future<void> unsubscribe(List<String> symbols) async {
+    final client = _stompClient;
+    for (final symbol in symbols) {
+      if (_subscribedSymbols.remove(symbol)) {
+        client?.unsubscribe(stockTopicDestination(symbol));
       }
-    } catch (e) {
-      AppLogger.error('PriceService: Subscription request error', error: e);
+      _upstreamSymbols.remove(symbol);
+      _pendingGatewaySymbols.remove(symbol);
     }
   }
 
-  void _onMessage(dynamic message) {
-    try {
-      if (message is String) {
-        final Map<String, dynamic> json = jsonDecode(message);
-        final update = MarketDataUpdate.fromJson(json);
-
-        // Broadcast individual update event.
-        _updatesSubject.add(update);
-
-        // Update cache and emit full price map.
-        if (update.quotes != null && update.quotes!.isNotEmpty) {
-          bool cacheChanged = false;
-          update.quotes!.forEach((symbol, quote) {
-            final existing = _priceCache[symbol];
-            if (existing != null) {
-              final lastPrice = quote.lastPrice ?? existing.lastPrice;
-              final previousClose = quote.previousClose ?? existing.previousClose;
-              double? change = quote.change ?? existing.change;
-              double? changePercent = quote.changePercent ?? existing.changePercent;
-              
-              if (lastPrice != null && previousClose != null && previousClose != 0) {
-                change = lastPrice - previousClose;
-                changePercent = (change / previousClose) * 100;
-              }
-
-              _priceCache[symbol] = QuoteChange(
-                lastPrice: lastPrice,
-                open: quote.open ?? existing.open,
-                high: quote.high ?? existing.high,
-                low: quote.low ?? existing.low,
-                close: quote.close ?? existing.close,
-                previousClose: previousClose,
-                change: change,
-                changePercent: changePercent,
-              );
-            } else {
-              _priceCache[symbol] = quote;
-            }
-            cacheChanged = true;
-          });
-          if (cacheChanged) {
-            _pricesSubject.add(Map.from(_priceCache));
-          }
-        }
+  void _queueGatewayConnect(
+    List<String> symbols, {
+    required String provider,
+    required bool isIndexSymbol,
+    required bool mockMode,
+    bool force = false,
+  }) {
+    for (final symbol in symbols) {
+      if (force || !_upstreamSymbols.contains(symbol)) {
+        _pendingGatewaySymbols.add(symbol);
       }
-    } catch (e) {
-      AppLogger.error('PriceService: Error parsing WS message', error: e);
+    }
+    if (_pendingGatewaySymbols.isEmpty) return;
+
+    _gatewayConnectDebounce?.cancel();
+    _gatewayConnectDebounce = Timer(_gatewayConnectDebounceDelay, () {
+      _flushGatewayConnect(
+        provider: provider,
+        isIndexSymbol: isIndexSymbol,
+        mockMode: mockMode,
+      );
+    });
+  }
+
+  void _flushGatewayConnect({
+    required String provider,
+    required bool isIndexSymbol,
+    required bool mockMode,
+  }) {
+    final batch = _pendingGatewaySymbols.toList();
+    _pendingGatewaySymbols.clear();
+    if (batch.isEmpty) return;
+
+    _gatewayConnect(
+      batch,
+      provider: provider,
+      isIndexSymbol: isIndexSymbol,
+      mockMode: mockMode,
+    );
+    _upstreamSymbols.addAll(batch);
+  }
+
+  void _gatewayConnect(
+    List<String> symbols, {
+    required String provider,
+    required bool isIndexSymbol,
+    required bool mockMode,
+  }) {
+    final client = _stompClient;
+    if (client == null) {
+      AppLogger.warning('PriceService: Cannot send market subscribe — no AmStompClient.');
+      return;
+    }
+
+    final body = jsonEncode({
+      'instrumentKeys': symbols,
+      'timeFrame': '1D',
+      'stream': true,
+      'expandIndices': false,
+      'isIndexSymbol': isIndexSymbol,
+      if (mockMode) ...{
+        'provider': 'MOCK',
+        'mockMode': true,
+      },
+    });
+
+    AppLogger.info(
+      'PriceService: STOMP /app/market/subscribe batch=${symbols.length} '
+      '(isIndexSymbol: $isIndexSymbol, server-driven provider)',
+    );
+
+    client.send(
+      destination: '/app/market/subscribe',
+      headers: {'content-type': 'application/json'},
+      body: body,
+    );
+  }
+
+  void _stompSubscribe(List<String> symbols, {bool forceResubscribe = false}) {
+    final client = _stompClient;
+    if (client == null) {
+      AppLogger.warning('PriceService: Cannot STOMP subscribe — no AmStompClient.');
+      return;
+    }
+
+    for (final symbol in symbols) {
+      client.subscribe(stockTopicDestination(symbol), forceResubscribe: forceResubscribe);
     }
   }
 
-  /// Disconnect WebSocket and clean up all resources.
+  void _resubscribeStompTopics() {
+    final client = _stompClient;
+    if (client == null || _subscribedSymbols.isEmpty) return;
+
+    final now = DateTime.now();
+    if (_lastTopicResubscribe != null &&
+        now.difference(_lastTopicResubscribe!) < _topicResubscribeCooldown) {
+      return;
+    }
+    _lastTopicResubscribe = now;
+
+    AppLogger.info(
+      'PriceService: Resubscribing ${_subscribedSymbols.length} stock topics after STOMP reconnect',
+    );
+
+    for (final symbol in _subscribedSymbols) {
+      client.subscribe(stockTopicDestination(symbol), forceResubscribe: true);
+    }
+
+    if (_upstreamSymbols.isNotEmpty) {
+      _queueGatewayConnect(
+        _upstreamSymbols.toList(),
+        provider: 'UPSTOX',
+        isIndexSymbol: false,
+        mockMode: false,
+        force: true,
+      );
+    }
+  }
+
+  void _onStompFrame(StompFrame frame) {
+    final body = frame.body;
+    if (body == null || body.isEmpty) return;
+
+    try {
+      final json = jsonDecode(body) as Map<String, dynamic>;
+      final symbol = json['symbol'] as String?;
+      if (symbol == null || symbol.isEmpty) return;
+
+      _applyQuote(symbol, quoteChangeFromEquityPriceJson(json));
+    } catch (e) {
+      AppLogger.error('PriceService: Error parsing STOMP frame', error: e);
+    }
+  }
+
+  void _applyQuote(String symbol, QuoteChange quote) {
+    _priceCache[symbol] = quote;
+    _updatesSubject.add(MarketDataUpdate(quotes: {symbol: quote}));
+    _pricesSubject.add(Map.from(_priceCache));
+  }
+
+  /// Stop listening; keeps STOMP topic subscriptions on the shared client.
+  void detach() {
+    _gatewayConnectDebounce?.cancel();
+    _gatewayConnectDebounce = null;
+
+    _messageSub?.cancel();
+    _messageSub = null;
+    _statusSub?.cancel();
+    _statusSub = null;
+  }
+
+  /// Full teardown (logout / app shutdown): detach + unsubscribe all topics.
   void disconnect() {
-    _wsClient.disconnect();
-    _subscription?.cancel();
-    _subscription = null;
-    _statusSubscription?.cancel();
-    _statusSubscription = null;
-    _subscribedSymbols = [];
-    AppLogger.info('PriceService: Disconnected.');
+    detach();
+    _pendingGatewaySymbols.clear();
+    _upstreamSymbols.clear();
+
+    final client = _stompClient;
+    for (final symbol in _subscribedSymbols.toList()) {
+      client?.unsubscribe(stockTopicDestination(symbol));
+    }
+    _subscribedSymbols.clear();
+
+    if (!_pricesSubject.isClosed) {
+      _pricesSubject.close();
+    }
+    if (!_updatesSubject.isClosed) {
+      _updatesSubject.close();
+    }
   }
 }

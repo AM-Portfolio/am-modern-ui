@@ -6,6 +6,7 @@ import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard_ui;
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_library/am_library.dart';
 import 'package:am_subscription_ui/am_subscription_ui.dart' as subscription_ui;
+import 'package:am_market_ui/features/market_analysis/services/market_analysis_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -162,7 +163,11 @@ void _registerDashboardDependencies() {
 }
 
 void _registerMarketDependencies() {
-  // Market UI uses Riverpod providers for its internal dependencies
+  if (!getIt.isRegistered<MarketAnalysisService>()) {
+    getIt.registerLazySingleton<MarketAnalysisService>(
+      () => MarketAnalysisService(),
+    );
+  }
 }
 void _registerPortfolioDependencies() {
   // Portfolio UI uses Riverpod providers for its internal dependencies

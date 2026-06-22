@@ -1,0 +1,13 @@
+{
+  "name": "@am-modern-ui/testing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Thin wrapper for am-ui-test-agent — MCP manifest + CLI",
+  "scripts": {
+    "auth:preprod": "python run_auth.py preprod",
+    "auth:local": "python run_auth.py local",
+    "auth:preprod:report": "python run_auth.py preprod --open-report",
+    "auth:preprod:json": "python run_auth.py preprod --json",
+    "manifest": "node -e \"console.log(JSON.stringify(require('./manifest.json'), null, 2))\""
+  }
+}

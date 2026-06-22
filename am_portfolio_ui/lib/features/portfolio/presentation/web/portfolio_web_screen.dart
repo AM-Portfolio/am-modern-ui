@@ -24,6 +24,8 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
     this.selectedPortfolioId,
     this.selectedPortfolioName,
     this.portfolios,
+    this.initialTab = 'overview',
+    this.onTabChanged,
     this.onPortfolioChanged,
     this.isSidebarVisible = true,
     this.onToggleSidebar,
@@ -33,6 +35,8 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final List<PortfolioItem>? portfolios;
+  final String initialTab;
+  final ValueChanged<String>? onTabChanged;
   final Function(String portfolioId, String portfolioName)? onPortfolioChanged;
   final bool isSidebarVisible;
   final VoidCallback? onToggleSidebar;
@@ -44,6 +48,14 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
 }
 
 class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
+  static const _tabSlugs = [
+    'overview',
+    'holdings',
+    'analysis',
+    'heatmap',
+    'baskets',
+  ];
+
   SwipeNavigationController? _swipeController;
   String? _currentPortfolioId;
   String? _currentPortfolioName;
@@ -54,12 +66,6 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     super.initState();
     _syncPortfolioSelection();
     _initializeSwipeController();
-  }
-
-  void _onSwipeControllerChanged() {
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   @override
@@ -74,6 +80,17 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         widget.portfolios?.firstOrNull?.portfolioId;
     _currentPortfolioName = widget.selectedPortfolioName ??
         widget.portfolios?.firstOrNull?.portfolioName;
+
+    final portfolioId = _currentPortfolioId;
+    if (portfolioId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+              portfolioId: portfolioId,
+              forceResubscribe: true,
+            );
+      });
+    }
   }
 
   @override
@@ -84,7 +101,23 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         widget.portfolios != oldWidget.portfolios) {
       _syncPortfolioSelection();
       _initializeSwipeController();
+    } else if (widget.initialTab != oldWidget.initialTab) {
+      _navigateToTabSlug(widget.initialTab, notify: false);
     }
+  }
+
+  int _tabIndexFromSlug(String slug) {
+    final index = _tabSlugs.indexOf(slug);
+    return index >= 0 ? index : 0;
+  }
+
+  String _slugFromIndex(int index) =>
+      _tabSlugs[index.clamp(0, _tabSlugs.length - 1)];
+
+  void _navigateToTabSlug(String slug, {bool notify = true}) {
+    final index = _tabIndexFromSlug(slug);
+    _swipeController?.navigateTo(index);
+    if (notify) widget.onTabChanged?.call(_slugFromIndex(index));
   }
 
   String? get _resolvedPortfolioId {
@@ -99,11 +132,26 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
 
   void _initializeSwipeController() {
     final items = _buildNavigationItems();
+    final initialIndex = _tabIndexFromSlug(widget.initialTab);
     if (_swipeController == null) {
-      _swipeController = SwipeNavigationController(items: items);
+      _swipeController = SwipeNavigationController(
+        items: items,
+        initialIndex: initialIndex,
+      );
       _swipeController!.addListener(_onSwipeControllerChanged);
     } else {
       _swipeController!.updateItems(items);
+      _swipeController!.navigateTo(initialIndex);
+    }
+  }
+
+  void _onSwipeControllerChanged() {
+    if (mounted) {
+      setState(() {});
+      final index = _swipeController?.currentIndex;
+      if (index != null) {
+        widget.onTabChanged?.call(_slugFromIndex(index));
+      }
     }
   }
 
@@ -231,10 +279,10 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
       },
       child: UnifiedSidebarScaffold(
       module: ModuleType.portfolio,
-      // Removed title/subtitle as requested
       title: null,
       subtitle: null,
-      // CRITICAL: Pass an empty header to override default "Portfolio" header
+      showModuleBottomNavigation: false,
+      headerActions: const [ShareLinkButton()],
       header: const SizedBox(height: 16),
       onBackToGlobal: widget.onBack,
       onThemeToggle: () {
@@ -319,7 +367,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
               title: item.title,
               icon: item.icon,
               isSelected: _swipeController!.currentIndex == index,
-              onTap: () => _swipeController!.navigateTo(index),
+              onTap: () => _navigateToTabSlug(_slugFromIndex(index)),
               accentColor: item.accentColor,
             );
           }).toList(),

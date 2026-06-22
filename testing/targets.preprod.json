@@ -1,0 +1,19 @@
+{
+  "module": "modern-ui",
+  "environment": "preprod",
+  "default_target": "main",
+  "targets": {
+    "main": {
+      "base_url": "${AM_API_BASE_URL}",
+      "ui_mode": "main",
+      "auth_login_mode": "demo",
+      "profile": "AUTH_FLOW_MAIN"
+    },
+    "portfolio": {
+      "base_url": "${AM_API_BASE_URL}",
+      "ui_mode": "portfolio",
+      "auth_login_mode": "demo",
+      "profile": "AUTH_FLOW_PORTFOLIO"
+    }
+  }
+}

@@ -93,7 +93,14 @@ def get_available_device():
     """Detect available flutter devices and return the best match."""
     try:
         is_windows = os.name == "nt"
-        result = subprocess.run(["flutter", "devices"], capture_output=True, text=True, shell=is_windows)
+        result = subprocess.run(
+            ["flutter", "devices"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            shell=is_windows,
+        )
         output = result.stdout.lower()
         if "chrome" in output:
             return "chrome"
@@ -138,7 +145,7 @@ def run_cmd(package, cmd_parts, env_vars=None):
         print(f"[Logs] Streaming output to logs/{log_name}.log")
         with open(log_file, "a", encoding="utf-8") as f:
             f.write(f"\n\n--- EXECUTION: {' '.join(cmd_parts)} ---\n")
-            p = subprocess.Popen(cmd_parts, cwd=package_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=is_windows)
+            p = subprocess.Popen(cmd_parts, cwd=package_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", shell=is_windows)
             try:
                 for line in p.stdout:
                     sys.stdout.write(line)
@@ -179,6 +186,7 @@ def get_web_port(package, env_vars):
 def handle_run(pkg, env_name):
     package = resolve_package(pkg)
     env_vars = load_env(env_name)
+    env_vars['AM_ENV'] = env_name
     defines = construct_dart_defines(env_vars)
     
     device = get_available_device()
@@ -190,6 +198,7 @@ def handle_run(pkg, env_name):
 def handle_build(pkg, env_name):
     package = resolve_package(pkg)
     env_vars = load_env(env_name)
+    env_vars['AM_ENV'] = env_name
     defines = construct_dart_defines(env_vars)
     
     cmd = ["flutter", "build", "web", "--release", "--no-wasm-dry-run"] + defines

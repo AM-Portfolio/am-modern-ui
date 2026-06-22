@@ -11,7 +11,6 @@ import '../mobile/portfolio_mobile_screen.dart';
 import '../web/portfolio_web_screen.dart';
 import 'global_portfolio_wrapper.dart';
 import 'gmail_sync/gmail_connect_button.dart';
-import 'global_portfolio_wrapper.dart';
 
 /// Wrapper widget that handles portfolio list loading and selection
 /// Provides portfolio selection functionality for both mobile and web screens
@@ -19,12 +18,20 @@ class PortfolioListWrapper extends ConsumerStatefulWidget {
   const PortfolioListWrapper({
     required this.isMobile,
     super.key,
+    this.initialPortfolioId,
+    this.initialTab = 'overview',
+    this.onTabChanged,
+    this.onPortfolioChanged,
     this.isSidebarVisible = true,
     this.onToggleSidebar,
     this.onBack,
     this.addTradeBuilder,
   });
   final bool isMobile;
+  final String? initialPortfolioId;
+  final String initialTab;
+  final ValueChanged<String>? onTabChanged;
+  final void Function(String portfolioId, String portfolioName)? onPortfolioChanged;
   final bool isSidebarVisible;
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
@@ -38,11 +45,22 @@ class PortfolioListWrapper extends ConsumerStatefulWidget {
 class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   String? selectedPortfolioId;
   String? selectedPortfolioName;
+  String? _streamActivatedForId;
 
   @override
   void initState() {
     super.initState();
+    if (widget.initialPortfolioId != null) {
+      selectedPortfolioId = widget.initialPortfolioId;
+    }
     _logInitialization();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final id = selectedPortfolioId ?? context.selectedPortfolioId;
+      if (id != null && mounted) {
+        _streamActivatedForId = null;
+        _ensureStreamActive(id);
+      }
+    });
   }
 
   /// Logs the initialization of the wrapper
@@ -53,14 +71,31 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     );
   }
 
+  /// Ensures STOMP queue + backend watch are active for the selected portfolio.
+  void _ensureStreamActive(String portfolioId) {
+    if (_streamActivatedForId == portfolioId) return;
+    _streamActivatedForId = portfolioId;
+    context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+          portfolioId: portfolioId,
+          forceResubscribe: true,
+        );
+    CommonLogger.info(
+      'Portfolio stream activated for $portfolioId',
+      tag: 'PortfolioListWrapper',
+    );
+  }
+
   /// Handles portfolio selection change
   void _onPortfolioChanged(String portfolioId, String portfolioName) {
     setState(() {
       selectedPortfolioId = portfolioId;
       selectedPortfolioName = portfolioName;
+      _streamActivatedForId = null;
     });
     if (context.mounted) {
       context.selectPortfolio(portfolioId, portfolioName);
+      _ensureStreamActive(portfolioId);
+      widget.onPortfolioChanged?.call(portfolioId, portfolioName);
     }
 
     CommonLogger.info(
@@ -69,9 +104,55 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     );
   }
 
-  /// Auto-selects the first portfolio if none is selected
+  /// Auto-selects portfolio from URL, global wrapper, or first available.
   void _autoSelectFirstPortfolio(List<PortfolioItem> portfolios) {
     if (portfolios.isEmpty) return;
+
+    final urlId = widget.initialPortfolioId;
+    if (urlId != null) {
+      PortfolioItem? match;
+      for (final p in portfolios) {
+        if (p.portfolioId == urlId) {
+          match = p;
+          break;
+        }
+      }
+      if (match != null) {
+        if (selectedPortfolioId != urlId) {
+          setState(() {
+            selectedPortfolioId = match!.portfolioId;
+            selectedPortfolioName = match.portfolioName;
+          });
+        }
+        if (context.mounted) {
+          context.selectPortfolio(match.portfolioId, match.portfolioName);
+          _ensureStreamActive(match.portfolioId);
+        }
+        return;
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Portfolio not found or access denied. Showing default.'),
+          ),
+        );
+      }
+      final fallback = portfolios.first;
+      setState(() {
+        selectedPortfolioId = fallback.portfolioId;
+        selectedPortfolioName = fallback.portfolioName;
+      });
+      if (context.mounted) {
+        context.selectPortfolio(fallback.portfolioId, fallback.portfolioName);
+        _ensureStreamActive(fallback.portfolioId);
+        widget.onPortfolioChanged?.call(
+          fallback.portfolioId,
+          fallback.portfolioName,
+        );
+      }
+      return;
+    }
 
     final inheritedId = context.selectedPortfolioId;
     if (inheritedId != null) {
@@ -82,12 +163,17 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
           break;
         }
       }
-      if (match != null && selectedPortfolioId != inheritedId) {
-        final selected = match;
-        setState(() {
-          selectedPortfolioId = selected.portfolioId;
-          selectedPortfolioName = selected.portfolioName;
-        });
+      if (match != null) {
+        if (selectedPortfolioId != inheritedId) {
+          setState(() {
+            selectedPortfolioId = match!.portfolioId;
+            selectedPortfolioName = match.portfolioName;
+          });
+        }
+        if (context.mounted) {
+          context.selectPortfolio(match.portfolioId, match.portfolioName);
+          _ensureStreamActive(match.portfolioId);
+        }
         return;
       }
     }
@@ -100,6 +186,10 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
       });
       if (context.mounted) {
         context.selectPortfolio(
+          firstPortfolio.portfolioId,
+          firstPortfolio.portfolioName,
+        );
+        widget.onPortfolioChanged?.call(
           firstPortfolio.portfolioId,
           firstPortfolio.portfolioName,
         );
@@ -265,6 +355,11 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         final name = _resolveSelectedPortfolioName(portfolios) ?? '';
         _onPortfolioChanged(effectiveId, name);
       });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _ensureStreamActive(effectiveId);
+      });
     }
 
     return _buildPortfolioScreen(
@@ -295,6 +390,8 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         selectedPortfolioId: portfolioId,
         selectedPortfolioName: portfolioName,
         portfolios: portfolios,
+        initialTab: widget.initialTab,
+        onTabChanged: widget.onTabChanged,
         onPortfolioChanged: _onPortfolioChanged,
         isSidebarVisible: widget.isSidebarVisible,
         onToggleSidebar: widget.onToggleSidebar,

@@ -9,15 +9,12 @@ import 'package:am_market_common/models/etf.dart';
 import 'package:am_common/am_common.dart';
 
 class EtfService {
-  // Use relative path which goes through Nginx proxy
-  // Local development fallback could be configured if needed, but assuming Docker setup
   static String get baseUrl => '${EnvDomains.etf}/v1';
   final _storage = GetIt.I<SecureStorageService>();
 
   Future<Map<String, String>> _getHeaders() async {
     final token = await _storage.getAccessToken();
-    CommonLogger.debug("Token present: ${token != null}", tag: "EtfService");
-
+    CommonLogger.debug('Token present: ${token != null}', tag: 'EtfService');
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:am_market_common/models/top_mover_stock.dart';
 import 'package:intl/intl.dart';
+import 'package:am_market_ui/features/market/widgets/market_colors.dart';
 
 /// Widget showing top gainers or losers (API-driven)
 class TopMoversWidgetV2 extends StatelessWidget {
@@ -25,11 +26,11 @@ class TopMoversWidgetV2 extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1D26).withOpacity(0.6),
+        color: MarketColors.cardSurface(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
-          width: 1,
+          color: MarketColors.borderDefault(context),
+          width: MarketColors.borderWidth(context),
         ),
       ),
       child: Column(
@@ -46,8 +47,8 @@ class TopMoversWidgetV2 extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: MarketColors.textPrimary(context),
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -74,7 +75,7 @@ class TopMoversWidgetV2 extends StatelessWidget {
                 child: Text(
                   'No data available',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: MarketColors.textMuted(context),
                     fontSize: 14,
                   ),
                 ),
@@ -119,8 +120,8 @@ class TopMoversWidgetV2 extends StatelessWidget {
                         children: [
                           Text(
                             stock.symbol,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: MarketColors.textPrimary(context),
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -130,7 +131,7 @@ class TopMoversWidgetV2 extends StatelessWidget {
                           Text(
                             '₹${numberFormat.format(stock.lastPrice)}',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.6),
+                              color: MarketColors.textMuted(context),
                               fontSize: 12,
                             ),
                           ),

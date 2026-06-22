@@ -1,0 +1,48 @@
+{
+  "schema": "am-ui-test-manifest/v1",
+  "description": "Machine-readable contract for MCP tools and am-mcp-gateway ui-test proxy",
+  "agent": {
+    "run_auth_path": "/api/v1/test/run/auth",
+    "status_path": "/api/v1/test/status/{testId}",
+    "report_path": "/api/v1/test/report/{testId}"
+  },
+  "modules": {
+    "modern-ui": {
+      "repo_root": "..",
+      "targets_file": "testing/targets.{environment}.json",
+      "env_file": ".env.{environment}",
+      "default_environment": "preprod",
+      "default_target": "main"
+    }
+  },
+  "tools": [
+    {
+      "name": "run_modern_ui_auth_test",
+      "description": "Run am-modern-ui Demo Login auth E2E via ui-test-agent. Returns testId, status, and report URL.",
+      "module": "modern-ui",
+      "gateway_method": "POST",
+      "gateway_path": "/api/v1/tools/ui-test/run-auth",
+      "litellm": {
+        "server_alias": "am_mcp_gateway",
+        "operation_id": "run_modern_ui_auth_test"
+      },
+      "parameters": {
+        "environment": {
+          "type": "string",
+          "enum": ["local", "preprod", "dev", "prod"],
+          "default": "preprod"
+        },
+        "target": {
+          "type": "string",
+          "enum": ["main", "portfolio"],
+          "default": "main"
+        },
+        "wait": {
+          "type": "boolean",
+          "default": true,
+          "description": "Poll until test completes (false = return testId only)"
+        }
+      }
+    }
+  ]
+}

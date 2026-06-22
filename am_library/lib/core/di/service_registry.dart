@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import '../auth/user_context.dart';
 import '../network/api_client.dart';
 import '../network/analysis_api_client.dart';
 import '../network/websocket/am_stomp_client.dart';
@@ -49,10 +50,11 @@ class ServiceRegistry {
   static Future<void> reset() async {
     AppLogger.warning('🔄 ServiceRegistry: Initiating global reset...', tag: 'Registry');
 
-    // 1. Clear session data
+    // 1. Clear session data + in-memory user context cache
     if (I.isRegistered<SecureStorageService>()) {
       await I<SecureStorageService>().clearAuthData();
     }
+    UserContext.instance.invalidate();
 
     // 2. Disconnect WebSocket
     if (I.isRegistered<AmStompClient>()) {
@@ -69,4 +71,6 @@ class ServiceRegistry {
   static AmStompClient get stomp => I<AmStompClient>();
   static SecureStorageService get storage => I<SecureStorageService>();
   static TelemetryService get telemetry => I<TelemetryService>();
+  /// Current user identity & auth header — use instead of raw storage reads.
+  static UserContext get user => UserContext.instance;
 }

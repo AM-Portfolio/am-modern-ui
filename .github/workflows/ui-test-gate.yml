@@ -1,0 +1,53 @@
+name: Pre-Release Gate UI Test
+
+on:
+  pull_request:
+    branches:
+      - main
+      - 'release/*'
+
+jobs:
+  ui-visual-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy Preview Environment
+        run: |
+          # Command to deploy branch to preprod-preview namespace...
+          echo "Deploying branch ${{ github.event.pull_request.head.sha }} preview to Kubernetes preprod-preview namespace..."
+
+      - name: Trigger Agent Release Gate
+        id: trigger_agent
+        run: |
+          RESPONSE=$(curl -s -X POST "http://am-ui-test-agent.am-apps-preprod.svc.cluster.local:8130/api/v1/test/run" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "targetUrl": "http://am-portfolio-preview-${{ github.event.pull_request.head.sha }}:9005",
+              "profile": "RELEASE_GATE",
+              "commitSha": "${{ github.event.pull_request.head.sha }}",
+              "callbackUrl": "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}"
+            }')
+          echo "TEST_ID=$(echo $RESPONSE | jq -r .testId)" >> $GITHUB_ENV
+
+      - name: Poll Test Status
+        run: |
+          # Simple script to poll status of the test run until finished
+          echo "Polling status for test ID: ${{ env.TEST_ID }}..."
+          STATUS="QUEUED"
+          for i in {1..30}; do
+            RESPONSE=$(curl -s "http://am-ui-test-agent.am-apps-preprod.svc.cluster.local:8130/api/v1/test/status/${{ env.TEST_ID }}")
+            STATUS=$(echo $RESPONSE | jq -r .status)
+            echo "Current status: $STATUS"
+            if [ "$STATUS" = "COMPLETED" ]; then
+              echo "Tests completed successfully!"
+              exit 0
+            elif [ "$STATUS" = "FAILED" ]; then
+              echo "Tests failed!"
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for test suite to finish."
+          exit 1

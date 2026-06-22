@@ -164,14 +164,19 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_currentPortfolioId != null && mounted) {
         final cubit = context.read<PortfolioCubit>();
+        cubit.subscribeToPortfolioUpdates(
+          portfolioId: _currentPortfolioId,
+          forceResubscribe: true,
+        );
+
         final currentState = cubit.state;
-        
-        if (currentState is PortfolioLoaded && 
+
+        if (currentState is PortfolioLoaded &&
             currentState.portfolioId == _currentPortfolioId) {
           // Data is already loaded for this portfolio, skip reloading
           return;
         }
-        
+
         cubit.loadPortfolioById(_currentPortfolioId!);
       }
     });
@@ -183,7 +188,12 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     if (widget.selectedPortfolioId != null &&
         widget.selectedPortfolioId != _currentPortfolioId) {
       setState(() => _currentPortfolioId = widget.selectedPortfolioId);
-      context.read<PortfolioCubit>().loadPortfolioById(widget.selectedPortfolioId!);
+      context.read<PortfolioCubit>()
+        ..subscribeToPortfolioUpdates(
+          portfolioId: widget.selectedPortfolioId,
+          forceResubscribe: true,
+        )
+        ..loadPortfolioById(widget.selectedPortfolioId!);
     }
   }
 
