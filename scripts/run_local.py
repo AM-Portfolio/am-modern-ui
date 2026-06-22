@@ -40,7 +40,7 @@ def run_with_logging(cmd, cwd, env, log_name):
     log_file = os.path.join(logs_dir, f"{log_name}.log")
     
     print(f"Logging output to {log_file}")
-    with open(log_file, "a") as f:
+    with open(log_file, "a", encoding="utf-8", errors="ignore") as f:
         f.write("\n\n--- NEW EXECUTION ---\n")
         is_windows = os.name == "nt"
         p = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", shell=is_windows)

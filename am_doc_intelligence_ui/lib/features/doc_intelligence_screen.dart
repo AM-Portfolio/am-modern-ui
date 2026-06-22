@@ -34,24 +34,6 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
           onTap: () => setState(() => _activeNavItem = 'Email Extractor'),
           isSelected: _activeNavItem == 'Email Extractor',
         ),
-        SecondarySidebarItem(
-          title: 'Environment: ${apiProvider.environment == AppEnvironment.local ? "Local" : "Preprod"}',
-          icon: apiProvider.environment == AppEnvironment.local ? Icons.lan_outlined : Icons.cloud_outlined,
-          onTap: () {
-            setState(() {
-              apiProvider.environment = apiProvider.environment == AppEnvironment.local 
-                  ? AppEnvironment.preprod 
-                  : AppEnvironment.local;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Switched to ${apiProvider.environment == AppEnvironment.local ? "Local" : "Preprod"} Backend'),
-                behavior: SnackBarBehavior.floating,
-                width: 400,
-              ),
-            );
-          },
-        ),
       ],
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),

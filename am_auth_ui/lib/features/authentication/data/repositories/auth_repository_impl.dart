@@ -292,7 +292,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, bool>> checkAuthStatus() async {
     try {
-      final accessToken = await _storageService.getAccessToken();
+      final accessToken = await _storageService.getAccessToken(checkExpiry: false);
       if (accessToken == null) return const Right(false);
 
       final isExpired = await _storageService.isTokenExpired();

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Service for securely storing sensitive data like tokens.
@@ -52,11 +53,16 @@ class SecureStorageService {
     await _storage.write(key: _accessTokenKey, value: token);
   }
 
-  /// Get access token — returns from in-memory cache if available,
-  /// otherwise reads from secure storage and populates the cache.
-  Future<String?> getAccessToken() async {
+  /// Get access token — cache-first; optional expiry validation for authenticated calls.
+  Future<String?> getAccessToken({bool checkExpiry = true}) async {
     if (_cachedAccessToken != null && _cachedAccessToken!.isNotEmpty) {
+      if (checkExpiry && _isJwtExpired(_cachedAccessToken!)) {
+        return null;
+      }
       return _cachedAccessToken;
+    }
+    if (checkExpiry && await isTokenExpired()) {
+      return null;
     }
     final token = await _storage.read(key: _accessTokenKey);
     if (token == null || token.isEmpty || token == 'mock_dev_token') {
@@ -150,8 +156,38 @@ class SecureStorageService {
     return DateTime.now().add(const Duration(days: 365));
   }
 
+  /// Helper to check if a JWT token string is expired
+  bool _isJwtExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return true; // Invalid token format
+      
+      final payload = parts[1];
+      final normalized = base64Url.normalize(payload);
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      final claims = jsonDecode(decoded) as Map<String, dynamic>;
+      
+      final exp = claims['exp'] as int?;
+      if (exp == null) return false; // No expiry claim, treat as not expired
+      
+      final expiryTime = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+      return DateTime.now().isAfter(expiryTime);
+    } catch (_) {
+      return true; // If parsing fails, treat as expired/invalid
+    }
+  }
+
   /// Check if token is expired
   Future<bool> isTokenExpired() async {
+    final token = await _storage.read(key: _accessTokenKey);
+    if (token == null || token.isEmpty) return true;
+    if (token == 'mock_dev_token') return false;
+    
+    // Check JWT exp claim first
+    if (_isJwtExpired(token)) {
+      return true;
+    }
+    
     final expiry = await getTokenExpiry();
     if (expiry == null) return true;
     return DateTime.now().isAfter(expiry);

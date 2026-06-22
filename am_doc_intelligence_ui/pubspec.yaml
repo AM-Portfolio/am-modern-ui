@@ -25,6 +25,7 @@ dependencies:
     path: ../am_design_system
   am_library:
     path: ../am_library
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -35,3 +36,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
