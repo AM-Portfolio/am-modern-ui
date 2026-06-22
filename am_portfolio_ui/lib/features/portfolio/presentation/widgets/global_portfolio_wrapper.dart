@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:am_common/am_common.dart';
+import 'package:go_router/go_router.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../../providers/portfolio_providers.dart';
 
 /// A wrapper that provides a global [PortfolioCubit] and handles
-/// initial portfolio selection. Sync is now handled at the root level.
+/// initial portfolio selection synced with URL path parameters.
 class GlobalPortfolioWrapper extends ConsumerStatefulWidget {
   final Widget child;
   final Function(String, String)? onPortfolioChanged;
@@ -30,6 +30,71 @@ class _GlobalPortfolioWrapperState
     extends ConsumerState<GlobalPortfolioWrapper> {
   String? _selectedPortfolioId;
   String? _selectedPortfolioName;
+  String? _validatedUrlPortfolioId;
+
+  String? _portfolioIdFromUrl(BuildContext context) {
+    final params = GoRouterState.of(context).pathParameters;
+    final id = params['portfolioId'];
+    if (id != null && id.isNotEmpty) return id;
+    return null;
+  }
+
+  void _selectPortfolio(
+    BuildContext innerContext,
+    String id,
+    String name, {
+    bool notifyUrl = true,
+  }) {
+    if (_selectedPortfolioId == id && _selectedPortfolioName == name) return;
+
+    setState(() {
+      _selectedPortfolioId = id;
+      _selectedPortfolioName = name;
+    });
+
+    innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+          portfolioId: id,
+          forceResubscribe: true,
+        );
+    innerContext.read<PortfolioCubit>().loadPortfolioById(id);
+
+    if (notifyUrl) {
+      widget.onPortfolioChanged?.call(id, name);
+    }
+  }
+
+  void _validateUrlPortfolio(
+    BuildContext innerContext,
+    PortfolioListLoaded state,
+  ) {
+    final urlId = _portfolioIdFromUrl(context);
+    if (urlId == null || _validatedUrlPortfolioId == urlId) return;
+
+    _validatedUrlPortfolioId = urlId;
+    final portfolios = state.portfolioList!.portfolios;
+    if (portfolios.isEmpty) return;
+
+    for (final p in portfolios) {
+      if (p.portfolioId == urlId) {
+        _selectPortfolio(innerContext, p.portfolioId, p.portfolioName, notifyUrl: false);
+        return;
+      }
+    }
+
+    final fallback = portfolios.first;
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Portfolio not found or access denied. Showing default.'),
+        ),
+      );
+    }
+    _selectPortfolio(
+      innerContext,
+      fallback.portfolioId,
+      fallback.portfolioName,
+    );
+  }
 
   bool get _portfolioStreamingAllowed => widget.streamingTab == 'Portfolio';
 
@@ -75,6 +140,7 @@ class _GlobalPortfolioWrapperState
   @override
   Widget build(BuildContext context) {
     final portfolioServiceAsync = ref.watch(portfolioServiceProvider);
+    final urlPortfolioId = _portfolioIdFromUrl(context);
 
     return portfolioServiceAsync.when(
       data: (service) {
@@ -88,27 +154,17 @@ class _GlobalPortfolioWrapperState
           child: Builder(
             builder: (innerContext) => BlocListener<PortfolioCubit, PortfolioState>(
               listener: (context, state) {
-                if (state is PortfolioListLoaded &&
-                    _selectedPortfolioId == null) {
-                  if (state.portfolioList!.portfolios.isNotEmpty) {
+                if (state is PortfolioListLoaded) {
+                  if (urlPortfolioId != null) {
+                    _validateUrlPortfolio(innerContext, state);
+                    return;
+                  }
+
+                  if (_selectedPortfolioId == null &&
+                      state.portfolioList!.portfolios.isNotEmpty) {
                     final first = state.portfolioList!.portfolios.first;
-                    setState(() {
-                      _selectedPortfolioId = first.portfolioId;
-                      _selectedPortfolioName = first.portfolioName;
-                    });
-
-                    _maybeSubscribe(
-                      innerContext.read<PortfolioCubit>(),
-                      first.portfolioId,
-                    );
-
-                    if (_portfolioStreamingAllowed) {
-                      innerContext
-                          .read<PortfolioCubit>()
-                          .loadPortfolioById(first.portfolioId);
-                    }
-
-                    widget.onPortfolioChanged?.call(
+                    _selectPortfolio(
+                      innerContext,
                       first.portfolioId,
                       first.portfolioName,
                     );
@@ -118,19 +174,8 @@ class _GlobalPortfolioWrapperState
               child: _SelectedPortfolioProvider(
                 selectedId: _selectedPortfolioId,
                 selectedName: _selectedPortfolioName,
-                onSelect: (id, name) {
-                  setState(() {
-                    _selectedPortfolioId = id;
-                    _selectedPortfolioName = name;
-                  });
-                  final cubit = innerContext.read<PortfolioCubit>();
-                  _maybeSubscribe(cubit, id);
-                  if (_portfolioStreamingAllowed) {
-                    cubit.loadPortfolioById(id);
-                  }
-
-                  widget.onPortfolioChanged?.call(id, name);
-                },
+                onSelect: (id, name) =>
+                    _selectPortfolio(innerContext, id, name, notifyUrl: true),
                 child: widget.child,
               ),
             ),

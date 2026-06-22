@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import '../../utils/logger.dart';
+import 'package:flutter/foundation.dart';
 import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
@@ -59,13 +60,31 @@ class AmStompClient {
     _client?.deactivate();
     _client = null;
 
+    var connectionUrl = _url!;
+
+    // On Web, browsers do not support custom headers in the WebSocket handshake.
+    // Pass the token as a query parameter so the gateway can authenticate the upgrade.
+    if (kIsWeb && headers != null && headers.containsKey('Authorization')) {
+      final auth = headers['Authorization']!;
+      if (auth.startsWith('Bearer ')) {
+        final token = auth.substring(7);
+        final uri = Uri.parse(connectionUrl);
+        final queryParams = Map<String, String>.from(uri.queryParameters);
+        queryParams['access_token'] = token;
+        connectionUrl = uri.replace(queryParameters: queryParams).toString();
+        AppLogger.debug('AmStompClient: Web detected, appending access_token to URL for handshake.');
+      }
+    }
+
     _statusSubject.add(StompStatus.connecting);
-    AppLogger.info('AmStompClient: Connecting to $_url ...');
+    AppLogger.info('AmStompClient: Connecting to $connectionUrl ...');
 
     _client = StompClient(
       config: StompConfig(
-        url: _url!,
+        url: connectionUrl,
         stompConnectHeaders: headers,
+        // On Web, webSocketConnectHeaders are typically ignored by browsers,
+        // but we still pass them for compatibility with other platforms.
         webSocketConnectHeaders: headers,
         onConnect: (StompFrame frame) {
           _statusSubject.add(StompStatus.connected);

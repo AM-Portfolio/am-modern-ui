@@ -1,42 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
-import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard;
 import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart' as common;
-import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
-
-// ── DISABLED MODULES (re-enable one at a time as each module is fixed) ─────
 import 'package:am_portfolio_ui/am_portfolio_ui.dart';
-import 'package:am_trade_ui/am_trade_ui.dart';
-import 'package:am_market_ui/am_market_ui.dart';
-import 'package:am_ai_ui/am_ai_ui.dart';
-import 'package:am_diagnostic_ui/am_diagnostic_ui.dart';
-import 'package:am_user_ui/am_user_ui.dart';
-import 'package:am_analysis_ui/am_analysis_ui.dart';
-import 'package:am_doc_intelligence_ui/am_doc_intelligence_ui.dart';
 
-/// Main application shell with navigation
+import '../../core/router/app_routes.dart';
+import '../../core/router/share_url_builder.dart';
+
+/// Main application shell with navigation — hosts [ShellRoute] child pages.
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  const AppShell({required this.child, super.key});
+
+  final Widget child;
 
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
 class _AppShellState extends State<AppShell> {
-  int _selectedIndex = 0; // Default to Dashboard
   bool _sessionRestored = false;
 
-  // ── Secondary navigation items for the "More" bottom sheet ───────────────
   static const List<_MoreMenuItem> _moreMenuItems = [
-    _MoreMenuItem(title: 'AI Chat', icon: Icons.auto_awesome_rounded, index: 4),
-    _MoreMenuItem(title: 'Lab', icon: Icons.science_rounded, index: 5),
-    _MoreMenuItem(title: 'Analysis', icon: Icons.analytics_outlined, index: 6),
-    _MoreMenuItem(title: 'Doc Intel', icon: Icons.psychology_outlined, index: 7),
-    _MoreMenuItem(title: 'Subscription', icon: Icons.subscriptions_rounded, index: 9),
-    _MoreMenuItem(title: 'Profile', icon: Icons.person_rounded, index: 8),
+    _MoreMenuItem(title: 'AI Chat', icon: Icons.auto_awesome_rounded, path: AppRoutes.aiChat),
+    _MoreMenuItem(title: 'Lab', icon: Icons.science_rounded, path: AppRoutes.lab),
+    _MoreMenuItem(title: 'Analysis', icon: Icons.analytics_outlined, path: AppRoutes.analysis),
+    _MoreMenuItem(title: 'Doc Intel', icon: Icons.psychology_outlined, path: AppRoutes.docIntel),
+    _MoreMenuItem(title: 'Subscription', icon: Icons.subscriptions_rounded, path: AppRoutes.subscription),
+    _MoreMenuItem(title: 'Profile', icon: Icons.person_rounded, path: AppRoutes.profile),
   ];
 
   @override
@@ -56,9 +49,28 @@ class _AppShellState extends State<AppShell> {
 
     final session =
         await common.SessionPersistenceService.instance.load(authState.user.id);
-    if (session != null && mounted && _navMap.containsKey(session.globalNav)) {
-      setState(() => _selectedIndex = _navMap[session.globalNav]!);
+    if (session == null || !mounted) return;
+
+    final current = GoRouterState.of(context).matchedLocation;
+    if (ShareUrlBuilder.isExplicitDeepLink(current)) return;
+
+    var savedPath = AppRoutes.pathForNavTitle(session.globalNav);
+    if (savedPath == null) return;
+
+    if (session.portfolioId != null) {
+      if (session.globalNav == 'Portfolio') {
+        savedPath = AppRoutes.portfolioPath(
+          session.portfolioId!,
+          AppRoutes.portfolioTab(session.portfolioTabIndex),
+        );
+      } else if (session.globalNav == 'Trade') {
+        savedPath = AppRoutes.tradePath(session.portfolioId!, 'portfolios');
+      }
+    }
+
+    if (current == AppRoutes.dashboard && savedPath != AppRoutes.dashboard) {
       _applyStreamingTabCoordinator(session.globalNav);
+      context.go(savedPath);
     }
   }
 
@@ -70,12 +82,27 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _onGlobalNavigate(String title, String userId) {
-    if (!_navMap.containsKey(title)) return;
+    final path = AppRoutes.pathForNavTitle(title);
+    if (path == null) return;
+
     _applyStreamingTabCoordinator(title);
-    setState(() => _selectedIndex = _navMap[title]!);
+    context.go(path);
     common.SessionPersistenceService.instance.patch(
       userId,
       (s) => s.copyWith(globalNav: title, clearBasket: title != 'Portfolio'),
+    );
+  }
+
+  void _onGlobalPortfolioChanged(String portfolioId, String portfolioName) {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! Authenticated) return;
+
+    common.SessionPersistenceService.instance.patch(
+      authState.user.id,
+      (s) => s.copyWith(
+        portfolioId: portfolioId,
+        portfolioName: portfolioName,
+      ),
     );
   }
 
@@ -83,9 +110,11 @@ class _AppShellState extends State<AppShell> {
     final authCubit = context.read<AuthCubit>();
     final authState = authCubit.state;
     if (authState is Authenticated) {
-      common.AppLogger.info('AppShell: Initialized while Authenticated. Triggering STOMP connection...');
+      common.AppLogger.info(
+        'AppShell: Initialized while Authenticated. Triggering STOMP connection...',
+      );
       final stompCubit = context.read<common.StompConnectionCubit>();
-      
+
       stompCubit.onConnected = (userId) {
         common.AppLogger.info('AppShell (Initial): STOMP Connected for $userId');
         if (mounted) _applyStreamingTabCoordinator(_activeNavItem);
@@ -95,7 +124,9 @@ class _AppShellState extends State<AppShell> {
       final token = await secureStorage.getAccessToken();
       if (token == null || token.isEmpty) {
         if (mounted) {
-          common.AppLogger.warning('AppShell: Authenticated state but no token in storage. Forcing logout.');
+          common.AppLogger.warning(
+            'AppShell: Authenticated state but no token in storage. Forcing logout.',
+          );
           authCubit.logout();
         }
         return;
@@ -106,27 +137,13 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
-  // Mapping string titles to indices
-  final Map<String, int> _navMap = const {
-    'Dashboard': 0,
-    'Portfolio': 1,
-    'Trade': 2,
-    'Market': 3,
-    'AI Chat': 4,
-    'Lab': 5,
-    'Analysis': 6,
-    'Doc Intel': 7,
-    'Profile': 8,
-    'Subscription': 9,
-  };
-
   String get _activeNavItem {
-    if (_selectedIndex == 8) return ''; // Profile is separate
-    return _navMap.entries
-        .firstWhere((e) => e.value == _selectedIndex,
-            orElse: () => const MapEntry('Dashboard', 0))
-        .key;
+    final location = GoRouterState.of(context).matchedLocation;
+    if (location.startsWith(AppRoutes.profile)) return '';
+    return AppRoutes.activeNavTitleForLocation(location);
   }
+
+  String get _currentLocation => GoRouterState.of(context).matchedLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -135,34 +152,39 @@ class _AppShellState extends State<AppShell> {
         BlocListener<AuthCubit, AuthState>(
           listener: (context, state) async {
             final stompCubit = context.read<common.StompConnectionCubit>();
-            
-            if (state is Authenticated) {
-               common.AppLogger.info('AppShell: AuthState changed to Authenticated. Connecting STOMP...');
-               
-               // Register root-level sync trigger
-               stompCubit.onConnected = (userId) {
-                 common.AppLogger.info('AppShell: STOMP Connected for $userId');
-                 if (context.mounted) {
-                   _applyStreamingTabCoordinator(_activeNavItem);
-                 }
-               };
 
-               final secureStorage = GetIt.instance<common.SecureStorageService>();
-               final token = await secureStorage.getAccessToken();
-               if (token == null || token.isEmpty) {
-                 if (context.mounted) {
-                   common.AppLogger.warning('AppShell: Authenticated state but no token. Forcing logout.');
-                   context.read<AuthCubit>().logout();
-                 }
-                 return;
-               }
-               if (context.mounted) {
-                 stompCubit.updateToken(token, userId: state.user.id);
-               }
+            if (state is Authenticated) {
+              common.AppLogger.info(
+                'AppShell: AuthState changed to Authenticated. Connecting STOMP...',
+              );
+
+              stompCubit.onConnected = (userId) {
+                common.AppLogger.info('AppShell: STOMP Connected for $userId');
+                if (context.mounted) {
+                  _applyStreamingTabCoordinator(_activeNavItem);
+                }
+              };
+
+              final secureStorage = GetIt.instance<common.SecureStorageService>();
+              final token = await secureStorage.getAccessToken();
+              if (token == null || token.isEmpty) {
+                if (context.mounted) {
+                  common.AppLogger.warning(
+                    'AppShell: Authenticated state but no token. Forcing logout.',
+                  );
+                  context.read<AuthCubit>().logout();
+                }
+                return;
+              }
+              if (context.mounted) {
+                stompCubit.updateToken(token, userId: state.user.id);
+              }
             } else if (state is Unauthenticated) {
-               common.AppLogger.info('AppShell: AuthState changed to Unauthenticated. Disconnecting STOMP...');
-               stompCubit.onConnected = null;
-               stompCubit.updateToken(null);
+              common.AppLogger.info(
+                'AppShell: AuthState changed to Unauthenticated. Disconnecting STOMP...',
+              );
+              stompCubit.onConnected = null;
+              stompCubit.updateToken(null);
             }
           },
         ),
@@ -170,7 +192,7 @@ class _AppShellState extends State<AppShell> {
       child: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
           if (authState is! Authenticated) {
-            return const LoginPage();
+            return const SizedBox.shrink();
           }
 
           final userId = authState.user.id;
@@ -179,7 +201,7 @@ class _AppShellState extends State<AppShell> {
           return LayoutBuilder(
             builder: (context, constraints) {
               final isDesktop = constraints.maxWidth > 1100;
-              final showMobileGlobalBar = !isDesktop;
+              const showMobileGlobalBar = true;
 
               return Scaffold(
                 body: Row(
@@ -191,6 +213,7 @@ class _AppShellState extends State<AppShell> {
                         userName: authState.user.displayName,
                         userEmail: authState.user.email,
                         userAvatarUrl: authState.user.photoUrl,
+                        moduleShareUrls: AppRoutes.navTitleToDefaultPath,
                         onThemeToggle: () {
                           try {
                             context.read<ThemeCubit>().toggleTheme();
@@ -199,8 +222,7 @@ class _AppShellState extends State<AppShell> {
                           }
                         },
                         onLogout: () => context.read<AuthCubit>().logout(),
-                        onProfileTap: () =>
-                            setState(() => _selectedIndex = 8),
+                        onProfileTap: () => context.go(AppRoutes.profile),
                         onNavigate: (title) => _onGlobalNavigate(title, userId),
                         items: const [
                           SidebarItem(
@@ -233,12 +255,13 @@ class _AppShellState extends State<AppShell> {
                         streamingTab: _activeNavItem.isEmpty
                             ? 'Dashboard'
                             : _activeNavItem,
-                        child: _buildPage(userId, isDesktop),
+                        onPortfolioChanged: _onGlobalPortfolioChanged,
+                        child: widget.child,
                       ),
                     ),
                   ],
                 ),
-                bottomNavigationBar: showMobileGlobalBar
+                bottomNavigationBar: !isDesktop
                     ? GlobalBottomNavigation(
                         activeNavItem: _activeNavItem,
                         isDarkMode: isDark,
@@ -272,41 +295,6 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  Widget _buildPage(String userId, bool isDesktop) {
-    switch (_selectedIndex) {
-      case 0:
-        return dashboard.DashboardScreen(userId: userId);
-      case 1:
-        return const PortfolioScreen();
-      case 2:
-        return const TradeResponsiveLayout();
-      case 3:
-        return MarketPage(userId: userId);
-      case 4:
-        return AiChatScreen(userId: userId);
-      case 5:
-        return const DiagnosticDashboardPage();
-      case 6:
-        return AnalysisDashboard(
-          entityType: AnalysisEntityType.PORTFOLIO,
-          entityId: userId,
-          analysisService: RealAnalysisService(),
-        );
-      case 7:
-        return DocIntelligenceScreen(userId: userId);
-      case 8:
-        return ProfileSettingsPage(userId: userId);
-      case 9:
-        return BlocProvider<am_sub.SubscriptionCubit>.value(
-          value: GetIt.instance<am_sub.SubscriptionCubit>(),
-          child: const am_sub.SubscriptionPricingScreen(),
-        );
-      default:
-        return dashboard.DashboardScreen(userId: userId);
-    }
-  }
-
-  // ── Premium "More Menu" Bottom Sheet ────────────────────────────────────────
   void _showMoreMenu(BuildContext context, String userId, bool isDark) {
     showModalBottomSheet(
       context: context,
@@ -336,7 +324,6 @@ class _AppShellState extends State<AppShell> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Drag handle
                 Container(
                   margin: const EdgeInsets.only(top: 12, bottom: 8),
                   width: 40,
@@ -346,8 +333,6 @@ class _AppShellState extends State<AppShell> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-
-                // Title
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   child: Row(
@@ -382,10 +367,7 @@ class _AppShellState extends State<AppShell> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 4),
-
-                // Grid of menu items
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: GridView.builder(
@@ -400,13 +382,17 @@ class _AppShellState extends State<AppShell> {
                     itemCount: _moreMenuItems.length,
                     itemBuilder: (ctx, i) {
                       final item = _moreMenuItems[i];
-                      final isActive = _selectedIndex == item.index;
+                      final isActive = _currentLocation.startsWith(item.path);
                       final accentColor = _getMoreItemColor(item.title);
 
                       return GestureDetector(
                         onTap: () {
                           Navigator.pop(sheetContext);
-                          _onGlobalNavigate(item.title, userId);
+                          context.go(item.path);
+                          common.SessionPersistenceService.instance.patch(
+                            userId,
+                            (s) => s.copyWith(globalNav: item.title),
+                          );
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -461,7 +447,6 @@ class _AppShellState extends State<AppShell> {
                     },
                   ),
                 ),
-
                 const SizedBox(height: 12),
               ],
             ),
@@ -491,15 +476,14 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
-/// Data class for the "More Menu" items
 class _MoreMenuItem {
   const _MoreMenuItem({
     required this.title,
     required this.icon,
-    required this.index,
+    required this.path,
   });
 
   final String title;
   final IconData icon;
-  final int index;
+  final String path;
 }

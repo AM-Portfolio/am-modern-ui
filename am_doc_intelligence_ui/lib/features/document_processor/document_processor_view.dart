@@ -5,8 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
 import 'package:am_doc_intelligence_ui/utils/file_downloader.dart';
-
-class DocumentProcessorView extends StatefulWidget {
+import 'package:url_launcher/url_launcher.dart';class DocumentProcessorView extends StatefulWidget {
   const DocumentProcessorView({super.key});
 
   @override
@@ -54,23 +53,50 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     }
   }
 
+  String _getDocTypeDisplayName(String type) {
+    switch (type) {
+      case 'COMBINE_PORTFOLIO':
+        return 'Combined Portfolio';
+      case 'MUTUAL_FUND':
+        return 'Mutual Funds';
+      case 'NPS_STATEMENT':
+        return 'NPS Statement';
+      case 'COMPANY_FINANCIAL_REPORT':
+        return 'Financial Report';
+      case 'STOCK_PORTFOLIO':
+        return 'Stock Portfolio';
+      case 'TRADE_FNO':
+        return 'F&O Tradebook';
+      case 'TRADE_EQ':
+        return _selectedBrokerType == 'ANGEL_ONE' ? 'Trading History' : 'Stock Trading History';
+      case 'TRADE_MF':
+        return 'Mutual Fund Transaction History';
+      case 'NSE_INDICES':
+        return 'NSE Indices';
+      default:
+        return type.split('_').map((word) {
+          if (word.isEmpty) return '';
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        }).join(' ');
+    }
+  }
+
   List<String> _getFilteredDocTypes() {
     if (_selectedBrokerType == null) {
       return _docTypes;
     }
     switch (_selectedBrokerType) {
       case 'ZERODHA':
-        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO').toList();
+        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ' || t == 'TRADE_FNO').toList();
       case 'GROWW':
-        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'MUTUAL_FUND').toList();
+        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'MUTUAL_FUND' || t == 'TRADE_EQ' || t == 'TRADE_MF').toList();
       case 'DHAN':
         return ['PORTFOLIO_EQUITY', 'PORTFOLIO_ETF'];
-      case 'MSTOCK':
+
       case 'ANGEL_ONE':
-      case 'UPSTOX':
-      case 'ICICI_DIRECT':
-      case 'HDFC_SECURITIES':
-        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO').toList();
+        return _docTypes.where((t) => t == 'COMBINE_PORTFOLIO' || t == 'TRADE_EQ').toList();
+      case 'MSTOCK':
+        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
       case 'OTHER':
       default:
         return _docTypes;
@@ -409,7 +435,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                         ? const ShimmerLoading(child: SkeletonBox(height: 42, width: double.infinity))
                         : CustomDropdown<String>(
                             value: _selectedDocType,
-                            items: _getFilteredDocTypes().map((e) => e.toSimpleDropdownItem(text: e)).toList(),
+                            items: _getFilteredDocTypes().map((e) => e.toSimpleDropdownItem(text: _getDocTypeDisplayName(e))).toList(),
                             hint: 'Select Doc Type',
                             onChanged: (v) => setState(() => _selectedDocType = v),
                           ),
@@ -474,7 +500,28 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                     label: const Text('Download Sample Portfolio CSV', style: TextStyle(fontSize: 12)),
                   ),
                 ],
-              )
+              ),
+              if ((_selectedBrokerType == 'ZERODHA' && (_selectedDocType == 'STOCK_PORTFOLIO' || _selectedDocType == 'TRADE_FNO' || _selectedDocType == 'TRADE_EQ')) ||
+                  (_selectedBrokerType == 'GROWW' && _selectedDocType != null) ||
+                  (_selectedBrokerType == 'ANGEL_ONE' && (_selectedDocType == 'COMBINE_PORTFOLIO' || _selectedDocType == 'TRADE_EQ')))
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: TextButton.icon(
+                    onPressed: () {
+                      _showDownloadStepsDialog(context, _selectedBrokerType!, _selectedDocType!);
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: Icon(Icons.open_in_new, size: 16, color: Colors.white.withOpacity(0.9)),
+                    label: Text(
+                      "Don't have the document? Download from ${_selectedBrokerType == 'ZERODHA' ? 'Zerodha Console' : _selectedBrokerType == 'ANGEL_ONE' ? 'Angel One' : 'Groww'}",
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white.withOpacity(0.9)),
+                    ),
+                  ),
+                )
             ],
           ),
         ),
@@ -513,29 +560,42 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         ],
       ),
     );
-  }
-
-  Widget _buildResultSection() {
+  }  Widget _buildResultSection() {
     if (_lastResult == null) return const SizedBox.shrink();
 
     final List<dynamic> parsedDataList = _lastResult!['data'] ?? [];
+    
+    final bool isTrade = (_selectedDocType != null && _selectedDocType!.startsWith('TRADE_')) ||
+        (parsedDataList.isNotEmpty && parsedDataList.first is Map && (parsedDataList.first as Map).containsKey('basicInfo'));
+
     double totalValuation = 0.0;
     
-    // Sum total assets dynamically using same fallback logic as datatable rows
-    for (var item in parsedDataList) {
-      if (item is Map) {
-        final double quantity = (item['quantity'] ?? item['qty'] ?? 0.0).toDouble();
-        final double currentPrice = (item['currentPrice'] ?? 
-                                     (item['marketData'] != null ? item['marketData']['marketPrice'] : null) ?? 
-                                     (item['currentValue'] != null && quantity > 0 ? (item['currentValue'] / quantity) : null) ?? 
-                                     item['avgBuyingPrice'] ?? 
-                                     item['averagePrice'] ??
-                                     item['buyPrice'] ??
-                                     item['nav'] ?? 
-                                     item['price'] ?? 
-                                     0.0).toDouble();
-        final double totalValue = item['currentValue'] != null ? (item['currentValue'] as num).toDouble() : quantity * currentPrice;
-        totalValuation += totalValue;
+    if (isTrade) {
+      for (var item in parsedDataList) {
+        if (item is Map) {
+          final exec = item['executionInfo'] is Map ? item['executionInfo'] : {};
+          final double quantity = (exec['quantity'] ?? exec['qty'] ?? item['quantity'] ?? 0.0).toDouble();
+          final double price = (exec['price'] ?? item['price'] ?? 0.0).toDouble();
+          totalValuation += quantity * price;
+        }
+      }
+    } else {
+      // Sum total assets dynamically using same fallback logic as datatable rows
+      for (var item in parsedDataList) {
+        if (item is Map) {
+          final double quantity = (item['quantity'] ?? item['qty'] ?? 0.0).toDouble();
+          final double currentPrice = (item['currentPrice'] ?? 
+                                       (item['marketData'] != null ? item['marketData']['marketPrice'] : null) ?? 
+                                       (item['currentValue'] != null && quantity > 0 ? (item['currentValue'] / quantity) : null) ?? 
+                                       item['avgBuyingPrice'] ?? 
+                                       item['averagePrice'] ??
+                                       item['buyPrice'] ??
+                                       item['nav'] ?? 
+                                       item['price'] ?? 
+                                       0.0).toDouble();
+          final double totalValue = item['currentValue'] != null ? (item['currentValue'] as num).toDouble() : quantity * currentPrice;
+          totalValuation += totalValue;
+        }
       }
     }
 
@@ -550,7 +610,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                 Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary, size: 22),
                 const SizedBox(width: 12),
                 Text(
-                  'Extracted Holdings Details', 
+                  isTrade ? 'Extracted Trade Log Details' : 'Extracted Holdings Details', 
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)
                 ),
               ],
@@ -570,7 +630,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         
         Row(
           children: [
-            _buildResultStatCard('TOTAL VALUATION', currencyFormatter.format(totalValuation), Icons.account_balance_wallet_outlined, Colors.green),
+            _buildResultStatCard(isTrade ? 'TOTAL VOLUME' : 'TOTAL VALUATION', currencyFormatter.format(totalValuation), Icons.account_balance_wallet_outlined, Colors.green),
             const SizedBox(width: 16),
             _buildResultStatCard('PARSED RECORDS', '${parsedDataList.length} Items', Icons.format_list_bulleted_outlined, Colors.blue),
             const SizedBox(width: 16),
@@ -606,15 +666,15 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           const SizedBox(height: 24),
         ],
 
-        // Beautiful Interactive holdings datatable
+        // Beautiful Interactive holdings/trade datatable
         GlassCard(
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             child: parsedDataList.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Center(child: Text('No holding assets found in this statement file.')),
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: Text(isTrade ? 'No trade records found in this file.' : 'No holding assets found in this statement file.')),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,7 +682,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       Padding(
                         padding: const EdgeInsets.only(left: 8.0, bottom: 12.0),
                         child: Text(
-                          'HOLDING ASSETS BREAKDOWN',
+                          isTrade ? 'TRADE LOG BREAKDOWN' : 'HOLDING ASSETS BREAKDOWN',
                           style: TextStyle(
                             fontSize: 11, 
                             fontWeight: FontWeight.bold, 
@@ -631,63 +691,140 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                           ),
                         ),
                       ),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          columnSpacing: 38.0,
-                          horizontalMargin: 8.0,
-                          columns: const [
-                            DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('IDENTIFIER', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(numeric: true, label: Text('BUY PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(numeric: true, label: Text('CURRENT PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(numeric: true, label: Text('TOTAL VALUATION', style: TextStyle(fontWeight: FontWeight.bold))),
-                          ],
-                          rows: parsedDataList.map((item) {
-                            final map = item is Map ? item : {};
-                            
-                            final String assetName = map['name'] ?? map['securityName'] ?? map['schemeName'] ?? map['symbol'] ?? 'Unknown Asset';
-                            final String identifier = map['isin'] ?? map['amfiCode'] ?? map['symbol'] ?? 'N/A';
-                            final double quantity = (map['quantity'] ?? map['qty'] ?? 0.0).toDouble();
-                            final double buyPrice = (map['avgBuyingPrice'] ?? map['averagePrice'] ?? map['buyPrice'] ?? map['price'] ?? 0.0).toDouble();
-                            final double currentPrice = (map['currentPrice'] ?? 
-                                                        (map['marketData'] != null ? map['marketData']['marketPrice'] : null) ?? 
-                                                        (map['currentValue'] != null && quantity > 0 ? (map['currentValue'] / quantity) : null) ?? 
-                                                        map['avgBuyingPrice'] ?? 
-                                                        map['nav'] ?? 
-                                                        map['price'] ?? 
-                                                        0.0).toDouble();
-                            final double totalValue = map['currentValue'] != null ? (map['currentValue'] as num).toDouble() : quantity * currentPrice;
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 500),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.vertical,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: DataTable(
+                              columnSpacing: 38.0,
+                              horizontalMargin: 8.0,
+                              columns: isTrade
+                                  ? const [
+                                      DataColumn(label: Text('DATE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(label: Text('TRADE ID', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(label: Text('TYPE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('TOTAL AMOUNT', style: TextStyle(fontWeight: FontWeight.bold))),
+                                    ]
+                                  : const [
+                                      DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(label: Text('IDENTIFIER', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('BUY PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('CURRENT PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(numeric: true, label: Text('TOTAL VALUATION', style: TextStyle(fontWeight: FontWeight.bold))),
+                                    ],
+                              rows: parsedDataList.map((item) {
+                                final map = item is Map ? item : {};
+                                
+                                if (isTrade) {
+                                  final basic = map['basicInfo'] is Map ? map['basicInfo'] : {};
+                                  final instrument = map['instrumentInfo'] is Map ? map['instrumentInfo'] : {};
+                                  final exec = map['executionInfo'] is Map ? map['executionInfo'] : {};
+                                  
+                                  final String tradeDate = basic['tradeDate'] ?? basic['orderExecutionTime']?.toString().split('T').first ?? 'N/A';
+                                  final String assetName = instrument['symbol'] ?? instrument['name'] ?? map['symbol'] ?? 'Unknown Asset';
+                                  final String tradeId = basic['tradeId'] ?? map['tradeId'] ?? 'N/A';
+                                  final String tradeType = (exec['tradeType'] ?? basic['tradeType'] ?? map['type'] ?? 'BUY').toString().toUpperCase();
+                                  final double quantity = (exec['quantity'] ?? exec['qty'] ?? map['quantity'] ?? 0.0).toDouble();
+                                  final double price = (exec['price'] ?? map['price'] ?? 0.0).toDouble();
+                                  final double totalValue = quantity * price;
 
-                            return DataRow(
-                              cells: [
-                                DataCell(
-                                  Container(
-                                    constraints: const BoxConstraints(maxWidth: 220),
-                                    child: Text(
-                                      assetName, 
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                                DataCell(Text(identifier, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
-                                DataCell(Text(quantity.toStringAsFixed(2))),
-                                DataCell(Text(currencyFormatter.format(buyPrice))),
-                                DataCell(Text(currencyFormatter.format(currentPrice), style: const TextStyle(fontWeight: FontWeight.bold))),
-                                DataCell(
-                                  Text(
-                                    currencyFormatter.format(totalValue),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.primary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
+                                  final Color typeColor = tradeType.contains('BUY') ? Colors.green : Colors.red;
+
+                                  return DataRow(
+                                    cells: [
+                                      DataCell(Text(tradeDate, style: const TextStyle(fontSize: 13))),
+                                      DataCell(
+                                        Container(
+                                          constraints: const BoxConstraints(maxWidth: 220),
+                                          child: Text(
+                                            assetName, 
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ),
+                                      DataCell(Text(tradeId, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
+                                      DataCell(
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: typeColor.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            tradeType,
+                                            style: TextStyle(
+                                              color: typeColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      DataCell(Text(quantity.toStringAsFixed(0))),
+                                      DataCell(Text(currencyFormatter.format(price))),
+                                      DataCell(
+                                        Text(
+                                          currencyFormatter.format(totalValue),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                } else {
+                                  final String assetName = map['name'] ?? map['securityName'] ?? map['schemeName'] ?? map['symbol'] ?? 'Unknown Asset';
+                                  final String identifier = map['isin'] ?? map['amfiCode'] ?? map['symbol'] ?? 'N/A';
+                                  final double quantity = (map['quantity'] ?? map['qty'] ?? 0.0).toDouble();
+                                  final double buyPrice = (map['avgBuyingPrice'] ?? map['averagePrice'] ?? map['buyPrice'] ?? map['price'] ?? 0.0).toDouble();
+                                  final double currentPrice = (map['currentPrice'] ?? 
+                                                              (map['marketData'] != null ? map['marketData']['marketPrice'] : null) ?? 
+                                                              (map['currentValue'] != null && quantity > 0 ? (map['currentValue'] / quantity) : null) ?? 
+                                                              map['avgBuyingPrice'] ?? 
+                                                              map['nav'] ?? 
+                                                              map['price'] ?? 
+                                                              0.0).toDouble();
+                                  final double totalValue = map['currentValue'] != null ? (map['currentValue'] as num).toDouble() : quantity * currentPrice;
+
+                                  return DataRow(
+                                    cells: [
+                                      DataCell(
+                                        Container(
+                                          constraints: const BoxConstraints(maxWidth: 220),
+                                          child: Text(
+                                            assetName, 
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ),
+                                      DataCell(Text(identifier, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
+                                      DataCell(Text(quantity.toStringAsFixed(2))),
+                                      DataCell(Text(currencyFormatter.format(buyPrice))),
+                                      DataCell(Text(currencyFormatter.format(currentPrice), style: const TextStyle(fontWeight: FontWeight.bold))),
+                                      DataCell(
+                                        Text(
+                                          currencyFormatter.format(totalValue),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }
+                              }).toList(),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -734,6 +871,183 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             ],
           ),
         ),
+      ),
+    );
+  }
+  void _showDownloadStepsDialog(BuildContext context, String broker, String docType) {
+    String title = 'How to Download Document';
+    String url = '';
+    List<Widget> steps = [];
+
+    if (broker == 'ZERODHA') {
+      if (docType == 'STOCK_PORTFOLIO') {
+        url = 'https://console.zerodha.com/portfolio/holdings';
+        title = 'Download Zerodha Portfolio';
+        steps = [
+          _buildStep(1, 'Log in to Zerodha Console and go to Portfolio > Holdings', imagePath: 'assets/images/holdings_step1.png'),
+          _buildStep(2, 'Scroll down to the bottom of the page and click "Download: XLSX"', imagePath: 'assets/images/holdings_step2.png'),
+          _buildStep(3, 'Upload the downloaded file here'),
+        ];
+      } else if (docType == 'TRADE_FNO' || docType == 'TRADE_EQ') {
+        url = 'https://console.zerodha.com/reports/tradebook';
+        title = 'Download Zerodha Tradebook';
+        String segment = docType == 'TRADE_FNO' ? 'Futures & Options' : 'Equity';
+        steps = [
+          _buildStep(1, 'Go to Zerodha Console > Reports > Tradebook', imagePath: 'assets/images/step1.png'),
+          _buildStep(2, 'Under the Segment dropdown, select "$segment"', imagePath: 'assets/images/step2.png'),
+          _buildStep(3, 'Select your desired Date Range (e.g. current FY) and click the blue arrow (→) button', imagePath: 'assets/images/step3.png'),
+          _buildStep(4, 'Scroll down to the results and click "Download: XLSX"', imagePath: 'assets/images/step4.png'),
+          _buildStep(5, 'Upload the downloaded file here'),
+        ];
+      }
+    } else if (broker == 'GROWW') {
+      if (docType == 'STOCK_PORTFOLIO') {
+        url = 'https://groww.in/user/profile/report';
+        title = 'Download Groww Stock Holdings';
+        steps = [
+          _buildStep(1, 'Log in to Groww and click on your Profile picture at the top right', imagePath: 'assets/images/groww_step1.png'),
+          _buildStep(2, 'Navigate to the "Holdings" section and select "Stocks - Holdings statement"'),
+          _buildStep(3, 'Select the current date and click the "Download" button', imagePath: 'assets/images/groww_step2.png'),
+          _buildStep(4, 'Upload the downloaded file here'),
+        ];
+      } else {
+        url = 'https://groww.in/user/profile/report';
+        title = 'Download Groww Report';
+        steps = [
+          _buildStep(1, 'Go to Groww > Profile > Reports'),
+          _buildStep(2, 'Download your Tax Report or P&L Report'),
+          _buildStep(3, 'Upload the downloaded file here'),
+        ];
+      }
+    } else if (broker == 'ANGEL_ONE') {
+      if (docType == 'COMBINE_PORTFOLIO') {
+        url = 'https://www.angelone.in/trade/reports/download-reports';
+        title = 'Download Angel One Portfolio';
+        steps = [
+          _buildStep(1, 'Log in to Angel One and go to your Profile section', imagePath: 'assets/images/angel_step1.png'),
+          _buildStep(2, 'Under Reports, select Statements (or any option) to open the reports page', imagePath: 'assets/images/angel_step2.png'),
+          _buildStep(3, 'Navigate to the "Download Reports" tab', imagePath: 'assets/images/angel_step3.png'),
+          _buildStep(4, 'In the Others section, click "DOWNLOAD REPORT" for "Combined Holding Statement"', imagePath: 'assets/images/angel_step4.png'),
+          _buildStep(5, 'Upload the downloaded file here'),
+        ];
+      } else if (docType == 'TRADE_EQ') {
+        url = 'https://www.angelone.in/trade/reports/download-reports';
+        title = 'Download Angel One Trading History';
+        steps = [
+          _buildStep(1, 'Log in to Angel One and go to your Profile section', imagePath: 'assets/images/angel_step1.png'),
+          _buildStep(2, 'Under Reports, select Statements (or any option) to open the reports page', imagePath: 'assets/images/angel_step2.png'),
+          _buildStep(3, 'Navigate to the "Download Reports" tab', imagePath: 'assets/images/angel_step3.png'),
+          _buildStep(4, 'In the Stocks, SGBs, Bonds and FnO section, click "DOWNLOAD REPORT" for "DP Transaction and Holding Statement"', imagePath: 'assets/images/angel_trade_step4.png'),
+          _buildStep(5, 'Upload the downloaded file here'),
+        ];
+      } else {
+        url = 'https://www.angelone.in/trade/reports/download-reports';
+        title = 'Download Angel One Report';
+        steps = [
+          _buildStep(1, 'Go to Angel One > Reports > Download Reports'),
+          _buildStep(2, 'Download your Portfolio or Trade History'),
+          _buildStep(3, 'Upload the downloaded file here'),
+        ];
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        content: SizedBox(
+          width: 700,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...steps,
+                const SizedBox(height: 24),
+                Center(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final uri = Uri.parse(url);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri);
+                      }
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: Text('Open ${broker == 'ZERODHA' ? 'Zerodha Console' : broker == 'ANGEL_ONE' ? 'Angel One' : 'Groww'}'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep(int stepNumber, String text, {String? imagePath}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              stepNumber.toString(),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    text,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  if (imagePath != null) ...[
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        constraints: const BoxConstraints(maxHeight: 280),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Image.asset(
+                          imagePath,
+                          package: 'am_doc_intelligence_ui',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

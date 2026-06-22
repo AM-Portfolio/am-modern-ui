@@ -26,9 +26,17 @@ import 'package:am_common/am_common.dart';
 
 /// Market feature page with Swipe Navigation
 class MarketPage extends StatelessWidget {
-  const MarketPage({required this.userId, super.key, this.onBack});
+  const MarketPage({
+    required this.userId,
+    super.key,
+    this.initialTab = 'all-indices',
+    this.onTabChanged,
+    this.onBack,
+  });
 
   final String userId;
+  final String initialTab;
+  final ValueChanged<String>? onTabChanged;
   final VoidCallback? onBack;
 
   @override
@@ -57,15 +65,28 @@ class MarketPage extends StatelessWidget {
           create: (_) => view_mode.ViewModeProvider(),
         ),
       ],
-      child: MarketContent(userId: userId, onBack: onBack),
+      child: MarketContent(
+        userId: userId,
+        initialTab: initialTab,
+        onTabChanged: onTabChanged,
+        onBack: onBack,
+      ),
     );
   }
 }
 
 class MarketContent extends ConsumerStatefulWidget {
-  const MarketContent({required this.userId, this.onBack, super.key});
+  const MarketContent({
+    required this.userId,
+    super.key,
+    this.initialTab = 'all-indices',
+    this.onTabChanged,
+    this.onBack,
+  });
 
   final String userId;
+  final String initialTab;
+  final ValueChanged<String>? onTabChanged;
   final VoidCallback? onBack;
 
   @override
@@ -74,6 +95,51 @@ class MarketContent extends ConsumerStatefulWidget {
 
 class _MarketContentState extends ConsumerState<MarketContent> {
   late SwipeNavigationController _swipeController;
+
+  static const _staticTitleToSlug = {
+    'All Indices': 'all-indices',
+    'Streamer': 'streamer',
+    'Instrument Explorer': 'instrument-explorer',
+    'Security Explorer': 'security-explorer',
+    'ETF Explorer': 'etf-explorer',
+    'Price Test': 'price-test',
+    'Market Analysis': 'market-analysis',
+    'Admin Dashboard': 'admin',
+    'Developer Dashboard': 'developer-dashboard',
+    'Dashboard': 'dashboard',
+    'Heatmap Explorer': 'heatmap-explorer',
+  };
+
+  String _slugForTitle(String title) {
+    return _staticTitleToSlug[title] ??
+        title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+  }
+
+  int _indexForSlug(String slug, List<NavigationItem> items) {
+    for (var i = 0; i < items.length; i++) {
+      if (_slugForTitle(items[i].title) == slug) return i;
+    }
+    return 0;
+  }
+
+  void _syncTabFromUrl({bool notify = false}) {
+    final items = _swipeController.items;
+    if (items.isEmpty) return;
+    final index = _indexForSlug(widget.initialTab, items);
+    if (_swipeController.currentIndex != index) {
+      _swipeController.navigateTo(index);
+    }
+    if (notify) {
+      widget.onTabChanged?.call(_slugForTitle(items[index].title));
+    }
+  }
+
+  void _notifyTabChanged() {
+    final items = _swipeController.items;
+    if (items.isEmpty) return;
+    final title = items[_swipeController.currentIndex].title;
+    widget.onTabChanged?.call(_slugForTitle(title));
+  }
 
   @override
   void initState() {
@@ -105,13 +171,23 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       if (!mounted) return;
       setState(() {});
 
-      // Sync provider with new selection
       final currentTitle = _swipeController.currentItem.title;
       final provider = context.read<MarketProvider>();
       if (provider.selectedIndex != currentTitle) {
         provider.selectIndex(currentTitle);
       }
+      _notifyTabChanged();
     });
+  }
+
+  @override
+  void didUpdateWidget(MarketContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTab != oldWidget.initialTab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _syncTabFromUrl();
+      });
+    }
   }
 
   void _navigateToNext() {
@@ -150,10 +226,10 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       // Update controller items when provider updates (e.g. indices loaded)
       final newItems = _buildNavigationItems(provider, viewModeProvider);
       if (_hasItemsChanged(newItems)) {
-        // Defer update to avoid build cycle
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             _swipeController.updateItems(newItems);
+            _syncTabFromUrl();
           }
         });
       }
@@ -161,6 +237,8 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       return UnifiedSidebarScaffold(
         module: ModuleType.market,
         onBackToGlobal: widget.onBack,
+        showModuleBottomNavigation: false,
+        headerActions: const [ShareLinkButton()],
         body: SwipeablePageView(
           key: const PageStorageKey('market_page_info'), // Maintain state across layout rebuilds
           scrollDirection: Axis.vertical,
@@ -351,7 +429,8 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     accentColor: ModuleColors.market,
     onTap: () {
       _swipeController.navigateTo(index);
-      context.read<MarketProvider>().selectIndex(title); // Sync provider
+      context.read<MarketProvider>().selectIndex(title);
+      widget.onTabChanged?.call(_slugForTitle(title));
     },
   );
 

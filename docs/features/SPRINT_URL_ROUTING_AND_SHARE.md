@@ -2,7 +2,7 @@
 
 **Module:** `am_app` / `am_portfolio_ui` / `am_trade_ui` / `am_market` / `am_design_system`
 **Sprint:** Next Sprint
-**Status:** Planned — Not Started
+**Status:** Implemented (enterprise path URLs with portfolio ID)
 **Author:** AM Platform Team
 
 ---
@@ -24,8 +24,8 @@ The current app uses purely index-based `setState` navigation. No URL changes as
 | Problem | Current Behaviour | Expected Behaviour |
 |---|---|---|
 | No URL change on navigation | URL stays at `/` for every screen | Each screen has its own path |
-| Module sub-pages not addressable | Portfolio Holdings has no URL | `/app/portfolio/holdings` works |
-| Can't share a deep link | Sharing the browser URL lands on login, loses destination | Shared URL redirects to destination after login |
+| Module sub-pages not addressable | Portfolio Holdings has no URL | `/app/portfolio/{portfolioId}/holdings` works |
+| Can't share a deep link | Sharing the browser URL lands on login, loses destination | Shared URL restores portfolio + tab after login |
 | Mobile global nav disappears | Only visible for Dashboard & Lab | Always visible on mobile |
 | Browser back button broken | Back goes to OS, not previous module | Back navigates correctly through history |
 
@@ -40,10 +40,13 @@ The current app uses purely index-based `setState` navigation. No URL changes as
 /reset-password                 → ResetPasswordPage
 
 /app/dashboard                  → DashboardPage
-/app/portfolio                  → redirect → /app/portfolio/overview
-/app/portfolio/:tab             → PortfolioWebScreen
+/app/portfolio                  → redirect → /app/portfolio/overview (legacy tab-only)
+/app/portfolio/:portfolioId/:tab → PortfolioWebScreen (canonical share URL)
+/app/portfolio/:tab             → legacy tab-only; upgrades to 3-segment after portfolio load
 /app/trade                      → redirect → /app/trade/portfolios
-/app/trade/:tab                 → TradeWebScreen
+/app/trade/portfolios           → TradePortfolioDiscovery (no portfolio ID)
+/app/trade/:portfolioId/:tab    → TradeWebScreen (canonical share URL)
+/app/trade/:tab                 → legacy tab-only; upgrades to 3-segment after portfolio load
 /app/market                     → redirect → /app/market/all-indices
 /app/market/:tab                → MarketPage
 /app/ai-chat                    → AiChatScreen
@@ -159,7 +162,7 @@ context.go(redirect ?? '/app/dashboard');
 
 New file: `am_design_system/lib/shared/widgets/share/share_link_button.dart`
 
-- Reads current URL via `GoRouterState.of(context).uri.toString()`.
+- Reads current URL via `Uri.base.toString()` (exact browser address bar).
 - **On tap:** copies URL to clipboard via `Clipboard.setData`, shows `SnackBar("Link copied")`.
 - **On web mobile:** also attempts `navigator.share()` native sheet.
 - Icon: `Icons.link_rounded` → animates to `Icons.check_rounded` for 2 seconds after copy.
