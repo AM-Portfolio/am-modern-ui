@@ -31,7 +31,7 @@ class PortfolioOverviewWidget extends StatefulWidget {
 }
 
 class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
-  ds.TimeFrame _selectedTimeFrame = ds.TimeFrame.oneYear;
+  ds.TimeFrame _selectedTimeFrame = ds.TimeFrame.oneDay;
 
   void _onTimeFrameChanged(ds.TimeFrame timeFrame) {
     setState(() {
@@ -221,8 +221,9 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          ds.TimeFrameSelector.portfolio(
+                          ds.TimeFrameSelector(
                             selectedTimeFrame: _selectedTimeFrame,
+                            availableTimeFrames: ds.TimeFrame.dashboardTimeFrames,
                             onTimeFrameChanged: _onTimeFrameChanged,
                             compact: true,
                           ),

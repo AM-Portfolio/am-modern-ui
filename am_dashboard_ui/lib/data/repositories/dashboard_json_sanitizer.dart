@@ -29,6 +29,7 @@ class DashboardJsonSanitizer {
     final sanitized = Map<String, dynamic>.from(json);
     sanitized['gainers'] = _sanitizeMoverList(json['gainers']);
     sanitized['losers'] = _sanitizeMoverList(json['losers']);
+    sanitized['timeFrame'] ??= '1D';
     return sanitized;
   }
 

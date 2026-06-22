@@ -1,6 +1,6 @@
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import '../shared/widgets/dashboard_summary_widget.dart';
-import '../shared/widgets/dashboard_allocation_widget.dart';
 import '../shared/widgets/dashboard_chart_widget.dart';
 import '../shared/widgets/dashboard_ranking_widget.dart';
 import '../shared/widgets/dashboard_recent_activity_widget.dart';
@@ -36,6 +36,10 @@ class DashboardWebScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(dashboardStreamingSessionProvider(userId));
+    final timeFrame = ref.watch(dashboardTimeFrameProvider);
+    final tfCode = timeFrame.code;
+
     final dashboardAsync = ref.watch(dashboardStreamProvider(userId));
     final overviewsAsync = ref.watch(portfolioOverviewsProvider(userId));
 
@@ -130,6 +134,13 @@ class DashboardWebScreen extends ConsumerWidget {
                         ),
                         Row(
                           children: [
+                            TimeFrameSelector(
+                              selectedTimeFrame: timeFrame,
+                              availableTimeFrames: TimeFrame.dashboardTimeFrames,
+                              onTimeFrameChanged: (tf) =>
+                                  onDashboardTimeFrameChanged(ref, userId, tf),
+                            ),
+                            const SizedBox(width: 12),
                             Container(
                               decoration: BoxDecoration(
                                 color: btnBgColor,
@@ -216,18 +227,17 @@ class DashboardWebScreen extends ConsumerWidget {
                             child: Consumer(
                               builder: (context, ref, child) {
                                 final performanceAsync =
-                                    ref.watch(dashboardPerformanceProvider(userId));
+                                    ref.watch(historyStreamProvider(userId, timeFrame: tfCode));
                                 return performanceAsync.when(
                                 data: (performance) => DashboardChartWidget(
                                   performance: performance,
-                                  onTimeFrameChanged: (timeFrame) {
-                                    ref.invalidate(dashboardPerformanceProvider(userId));
-                                  },
                                 ),
                                 loading: () => _buildLoadingCard(280),
                                 error: (err, stack) => AmErrorWidget(
                                   message: 'Failed to load chart',
-                                  onRetry: () => ref.invalidate(dashboardPerformanceProvider(userId)),
+                                  onRetry: () => ref.invalidate(
+                                    historyStreamProvider(userId, timeFrame: tfCode),
+                                  ),
                                 ),
                               );
                             },
@@ -238,7 +248,8 @@ class DashboardWebScreen extends ConsumerWidget {
                           flex: 30,
                           child: Consumer(
                             builder: (context, ref, child) {
-                              final topMoversAsync = ref.watch(topMoversProvider(userId));
+                              final topMoversAsync =
+                                  ref.watch(moversStreamProvider(userId, timeFrame: tfCode));
                               return topMoversAsync.when(
                                 data: (topMovers) => DashboardRankingWidget(
                                   gainers: topMovers.gainers,
@@ -261,19 +272,7 @@ class DashboardWebScreen extends ConsumerWidget {
                       children: [
                         Expanded(
                           flex: 70,
-                          child: Consumer(
-                            builder: (context, ref, child) {
-                              final activitiesAsync = ref.watch(recentActivityProvider(userId));
-                              return activitiesAsync.when(
-                                data: (activities) => DashboardRecentActivityWidget(activities: activities),
-                                loading: () => _buildLoadingCard(200),
-                                error: (err, stack) => AmErrorWidget(
-                                  message: 'Failed to load recent activity',
-                                  onRetry: () => ref.invalidate(recentActivityProvider(userId)),
-                                ),
-                              );
-                            },
-                          ),
+                          child: DashboardRecentActivitySection(userId: userId),
                         ),
                         const SizedBox(width: 24),
                         Expanded(

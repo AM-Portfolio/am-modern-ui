@@ -69,19 +69,23 @@ class _AppShellState extends State<AppShell> {
     }
 
     if (current == AppRoutes.dashboard && savedPath != AppRoutes.dashboard) {
+      _applyStreamingTabCoordinator(session.globalNav);
       context.go(savedPath);
     }
+  }
+
+  void _applyStreamingTabCoordinator(String tabTitle) {
+    if (!GetIt.instance.isRegistered<common.AmStompClient>()) return;
+    if (tabTitle.isEmpty) return;
+    common.StreamingTabCoordinator(GetIt.instance<common.AmStompClient>())
+        .onTabSelected(tabTitle);
   }
 
   void _onGlobalNavigate(String title, String userId) {
     final path = AppRoutes.pathForNavTitle(title);
     if (path == null) return;
 
-    if (GetIt.instance.isRegistered<common.AmStompClient>()) {
-      common.StreamingTabCoordinator(GetIt.instance<common.AmStompClient>())
-          .onTabSelected(title);
-    }
-
+    _applyStreamingTabCoordinator(title);
     context.go(path);
     common.SessionPersistenceService.instance.patch(
       userId,
@@ -113,6 +117,7 @@ class _AppShellState extends State<AppShell> {
 
       stompCubit.onConnected = (userId) {
         common.AppLogger.info('AppShell (Initial): STOMP Connected for $userId');
+        if (mounted) _applyStreamingTabCoordinator(_activeNavItem);
       };
 
       final secureStorage = GetIt.instance<common.SecureStorageService>();
@@ -155,6 +160,9 @@ class _AppShellState extends State<AppShell> {
 
               stompCubit.onConnected = (userId) {
                 common.AppLogger.info('AppShell: STOMP Connected for $userId');
+                if (context.mounted) {
+                  _applyStreamingTabCoordinator(_activeNavItem);
+                }
               };
 
               final secureStorage = GetIt.instance<common.SecureStorageService>();
@@ -244,6 +252,9 @@ class _AppShellState extends State<AppShell> {
                       ),
                     Expanded(
                       child: GlobalPortfolioWrapper(
+                        streamingTab: _activeNavItem.isEmpty
+                            ? 'Dashboard'
+                            : _activeNavItem,
                         onPortfolioChanged: _onGlobalPortfolioChanged,
                         child: widget.child,
                       ),
