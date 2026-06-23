@@ -373,11 +373,31 @@ class MultiIndexChart extends StatelessWidget {
                           try {
                             final date = DateTime.parse(dateStr);
                             final fmt = _getDateFormat(chartData);
-                             return SideTitleWidget(
-                               meta: meta,
-                               space: 8.0,
-                               child: Text(
-                                 fmt.format(date),
+
+                            // DEDUPLICATION LOGIC:
+                            // Stock charts can have multiple data points on the same day (e.g. market open and close).
+                            // When formatting with 'dd MMM' or 'E', they resolve to identical day strings (e.g., 'Mon' or '15 Jun').
+                            // We determine the index of the previously printed interval step:
+                            // - For standard intervals, this is the previous step (e.g. index 18 for step 21).
+                            // - For forced edge ticks (e.g. index 19), this finds the last printed multiple (index 18).
+                            final prevIndex =
+                                ((index - 1) ~/ interval) * interval;
+                            if (prevIndex >= 0) {
+                              try {
+                                final prevDate = DateTime.parse(
+                                    chartData[prevIndex]['time'] as String);
+                                // If the current label matches the previous label, skip rendering it
+                                if (fmt.format(prevDate) == fmt.format(date)) {
+                                  return const SizedBox.shrink();
+                                }
+                              } catch (_) {}
+                            }
+
+                            return SideTitleWidget(
+                              meta: meta,
+                              space: 8.0,
+                              child: Text(
+                                fmt.format(date),
                                 style: TextStyle(
                                   color: theme.textTheme.bodySmall?.color
                                       ?.withOpacity(0.6),
@@ -607,7 +627,7 @@ class MultiIndexChart extends StatelessWidget {
       } else if (difference.inDays <= 7) {
         return DateFormat(
             'E'); // Just show day of the week (e.g. Tue, Wed) for clean view
-      } else if (difference.inDays <= 90) {
+      } else if (difference.inDays <= 120) {
         return DateFormat('dd MMM');
       } else {
         return DateFormat('MMM yy');
