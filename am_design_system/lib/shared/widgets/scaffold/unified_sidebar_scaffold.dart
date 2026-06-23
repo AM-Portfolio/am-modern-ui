@@ -36,6 +36,7 @@ class UnifiedSidebarScaffold extends StatefulWidget {
   final VoidCallback? onThemeToggle;
   final VoidCallback? onProfileTap;
   final VoidCallback? onLogout;
+  final VoidCallback? onMobileMenuTap;
 
   const UnifiedSidebarScaffold({
     required this.body,
@@ -60,10 +61,12 @@ class UnifiedSidebarScaffold extends StatefulWidget {
     this.onThemeToggle,
     this.onProfileTap,
     this.onLogout,
+    this.onMobileMenuTap,
     this.footer,
     this.enableGlass = false,
     this.showModuleBottomNavigation = true,
     this.headerActions,
+    this.showAppBarOnMobile = true,
   }) : assert((items != null) != (sections != null), 'Provide either items or sections, not both.');
 
   /// The main content of the page
@@ -129,6 +132,8 @@ class UnifiedSidebarScaffold extends StatefulWidget {
   /// Optional actions shown in the mobile app bar (e.g. ShareLinkButton).
   final List<Widget>? headerActions;
 
+  final bool showAppBarOnMobile;
+
   @override
   State<UnifiedSidebarScaffold> createState() => _UnifiedSidebarScaffoldState();
 }
@@ -178,6 +183,83 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold> with Si
     });
   }
 
+  Widget _buildMobilePillTabs(BuildContext context, List<SecondarySidebarItem> items) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      height: 40,
+      margin: const EdgeInsets.only(bottom: 12, top: 4),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: items.length,
+        itemBuilder: (context, index) {
+          final item = items[index];
+          final isSelected = item.isSelected;
+          final itemColor = item.accentColor ?? _resolvedColor;
+
+          return GestureDetector(
+            onTap: item.onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? itemColor.withOpacity(isDark ? 0.3 : 0.8)
+                    : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03)),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected
+                      ? itemColor
+                      : (isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05)),
+                  width: 1.5,
+                ),
+                boxShadow: isSelected && isDark
+                    ? [
+                        BoxShadow(
+                          color: itemColor.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        )
+                      ]
+                    : [],
+              ),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      item.icon,
+                      size: 16,
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? Colors.white70 : Colors.black54),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      item.title,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                        color: isSelected
+                            ? Colors.white
+                            : (isDark ? Colors.white70 : Colors.black87),
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -187,34 +269,50 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold> with Si
         final isTablet = width >= widget.tabletBreakpoint && width < widget.desktopBreakpoint;
         final isMobile = width < widget.tabletBreakpoint;
 
-        // Mobile Layout: Bottom Navigation
+        // Mobile Layout: Top Navigation Tabs + Clean Global Bottom Nav
         if (isMobile) {
+          // Flatten items
+          List<SecondarySidebarItem> flatItems = [];
+          if (widget.items != null) {
+            flatItems = widget.items!;
+          } else if (widget.sections != null) {
+            for (var section in widget.sections!) {
+              if (section.items != null) {
+                flatItems.addAll(section.items!);
+              }
+            }
+          }
+
           return Scaffold(
-            appBar: AppBar(
-              title: Text(_resolvedTitle ?? ''),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              centerTitle: true,
-              leading: widget.onBackToGlobal != null
-                  ? IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: widget.onBackToGlobal,
-                    )
-                  : null,
-              actions: [
-                ...?widget.headerActions,
-                if (!widget.showModuleBottomNavigation)
-                  IconButton(
-                    icon: const Icon(Icons.menu_rounded),
-                    tooltip: 'Module menu',
-                    onPressed: () => _showMobileMenu(context),
-                  ),
+            appBar: widget.showAppBarOnMobile
+                ? AppBar(
+                    title: Text(_resolvedTitle ?? ''),
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    centerTitle: true,
+                    leading: widget.onBackToGlobal != null
+                        ? IconButton(
+                            icon: const Icon(Icons.arrow_back),
+                            onPressed: widget.onBackToGlobal,
+                          )
+                        : null,
+                    actions: [
+                      ...?widget.headerActions,
+                      IconButton(
+                        icon: const Icon(Icons.menu_rounded),
+                        tooltip: 'Module menu',
+                        onPressed: widget.onMobileMenuTap ?? () => _showMobileMenu(context),
+                      ),
+                    ],
+                  )
+                : null,
+            body: Column(
+              children: [
+                if (flatItems.isNotEmpty)
+                  _buildMobilePillTabs(context, flatItems),
+                Expanded(child: widget.body),
               ],
             ),
-            body: widget.body,
-            bottomNavigationBar: widget.showModuleBottomNavigation
-                ? _buildBottomNavigationBar(context)
-                : null,
             floatingActionButton: widget.floatingActionButton,
           );
         }

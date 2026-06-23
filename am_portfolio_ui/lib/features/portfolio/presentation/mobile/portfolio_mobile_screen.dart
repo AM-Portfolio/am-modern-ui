@@ -158,6 +158,11 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    _tabController.addListener(() {
+      if (mounted && !_tabController.indexIsChanging) {
+        setState(() {});
+      }
+    });
     _currentPortfolioId = widget.selectedPortfolioId;
 
     // Load portfolio data
@@ -229,6 +234,16 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       );
     }
 
+    String currentName = 'Select Portfolio';
+    if (_currentPortfolioId != null && widget.portfolios != null) {
+      final match = widget.portfolios!.where(
+        (p) => p.portfolioId == _currentPortfolioId,
+      );
+      if (match.isNotEmpty) {
+        currentName = match.first.portfolioName;
+      }
+    }
+
     return BlocListener<PortfolioCubit, PortfolioState>(
       listener: (context, state) {
         if (state is PortfolioError) {
@@ -240,68 +255,49 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           );
         }
       },
-      child: Scaffold(
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: PortfolioTabContentWidget(
-                  tabController: _tabController,
-                  currentPortfolioId: _currentPortfolioId!,
-                  ),
-              ),
-            ],
+      child: UnifiedSidebarScaffold(
+        module: ModuleType.portfolio,
+        title: currentName,
+        showModuleBottomNavigation: false,
+        onBackToGlobal: widget.onBack,
+        onMobileMenuTap: () => _showMenuBottomSheet(context),
+        items: [
+          SecondarySidebarItem(
+            title: 'Overview',
+            icon: Icons.dashboard_outlined,
+            isSelected: _tabController.index == 0,
+            onTap: () => setState(() => _tabController.index = 0),
           ),
+          SecondarySidebarItem(
+            title: 'Holdings',
+            icon: Icons.wallet,
+            isSelected: _tabController.index == 1,
+            onTap: () => setState(() => _tabController.index = 1),
+          ),
+          SecondarySidebarItem(
+            title: 'Analysis',
+            icon: Icons.analytics_outlined,
+            isSelected: _tabController.index == 2,
+            onTap: () => setState(() => _tabController.index = 2),
+          ),
+          SecondarySidebarItem(
+            title: 'Heatmap',
+            icon: Icons.grid_view,
+            isSelected: _tabController.index == 3,
+            onTap: () => setState(() => _tabController.index = 3),
+          ),
+          SecondarySidebarItem(
+            title: 'Trade',
+            icon: Icons.show_chart,
+            isSelected: _tabController.index == 4,
+            onTap: () => setState(() => _tabController.index = 4),
+          ),
+        ],
+        body: PortfolioTabContentWidget(
+          tabController: _tabController,
+          currentPortfolioId: _currentPortfolioId!,
         ),
-        bottomNavigationBar: _buildBottomNavigationBar(context),
       ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar(BuildContext context) {
-    // Standard Portfolio Tabs
-    final tabs = [
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.dashboard_outlined),
-        label: 'Overview',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.wallet),
-        label: 'Holdings',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.analytics_outlined),
-        label: 'Analysis',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.grid_view),
-        label: 'Heatmap',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.show_chart),
-        label: 'Trade',
-      ),
-      // We add 'Menu' as the last functional item
-      const BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
-    ];
-
-    return ModuleBottomNavigation(
-      items: tabs,
-      currentIndex: _tabController.index,
-      accentColor: Theme.of(context).primaryColor,
-      onBackToGlobal: widget.onBack,
-      onTap: (index) {
-        if (index < 5) {
-          // Tab Switch
-          setState(() {
-            _tabController.animateTo(index);
-          });
-        } else {
-          // Menu
-          _showMenuBottomSheet(context);
-        }
-      },
-      // Using generic styling, no special FAB here strictly needed unless we want 'Trade' to be FAB?
     );
   }
 
