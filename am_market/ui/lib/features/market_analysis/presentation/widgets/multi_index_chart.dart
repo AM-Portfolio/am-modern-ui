@@ -372,27 +372,12 @@ class MultiIndexChart extends StatelessWidget {
                           final dateStr = chartData[index]['time'] as String;
                           try {
                             final date = DateTime.parse(dateStr);
-                            final fmt = _getDateFormat(
-                                chartData); // Dynamically formatted
-
-                            // If the previous tick formats to the same string, skip it to prevent duplicates
-                            final prevIndex =
-                                ((index - 1) ~/ interval) * interval;
-                            if (prevIndex >= 0) {
-                              try {
-                                final prevDate = DateTime.parse(
-                                    chartData[prevIndex]['time'] as String);
-                                if (fmt.format(prevDate) == fmt.format(date)) {
-                                  return const SizedBox.shrink();
-                                }
-                              } catch (_) {}
-                            }
-
-                            return SideTitleWidget(
-                              meta: meta,
-                              space: 8.0,
-                              child: Text(
-                                fmt.format(date),
+                            final fmt = _getDateFormat(chartData);
+                             return SideTitleWidget(
+                               meta: meta,
+                               space: 8.0,
+                               child: Text(
+                                 fmt.format(date),
                                 style: TextStyle(
                                   color: theme.textTheme.bodySmall?.color
                                       ?.withOpacity(0.6),
