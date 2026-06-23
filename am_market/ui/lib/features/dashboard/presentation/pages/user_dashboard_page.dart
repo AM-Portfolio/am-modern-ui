@@ -117,7 +117,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
             if (val is Map && val.containsKey('dataPoints')) {
               final points = List.from(val['dataPoints']);
               if (points.isNotEmpty) {
-                for (int i = points.length - 1; i >= 0; i--) {
+                for (int i = 0; i < points.length; i++) {
                   final point = points[i];
                   final p = point['close'] ?? point['lastPrice'] ?? point['price'];
                   if (p != null && (p as num) > 0) {
