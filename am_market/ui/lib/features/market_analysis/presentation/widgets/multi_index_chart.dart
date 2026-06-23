@@ -101,7 +101,7 @@ class MultiIndexChart extends StatelessWidget {
           _buildLegend(context),
           const SizedBox(height: 24),
           Expanded(
-            child: isBarChart 
+            child: isBarChart
                 ? _buildBarChart(context, chartData)
                 : _buildChart(context, chartData),
           ),
@@ -146,25 +146,31 @@ class MultiIndexChart extends StatelessWidget {
     );
   }
 
-  Widget _buildBarChart(BuildContext context, List<Map<String, dynamic>> chartData) {
+  Widget _buildBarChart(
+      BuildContext context, List<Map<String, dynamic>> chartData) {
     final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         // Ensure enough width for bars
-        final minWidth = chartData.length * (selectedIndices.length * 10.0 + 20.0);
-        
+        final minWidth =
+            chartData.length * (selectedIndices.length * 10.0 + 20.0);
+
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SizedBox(
-            width: minWidth > constraints.maxWidth ? minWidth : constraints.maxWidth,
+            width: minWidth > constraints.maxWidth
+                ? minWidth
+                : constraints.maxWidth,
             height: constraints.maxHeight,
             child: BarChart(
               BarChartData(
                 gridData: FlGridData(show: false),
                 titlesData: FlTitlesData(
                   show: true,
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -173,19 +179,40 @@ class MultiIndexChart extends StatelessWidget {
                         final index = value.toInt();
                         if (index >= 0 && index < chartData.length) {
                           // Show fewer labels if too many
-                          if (chartData.length > 20 && index % (chartData.length ~/ 10) != 0) {
+                          if (chartData.length > 20 &&
+                              index % (chartData.length ~/ 10) != 0) {
                             return const SizedBox.shrink();
                           }
-                          
+
                           final dateStr = chartData[index]['time'] as String;
                           try {
                             final date = DateTime.parse(dateStr);
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
+                            final fmt = _getDateFormat(chartData);
+
+                            // If the previous tick formats to the same string, skip it to prevent duplicates
+                            final interval = (chartData.length > 20)
+                                ? (chartData.length ~/ 10)
+                                : 1;
+                            final prevIndex =
+                                ((index - 1) ~/ interval) * interval;
+                            if (prevIndex >= 0) {
+                              try {
+                                final prevDate = DateTime.parse(
+                                    chartData[prevIndex]['time'] as String);
+                                if (fmt.format(prevDate) == fmt.format(date)) {
+                                  return const SizedBox.shrink();
+                                }
+                              } catch (_) {}
+                            }
+
+                            return SideTitleWidget(
+                              meta: meta,
+                              space: 8.0,
                               child: Text(
-                                _getDateFormat(chartData).format(date),
+                                fmt.format(date),
                                 style: TextStyle(
-                                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                                  color: theme.textTheme.bodySmall?.color
+                                      ?.withOpacity(0.6),
                                   fontSize: 10,
                                 ),
                               ),
@@ -202,12 +229,22 @@ class MultiIndexChart extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 40,
+                      interval: _calculateInterval(chartData),
                       getTitlesWidget: (value, meta) {
-                         return Text(
-                          '${value.toStringAsFixed(0)}%',
-                          style: TextStyle(
-                            color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
-                            fontSize: 10,
+                        // Skip printing min and max values directly on the edge to prevent overlap/clutter
+                        if (value == meta.min || value == meta.max) {
+                          return const SizedBox.shrink();
+                        }
+                        return SideTitleWidget(
+                          meta: meta,
+                          space: 8.0,
+                          child: Text(
+                            '${value.toStringAsFixed(0)}%',
+                            style: TextStyle(
+                              color: theme.textTheme.bodySmall?.color
+                                  ?.withOpacity(0.6),
+                              fontSize: 10,
+                            ),
                           ),
                         );
                       },
@@ -217,8 +254,10 @@ class MultiIndexChart extends StatelessWidget {
                 borderData: FlBorderData(
                   show: true,
                   border: Border(
-                    bottom: BorderSide(color: theme.dividerColor.withOpacity(0.5), width: 1),
-                    left: BorderSide(color: theme.dividerColor.withOpacity(0.5), width: 1),
+                    bottom: BorderSide(
+                        color: theme.dividerColor.withOpacity(0.5), width: 1),
+                    left: BorderSide(
+                        color: theme.dividerColor.withOpacity(0.5), width: 1),
                     top: BorderSide.none,
                     right: BorderSide.none,
                   ),
@@ -228,7 +267,7 @@ class MultiIndexChart extends StatelessWidget {
                 barGroups: chartData.asMap().entries.map((entry) {
                   final index = entry.key;
                   final point = entry.value;
-                  
+
                   return BarChartGroupData(
                     x: index,
                     barsSpace: 4,
@@ -238,17 +277,23 @@ class MultiIndexChart extends StatelessWidget {
                       final val = (point[symbol] as num?)?.toDouble() ?? 0.0;
                       // Logic: If value < 0, use RED, else use Index Color
                       final isNegative = val < 0;
-                      final color = isNegative ? const Color(0xFFEF4444) : indexColors[idx % indexColors.length];
-                      
+                      final color = isNegative
+                          ? const Color(0xFFEF4444)
+                          : indexColors[idx % indexColors.length];
+
                       return BarChartRodData(
                         toY: val,
                         color: color,
                         width: 14, // Fixed width
-                        borderRadius: val > 0 
-                            ? const BorderRadius.only(topLeft: Radius.circular(2), topRight: Radius.circular(2))
-                            : const BorderRadius.only(bottomLeft: Radius.circular(2), bottomRight: Radius.circular(2)),
+                        borderRadius: val > 0
+                            ? const BorderRadius.only(
+                                topLeft: Radius.circular(2),
+                                topRight: Radius.circular(2))
+                            : const BorderRadius.only(
+                                bottomLeft: Radius.circular(2),
+                                bottomRight: Radius.circular(2)),
                         backDrawRodData: BackgroundBarChartRodData(
-                            show: true, toY: 0, color: Colors.transparent), 
+                            show: true, toY: 0, color: Colors.transparent),
                       );
                     }).toList(),
                   );
@@ -258,7 +303,7 @@ class MultiIndexChart extends StatelessWidget {
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final dateStr = chartData[group.x]['time'] as String;
                       final date = DateTime.parse(dateStr);
-                      final symbol = selectedIndices[rodIndex]; 
+                      final symbol = selectedIndices[rodIndex];
                       return BarTooltipItem(
                         '${_getTooltipDateFormat(chartData).format(date)}\n$symbol\n${rod.toY.toStringAsFixed(2)}%',
                         const TextStyle(
@@ -278,7 +323,8 @@ class MultiIndexChart extends StatelessWidget {
     );
   }
 
-  Widget _buildChart(BuildContext context, List<Map<String, dynamic>> chartData) {
+  Widget _buildChart(
+      BuildContext context, List<Map<String, dynamic>> chartData) {
     final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -291,9 +337,9 @@ class MultiIndexChart extends StatelessWidget {
             height: constraints.maxHeight,
             child: LineChart(
               LineChartData(
-                  gridData: FlGridData(
-                    show: false, 
-                  ),
+                gridData: FlGridData(
+                  show: false,
+                ),
                 titlesData: FlTitlesData(
                   show: true,
                   rightTitles: AxisTitles(
@@ -310,25 +356,55 @@ class MultiIndexChart extends StatelessWidget {
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
                         if (index >= 0 && index < chartData.length) {
+                          final interval = (chartData.length / 8).ceil();
+                          // Skip the final boundary tick if it's too close to the last regular interval tick
+                          // to prevent duplicate/crowded labels at the end.
+                          if (index == chartData.length - 1 && interval > 1) {
+                            final lastIntervalTick =
+                                ((chartData.length - 1) ~/ interval) * interval;
+                            if (chartData.length - 1 != lastIntervalTick &&
+                                chartData.length - 1 - lastIntervalTick <
+                                    interval / 2) {
+                              return const SizedBox.shrink();
+                            }
+                          }
+
                           final dateStr = chartData[index]['time'] as String;
                           try {
                             final date = DateTime.parse(dateStr);
-                            final fmt = _getDateFormat(chartData);
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
+                            final fmt = _getDateFormat(
+                                chartData); // Dynamically formatted
+
+                            // If the previous tick formats to the same string, skip it to prevent duplicates
+                            final prevIndex =
+                                ((index - 1) ~/ interval) * interval;
+                            if (prevIndex >= 0) {
+                              try {
+                                final prevDate = DateTime.parse(
+                                    chartData[prevIndex]['time'] as String);
+                                if (fmt.format(prevDate) == fmt.format(date)) {
+                                  return const SizedBox.shrink();
+                                }
+                              } catch (_) {}
+                            }
+
+                            return SideTitleWidget(
+                              meta: meta,
+                              space: 8.0,
                               child: Text(
                                 fmt.format(date),
                                 style: TextStyle(
-                                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                                  color: theme.textTheme.bodySmall?.color
+                                      ?.withOpacity(0.6),
                                   fontSize: 10,
                                 ),
                               ),
                             );
                           } catch (e) {
-                            return const Text('');
+                            return const SizedBox.shrink();
                           }
                         }
-                        return const Text('');
+                        return const SizedBox.shrink();
                       },
                     ),
                   ),
@@ -336,12 +412,22 @@ class MultiIndexChart extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 50,
+                      interval: _calculateInterval(chartData),
                       getTitlesWidget: (value, meta) {
-                        return Text(
-                          '${value.toStringAsFixed(1)}%',
-                          style: TextStyle(
-                            color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
-                            fontSize: 10,
+                        // Skip printing min and max values directly on the edge to prevent overlap/clutter
+                        if (value == meta.min || value == meta.max) {
+                          return const SizedBox.shrink();
+                        }
+                        return SideTitleWidget(
+                          meta: meta,
+                          space: 8.0,
+                          child: Text(
+                            '${value.toStringAsFixed(1)}%',
+                            style: TextStyle(
+                              color: theme.textTheme.bodySmall?.color
+                                  ?.withOpacity(0.6),
+                              fontSize: 10,
+                            ),
                           ),
                         );
                       },
@@ -351,8 +437,10 @@ class MultiIndexChart extends StatelessWidget {
                 borderData: FlBorderData(
                   show: true,
                   border: Border(
-                    bottom: BorderSide(color: theme.dividerColor.withOpacity(0.5), width: 1),
-                    left: BorderSide(color: theme.dividerColor.withOpacity(0.5), width: 1),
+                    bottom: BorderSide(
+                        color: theme.dividerColor.withOpacity(0.5), width: 1),
+                    left: BorderSide(
+                        color: theme.dividerColor.withOpacity(0.5), width: 1),
                     top: BorderSide.none,
                     right: BorderSide.none,
                   ),
@@ -398,13 +486,29 @@ class MultiIndexChart extends StatelessWidget {
   List<Map<String, dynamic>> _prepareChartData() {
     if (selectedIndices.isEmpty) return [];
 
+    // Helper to normalize timestamps (strip fractional seconds/millis)
+    String normalizeTime(String timeStr) {
+      try {
+        final dt = DateTime.parse(timeStr);
+        return '${dt.year.toString().padLeft(4, '0')}-'
+            '${dt.month.toString().padLeft(2, '0')}-'
+            '${dt.day.toString().padLeft(2, '0')}T'
+            '${dt.hour.toString().padLeft(2, '0')}:'
+            '${dt.minute.toString().padLeft(2, '0')}:'
+            '${dt.second.toString().padLeft(2, '0')}';
+      } catch (_) {
+        return timeStr;
+      }
+    }
+
     // Get all unique timestamps across selected indices
     final Set<String> allTimestamps = {};
     for (final symbol in selectedIndices) {
       final data = historicalData[symbol];
       if (data != null) {
         for (final point in data) {
-          allTimestamps.add(point['time'] as String);
+          final time = point['time'] as String;
+          allTimestamps.add(normalizeTime(time));
         }
       }
     }
@@ -420,7 +524,10 @@ class MultiIndexChart extends StatelessWidget {
         // Find the first price for this symbol
         for (final timestamp in sortedTimestamps) {
           final matchingPoint = data.firstWhere(
-            (p) => p['time'] == timestamp,
+            (p) {
+              final pTime = p['time'] as String?;
+              return pTime != null && normalizeTime(pTime) == timestamp;
+            },
             orElse: () => {},
           );
           if (matchingPoint.isNotEmpty) {
@@ -440,7 +547,10 @@ class MultiIndexChart extends StatelessWidget {
         final data = historicalData[symbol];
         if (data != null && baselinePrices.containsKey(symbol)) {
           final matchingPoint = data.firstWhere(
-            (p) => p['time'] == timestamp,
+            (p) {
+              final pTime = p['time'] as String?;
+              return pTime != null && normalizeTime(pTime) == timestamp;
+            },
             orElse: () => {},
           );
           if (matchingPoint.isNotEmpty) {
@@ -510,7 +620,8 @@ class MultiIndexChart extends StatelessWidget {
       if (difference.inDays <= 1) {
         return DateFormat('HH:mm');
       } else if (difference.inDays <= 7) {
-        return DateFormat('E HH:mm');
+        return DateFormat(
+            'E'); // Just show day of the week (e.g. Tue, Wed) for clean view
       } else if (difference.inDays <= 90) {
         return DateFormat('dd MMM');
       } else {
@@ -544,7 +655,17 @@ class MultiIndexChart extends StatelessWidget {
     if (chartData.isEmpty) return 1.0;
     final min = _getMinPrice(chartData);
     final max = _getMaxPrice(chartData);
-    return (max - min) / 5;
+    final range = max - min;
+    if (range <= 0) return 1.0;
+
+    // Suggest a clean, rounded interval based on the range size
+    final rawInterval = range / 5;
+    if (rawInterval < 0.25) return 0.25;
+    if (rawInterval < 0.5) return 0.5;
+    if (rawInterval < 1.0) return 1.0;
+    if (rawInterval < 2.0) return 2.0;
+    if (rawInterval < 5.0) return 5.0;
+    return (rawInterval / 5).ceil() * 5.0;
   }
 
   double _getMinPrice(List<Map<String, dynamic>> chartData) {
