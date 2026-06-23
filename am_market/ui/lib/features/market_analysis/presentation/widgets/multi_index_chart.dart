@@ -183,7 +183,7 @@ class MultiIndexChart extends StatelessWidget {
                             return Padding(
                               padding: const EdgeInsets.only(top: 8.0),
                               child: Text(
-                                DateFormat('dd MMM').format(date),
+                                _getDateFormat(chartData).format(date),
                                 style: TextStyle(
                                   color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
                                   fontSize: 10,
@@ -260,7 +260,7 @@ class MultiIndexChart extends StatelessWidget {
                       final date = DateTime.parse(dateStr);
                       final symbol = selectedIndices[rodIndex]; 
                       return BarTooltipItem(
-                        '${DateFormat('dd MMM yy').format(date)}\n$symbol\n${rod.toY.toStringAsFixed(2)}%',
+                        '${_getTooltipDateFormat(chartData).format(date)}\n$symbol\n${rod.toY.toStringAsFixed(2)}%',
                         const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -313,9 +313,7 @@ class MultiIndexChart extends StatelessWidget {
                           final dateStr = chartData[index]['time'] as String;
                           try {
                             final date = DateTime.parse(dateStr);
-                            // Show Year if jan or for better context
-                            final isYearStart = date.month == 1 && date.day == 1;
-                            final fmt = DateFormat('MMM yy'); // Always show Year for better context
+                            final fmt = _getDateFormat(chartData);
                             return Padding(
                               padding: const EdgeInsets.only(top: 8.0),
                               child: Text(
@@ -376,8 +374,8 @@ class MultiIndexChart extends StatelessWidget {
                           final percentChange = spot.y;
 
                           return LineTooltipItem(
-                            '${DateFormat('dd MMM yy').format(date)}\n$symbol: ${percentChange >= 0 ? '+' : ''}${percentChange.toStringAsFixed(2)}%',
-                            TextStyle(
+                            '${_getTooltipDateFormat(chartData).format(date)}\n$symbol: ${percentChange >= 0 ? '+' : ''}${percentChange.toStringAsFixed(2)}%',
+                            const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
@@ -498,6 +496,48 @@ class MultiIndexChart extends StatelessWidget {
         ),
       );
     }).toList();
+  }
+
+  /// Helper method to dynamically determine date formatting on the X-axis
+  /// based on the date range span of the available chart data.
+  DateFormat _getDateFormat(List<Map<String, dynamic>> chartData) {
+    if (chartData.isEmpty) return DateFormat('MMM yy');
+    try {
+      final firstDate = DateTime.parse(chartData.first['time'] as String);
+      final lastDate = DateTime.parse(chartData.last['time'] as String);
+      final difference = lastDate.difference(firstDate);
+
+      if (difference.inDays <= 1) {
+        return DateFormat('HH:mm');
+      } else if (difference.inDays <= 7) {
+        return DateFormat('E HH:mm');
+      } else if (difference.inDays <= 90) {
+        return DateFormat('dd MMM');
+      } else {
+        return DateFormat('MMM yy');
+      }
+    } catch (_) {
+      return DateFormat('MMM yy');
+    }
+  }
+
+  /// Helper method to dynamically determine date formatting for tooltips
+  /// based on the date range span of the available chart data.
+  DateFormat _getTooltipDateFormat(List<Map<String, dynamic>> chartData) {
+    if (chartData.isEmpty) return DateFormat('dd MMM yy');
+    try {
+      final firstDate = DateTime.parse(chartData.first['time'] as String);
+      final lastDate = DateTime.parse(chartData.last['time'] as String);
+      final difference = lastDate.difference(firstDate);
+
+      // Include hour:minute time precision in tooltip if the span is a week or less
+      if (difference.inDays <= 7) {
+        return DateFormat('dd MMM yy HH:mm');
+      }
+      return DateFormat('dd MMM yy');
+    } catch (_) {
+      return DateFormat('dd MMM yy');
+    }
   }
 
   double _calculateInterval(List<Map<String, dynamic>> chartData) {
