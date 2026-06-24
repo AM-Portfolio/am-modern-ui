@@ -84,6 +84,14 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
       final baseUri = _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioListResource);
       var fullUri = baseUri;
 
+      // The cloud API Gateway requires the user ID to be appended to the path
+      if (fullUri.endsWith('by-owner')) {
+        final userId = await SecureStorageService().getUserId() ?? '';
+        if (userId.isNotEmpty) {
+          fullUri = '$fullUri/$userId';
+        }
+      }
+
       final response = await _apiClient.get<TradePortfolioListDto>(
         fullUri,
         parser: (data) {
