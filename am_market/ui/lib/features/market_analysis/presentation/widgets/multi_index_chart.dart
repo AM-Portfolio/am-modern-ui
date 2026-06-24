@@ -163,8 +163,22 @@ class MultiIndexChart extends StatelessWidget {
                 : constraints.maxWidth,
             height: constraints.maxHeight,
             child: BarChart(
+              // Fixes horizontal stretching measurement glitches by forcing a fresh layout on load
+              key: ValueKey('${selectedIndices.join('-')}_bar_${chartData.length}'),
               BarChartData(
-                gridData: FlGridData(show: false),
+                // Dynamic dashed horizontal gridlines that adjust perfectly with Y-axis percentages
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  drawHorizontalLine: true,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: theme.dividerColor.withOpacity(0.15),
+                      strokeWidth: 1,
+                      dashArray: [4, 4], // Clean dashes instead of solid lines
+                    );
+                  },
+                ),
                 titlesData: FlTitlesData(
                   show: true,
                   rightTitles:
@@ -229,12 +243,15 @@ class MultiIndexChart extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 40,
-                      interval: _calculateInterval(chartData),
+                      // Symmetrical 5-tick grid calculation: Divides the total vertical range into 4 equal blocks,
+                      // mathematically guaranteeing exactly 5 symmetrical ticks across the Y-axis.
+                      interval: (() {
+                        final min = _getMinPrice(chartData);
+                        final max = _getMaxPrice(chartData);
+                        final range = max - min;
+                        return range > 0 ? range / 4 : 1.0;
+                      })(),
                       getTitlesWidget: (value, meta) {
-                        // Skip printing min and max values directly on the edge to prevent overlap/clutter
-                        if (value == meta.min || value == meta.max) {
-                          return const SizedBox.shrink();
-                        }
                         return SideTitleWidget(
                           meta: meta,
                           space: 8.0,
@@ -336,9 +353,21 @@ class MultiIndexChart extends StatelessWidget {
                 : constraints.maxWidth,
             height: constraints.maxHeight,
             child: LineChart(
+              // Fixes horizontal stretching measurement glitches by forcing a fresh layout on load
+              key: ValueKey('${selectedIndices.join('-')}_line_${chartData.length}'),
               LineChartData(
+                // Dynamic dashed horizontal gridlines that adjust perfectly with Y-axis percentages
                 gridData: FlGridData(
-                  show: false,
+                  show: true,
+                  drawVerticalLine: false,
+                  drawHorizontalLine: true,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: theme.dividerColor.withOpacity(0.15),
+                      strokeWidth: 1,
+                      dashArray: [4, 4], // Clean dashes instead of solid lines
+                    );
+                  },
                 ),
                 titlesData: FlTitlesData(
                   show: true,
@@ -417,12 +446,15 @@ class MultiIndexChart extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 50,
-                      interval: _calculateInterval(chartData),
+                      // Symmetrical 5-tick grid calculation: Divides the total vertical range into 4 equal blocks,
+                      // mathematically guaranteeing exactly 5 symmetrical ticks across the Y-axis.
+                      interval: (() {
+                        final min = _getMinPrice(chartData);
+                        final max = _getMaxPrice(chartData);
+                        final range = max - min;
+                        return range > 0 ? range / 4 : 1.0;
+                      })(),
                       getTitlesWidget: (value, meta) {
-                        // Skip printing min and max values directly on the edge to prevent overlap/clutter
-                        if (value == meta.min || value == meta.max) {
-                          return const SizedBox.shrink();
-                        }
                         return SideTitleWidget(
                           meta: meta,
                           space: 8.0,
@@ -454,6 +486,26 @@ class MultiIndexChart extends StatelessWidget {
                 maxX: chartData.length.toDouble() - 1,
                 minY: _getMinPrice(chartData),
                 maxY: _getMaxPrice(chartData),
+                // Highlighted horizontal baseline drawn at exactly 0.0% to instantly separate profits/losses
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: [
+                    HorizontalLine(
+                      y: 0.0,
+                      color: theme.colorScheme.primary.withOpacity(0.35),
+                      strokeWidth: 1.5,
+                      dashArray: [4, 4], // Highlighted dashed baseline
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topRight,
+                        style: TextStyle(
+                          color: theme.colorScheme.primary.withOpacity(0.8),
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 lineBarsData: _buildLineBars(chartData),
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
@@ -568,8 +620,10 @@ class MultiIndexChart extends StatelessWidget {
         }
       }
 
-      // Only add if at least one index has data
-      if (point.length > 1) {
+      // LINE ALIGNMENT FILTER (Option 1 - Intersection):
+      // Only add this date point to the chart if ALL selected indices have valid price data.
+      // This crops the chart timeline to matching days, ensuring both lines start and end at the exact same pixel.
+      if (point.length == selectedIndices.length + 1) {
         combined.add(point);
       }
     }
