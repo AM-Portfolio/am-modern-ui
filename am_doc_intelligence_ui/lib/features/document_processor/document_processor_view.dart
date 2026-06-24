@@ -511,14 +511,24 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       _showDownloadStepsDialog(context, _selectedBrokerType!, _selectedDocType!);
                     },
                     style: TextButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                      backgroundColor: Theme.of(context).brightness == Brightness.dark
+                          ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                          : Theme.of(context).colorScheme.primary.withOpacity(0.12),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
-                    icon: Icon(Icons.open_in_new, size: 16, color: Colors.white.withOpacity(0.9)),
+                    icon: Icon(Icons.open_in_new, size: 16, color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white.withOpacity(0.9)
+                        : Theme.of(context).colorScheme.primary),
                     label: Text(
                       "Don't have the document? Download from ${_selectedBrokerType == 'ZERODHA' ? 'Zerodha Console' : _selectedBrokerType == 'ANGEL_ONE' ? 'Angel One' : 'Groww'}",
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white.withOpacity(0.9)),
+                      style: TextStyle(
+                        fontSize: 13, 
+                        fontWeight: FontWeight.bold, 
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withOpacity(0.9)
+                            : Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                   ),
                 )

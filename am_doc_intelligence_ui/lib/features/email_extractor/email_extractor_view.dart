@@ -330,7 +330,9 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                       fontWeight: FontWeight.bold, 
                       fontSize: 11, 
                       letterSpacing: 0.8,
-                      color: isConnected ? Colors.green : Colors.amber,
+                      color: isConnected 
+                          ? Colors.green 
+                          : (Theme.of(context).brightness == Brightness.dark ? Colors.amber : Colors.orange.shade800),
                     ),
                   ),
                   const SizedBox(height: 4),
