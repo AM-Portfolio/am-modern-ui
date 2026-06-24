@@ -58,7 +58,11 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
   void _triggerBasePricesLoadingIfNeeded(MarketProvider provider) {
     if (provider.allIndicesData.isNotEmpty && allTimeframeBasePrices.length <= 1 && !isLoadingAllTimeframes) {
       final symbols = provider.allIndicesData.map((e) => e.indexSymbol).toList();
-      _loadAllTimeframeBasePrices(symbols);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadAllTimeframeBasePrices(symbols);
+        }
+      });
     }
   }
 

@@ -151,6 +151,12 @@ class MultiIndexChart extends StatelessWidget {
     final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Symmetrical 5-tick grid calculations
+        final minY = _getMinPrice(chartData);
+        final maxY = _getMaxPrice(chartData);
+        final range = maxY - minY;
+        final chartInterval = range > 0 ? range / 4 : 1.0;
+
         // Ensure enough width for bars
         final minWidth =
             chartData.length * (selectedIndices.length * 10.0 + 20.0);
@@ -164,13 +170,16 @@ class MultiIndexChart extends StatelessWidget {
             height: constraints.maxHeight,
             child: BarChart(
               // Fixes horizontal stretching measurement glitches by forcing a fresh layout on load
-              key: ValueKey('${selectedIndices.join('-')}_bar_${chartData.length}'),
+              key: ValueKey(
+                  '${selectedIndices.join('-')}_bar_${chartData.length}'),
               BarChartData(
                 // Dynamic dashed horizontal gridlines that adjust perfectly with Y-axis percentages
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
                   drawHorizontalLine: true,
+                  horizontalInterval:
+                      chartInterval, // Align gridlines with Y-axis labels
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
                       color: theme.dividerColor.withOpacity(0.15),
@@ -243,15 +252,13 @@ class MultiIndexChart extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 40,
-                      // Symmetrical 5-tick grid calculation: Divides the total vertical range into 4 equal blocks,
-                      // mathematically guaranteeing exactly 5 symmetrical ticks across the Y-axis.
-                      interval: (() {
-                        final min = _getMinPrice(chartData);
-                        final max = _getMaxPrice(chartData);
-                        final range = max - min;
-                        return range > 0 ? range / 4 : 1.0;
-                      })(),
+                      interval: chartInterval, // Set symmetrical tick interval
                       getTitlesWidget: (value, meta) {
+                        // Skip printing min and max values directly on the edge to prevent overlap/clutter with X-axis
+                        if ((value - meta.min).abs() < 0.01 ||
+                            (value - meta.max).abs() < 0.01) {
+                          return const SizedBox.shrink();
+                        }
                         return SideTitleWidget(
                           meta: meta,
                           space: 8.0,
@@ -279,8 +286,8 @@ class MultiIndexChart extends StatelessWidget {
                     right: BorderSide.none,
                   ),
                 ),
-                minY: _getMinPrice(chartData),
-                maxY: _getMaxPrice(chartData),
+                minY: minY,
+                maxY: maxY,
                 barGroups: chartData.asMap().entries.map((entry) {
                   final index = entry.key;
                   final point = entry.value;
@@ -343,6 +350,12 @@ class MultiIndexChart extends StatelessWidget {
   Widget _buildChart(
       BuildContext context, List<Map<String, dynamic>> chartData) {
     final theme = Theme.of(context);
+    // Symmetrical 5-tick grid calculations
+    final minY = _getMinPrice(chartData);
+    final maxY = _getMaxPrice(chartData);
+    final range = maxY - minY;
+    final chartInterval = range > 0 ? range / 4 : 1.0;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
@@ -354,13 +367,16 @@ class MultiIndexChart extends StatelessWidget {
             height: constraints.maxHeight,
             child: LineChart(
               // Fixes horizontal stretching measurement glitches by forcing a fresh layout on load
-              key: ValueKey('${selectedIndices.join('-')}_line_${chartData.length}'),
+              key: ValueKey(
+                  '${selectedIndices.join('-')}_line_${chartData.length}'),
               LineChartData(
                 // Dynamic dashed horizontal gridlines that adjust perfectly with Y-axis percentages
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
                   drawHorizontalLine: true,
+                  horizontalInterval:
+                      chartInterval, // Align gridlines with Y-axis labels
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
                       color: theme.dividerColor.withOpacity(0.15),
@@ -446,15 +462,13 @@ class MultiIndexChart extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 50,
-                      // Symmetrical 5-tick grid calculation: Divides the total vertical range into 4 equal blocks,
-                      // mathematically guaranteeing exactly 5 symmetrical ticks across the Y-axis.
-                      interval: (() {
-                        final min = _getMinPrice(chartData);
-                        final max = _getMaxPrice(chartData);
-                        final range = max - min;
-                        return range > 0 ? range / 4 : 1.0;
-                      })(),
+                      interval: chartInterval, // Set symmetrical tick interval
                       getTitlesWidget: (value, meta) {
+                        // Skip printing min and max values directly on the edge to prevent overlap/clutter with X-axis
+                        if ((value - meta.min).abs() < 0.01 ||
+                            (value - meta.max).abs() < 0.01) {
+                          return const SizedBox.shrink();
+                        }
                         return SideTitleWidget(
                           meta: meta,
                           space: 8.0,
@@ -484,8 +498,8 @@ class MultiIndexChart extends StatelessWidget {
                 ),
                 minX: 0,
                 maxX: chartData.length.toDouble() - 1,
-                minY: _getMinPrice(chartData),
-                maxY: _getMaxPrice(chartData),
+                minY: minY,
+                maxY: maxY,
                 // Highlighted horizontal baseline drawn at exactly 0.0% to instantly separate profits/losses
                 extraLinesData: ExtraLinesData(
                   horizontalLines: [
@@ -543,16 +557,41 @@ class MultiIndexChart extends StatelessWidget {
   List<Map<String, dynamic>> _prepareChartData() {
     if (selectedIndices.isEmpty) return [];
 
-    // Helper to normalize timestamps (strip fractional seconds/millis)
+    // Determine if the data span is daily or intraday to choose the right normalization format
+    bool isIntraday = false;
+    try {
+      DateTime? minDate;
+      DateTime? maxDate;
+      for (final symbol in selectedIndices) {
+        final data = historicalData[symbol];
+        if (data != null && data.isNotEmpty) {
+          final first = DateTime.parse(data.first['time'] as String);
+          final last = DateTime.parse(data.last['time'] as String);
+          if (minDate == null || first.isBefore(minDate)) minDate = first;
+          if (maxDate == null || last.isAfter(maxDate)) maxDate = last;
+        }
+      }
+      if (minDate != null && maxDate != null) {
+        isIntraday = maxDate.difference(minDate).inDays <= 1;
+      }
+    } catch (_) {}
+
+    // Helper to normalize timestamps (strip fractional seconds/millis/hours depending on timeframe)
     String normalizeTime(String timeStr) {
       try {
         final dt = DateTime.parse(timeStr);
-        return '${dt.year.toString().padLeft(4, '0')}-'
-            '${dt.month.toString().padLeft(2, '0')}-'
-            '${dt.day.toString().padLeft(2, '0')}T'
-            '${dt.hour.toString().padLeft(2, '0')}:'
-            '${dt.minute.toString().padLeft(2, '0')}:'
-            '${dt.second.toString().padLeft(2, '0')}';
+        if (isIntraday) {
+          // For intraday charts, keep year, month, day, hour, and minute
+          return '${dt.year.toString().padLeft(4, '0')}-'
+              '${dt.month.toString().padLeft(2, '0')}-'
+              '${dt.day.toString().padLeft(2, '0')}T'
+              '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+        } else {
+          // For daily charts, normalize strictly to the Date (YYYY-MM-DD) to align different record times
+          return '${dt.year.toString().padLeft(4, '0')}-'
+              '${dt.month.toString().padLeft(2, '0')}-'
+              '${dt.day.toString().padLeft(2, '0')}';
+        }
       } catch (_) {
         return timeStr;
       }
