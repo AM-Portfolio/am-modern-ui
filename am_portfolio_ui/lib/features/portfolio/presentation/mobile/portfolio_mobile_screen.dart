@@ -22,12 +22,16 @@ class PortfolioMobileScreen extends ConsumerWidget {
     this.portfolios,
     this.onPortfolioChanged,
     this.onBack,
+    this.initialTab,
+    this.onTabChanged,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final List<PortfolioItem>? portfolios;
   final Function(String portfolioId, String portfolioName)? onPortfolioChanged;
   final VoidCallback? onBack;
+  final String? initialTab;
+  final ValueChanged<String>? onTabChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,6 +67,8 @@ class PortfolioMobileScreen extends ConsumerWidget {
               portfolios: portfolios,
               onPortfolioChanged: onPortfolioChanged,
               onBack: onBack,
+              initialTab: initialTab,
+              onTabChanged: onTabChanged,
             ),
           ),
           loading: () =>
@@ -138,12 +144,16 @@ class PortfolioMobileView extends StatefulWidget {
     this.portfolios,
     this.onPortfolioChanged,
     this.onBack,
+    this.initialTab,
+    this.onTabChanged,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final List<PortfolioItem>? portfolios;
   final Function(String portfolioId, String portfolioName)? onPortfolioChanged;
   final VoidCallback? onBack;
+  final String? initialTab;
+  final ValueChanged<String>? onTabChanged;
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
@@ -154,13 +164,49 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   late TabController _tabController;
   String? _currentPortfolioId;
 
+  int _tabIndexFromSlug(String? slug) {
+    switch (slug?.toLowerCase()) {
+      case 'overview':
+        return 0;
+      case 'holdings':
+        return 1;
+      case 'analysis':
+        return 2;
+      case 'heatmap':
+        return 3;
+      case 'trade':
+        return 4;
+      default:
+        return 0;
+    }
+  }
+
+  String _tabSlugFromIndex(int index) {
+    switch (index) {
+      case 0:
+        return 'overview';
+      case 1:
+        return 'holdings';
+      case 2:
+        return 'analysis';
+      case 3:
+        return 'heatmap';
+      case 4:
+        return 'trade';
+      default:
+        return 'overview';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    final initialIndex = _tabIndexFromSlug(widget.initialTab);
+    _tabController = TabController(length: 5, vsync: this, initialIndex: initialIndex);
     _tabController.addListener(() {
       if (mounted && !_tabController.indexIsChanging) {
         setState(() {});
+        widget.onTabChanged?.call(_tabSlugFromIndex(_tabController.index));
       }
     });
     _currentPortfolioId = widget.selectedPortfolioId;
@@ -199,6 +245,13 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           forceResubscribe: true,
         )
         ..loadPortfolioById(widget.selectedPortfolioId!);
+    }
+
+    if (widget.initialTab != oldWidget.initialTab) {
+      final newIndex = _tabIndexFromSlug(widget.initialTab);
+      if (newIndex != _tabController.index) {
+        _tabController.animateTo(newIndex);
+      }
     }
   }
 

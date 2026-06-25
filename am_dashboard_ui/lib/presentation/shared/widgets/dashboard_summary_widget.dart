@@ -18,17 +18,27 @@ class DashboardSummaryWidget extends StatelessWidget {
         if (isMobile) {
           return Column(
             children: [
-              _buildPortfolioCard(context, isMobile),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(child: _buildInvestedCard(context)),
-                  const SizedBox(width: 16),
-                  Expanded(child: _buildReturnCard(context)),
-                ],
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _buildPortfolioCard(context, isMobile)),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildInvestedCard(context)),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
-              _buildPortfoliosCard(context),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _buildReturnCard(context)),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildPortfoliosCard(context)),
+                  ],
+                ),
+              ),
             ],
           );
         }
@@ -77,7 +87,7 @@ class DashboardSummaryWidget extends StatelessWidget {
           currencyFormat.format(summary.totalValue),
           style: TextStyle(
             color: onSurface,
-            fontSize: 24,
+            fontSize: isMobile ? 20 : 24,
             fontWeight: FontWeight.w800,
             fontFamily: 'Inter',
             letterSpacing: -0.5,

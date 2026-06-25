@@ -381,6 +381,8 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         selectedPortfolioId: portfolioId,
         selectedPortfolioName: portfolioName,
         portfolios: portfolios,
+        initialTab: widget.initialTab,
+        onTabChanged: widget.onTabChanged,
         onPortfolioChanged: _onPortfolioChanged,
         onBack: widget.onBack,
       );
