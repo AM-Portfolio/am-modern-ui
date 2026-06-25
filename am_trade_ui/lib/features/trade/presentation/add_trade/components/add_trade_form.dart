@@ -86,7 +86,47 @@ class _AddTradeFormState extends State<AddTradeForm> {
   }
 
   void _loadInitialData() {
-    // TODO: Load from initialData if editing
+    final trade = widget.initialData!;
+    _symbolController.text = trade.instrumentInfo.symbol ?? '';
+    _isinController.text = trade.instrumentInfo.isin ?? '';
+    _descriptionController.text = trade.instrumentInfo.description ?? '';
+    _selectedExchange = trade.instrumentInfo.exchange;
+    _selectedSegment = trade.instrumentInfo.segment;
+
+    if (trade.instrumentInfo.derivativeInfo != null) {
+      _selectedDerivativeType = trade.instrumentInfo.derivativeInfo!.derivativeType;
+      _selectedOptionType = trade.instrumentInfo.derivativeInfo!.optionType;
+      _strikePriceController.text = trade.instrumentInfo.derivativeInfo!.strikePrice?.toString() ?? '';
+      _expiryDate = trade.instrumentInfo.derivativeInfo!.expiryDate;
+    }
+
+    _selectedDirection = trade.tradePositionType;
+    _selectedStatus = trade.status;
+    _selectedBroker = trade.tradeExecutions?.isNotEmpty == true ? trade.tradeExecutions!.first.basicInfo?.brokerType : null;
+    
+    _entryDate = trade.entryInfo.timestamp;
+    _entryPriceController.text = trade.entryInfo.price?.toString() ?? '';
+    _entryQuantityController.text = trade.entryInfo.quantity?.toString() ?? '';
+
+    if (trade.exitInfo != null) {
+      _exitDate = trade.exitInfo!.timestamp;
+      _exitPriceController.text = trade.exitInfo!.price?.toString() ?? '';
+      _exitQuantityController.text = trade.exitInfo!.quantity?.toString() ?? '';
+    }
+
+    _strategyController.text = trade.strategy ?? '';
+    _notesController.text = trade.notes ?? '';
+    _attachments = trade.attachments?.map((a) => a.fileUrl ?? '').toList() ?? [];
+    
+    if (trade.psychologyData != null) {
+      _selectedEntryPsychology = trade.psychologyData!.entryPsychologyFactors ?? [];
+      _selectedExitPsychology = trade.psychologyData!.exitPsychologyFactors ?? [];
+    }
+
+    if (trade.entryReasoning != null) {
+      _selectedTechnicalReasons = trade.entryReasoning!.technicalReasons ?? [];
+      _selectedFundamentalReasons = trade.entryReasoning!.fundamentalReasons ?? [];
+    }
   }
 
   @override

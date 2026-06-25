@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/trade_holding_view_model.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_common/am_common.dart';
 
 class TradeHoldingsAdvancedTemplate extends StatefulWidget {
   const TradeHoldingsAdvancedTemplate({
@@ -685,53 +686,77 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
       children: [
         Divider(color: Colors.grey.shade200),
         const SizedBox(height: 12),
-        // Entry and Exit Details Grid
-        Row(
-          children: [
-            Expanded(
-              child: _buildDetailCard(
-                icon: Icons.login,
-                label: 'Entry',
-                value: holding.displayEntryPrice,
-                subValue: holding.entryTimestamp != null ? DateFormat('MMM dd').format(holding.entryTimestamp!) : null,
-                color: Colors.blue,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildDetailCard(
-                icon: Icons.logout,
-                label: 'Exit',
-                value: holding.displayExitPrice,
-                subValue: holding.exitTimestamp != null
-                    ? DateFormat('MMM dd').format(holding.exitTimestamp!)
-                    : (holding.displayStatus == 'ACTIVE' ? 'Active' : null),
-                color: Colors.orange,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildDetailCard(
-                icon: Icons.access_time,
-                label: 'Period',
-                value: holding.displayHoldingPeriod,
-                color: Colors.purple,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildDetailCard(
-                icon: Icons.balance,
-                label: 'R:R',
-                value: holding.displayRiskRewardRatio,
-                color: Colors.teal,
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmall = constraints.maxWidth < 300;
+            
+            final entryCard = _buildDetailCard(
+              icon: Icons.login,
+              label: 'Entry',
+              value: holding.displayEntryPrice,
+              subValue: holding.entryTimestamp != null ? DateFormat('MMM dd').format(holding.entryTimestamp!) : null,
+              color: Colors.blue,
+            );
+            
+            final exitCard = _buildDetailCard(
+              icon: Icons.logout,
+              label: 'Exit',
+              value: holding.displayExitPrice,
+              subValue: holding.exitTimestamp != null
+                  ? DateFormat('MMM dd').format(holding.exitTimestamp!)
+                  : (holding.displayStatus == 'ACTIVE' ? 'Active' : null),
+              color: Colors.orange,
+            );
+            
+            final periodCard = _buildDetailCard(
+              icon: Icons.access_time,
+              label: 'Period',
+              value: holding.displayHoldingPeriod,
+              color: Colors.purple,
+            );
+            
+            final rrCard = _buildDetailCard(
+              icon: Icons.balance,
+              label: 'R:R',
+              value: holding.displayRiskRewardRatio,
+              color: Colors.teal,
+            );
+
+            if (isSmall) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  entryCard,
+                  const SizedBox(height: 8),
+                  exitCard,
+                  const SizedBox(height: 8),
+                  periodCard,
+                  const SizedBox(height: 8),
+                  rrCard,
+                ],
+              );
+            }
+
+            return Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: entryCard),
+                    const SizedBox(width: 8),
+                    Expanded(child: exitCard),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(child: periodCard),
+                    const SizedBox(width: 8),
+                    Expanded(child: rrCard),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
         if (holding.sector != null || holding.broker != null) ...[
           const SizedBox(height: 12),
@@ -749,6 +774,27 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
             ],
           ),
         ],
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () {
+                OpenAddTradeNotification(
+                  portfolioId: holding.portfolioId,
+                  existingTrade: holding,
+                ).dispatch(context);
+              },
+              icon: const Icon(Icons.edit, size: 16),
+              label: const Text('Edit Trade'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.blue.shade700,
+                side: BorderSide(color: Colors.blue.shade200),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+            ),
+          ],
+        ),
       ],
     ),
   );
@@ -773,9 +819,12 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
           children: [
             Icon(icon, size: 12, color: color),
             const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(fontSize: 10, color: Colors.grey[700], fontWeight: FontWeight.w500),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 10, color: Colors.grey[700], fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
