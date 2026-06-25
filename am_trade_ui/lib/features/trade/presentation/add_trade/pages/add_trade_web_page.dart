@@ -14,12 +14,13 @@ import '../components/add_trade_form.dart';
 /// Web page for adding new trades with responsive design
 /// Streamlined 4-step process with click-and-select focus
 class AddTradeWebPage extends StatefulWidget {
-  const AddTradeWebPage({required this.portfolioId, super.key, this.portfolioName, this.onTradeAdded, this.onCancel});
+  const AddTradeWebPage({required this.portfolioId, super.key, this.portfolioName, this.onTradeAdded, this.onCancel, this.existingTrade});
 
   final String portfolioId;
   final String? portfolioName;
   final VoidCallback? onTradeAdded;
   final VoidCallback? onCancel;
+  final TradeDetails? existingTrade;
 
   @override
   State<AddTradeWebPage> createState() => _AddTradeWebPageState();
@@ -66,7 +67,12 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
     AppLogger.info('🚀 Calling TradeControllerCubit.addNewTrade() with userId: $userId', tag: 'AddTradeWebPage');
 
     // Call the TradeControllerCubit to save the trade
-    context.read<TradeControllerCubit>().addNewTrade(tradeToSave);
+    if (widget.existingTrade != null) {
+      final tradeToUpdate = tradeToSave.copyWith(tradeId: widget.existingTrade!.tradeId);
+      context.read<TradeControllerCubit>().updateExistingTrade(tradeId: tradeToUpdate.tradeId, tradeDetails: tradeToUpdate);
+    } else {
+      context.read<TradeControllerCubit>().addNewTrade(tradeToSave);
+    }
 
     AppLogger.methodExit('_handleSave', tag: 'AddTradeWebPage');
   }
@@ -192,11 +198,11 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
                       tooltip: 'Back to Trades',
                     ),
                     const SizedBox(width: 16),
-                    Column(
+                        Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                          Text(
-                          'New Trade',
+                          widget.existingTrade != null ? 'Edit Trade' : 'New Trade',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -216,7 +222,7 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
 
               // Form
               Expanded(
-                child: AddTradeForm(onSave: _handleSave, onCancel: _handleCancel, isLoading: _isLoading),
+                child: AddTradeForm(onSave: _handleSave, onCancel: _handleCancel, isLoading: _isLoading, initialData: widget.existingTrade),
               ),
             ],
           ),
