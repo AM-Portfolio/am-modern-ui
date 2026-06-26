@@ -68,12 +68,17 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   // Viewport-based calculated min/max
   double _viewportMinY = -5.0;
   double _viewportMaxY = 5.0;
+  double _currentInterval = 2.0; // [SIP/Absolute Value Optimization] Stores the active interval step
 
   // Tracked targets to avoid duplicate state sets
   double _targetMinY = -5.0;
   double _targetMaxY = 5.0;
 
   Timer? _throttleTimer;
+
+  /// [SIP/Absolute Value Optimization] Tracks whether the chart should render absolute price numbers
+  /// (Google Finance style) instead of percentage changes.
+  bool _showAbsoluteValues = false;
   List<Map<String, dynamic>> _chartData = [];
   List<String> _activeIndices = [];
 
@@ -96,6 +101,13 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   @override
   void didUpdateWidget(covariant MultiIndexChart oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    // [SIP/Absolute Value Optimization] Automatically fallback to Percentage Mode
+    // if the user selects more than 2 indices, or toggles to Bar Chart view,
+    // as absolute price comparisons are visually invalid under these conditions.
+    if (widget.selectedIndices.length > 2 || widget.isBarChart) {
+      _showAbsoluteValues = false;
+    }
 
     final dataChanged = widget.historicalData != oldWidget.historicalData ||
         widget.selectedIndices != oldWidget.selectedIndices ||
@@ -231,9 +243,15 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             final price = (matchingPoint['close'] as num).toDouble();
             lastKnownPrices[symbol] = price;
 
-            final baseline = baselinePrices[symbol]!;
-            final percentChange = ((price - baseline) / baseline) * 100;
-            point[symbol] = percentChange;
+            if (_showAbsoluteValues) {
+              // [SIP/Absolute Value Optimization] In Absolute Mode, we store the raw price value directly.
+              point[symbol] = price;
+            } else {
+              // In Percentage Mode, we normalize the price against the baseline to get percentage growth.
+              final baseline = baselinePrices[symbol]!;
+              final percentChange = ((price - baseline) / baseline) * 100;
+              point[symbol] = percentChange;
+            }
             hasAnyValidValue = true;
           } else {
             // Gap handling: check if the gap is short (<= 3 days)
@@ -259,9 +277,14 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
               if (isGapShort) {
                 // Carry over for short gaps to maintain visual continuity
                 final price = lastKnownPrices[symbol]!;
-                final baseline = baselinePrices[symbol]!;
-                final percentChange = ((price - baseline) / baseline) * 100;
-                point[symbol] = percentChange;
+                if (_showAbsoluteValues) {
+                  // [SIP/Absolute Value Optimization] Carry over absolute price.
+                  point[symbol] = price;
+                } else {
+                  final baseline = baselinePrices[symbol]!;
+                  final percentChange = ((price - baseline) / baseline) * 100;
+                  point[symbol] = percentChange;
+                }
                 hasAnyValidValue = true;
               } else {
                 // Long gap (>3 days): leave point[symbol] = null to draw a clean visual line break
@@ -293,6 +316,78 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     } else {
       _recalculateViewport();
     }
+  }
+
+  /// [SIP/Absolute Value Optimization] Dynamically calculates the clean Y-axis bounds (minY, maxY)
+  /// and major tick interval. Rounds bounds to clean multiples of the interval (e.g., 200, 1000, 10000)
+  /// to ensure grid lines and numbers align perfectly without visual clutter, matching Google Finance.
+  /// [SIP/Absolute Value Optimization] Dynamically calculates the clean Y-axis bounds (minY, maxY)
+  /// and major tick interval. Rounds bounds to clean multiples of the interval (e.g., 200, 1000, 10000)
+  /// to ensure grid lines and numbers align perfectly without visual clutter, matching Google Finance.
+  /// 
+  /// CRITICAL BUG FIX: This method has been unified to use a single logarithmic/milestone interval 
+  /// calculator that scales seamlessly from very small percentage changes (0.1%) to very large 
+  /// absolute index prices (30,000+). During the 150ms viewport transition animation between 
+  /// absolute and percentage mode, the active chart range interpolates across thousands of units.
+  /// By using a unified scale, we prevent the "grid-line explosion" bug where the chart would 
+  /// attempt to render thousands of grid lines (e.g., 24,000 range divided by a 1.0% interval = 24,000 lines),
+  /// which previously froze the UI thread and crashed the browser.
+  Map<String, double> _calculateCleanBounds(double minVal, double maxVal) {
+    // Return safe default bounds if inputs are invalid or empty
+    if (minVal == double.infinity || maxVal == double.negativeInfinity) {
+      return {'minY': -5.0, 'maxY': 5.0, 'interval': 2.0};
+    }
+
+    // Calculate the raw range of the dataset/viewport
+    final double rawRange = maxVal - minVal;
+    
+    // Target roughly 5 horizontal grid lines/intervals across the viewport height
+    final double roughInterval = rawRange / 5;
+    
+    // Select the best clean milestone step based on the magnitude of the range
+    double interval;
+    if (roughInterval > 15000) {
+      interval = 20000.0;
+    } else if (roughInterval > 7500) {
+      interval = 10000.0;
+    } else if (roughInterval > 3500) {
+      interval = 5000.0;
+    } else if (roughInterval > 1500) {
+      interval = 2000.0;
+    } else if (roughInterval > 750) {
+      interval = 1000.0;
+    } else if (roughInterval > 350) {
+      interval = 500.0;
+    } else if (roughInterval > 150) {
+      interval = 200.0;
+    } else if (roughInterval > 75) {
+      interval = 100.0;
+    } else if (roughInterval > 35) {
+      interval = 50.0;
+    } else if (roughInterval > 15) {
+      interval = 20.0;
+    } else if (roughInterval > 7.5) {
+      interval = 10.0;
+    } else if (roughInterval > 3.5) {
+      interval = 5.0;
+    } else if (roughInterval > 1.5) {
+      interval = 2.0;
+    } else if (roughInterval > 0.75) {
+      interval = 1.0;
+    } else if (roughInterval > 0.35) {
+      interval = 0.5;
+    } else if (roughInterval > 0.15) {
+      interval = 0.2;
+    } else {
+      interval = 0.1;
+    }
+
+    // Round the minimum value down and maximum value up to the nearest multiple of the clean interval,
+    // and subtract/add one full interval step to provide a clean visual margin/padding at the top and bottom.
+    final double minY = (minVal / interval).floorToDouble() * interval - interval;
+    final double maxY = (maxVal / interval).ceilToDouble() * interval + interval;
+    
+    return {'minY': minY, 'maxY': maxY, 'interval': interval};
   }
 
   /// 📐 Dynamic Viewport Y-Axis Recalculation (Throttled)
@@ -341,21 +436,19 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       }
     }
 
-    if (minVal == double.infinity || maxVal == double.negativeInfinity) {
-      minVal = -5.0;
-      maxVal = 5.0;
-    } else {
-      minVal = minVal - 1.0;
-      maxVal = maxVal + 1.0;
-    }
+    final bounds = _calculateCleanBounds(minVal, maxVal);
+    final double computedMinY = bounds['minY']!;
+    final double computedMaxY = bounds['maxY']!;
+    final double computedInterval = bounds['interval']!;
 
-    if ((minVal - _targetMinY).abs() > 0.05 || (maxVal - _targetMaxY).abs() > 0.05) {
-      _targetMinY = minVal;
-      _targetMaxY = maxVal;
+    if ((computedMinY - _targetMinY).abs() > 0.05 || (computedMaxY - _targetMaxY).abs() > 0.05) {
+      _targetMinY = computedMinY;
+      _targetMaxY = computedMaxY;
       if (mounted) {
         setState(() {
           _viewportMinY = _targetMinY;
           _viewportMaxY = _targetMaxY;
+          _currentInterval = computedInterval;
         });
       }
     }
@@ -380,13 +473,11 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         }
       }
     }
-    if (minVal == double.infinity || maxVal == double.negativeInfinity) {
-      _targetMinY = -5.0;
-      _targetMaxY = 5.0;
-    } else {
-      _targetMinY = minVal - 1.0;
-      _targetMaxY = maxVal + 1.0;
-    }
+    
+    final bounds = _calculateCleanBounds(minVal, maxVal);
+    _targetMinY = bounds['minY']!;
+    _targetMaxY = bounds['maxY']!;
+    _currentInterval = bounds['interval']!;
   }
 
   /// 🔍 Center-Anchored Zooming
@@ -514,19 +605,56 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildLegend(context),
-              // Floating Zoom Controls overlay
-              if (!widget.isBarChart)
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.zoom_out, color: Color(0xFF00D1FF)),
-                      onPressed: () {
-                        if (_scrollController.hasClients) {
-                          _zoom(_zoomScale - 0.2, _scrollController.position.viewportDimension);
-                        }
-                      },
-                      tooltip: 'Zoom Out',
+              Row(
+                children: [
+                  // [SIP/Absolute Value Optimization] Y-Axis Mode Toggle Control (Percentage vs. Absolute Values)
+                  Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: Row(
+                      children: [
+                        _buildToggleSegment(
+                          label: '%',
+                          isSelected: !_showAbsoluteValues,
+                          onTap: () {
+                            setState(() {
+                              _showAbsoluteValues = false;
+                              _prepareDataAndRecalculate(resetViewport: true);
+                            });
+                          },
+                        ),
+                        _buildToggleSegment(
+                          label: '123',
+                          isSelected: _showAbsoluteValues,
+                          // Absolute Mode is strictly enabled only for Line Charts and when 1 or 2 indices are compared
+                          isEnabled: _activeIndices.length <= 2 && !widget.isBarChart,
+                          onTap: () {
+                            setState(() {
+                              _showAbsoluteValues = true;
+                              _prepareDataAndRecalculate(resetViewport: true);
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Floating Zoom Controls overlay
+                  if (!widget.isBarChart)
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.zoom_out, color: Color(0xFF00D1FF)),
+                          onPressed: () {
+                            if (_scrollController.hasClients) {
+                              _zoom(_zoomScale - 0.2, _scrollController.position.viewportDimension);
+                            }
+                          },
+                          tooltip: 'Zoom Out',
+                        ),
                     Text(
                       '${(_zoomScale * 100).toInt()}%',
                       style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.8), fontSize: 11, fontWeight: FontWeight.bold),
@@ -542,8 +670,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                     ),
                   ],
                 ),
-            ],
-          ),
+              ],
+            ),
+          ],
+        ),
           const SizedBox(height: 24),
           Expanded(
             child: widget.isBarChart
@@ -551,6 +681,53 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                 : _buildChart(context, _chartData),
           ),
         ],
+      ),
+    );
+  }
+
+  /// [SIP/Absolute Value Optimization] Builds a single segment button for the Y-Axis mode toggle
+  Widget _buildToggleSegment({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    bool isEnabled = true,
+  }) {
+    final color = isSelected
+        ? const Color(0xFF00D1FF)
+        : (isEnabled ? Colors.white70 : Colors.white24);
+    final bgColor = isSelected
+        ? const Color(0xFF00D1FF).withOpacity(0.15)
+        : Colors.transparent;
+
+    return IgnorePointer(
+      ignoring: !isEnabled,
+      child: Opacity(
+        opacity: isEnabled ? 1.0 : 0.4,
+        child: Tooltip(
+          message: !isEnabled && label == '123'
+              ? (widget.isBarChart
+                  ? 'Absolute mode is not supported on Bar Charts'
+                  : 'Absolute mode supports up to 2 compared indices')
+              : '',
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -609,8 +786,13 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           builder: (context, range, child) {
             final double chartMinY = range.minY;
             final double chartMaxY = range.maxY;
-            final double gridRange = chartMaxY - chartMinY;
-            final double chartInterval = gridRange > 0 ? gridRange / 4 : 1.0;
+            
+            // [SIP/Absolute Value Optimization] CRITICAL BUG FIX: Dynamically calculate the chart interval
+            // using the currently animated range bounds rather than using the static snapped target interval.
+            // This prevents the "grid-line explosion" during mode transitions (e.g. going from 24,000 range
+            // down to 10 range, which previously caused the chart to attempt to draw 24,000 grid lines and labels,
+            // freezing the browser completely).
+            final double chartInterval = _calculateCleanBounds(chartMinY, chartMaxY)['interval']!;
 
             return Scrollbar(
               controller: _scrollController,
@@ -623,6 +805,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                       _scrollController.position.moveTo(_scrollController.offset - details.delta.dx);
                     }
                   },
+                  // [Gesture Lock Optimization] Intercept vertical drag components within the chart
+                  // boundaries, keeping horizontal swipes perfectly focused inside the chart.
+                  onVerticalDragUpdate: (_) {},
                   child: SingleChildScrollView(
                     controller: _scrollController,
                     scrollDirection: Axis.horizontal,
@@ -699,7 +884,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                             leftTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                reservedSize: 40,
+                                reservedSize: 65, // [SIP/Absolute Value Optimization] Fixed size prevents layout reflows and infinite loops
                                 interval: chartInterval,
                                 getTitlesWidget: (value, meta) {
                                   if ((value - meta.min).abs() < 0.01 || (value - meta.max).abs() < 0.01) {
@@ -709,7 +894,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                     meta: meta,
                                     space: 8.0,
                                     child: Text(
-                                      '${value.toStringAsFixed(0)}%',
+                                      _showAbsoluteValues 
+                                          ? value.toStringAsFixed(0) 
+                                          : '${value.toStringAsFixed(0)}%',
                                       style: TextStyle(
                                         color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
                                         fontSize: 10,
@@ -764,7 +951,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                 final date = DateTime.parse(dateStr);
                                 final symbol = _activeIndices[rodIndex];
                                 return BarTooltipItem(
-                                  '${_getTooltipDateFormat(chartData).format(date)}\n$symbol\n${rod.toY.toStringAsFixed(2)}%',
+                                  '${_getTooltipDateFormat(chartData).format(date)}\n$symbol\n${_showAbsoluteValues ? rod.toY.toStringAsFixed(2) : '${rod.toY >= 0 ? '+' : ''}${rod.toY.toStringAsFixed(2)}%'}',
                                   const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -805,8 +992,13 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           builder: (context, range, child) {
             final double chartMinY = range.minY;
             final double chartMaxY = range.maxY;
-            final double gridRange = chartMaxY - chartMinY;
-            final double chartInterval = gridRange > 0 ? gridRange / 4 : 1.0;
+            
+            // [SIP/Absolute Value Optimization] CRITICAL BUG FIX: Dynamically calculate the chart interval
+            // using the currently animated range bounds rather than using the static snapped target interval.
+            // This prevents the "grid-line explosion" during mode transitions (e.g. going from 24,000 range
+            // down to 10 range, which previously caused the chart to attempt to draw 24,000 grid lines and labels,
+            // freezing the browser completely).
+            final double chartInterval = _calculateCleanBounds(chartMinY, chartMaxY)['interval']!;
 
             return Scrollbar(
               controller: _scrollController,
@@ -819,6 +1011,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                       _scrollController.position.moveTo(_scrollController.offset - details.delta.dx);
                     }
                   },
+                  // [Gesture Lock Optimization] Intercept vertical drag components within the chart
+                  // boundaries, keeping horizontal swipes perfectly focused inside the chart.
+                  onVerticalDragUpdate: (_) {},
                   child: SingleChildScrollView(
                     controller: _scrollController,
                     scrollDirection: Axis.horizontal,
@@ -899,7 +1094,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                             leftTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                reservedSize: 50,
+                                reservedSize: 65, // [SIP/Absolute Value Optimization] Fixed size prevents layout reflows and infinite loops
                                 interval: chartInterval,
                                 getTitlesWidget: (value, meta) {
                                   if ((value - meta.min).abs() < 0.01 || (value - meta.max).abs() < 0.01) {
@@ -909,7 +1104,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                     meta: meta,
                                     space: 8.0,
                                     child: Text(
-                                      '${value.toStringAsFixed(1)}%',
+                                      _showAbsoluteValues 
+                                          ? value.toStringAsFixed(0) 
+                                          : '${value.toStringAsFixed(1)}%',
                                       style: TextStyle(
                                         color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
                                         fontSize: 10,
@@ -933,25 +1130,27 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                           maxX: chartData.length.toDouble() - 1,
                           minY: chartMinY,
                           maxY: chartMaxY,
-                          extraLinesData: ExtraLinesData(
-                            horizontalLines: [
-                              HorizontalLine(
-                                y: 0.0,
-                                color: theme.colorScheme.primary.withOpacity(0.35),
-                                strokeWidth: 1.5,
-                                dashArray: [4, 4],
-                                label: HorizontalLineLabel(
-                                  show: true,
-                                  alignment: Alignment.topRight,
-                                  style: TextStyle(
-                                    color: theme.colorScheme.primary.withOpacity(0.8),
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          extraLinesData: _showAbsoluteValues
+                              ? const ExtraLinesData(horizontalLines: [])
+                              : ExtraLinesData(
+                                  horizontalLines: [
+                                    HorizontalLine(
+                                      y: 0.0,
+                                      color: theme.colorScheme.primary.withOpacity(0.35),
+                                      strokeWidth: 1.5,
+                                      dashArray: [4, 4],
+                                      label: HorizontalLineLabel(
+                                        show: true,
+                                        alignment: Alignment.topRight,
+                                        style: TextStyle(
+                                          color: theme.colorScheme.primary.withOpacity(0.8),
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
                           lineBarsData: _buildLineBars(chartData),
                           lineTouchData: LineTouchData(
                             touchTooltipData: LineTouchTooltipData(
@@ -965,7 +1164,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                     final percentChange = spot.y;
 
                                     return LineTooltipItem(
-                                      '${_getTooltipDateFormat(chartData).format(date)}\n$symbol: ${percentChange >= 0 ? '+' : ''}${percentChange.toStringAsFixed(2)}%',
+                                      '${_getTooltipDateFormat(chartData).format(date)}\n$symbol: ${_showAbsoluteValues ? percentChange.toStringAsFixed(2) : '${percentChange >= 0 ? '+' : ''}${percentChange.toStringAsFixed(2)}%'}',
                                       const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
