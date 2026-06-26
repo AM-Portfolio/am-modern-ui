@@ -84,11 +84,12 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
       final baseUri = _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioListResource);
       var fullUri = baseUri;
 
-      // Local Dev Override: The cloud API Gateway normally appends the user ID. 
-      // When hitting the local microservice directly, we must append it manually.
-      const devUserId = String.fromEnvironment('AM_DEV_USER_ID');
-      if (devUserId.isNotEmpty && fullUri.endsWith('by-owner')) {
-        fullUri = '$fullUri/$devUserId';
+      // The cloud API Gateway requires the user ID to be appended to the path
+      if (fullUri.endsWith('by-owner')) {
+        final userId = await SecureStorageService().getUserId() ?? '';
+        if (userId.isNotEmpty) {
+          fullUri = '$fullUri/$userId';
+        }
       }
 
       final response = await _apiClient.get<TradePortfolioListDto>(
