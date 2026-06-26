@@ -13,16 +13,17 @@ class DashboardSummaryWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isMobile = constraints.maxWidth < 800;
+        final width = constraints.maxWidth;
 
-        if (isMobile) {
+        if (width < 960) {
+          // Mobile & Tablet screens: 2x2 grid
           return Column(
             children: [
               IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(child: _buildPortfolioCard(context, isMobile)),
+                    Expanded(child: _buildPortfolioCard(context, true)),
                     const SizedBox(width: 16),
                     Expanded(child: _buildInvestedCard(context)),
                   ],
@@ -43,11 +44,12 @@ class DashboardSummaryWidget extends StatelessWidget {
           );
         }
 
+        // Desktop screens: Horizontal row
         return IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(child: _buildPortfolioCard(context, isMobile)),
+              Expanded(child: _buildPortfolioCard(context, false)),
               const SizedBox(width: 16),
               Expanded(child: _buildInvestedCard(context)),
               const SizedBox(width: 16),
@@ -83,14 +85,18 @@ class DashboardSummaryWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          currencyFormat.format(summary.totalValue),
-          style: TextStyle(
-            color: onSurface,
-            fontSize: isMobile ? 20 : 24,
-            fontWeight: FontWeight.w800,
-            fontFamily: 'Inter',
-            letterSpacing: -0.5,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            currencyFormat.format(summary.totalValue),
+            style: TextStyle(
+              color: onSurface,
+              fontSize: isMobile ? 20 : 24,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'Inter',
+              letterSpacing: -0.5,
+            ),
           ),
         ),
         const SizedBox(height: 4),
@@ -160,13 +166,17 @@ class DashboardSummaryWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            currencyFormat.format(summary.totalInvested),
-            style: TextStyle(
-              color: onSurface,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              fontFamily: 'Inter',
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              currencyFormat.format(summary.totalInvested),
+              style: TextStyle(
+                color: onSurface,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Inter',
+              ),
             ),
           ),
           const SizedBox(height: 4),
@@ -210,13 +220,17 @@ class DashboardSummaryWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            '${isPositiveReturn ? "+" : "-"}${currencyFormat.format(summary.totalGainLoss.abs())}',
-            style: TextStyle(
-              color: valueColor,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              fontFamily: 'Inter',
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '${isPositiveReturn ? "+" : "-"}${currencyFormat.format(summary.totalGainLoss.abs())}',
+              style: TextStyle(
+                color: valueColor,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Inter',
+              ),
             ),
           ),
           const SizedBox(height: 4),
@@ -255,13 +269,17 @@ class DashboardSummaryWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            summary.totalPortfolios.toString(),
-            style: TextStyle(
-              color: onSurface,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              fontFamily: 'Inter',
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              summary.totalPortfolios.toString(),
+              style: TextStyle(
+                color: onSurface,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Inter',
+              ),
             ),
           ),
           const SizedBox(height: 4),

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_design_system/core/utils/responsive_helper.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
 
 class EmailExtractorView extends StatefulWidget {
@@ -151,9 +152,13 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   Widget build(BuildContext context) {
     bool isConnected = _gmailStatus?['connected'] == true;
     String email = _gmailStatus?['email'] ?? 'Not Connected';
+    final bool isMobile = ResponsiveHelper.isMobile(context);
     
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16.0 : 32.0, 
+        vertical: 24.0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -184,7 +189,10 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                 const SizedBox(width: 12),
                 Text(
                   'Available Broker Profiles', 
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: isMobile ? 18 : null,
+                  )
                 ),
               ],
             ),
@@ -204,67 +212,85 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   Widget _buildHeader() {
     Color statusColor = _isServiceConnected == true ? Colors.green : (_isServiceConnected == false ? Colors.red : Colors.grey);
     String statusText = _isServiceConnected == true ? 'Online' : (_isServiceConnected == false ? 'Offline' : 'Checking...');
+    final bool isMobile = ResponsiveHelper.isMobile(context);
+
+    final headerContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Email Extractor',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+            fontSize: isMobile ? 22 : null,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Extract holding statements directly from your secure mailbox',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+
+    final statusBadge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: statusColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: statusColor.withOpacity(0.6),
+                  blurRadius: 6,
+                  spreadRadius: 2,
+                )
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            statusText.toUpperCase(),
+            style: TextStyle(
+              color: statusColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          headerContent,
+          const SizedBox(height: 12),
+          statusBadge,
+        ],
+      );
+    }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Email Extractor',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Extract holding statements directly from your secure mailbox',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: statusColor.withOpacity(0.3)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: statusColor.withOpacity(0.6),
-                      blurRadius: 6,
-                      spreadRadius: 2,
-                    )
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                statusText.toUpperCase(),
-                style: TextStyle(
-                  color: statusColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        )
+        Expanded(child: headerContent),
+        const SizedBox(width: 16),
+        statusBadge,
       ],
     );
   }
@@ -301,6 +327,68 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   }
 
   Widget _buildGmailStatusCard(bool isConnected, String email) {
+    final bool isMobile = ResponsiveHelper.isMobile(context);
+
+    if (isMobile) {
+      return GlassCard(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: (isConnected ? Colors.green : Colors.amber).withOpacity(0.08),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: (isConnected ? Colors.green : Colors.amber).withOpacity(0.3)),
+                    ),
+                    child: Icon(
+                      isConnected ? Icons.verified_user_outlined : Icons.lock_open_outlined,
+                      color: isConnected ? Colors.green : Colors.amber,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isConnected ? 'GMAIL MAILBOX CONNECTED' : 'SECURE GMAIL INTEGRATION REQUIRED',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 10, 
+                            letterSpacing: 0.5,
+                            color: isConnected 
+                                ? Colors.green 
+                                : (Theme.of(context).brightness == Brightness.dark ? Colors.amber : Colors.orange.shade800),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          isConnected ? email : 'Authorize read-only scanning to extract holdings.',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              AppButton(
+                text: isConnected ? 'Disconnect Access' : 'Authenticate Google Mail',
+                onPressed: () => _handleGmailConnectionToggle(isConnected),
+                type: isConnected ? AppButtonType.secondary : AppButtonType.primary,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return GlassCard(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -356,6 +444,102 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   }
 
   Widget _buildBrokerGrid(bool isConnected) {
+    final bool isMobile = ResponsiveHelper.isMobile(context);
+
+    Widget buildBrokerCard(Map<String, dynamic> broker) {
+      final String brokerId = broker['id'];
+      final String brokerName = broker['name'];
+      final String format = broker['format'];
+      final bool isCurrentlyExtracting = _activeExtractingBrokerId == brokerId;
+
+      // Custom colors/icons per broker
+      Color brokerColor = Theme.of(context).colorScheme.primary;
+      IconData brokerIcon = Icons.account_balance_outlined;
+      if (brokerId == 'zerodha') {
+        brokerColor = Colors.blue;
+        brokerIcon = Icons.auto_graph_outlined;
+      } else if (brokerId == 'groww') {
+        brokerColor = Colors.teal;
+        brokerIcon = Icons.show_chart_outlined;
+      } else if (brokerId == 'angleone') {
+        brokerColor = Colors.deepOrange;
+        brokerIcon = Icons.analytics_outlined;
+      }
+
+      return GlassCard(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: brokerColor.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(brokerIcon, color: brokerColor, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(brokerName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            format, 
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              isCurrentlyExtracting
+                  ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Container(
+                      decoration: BoxDecoration(
+                        color: isConnected ? Theme.of(context).colorScheme.primary.withOpacity(0.08) : Colors.grey.withOpacity(0.05),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        onPressed: isConnected ? () => _extract(brokerId) : null,
+                        icon: Icon(
+                          Icons.arrow_circle_down_outlined, 
+                          color: isConnected ? Theme.of(context).colorScheme.primary : Colors.grey.withOpacity(0.4)
+                        ),
+                        tooltip: isConnected ? 'Extract holdings from mailbox' : 'Connect Gmail to enable mailbox scanning',
+                      ),
+                    ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (isMobile) {
+      return Column(
+        children: _brokers.map((broker) => Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: buildBrokerCard(broker),
+        )).toList(),
+      );
+    }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -367,89 +551,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       ),
       itemCount: _brokers.length,
       itemBuilder: (context, index) {
-        final broker = _brokers[index];
-        final String brokerId = broker['id'];
-        final String brokerName = broker['name'];
-        final String format = broker['format'];
-        final bool isCurrentlyExtracting = _activeExtractingBrokerId == brokerId;
-
-        // Custom colors/icons per broker
-        Color brokerColor = Theme.of(context).colorScheme.primary;
-        IconData brokerIcon = Icons.account_balance_outlined;
-        if (brokerId == 'zerodha') {
-          brokerColor = Colors.blue;
-          brokerIcon = Icons.auto_graph_outlined;
-        } else if (brokerId == 'groww') {
-          brokerColor = Colors.teal;
-          brokerIcon = Icons.show_chart_outlined;
-        } else if (brokerId == 'angleone') {
-          brokerColor = Colors.deepOrange;
-          brokerIcon = Icons.analytics_outlined;
-        }
-
-        return GlassCard(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: brokerColor.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(brokerIcon, color: brokerColor, size: 28),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(brokerName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              format, 
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                isCurrentlyExtracting
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Container(
-                        decoration: BoxDecoration(
-                          color: isConnected ? Theme.of(context).colorScheme.primary.withOpacity(0.08) : Colors.grey.withOpacity(0.05),
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          onPressed: isConnected ? () => _extract(brokerId) : null,
-                          icon: Icon(
-                            Icons.arrow_circle_down_outlined, 
-                            color: isConnected ? Theme.of(context).colorScheme.primary : Colors.grey.withOpacity(0.4)
-                          ),
-                          tooltip: isConnected ? 'Extract holdings from mailbox' : 'Connect Gmail to enable mailbox scanning',
-                        ),
-                      ),
-              ],
-            ),
-          ),
-        );
+        return buildBrokerCard(_brokers[index]);
       },
     );
   }
