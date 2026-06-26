@@ -1,4 +1,5 @@
 import '../../../internal/domain/entities/trade_controller_entities.dart';
+import '../../../internal/domain/enums/broker_types.dart';
 import '../../../internal/domain/enums/derivative_types.dart';
 import '../../../internal/domain/enums/exchange_types.dart';
 import '../../../internal/domain/enums/fundamental_reasons.dart';
@@ -40,6 +41,7 @@ class TradeFormMapper {
     required String? notes,
     required String? portfolioId,
     required List<String> attachments,
+    required BrokerTypes? selectedBroker,
   }) {
     // Construct InstrumentInfo
     final instrumentInfo = InstrumentInfo(
@@ -93,6 +95,13 @@ class TradeFormMapper {
       notes: notes,
       strategy: strategy,
       attachments: attachments.isNotEmpty ? attachments.map((url) => Attachment(fileUrl: url)).toList() : null,
+      tradeExecutions: selectedBroker != null ? [
+        TradeModel(
+          basicInfo: BasicInfo(
+            brokerType: selectedBroker,
+          )
+        )
+      ] : null,
     );
   }
 }

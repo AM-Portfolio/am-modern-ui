@@ -177,8 +177,8 @@ class _AddTradeFormState extends State<AddTradeForm> {
         selectedBroker: _selectedBroker,
       );
 
-      AppLogger.info('✅ Required fields validation passed', tag: 'AddTradeForm');
-      AppLogger.debug('📊 Parsing numeric values...', tag: 'AddTradeForm');
+      AppLogger.info('Required fields validation passed', tag: 'AddTradeForm');
+      AppLogger.debug('Parsing numeric values...', tag: 'AddTradeForm');
 
       // Parse numeric values
       final entryPrice = double.tryParse(_entryPriceController.text);
@@ -190,14 +190,14 @@ class _AddTradeFormState extends State<AddTradeForm> {
       final strikePrice = _strikePriceController.text.isNotEmpty ? double.tryParse(_strikePriceController.text) : null;
 
       AppLogger.debug(
-        '💰 Parsed values - entryPrice: $entryPrice, entryQuantity: $entryQuantity, exitPrice: $exitPrice',
+        'Parsed values - entryPrice: $entryPrice, entryQuantity: $entryQuantity, exitPrice: $exitPrice',
         tag: 'AddTradeForm',
       );
 
       // Validate numeric values
       TradeFormValidator.validateNumericValues(entryPrice: entryPrice, entryQuantity: entryQuantity);
 
-      AppLogger.info('✅ Numeric validation passed', tag: 'AddTradeForm');
+      AppLogger.info('Numeric validation passed', tag: 'AddTradeForm');
 
       // Validate closed trade data
       TradeFormValidator.validateClosedTrade(
@@ -207,8 +207,8 @@ class _AddTradeFormState extends State<AddTradeForm> {
         exitQuantity: exitQuantity,
       );
 
-      AppLogger.info('✅ Closed trade validation passed', tag: 'AddTradeForm');
-      AppLogger.debug('🏗️ Building TradeDetails entity...', tag: 'AddTradeForm');
+      AppLogger.info('Closed trade validation passed', tag: 'AddTradeForm');
+      AppLogger.debug('Building TradeDetails entity...', tag: 'AddTradeForm');
 
       // Map form data to TradeDetails entity
       final tradeDetails = TradeFormMapper.mapToTradeDetails(
@@ -237,10 +237,11 @@ class _AddTradeFormState extends State<AddTradeForm> {
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         portfolioId: widget.initialData?.portfolioId,
         attachments: _attachments,
+        selectedBroker: _selectedBroker,
       );
 
       AppLogger.info(
-        '✅ TradeDetails entity created - symbol: ${_symbolController.text}, portfolioId: ${widget.initialData?.portfolioId}',
+        'TradeDetails entity created - symbol: ${_symbolController.text}, portfolioId: ${widget.initialData?.portfolioId}',
         tag: 'AddTradeForm',
       );
 
@@ -249,18 +250,19 @@ class _AddTradeFormState extends State<AddTradeForm> {
         AppLogger.info('📤 Calling onSave callback to parent', tag: 'AddTradeForm');
         widget.onSave!(tradeDetails);
       } else {
-        AppLogger.warning('⚠️ No onSave callback provided!', tag: 'AddTradeForm');
+        AppLogger.warning('No onSave callback provided!', tag: 'AddTradeForm');
       }
 
       AppLogger.methodExit('_saveTrade', tag: 'AddTradeForm', result: 'success');
     } catch (e) {
-      AppLogger.error('❌ Trade save failed', tag: 'AddTradeForm', error: e, stackTrace: StackTrace.current);
+      AppLogger.error('Trade save failed', tag: 'AddTradeForm', error: e, stackTrace: StackTrace.current);
 
       // Show error if validation or construction fails
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to save trade: ${e.toString()}'), backgroundColor: Colors.red));
     }
+    
   }
 
   void _onInstrumentSelected(Map<String, dynamic> instrument) {
@@ -290,7 +292,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
     });
     
     AppLogger.info(
-      '🎯 Instrument selected: ${_symbolController.text} - ${_descriptionController.text}', 
+      'Instrument selected: ${_symbolController.text} - ${_descriptionController.text}', 
       tag: 'AddTradeForm'
     );
   }
