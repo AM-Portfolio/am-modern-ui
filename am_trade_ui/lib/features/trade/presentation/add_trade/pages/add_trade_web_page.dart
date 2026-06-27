@@ -157,9 +157,18 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
           },
           updating: () {
             AppLogger.debug('[TradeControllerCubit] State: Updating trade', tag: 'AddTradeWebPage');
+            setState(() => _isLoading = true);
           },
           updateSuccess: (trade) {
             AppLogger.info('[TradeControllerCubit] State: Trade updated successfully', tag: 'AddTradeWebPage');
+            setState(() => _isLoading = false);
+
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Trade updated successfully!'), backgroundColor: Colors.green));
+
+            widget.onTradeAdded?.call();
+            _navigateBack();
           },
           deleting: () {
             AppLogger.debug('[TradeControllerCubit] State: Deleting trade', tag: 'AddTradeWebPage');

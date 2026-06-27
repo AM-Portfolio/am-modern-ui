@@ -103,6 +103,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
     _selectedDirection = trade.tradePositionType;
     _selectedStatus = trade.status;
     _selectedBroker = trade.tradeExecutions?.isNotEmpty == true ? trade.tradeExecutions!.first.basicInfo?.brokerType : null;
+    _selectedOrderType = trade.tradeExecutions?.isNotEmpty == true ? trade.tradeExecutions!.first.executionInfo?.orderType : null;
     
     _entryDate = trade.entryInfo.timestamp;
     _entryPriceController.text = trade.entryInfo.price?.toString() ?? '';
@@ -238,6 +239,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
         portfolioId: widget.initialData?.portfolioId,
         attachments: _attachments,
         selectedBroker: _selectedBroker,
+        selectedOrderType: _selectedOrderType,
       );
 
       AppLogger.info(

@@ -9,6 +9,7 @@ import '../../../internal/domain/enums/psychology_factors.dart';
 import '../../../internal/domain/enums/technical_reasons.dart';
 import '../../../internal/domain/enums/trade_directions.dart';
 import '../../../internal/domain/enums/trade_statuses.dart';
+import '../../../internal/domain/enums/order_types.dart';
 
 /// Mapper to convert form data to domain entities
 class TradeFormMapper {
@@ -42,6 +43,7 @@ class TradeFormMapper {
     required String? portfolioId,
     required List<String> attachments,
     required BrokerTypes? selectedBroker,
+    required OrderTypes? selectedOrderType,
   }) {
     // Construct InstrumentInfo
     final instrumentInfo = InstrumentInfo(
@@ -95,11 +97,14 @@ class TradeFormMapper {
       notes: notes,
       strategy: strategy,
       attachments: attachments.isNotEmpty ? attachments.map((url) => Attachment(fileUrl: url)).toList() : null,
-      tradeExecutions: selectedBroker != null ? [
+      tradeExecutions: (selectedBroker != null || selectedOrderType != null) ? [
         TradeModel(
-          basicInfo: BasicInfo(
+          basicInfo: selectedBroker != null ? BasicInfo(
             brokerType: selectedBroker,
-          )
+          ) : null,
+          executionInfo: selectedOrderType != null ? ExecutionInfo(
+            orderType: selectedOrderType,
+          ) : null,
         )
       ] : null,
     );
