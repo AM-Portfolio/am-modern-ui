@@ -31,6 +31,8 @@ import '../../internal/domain/enums/derivative_types.dart';
 import '../../internal/domain/enums/option_types.dart';
 import '../../internal/domain/enums/trade_statuses.dart';
 import '../../internal/domain/enums/trade_directions.dart';
+import '../../internal/domain/enums/broker_types.dart';
+import '../../internal/domain/enums/order_types.dart';
 import '../cubit/trade_controller_cubit.dart';
 import '../cubit/trade_controller_state.dart';
 import '../models/trade_holding_view_model.dart';
@@ -382,14 +384,16 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             ),
             symbol: holding.symbol,
             strategy: holding.strategy,
-            exitInfo: EntryExitInfo(
-              timestamp: holding.exitTimestamp,
-              price: holding.exitPrice,
-              quantity: holding.quantity,
-              totalValue: holding.exitTotalValue,
-              fees: holding.exitFees,
-              reason: holding.exitReason,
-            ),
+            exitInfo: (holding.exitTimestamp != null || holding.exitPrice != null)
+              ? EntryExitInfo(
+                  timestamp: holding.exitTimestamp,
+                  price: holding.exitPrice,
+                  quantity: holding.quantity,
+                  totalValue: holding.exitTotalValue,
+                  fees: holding.exitFees,
+                  reason: holding.exitReason,
+                )
+              : null,
             metrics: TradeMetrics(
               profitLoss: holding.profitLoss,
               profitLossPercentage: holding.profitLossPercentage,
@@ -401,6 +405,16 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               maxAdverseExcursion: holding.maxAdverseExcursion,
               maxFavorableExcursion: holding.maxFavorableExcursion,
             ),
+            tradeExecutions: (holding.broker != null || holding.orderType != null) ? [
+              TradeModel(
+                basicInfo: holding.broker != null ? BasicInfo(
+                  brokerType: parseEnum(BrokerTypes.values, holding.broker),
+                ) : null,
+                executionInfo: holding.orderType != null ? ExecutionInfo(
+                  orderType: parseEnum(OrderTypes.values, holding.orderType),
+                ) : null,
+              )
+            ] : null,
             notes: holding.notes,
             tags: holding.tags,
             userId: holding.userId,
