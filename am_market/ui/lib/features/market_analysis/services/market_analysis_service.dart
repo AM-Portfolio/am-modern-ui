@@ -10,7 +10,7 @@ import 'package:am_common/am_common.dart';
 
 class MarketAnalysisService {
   // Matches backend AnalysisController
-  final String baseUrl = '${EnvDomains.analysis}/v1/analysis';
+  final String baseUrl = '${EnvDomains.market}/v1/analysis';
 
   final _storage = GetIt.I<SecureStorageService>();
 
