@@ -40,19 +40,6 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                   fontFamily: 'Inter',
                 ),
               ),
-              InkWell(
-                onTap: () {},
-                hoverColor: Colors.transparent,
-                child: Text(
-                  'View All →',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2E3192),
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 16),

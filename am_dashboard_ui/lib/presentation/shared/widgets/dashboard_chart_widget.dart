@@ -99,11 +99,11 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 580;
+
+              final infoColumn = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -145,8 +145,10 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
                     ],
                   ),
                 ],
-              ),
-              Row(
+              );
+
+              final controlsRow = Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // Graph vs Table Toggle
                   Container(
@@ -207,8 +209,32 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
                     ),
                   ),
                 ],
-              ),
-            ],
+              );
+
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    infoColumn,
+                    const SizedBox(height: 12),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: controlsRow,
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  infoColumn,
+                  controlsRow,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
           
