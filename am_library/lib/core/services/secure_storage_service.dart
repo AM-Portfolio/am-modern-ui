@@ -19,12 +19,14 @@ class SecureStorageService {
   static String? _cachedAccessToken;
   static String? _cachedUserId;
   static String? _cachedUserEmail;
+  static String? _cachedUserDisplayName;
 
   // Keys
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _userIdKey = 'user_id';
   static const String _userEmailKey = 'user_email';
+  static const String _userDisplayNameKey = 'user_display_name';
   static const String _tokenExpiryKey = 'token_expiry';
 
   static String get _fallbackToken {
@@ -140,6 +142,27 @@ class SecureStorageService {
     return email;
   }
 
+  // ── User display name ───────────────────────────────────────────────────
+
+  /// Save user display name — writes to both in-memory cache and secure storage.
+  Future<void> saveUserDisplayName(String displayName) async {
+    _cachedUserDisplayName = displayName;
+    await _storage.write(key: _userDisplayNameKey, value: displayName);
+  }
+
+  /// Get user display name — returns from in-memory cache if available.
+  Future<String?> getUserDisplayName() async {
+    if (_cachedUserDisplayName != null && _cachedUserDisplayName!.isNotEmpty) {
+      return _cachedUserDisplayName;
+    }
+    final name = await _storage.read(key: _userDisplayNameKey);
+    if (name == null || name.isEmpty) {
+      return null;
+    }
+    _cachedUserDisplayName = name;
+    return name;
+  }
+
   // ── Expiry ───────────────────────────────────────────────────────────────
 
   /// Save token expiry timestamp
@@ -201,6 +224,7 @@ class SecureStorageService {
     _cachedAccessToken = null;
     _cachedUserId = null;
     _cachedUserEmail = null;
+    _cachedUserDisplayName = null;
   }
 
   // ── Clearing ─────────────────────────────────────────────────────────────
@@ -218,6 +242,7 @@ class SecureStorageService {
     await _storage.delete(key: _refreshTokenKey);
     await _storage.delete(key: _userIdKey);
     await _storage.delete(key: _userEmailKey);
+    await _storage.delete(key: _userDisplayNameKey);
     await _storage.delete(key: _tokenExpiryKey);
   }
 }

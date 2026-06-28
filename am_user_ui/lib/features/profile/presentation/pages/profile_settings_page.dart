@@ -6,9 +6,13 @@ import 'dart:ui';
 /// Profile and Settings page for user account management
 class ProfileSettingsPage extends StatelessWidget {
   final String userId;
+  final String? email;
+  final String? displayName;
 
   const ProfileSettingsPage({
     required this.userId,
+    this.email,
+    this.displayName,
     super.key,
   });
 
@@ -114,7 +118,7 @@ class ProfileSettingsPage extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         Text(
-          userId,
+          displayName != null && displayName!.isNotEmpty ? displayName! : userId,
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black87,
             fontSize: 20,
@@ -174,7 +178,7 @@ class ProfileSettingsPage extends StatelessWidget {
               context,
               icon: Icons.email_outlined,
               title: 'Email Address',
-              subtitle: 'Not set',
+              subtitle: (email != null && email!.isNotEmpty) ? email! : 'Not set',
               isDark: isDark,
               onTap: () => _showEditEmailDialog(context),
             ),
