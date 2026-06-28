@@ -66,6 +66,7 @@ class GlassCard extends StatelessWidget {
         borderWidth: borderWidth,
         blur: blur,
         borderRadius: effectiveRadius,
+        isDark: isDark,
       );
     } else {
       // Default Glass Style
@@ -74,6 +75,7 @@ class GlassCard extends StatelessWidget {
         borderWidth: borderWidth,
         blur: blur,
         borderRadius: effectiveRadius,
+        isDark: isDark,
       );
     }
 

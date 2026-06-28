@@ -1,6 +1,5 @@
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import '../shared/widgets/dashboard_summary_widget.dart';
-import '../shared/widgets/dashboard_allocation_widget.dart';
 import '../shared/widgets/dashboard_chart_widget.dart';
 import '../shared/widgets/dashboard_ranking_widget.dart';
 import '../shared/widgets/dashboard_recent_activity_widget.dart';
@@ -157,11 +156,14 @@ class DashboardMobileScreen extends ConsumerWidget {
                           final performanceAsync =
                               ref.watch(dashboardPerformanceProvider(userId));
                           return performanceAsync.when(
-                            data: (performance) => DashboardChartWidget(
-                              performance: performance,
-                              onTimeFrameChanged: (timeFrame) {
-                                ref.invalidate(dashboardPerformanceProvider(userId));
-                              },
+                            data: (performance) => SizedBox(
+                              height: 350,
+                              child: DashboardChartWidget(
+                                performance: performance,
+                                onTimeFrameChanged: (timeFrame) {
+                                  ref.invalidate(dashboardPerformanceProvider(userId));
+                                },
+                              ),
                             ),
                             loading: () => _buildLoadingCard(350),
                             error: (err, stack) => AmErrorWidget(
@@ -172,24 +174,6 @@ class DashboardMobileScreen extends ConsumerWidget {
                           );
                         },
                       ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-                  // ── Allocation ──
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    sliver: SliverToBoxAdapter(
-                      child: ref.watch(dashboardAllocationProvider(userId)).when(
-                            data: (allocation) =>
-                                DashboardAllocationWidget(allocation: allocation),
-                            loading: () => _buildLoadingCard(300),
-                            error: (err, stack) => AmErrorWidget(
-                              message: 'Failed to load allocation data',
-                              onRetry: () =>
-                                  ref.invalidate(dashboardAllocationProvider(userId)),
-                            ),
-                          ),
                     ),
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 16)),
@@ -226,9 +210,12 @@ class DashboardMobileScreen extends ConsumerWidget {
                         builder: (context, ref, child) {
                           final topMoversAsync = ref.watch(topMoversProvider(userId));
                           return topMoversAsync.when(
-                            data: (topMovers) => DashboardRankingWidget(
-                              gainers: topMovers.gainers,
-                              losers: topMovers.losers,
+                            data: (topMovers) => SizedBox(
+                              height: 350,
+                              child: DashboardRankingWidget(
+                                gainers: topMovers.gainers,
+                                losers: topMovers.losers,
+                              ),
                             ),
                             loading: () => _buildLoadingCard(350),
                             error: (err, stack) => DashboardRankingWidget.errorState(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import 'package:am_common/am_common.dart';
 import '../../providers/trade_controller_providers.dart';
@@ -128,12 +129,63 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: _buildAppBar(context),
-    body: _buildMainContent(context),
-    bottomNavigationBar: _buildBottomNavigationBar(context),
-    floatingActionButton: _buildFloatingActionButton(context),
-  );
+  Widget build(BuildContext context) {
+    String title = 'Trade';
+    switch (_selectedView) {
+      case MobileTradeViewType.portfolios:
+        title = 'Trade Portfolios';
+        break;
+      case MobileTradeViewType.holdings:
+        title = _currentPortfolioName != null ? 'Holdings - $_currentPortfolioName' : 'Holdings';
+        break;
+      case MobileTradeViewType.calendar:
+        title = _currentPortfolioName != null ? 'Calendar - $_currentPortfolioName' : 'Calendar';
+        break;
+      case MobileTradeViewType.addTrade:
+        title = _currentPortfolioName != null ? 'Add Trade - $_currentPortfolioName' : 'Add Trade';
+        break;
+    }
+
+    final showAppBar = _selectedView != MobileTradeViewType.addTrade &&
+        _selectedView != MobileTradeViewType.calendar;
+
+    return UnifiedSidebarScaffold(
+      module: ModuleType.trade,
+      title: title,
+      showAppBarOnMobile: showAppBar,
+      showModuleBottomNavigation: false,
+      onBackToGlobal: widget.onBack,
+      onMobileMenuTap: () => _showMoreMenu(context),
+      floatingActionButton: _buildFloatingActionButton(context),
+      items: [
+        SecondarySidebarItem(
+          title: 'Portfolios',
+          icon: Icons.account_balance_wallet,
+          isSelected: _selectedView == MobileTradeViewType.portfolios,
+          onTap: () => _onViewChanged(MobileTradeViewType.portfolios),
+        ),
+        SecondarySidebarItem(
+          title: 'Holdings',
+          icon: Icons.dashboard_outlined,
+          isSelected: _selectedView == MobileTradeViewType.holdings,
+          onTap: () => _onViewChanged(MobileTradeViewType.holdings),
+        ),
+        SecondarySidebarItem(
+          title: 'Calendar',
+          icon: Icons.calendar_today_outlined,
+          isSelected: _selectedView == MobileTradeViewType.calendar,
+          onTap: () => _onViewChanged(MobileTradeViewType.calendar),
+        ),
+        SecondarySidebarItem(
+          title: 'Add Trade',
+          icon: Icons.add_circle_outline,
+          isSelected: _selectedView == MobileTradeViewType.addTrade,
+          onTap: () => _onViewChanged(MobileTradeViewType.addTrade),
+        ),
+      ],
+      body: _buildMainContent(context),
+    );
+  }
 
   void _showMoreMenu(BuildContext context) {
     showModalBottomSheet(
@@ -237,125 +289,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
     );
   }
 
-  /// Build app bar with context-aware title and actions
-  PreferredSizeWidget? _buildAppBar(BuildContext context) {
-    // Let AddTradeMobilePage and Calendar handle their own headers
-    if (_selectedView == MobileTradeViewType.addTrade || _selectedView == MobileTradeViewType.calendar) {
-      return null;
-    }
 
-    String title;
-    var actions = <Widget>[];
-
-    switch (_selectedView) {
-      case MobileTradeViewType.portfolios:
-        title = 'Trade Portfolios';
-        break;
-      case MobileTradeViewType.holdings:
-        title = _currentPortfolioName != null ? 'Holdings - $_currentPortfolioName' : 'Holdings';
-        break;
-      case MobileTradeViewType.calendar:
-        title = _currentPortfolioName != null ? 'Calendar - $_currentPortfolioName' : 'Calendar';
-        break;
-      case MobileTradeViewType.addTrade:
-        title = _currentPortfolioName != null ? 'Add Trade - $_currentPortfolioName' : 'Add Trade';
-        actions = [];
-        break;
-    }
-
-    return AppBar(
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.swap_horiz, color: Theme.of(context).colorScheme.primary, size: 20),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(title, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 18)),
-          ),
-        ],
-      ),
-      leading: (widget.onBack != null || Navigator.of(context).canPop())
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  tooltip: 'Back',
-                  onPressed: () {
-                    if (widget.onBack != null) {
-                      widget.onBack!();
-                    } else if (Navigator.of(context).canPop()) {
-                      Navigator.of(context).pop();
-                    }
-                  },
-                )
-              : null,
-      actions: actions,
-      elevation: 1,
-    );
-  }
-
-  /// Build bottom navigation bar for trade views
-  Widget _buildBottomNavigationBar(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasPortfolio = _currentPortfolioId != null;
-
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, -2))],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: _selectedView.index,
-        onTap: (index) {
-          if (index == 4) {
-            _showMoreMenu(context);
-          } else {
-            _onViewChanged(MobileTradeViewType.values[index]);
-          }
-        },
-        selectedItemColor: theme.colorScheme.primary,
-        unselectedItemColor: theme.colorScheme.onSurface.withOpacity(0.6),
-        backgroundColor: theme.cardColor,
-        elevation: 0,
-        type: BottomNavigationBarType.fixed,
-        selectedFontSize: 12,
-        unselectedFontSize: 11,
-        items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet),
-            activeIcon: Icon(Icons.account_balance_wallet),
-            label: 'Portfolios',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.dashboard_outlined,
-              color: hasPortfolio ? null : theme.colorScheme.onSurface.withOpacity(0.3),
-            ),
-            activeIcon: const Icon(Icons.dashboard),
-            label: 'Holdings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.calendar_today_outlined,
-              color: hasPortfolio ? null : theme.colorScheme.onSurface.withOpacity(0.3),
-            ),
-            activeIcon: const Icon(Icons.calendar_today),
-            label: 'Calendar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.add_circle_outline,
-              color: hasPortfolio ? null : theme.colorScheme.onSurface.withOpacity(0.3),
-            ),
-            activeIcon: const Icon(Icons.add_circle),
-            label: 'Add Trade',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.more_horiz),
-            activeIcon: Icon(Icons.more_horiz),
-            label: 'More',
-          ),
-        ],
-      ),
-    );
-  }
 
   /// Build main content based on selected view
   Widget _buildMainContent(BuildContext context) {

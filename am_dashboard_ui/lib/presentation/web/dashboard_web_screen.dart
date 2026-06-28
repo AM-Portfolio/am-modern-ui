@@ -40,6 +40,8 @@ class DashboardWebScreen extends ConsumerWidget {
     final overviewsAsync = ref.watch(portfolioOverviewsProvider(userId));
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isCompactWeb = screenWidth < 1280;
 
     // Dynamic Colors based on theme
     final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
@@ -109,88 +111,96 @@ class DashboardWebScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Header Row ──
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.arrow_back, color: onSurfaceVariant, size: 20),
-                            const SizedBox(width: 16),
-                            Text(
-                              'Dashboard',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                color: onSurface,
-                                fontFamily: 'Inter',
+                    // ── Header Row (Wrap for responsiveness) ──
+                    SizedBox(
+                      width: double.infinity,
+                      child: Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 16,
+                        runSpacing: 12,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.arrow_back, color: onSurfaceVariant, size: 20),
+                              const SizedBox(width: 16),
+                              Text(
+                                'Dashboard',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: onSurface,
+                                  fontFamily: 'Inter',
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: btnBgColor,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: borderColor),
+                            ],
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: btnBgColor,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: borderColor),
+                                ),
+                                child: IconButton(
+                                  icon: Icon(Icons.refresh, color: onSurfaceVariant, size: 20),
+                                  onPressed: () {
+                                    ref.invalidate(dashboardStreamProvider(userId));
+                                    ref.invalidate(portfolioOverviewsProvider(userId));
+                                  },
+                                ),
                               ),
-                              child: IconButton(
-                                icon: Icon(Icons.refresh, color: onSurfaceVariant, size: 20),
-                                onPressed: () {
-                                  ref.invalidate(dashboardStreamProvider(userId));
-                                  ref.invalidate(portfolioOverviewsProvider(userId));
-                                },
+                              const SizedBox(width: 12),
+                              const ShareLinkButton(),
+                              const SizedBox(width: 12),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: btnBgColor,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: borderColor),
+                                ),
+                                child: IconButton(
+                                  icon: Icon(Icons.notifications_outlined, color: onSurfaceVariant, size: 20),
+                                  onPressed: () {},
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            const ShareLinkButton(),
-                            const SizedBox(width: 12),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: btnBgColor,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: borderColor),
-                              ),
-                              child: IconButton(
-                                icon: Icon(Icons.notifications_outlined, color: onSurfaceVariant, size: 20),
-                                onPressed: () {},
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: marketOpenBg,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: marketOpenDot,
-                                      shape: BoxShape.circle,
+                              const SizedBox(width: 16),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: marketOpenBg,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: marketOpenDot,
+                                        shape: BoxShape.circle,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Market Open',
-                                    style: TextStyle(
-                                      color: marketOpenText,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'Inter',
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Market Open',
+                                      style: TextStyle(
+                                        color: marketOpenText,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: 'Inter',
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
 
@@ -205,114 +215,205 @@ class DashboardWebScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    // ── Row 3: Performance (70%) & Market Movers (30%) ──
-                    SizedBox(
-                      height: 380,
-                      child: Row(
+                    // ── Row 3: Performance & Market Movers ──
+                    if (isCompactWeb) ...[
+                      SizedBox(
+                        height: 380,
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final performanceAsync =
+                                ref.watch(dashboardPerformanceProvider(userId));
+                            return performanceAsync.when(
+                              data: (performance) => DashboardChartWidget(
+                                performance: performance,
+                                onTimeFrameChanged: (timeFrame) {
+                                  ref.invalidate(dashboardPerformanceProvider(userId));
+                                },
+                              ),
+                              loading: () => _buildLoadingCard(280),
+                              error: (err, stack) => AmErrorWidget(
+                                message: 'Failed to load chart',
+                                onRetry: () => ref.invalidate(dashboardPerformanceProvider(userId)),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        height: 380,
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final topMoversAsync = ref.watch(topMoversProvider(userId));
+                            return topMoversAsync.when(
+                              data: (topMovers) => DashboardRankingWidget(
+                                gainers: topMovers.gainers,
+                                losers: topMovers.losers,
+                              ),
+                              loading: () => _buildLoadingCard(280),
+                              error: (err, stack) => DashboardRankingWidget.errorState(),
+                            );
+                          },
+                        ),
+                      ),
+                    ] else ...[
+                      SizedBox(
+                        height: 380,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              flex: 70,
+                              child: Consumer(
+                                builder: (context, ref, child) {
+                                  final performanceAsync =
+                                      ref.watch(dashboardPerformanceProvider(userId));
+                                  return performanceAsync.when(
+                                    data: (performance) => DashboardChartWidget(
+                                      performance: performance,
+                                      onTimeFrameChanged: (timeFrame) {
+                                        ref.invalidate(dashboardPerformanceProvider(userId));
+                                      },
+                                    ),
+                                    loading: () => _buildLoadingCard(280),
+                                    error: (err, stack) => AmErrorWidget(
+                                      message: 'Failed to load chart',
+                                      onRetry: () => ref.invalidate(dashboardPerformanceProvider(userId)),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            Expanded(
+                              flex: 30,
+                              child: Consumer(
+                                builder: (context, ref, child) {
+                                  final topMoversAsync = ref.watch(topMoversProvider(userId));
+                                  return topMoversAsync.when(
+                                    data: (topMovers) => DashboardRankingWidget(
+                                      gainers: topMovers.gainers,
+                                      losers: topMovers.losers,
+                                    ),
+                                    loading: () => _buildLoadingCard(280),
+                                    error: (err, stack) => DashboardRankingWidget.errorState(),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+
+                    // ── Row 4: Recent Activity & Your Portfolios ──
+                    if (isCompactWeb) ...[
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final activitiesAsync = ref.watch(recentActivityProvider(userId));
+                          return activitiesAsync.when(
+                            data: (activities) => DashboardRecentActivityWidget(activities: activities),
+                            loading: () => _buildLoadingCard(200),
+                            error: (err, stack) => AmErrorWidget(
+                              message: 'Failed to load recent activity',
+                              onRetry: () => ref.invalidate(recentActivityProvider(userId)),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Your Portfolios',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 20,
+                              color: onSurface,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          overviewsAsync.when(
+                            data: (overviews) => Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: overviews.map((overview) => Padding(
+                                padding: const EdgeInsets.only(bottom: 16.0),
+                                child: DashboardPortfolioOverviewCard(
+                                  overview: overview,
+                                  onTap: () {},
+                                ),
+                              )).toList(),
+                            ),
+                            loading: () => _buildLoadingCard(100),
+                            error: (err, stack) => AmErrorWidget(
+                              message: 'Failed to load portfolios',
+                              onRetry: () => ref.invalidate(portfolioOverviewsProvider(userId)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             flex: 70,
                             child: Consumer(
                               builder: (context, ref, child) {
-                                final performanceAsync =
-                                    ref.watch(dashboardPerformanceProvider(userId));
-                                return performanceAsync.when(
-                                data: (performance) => DashboardChartWidget(
-                                  performance: performance,
-                                  onTimeFrameChanged: (timeFrame) {
-                                    ref.invalidate(dashboardPerformanceProvider(userId));
-                                  },
-                                ),
-                                loading: () => _buildLoadingCard(280),
-                                error: (err, stack) => AmErrorWidget(
-                                  message: 'Failed to load chart',
-                                  onRetry: () => ref.invalidate(dashboardPerformanceProvider(userId)),
-                                ),
-                              );
-                            },
+                                final activitiesAsync = ref.watch(recentActivityProvider(userId));
+                                return activitiesAsync.when(
+                                  data: (activities) => DashboardRecentActivityWidget(activities: activities),
+                                  loading: () => _buildLoadingCard(200),
+                                  error: (err, stack) => AmErrorWidget(
+                                    message: 'Failed to load recent activity',
+                                    onRetry: () => ref.invalidate(recentActivityProvider(userId)),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 24),
-                        Expanded(
-                          flex: 30,
-                          child: Consumer(
-                            builder: (context, ref, child) {
-                              final topMoversAsync = ref.watch(topMoversProvider(userId));
-                              return topMoversAsync.when(
-                                data: (topMovers) => DashboardRankingWidget(
-                                  gainers: topMovers.gainers,
-                                  losers: topMovers.losers,
+                          const SizedBox(width: 24),
+                          Expanded(
+                            flex: 30,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Your Portfolios',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 20,
+                                    color: onSurface,
+                                    fontFamily: 'Inter',
+                                  ),
                                 ),
-                                loading: () => _buildLoadingCard(280),
-                                error: (err, stack) => DashboardRankingWidget.errorState(),
-                              );
-                            },
+                                const SizedBox(height: 16),
+                                overviewsAsync.when(
+                                  data: (overviews) => Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: overviews.map((overview) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 16.0),
+                                      child: DashboardPortfolioOverviewCard(
+                                        overview: overview,
+                                        onTap: () {},
+                                      ),
+                                    )).toList(),
+                                  ),
+                                  loading: () => _buildLoadingCard(100),
+                                  error: (err, stack) => AmErrorWidget(
+                                    message: 'Failed to load portfolios',
+                                    onRetry: () => ref.invalidate(portfolioOverviewsProvider(userId)),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                    // ── Row 4: Recent Activity (70%) & Your Portfolios (30%) ──
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 70,
-                          child: Consumer(
-                            builder: (context, ref, child) {
-                              final activitiesAsync = ref.watch(recentActivityProvider(userId));
-                              return activitiesAsync.when(
-                                data: (activities) => DashboardRecentActivityWidget(activities: activities),
-                                loading: () => _buildLoadingCard(200),
-                                error: (err, stack) => AmErrorWidget(
-                                  message: 'Failed to load recent activity',
-                                  onRetry: () => ref.invalidate(recentActivityProvider(userId)),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 24),
-                        Expanded(
-                          flex: 30,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'Your Portfolios',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 20,
-                                  color: onSurface,
-                                  fontFamily: 'Inter',
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              overviewsAsync.when(
-                                data: (overviews) => Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: overviews.map((overview) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 16.0),
-                                    child: DashboardPortfolioOverviewCard(
-                                      overview: overview,
-                                      onTap: () {},
-                                    ),
-                                  )).toList(),
-                                ),
-                                loading: () => _buildLoadingCard(100),
-                                error: (err, stack) => AmErrorWidget(
-                                  message: 'Failed to load portfolios',
-                                  onRetry: () => ref.invalidate(portfolioOverviewsProvider(userId)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
