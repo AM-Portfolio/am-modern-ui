@@ -16,6 +16,7 @@ class HeatmapExplorerView extends StatefulWidget {
 }
 
 class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
   String _selectedSymbol = 'NIFTY BANK'; // Default symbol
   final List<String> _months = [
     'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
@@ -72,6 +73,8 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final provider = context.watch<MarketProvider>();
     final data = provider.historicalPerformance;
 
@@ -81,9 +84,18 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.darkCard,
+            color: isDark ? AppColors.darkCard : AppColors.lightCard,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+            boxShadow: isDark
+                ? []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,19 +117,19 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                      child: Container(
                        height: 48,
                        decoration: BoxDecoration(
-                         color: Colors.black.withOpacity(0.2),
+                         color: isDark ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.03),
                          borderRadius: BorderRadius.circular(12),
-                         border: Border.all(color: Colors.white.withOpacity(0.1)),
+                         border: Border.all(color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.08)),
                        ),
                        child: TextField(
                          controller: _searchController,
-                         style: const TextStyle(color: Colors.white),
-                         decoration: const InputDecoration(
+                         style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                         decoration: InputDecoration(
                            hintText: 'Search Symbol (e.g. RELIANCE, NIFTY 50)',
-                           hintStyle: TextStyle(color: Colors.white38),
-                           prefixIcon: Icon(Icons.search, color: Colors.white54),
+                           hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
+                           prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54),
                            border: InputBorder.none,
-                           contentPadding: EdgeInsets.symmetric(vertical: 14),
+                           contentPadding: const EdgeInsets.symmetric(vertical: 14),
                          ),
                          onSubmitted: (value) {
                            if (value.isNotEmpty) {
@@ -208,9 +220,18 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                     const SizedBox(height: 16),
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.darkCard,
+                        color: isDark ? AppColors.darkCard : AppColors.lightCard,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.05)),
+                        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+                        boxShadow: isDark
+                            ? []
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                )
+                              ],
                       ),
                       child: const HistoricalPerformanceSection(),
                     ),
@@ -226,7 +247,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                     data == null 
                         ? SizedBox(
                             height: 200,
-                            child: Center(child: Text(provider.isLoading ? 'Loading...' : 'No data available', style: const TextStyle(color: Colors.white54)))
+                            child: Center(child: Text(provider.isLoading ? 'Loading...' : 'No data available', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)))
                           )
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -234,9 +255,18 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                                 Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: AppColors.darkCard,
+                                  color: isDark ? AppColors.darkCard : AppColors.lightCard,
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                                  border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+                                  boxShadow: isDark
+                                      ? []
+                                      : [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.04),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
+                                          )
+                                        ],
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,7 +309,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                                                         child: Center(
                                                           child: Text(
                                                             m,
-                                                            style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+                                                            style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 11, fontWeight: FontWeight.bold),
                                                           ),
                                                         ),
                                                       )),
@@ -301,7 +331,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                                                               width: 60,
                                                               child: Text(
                                                                 '${yearly.year}',
-                                                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                                                style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 13),
                                                               ),
                                                             ),
                                                             
@@ -313,7 +343,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                                                                     margin: const EdgeInsets.symmetric(horizontal: 2),
                                                                     height: 32,
                                                                     decoration: BoxDecoration(
-                                                                      color: val != null ? _getColorForChange(val).withOpacity(0.8) : Colors.white.withOpacity(0.05),
+                                                                      color: val != null ? _getColorForChange(val).withOpacity(0.8) : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
                                                                       borderRadius: BorderRadius.circular(6),
                                                                     ),
                                                                     child: Center(
@@ -374,6 +404,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
 
 
   Widget _buildSeasonality(SeasonalityResponse seasonality) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Filter out weekends
     final dayOfWeekData = seasonality.dayOfWeekReturns.entries
         .where((e) => e.key != 'SATURDAY' && e.key != 'SUNDAY')
@@ -382,28 +413,37 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.darkCard,
+        color: isDark ? AppColors.darkCard : AppColors.lightCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 'Seasonality Analysis',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(width: 8),
               Tooltip(
                 message: 'Average percentage return based on historical data.',
                 triggerMode: TooltipTriggerMode.tap,
-                child: Icon(Icons.info_outline, color: Colors.white.withOpacity(0.5), size: 14),
+                child: Icon(Icons.info_outline, color: isDark ? Colors.white.withOpacity(0.5) : Colors.black.withOpacity(0.4), size: 14),
               ),
             ],
           ),
@@ -419,18 +459,18 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Day of Week', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600)),
+                        Text('Day of Week', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 11, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
                         ...dayOfWeekData.map((e) {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 6.0),
                             child: Row(
                               children: [
-                                SizedBox(width: 80, child: Text(e.key, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500))),
+                                SizedBox(width: 80, child: Text(e.key, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 11, fontWeight: FontWeight.w500))),
                                 Expanded(
                                   child: Stack(
                                     children: [
-                                      Container(height: 4, decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(2))),
+                                      Container(height: 4, decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(2))),
                                       FractionallySizedBox(
                                         widthFactor: (e.value.abs() / 1.0).clamp(0.0, 1.0), // Normalize
                                         child: Container(
@@ -457,18 +497,18 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Monthly', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600)),
+                        Text('Monthly', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 11, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
                          ...seasonality.monthlyReturns.entries.map((e) {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 6.0),
                             child: Row(
                               children: [
-                                SizedBox(width: 80, child: Text(e.key, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500))),
+                                SizedBox(width: 80, child: Text(e.key, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 11, fontWeight: FontWeight.w500))),
                                 Expanded(
                                   child: Stack(
                                     children: [
-                                      Container(height: 4, decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(2))),
+                                      Container(height: 4, decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(2))),
                                       FractionallySizedBox(
                                         widthFactor: (e.value.abs() / 5.0).clamp(0.0, 1.0), // Normalize
                                         child: Container(
@@ -502,18 +542,18 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Day of Week', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600)),
+                          Text('Day of Week', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 11, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 8),
                           ...dayOfWeekData.map((e) {
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 6.0),
                               child: Row(
                                 children: [
-                                  SizedBox(width: 80, child: Text(e.key, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500))),
+                                  SizedBox(width: 80, child: Text(e.key, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 11, fontWeight: FontWeight.w500))),
                                   Expanded(
                                     child: Stack(
                                       children: [
-                                        Container(height: 4, decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(2))),
+                                        Container(height: 4, decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(2))),
                                         FractionallySizedBox(
                                           widthFactor: (e.value.abs() / 1.0).clamp(0.0, 1.0), // Normalize
                                           child: Container(
@@ -543,18 +583,18 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Monthly', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600)),
+                          Text('Monthly', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 11, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 8),
                            ...seasonality.monthlyReturns.entries.map((e) {
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 6.0),
                               child: Row(
                                 children: [
-                                  SizedBox(width: 80, child: Text(e.key, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500))),
+                                  SizedBox(width: 80, child: Text(e.key, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 11, fontWeight: FontWeight.w500))),
                                   Expanded(
                                     child: Stack(
                                       children: [
-                                        Container(height: 4, decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(2))),
+                                        Container(height: 4, decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(2))),
                                         FractionallySizedBox(
                                           widthFactor: (e.value.abs() / 5.0).clamp(0.0, 1.0), // Normalize
                                           child: Container(
@@ -600,14 +640,24 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
   // --- New Market Heatmap Section ---
 
   Widget _buildHeatmapSection() {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
       // Logic to determine title
       String title = _showingIndices ? "Market Heatmap (Indices)" : "Heatmap: $_selectedSymbol";
 
       return Container(
           decoration: BoxDecoration(
-            color: AppColors.darkCard,
+            color: isDark ? AppColors.darkCard : AppColors.lightCard,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+            boxShadow: isDark
+                ? []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -624,7 +674,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                               children: [
                                   if (!_showingIndices)
                                     IconButton(
-                                        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                                        icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87, size: 20),
                                         padding: EdgeInsets.zero,
                                         constraints: const BoxConstraints(),
                                         onPressed: _onBackToIndices,
@@ -633,8 +683,8 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                                   Flexible(
                                     child: Text(
                                       title,
-                                      style: const TextStyle(
-                                          color: Colors.white,
+                                      style: TextStyle(
+                                          color: isDark ? Colors.white : Colors.black87,
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 0.5
@@ -644,7 +694,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                                   ),
                                   const SizedBox(width: 12),
                                   IconButton(
-                                      icon: Icon(_isHeatmapExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.white70),
+                                      icon: Icon(_isHeatmapExpanded ? Icons.expand_less : Icons.expand_more, color: isDark ? Colors.white70 : Colors.black54),
                                       onPressed: () => setState(() => _isHeatmapExpanded = !_isHeatmapExpanded),
                                       tooltip: _isHeatmapExpanded ? "Minimize Section" : "Expand Section",
                                   ),
@@ -665,14 +715,14 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                                               child: Container(
                                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                                   decoration: BoxDecoration(
-                                                      color: isSelected ? const Color(0xFF0055FF) : Colors.black.withOpacity(0.3),
+                                                      color: isSelected ? const Color(0xFF0055FF) : (isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.05)),
                                                       borderRadius: BorderRadius.circular(12),
-                                                      border: Border.all(color: isSelected ? const Color(0xFF00D1FF) : Colors.white10),
+                                                      border: Border.all(color: isSelected ? const Color(0xFF00D1FF) : (isDark ? Colors.white10 : Colors.black12)),
                                                   ),
                                                   child: Text(
                                                       tf,
                                                       style: TextStyle(
-                                                          color: isSelected ? Colors.white : Colors.white54,
+                                                          color: isSelected ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
                                                           fontSize: 12,
                                                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                                       ),
@@ -768,6 +818,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
   }
 
   Widget _buildHeatmapCard(String symbol, double value) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
       return InkWell(
           onTap: () => _onHeatmapItemTap(symbol, value),
           child: Container(
@@ -781,7 +832,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                   children: [
                       Text(
                           symbol, 
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13), 
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 13), 
                           textAlign: TextAlign.center,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -798,6 +849,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
   }
 
   Widget _buildQuickActionChip(MarketProvider provider, String label, String symbol) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     bool isSelected = _selectedSymbol == symbol;
     return GestureDetector(
       onTap: () {
@@ -812,14 +864,18 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.2),
+          color: isDark
+              ? (isSelected ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.2))
+              : (isSelected ? Colors.black.withOpacity(0.1) : Colors.black.withOpacity(0.03)),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? Colors.white54 : Colors.transparent),
+          border: Border.all(color: isSelected ? (isDark ? Colors.white54 : Colors.black26) : Colors.transparent),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(isSelected ? 1 : 0.7),
+            color: isDark
+                ? Colors.white.withOpacity(isSelected ? 1 : 0.7)
+                : Colors.black.withOpacity(isSelected ? 1 : 0.7),
             fontSize: 12,
           ),
         ),

@@ -41,6 +41,9 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 800;
@@ -57,7 +60,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                     child: Text(
                       'Historical Monthly Performance (10 Years)',
                       style: AmTextStyles.h6.copyWith(
-                        color: AppColors.textPrimaryDark,
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                         fontSize: isMobile ? 16 : 18,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -65,9 +68,9 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                   ),
                   // Hint text (Hide on very small screens)
                   if (!isMobile)
-                  const Text(
+                  Text(
                     'Scroll to view more months  ➡',
-                    style: TextStyle(color: Colors.white24, fontSize: 12),
+                    style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 12),
                   ),
                 ],
               ),
@@ -82,7 +85,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                     return Center(child: Padding(padding: EdgeInsets.all(20), child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.redAccent))));
                   }
                   if (!snapshot.hasData || snapshot.data!.monthlyPerformance.isEmpty) {
-                    return const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('No data available', style: TextStyle(color: Colors.white54))));
+                    return Center(child: Padding(padding: const EdgeInsets.all(20), child: Text('No data available', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54))));
                   }
 
                   final data = snapshot.data!.monthlyPerformance;
@@ -115,7 +118,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                         Padding(
                           padding: const EdgeInsets.only(top: 40.0), 
                           child: IconButton(
-                              icon: const Icon(Icons.arrow_back_ios, color: Colors.white54),
+                              icon: Icon(Icons.arrow_back_ios, color: isDark ? Colors.white54 : Colors.black54),
                               onPressed: () => _scroll(-300),
                           ),
                         ),
@@ -140,7 +143,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                           child: Center(
                                             child: Text(
                                               m,
-                                              style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: isMobile ? 10 : 12),
+                                              style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontWeight: FontWeight.bold, fontSize: isMobile ? 10 : 12),
                                             ),
                                           ),
                                         )),
@@ -162,7 +165,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                                 child: Center(
                                                   child: Text(
                                                     '$year',
-                                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: isMobile ? 12 : 16),
+                                                    style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: isMobile ? 12 : 16),
                                                   ),
                                                 ),
                                               ),
@@ -175,7 +178,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                                                     child: item != null 
                                                       ? MonthlyPerformanceCard(data: item, isCompactTable: true)
-                                                      : Container(decoration: BoxDecoration(color: Colors.white.withOpacity(0.02), borderRadius: BorderRadius.circular(8))),
+                                                      : Container(decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02), borderRadius: BorderRadius.circular(8))),
                                                   ),
                                                 );
                                               }),
@@ -195,7 +198,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                         Padding(
                           padding: const EdgeInsets.only(top: 40.0),
                           child: IconButton(
-                              icon: const Icon(Icons.arrow_forward_ios, color: Colors.white54),
+                              icon: Icon(Icons.arrow_forward_ios, color: isDark ? Colors.white54 : Colors.black54),
                               onPressed: () => _scroll(300),
                           ),
                         ),
