@@ -12,16 +12,25 @@ class MonthlyPerformanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     // Table Mode: Single Line (Top Performer Only)
     if (isCompactTable) {
        final perf = data.topPerformer;
        if (perf == null) return const SizedBox();
 
        final isPositive = perf.returnPercentage >= 0;
-       final bgColor = isPositive 
-            ? const Color(0xFF1B5E20).withOpacity(0.3) 
-            : const Color(0xFFB71C1C).withOpacity(0.3);
-       final textColor = isPositive ? const Color(0xFF69F0AE) : const Color(0xFFFF5252);
+       final bgColor = isDark
+           ? (isPositive 
+                ? const Color(0xFF1B5E20).withOpacity(0.3) 
+                : const Color(0xFFB71C1C).withOpacity(0.3))
+           : (isPositive 
+                ? const Color(0xFFE8F5E9) 
+                : const Color(0xFFFFEBEE));
+       final textColor = isDark
+           ? (isPositive ? const Color(0xFF69F0AE) : const Color(0xFFFF5252))
+           : (isPositive ? const Color(0xFF2E7D32) : const Color(0xFFC62828));
 
        return InkWell(
           onTap: () => _showRanking(context),
@@ -39,8 +48,8 @@ class MonthlyPerformanceCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     perf.symbol,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black87,
                       fontSize: 11, 
                       fontWeight: FontWeight.w600,
                     ),
@@ -60,7 +69,7 @@ class MonthlyPerformanceCard extends StatelessWidget {
                 ),
                  const SizedBox(width: 6),
                  // View Icon
-                 Icon(Icons.open_in_new, size: 10, color: Colors.white.withOpacity(0.5))
+                 Icon(Icons.open_in_new, size: 10, color: isDark ? Colors.white.withOpacity(0.5) : Colors.black.withOpacity(0.4))
               ],
             ),
           ),
@@ -69,58 +78,72 @@ class MonthlyPerformanceCard extends StatelessWidget {
 
     // Default Card Mode
     return InkWell(
-      onTap: () => _showRanking(context),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.darkCard,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${data.monthName.substring(0, 3)} ${data.year}',
-                  style: AmTextStyles.caption.copyWith(
-                    color: Colors.white54,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Icon(Icons.remove_red_eye_outlined, size: 12, color: Colors.white24),
-              ],
-            ),
-            
-            const Spacer(),
+       onTap: () => _showRanking(context),
+       borderRadius: BorderRadius.circular(8),
+       child: Container(
+         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+         decoration: BoxDecoration(
+           color: isDark ? AppColors.darkCard : AppColors.lightCard,
+           borderRadius: BorderRadius.circular(8),
+           border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+           boxShadow: isDark
+               ? []
+               : [
+                   BoxShadow(
+                     color: Colors.black.withOpacity(0.04),
+                     blurRadius: 10,
+                     offset: const Offset(0, 4),
+                   )
+                 ],
+         ),
+         child: Column(
+           crossAxisAlignment: CrossAxisAlignment.start,
+           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+           children: [
+             // Header
+             Row(
+               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+               children: [
+                 Text(
+                   '${data.monthName.substring(0, 3)} ${data.year}',
+                   style: AmTextStyles.caption.copyWith(
+                     color: isDark ? Colors.white54 : Colors.black54,
+                     fontWeight: FontWeight.bold,
+                   ),
+                 ),
+                 Icon(Icons.remove_red_eye_outlined, size: 12, color: isDark ? Colors.white24 : Colors.black26),
+               ],
+             ),
+             
+             const Spacer(),
 
-            if (data.topPerformer != null)
-              _buildCompactRow("Top", data.topPerformer!),
-              
-            const SizedBox(height: 4),
-            
-            if (data.worstPerformer != null)
-              _buildCompactRow("Bot", data.worstPerformer!),
-          ],
-        ),
-      ),
+             if (data.topPerformer != null)
+               _buildCompactRow(context, "Top", data.topPerformer!),
+               
+             const SizedBox(height: 4),
+             
+             if (data.worstPerformer != null)
+               _buildCompactRow(context, "Bot", data.worstPerformer!),
+           ],
+         ),
+       ),
     );
   }
 
-  Widget _buildCompactRow(String label, IndexPerformance perf) {
+  Widget _buildCompactRow(BuildContext context, String label, IndexPerformance perf) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isPositive = perf.returnPercentage >= 0;
     // Darker Green/Red for background, brighter for text
-    final bgColor = isPositive 
-        ? const Color(0xFF1B5E20).withOpacity(0.4) // Dark Green
-        : const Color(0xFFB71C1C).withOpacity(0.4); // Dark Red
-    final textColor = isPositive 
-        ? const Color(0xFF69F0AE) // Bright Green
-        : const Color(0xFFFF5252); // Bright Red
+    final bgColor = isDark
+        ? (isPositive 
+            ? const Color(0xFF1B5E20).withOpacity(0.4) // Dark Green
+            : const Color(0xFFB71C1C).withOpacity(0.4)) // Dark Red
+        : (isPositive 
+            ? const Color(0xFFE8F5E9) 
+            : const Color(0xFFFFEBEE));
+    final textColor = isDark
+        ? (isPositive ? const Color(0xFF69F0AE) : const Color(0xFFFF5252))
+        : (isPositive ? const Color(0xFF2E7D32) : const Color(0xFFC62828));
 
     return Row(
       children: [
@@ -129,7 +152,7 @@ class MonthlyPerformanceCard extends StatelessWidget {
           width: 24,
           child: Text(
             label,
-            style: TextStyle(color: Colors.white38, fontSize: 10),
+            style: TextStyle(color: isDark ? Colors.white38 : Colors.black45, fontSize: 10),
           ),
         ),
         // Badge
@@ -147,7 +170,7 @@ class MonthlyPerformanceCard extends StatelessWidget {
                   child: Text(
                     perf.symbol,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: isDark ? Colors.white.withOpacity(0.9) : Colors.black87,
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
                       overflow: TextOverflow.ellipsis,

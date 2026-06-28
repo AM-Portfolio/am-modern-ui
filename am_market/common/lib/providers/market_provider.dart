@@ -300,7 +300,7 @@ class MarketProvider with ChangeNotifier {
             if (val is Map && val.containsKey('dataPoints')) {
               final points = List.from(val['dataPoints']);
               if (points.isNotEmpty) {
-                for (int i = points.length - 1; i >= 0; i--) {
+                for (int i = 0; i < points.length; i++) {
                   final point = points[i];
                   final p = point['close'] ?? point['lastPrice'] ?? point['price'];
                   if (p != null && (p as num) > 0) {
@@ -323,6 +323,14 @@ class MarketProvider with ChangeNotifier {
       _isLoadingBasePrices = false;
       notifyListeners();
     }
+  }
+
+  /// [SIP Optimization] Allows the preloading scheduler and on-demand fetches to register 
+  /// historical reference prices directly into the provider cache, synchronizing states.
+  void updateTimeframeBasePrices(String timeframe, Map<String, double> basePrices) {
+    if (timeframe == '1D') return;
+    _timeframeBasePrices.addAll(basePrices);
+    notifyListeners();
   }
 
   void toggleForceRefresh(bool value) {
