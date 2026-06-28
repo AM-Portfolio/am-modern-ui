@@ -325,6 +325,14 @@ class MarketProvider with ChangeNotifier {
     }
   }
 
+  /// [SIP Optimization] Allows the preloading scheduler and on-demand fetches to register 
+  /// historical reference prices directly into the provider cache, synchronizing states.
+  void updateTimeframeBasePrices(String timeframe, Map<String, double> basePrices) {
+    if (timeframe == '1D') return;
+    _timeframeBasePrices.addAll(basePrices);
+    notifyListeners();
+  }
+
   void toggleForceRefresh(bool value) {
     _forceRefresh = value;
     notifyListeners();

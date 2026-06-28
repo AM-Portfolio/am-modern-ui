@@ -206,6 +206,11 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
     } else {
       allTimeframeBasePrices[tf] = basePrices;
     }
+
+    // [SIP Optimization] Push newly fetched base prices directly to the MarketProvider cache
+    if (mounted) {
+      context.read<MarketProvider>().updateTimeframeBasePrices(tf, basePrices);
+    }
   }
 
   /// [SIP Optimization] Instantly triggers a prioritized, on-demand fetch of a timeframe
@@ -217,6 +222,10 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
     final bool allCached = symbols.every((sym) => cachedForTf.containsKey(sym));
     if (allCached) {
       _loadedTimeframes.add(tf);
+      // [SIP Optimization] Ensure the MarketProvider is in sync with our local cache when bypassing fetch
+      if (mounted) {
+        context.read<MarketProvider>().updateTimeframeBasePrices(tf, cachedForTf);
+      }
       return;
     }
 

@@ -90,26 +90,12 @@ def load_env(env_name):
     return env_vars
 
 def get_available_device():
-    """Detect available flutter devices and return the best match."""
-    try:
-        is_windows = os.name == "nt"
-        result = subprocess.run(
-            ["flutter", "devices"],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            shell=is_windows,
-        )
-        output = result.stdout.lower()
-        if "chrome" in output:
-            return "chrome"
-        elif "edge" in output:
-            return "edge"
-        else:
-            return "web-server"
-    except Exception:
-        return "chrome"
+    """Detect available flutter devices and return the best match.
+    
+    CRITICAL BUG FIX: Force the use of 'web-server' device instead of launching local Chrome.
+    This prevents the startup process from hanging on 'Waiting for connection from Chrome' 
+    due to browser profile locks, allowing the server to start instantly on port 9000."""
+    return "web-server"
 
 def run_cmd(package, cmd_parts, env_vars=None):
     """Run a terminal command inside the specified package directory."""
