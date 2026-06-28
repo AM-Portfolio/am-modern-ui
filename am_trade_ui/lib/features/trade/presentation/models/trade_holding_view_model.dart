@@ -29,6 +29,7 @@ class TradeHoldingViewModel {
     this.entryTimestamp,
     this.exitTimestamp,
     this.broker,
+    this.orderType,
     this.executionCount = 0,
     // New fields from TradeDetails
     this.strategy,
@@ -72,12 +73,15 @@ class TradeHoldingViewModel {
 
     // Extract broker from first execution (if available)
     String? broker;
+    String? orderType;
     if (entity.tradeExecutions != null && entity.tradeExecutions!.isNotEmpty) {
       try {
         broker = entity.tradeExecutions!.first.basicInfo?.brokerType?.name;
+        orderType = entity.tradeExecutions!.first.executionInfo?.orderType?.name;
       } catch (e) {
-        // Ignore broker extraction errors
+        // Ignore extraction errors
         broker = null;
+        orderType = null;
       }
     }
 
@@ -107,6 +111,7 @@ class TradeHoldingViewModel {
       entryTimestamp: entity.entryInfo.timestamp,
       exitTimestamp: exitInfo?.timestamp,
       broker: broker,
+      orderType: orderType,
       executionCount: entity.tradeExecutions?.length ?? 0,
       // New fields
       strategy: entity.strategy,
@@ -166,6 +171,7 @@ class TradeHoldingViewModel {
   final DateTime? entryTimestamp;
   final DateTime? exitTimestamp;
   final String? broker;
+  final String? orderType;
   final int executionCount;
 
   // New fields from TradeDetails
