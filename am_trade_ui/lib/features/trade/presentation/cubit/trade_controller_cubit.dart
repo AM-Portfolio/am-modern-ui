@@ -33,14 +33,17 @@ class TradeControllerCubit extends Cubit<TradeControllerState> {
   Future<void> loadTrades({
     required String portfolioId,
     List<String>? symbols,
+    bool showLoading = true,
   }) async {
     AppLogger.methodEntry(
       'loadTrades',
       tag: 'TradeControllerCubit',
-      params: {'portfolioId': portfolioId, 'symbols': symbols},
+      params: {'portfolioId': portfolioId, 'symbols': symbols, 'showLoading': showLoading},
     );
 
-    emit(const TradeControllerState.loading());
+    if (showLoading) {
+      emit(const TradeControllerState.loading());
+    }
 
     try {
       final trades = await _getTradesByPortfolio(
@@ -95,8 +98,8 @@ class TradeControllerCubit extends Cubit<TradeControllerState> {
 
       emit(TradeControllerState.addSuccess(trade: createdTrade));
 
-      // Reload trades for the portfolio
-      await loadTrades(portfolioId: createdTrade.portfolioId);
+      // Reload trades silently in the background so it doesn't interrupt UI success transitions
+      await loadTrades(portfolioId: createdTrade.portfolioId, showLoading: false);
     } catch (e) {
       AppLogger.error(
         'Failed to add trade',
@@ -138,8 +141,8 @@ class TradeControllerCubit extends Cubit<TradeControllerState> {
 
       emit(TradeControllerState.updateSuccess(trade: updatedTrade));
 
-      // Reload trades for the portfolio
-      await loadTrades(portfolioId: updatedTrade.portfolioId);
+      // Reload trades silently in the background so it doesn't interrupt UI success transitions
+      await loadTrades(portfolioId: updatedTrade.portfolioId, showLoading: false);
     } catch (e) {
       AppLogger.error(
         'Failed to update trade',
