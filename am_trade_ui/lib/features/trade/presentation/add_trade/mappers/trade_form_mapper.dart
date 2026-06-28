@@ -1,4 +1,5 @@
 import '../../../internal/domain/entities/trade_controller_entities.dart';
+import '../../../internal/domain/enums/broker_types.dart';
 import '../../../internal/domain/enums/derivative_types.dart';
 import '../../../internal/domain/enums/exchange_types.dart';
 import '../../../internal/domain/enums/fundamental_reasons.dart';
@@ -8,6 +9,7 @@ import '../../../internal/domain/enums/psychology_factors.dart';
 import '../../../internal/domain/enums/technical_reasons.dart';
 import '../../../internal/domain/enums/trade_directions.dart';
 import '../../../internal/domain/enums/trade_statuses.dart';
+import '../../../internal/domain/enums/order_types.dart';
 
 /// Mapper to convert form data to domain entities
 class TradeFormMapper {
@@ -40,6 +42,8 @@ class TradeFormMapper {
     required String? notes,
     required String? portfolioId,
     required List<String> attachments,
+    required BrokerTypes? selectedBroker,
+    required OrderTypes? selectedOrderType,
   }) {
     // Construct InstrumentInfo
     final instrumentInfo = InstrumentInfo(
@@ -93,6 +97,16 @@ class TradeFormMapper {
       notes: notes,
       strategy: strategy,
       attachments: attachments.isNotEmpty ? attachments.map((url) => Attachment(fileUrl: url)).toList() : null,
+      tradeExecutions: (selectedBroker != null || selectedOrderType != null) ? [
+        TradeModel(
+          basicInfo: selectedBroker != null ? BasicInfo(
+            brokerType: selectedBroker,
+          ) : null,
+          executionInfo: selectedOrderType != null ? ExecutionInfo(
+            orderType: selectedOrderType,
+          ) : null,
+        )
+      ] : null,
     );
   }
 }
