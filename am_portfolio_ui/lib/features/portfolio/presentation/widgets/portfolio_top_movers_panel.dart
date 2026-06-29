@@ -2,6 +2,7 @@ import 'package:am_design_system/am_design_system.dart' as ds;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../internal/domain/entities/portfolio_analytics.dart';
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
 import 'movers_widget.dart';

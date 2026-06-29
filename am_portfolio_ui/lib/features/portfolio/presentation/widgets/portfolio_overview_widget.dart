@@ -1,17 +1,17 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:am_analysis_ui/widgets/analysis_allocation_widget.dart';
+import 'allocation_panel_widget.dart';
 import 'portfolio_top_movers_panel.dart';
 import 'package:am_analysis_ui/widgets/analysis_performance_widget.dart';
-import 'package:am_analysis_core/am_analysis_core.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
 
 import 'package:intl/intl.dart';
 
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
+import '../../internal/domain/entities/portfolio_analytics.dart';
+import '../../internal/domain/entities/portfolio_summary.dart' hide SectorAllocation;
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
 import 'package:am_common/am_common.dart';
@@ -33,23 +33,10 @@ class PortfolioOverviewWidget extends StatefulWidget {
 class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
   ds.TimeFrame _selectedTimeFrame = ds.TimeFrame.oneYear;
 
-  void _onTimeFrameChanged(ds.TimeFrame timeFrame) {
-    setState(() {
-      _selectedTimeFrame = timeFrame;
-    });
-    
-    // Refresh analytics when timeframe changes
-    if (widget.portfolioId != null) {
-      try {
-        context.read<PortfolioAnalyticsCubit>().loadAnalytics(
-          widget.portfolioId!,
-          timeFrame: timeFrame,
-        );
-      } catch (_) {
-        // Cubit may not be in tree, safe to ignore
-      }
-    }
-  }
+  static const _upSparkData = [8.0, 10.0, 9.0, 12.0, 14.0, 13.0, 16.0];
+  static const _downSparkData = [16.0, 14.0, 15.0, 11.0, 9.0, 10.0, 7.0];
+  static const _flatSparkData = [11.0, 12.0, 11.0, 13.0, 12.0, 13.0, 12.0];
+
 
   @override
   void initState() {
@@ -60,43 +47,41 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
   @override
   void didUpdateWidget(covariant PortfolioOverviewWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.portfolioId != oldWidget.portfolioId && widget.portfolioId != null) {
+    if (widget.portfolioId != oldWidget.portfolioId &&
+        widget.portfolioId != null) {
       _triggerLoad();
     }
   }
 
-
-
   void _triggerLoad() {
     final cubit = context.read<PortfolioCubit>();
     final currentState = cubit.state;
-    
+
     if (widget.portfolioId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           try {
             context.read<PortfolioAnalyticsCubit>().loadAnalytics(
-              widget.portfolioId!,
-              timeFrame: _selectedTimeFrame,
-            );
+                  widget.portfolioId!,
+                  timeFrame: _selectedTimeFrame,
+                );
           } catch (_) {
             // Cubit may not be in tree, safe to ignore
           }
 
-          if (currentState is PortfolioLoaded && 
+          if (currentState is PortfolioLoaded &&
               currentState.portfolioId == widget.portfolioId) {
-            // Data is already loaded for this portfolio, skip reloading
             return;
           }
-          
+
           cubit.loadPortfolioById(widget.portfolioId!);
         }
       });
     } else {
-      // Load GLOBAL overview if no portfolioId provided
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          if (currentState is PortfolioLoaded && currentState.portfolioId == 'GLOBAL') {
+          if (currentState is PortfolioLoaded &&
+              currentState.portfolioId == 'GLOBAL') {
             return;
           }
           cubit.loadPortfolio();
@@ -108,17 +93,21 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
   @override
   Widget build(BuildContext context) {
     final portfolioId = widget.portfolioId;
-    
-    ds.CommonLogger.debug('[PortfolioOverview] Building with portfolioId=$portfolioId', tag: 'PortfolioUI');
+
+    ds.CommonLogger.debug(
+        '[PortfolioOverview] Building with portfolioId=$portfolioId',
+        tag: 'PortfolioUI');
 
     return BlocConsumer<PortfolioCubit, PortfolioState>(
       listenWhen: (previous, current) {
         if (portfolioId == null) return false;
-        if (current is PortfolioLoaded && current.portfolioId == portfolioId) {
+        if (current is PortfolioLoaded &&
+            current.portfolioId == portfolioId) {
           return false;
         }
-        if (current is PortfolioLoaded && current.portfolioId != portfolioId) {
-          return false; // Prevent ping-pong loop when multiple widgets are mounted
+        if (current is PortfolioLoaded &&
+            current.portfolioId != portfolioId) {
+          return false;
         }
         return current is PortfolioListLoaded ||
             current is PortfolioInitial ||
@@ -128,7 +117,8 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
         if (portfolioId == null) return;
         final cubit = context.read<PortfolioCubit>();
         final current = cubit.state;
-        if (current is PortfolioLoaded && current.portfolioId == portfolioId) {
+        if (current is PortfolioLoaded &&
+            current.portfolioId == portfolioId) {
           return;
         }
         cubit.loadPortfolioById(portfolioId);
@@ -142,14 +132,18 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
         return previous.runtimeType != current.runtimeType;
       },
       builder: (context, state) {
-        ds.CommonLogger.info('[PortfolioOverview] State change: ${state.runtimeType}', tag: 'PortfolioUI');
+        ds.CommonLogger.info(
+            '[PortfolioOverview] State change: ${state.runtimeType}',
+            tag: 'PortfolioUI');
 
+        // ── No portfolio selected ──
         if (portfolioId == null) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.account_balance_wallet_outlined, size: 64, color: Theme.of(context).disabledColor),
+                Icon(Icons.account_balance_wallet_outlined,
+                    size: 64, color: Theme.of(context).disabledColor),
                 const SizedBox(height: 16),
                 Text(
                   'Select a portfolio to view overview',
@@ -160,9 +154,11 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           );
         }
 
-        // 1. Error States (check before loading so errors are visible)
+        // ── Error State ──
         if (state is PortfolioError || state is PortfolioListError) {
-          final message = state is PortfolioError ? state.message : (state as PortfolioListError).message;
+          final message = state is PortfolioError
+              ? state.message
+              : (state as PortfolioListError).message;
           return Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(32),
@@ -180,18 +176,21 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                     message,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
                     onPressed: () {
-                      context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
+                      context
+                          .read<PortfolioCubit>()
+                          .loadPortfolioById(portfolioId);
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text('Try Again'),
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 16),
                     ),
                   ),
                 ],
@@ -200,231 +199,290 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           );
         }
 
-        // 2. Loaded State (show when cubit has data for this portfolio)
+        // ── Loaded State ──
         if (state is PortfolioLoaded) {
           if (state.portfolioId != portfolioId) {
             return _buildOverviewSkeleton(context);
           }
+
           return LayoutBuilder(
             builder: (context, constraints) {
               final isMobile = constraints.maxWidth < 800;
               final isSmallMobile = constraints.maxWidth < 600;
 
-              return SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header with Global Time Frame Selector
-                      // Header with Global Time Frame Selector
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          ds.TimeFrameSelector.portfolio(
-                            selectedTimeFrame: _selectedTimeFrame,
-                            onTimeFrameChanged: _onTimeFrameChanged,
-                            compact: true,
+              return Stack(
+                children: [
+                  // ── Ambient glow orb: green (bottom-left) ──
+                  Positioned(
+                    left: -80,
+                    bottom: -60,
+                    child: IgnorePointer(
+                      child: Container(
+                        width: 350,
+                        height: 350,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              Color(0x1700B894), // #00B894 at ~9% opacity
+                              Colors.transparent,
+                            ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Section 1: Metric Cards
-                      if (isMobile)
-                        GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 2, // 2 columns always on mobile for balance
-                          childAspectRatio: isSmallMobile ? 1.45 : 1.6, // Better ratio for grid
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          children: [
-                            PortfolioMetricCard(
-                              title: 'Total Return',
-                              value: _formatCurrency(state.summary.totalGainLoss),
-                              subtitle: '${state.summary.totalGainLossPercentage >= 0 ? "+" : ""}${state.summary.totalGainLossPercentage.toStringAsFixed(2)}% total',
-                              accentColor: state.summary.totalGainLoss == 0
-                                  ? Colors.grey
-                                  : (state.summary.totalGainLoss > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
-                              icon: Icons.show_chart,
-                              isPositive: state.summary.totalGainLoss == 0 ? null : state.summary.totalGainLoss > 0,
-                              compact: isSmallMobile,
-                              tooltip: 'Total unrealized profit or loss across all holdings',
-                            ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
-                            PortfolioMetricCard(
-                              title: 'Today\'s P&L',
-                              value: _formatCurrency(state.summary.todayChange),
-                              subtitle: '${state.summary.todayChangePercentage >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}% today',
-                              accentColor: state.summary.todayChange == 0
-                                  ? Colors.grey
-                                  : (state.summary.todayChange > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
-                              icon: Icons.trending_up,
-                              isPositive: state.summary.todayChange == 0 ? null : state.summary.todayChange > 0,
-                              compact: isSmallMobile,
-                              tooltip: 'Unrealized profit or loss for today',
-                            ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0),
-                            PortfolioMetricCard(
-                              title: 'Total Balance',
-                              value: _formatCurrency(state.summary.totalValue),
-                              subtitle: '${state.summary.totalAssets} Active Holdings',
-                              accentColor: const Color(0xFF6C5DD3),
-                              icon: Icons.account_balance_wallet,
-                              isPositive: null,
-                              compact: isSmallMobile,
-                              tooltip: 'Total value of all holdings based on current market price',
-                            ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0),
-                            PortfolioMetricCard(
-                              title: 'Invested Amount',
-                              value: _formatCurrency(state.summary.investmentValue),
-                              subtitle: 'Total Principal',
-                              accentColor: const Color(0xFF4A90E2),
-                              icon: Icons.savings_outlined,
-                              isHighlight: true,
-                              compact: isSmallMobile,
-                              tooltip: 'Total principal amount invested',
-                            ).animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.2, end: 0),
-                          ],
-                        )
-                      else
-                        Row(
-                          children: [
-                            Expanded(
-                              child: PortfolioMetricCard(
-                                title: 'Total Return',
-                                value: _formatCurrency(state.summary.totalGainLoss),
-                                subtitle: '${state.summary.totalGainLossPercentage >= 0 ? "+" : ""}${state.summary.totalGainLossPercentage.toStringAsFixed(2)}% total',
-                                accentColor: state.summary.totalGainLoss == 0
-                                    ? Colors.grey
-                                    : (state.summary.totalGainLoss > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
-                                icon: Icons.show_chart,
-                                isPositive: state.summary.totalGainLoss == 0 ? null : state.summary.totalGainLoss > 0,
-                                tooltip: 'Total unrealized profit or loss across all holdings',
-                              ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: PortfolioMetricCard(
-                                title: 'Today\'s P&L',
-                                value: _formatCurrency(state.summary.todayChange),
-                                subtitle: '${state.summary.todayChangePercentage >= 0 ? "+" : ""}${state.summary.todayChangePercentage.toStringAsFixed(2)}% today',
-                                accentColor: state.summary.todayChange == 0
-                                    ? Colors.grey
-                                    : (state.summary.todayChange > 0 ? const Color(0xFF00B894) : const Color(0xFFFF7675)),
-                                icon: Icons.trending_up,
-                                isPositive: state.summary.todayChange == 0 ? null : state.summary.todayChange > 0,
-                                tooltip: 'Unrealized profit or loss for today',
-                              ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: PortfolioMetricCard(
-                                title: 'Total Balance',
-                                value: _formatCurrency(state.summary.totalValue),
-                                subtitle: '${state.summary.totalAssets} Active Holdings',
-                                accentColor: const Color(0xFF6C5DD3),
-                                icon: Icons.account_balance_wallet,
-                                isPositive: null,
-                                tooltip: 'Total value of all holdings based on current market price',
-                              ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: PortfolioMetricCard(
-                                title: 'Invested Amount',
-                                value: _formatCurrency(state.summary.investmentValue),
-                                subtitle: 'Total Principal',
-                                accentColor: const Color(0xFF4A90E2),
-                                icon: Icons.savings_outlined,
-                                isHighlight: true,
-                                tooltip: 'Total principal amount invested',
-                              ).animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.2, end: 0),
-                            ),
-                          ],
                         ),
-                      const SizedBox(height: 16),
+                      ),
+                    ),
+                  ),
+                  // ── Ambient glow orb: purple (top-right) ──
+                  Positioned(
+                    right: -60,
+                    top: -40,
+                    child: IgnorePointer(
+                      child: Container(
+                        width: 300,
+                        height: 300,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              Color(0x1A6C5DD3), // #6C5DD3 at ~10% opacity
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
 
-                      // Section 2+3: Charts — develop uses fixed-height Container (not AppCard)
-                      // so Expanded inside analysis widgets gets bounded height.
-                      if (isMobile) ...[
-                        SizedBox(
-                          height: isSmallMobile ? 280 : 340,
-                          child: AnalysisPerformanceWidget(
-                            key: ValueKey('perf_${_selectedTimeFrame.code}'),
+                  // ── Main scrollable content ──
+                  SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── ROW 1: 4 Metric Cards ──────────────────────────
+                        if (isSmallMobile)
+                          GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            childAspectRatio: 1.45,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            children: _buildMetricCards(state),
+                          )
+                        else
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildMetricCards(state)[0]
+                                    .animate()
+                                    .fadeIn(duration: 400.ms)
+                                    .slideY(begin: 0.2, end: 0),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildMetricCards(state)[1]
+                                    .animate()
+                                    .fadeIn(duration: 400.ms, delay: 100.ms)
+                                    .slideY(begin: 0.2, end: 0),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildMetricCards(state)[2]
+                                    .animate()
+                                    .fadeIn(duration: 400.ms, delay: 200.ms)
+                                    .slideY(begin: 0.2, end: 0),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildMetricCards(state)[3]
+                                    .animate()
+                                    .fadeIn(duration: 400.ms, delay: 300.ms)
+                                    .slideY(begin: 0.2, end: 0),
+                              ),
+                            ],
+                          ),
+                        const SizedBox(height: 20),
+
+                        // ── ROW 2: Chart + Allocation (or stacked on mobile) ──
+                        if (isMobile) ...[
+                          SizedBox(
+                            height: 340,
+                            child: AnalysisPerformanceWidget(
+                              key: ValueKey(
+                                  'perf_${_selectedTimeFrame.code}'),
+                              portfolioId: portfolioId,
+                              initialTimeFrame: _selectedTimeFrame,
+                              showTimeFrameSelector: true,
+                              height: 340,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          PortfolioTopMoversPanel(
                             portfolioId: portfolioId,
-                            initialTimeFrame: _selectedTimeFrame,
+                            timeFrame: _selectedTimeFrame,
                             showTimeFrameSelector: false,
-                            height: isSmallMobile ? 280 : 340,
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          height: isSmallMobile ? 280 : 340,
-                          child: AnalysisAllocationWidget(
-                            key: ValueKey('alloc_${_selectedTimeFrame.code}'),
-                            portfolioId: portfolioId,
-                            initialTimeFrame: _selectedTimeFrame,
-                            groupBy: GroupBy.sector,
-                            height: isSmallMobile ? 280 : 340,
+                          const SizedBox(height: 16),
+                          BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+                            builder: (context, state) {
+                              if (state is PortfolioAnalyticsLoading) {
+                                return const AllocationPanelWidget(isLoading: true);
+                              } else if (state is PortfolioAnalyticsLoaded) {
+                                final isLoading = state.isLoadingType(AnalyticsDataType.sectorAllocation);
+                                final error = state.getErrorForType(AnalyticsDataType.sectorAllocation);
+                                return AllocationPanelWidget(
+                                  sectorAllocation: state.sectorAllocation,
+                                  isLoading: isLoading,
+                                  error: error,
+                                );
+                              } else if (state is PortfolioAnalyticsError) {
+                                return AllocationPanelWidget(error: state.message);
+                              }
+                              return const AllocationPanelWidget(isLoading: true);
+                            },
                           ),
-                        ),
-                      ] else ...[
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 7,
-                              child: SizedBox(
-                                height: 420,
-                                child: AnalysisPerformanceWidget(
-                                  key: ValueKey('perf_${_selectedTimeFrame.code}'),
-                                  portfolioId: portfolioId,
-                                  initialTimeFrame: _selectedTimeFrame,
-                                  showTimeFrameSelector: false,
-                                  height: 420,
+                        ] else
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Left column: Chart + Movers
+                              Expanded(
+                                flex: 2,
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      height: 420,
+                                      child: AnalysisPerformanceWidget(
+                                        key: ValueKey(
+                                            'perf_${_selectedTimeFrame.code}'),
+                                        portfolioId: portfolioId,
+                                        initialTimeFrame: _selectedTimeFrame,
+                                        showTimeFrameSelector: true,
+                                        height: 420,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    PortfolioTopMoversPanel(
+                                      portfolioId: portfolioId,
+                                      timeFrame: _selectedTimeFrame,
+                                      showTimeFrameSelector: false,
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              flex: 5,
-                              child: SizedBox(
-                                height: 420,
-                                child: AnalysisAllocationWidget(
-                                  key: ValueKey('alloc_${_selectedTimeFrame.code}'),
-                                  portfolioId: portfolioId,
-                                  initialTimeFrame: _selectedTimeFrame,
-                                  groupBy: GroupBy.sector,
-                                  height: 420,
+                              const SizedBox(width: 16),
+                              // Right column: Allocation panel
+                              Expanded(
+                                flex: 1,
+                                child: BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+                                  builder: (context, state) {
+                                    if (state is PortfolioAnalyticsLoading) {
+                                      return const AllocationPanelWidget(isLoading: true);
+                                    } else if (state is PortfolioAnalyticsLoaded) {
+                                      final isLoading = state.isLoadingType(AnalyticsDataType.sectorAllocation);
+                                      final error = state.getErrorForType(AnalyticsDataType.sectorAllocation);
+                                      return AllocationPanelWidget(
+                                        sectorAllocation: state.sectorAllocation,
+                                        isLoading: isLoading,
+                                        error: error,
+                                      );
+                                    } else if (state is PortfolioAnalyticsError) {
+                                      return AllocationPanelWidget(error: state.message);
+                                    }
+                                    return const AllocationPanelWidget(isLoading: true);
+                                  },
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        const SizedBox(height: 20),
                       ],
-                      const SizedBox(height: 16),
-                      PortfolioTopMoversPanel(
-                        portfolioId: portfolioId,
-                        timeFrame: _selectedTimeFrame,
-                        showTimeFrameSelector: false,
-                      ),
-                      const SizedBox(height: 16),
-
-                  ],
-                ),
+                    ),
+                  ),
+                ],
               );
             },
           );
         }
 
-        // 3. Loading portfolio details (list ready or fetch in progress)
+        // ── Loading / Skeleton State ──
         return _buildOverviewSkeleton(context);
       },
     );
   }
 
-  // Helper to format currency
-  // Helper to format currency
+  /// Builds the 4 metric cards with real data from [state].
+  List<Widget> _buildMetricCards(PortfolioLoaded state) {
+    final summaryToUse = state.summary;
+
+    return [
+      PortfolioMetricCard(
+        title: 'Total Return',
+        value: _formatCurrency(summaryToUse.totalGainLoss),
+        subtitle:
+            '${summaryToUse.totalGainLossPercentage >= 0 ? "+" : ""}${summaryToUse.totalGainLossPercentage.toStringAsFixed(2)}% total',
+        accentColor: summaryToUse.totalGainLoss == 0
+            ? Colors.grey
+            : (summaryToUse.totalGainLoss > 0
+                ? const Color(0xFF00B894)
+                : const Color(0xFFFF7675)),
+        icon: Icons.show_chart,
+        isPositive: summaryToUse.totalGainLoss == 0
+            ? null
+            : summaryToUse.totalGainLoss > 0,
+        glowBorder: true,
+        sparklineData:
+            summaryToUse.totalGainLoss >= 0 ? _upSparkData : _downSparkData,
+        tooltip: 'Total unrealized profit or loss across all holdings',
+      ),
+      PortfolioMetricCard(
+        title: "Today's P&L",
+        value: _formatCurrency(summaryToUse.todayChange),
+        subtitle:
+            '${summaryToUse.todayChangePercentage >= 0 ? "+" : ""}${summaryToUse.todayChangePercentage.toStringAsFixed(2)}% today',
+        accentColor: summaryToUse.todayChange == 0
+            ? Colors.grey
+            : (summaryToUse.todayChange > 0
+                ? const Color(0xFF00B894)
+                : const Color(0xFFFF7675)),
+        icon: Icons.trending_up,
+        isPositive: summaryToUse.todayChange == 0
+            ? null
+            : summaryToUse.todayChange > 0,
+        glowBorder: true,
+        sparklineData:
+            summaryToUse.todayChange >= 0 ? _upSparkData : _downSparkData,
+        tooltip: "Unrealized profit or loss for today",
+      ),
+      PortfolioMetricCard(
+        title: 'Total Balance',
+        value: _formatCurrency(summaryToUse.totalValue),
+        subtitle: '${summaryToUse.totalAssets} Active Holdings',
+        accentColor: ds.AppColors.primary,
+        icon: Icons.account_balance_wallet,
+        isPositive: null,
+        glowBorder: false,
+        sparklineData: _flatSparkData,
+        tooltip:
+            'Total value of all holdings based on current market price',
+      ),
+      PortfolioMetricCard(
+        title: 'Invested Amount',
+        value: _formatCurrency(summaryToUse.investmentValue),
+        subtitle: 'Total Principal',
+        accentColor: ds.AppColors.info,
+        icon: Icons.savings_outlined,
+        isPositive: null,
+        isHighlight: true,
+        glowBorder: false,
+        sparklineData: _flatSparkData,
+        tooltip: 'Total principal amount invested',
+      ),
+    ];
+  }
+
   String _formatCurrency(double amount) {
     if (!amount.isFinite) return '₹0';
     final formatter = NumberFormat.currency(
@@ -436,8 +494,8 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
   }
 
   Widget _buildOverviewSkeleton(BuildContext context) {
-    final baseColor = Theme.of(context).brightness == Brightness.dark 
-        ? const Color(0xFF2C2C3E) 
+    final baseColor = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF0D1B2A)
         : Colors.grey.shade200;
     final highlightColor = Theme.of(context).brightness == Brightness.dark
         ? Colors.white.withValues(alpha: 0.05)
@@ -453,20 +511,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 200,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: baseColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              )
-                  .animate(onPlay: (controller) => controller.repeat())
-                  .shimmer(
-                    duration: 1200.ms,
-                    color: highlightColor,
-                  ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -478,8 +523,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                   return Container(
                     decoration: BoxDecoration(
                       color: baseColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: highlightColor.withValues(alpha: 0.1)),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                   )
                       .animate(onPlay: (controller) => controller.repeat())
@@ -491,98 +535,79 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                 }),
               ),
               const SizedBox(height: 24),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 150,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: baseColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  )
-                      .animate(onPlay: (controller) => controller.repeat())
-                      .shimmer(
-                        duration: 1200.ms,
-                        color: highlightColor,
+              if (isMobile)
+                Column(
+                  children: [
+                    Container(
+                      height: 280,
+                      decoration: BoxDecoration(
+                        color: baseColor,
+                        borderRadius: BorderRadius.circular(18),
                       ),
-                  const SizedBox(height: 16),
-                  if (isMobile)
-                    Column(
-                      children: [
-                        Container(
-                          height: 280,
-                          decoration: BoxDecoration(
-                            color: baseColor,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        )
-                            .animate(onPlay: (controller) => controller.repeat())
-                            .shimmer(
-                              duration: 1200.ms,
-                              delay: 400.ms,
-                              color: highlightColor,
-                            ),
-                        const SizedBox(height: 16),
-                        Container(
-                          height: 280,
-                          decoration: BoxDecoration(
-                            color: baseColor,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        )
-                            .animate(onPlay: (controller) => controller.repeat())
-                            .shimmer(
-                              duration: 1200.ms,
-                              delay: 500.ms,
-                              color: highlightColor,
-                            ),
-                      ],
                     )
-                  else
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 340,
+                        .animate(onPlay: (c) => c.repeat())
+                        .shimmer(duration: 1200.ms, delay: 400.ms, color: highlightColor),
+                    const SizedBox(height: 16),
+                    Container(
+                      height: 220,
+                      decoration: BoxDecoration(
+                        color: baseColor,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    )
+                        .animate(onPlay: (c) => c.repeat())
+                        .shimmer(duration: 1200.ms, delay: 500.ms, color: highlightColor),
+                  ],
+                )
+              else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 420,
                             decoration: BoxDecoration(
                               color: baseColor,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(18),
                             ),
                           )
-                              .animate(onPlay: (controller) => controller.repeat())
-                              .shimmer(
-                                duration: 1200.ms,
-                                delay: 400.ms,
-                                color: highlightColor,
-                              ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Container(
-                            height: 340,
+                              .animate(onPlay: (c) => c.repeat())
+                              .shimmer(duration: 1200.ms, delay: 400.ms, color: highlightColor),
+                          const SizedBox(height: 16),
+                          Container(
+                            height: 280,
                             decoration: BoxDecoration(
                               color: baseColor,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(18),
                             ),
                           )
-                              .animate(onPlay: (controller) => controller.repeat())
-                              .shimmer(
-                                duration: 1200.ms,
-                                delay: 500.ms,
-                                color: highlightColor,
-                              ),
-                        ),
-                      ],
+                              .animate(onPlay: (c) => c.repeat())
+                              .shimmer(duration: 1200.ms, delay: 450.ms, color: highlightColor),
+                        ],
+                      ),
                     ),
-                ],
-              ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        height: 716,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      )
+                          .animate(onPlay: (c) => c.repeat())
+                          .shimmer(duration: 1200.ms, delay: 500.ms, color: highlightColor),
+                    ),
+                  ],
+                ),
             ],
           ),
         );
       },
     );
   }
-
 }
