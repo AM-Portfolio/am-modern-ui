@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
 import 'package:am_doc_intelligence_ui/utils/file_downloader.dart';
-import 'package:url_launcher/url_launcher.dart';class DocumentProcessorView extends StatefulWidget {
+import 'package:url_launcher/url_launcher.dart';
+import 'package:am_design_system/core/utils/responsive_helper.dart';
+class DocumentProcessorView extends StatefulWidget {
   const DocumentProcessorView({super.key});
 
   @override
@@ -167,8 +169,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isMobile = ResponsiveHelper.isMobile(context);
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16.0 : 32.0, 
+        vertical: 24.0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -191,26 +197,34 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           else if (_isServiceConnected == false)
              _buildConnectionError()
           else ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    children: [
-                      _buildConfigurationSection(),
-                      const SizedBox(height: 24),
-                      _buildUploadSection(),
-                    ],
+            if (isMobile) ...[
+              _buildConfigurationSection(),
+              const SizedBox(height: 24),
+              _buildUploadSection(),
+              const SizedBox(height: 24),
+              _buildDetailsPanel(),
+            ] else ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      children: [
+                        _buildConfigurationSection(),
+                        const SizedBox(height: 24),
+                        _buildUploadSection(),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  flex: 2,
-                  child: _buildDetailsPanel(),
-                )
-              ],
-            ),
+                  const SizedBox(width: 24),
+                  Expanded(
+                    flex: 2,
+                    child: _buildDetailsPanel(),
+                  )
+                ],
+              ),
+            ],
             const SizedBox(height: 24),
             if (_status.isNotEmpty || _processing) _buildStatusLog(),
             if (_lastResult != null) ...[
@@ -226,67 +240,85 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   Widget _buildHeader() {
     Color statusColor = _isServiceConnected == true ? Colors.green : (_isServiceConnected == false ? Colors.red : Colors.grey);
     String statusText = _isServiceConnected == true ? 'Online' : (_isServiceConnected == false ? 'Offline' : 'Checking...');
+    final bool isMobile = ResponsiveHelper.isMobile(context);
+
+    final headerContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Document Intelligence',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+            fontSize: isMobile ? 22 : null,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Automated parser for financial statements',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+
+    final statusBadge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: statusColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: statusColor.withOpacity(0.6),
+                  blurRadius: 6,
+                  spreadRadius: 2,
+                )
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            statusText.toUpperCase(),
+            style: TextStyle(
+              color: statusColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          headerContent,
+          const SizedBox(height: 12),
+          statusBadge,
+        ],
+      );
+    }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Document Intelligence',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Automated parser for financial statements',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: statusColor.withOpacity(0.3)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: statusColor.withOpacity(0.6),
-                      blurRadius: 6,
-                      spreadRadius: 2,
-                    )
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                statusText.toUpperCase(),
-                style: TextStyle(
-                  color: statusColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        )
+        Expanded(child: headerContent),
+        const SizedBox(width: 16),
+        statusBadge,
       ],
     );
   }
@@ -378,6 +410,50 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   Widget _buildConfigurationSection() {
+    final bool isMobile = ResponsiveHelper.isMobile(context);
+
+    final brokerSelect = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('BROKER / INSTITUTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.grey)),
+        const SizedBox(height: 8),
+        CustomDropdown<String>(
+          value: _selectedBrokerType,
+          items: apiProvider.brokerTypes.map((e) => e.toSimpleDropdownItem(text: e)).toList(),
+          hint: 'Select Broker',
+          onChanged: (v) {
+            setState(() {
+              _selectedBrokerType = v;
+              final filtered = _getFilteredDocTypes();
+              if (filtered.isNotEmpty) {
+                if (!filtered.contains(_selectedDocType)) {
+                  _selectedDocType = filtered.first;
+                }
+              } else {
+                _selectedDocType = null;
+              }
+            });
+          },
+        ),
+      ],
+    );
+
+    final docTypeSelect = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('DOCUMENT TYPE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.grey)),
+        const SizedBox(height: 8),
+        _loadingTypes 
+          ? const ShimmerLoading(child: SkeletonBox(height: 42, width: double.infinity))
+          : CustomDropdown<String>(
+              value: _selectedDocType,
+              items: _getFilteredDocTypes().map((e) => e.toSimpleDropdownItem(text: _getDocTypeDisplayName(e))).toList(),
+              hint: 'Select Doc Type',
+              onChanged: (v) => setState(() => _selectedDocType = v),
+            ),
+      ],
+    );
+
     return GlassCard(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -395,55 +471,19 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               ],
             ),
             const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('BROKER / INSTITUTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.grey)),
-                      const SizedBox(height: 8),
-                      CustomDropdown<String>(
-                        value: _selectedBrokerType,
-                        items: apiProvider.brokerTypes.map((e) => e.toSimpleDropdownItem(text: e)).toList(),
-                        hint: 'Select Broker',
-                        onChanged: (v) {
-                          setState(() {
-                            _selectedBrokerType = v;
-                            final filtered = _getFilteredDocTypes();
-                            if (filtered.isNotEmpty) {
-                              if (!filtered.contains(_selectedDocType)) {
-                                _selectedDocType = filtered.first;
-                              }
-                            } else {
-                              _selectedDocType = null;
-                            }
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('DOCUMENT TYPE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.grey)),
-                      const SizedBox(height: 8),
-                      _loadingTypes 
-                        ? const ShimmerLoading(child: SkeletonBox(height: 42, width: double.infinity))
-                        : CustomDropdown<String>(
-                            value: _selectedDocType,
-                            items: _getFilteredDocTypes().map((e) => e.toSimpleDropdownItem(text: _getDocTypeDisplayName(e))).toList(),
-                            hint: 'Select Doc Type',
-                            onChanged: (v) => setState(() => _selectedDocType = v),
-                          ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            if (isMobile) ...[
+              brokerSelect,
+              const SizedBox(height: 16),
+              docTypeSelect,
+            ] else ...[
+              Row(
+                children: [
+                  Expanded(child: brokerSelect),
+                  const SizedBox(width: 20),
+                  Expanded(child: docTypeSelect),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -511,14 +551,24 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       _showDownloadStepsDialog(context, _selectedBrokerType!, _selectedDocType!);
                     },
                     style: TextButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                      backgroundColor: Theme.of(context).brightness == Brightness.dark
+                          ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                          : Theme.of(context).colorScheme.primary.withOpacity(0.12),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
-                    icon: Icon(Icons.open_in_new, size: 16, color: Colors.white.withOpacity(0.9)),
+                    icon: Icon(Icons.open_in_new, size: 16, color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white.withOpacity(0.9)
+                        : Theme.of(context).colorScheme.primary),
                     label: Text(
                       "Don't have the document? Download from ${_selectedBrokerType == 'ZERODHA' ? 'Zerodha Console' : _selectedBrokerType == 'ANGEL_ONE' ? 'Angel One' : 'Groww'}",
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white.withOpacity(0.9)),
+                      style: TextStyle(
+                        fontSize: 13, 
+                        fontWeight: FontWeight.bold, 
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withOpacity(0.9)
+                            : Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                   ),
                 )

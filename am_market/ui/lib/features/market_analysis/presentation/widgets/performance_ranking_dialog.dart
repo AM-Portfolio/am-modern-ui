@@ -11,11 +11,14 @@ class PerformanceRankingDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     // Glassmorphism effect
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
       child: Dialog(
-        backgroundColor: AppColors.darkCard.withOpacity(0.9),
+        backgroundColor: isDark ? AppColors.darkCard.withOpacity(0.9) : AppColors.lightCard.withOpacity(0.95),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           width: 500,
@@ -32,10 +35,10 @@ class PerformanceRankingDialog extends StatelessWidget {
                 children: [
                   Text(
                     'Performance Ranking - ${data.monthName} ${data.year}',
-                    style: AmTextStyles.h6.copyWith(color: AppColors.textPrimaryDark),
+                    style: AmTextStyles.h6.copyWith(color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.textSecondaryDark),
+                    icon: Icon(Icons.close, color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -68,7 +71,7 @@ class PerformanceRankingDialog extends StatelessWidget {
                       ),
                       title: Text(
                         perf.symbol,
-                        style: AmTextStyles.body1.copyWith(color: AppColors.textPrimaryDark),
+                        style: AmTextStyles.body1.copyWith(color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
                       ),
                       trailing: Text(
                         '${isPositive ? '+' : ''}${perf.returnPercentage.toStringAsFixed(2)}%',
