@@ -90,7 +90,7 @@ class TradeHoldingViewModel {
       tradeId: entity.tradeId,
       portfolioId: entity.portfolioId,
       symbol: instrumentInfo.symbol ?? entity.symbol ?? 'UNKNOWN',
-      companyName: instrumentInfo.description ?? instrumentInfo.symbol ?? entity.symbol ?? 'Unknown Company',
+      companyName: instrumentInfo.description ?? 'Unknown Company',
       sector: instrumentInfo.segment?.name,
       industry: instrumentInfo.series?.name,
       exchange: instrumentInfo.exchange?.name,
@@ -104,9 +104,7 @@ class TradeHoldingViewModel {
       currentValue:
           (exitInfo?.quantity ?? entity.entryInfo.quantity ?? 0) * (exitInfo?.price ?? entity.entryInfo.price ?? 0),
       profitLoss: metrics?.profitLoss,
-      profitLossPercentage: (metrics?.profitLossPercentage == null || metrics?.profitLossPercentage == 0.0) && entity.entryInfo.price != null && entity.entryInfo.price! > 0
-          ? ((entity.tradePositionType == TradeDirections.short ? -1 : 1) * (((exitInfo?.price ?? entity.entryInfo.price ?? 0) - entity.entryInfo.price!) / entity.entryInfo.price!) * 100)
-          : metrics?.profitLossPercentage,
+      profitLossPercentage: metrics?.profitLossPercentage,
       riskAmount: metrics?.riskAmount,
       rewardAmount: metrics?.rewardAmount,
       riskRewardRatio: metrics?.riskRewardRatio,
