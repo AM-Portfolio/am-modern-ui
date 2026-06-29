@@ -23,6 +23,7 @@ import '../pages/trade_market_page.dart';
 import '../pages/trade_unified_view_page.dart';
 import '../trade_navigation.dart';
 import '../../providers/trade_controller_providers.dart';
+import '../../trade_calendar_providers.dart';
 import '../../internal/domain/enums/exchange_types.dart';
 import '../../internal/domain/enums/market_segments.dart';
 import '../../internal/domain/enums/series_types.dart';
@@ -283,6 +284,16 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                         existingTrade: _existingTradeToEdit,
                         onTradeAdded: () {
                            setState(() => _existingTradeToEdit = null);
+                           
+                           // Refresh calendar data so it reflects the new trade
+                           if (_currentPortfolioId != null) {
+                             ref.read(tradeCalendarCubitProvider(_currentPortfolioId!).future)
+                               .then((cubit) => cubit.loadTradeCalendar(
+                                  portfolioId: _currentPortfolioId!, 
+                                  forceReload: true,
+                               ));
+                           }
+                           
                            _swipeController.navigateTo(3); // Navigate to trades on success
                         },
                         onCancel: () {
