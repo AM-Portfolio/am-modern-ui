@@ -90,7 +90,7 @@ class TradeHoldingViewModel {
       tradeId: entity.tradeId,
       portfolioId: entity.portfolioId,
       symbol: instrumentInfo.symbol ?? entity.symbol ?? 'UNKNOWN',
-      companyName: instrumentInfo.description ?? 'Unknown Company',
+      companyName: instrumentInfo.description ?? instrumentInfo.symbol ?? entity.symbol ?? 'Unknown Company',
       sector: instrumentInfo.segment?.name,
       industry: instrumentInfo.series?.name,
       exchange: instrumentInfo.exchange?.name,
