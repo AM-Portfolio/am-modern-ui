@@ -1,5 +1,6 @@
 import '../../internal/domain/entities/trade_controller_entities.dart';
 import '../../internal/domain/entities/trade_holding.dart';
+import '../../internal/domain/enums/trade_directions.dart';
 
 /// View model for presenting trade holding data in UI
 /// Flattens nested domain structure for easier template consumption
