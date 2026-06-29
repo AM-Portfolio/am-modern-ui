@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WealthPro Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#adc6ff",
+                        "surface-container": "#122131",
+                        "error": "#ffb4ab",
+                        "on-tertiary": "#002e6a",
+                        "on-error": "#690005",
+                        "on-primary": "#283044",
+                        "tertiary-fixed-dim": "#adc6ff",
+                        "outline-variant": "#45464d",
+                        "background": "#051424",
+                        "surface-tint": "#bec6e0",
+                        "surface-container-lowest": "#010f1f",
+                        "surface-dim": "#051424",
+                        "surface-container-highest": "#273647",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-secondary-container": "#00311f",
+                        "inverse-on-surface": "#233143",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#4edea3",
+                        "primary-fixed-dim": "#bec6e0",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-tertiary-fixed-variant": "#004395",
+                        "secondary": "#4edea3",
+                        "outline": "#909097",
+                        "on-secondary-fixed": "#002113",
+                        "on-tertiary-fixed": "#001a42",
+                        "on-surface-variant": "#c6c6cd",
+                        "on-background": "#d4e4fa",
+                        "on-surface": "#d4e4fa",
+                        "surface-variant": "#273647",
+                        "on-primary-fixed": "#131b2e",
+                        "secondary-container": "#00a572",
+                        "primary-fixed": "#dae2fd",
+                        "primary-container": "#0f172a",
+                        "surface": "#051424",
+                        "on-tertiary-container": "#357df1",
+                        "tertiary-container": "#00163a",
+                        "surface-bright": "#2c3a4c",
+                        "on-primary-container": "#798098",
+                        "inverse-surface": "#d4e4fa",
+                        "tertiary-fixed": "#d8e2ff",
+                        "on-secondary": "#003824",
+                        "inverse-primary": "#565e74",
+                        "surface-container-low": "#0d1c2d",
+                        "surface-container-high": "#1c2b3c",
+                        "primary": "#bec6e0",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed": "#6ffbbe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "inner-padding": "1.25rem",
+                        "gutter": "1.5rem",
+                        "card-gap": "1rem",
+                        "container-padding": "2rem",
+                        "section-margin": "3rem"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "data-display": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-md": ["20px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "data-display": ["28px", { "lineHeight": "1.1", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+                    },
+                    "animation": {
+                        'float': 'float 10s ease-in-out infinite',
+                        'float-delayed': 'float 12s ease-in-out infinite 5s',
+                        'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                        'fill-bar': 'fillBar 1.5s ease-out forwards'
+                    },
+                    "keyframes": {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0) scale(1)' },
+                            '50%': { transform: 'translateY(-20px) scale(1.05)' },
+                        },
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+                            '50%': { opacity: '0.6', transform: 'scale(1.2)' },
+                        },
+                        fillBar: {
+                            '0%': { transform: 'scaleX(0)' },
+                            '100%': { transform: 'scaleX(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background-color: rgba(18, 33, 49, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 12px -1px rgba(0, 0, 0, 0.2), 0 4px 8px -1px rgba(0, 0, 0, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.02);
+        }
+        
+        .text-glow-green { text-shadow: 0 0 15px rgba(78, 222, 163, 0.6); }
+        .text-glow-red { text-shadow: 0 0 15px rgba(255, 180, 171, 0.6); }
+        .bg-glow-green { box-shadow: inset 0 0 30px rgba(78, 222, 163, 0.15), 0 0 20px rgba(78, 222, 163, 0.05); border-color: rgba(78, 222, 163, 0.2); }
+        .bg-glow-red { box-shadow: inset 0 0 30px rgba(255, 180, 171, 0.15), 0 0 20px rgba(255, 180, 171, 0.05); border-color: rgba(255, 180, 171, 0.2); }
+        
+        /* Sparkline SVGs */
+        .spark-green { filter: drop-shadow(0 0 6px rgba(78, 222, 163, 0.9)); }
+        .spark-red { filter: drop-shadow(0 0 6px rgba(255, 180, 171, 0.9)); }
+        .spark-purple { filter: drop-shadow(0 0 6px rgba(173, 198, 255, 0.9)); }
+        .spark-blue { filter: drop-shadow(0 0 6px rgba(53, 125, 241, 0.9)); }
+
+        .hover-card {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .hover-card:hover {
+            transform: scale(1.02) translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2), inset 0 0 10px rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.1);
+        }
+        
+        .progress-bar-fill {
+            transform-origin: left;
+        }
+
+        /* Animation Delays */
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+        .delay-400 { animation-delay: 400ms; }
+        .delay-500 { animation-delay: 500ms; }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="bg-surface-container dark:bg-surface-container-low/60 backdrop-blur-xl h-screen w-64 fixed left-0 top-0 border-r border-white/10 shadow-none flex flex-col h-full py-6 z-40 hidden md:flex">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-primary font-bold text-xl">W</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary tracking-tight">WealthPro</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Elite Tier</p>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto">
+<ul class="space-y-1">
+<li><a class="flex items-center gap-3 px-4 py-3 bg-secondary-container/20 text-secondary border-r-2 border-secondary cursor-pointer hover:bg-secondary-container/30 transition-colors" href="#"><span class="material-symbols-outlined transition-transform group-hover:scale-110" style="font-variation-settings: 'FILL' 1;">dashboard</span>Overview</a></li>
+<li><a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors duration-200 cursor-pointer group" href="#"><span class="material-symbols-outlined transition-transform group-hover:scale-110 group-hover:text-tertiary">account_balance_wallet</span>Holdings</a></li>
+<li><a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors duration-200 cursor-pointer group" href="#"><span class="material-symbols-outlined transition-transform group-hover:scale-110 group-hover:text-tertiary">analytics</span>Analysis</a></li>
+<li><a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors duration-200 cursor-pointer group" href="#"><span class="material-symbols-outlined transition-transform group-hover:scale-110 group-hover:text-tertiary">grid_view</span>Heatmap</a></li>
+<li><a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors duration-200 cursor-pointer group" href="#"><span class="material-symbols-outlined transition-transform group-hover:scale-110 group-hover:text-tertiary">shopping_basket</span>Baskets</a></li>
+<li><a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors duration-200 cursor-pointer group" href="#"><span class="material-symbols-outlined transition-transform group-hover:scale-110 group-hover:text-tertiary">settings</span>Settings</a></li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-0 md:ml-64 flex flex-col h-screen overflow-hidden relative">
+<!-- Ambient Background Effects -->
+<div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-secondary/15 blur-[120px] pointer-events-none animate-float"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-tertiary-container/30 blur-[150px] pointer-events-none animate-float-delayed"></div>
+<!-- TopNavBar (Dashboard Specific) -->
+<header class="bg-transparent h-20 w-full z-50 backdrop-blur-md bg-background/40 shadow-none flex items-center justify-between px-gutter shrink-0">
+<h2 class="font-headline-lg text-headline-lg font-bold text-primary dark:text-primary">Dashboard</h2>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-variant/30 rounded-full transition-all hover:scale-110 hover:text-on-surface"><span class="material-symbols-outlined">notifications</span></button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-variant/30 rounded-full transition-all hover:scale-110 hover:text-on-surface"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_circle</span></button>
+</div>
+</header>
+<!-- Scrollable Dashboard Content -->
+<div class="flex-1 overflow-y-auto p-gutter custom-scrollbar relative z-10">
+<!-- Quick Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-card-gap mb-card-gap">
+<!-- Total Return -->
+<div class="glass-panel rounded-xl p-inner-padding bg-glow-green relative overflow-hidden flex justify-between items-center opacity-0 animate-fade-in-up delay-100">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1 font-medium">Total Return</p>
+<div class="flex items-baseline gap-2">
+<h3 class="font-data-display text-data-display text-secondary text-glow-green font-bold">₹22,648.81</h3>
+<span class="font-label-sm text-label-sm text-secondary font-medium">+2.72%</span>
+</div>
+</div>
+<div class="w-20 h-10">
+<svg class="spark-green w-full h-full" preserveaspectratio="none" viewbox="0 0 100 30">
+<path d="M0,25 C20,25 30,15 40,20 C50,25 60,10 70,15 C80,20 90,5 100,10" fill="none" stroke="#4edea3" stroke-width="2.5" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+<!-- Today's P&L -->
+<div class="glass-panel rounded-xl p-inner-padding bg-glow-red relative overflow-hidden flex justify-between items-center opacity-0 animate-fade-in-up delay-200">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1 font-medium">Today's P&amp;L</p>
+<div class="flex items-baseline gap-2">
+<h3 class="font-data-display text-data-display text-error text-glow-red font-bold">-₹4,588.57</h3>
+<span class="font-label-sm text-label-sm text-error font-medium">-0.53%</span>
+</div>
+</div>
+<div class="w-20 h-10">
+<svg class="spark-red w-full h-full" preserveaspectratio="none" viewbox="0 0 100 30">
+<path d="M0,10 C20,15 30,5 40,15 C50,25 60,10 70,20 C80,30 90,20 100,25" fill="none" stroke="#ffb4ab" stroke-width="2.5" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+<!-- Total Balance -->
+<div class="glass-panel rounded-xl p-inner-padding relative overflow-hidden flex justify-between items-center opacity-0 animate-fade-in-up delay-300 hover:border-white/20 transition-colors">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1 font-medium">Total Balance</p>
+<h3 class="font-data-display text-data-display text-on-surface font-bold">₹8,55,439.46</h3>
+</div>
+<div class="w-20 h-10">
+<svg class="spark-purple w-full h-full" preserveaspectratio="none" viewbox="0 0 100 30">
+<path d="M0,20 C20,25 30,10 40,15 C50,20 60,5 70,15 C80,25 90,10 100,15" fill="none" stroke="#adc6ff" stroke-width="2.5" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+<!-- Invested Amount -->
+<div class="glass-panel rounded-xl p-inner-padding relative overflow-hidden flex justify-between items-center opacity-0 animate-fade-in-up delay-400 hover:border-white/20 transition-colors">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1 font-medium">Invested Amount</p>
+<h3 class="font-data-display text-data-display text-on-surface font-bold">₹8,32,790.65</h3>
+</div>
+<div class="w-20 h-10">
+<svg class="spark-blue w-full h-full" preserveaspectratio="none" viewbox="0 0 100 30">
+<path d="M0,15 C20,10 30,20 40,15 C50,10 60,20 70,10 C80,15 90,20 100,10" fill="none" stroke="#357df1" stroke-width="2.5" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Main Layout Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-card-gap">
+<!-- Left Column (Performance & Movers) -->
+<div class="xl:col-span-2 flex flex-col gap-card-gap">
+<!-- Performance Chart Card -->
+<div class="glass-panel rounded-xl p-inner-padding h-[400px] flex flex-col opacity-0 animate-fade-in-up delay-300">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-md text-headline-md text-primary font-semibold">Performance</h3>
+<div class="flex bg-surface-container-high/50 rounded-lg p-1 border border-white/5">
+<button class="px-3 py-1 font-label-sm text-label-sm text-on-surface-variant rounded hover:text-on-surface hover:bg-white/5 transition-colors">1M</button>
+<button class="px-3 py-1 font-label-sm text-label-sm text-on-surface-variant rounded hover:text-on-surface hover:bg-white/5 transition-colors">3M</button>
+<button class="px-3 py-1 font-label-sm text-label-sm bg-surface-variant text-on-surface rounded shadow-sm border border-white/10">6M</button>
+<button class="px-3 py-1 font-label-sm text-label-sm text-on-surface-variant rounded hover:text-on-surface hover:bg-white/5 transition-colors">1Y</button>
+<button class="px-3 py-1 font-label-sm text-label-sm text-on-surface-variant rounded hover:text-on-surface hover:bg-white/5 transition-colors">YTD</button>
+<button class="px-3 py-1 font-label-sm text-label-sm text-on-surface-variant rounded hover:text-on-surface hover:bg-white/5 transition-colors">All</button>
+</div>
+</div>
+<!-- Chart Area Placeholder (CSS Styled) -->
+<div class="flex-1 relative w-full border-b border-l border-outline-variant/30 mt-4 pb-6 pl-2">
+<!-- Y Axis Labels -->
+<div class="absolute left-[-30px] top-0 h-full flex flex-col justify-between text-[10px] text-on-surface-variant pb-6 font-medium">
+<span>100M</span>
+<span>75M</span>
+<span>50M</span>
+<span>25M</span>
+<span>0</span>
+</div>
+<!-- X Axis Labels -->
+<div class="absolute bottom-[-20px] left-0 w-full flex justify-between text-[10px] text-on-surface-variant px-4 font-medium">
+<span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+</div>
+<!-- Simulated Area Chart -->
+<div class="absolute bottom-6 left-2 right-0 top-0 overflow-hidden">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 1000 300">
+<defs>
+<lineargradient id="areaGrad" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#4edea3" stop-opacity="0.6"></stop>
+<stop offset="100%" stop-color="#357df1" stop-opacity="0.6"></stop>
+</lineargradient>
+<lineargradient id="areaGradVert" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="url(#areaGrad)" stop-opacity="0.8"></stop>
+<stop offset="100%" stop-color="transparent" stop-opacity="0"></stop>
+</lineargradient>
+<lineargradient id="lineGrad" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#4edea3"></stop>
+<stop offset="50%" stop-color="#6ffbbe"></stop>
+<stop offset="100%" stop-color="#adc6ff"></stop>
+</lineargradient>
+<filter height="140%" id="glow" width="140%" x="-20%" y="-20%">
+<fegaussianblur result="coloredBlur" stddeviation="6"></fegaussianblur>
+<femerge>
+<femergenode in="coloredBlur"></femergenode>
+<femergenode in="SourceGraphic"></femergenode>
+</femerge>
+</filter>
+<filter height="200%" id="nodeGlow" width="200%" x="-50%" y="-50%">
+<fegaussianblur result="blur" stddeviation="4"></fegaussianblur>
+<femerge>
+<femergenode in="blur"></femergenode>
+<femergenode in="SourceGraphic"></femergenode>
+</femerge>
+</filter>
+</defs>
+<!-- Filled Area -->
+<path d="M0,280 C150,150 250,180 400,160 C550,140 650,50 800,40 C900,30 950,20 1000,10 L1000,300 L0,300 Z" fill="url(#areaGradVert)"></path>
+<!-- Stroke Line -->
+<path d="M0,280 C150,150 250,180 400,160 C550,140 650,50 800,40 C900,30 950,20 1000,10" fill="none" filter="url(#glow)" stroke="url(#lineGrad)" stroke-width="4" vector-effect="non-scaling-stroke"></path>
+<!-- Pulsing Node at End -->
+<circle class="animate-pulse-glow" cx="1000" cy="10" fill="#ffffff" filter="url(#nodeGlow)" r="6"></circle>
+</svg>
+</div>
+</div>
+</div>
+<!-- Top Movers (Gainers & Losers) -->
+<div class="glass-panel rounded-xl p-inner-padding opacity-0 animate-fade-in-up delay-400">
+<h3 class="font-headline-md text-headline-md text-primary mb-6 font-semibold">Top Movers</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Gainers -->
+<div>
+<h4 class="font-body-md text-body-md text-secondary mb-4 flex items-center gap-2 font-medium">Gainers (10)</h4>
+<div class="space-y-3">
+<!-- Item -->
+<div class="flex justify-between items-center p-3 rounded-lg bg-surface-container-high/30 border border-white/5 hover:bg-surface-container-high/50 transition-colors hover-card">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded bg-secondary/20 text-secondary flex items-center justify-center border border-secondary/30"><span class="material-symbols-outlined text-[14px]">call_made</span></div>
+<span class="font-body-md text-body-md text-on-surface font-semibold tracking-wide">AJANTPHARM</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-body-md text-body-md text-on-surface font-medium">₹3299.10</span>
+<span class="font-label-sm text-label-sm text-secondary bg-secondary/10 px-2 py-1 rounded border border-secondary/20 shadow-[0_0_10px_rgba(78,222,163,0.2)]">+3.73%</span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 rounded-lg bg-surface-container-high/30 border border-white/5 hover:bg-surface-container-high/50 transition-colors hover-card">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded bg-secondary/20 text-secondary flex items-center justify-center border border-secondary/30"><span class="material-symbols-outlined text-[14px]">call_made</span></div>
+<span class="font-body-md text-body-md text-on-surface font-semibold tracking-wide">CIPLA</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-body-md text-body-md text-on-surface font-medium">₹1480.00</span>
+<span class="font-label-sm text-label-sm text-secondary bg-secondary/10 px-2 py-1 rounded border border-secondary/20 shadow-[0_0_10px_rgba(78,222,163,0.2)]">+2.77%</span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 rounded-lg bg-surface-container-high/30 border border-white/5 hover:bg-surface-container-high/50 transition-colors hover-card">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded bg-secondary/20 text-secondary flex items-center justify-center border border-secondary/30"><span class="material-symbols-outlined text-[14px]">call_made</span></div>
+<span class="font-body-md text-body-md text-on-surface font-semibold tracking-wide">KIMPBH</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-body-md text-body-md text-on-surface font-medium">₹1230.00</span>
+<span class="font-label-sm text-label-sm text-secondary bg-secondary/10 px-2 py-1 rounded border border-secondary/20 shadow-[0_0_10px_rgba(78,222,163,0.2)]">+1.33%</span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 rounded-lg bg-surface-container-high/30 border border-white/5 hover:bg-surface-container-high/50 transition-colors hover-card">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded bg-secondary/20 text-secondary flex items-center justify-center border border-secondary/30"><span class="material-symbols-outlined text-[14px]">call_made</span></div>
+<span class="font-body-md text-body-md text-on-surface font-semibold tracking-wide">OPALA</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-body-md text-body-md text-on-surface font-medium">₹599.00</span>
+<span class="font-label-sm text-label-sm text-secondary bg-secondary/10 px-2 py-1 rounded border border-secondary/20 shadow-[0_0_10px_rgba(78,222,163,0.2)]">+0.99%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Losers -->
+<div>
+<h4 class="font-body-md text-body-md text-error mb-4 flex items-center gap-2 font-medium">Losers (10)</h4>
+<div class="space-y-3">
+<!-- Item -->
+<div class="flex justify-between items-center p-3 rounded-lg bg-surface-container-high/30 border border-white/5 hover:bg-surface-container-high/50 transition-colors hover-card">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded bg-error/20 text-error flex items-center justify-center border border-error/30"><span class="material-symbols-outlined text-[14px]">call_received</span></div>
+<span class="font-body-md text-body-md text-on-surface font-semibold tracking-wide">TCS</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-body-md text-body-md text-on-surface font-medium">-₹4,588.57</span>
+<span class="font-label-sm text-label-sm text-error bg-error/10 px-2 py-1 rounded border border-error/20 shadow-[0_0_10px_rgba(255,180,171,0.2)]">-0.53%</span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 rounded-lg bg-surface-container-high/30 border border-white/5 hover:bg-surface-container-high/50 transition-colors hover-card">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded bg-error/20 text-error flex items-center justify-center border border-error/30"><span class="material-symbols-outlined text-[14px]">call_received</span></div>
+<span class="font-body-md text-body-md text-on-surface font-semibold tracking-wide">INFY</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-body-md text-body-md text-on-surface font-medium">-₹1,088.56</span>
+<span class="font-label-sm text-label-sm text-error bg-error/10 px-2 py-1 rounded border border-error/20 shadow-[0_0_10px_rgba(255,180,171,0.2)]">-0.44%</span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 rounded-lg bg-surface-container-high/30 border border-white/5 hover:bg-surface-container-high/50 transition-colors hover-card">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded bg-tertiary-fixed-dim/20 text-tertiary-fixed-dim flex items-center justify-center border border-tertiary-fixed-dim/30"><span class="font-bold text-[12px]">N</span></div>
+<span class="font-body-md text-body-md text-on-surface font-semibold tracking-wide">NOHN</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-body-md text-body-md text-on-surface font-medium">-₹510.00</span>
+<span class="font-label-sm text-label-sm text-error bg-error/10 px-2 py-1 rounded border border-error/20 shadow-[0_0_10px_rgba(255,180,171,0.2)]">-0.09%</span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 rounded-lg bg-surface-container-high/30 border border-white/5 hover:bg-surface-container-high/50 transition-colors hover-card">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded bg-[#c084fc]/20 text-[#c084fc] flex items-center justify-center border border-[#c084fc]/30"><span class="material-symbols-outlined text-[14px]">ssid_chart</span></div>
+<span class="font-body-md text-body-md text-on-surface font-semibold tracking-wide">HINGTIV</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-body-md text-body-md text-on-surface font-medium">-₹626.22</span>
+<span class="font-label-sm text-label-sm text-error bg-error/10 px-2 py-1 rounded border border-error/20 shadow-[0_0_10px_rgba(255,180,171,0.2)]">-0.02%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column (Allocation) -->
+<div class="glass-panel rounded-xl p-inner-padding flex flex-col opacity-0 animate-fade-in-up delay-500">
+<h3 class="font-headline-md text-headline-md text-primary mb-6 font-semibold">Allocation</h3>
+<!-- Line View -->
+<div class="mb-8">
+<h4 class="font-body-md text-body-md text-on-surface-variant mb-4 font-medium">Sector Distribution (Line View)</h4>
+<div class="space-y-4">
+<!-- Progress Bar Item -->
+<div>
+<div class="flex justify-between text-[12px] mb-1 font-medium">
+<span class="text-on-surface">Financial Services</span>
+<span class="text-on-surface-variant">29.92%</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container-highest rounded-full overflow-hidden border border-white/5">
+<div class="h-full bg-gradient-to-r from-secondary to-tertiary-fixed-dim rounded-full progress-bar-fill animate-fill-bar" style="width: 29.92%; box-shadow: 0 0 10px rgba(78, 222, 163, 0.5);"></div>
+</div>
+</div>
+<!-- Progress Bar Item -->
+<div>
+<div class="flex justify-between text-[12px] mb-1 font-medium">
+<span class="text-on-surface">Consumer Discretionary</span>
+<span class="text-on-surface-variant">27.62%</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container-highest rounded-full overflow-hidden border border-white/5">
+<div class="h-full bg-gradient-to-r from-error to-[#f87171] rounded-full progress-bar-fill animate-fill-bar delay-100" style="width: 27.62%; box-shadow: 0 0 10px rgba(255, 180, 171, 0.5);"></div>
+</div>
+</div>
+<!-- Progress Bar Item -->
+<div>
+<div class="flex justify-between text-[12px] mb-1 font-medium">
+<span class="text-on-surface">IT</span>
+<span class="text-on-surface-variant">26.35%</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container-highest rounded-full overflow-hidden border border-white/5">
+<div class="h-full bg-gradient-to-r from-[#60a5fa] to-tertiary rounded-full progress-bar-fill animate-fill-bar delay-200" style="width: 26.35%; box-shadow: 0 0 10px rgba(173, 198, 255, 0.5);"></div>
+</div>
+</div>
+<!-- Progress Bar Item -->
+<div>
+<div class="flex justify-between text-[12px] mb-1 font-medium">
+<span class="text-on-surface">Industrials</span>
+<span class="text-on-surface-variant">10.59%</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container-highest rounded-full overflow-hidden border border-white/5">
+<div class="h-full bg-gradient-to-r from-[#c084fc] to-[#e879f9] rounded-full progress-bar-fill animate-fill-bar delay-300" style="width: 10.59%; box-shadow: 0 0 10px rgba(192, 132, 252, 0.5);"></div>
+</div>
+</div>
+<!-- Progress Bar Item -->
+<div>
+<div class="flex justify-between text-[12px] mb-1 font-medium">
+<span class="text-on-surface">Healthcare</span>
+<span class="text-on-surface-variant">3.55%</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container-highest rounded-full overflow-hidden border border-white/5">
+<div class="h-full bg-gradient-to-r from-[#fbbf24] to-[#fcd34d] rounded-full progress-bar-fill animate-fill-bar delay-400" style="width: 13.55%; box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);"></div>
+</div>
+</div>
+<!-- Progress Bar Item -->
+<div>
+<div class="flex justify-between text-[12px] mb-1 font-medium">
+<span class="text-on-surface">Others</span>
+<span class="text-on-surface-variant">0.00%</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container-highest rounded-full overflow-hidden border border-white/5">
+<div class="h-full bg-gradient-to-r from-[#2dd4bf] to-[#5eead4] rounded-full progress-bar-fill animate-fill-bar delay-500" style="width: 5%; box-shadow: 0 0 10px rgba(45, 212, 191, 0.5);"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Donut View -->
+<div class="flex-1 flex flex-col">
+<h4 class="font-body-md text-body-md text-on-surface-variant mb-4 font-medium">Sector Distribution (Donut View)</h4>
+<div class="flex-1 relative flex items-center justify-center min-h-[250px]">
+<!-- SVG Donut Chart Placeholder -->
+<svg class="w-full h-full max-w-[250px] max-h-[250px] drop-shadow-[0_10px_25px_rgba(0,0,0,0.5)]" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#1c2b3c" stroke-width="15"></circle>
+<!-- Segments (Approximated dashes for visual) -->
+<!-- Financial Services -->
+<circle cx="50" cy="50" fill="transparent" filter="url(#glowDonut)" r="40" stroke="#4edea3" stroke-dasharray="75 251" stroke-dashoffset="0" stroke-width="15"></circle>
+<!-- Consumer Discretionary -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#ffb4ab" stroke-dasharray="60 251" stroke-dashoffset="-75" stroke-width="15"></circle>
+<!-- IT -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#357df1" stroke-dasharray="40 251" stroke-dashoffset="-135" stroke-width="15"></circle>
+<!-- Industrials -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#c084fc" stroke-dasharray="25 251" stroke-dashoffset="-175" stroke-width="15"></circle>
+<!-- Healthcare -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#fbbf24" stroke-dasharray="35 251" stroke-dashoffset="-200" stroke-width="15"></circle>
+<defs>
+<filter height="140%" id="glowDonut" width="140%" x="-20%" y="-20%">
+<fegaussianblur result="coloredBlur" stddeviation="2"></fegaussianblur>
+<femerge>
+<femergenode in="coloredBlur"></femergenode>
+<femergenode in="SourceGraphic"></femergenode>
+</femerge>
+</filter>
+</defs>
+</svg>
+<!-- Center Text -->
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+<span class="font-data-display text-[22px] font-bold text-on-surface">100%</span>
+<span class="text-[11px] text-on-surface-variant font-medium tracking-wide">Allocated</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

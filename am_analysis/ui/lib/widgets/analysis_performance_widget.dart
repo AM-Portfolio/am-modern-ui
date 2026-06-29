@@ -44,6 +44,17 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
     _initService();
   }
 
+  @override
+  void didUpdateWidget(covariant AnalysisPerformanceWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTimeFrame != oldWidget.initialTimeFrame) {
+      if (_selectedTimeFrame != widget.initialTimeFrame) {
+        _selectedTimeFrame = widget.initialTimeFrame;
+        _loadData();
+      }
+    }
+  }
+
   Future<void> _initService() async {
     _service = RealAnalysisService();
     _loadData();

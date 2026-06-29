@@ -6,6 +6,7 @@ import '../../internal/domain/entities/portfolio_analytics.dart';
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
 import 'movers_widget.dart';
+import 'movers_detail_modal.dart';
 import 'portfolio_market_movers_widget.dart';
 
 /// Top movers panel that displays global market top gainers and losers.
@@ -36,6 +37,7 @@ class PortfolioTopMoversPanel extends StatelessWidget {
             movers: state.movers,
             isLoading: isLoading,
             error: error,
+            onViewAll: (movers) => MoversDetailModal.show(context, movers),
           );
         } else if (state is PortfolioAnalyticsError) {
           return MoversWidget(error: state.message);

@@ -10,8 +10,6 @@ import 'package:intl/intl.dart';
 
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
-import '../../internal/domain/entities/portfolio_analytics.dart';
-import '../../internal/domain/entities/portfolio_summary.dart' hide SectorAllocation;
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
 import 'package:am_common/am_common.dart';
@@ -260,6 +258,26 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // ── GLOBAL TIME FRAME SELECTOR ──
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 20.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              SizedBox(
+                                width: isMobile ? constraints.maxWidth - 32 : 400,
+                                child: ds.TimeFrameSelector.portfolio(
+                                  selectedTimeFrame: _selectedTimeFrame,
+                                  onTimeFrameChanged: (tf) {
+                                    setState(() => _selectedTimeFrame = tf);
+                                    _triggerLoad();
+                                  },
+                                  compact: false,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         // ── ROW 1: 4 Metric Cards ──────────────────────────
                         if (isSmallMobile)
                           GridView.count(
@@ -314,7 +332,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                                   'perf_${_selectedTimeFrame.code}'),
                               portfolioId: portfolioId,
                               initialTimeFrame: _selectedTimeFrame,
-                              showTimeFrameSelector: true,
+                              showTimeFrameSelector: false,
                               height: 340,
                             ),
                           ),
@@ -344,58 +362,9 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                             },
                           ),
                         ] else
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Left column: Chart + Movers
-                              Expanded(
-                                flex: 2,
-                                child: Column(
-                                  children: [
-                                    SizedBox(
-                                      height: 420,
-                                      child: AnalysisPerformanceWidget(
-                                        key: ValueKey(
-                                            'perf_${_selectedTimeFrame.code}'),
-                                        portfolioId: portfolioId,
-                                        initialTimeFrame: _selectedTimeFrame,
-                                        showTimeFrameSelector: true,
-                                        height: 420,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    PortfolioTopMoversPanel(
-                                      portfolioId: portfolioId,
-                                      timeFrame: _selectedTimeFrame,
-                                      showTimeFrameSelector: false,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              // Right column: Allocation panel
-                              Expanded(
-                                flex: 1,
-                                child: BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
-                                  builder: (context, state) {
-                                    if (state is PortfolioAnalyticsLoading) {
-                                      return const AllocationPanelWidget(isLoading: true);
-                                    } else if (state is PortfolioAnalyticsLoaded) {
-                                      final isLoading = state.isLoadingType(AnalyticsDataType.sectorAllocation);
-                                      final error = state.getErrorForType(AnalyticsDataType.sectorAllocation);
-                                      return AllocationPanelWidget(
-                                        sectorAllocation: state.sectorAllocation,
-                                        isLoading: isLoading,
-                                        error: error,
-                                      );
-                                    } else if (state is PortfolioAnalyticsError) {
-                                      return AllocationPanelWidget(error: state.message);
-                                    }
-                                    return const AllocationPanelWidget(isLoading: true);
-                                  },
-                                ),
-                              ),
-                            ],
+                          _MoversAllocationRow(
+                            portfolioId: portfolioId,
+                            selectedTimeFrame: _selectedTimeFrame,
                           ),
                         const SizedBox(height: 20),
                       ],
@@ -608,6 +577,112 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           ),
         );
       },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _MoversAllocationRow
+// Measures the left column height after layout and sizes the right column
+// to match, avoiding IntrinsicHeight which breaks with scrollable children.
+// ---------------------------------------------------------------------------
+class _MoversAllocationRow extends StatefulWidget {
+  const _MoversAllocationRow({
+    required this.portfolioId,
+    required this.selectedTimeFrame,
+  });
+
+  final String portfolioId;
+  final ds.TimeFrame selectedTimeFrame;
+
+  @override
+  State<_MoversAllocationRow> createState() => _MoversAllocationRowState();
+}
+
+class _MoversAllocationRowState extends State<_MoversAllocationRow> {
+  final GlobalKey _leftKey = GlobalKey();
+  double? _leftHeight;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
+  }
+
+  @override
+  void didUpdateWidget(_MoversAllocationRow old) {
+    super.didUpdateWidget(old);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
+  }
+
+  void _measure() {
+    final box = _leftKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize) {
+      final h = box.size.height;
+      if (h != _leftHeight) setState(() => _leftHeight = h);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Left column: Chart + Movers ──
+        Expanded(
+          flex: 2,
+          child: Column(
+            key: _leftKey,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 420,
+                child: AnalysisPerformanceWidget(
+                  key: ValueKey('perf_${widget.selectedTimeFrame.code}'),
+                  portfolioId: widget.portfolioId,
+                  initialTimeFrame: widget.selectedTimeFrame,
+                  showTimeFrameSelector: false,
+                  height: 360,
+                ),
+              ),
+              const SizedBox(height: 16),
+              PortfolioTopMoversPanel(
+                portfolioId: widget.portfolioId,
+                timeFrame: widget.selectedTimeFrame,
+                showTimeFrameSelector: false,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        // ── Right column: Allocation panel sized to match left column ──
+        Expanded(
+          flex: 1,
+          child: SizedBox(
+            height: _leftHeight ?? 800, // fallback to tall box until measured
+            child: BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+              builder: (context, state) {
+                if (state is PortfolioAnalyticsLoading) {
+                  return const AllocationPanelWidget(isLoading: true);
+                } else if (state is PortfolioAnalyticsLoaded) {
+                  final isLoading =
+                      state.isLoadingType(AnalyticsDataType.sectorAllocation);
+                  final error =
+                      state.getErrorForType(AnalyticsDataType.sectorAllocation);
+                  return AllocationPanelWidget(
+                    sectorAllocation: state.sectorAllocation,
+                    isLoading: isLoading,
+                    error: error,
+                  );
+                } else if (state is PortfolioAnalyticsError) {
+                  return AllocationPanelWidget(error: state.message);
+                }
+                return const AllocationPanelWidget(isLoading: true);
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
 import '../../internal/domain/entities/portfolio_analytics.dart';
@@ -11,10 +12,12 @@ class MoversWidget extends StatelessWidget {
     this.movers,
     this.isLoading = false,
     this.error,
+    this.onViewAll,
   });
   final Movers? movers;
   final bool isLoading;
   final String? error;
+  final ValueChanged<Movers>? onViewAll;
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +77,26 @@ class MoversWidget extends StatelessWidget {
                           letterSpacing: -0.3,
                         ),
                   ),
+                  const Spacer(),
+                  if (onViewAll != null && movers != null && (movers!.topGainers.length > 5 || movers!.topLosers.length > 5))
+                    TextButton(
+                      onPressed: () => onViewAll!(movers!),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      child: Text(
+                        'View All (${math.max(movers!.topGainers.length, movers!.topLosers.length)})',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -142,21 +165,19 @@ class MoversWidget extends StatelessWidget {
       );
     }
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child:
-                _buildColumn(context, 'Gainers', movers!.topGainers, true),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child:
-                _buildColumn(context, 'Losers', movers!.topLosers, false),
-          ),
-        ],
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child:
+              _buildColumn(context, 'Gainers', movers!.topGainers, true),
+        ),
+        const SizedBox(width: 20),
+        Expanded(
+          child:
+              _buildColumn(context, 'Losers', movers!.topLosers, false),
+        ),
+      ],
     );
   }
 
@@ -208,24 +229,24 @@ class MoversWidget extends StatelessWidget {
             ),
           )
         else
-          ...stocks.map(
-            (stock) => _MoverTile(stock: stock, isGainer: isGainers),
+          ...stocks.take(5).map(
+            (stock) => MoverTile(stock: stock, isGainer: isGainers),
           ),
       ],
     );
   }
 }
 
-class _MoverTile extends StatefulWidget {
+class MoverTile extends StatefulWidget {
   final Stock stock;
   final bool isGainer;
-  const _MoverTile({required this.stock, required this.isGainer});
+  const MoverTile({super.key, required this.stock, required this.isGainer});
 
   @override
-  State<_MoverTile> createState() => _MoverTileState();
+  State<MoverTile> createState() => _MoverTileState();
 }
 
-class _MoverTileState extends State<_MoverTile> {
+class _MoverTileState extends State<MoverTile> {
   bool _hovered = false;
 
   @override
