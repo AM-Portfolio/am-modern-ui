@@ -1,5 +1,6 @@
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
+import 'package:am_common/am_common.dart';
 import '../shared/widgets/dashboard_summary_widget.dart';
 import '../shared/widgets/dashboard_chart_widget.dart';
 import '../shared/widgets/dashboard_ranking_widget.dart';
@@ -73,7 +74,12 @@ class DashboardWebScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(dashboardStreamingSessionProvider(userId));
-    final timeFrame = ref.watch(dashboardTimeFrameProvider);
+    ref.listen(appTimeFrameProvider, (previous, next) {
+      if (previous != next) {
+        onDashboardTimeFrameChanged(ref, userId, next);
+      }
+    });
+    final timeFrame = ref.watch(appTimeFrameProvider);
     final tfCode = timeFrame.code;
 
     final dashboardAsync = ref.watch(dashboardStreamProvider(userId));
@@ -173,12 +179,7 @@ class DashboardWebScreen extends ConsumerWidget {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              TimeFrameSelector(
-                                selectedTimeFrame: timeFrame,
-                                availableTimeFrames: TimeFrame.dashboardTimeFrames,
-                                onTimeFrameChanged: (tf) =>
-                                    onDashboardTimeFrameChanged(ref, userId, tf),
-                              ),
+                              const GlobalTimeFrameBar(),
                               const SizedBox(width: 12),
                               Container(
                                 decoration: BoxDecoration(

@@ -9,6 +9,7 @@ class UserEntity extends Equatable {
     this.displayName,
     this.photoUrl,
     this.isDemo = false,
+    this.roles = const [],
   });
   final String id;
   final String email;
@@ -16,6 +17,18 @@ class UserEntity extends Equatable {
   final String? photoUrl;
   final String authMethod; // 'email', 'google', 'demo'
   final bool isDemo;
+  final List<String> roles;
+
+  /// Admin if JWT roles include Keycloak `admin` or Spring `ROLE_ADMIN`.
+  bool get isAdmin {
+    for (final role in roles) {
+      final normalized = role.toLowerCase().replaceAll('-', '_');
+      if (normalized == 'admin' || normalized == 'role_admin') {
+        return true;
+      }
+    }
+    return false;
+  }
 
   @override
   List<Object?> get props => [
@@ -25,6 +38,7 @@ class UserEntity extends Equatable {
     photoUrl,
     authMethod,
     isDemo,
+    roles,
   ];
 
   UserEntity copyWith({
@@ -34,6 +48,7 @@ class UserEntity extends Equatable {
     String? photoUrl,
     String? authMethod,
     bool? isDemo,
+    List<String>? roles,
   }) => UserEntity(
     id: id ?? this.id,
     email: email ?? this.email,
@@ -41,5 +56,6 @@ class UserEntity extends Equatable {
     photoUrl: photoUrl ?? this.photoUrl,
     authMethod: authMethod ?? this.authMethod,
     isDemo: isDemo ?? this.isDemo,
+    roles: roles ?? this.roles,
   );
 }

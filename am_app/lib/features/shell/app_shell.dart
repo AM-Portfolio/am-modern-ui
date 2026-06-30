@@ -23,14 +23,48 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   bool _sessionRestored = false;
 
-  static const List<_MoreMenuItem> _moreMenuItems = [
-    _MoreMenuItem(title: 'AI Chat', icon: Icons.auto_awesome_rounded, path: AppRoutes.aiChat),
-    _MoreMenuItem(title: 'Lab', icon: Icons.science_rounded, path: AppRoutes.lab),
-    _MoreMenuItem(title: 'Analysis', icon: Icons.analytics_outlined, path: AppRoutes.analysis),
-    _MoreMenuItem(title: 'Doc Intel', icon: Icons.psychology_outlined, path: AppRoutes.docIntel),
-    _MoreMenuItem(title: 'Subscription', icon: Icons.subscriptions_rounded, path: AppRoutes.subscription),
-    _MoreMenuItem(title: 'Profile', icon: Icons.person_rounded, path: AppRoutes.profile),
-  ];
+  List<_MoreMenuItem> _moreMenuItemsFor({required bool isAdmin}) => [
+        const _MoreMenuItem(
+            title: 'AI Chat',
+            icon: Icons.auto_awesome_rounded,
+            path: AppRoutes.aiChat),
+        if (isAdmin)
+          const _MoreMenuItem(
+              title: 'Analysis',
+              icon: Icons.analytics_outlined,
+              path: AppRoutes.analysis),
+        const _MoreMenuItem(
+            title: 'Doc Intel',
+            icon: Icons.psychology_outlined,
+            path: AppRoutes.docIntel),
+        const _MoreMenuItem(
+            title: 'Subscription',
+            icon: Icons.subscriptions_rounded,
+            path: AppRoutes.subscription),
+        const _MoreMenuItem(
+            title: 'Profile',
+            icon: Icons.person_rounded,
+            path: AppRoutes.profile),
+      ];
+
+  List<SidebarItem> _sidebarItemsFor({required bool isAdmin}) => [
+        const SidebarItem(
+            title: 'Dashboard', icon: Icons.dashboard_rounded),
+        const SidebarItem(
+            title: 'Portfolio',
+            icon: Icons.account_balance_wallet_rounded),
+        const SidebarItem(title: 'Trade', icon: Icons.swap_horiz_rounded),
+        const SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
+        const SidebarItem(
+            title: 'AI Chat', icon: Icons.auto_awesome_rounded),
+        if (isAdmin)
+          const SidebarItem(
+              title: 'Analysis', icon: Icons.analytics_outlined),
+        const SidebarItem(
+            title: 'Doc Intel', icon: Icons.psychology_outlined),
+        const SidebarItem(
+            title: 'Subscription', icon: Icons.subscriptions_rounded),
+      ];
 
   @override
   void initState() {
@@ -191,17 +225,32 @@ class _AppShellState extends State<AppShell> {
       ],
       child: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
+          if (authState is AuthInitial || authState is AuthLoading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
           if (authState is! Authenticated) {
-            return const SizedBox.shrink();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!context.mounted) return;
+              final redirect = Uri.encodeComponent(
+                GoRouterState.of(context).uri.toString(),
+              );
+              context.go('${AppRoutes.login}?redirect=$redirect');
+            });
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
           }
 
           final userId = authState.user.id;
+          final isAdmin = authState.user.isAdmin;
           final isDark = Theme.of(context).brightness == Brightness.dark;
 
           return LayoutBuilder(
             builder: (context, constraints) {
               final isDesktop = constraints.maxWidth > 1100;
-              const showMobileGlobalBar = true;
 
               return Scaffold(
                 body: Row(
@@ -224,31 +273,7 @@ class _AppShellState extends State<AppShell> {
                         onLogout: () => context.read<AuthCubit>().logout(),
                         onProfileTap: () => context.go(AppRoutes.profile),
                         onNavigate: (title) => _onGlobalNavigate(title, userId),
-                        items: const [
-                          SidebarItem(
-                              title: 'Dashboard',
-                              icon: Icons.dashboard_rounded),
-                          SidebarItem(
-                              title: 'Portfolio',
-                              icon: Icons.account_balance_wallet_rounded),
-                          SidebarItem(
-                              title: 'Trade',
-                              icon: Icons.swap_horiz_rounded),
-                          SidebarItem(
-                              title: 'Market',
-                              icon: Icons.show_chart_rounded),
-                          SidebarItem(
-                              title: 'AI Chat',
-                              icon: Icons.auto_awesome_rounded),
-                          SidebarItem(
-                              title: 'Lab', icon: Icons.science_rounded),
-                          SidebarItem(
-                              title: 'Analysis', icon: Icons.analytics_outlined),
-                          SidebarItem(
-                              title: 'Doc Intel', icon: Icons.psychology_outlined),
-                          SidebarItem(
-                              title: 'Subscription', icon: Icons.subscriptions_rounded),
-                        ],
+                        items: _sidebarItemsFor(isAdmin: isAdmin),
                       ),
                     Expanded(
                       child: GlobalPortfolioWrapper(
@@ -266,7 +291,7 @@ class _AppShellState extends State<AppShell> {
                         activeNavItem: _activeNavItem,
                         isDarkMode: isDark,
                         userName: authState.user.displayName,
-                        onMenuTap: () => _showMoreMenu(context, userId, isDark),
+                        onMenuTap: () => _showMoreMenu(context, userId, isDark, isAdmin),
                         onNavigate: (title) => _onGlobalNavigate(title, userId),
                         items: const [
                           SidebarItem(
@@ -295,7 +320,14 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  void _showMoreMenu(BuildContext context, String userId, bool isDark) {
+  void _showMoreMenu(
+    BuildContext context,
+    String userId,
+    bool isDark,
+    bool isAdmin,
+  ) {
+    final moreMenuItems = _moreMenuItemsFor(isAdmin: isAdmin);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -379,9 +411,9 @@ class _AppShellState extends State<AppShell> {
                       crossAxisSpacing: 8,
                       childAspectRatio: 1.15,
                     ),
-                    itemCount: _moreMenuItems.length,
+                    itemCount: moreMenuItems.length,
                     itemBuilder: (ctx, i) {
-                      final item = _moreMenuItems[i];
+                      final item = moreMenuItems[i];
                       final isActive = _currentLocation.startsWith(item.path);
                       final accentColor = _getMoreItemColor(item.title);
 
@@ -460,8 +492,6 @@ class _AppShellState extends State<AppShell> {
     switch (title) {
       case 'AI Chat':
         return const Color(0xFF6C5DD3);
-      case 'Lab':
-        return const Color(0xFF00B894);
       case 'Analysis':
         return const Color(0xFF0984E3);
       case 'Doc Intel':

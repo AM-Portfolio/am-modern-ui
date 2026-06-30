@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/utils/common_logger.dart';
 
 
@@ -55,13 +56,8 @@ const List<TimeFrame> webTimeFrames = [
   TimeFrame.all,
 ];
 
-/// Get dashboard time frames (quick selection)
-const List<TimeFrame> dashboardTimeFrames = [
-  TimeFrame.oneDay,
-  TimeFrame.oneWeek,
-  TimeFrame.oneMonth,
-  TimeFrame.oneYear,
-];
+/// Get dashboard / app-wide time frames (alias of [TimeFrame.appTimeFrames]).
+List<TimeFrame> get dashboardTimeFrames => TimeFrame.appTimeFrames;
 
 /// Widget for selecting time frames with customizable options
 class TimeFrameSelector extends StatelessWidget {
@@ -213,71 +209,72 @@ class TimeFrameSelector extends StatelessWidget {
   Widget _buildCompactSelector(
     BuildContext context,
     List<TimeFrame> timeFrames,
-  ) => SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: timeFrames.map((timeFrame) {
-        final isSelected = timeFrame == selectedTimeFrame;
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = primaryColor ?? AppColors.primary;
+    final barBg = isDark
+        ? Colors.white.withOpacity(0.06)
+        : theme.colorScheme.surfaceContainerHighest;
+    final borderColor = isDark
+        ? Colors.white.withOpacity(0.1)
+        : theme.colorScheme.outline.withOpacity(0.2);
+    final idleText = isDark
+        ? Colors.white.withOpacity(0.65)
+        : theme.colorScheme.onSurfaceVariant;
 
-        return Padding(
-          padding: const EdgeInsets.only(right: 8.0),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                CommonLogger.debug(
-                  'TimeFrame changed: ${selectedTimeFrame.code} → ${timeFrame.code}',
-                  tag: 'Heatmap.Filter',
-                );
-                onTimeFrameChanged(timeFrame);
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                constraints: const BoxConstraints(
-                  minHeight: 36,
-                  minWidth: 48,
-                ), // Compact touch target
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? (primaryColor ?? Theme.of(context).primaryColor)
-                      : Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: isSelected
-                        ? (primaryColor ?? Theme.of(context).primaryColor)
-                        : Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                    width: 1.5,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: (primaryColor ?? Theme.of(context).primaryColor)
-                                .withOpacity(0.3), // Changed .withValues to .withOpacity
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    showDisplayNames ? timeFrame.displayName : timeFrame.code,
-                    style: TextStyle(
-                      color: isSelected
-                          ? Colors.white
-                          : Theme.of(context).colorScheme.onSurface,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      fontSize: 13,
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: barBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: timeFrames.map((timeFrame) {
+            final isSelected = timeFrame == selectedTimeFrame;
+
+            return Padding(
+              padding: const EdgeInsets.only(right: 2),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    CommonLogger.debug(
+                      'TimeFrame changed: ${selectedTimeFrame.code} → ${timeFrame.code}',
+                      tag: 'Heatmap.Filter',
+                    );
+                    onTimeFrameChanged(timeFrame);
+                  },
+                  borderRadius: BorderRadius.circular(7),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    constraints: const BoxConstraints(minHeight: 32, minWidth: 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isSelected ? accent : Colors.transparent,
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: Center(
+                      child: Text(
+                        showDisplayNames ? timeFrame.displayName : timeFrame.code,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : idleText,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-        );
-      }).toList(),
-    ),
-  );
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
 }

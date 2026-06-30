@@ -51,19 +51,14 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Market Movers',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: onSurface,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ],
+          Text(
+            'Market Movers',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: onSurface,
+              fontFamily: 'Inter',
+            ),
           ),
           const SizedBox(height: 16),
           Container(

@@ -1,5 +1,6 @@
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
+import 'package:am_common/am_common.dart';
 import '../shared/widgets/dashboard_summary_widget.dart';
 import '../shared/widgets/dashboard_chart_widget.dart';
 import '../shared/widgets/dashboard_ranking_widget.dart';
@@ -37,7 +38,12 @@ class DashboardMobileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(dashboardStreamingSessionProvider(userId));
-    final timeFrame = ref.watch(dashboardTimeFrameProvider);
+    ref.listen(appTimeFrameProvider, (previous, next) {
+      if (previous != next) {
+        onDashboardTimeFrameChanged(ref, userId, next);
+      }
+    });
+    final timeFrame = ref.watch(appTimeFrameProvider);
     final tfCode = timeFrame.code;
 
     final dashboardAsync = ref.watch(dashboardStreamProvider(userId));
@@ -65,26 +71,18 @@ class DashboardMobileScreen extends ConsumerWidget {
         elevation: 0,
         iconTheme: IconThemeData(color: onSurface),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: TimeFrameSelector(
-              selectedTimeFrame: timeFrame,
-              availableTimeFrames: TimeFrame.dashboardTimeFrames,
-              compact: true,
-              onTimeFrameChanged: (tf) =>
-                  onDashboardTimeFrameChanged(ref, userId, tf),
-            ),
-          ),
-          IconButton(
-            icon: Icon(Icons.notifications_outlined, color: onSurfaceVariant),
-            onPressed: () {},
-          ),
+          const GlobalTimeFrameBar(),
           IconButton(
             icon: Icon(Icons.refresh, color: onSurfaceVariant),
             onPressed: () {
               ref.invalidate(dashboardStreamProvider(userId));
               ref.invalidate(portfolioOverviewsProvider(userId));
+              onDashboardTimeFrameChanged(ref, userId, timeFrame);
             },
+          ),
+          IconButton(
+            icon: Icon(Icons.notifications_outlined, color: onSurfaceVariant),
+            onPressed: () {},
           ),
         ],
       ),
