@@ -185,7 +185,7 @@ class PortfolioHeatmapConfig {
   /// - Full control over selector behavior
   static SelectorConfig createPortfolioSelectorConfig() => SelectorConfig(
     // Hide all selectors except market cap, sector, and layout
-    showTimeFrameSelector: true,
+    showTimeFrameSelector: false,
     showMetricSelector: false,
     showSectorSelector: true,
     showMarketCapSelector: true,

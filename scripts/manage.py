@@ -90,11 +90,23 @@ def load_env(env_name):
     return env_vars
 
 def get_available_device():
-    """Detect available flutter devices and return the best match.
-    
-    CRITICAL BUG FIX: Force the use of 'web-server' device instead of launching local Chrome.
-    This prevents the startup process from hanging on 'Waiting for connection from Chrome' 
-    due to browser profile locks, allowing the server to start instantly on port 9000."""
+    """Prefer Chrome/Edge so Flutter launches the browser; fall back to web-server."""
+    try:
+        is_windows = os.name == "nt"
+        result = subprocess.run(
+            ["flutter", "devices"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            shell=is_windows,
+        )
+        output = result.stdout.lower()
+        if "chrome" in output:
+            return "chrome"
+        if "edge" in output:
+            return "edge"
+    except Exception:
+        pass
     return "web-server"
 
 def run_cmd(package, cmd_parts, env_vars=None):
@@ -178,7 +190,12 @@ def handle_run(pkg, env_name):
     device = get_available_device()
     port = get_web_port(package, env_vars)
     
-    cmd = ["flutter", "run", "-d", device, f"--web-port={port}"] + defines
+    cmd = [
+        "flutter", "run", "-d", device,
+        f"--web-port={port}",
+        "--no-web-resources-cdn",
+        f"--web-launch-url=http://localhost:{port}/login",
+    ] + defines
     run_cmd(package, cmd, env_vars)
 
 def handle_build(pkg, env_name):
@@ -187,7 +204,7 @@ def handle_build(pkg, env_name):
     env_vars['AM_ENV'] = env_name
     defines = construct_dart_defines(env_vars)
     
-    cmd = ["flutter", "build", "web", "--release", "--no-wasm-dry-run"] + defines
+    cmd = ["flutter", "build", "web", "--release", "--no-wasm-dry-run", "--no-web-resources-cdn"] + defines
     run_cmd(package, cmd, env_vars)
 
 def handle_clean(pkg):

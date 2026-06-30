@@ -8,6 +8,7 @@ abstract class TopMoversResponse with _$TopMoversResponse {
   const factory TopMoversResponse({
     @Default([]) List<MoverItem> gainers,
     @Default([]) List<MoverItem> losers,
+    @Default('1D') String timeFrame,
   }) = _TopMoversResponse;
 
   factory TopMoversResponse.fromJson(Map<String, dynamic> json) =>
