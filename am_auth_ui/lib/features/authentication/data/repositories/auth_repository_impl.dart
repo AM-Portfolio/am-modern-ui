@@ -74,7 +74,7 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       await _storageService.saveTokenExpiry(result.tokens.expiresAt);
 
-      return Right(result.toEntity());
+      return Right(_enrichedEntity(result.toEntity()));
     } on AuthException catch (e) {
       return Left(AuthFailure(e.message, code: e.code));
     } on NetworkException catch (e) {
@@ -113,14 +113,16 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       await _storageService.saveTokenExpiry(entity.tokens.expiresAt);
 
+      final enriched = _enrichedEntity(entity);
+
       // Populate in-memory UserContext so all modules are immediately cache-hot
       UserContext.instance.populate(
-        accessToken: entity.tokens.accessToken,
-        userId: entity.user.id,
-        email: entity.user.email,
+        accessToken: enriched.tokens.accessToken,
+        userId: enriched.user.id,
+        email: enriched.user.email,
       );
       
-      return Right(entity);
+      return Right(enriched);
     } on AuthException catch (e) {
       return Left(AuthFailure(e.message, code: e.code));
     } on NetworkException catch (e) {
@@ -206,7 +208,7 @@ class AuthRepositoryImpl implements AuthRepository {
         '🟢 [GOOGLE OAUTH] ✅ GOOGLE SIGN-IN COMPLETE! Returning success.',
       );
 
-      return Right(result.toEntity());
+      return Right(_enrichedEntity(result.toEntity()));
     } on AuthException catch (e) {
       CommonLogger.error('🔴 [GOOGLE OAUTH] AuthException: ${e.message}');
       CommonLogger.error('🔴 [GOOGLE OAUTH] Code: ${e.code}');
@@ -239,7 +241,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await _storageService.saveUserEmail(result.user.email);
       await _storageService.saveTokenExpiry(result.tokens.expiresAt);
 
-      return Right(result.toEntity());
+      return Right(_enrichedEntity(result.toEntity()));
     } on AuthException catch (e) {
       return Left(AuthFailure(e.message, code: e.code));
     } catch (e) {
@@ -377,11 +379,14 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       // Reconstruct user and auth result from stored data
-      final userEntity = UserEntity(
-        id: userId,
-        email: email,
-        displayName: displayName,
-        authMethod: 'stored', // Could be tracked separately if needed
+      final userEntity = _userWithRolesFromToken(
+        UserEntity(
+          id: userId,
+          email: email,
+          displayName: displayName,
+          authMethod: 'stored', // Could be tracked separately if needed
+        ),
+        accessToken,
       );
 
       final tokensEntity = AuthTokensEntity(
@@ -410,5 +415,15 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(UnknownFailure(e.toString()));
     }
   }
+
+  UserEntity _userWithRolesFromToken(UserEntity user, String accessToken) {
+    final roles = TokenExtractor.extractRoles(accessToken);
+    return user.copyWith(roles: roles);
+  }
+
+  AuthResultEntity _enrichedEntity(AuthResultEntity entity) => AuthResultEntity(
+        user: _userWithRolesFromToken(entity.user, entity.tokens.accessToken),
+        tokens: entity.tokens,
+      );
 }
 

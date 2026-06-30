@@ -4,6 +4,7 @@ import 'package:am_library/am_library.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/data/repositories/dashboard_json_sanitizer.dart';
 import 'package:am_dashboard_ui/domain/models/activity_item.dart';
+import 'package:am_dashboard_ui/domain/models/recent_activity_response.dart';
 import 'package:am_dashboard_ui/domain/models/allocation_response.dart';
 import 'package:am_dashboard_ui/domain/models/dashboard_summary.dart';
 import 'package:am_dashboard_ui/domain/models/performance_response.dart';
@@ -194,11 +195,21 @@ class DashboardRepository {
     }
   }
 
-  Future<List<ActivityItem>> getRecentActivity(String userId) async {
+  Future<RecentActivityResponse> getRecentActivity(
+    String userId, {
+    int page = 0,
+    int size = 10,
+    String sortBy = 'TIMESTAMP',
+  }) async {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/recent-activity',
-        parser: (data) => _parseActivityItems(data),
+        queryParams: {
+          'page': page.toString(),
+          'size': size.toString(),
+          'sortBy': sortBy,
+        },
+        parser: (data) => _parseRecentActivity(data),
       );
     } catch (e) {
       AppLogger.error('Failed to fetch recent activity', error: e);
@@ -213,7 +224,7 @@ class DashboardRepository {
 
   Stream<List<ActivityItem>> watchActivity() => _watchWidget(
         DashboardQueueDestinations.activity,
-        (json) => _parseActivityItems(json),
+        (json) => _parseRecentActivity(json).items,
       );
 
   Stream<AllocationResponse> watchAllocation() => _watchWidget(
@@ -221,10 +232,20 @@ class DashboardRepository {
         (json) => AllocationResponse.fromJson(DashboardJsonSanitizer.allocation(json)),
       );
 
-  Stream<TopMoversResponse> watchMovers() => _watchWidget(
+  Stream<TopMoversResponse> watchMovers({String? timeFrame}) => _watchWidget(
         DashboardQueueDestinations.movers,
-        (json) => TopMoversResponse.fromJson(DashboardJsonSanitizer.topMovers(json)),
-      );
+        (json) {
+          final payload = json.containsKey('data') && json['data'] is Map
+              ? Map<String, dynamic>.from(json['data'] as Map)
+              : json;
+          return TopMoversResponse.fromJson(
+            DashboardJsonSanitizer.topMovers(payload),
+          );
+        },
+      ).where((response) {
+        if (timeFrame == null || timeFrame.isEmpty) return true;
+        return response.timeFrame.isEmpty || response.timeFrame == timeFrame;
+      });
 
   Stream<PerformanceResponse> watchHistory() => _watchWidget(
         DashboardQueueDestinations.history,
@@ -275,6 +296,23 @@ class DashboardRepository {
     if (actual == bare || actual.endsWith(bare)) return true;
     final suffix = expected.split('/dashboard/').last;
     return actual.contains('/dashboard/$suffix');
+  }
+
+  RecentActivityResponse _parseRecentActivity(dynamic data) {
+    final map = data is Map<String, dynamic> ? data : <String, dynamic>{};
+    final payload = map.containsKey('data') && map['data'] is Map
+        ? Map<String, dynamic>.from(map['data'] as Map)
+        : map;
+    final items = _parseActivityItems(payload);
+    return RecentActivityResponse(
+      items: items,
+      page: (payload['page'] as num?)?.toInt() ?? 0,
+      size: (payload['size'] as num?)?.toInt() ?? items.length,
+      totalItems: (payload['totalItems'] as num?)?.toInt() ?? items.length,
+      totalPages: (payload['totalPages'] as num?)?.toInt() ?? 1,
+      hasNext: payload['hasNext'] as bool? ?? false,
+      hasPrevious: payload['hasPrevious'] as bool? ?? false,
+    );
   }
 
   List<ActivityItem> _parseActivityItems(dynamic data) {

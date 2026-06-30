@@ -1,38 +1,101 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="AM Investment Platform">
 
-  <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="am_app">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>am_app</title>
+  <title>AM Investment Platform</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #0b1120;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    #am-boot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100%;
+      color: #e2e8f0;
+      gap: 16px;
+      padding: 24px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    #am-boot .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: am-spin 0.8s linear infinite;
+    }
+    #am-boot-error {
+      display: none;
+      max-width: 720px;
+      color: #fecaca;
+      white-space: pre-wrap;
+      text-align: left;
+      background: rgba(127,29,29,0.35);
+      border: 1px solid rgba(248,113,113,0.35);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    @keyframes am-spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js?v=2" async></script>
+  <div id="am-boot">
+    <div class="spinner" aria-hidden="true"></div>
+    <div>Loading AM Investment Platform…</div>
+    <pre id="am-boot-error"></pre>
+  </div>
+
+  <script>
+    // Stale production service workers can cache broken assets and cause a blank page.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (reg) { reg.unregister(); });
+      });
+    }
+
+    function showBootError(message) {
+      var boot = document.getElementById('am-boot');
+      var err = document.getElementById('am-boot-error');
+      if (boot) boot.style.display = 'flex';
+      if (err) {
+        err.style.display = 'block';
+        err.textContent = message;
+      }
+    }
+
+    window.addEventListener('error', function (event) {
+      showBootError('JavaScript error: ' + (event.message || event));
+    });
+
+    window.addEventListener('unhandledrejection', function (event) {
+      showBootError('Unhandled promise rejection: ' + (event.reason || event));
+    });
+
+    document.addEventListener('dart-app-ready', function () {
+      var boot = document.getElementById('am-boot');
+      if (boot) boot.remove();
+    });
+  </script>
+  <script src="flutter_bootstrap.js?v=3" async></script>
 </body>
 </html>

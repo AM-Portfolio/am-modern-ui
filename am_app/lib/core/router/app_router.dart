@@ -24,11 +24,17 @@ GoRouter createAppRouter({
   required AuthRefreshListenable refreshListenable,
 }) {
   return GoRouter(
-    initialLocation: AppRoutes.dashboard,
+    initialLocation: AppRoutes.login,
     refreshListenable: refreshListenable,
     redirect: (context, state) {
-      final isAuthenticated = authCubit.state is Authenticated;
+      final authState = authCubit.state;
+      final isAuthenticated = authState is Authenticated;
       final location = state.matchedLocation;
+
+      // Browser opens http://localhost:9000/ — no page registered for `/`.
+      if (location == '/' || location.isEmpty) {
+        return isAuthenticated ? AppRoutes.dashboard : AppRoutes.login;
+      }
 
       if (!isAuthenticated && AppRoutes.isAuthenticatedAppRoute(location)) {
         final redirect = Uri.encodeComponent(state.uri.toString());
@@ -40,6 +46,19 @@ GoRouter createAppRouter({
           state.uri.queryParameters['redirect'],
         );
         return target ?? AppRoutes.dashboard;
+      }
+
+      // Lab is disabled in navigation — block direct URL access.
+      if (location == AppRoutes.lab || location.startsWith('${AppRoutes.lab}/')) {
+        return AppRoutes.dashboard;
+      }
+
+      // Global Analysis module is admin-only.
+      if (location == AppRoutes.analysis ||
+          location.startsWith('${AppRoutes.analysis}/')) {
+        final isAdmin =
+            authState is Authenticated && authState.user.isAdmin;
+        if (!isAdmin) return AppRoutes.dashboard;
       }
 
       if (location == AppRoutes.portfolio) {
@@ -66,6 +85,29 @@ GoRouter createAppRouter({
 
       return null;
     },
+    errorBuilder: (context, state) => Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                'Page not found: ${state.uri}',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: () => context.go(AppRoutes.login),
+                child: const Text('Go to login'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
     routes: [
       GoRoute(
         path: AppRoutes.login,
@@ -285,4 +327,4 @@ String _userId(BuildContext context) {
   final authState = context.read<AuthCubit>().state;
   return authState is Authenticated ? authState.user.id : '';
 }
-
+

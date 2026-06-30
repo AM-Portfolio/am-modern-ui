@@ -8,6 +8,7 @@ export 'shared/enums/metric_type.dart';
 export 'shared/enums/sector_type.dart';
 export 'shared/enums/timeframe.dart';
 export 'shared/extensions/investment_extensions.dart';
+export 'providers/app_timeframe_provider.dart';
 
 // ============================================================================
 // ATTACHMENT FEATURE
