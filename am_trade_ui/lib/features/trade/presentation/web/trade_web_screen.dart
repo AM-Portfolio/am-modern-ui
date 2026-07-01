@@ -312,7 +312,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     ];
   }
 
-  void _onPortfolioSelected(String portfolioId, String portfolioName) {
+  void _onPortfolioSelected(String portfolioId, String portfolioName, {bool autoSelect = false}) {
     final currentIndex = _swipeController.currentIndex;
 
     setState(() {
@@ -324,8 +324,8 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
 
       // If we were on a portfolio-specific page but had no portfolio selected (prompt shown),
       // we stay on the same page index, but now it shows data.
-      // If we were on Portfolios list (index 0) and selected one, go to Holdings (index 1).
-      if (currentIndex == 0) {
+      // If we were on Portfolios list (index 0) and selected one manually, go to Holdings (index 1).
+      if (currentIndex == 0 && !autoSelect) {
         _swipeController.navigateTo(1);
       }
     });
@@ -406,7 +406,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
           final defaultPortfolio = loadedPortfolios.first;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              _onPortfolioSelected(defaultPortfolio.id, defaultPortfolio.name);
+              _onPortfolioSelected(defaultPortfolio.id, defaultPortfolio.name, autoSelect: true);
             }
           });
         }
