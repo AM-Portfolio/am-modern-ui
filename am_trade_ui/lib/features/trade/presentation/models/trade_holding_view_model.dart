@@ -216,11 +216,11 @@ class TradeHoldingViewModel {
   String get displayStatus => status ?? 'Unknown';
 
   String get displayQuantity => quantity != null ? quantity!.toStringAsFixed(0) : '0';
-  String get displayEntryPrice => entryPrice != null ? '\$${entryPrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayExitPrice => exitPrice != null ? '\$${exitPrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayCurrentPrice => currentPrice != null ? '\$${currentPrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayAvgPrice => avgPrice != null ? '\$${avgPrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayCurrentValue => currentValue != null ? '\$${currentValue!.toStringAsFixed(2)}' : 'N/A';
+  String get displayEntryPrice => entryPrice != null ? '₹${entryPrice!.toStringAsFixed(2)}' : 'N/A';
+  String get displayExitPrice => exitPrice != null ? '₹${exitPrice!.toStringAsFixed(2)}' : 'N/A';
+  String get displayCurrentPrice => currentPrice != null ? '₹${currentPrice!.toStringAsFixed(2)}' : 'N/A';
+  String get displayAvgPrice => avgPrice != null ? '₹${avgPrice!.toStringAsFixed(2)}' : 'N/A';
+  String get displayCurrentValue => currentValue != null ? '₹${currentValue!.toStringAsFixed(2)}' : 'N/A';
 
   // Computed values
   double get totalGainLoss => profitLoss ?? 0.0;
@@ -228,12 +228,12 @@ class TradeHoldingViewModel {
   double get todayChange => 0.0; // Not available in new structure
   double get todayChangePercentage => 0.0; // Not available in new structure
 
-  String get displayProfitLoss => profitLoss != null ? '\$${profitLoss!.toStringAsFixed(2)}' : r'$0.00';
+  String get displayProfitLoss => profitLoss != null ? '₹${profitLoss!.toStringAsFixed(2)}' : r'₹0.00';
   String get displayProfitLossPercentage =>
       profitLossPercentage != null ? '${profitLossPercentage!.toStringAsFixed(2)}%' : '0.00%';
 
-  String get displayRiskAmount => riskAmount != null ? '\$${riskAmount!.toStringAsFixed(2)}' : 'N/A';
-  String get displayRewardAmount => rewardAmount != null ? '\$${rewardAmount!.toStringAsFixed(2)}' : 'N/A';
+  String get displayRiskAmount => riskAmount != null ? '₹${riskAmount!.toStringAsFixed(2)}' : 'N/A';
+  String get displayRewardAmount => rewardAmount != null ? '₹${rewardAmount!.toStringAsFixed(2)}' : 'N/A';
   String get displayRiskRewardRatio => riskRewardRatio != null ? '${riskRewardRatio!.toStringAsFixed(2)}:1' : 'N/A';
 
   String get displayHoldingPeriod => holdingDays != null ? '$holdingDays days' : 'N/A';

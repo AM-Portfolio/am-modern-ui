@@ -228,54 +228,32 @@ class TradeDetailSummary extends StatelessWidget {
   Widget _buildMobileLayout(BuildContext context, bool isProfit) {
     return Column(
       children: [
-        // Trade Overview Section (Mobile: Grid inside Card)
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
-             boxShadow: [
-               BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
-             ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                 children: [
-                    Container(
-                       padding: const EdgeInsets.all(6),
-                       decoration: BoxDecoration(color: const Color(0xFFF3E5F5), borderRadius: BorderRadius.circular(8)),
-                       child: const Icon(Icons.receipt_long, color: Color(0xFF7B1FA2), size: 16),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                       'Trade Overview',
-                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87),
-                    ),
-                 ],
-              ),
-              const SizedBox(height: 16),
-              // Mobile Grid for Overview Items
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                childAspectRatio: 2.5,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                children: [
-                  _buildOverviewItem(context, 'POSITION', trade.tradePositionType ?? 'N/A', isBold: true),
-                  _buildOverviewItem(context, 'QTY', trade.displayQuantity, isBold: true),
-                  _buildOverviewItem(context, 'EXECS', '${trade.executionCount}', isBold: true),
-                  _buildOverviewItem(context, 'AVG. PRICE', trade.displayAvgPrice),
-                  _buildOverviewItem(context, 'HOLD', trade.displayHoldingPeriod),
-                  _buildOverviewItem(context, 'CURRENCY', trade.displayCurrency, isBold: true),
-                ],
-              ),
-            ],
-          ),
+        // Trade Overview Section (Stacked vertically on mobile)
+        _buildSpecificCard(
+          context,
+          title: 'Trade Overview',
+          accentColor: const Color(0xFF311B92).withOpacity(0.3), // Dark Purple
+          iconColor: const Color(0xFFB39DDB), // Light Purple
+          icon: Icons.receipt_long,
+          children: [
+             Row(
+               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+               children: [
+                  Expanded(child: _buildStatColumn('POSITION', trade.tradePositionType ?? 'N/A')),
+                  Expanded(child: _buildStatColumn('QTY', trade.displayQuantity)),
+                  Expanded(child: _buildStatColumn('EXECS', '${trade.executionCount}')),
+               ]
+             ),
+             const SizedBox(height: 16),
+             Row(
+               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+               children: [
+                  Expanded(child: _buildStatColumn('AVG. PRICE', trade.displayAvgPrice)),
+                  Expanded(child: _buildStatColumn('HOLD', trade.displayHoldingPeriod)),
+                  Expanded(child: _buildStatColumn('CURRENCY', trade.displayCurrency)),
+               ]
+             )
+          ]
         ),
         const SizedBox(height: 16),
 

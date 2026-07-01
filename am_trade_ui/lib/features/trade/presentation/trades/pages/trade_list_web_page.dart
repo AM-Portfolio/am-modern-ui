@@ -22,6 +22,7 @@ class TradeListWebPage extends ConsumerStatefulWidget {
 class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
   TradeHoldingViewModel? _selectedTrade;
   bool _isListVisible = true;
+  bool _hasInitializedSelection = false;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +39,7 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.receipt_long, size: 64, color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
+                  Icon(Icons.receipt_long, size: 64, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
                   const SizedBox(height: 16),
                   Text('No Trades Found', style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 8),
@@ -46,6 +47,18 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                 ],
               ),
             ).animate().fadeIn(duration: 600.ms).scale();
+          }
+
+          // Auto-select the first trade on initial load
+          if (!_hasInitializedSelection && holdings.isNotEmpty) {
+            _hasInitializedSelection = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _selectedTrade = holdings.first;
+                });
+              }
+            });
           }
 
           return LayoutBuilder(
@@ -236,7 +249,6 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
           onTap: () {
             setState(() {
               _selectedTrade = holding;
-              _isListVisible = false; // Hide sidebar when trade selected
             });
           },
           child: Padding(
@@ -367,6 +379,7 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
     if (_selectedTrade == null) return const SizedBox();
 
     return TradeDetailViewPage(
+      key: ValueKey(_selectedTrade!.tradeId),
       trade: _selectedTrade!,
       portfolioId: widget.portfolioId,
       onNavigateToChart: widget.onNavigateToChart,

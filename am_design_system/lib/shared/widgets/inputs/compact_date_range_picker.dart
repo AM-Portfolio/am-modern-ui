@@ -532,8 +532,8 @@ class _CompactDateRangePickerDialogState
   Widget _buildCalendarGrid(ThemeData theme) {
     final year = _displayedMonth.year;
     final month = _displayedMonth.month;
-    final daysInMonth = DateTime(year, month + 1, 0).day;
-    final firstDayWeekday = DateTime(year, month).weekday % 7;
+    final daysInMonth = DateUtils.getDaysInMonth(year, month);
+    final firstDayWeekday = DateTime(year, month, 1).weekday % 7;
     const totalSlots = 42;
 
     return GridView.builder(

@@ -59,6 +59,16 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
     final cardBgColor = isDarkMode ? const Color(0xFF2C2C3E) : Colors.white;
     final cardBorderColor = isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
 
+    String displayName = 'Select Portfolio';
+    if (currentPortfolioName != null) {
+      displayName = currentPortfolioName!;
+    } else if (currentPortfolioId != null && portfolios.isNotEmpty) {
+      try {
+        final portfolio = portfolios.firstWhere((p) => idExtractor(p) == currentPortfolioId);
+        displayName = nameExtractor(portfolio);
+      } catch (_) {}
+    }
+
     if (isCompact) {
       if (portfolios.isEmpty) return const SizedBox.shrink();
       
@@ -158,7 +168,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      currentPortfolioName ?? 'Select Portfolio',
+                      displayName,
                       style: TextStyle(
                         color: textColor,
                         fontSize: 13,

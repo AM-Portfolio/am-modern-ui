@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'dropdown_styles.dart';
 import '../../../core/theme/app_glassmorphism.dart';
 
 
 /// A customizable dropdown widget that provides consistent styling and behavior
 /// across the application. Supports icons, hints, and custom styling.
-class CustomDropdown<T> extends StatelessWidget {
+class CustomDropdown<T> extends StatefulWidget {
   const CustomDropdown({
     required this.items,
     required this.onChanged,
@@ -17,7 +18,7 @@ class CustomDropdown<T> extends StatelessWidget {
     this.primaryColor,
     this.height = 40,
     this.isExpanded = true,
-    this.fontSize = 13,
+    this.fontSize = 14,
     this.iconSize = 18,
     this.borderRadius = 12,
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 12),
@@ -83,71 +84,241 @@ class CustomDropdown<T> extends StatelessWidget {
   final bool enableGlass;
 
   @override
+  State<CustomDropdown<T>> createState() => _CustomDropdownState<T>();
+}
+
+class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _overlayEntry;
+  bool _isOpen = false;
+
+  void _toggleDropdown() {
+    if (!widget.enabled) return;
+    if (_isOpen) {
+      _closeDropdown();
+    } else {
+      _openDropdown();
+    }
+  }
+
+  void _openDropdown() {
+    _overlayEntry = _createOverlayEntry();
+    Overlay.of(context).insert(_overlayEntry!);
+    setState(() => _isOpen = true);
+  }
+
+  void _closeDropdown() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    if (mounted) {
+      setState(() => _isOpen = false);
+    }
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    final renderBox = context.findRenderObject()! as RenderBox;
+    final size = renderBox.size;
+    final theme = Theme.of(context);
+
+    return OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _closeDropdown,
+              behavior: HitTestBehavior.translucent,
+            ),
+          ),
+          Positioned(
+            width: widget.isExpanded ? size.width : null,
+            child: CompositedTransformFollower(
+              link: _layerLink,
+              showWhenUnlinked: false,
+              offset: Offset(0, size.height + 4),
+              child: Material(
+                elevation: widget.enableGlass ? 0 : 8,
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: 300,
+                    minWidth: widget.isExpanded ? size.width : math.max(size.width, 160.0),
+                  ),
+                  decoration: widget.enableGlass
+                      ? AppGlassmorphism.dropdownDecoration(context).copyWith(
+                          borderRadius: BorderRadius.circular(widget.borderRadius),
+                        )
+                      : BoxDecoration(
+                          color: theme.brightness == Brightness.dark 
+                              ? const Color(0xFF1E1E2A)
+                              : theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(widget.borderRadius),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 24,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 12),
+                            ),
+                          ],
+                        ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(widget.borderRadius),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(8),
+                      child: IntrinsicWidth(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: widget.items.map((item) {
+                            final isSelected = item.value == widget.value;
+                            return InkWell(
+                              onTap: () {
+                                widget.onChanged?.call(item.value);
+                                _closeDropdown();
+                              },
+                              hoverColor: Colors.transparent,
+                              splashColor: Colors.transparent,
+                              highlightColor: Colors.transparent,
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: _HoverableDropdownItemChild(
+                                  isSelected: isSelected,
+                                  child: DefaultTextStyle(
+                                    style: DropdownStyles.createTextStyle(
+                                      context,
+                                      primaryColor: widget.primaryColor,
+                                      textColor: widget.textColor,
+                                      fontSize: widget.fontSize,
+                                      enabled: true,
+                                    ).copyWith(
+                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                    ),
+                                    child: Stack(
+                                      alignment: Alignment.centerLeft,
+                                      children: [
+                                        item.child,
+                                        if (isSelected)
+                                          Positioned(
+                                            right: 12,
+                                            child: Icon(
+                                              Icons.check_circle_rounded, 
+                                              size: 16, 
+                                              color: widget.primaryColor ?? theme.primaryColor,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    if (_isOpen) {
+      _overlayEntry?.remove();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final effectivePrimaryColor = primaryColor ?? theme.primaryColor;
+    final effectivePrimaryColor = widget.primaryColor ?? theme.primaryColor;
 
-    Widget dropdownBody = DropdownButtonHideUnderline(
-      child: DropdownButton<T>(
-        value: value,
-        isExpanded: isExpanded,
-        hint:
-            hint != null
-                ? Text(
-                  hint!,
-                  style: DropdownStyles.createTextStyle(
-                    context,
-                    primaryColor: effectivePrimaryColor,
-                    fontSize: fontSize,
-                    isPlaceholder: true,
-                    enabled: enabled,
-                  ),
-                )
-                : null,
-        icon: Icon(
-          icon ?? Icons.expand_more,
-          color: DropdownStyles.getIconColor(
-            context,
-            primaryColor: effectivePrimaryColor,
-            enabled: enabled,
-          ),
-          size: iconSize,
-        ),
+    Widget? displayWidget;
+    if (widget.value != null) {
+      final selectedItem = widget.items.cast<DropdownMenuItem<T>?>().firstWhere(
+        (item) => item?.value == widget.value,
+        orElse: () => null,
+      );
+      if (selectedItem != null) {
+        displayWidget = selectedItem.child;
+      }
+    }
+
+    if (displayWidget == null && widget.hint != null) {
+      displayWidget = Text(
+        widget.hint!,
         style: DropdownStyles.createTextStyle(
           context,
           primaryColor: effectivePrimaryColor,
-          textColor: textColor,
-          fontSize: fontSize,
-          enabled: enabled,
+          fontSize: widget.fontSize,
+          isPlaceholder: true,
+          enabled: widget.enabled,
         ),
-        items: enabled ? items : [],
-        onChanged: enabled ? onChanged : null,
-        dropdownColor: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(borderRadius),
-      ),
+      );
+    }
+
+    Widget dropdownBody = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        if (displayWidget != null)
+          widget.isExpanded ? Expanded(child: displayWidget) : displayWidget,
+        Icon(
+          widget.icon ?? (_isOpen ? Icons.expand_less : Icons.expand_more),
+          color: DropdownStyles.getIconColor(
+            context,
+            primaryColor: effectivePrimaryColor,
+            enabled: widget.enabled,
+          ),
+          size: widget.iconSize,
+        ),
+      ],
     );
 
-    if (enableGlass) {
-      return Container(
-        height: height,
+    Widget container;
+    if (widget.enableGlass) {
+      container = Container(
+        height: widget.height,
         decoration: AppGlassmorphism.dropdownDecoration(context),
-        padding: contentPadding,
+        padding: widget.contentPadding,
+        child: dropdownBody,
+      );
+    } else {
+      container = Container(
+        height: widget.height,
+        padding: widget.contentPadding,
+        decoration: DropdownStyles.createDecoration(
+          context,
+          primaryColor: effectivePrimaryColor,
+          backgroundColor: widget.backgroundColor,
+          borderColor: widget.borderColor,
+          borderRadius: widget.borderRadius,
+          enabled: widget.enabled,
+        ),
         child: dropdownBody,
       );
     }
 
-    return Container(
-      height: height,
-      padding: contentPadding,
-      decoration: DropdownStyles.createDecoration(
-        context,
-        primaryColor: effectivePrimaryColor,
-        backgroundColor: backgroundColor,
-        borderColor: borderColor,
-        borderRadius: borderRadius,
-        enabled: enabled,
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: MouseRegion(
+        cursor: widget.enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        child: GestureDetector(
+          onTap: _toggleDropdown,
+          behavior: HitTestBehavior.opaque,
+          child: container,
+        ),
       ),
-      child: dropdownBody,
     );
   }
 }
@@ -159,8 +330,8 @@ extension DropdownItemHelper<T> on T {
     required String text,
     IconData? icon,
     Color? iconColor,
-    double iconSize = 14,
-    double fontSize = 13,
+    double iconSize = 16,
+    double fontSize = 14,
     bool expandText = true,
   }) => DropdownMenuItem<T>(
     value: this,
@@ -172,7 +343,7 @@ extension DropdownItemHelper<T> on T {
           const SizedBox(width: 8),
         ],
         if (expandText)
-          Expanded(
+          Flexible(
             child: Text(
               text,
               style: TextStyle(fontSize: fontSize),
@@ -188,9 +359,64 @@ extension DropdownItemHelper<T> on T {
   /// Creates a simple dropdown item with just text
   DropdownMenuItem<T> toSimpleDropdownItem({
     required String text,
-    double fontSize = 13,
+    double fontSize = 14,
   }) => DropdownMenuItem<T>(
     value: this,
     child: Text(text, style: TextStyle(fontSize: fontSize)),
   );
+}
+
+class _HoverableDropdownItemChild extends StatefulWidget {
+  final Widget child;
+  final bool isSelected;
+
+  const _HoverableDropdownItemChild({required this.child, this.isSelected = false});
+
+  @override
+  State<_HoverableDropdownItemChild> createState() => _HoverableDropdownItemChildState();
+}
+
+class _HoverableDropdownItemChildState extends State<_HoverableDropdownItemChild> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        // Use padding to shift content instead of transform to avoid overflow clipping
+        padding: EdgeInsets.only(
+          left: _isHovered ? 12.0 : 8.0, 
+          right: _isHovered ? 4.0 : 8.0, 
+          top: 10.0, 
+          bottom: 10.0
+        ),
+        decoration: BoxDecoration(
+          color: _isHovered 
+              ? theme.primaryColor.withValues(alpha: 0.15) 
+              : (widget.isSelected ? theme.primaryColor.withValues(alpha: 0.05) : Colors.transparent),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          style: TextStyle(
+            color: _isHovered ? theme.primaryColor : theme.colorScheme.onSurface,
+            fontWeight: _isHovered ? FontWeight.w600 : FontWeight.w500,
+          ),
+          child: IconTheme(
+            data: IconThemeData(
+              color: _isHovered ? theme.primaryColor : theme.iconTheme.color,
+            ),
+            child: widget.child,
+          ),
+        ),
+      ),
+    );
+  }
 }
