@@ -399,19 +399,14 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     final portfolios = portfoliosAsyncValue.asData?.value ?? const [];
 
     // Automatically select the first portfolio if none is selected
-    ref.listen(tradePortfoliosStreamProvider, fireImmediately: true, (previous, next) {
-      final loadedPortfolios = next.asData?.value;
-      if (loadedPortfolios != null && loadedPortfolios.isNotEmpty) {
-        if (_currentPortfolioId == null) {
-          final defaultPortfolio = loadedPortfolios.first;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              _onPortfolioSelected(defaultPortfolio.id, defaultPortfolio.name, autoSelect: true);
-            }
-          });
+    if (portfolios.isNotEmpty && _currentPortfolioId == null) {
+      final defaultPortfolio = portfolios.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _onPortfolioSelected(defaultPortfolio.id, defaultPortfolio.name, autoSelect: true);
         }
-      }
-    });
+      });
+    }
 
     return NotificationListener<OpenAddTradeNotification>(
       onNotification: (notification) {
