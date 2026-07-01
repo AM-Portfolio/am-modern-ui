@@ -68,8 +68,7 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
               controller: _scrollController,
               child: Column(
                 children: [
-                  // Spline Chart Section (from Zomato Mockup)
-                  TradeDetailChartSection(trade: widget.trade),
+
                   
                   // Summary Cards (Trade Details, Price, Fees, Performance)
                   Padding(

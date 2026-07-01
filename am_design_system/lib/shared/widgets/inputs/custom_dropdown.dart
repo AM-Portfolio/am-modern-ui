@@ -149,9 +149,7 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                           borderRadius: BorderRadius.circular(widget.borderRadius),
                         )
                       : BoxDecoration(
-                          color: theme.brightness == Brightness.dark 
-                              ? const Color(0xFF1E1E2A)
-                              : theme.colorScheme.surface,
+                          color: widget.backgroundColor ?? theme.colorScheme.surface,
                           borderRadius: BorderRadius.circular(widget.borderRadius),
                           border: Border.all(
                             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),

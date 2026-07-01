@@ -432,7 +432,7 @@ class _TradePortfolioDiscoveryTemplateState
                         fontWeight: FontWeight.w500,
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
-                      dropdownColor: const Color(0xFF1E1E30),
+                      dropdownColor: Theme.of(context).colorScheme.surface,
                       items: const [
                         DropdownMenuItem(
                             value: 'name', child: Text('Name')),
@@ -1069,15 +1069,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        SizedBox(
-                          width: 70,
-                          height: 28,
-                          child: CustomPaint(
-                            painter: _SparklinePainter(
-                              color: const Color(0xFF7C3AED),
-                            ),
-                          ),
-                        ),
+
                       ],
                     ),
                   ],
@@ -1136,31 +1128,3 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
   }
 }
 
-// ─── SPARKLINE ────────────────────────────────────────────────────────────
-class _SparklinePainter extends CustomPainter {
-  final Color color;
-  _SparklinePainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.8
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path()
-      ..moveTo(0, size.height * 0.75)
-      ..quadraticBezierTo(
-          size.width * 0.25, size.height * 0.9, size.width * 0.4, size.height * 0.45)
-      ..quadraticBezierTo(
-          size.width * 0.55, size.height * 0.05, size.width * 0.7, size.height * 0.4)
-      ..quadraticBezierTo(
-          size.width * 0.85, size.height * 0.65, size.width, size.height * 0.25);
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
-}
