@@ -336,11 +336,82 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     AppLogger.info('Portfolio selected: $portfolioName ($portfolioId)', tag: 'TradeWebScreen');
   }
 
+  void _showRenamePortfolioDialog(BuildContext context, String portfolioId, String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDarkMode ? const Color(0xFF2C2C3E) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Rename Portfolio', style: TextStyle(fontWeight: FontWeight.w600)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Enter a new name for your portfolio:'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Portfolio Name',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  filled: true,
+                  fillColor: isDarkMode ? Colors.black12 : Colors.grey[50],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Portfolio rename UI added. Backend API connection coming soon!'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ModuleColors.trade,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch portfolios stream
     final portfoliosAsyncValue = ref.watch(tradePortfoliosStreamProvider);
     final portfolios = portfoliosAsyncValue.asData?.value ?? const [];
+
+    // Automatically select the first portfolio if none is selected
+    ref.listen(tradePortfoliosStreamProvider, fireImmediately: true, (previous, next) {
+      final loadedPortfolios = next.asData?.value;
+      if (loadedPortfolios != null && loadedPortfolios.isNotEmpty) {
+        if (_currentPortfolioId == null) {
+          final defaultPortfolio = loadedPortfolios.first;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _onPortfolioSelected(defaultPortfolio.id, defaultPortfolio.name);
+            }
+          });
+        }
+      }
+    });
 
     return NotificationListener<OpenAddTradeNotification>(
       onNotification: (notification) {
@@ -501,6 +572,9 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 currentPortfolioName: _currentPortfolioName,
                 portfolios: portfolios,
                 onPortfolioSelected: _onPortfolioSelected,
+                onRenamePortfolio: (id, name) {
+                  _showRenamePortfolioDialog(context, id, name);
+                },
                 idExtractor: (p) => p.id,
                 nameExtractor: (p) => p.name,
                 accentColor: ModuleColors.trade,

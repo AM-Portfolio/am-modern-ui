@@ -11,6 +11,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
     required this.onPortfolioSelected,
     required this.nameExtractor,
     required this.idExtractor,
+    this.onRenamePortfolio,
     this.isCompact = false,
     this.accentColor,
     this.isDark,
@@ -33,6 +34,9 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
 
   /// Function to extract Name from the portfolio object
   final String Function(T) nameExtractor;
+
+  /// Optional callback to trigger when rename is requested
+  final void Function(String id, String currentName)? onRenamePortfolio;
 
   /// Whether to show in compact mode (icon only)
   final bool isCompact;
@@ -151,6 +155,17 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (onRenamePortfolio != null)
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pop(); // Close the menu
+                          onRenamePortfolio!(pId, nameExtractor(portfolio));
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8.0, right: 4.0),
+                          child: Icon(Icons.edit, size: 16, color: subTextColor),
+                        ),
+                      ),
                     if (isSelected)
                       Icon(Icons.check, size: 16, color: effectiveAccent),
                   ],
