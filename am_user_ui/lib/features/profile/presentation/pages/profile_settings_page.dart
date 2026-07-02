@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_auth_ui/am_auth_ui.dart';
 import 'dart:ui';
 
 /// Profile and Settings page for user account management
@@ -58,7 +59,7 @@ class ProfileSettingsPage extends StatelessWidget {
                         const SizedBox(height: 32),
                         
                         // Settings Content
-                        _buildSettingsContent(context, isDark),
+                        _buildSettingsContent(context, isDark, isDesktop),
                       ],
                     ),
                   ),
@@ -163,7 +164,7 @@ class ProfileSettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsContent(BuildContext context, bool isDark) {
+  Widget _buildSettingsContent(BuildContext context, bool isDark, bool isDesktop) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -259,6 +260,30 @@ class ProfileSettingsPage extends StatelessWidget {
             ),
           ],
         ),
+        if (!isDesktop) ...[
+          const SizedBox(height: 32),
+          _buildSectionHeader(context, 'Session', isDark),
+          const SizedBox(height: 16),
+          _buildGlassSection(
+            context,
+            isDark,
+            children: [
+              _buildSettingTile(
+                context,
+                icon: Icons.logout_rounded,
+                title: 'Log Out',
+                subtitle: 'Sign out of your account',
+                isDark: isDark,
+                iconColor: Colors.redAccent,
+                textColor: Colors.redAccent,
+                trailing: const SizedBox(),
+                onTap: () {
+                  context.read<AuthCubit>().logout();
+                },
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -299,6 +324,8 @@ class ProfileSettingsPage extends StatelessWidget {
     required bool isDark,
     Widget? trailing,
     VoidCallback? onTap,
+    Color? iconColor,
+    Color? textColor,
   }) {
     return InkWell(
       onTap: onTap,
@@ -314,7 +341,7 @@ class ProfileSettingsPage extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                color: isDark ? Colors.white : ModuleColors.portfolio,
+                color: iconColor ?? (isDark ? Colors.white : ModuleColors.portfolio),
                 size: 20,
               ),
             ),
@@ -326,7 +353,7 @@ class ProfileSettingsPage extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      color: isDark ? Colors.white : Colors.black87,
+                      color: textColor ?? (isDark ? Colors.white : Colors.black87),
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
