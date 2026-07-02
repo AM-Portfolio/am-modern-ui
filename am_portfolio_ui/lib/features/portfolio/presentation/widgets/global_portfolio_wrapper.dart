@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:am_common/am_common.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../../providers/portfolio_providers.dart';
@@ -31,6 +32,9 @@ class _GlobalPortfolioWrapperState
   String? _selectedPortfolioId;
   String? _selectedPortfolioName;
   String? _validatedUrlPortfolioId;
+  BuildContext? _portfolioBlocContext;
+  bool _portfolioServiceMarked = false;
+  bool _portfolioListMarked = false;
 
   String? _portfolioIdFromUrl(BuildContext context) {
     final params = GoRouterState.of(context).pathParameters;
@@ -52,11 +56,15 @@ class _GlobalPortfolioWrapperState
       _selectedPortfolioName = name;
     });
 
-    innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
-          portfolioId: id,
-          forceResubscribe: true,
-        );
-    innerContext.read<PortfolioCubit>().loadPortfolioById(id);
+    try {
+      innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+            portfolioId: id,
+            forceResubscribe: true,
+          );
+      innerContext.read<PortfolioCubit>().loadPortfolioById(id);
+    } catch (_) {
+      // PortfolioCubit not ready yet — selection stored for when service loads.
+    }
 
     if (notifyUrl) {
       widget.onPortfolioChanged?.call(id, name);
@@ -142,8 +150,24 @@ class _GlobalPortfolioWrapperState
     final portfolioServiceAsync = ref.watch(portfolioServiceProvider);
     final urlPortfolioId = _portfolioIdFromUrl(context);
 
+    final shellChild = _SelectedPortfolioProvider(
+      selectedId: _selectedPortfolioId,
+      selectedName: _selectedPortfolioName,
+      onSelect: (id, name) {
+        final innerContext = _portfolioBlocContext;
+        if (innerContext != null) {
+          _selectPortfolio(innerContext, id, name, notifyUrl: true);
+        }
+      },
+      child: widget.child,
+    );
+
     return portfolioServiceAsync.when(
       data: (service) {
+        if (!_portfolioServiceMarked) {
+          _portfolioServiceMarked = true;
+          BootTrace.instance.mark('portfolio_service_ready');
+        }
         return BlocProvider<PortfolioCubit>(
           create: (context) {
             final cubit = PortfolioCubit(service);
@@ -152,39 +176,39 @@ class _GlobalPortfolioWrapperState
             return cubit;
           },
           child: Builder(
-            builder: (innerContext) => BlocListener<PortfolioCubit, PortfolioState>(
-              listener: (context, state) {
-                if (state is PortfolioListLoaded) {
-                  if (urlPortfolioId != null) {
-                    _validateUrlPortfolio(innerContext, state);
-                    return;
-                  }
+            builder: (innerContext) {
+              _portfolioBlocContext = innerContext;
+              return BlocListener<PortfolioCubit, PortfolioState>(
+                listener: (context, state) {
+                  if (state is PortfolioListLoaded) {
+                    if (!_portfolioListMarked) {
+                      _portfolioListMarked = true;
+                      BootTrace.instance.mark('portfolio_list_done');
+                    }
+                    if (urlPortfolioId != null) {
+                      _validateUrlPortfolio(innerContext, state);
+                      return;
+                    }
 
-                  if (_selectedPortfolioId == null &&
-                      state.portfolioList!.portfolios.isNotEmpty) {
-                    final first = state.portfolioList!.portfolios.first;
-                    _selectPortfolio(
-                      innerContext,
-                      first.portfolioId,
-                      first.portfolioName,
-                    );
+                    if (_selectedPortfolioId == null &&
+                        state.portfolioList!.portfolios.isNotEmpty) {
+                      final first = state.portfolioList!.portfolios.first;
+                      _selectPortfolio(
+                        innerContext,
+                        first.portfolioId,
+                        first.portfolioName,
+                      );
+                    }
                   }
-                }
-              },
-              child: _SelectedPortfolioProvider(
-                selectedId: _selectedPortfolioId,
-                selectedName: _selectedPortfolioName,
-                onSelect: (id, name) =>
-                    _selectPortfolio(innerContext, id, name, notifyUrl: true),
-                child: widget.child,
-              ),
-            ),
+                },
+                child: shellChild,
+              );
+            },
           ),
         );
       },
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
+      loading: () => shellChild,
+      error: (err, stack) => shellChild,
     );
   }
 }

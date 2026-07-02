@@ -22,6 +22,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   bool _sessionRestored = false;
+  bool _shellMarked = false;
 
   List<_MoreMenuItem> _moreMenuItemsFor({required bool isAdmin}) => [
         const _MoreMenuItem(
@@ -226,8 +227,16 @@ class _AppShellState extends State<AppShell> {
       child: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
           if (authState is AuthInitial || authState is AuthLoading) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
+            return Scaffold(
+              body: Stack(
+                children: [
+                  widget.child,
+                  const Align(
+                    alignment: Alignment.topCenter,
+                    child: LinearProgressIndicator(minHeight: 2),
+                  ),
+                ],
+              ),
             );
           }
 
@@ -239,9 +248,12 @@ class _AppShellState extends State<AppShell> {
               );
               context.go('${AppRoutes.login}?redirect=$redirect');
             });
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+            return widget.child;
+          }
+
+          if (!_shellMarked) {
+            _shellMarked = true;
+            common.BootTrace.instance.mark('shell_visible');
           }
 
           final userId = authState.user.id;

@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 
+bool _dashboardDataMarked = false;
+
 /// Pixel-perfect Lumina web dashboard screen with Glassmorphism and Dark Theme.
 class DashboardWebScreen extends ConsumerWidget {
   final String userId;
@@ -73,6 +75,13 @@ class DashboardWebScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(dashboardStreamProvider(userId), (previous, next) {
+      if (!_dashboardDataMarked && next.hasValue) {
+        _dashboardDataMarked = true;
+        BootTrace.instance.mark('dashboard_first_data');
+      }
+    });
+
     ref.watch(dashboardStreamingSessionProvider(userId));
     ref.listen(appTimeFrameProvider, (previous, next) {
       if (previous != next) {

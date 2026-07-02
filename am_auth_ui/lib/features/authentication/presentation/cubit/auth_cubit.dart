@@ -3,7 +3,6 @@ import 'package:am_common/am_common.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:am_common/am_common.dart';
 import '../../domain/usecases/check_auth_status_usecase.dart';
 import '../../domain/usecases/demo_login_usecase.dart';
 import '../../domain/usecases/email_login_usecase.dart';
@@ -96,6 +95,7 @@ class AuthCubit extends Cubit<AuthState> {
   /// Check authentication status and restore session if valid
   Future<void> checkAuthStatus() async {
     CommonLogger.methodEntry('checkAuthStatus', tag: 'AuthCubit');
+    BootTrace.instance.mark('auth_check_start');
     CommonLogger.debug(
       '🔍 Starting authentication status check...',
       tag: 'AuthCubit',
@@ -194,6 +194,7 @@ class AuthCubit extends Cubit<AuthState> {
       },
     );
 
+    BootTrace.instance.mark('auth_check_done');
     CommonLogger.methodExit('checkAuthStatus', tag: 'AuthCubit');
   }
 
