@@ -55,6 +55,7 @@ export 'features/attachment/internal/presentation/widgets/shared_attachment_sect
 export 'features/attachment/internal/presentation/widgets/attachment_picker/attachment_picker.dart';
 export 'features/attachment/internal/presentation/widgets/attachment_picker/shared/attachment_preview_grid.dart';
 export 'features/attachment/internal/presentation/models/pending_attachment.dart';
+export 'features/charts/presentation/common_performance_chart.dart';
 
 // Navigation Widgets
 export 'features/navigation/widgets/vertical_scroll_navigator.dart';
