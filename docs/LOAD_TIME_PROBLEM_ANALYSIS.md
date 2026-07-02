@@ -28,6 +28,7 @@ This document lists **every major bottleneck**, **exact file/line area**, **meas
 | P13 | Hive init on shell mount | **100–500ms** | **Fixed** | Lazy `ensureInitialized()` |
 | P14 | nginx no-cache on JS | Full re-download | Open | `nginx.conf` (follow-up) |
 | P15 | Backend preprod slowness | **1.6s–74s** | Open (backend) | am-core-services |
+| — | Auth refresh hang (expired token) | Up to 74s+ | **Fixed** | Dio 15s/30s timeout in `injection.dart` |
 
 **Expected dashboard landing after fixes (preprod, release build):**
 
@@ -366,4 +367,7 @@ am-modern-ui/
 
 ## Related docs
 
-- [FAST_BOOT_PERFORMANCE.md](FAST_BOOT_PERFORMANCE.md) — Phase 0/1 boot + Phase 2 progressive dashboard (shipped)
+- **[FIRST_URL_TO_AUTH.md](FIRST_URL_TO_AUTH.md)** — first URL hit → login timeline (preprod vs localhost)
+- **[LOAD_TIME_PROBLEM_ANALYSIS.md](LOAD_TIME_PROBLEM_ANALYSIS.md)** — detailed what/where/time for each bottleneck (P1–P15)
+- **[PREPROD_DEPLOY_CHECKLIST.md](PREPROD_DEPLOY_CHECKLIST.md)** — verify before commit/deploy
+- Original spinner change: commit `b2ac3f1` — bootstrap refactor (spinners are UX feedback, not the root cause)

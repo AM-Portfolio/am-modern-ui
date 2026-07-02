@@ -66,6 +66,10 @@ npm run run:app:local:notrace    # trace OFF
 
 **Detailed problem analysis (timings + file locations):** [LOAD_TIME_PROBLEM_ANALYSIS.md](../docs/LOAD_TIME_PROBLEM_ANALYSIS.md)
 
+**First URL → auth timeline (preprod):** [FIRST_URL_TO_AUTH.md](../docs/FIRST_URL_TO_AUTH.md)
+
+**Preprod deploy checklist:** [PREPROD_DEPLOY_CHECKLIST.md](../docs/PREPROD_DEPLOY_CHECKLIST.md)
+
 ---
 
 ## 🚀 **Getting Started**

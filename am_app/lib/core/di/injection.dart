@@ -84,7 +84,15 @@ void _registerAuthDependencies() {
     () => auth_ui.GoogleSignInService(),
   );
 
-  getIt.registerLazySingleton<Dio>(() => Dio());
+  getIt.registerLazySingleton<Dio>(() {
+    final dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 30),
+      ),
+    );
+    return dio;
+  });
 
   getIt.registerLazySingleton<auth_ui.MockAuthDataSource>(
     () => auth_ui.MockAuthDataSource(getIt<auth_ui.MockDataService>()),
