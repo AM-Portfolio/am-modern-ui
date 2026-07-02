@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -29,6 +30,9 @@ class ApiClient {
 
   /// HTTP client for making requests
   final http.Client _client;
+
+  /// Default timeout for HTTP requests (overridable per call).
+  static const Duration defaultTimeout = Duration(seconds: 30);
 
   /// Get authentication token from secure storage
   Future<String?> _getAuthToken() async {
@@ -139,7 +143,10 @@ class ApiClient {
   }
 
   /// Helper to wrap requests with retry logic
-  Future<T> _requestWithRetry<T>(Future<T> Function(int attempt) request) async {
+  Future<T> _requestWithRetry<T>(
+    Future<T> Function(int attempt) request, {
+    bool retryOnTimeout = true,
+  }) async {
     const int maxRetries = 3;
     int attempt = 0;
 
@@ -157,6 +164,8 @@ class ApiClient {
               shouldRetry = false;
             }
           }
+        } else if (e is TimeoutException) {
+          shouldRetry = retryOnTimeout;
         }
 
         if (!shouldRetry || attempt >= maxRetries) {
@@ -181,7 +190,9 @@ class ApiClient {
     Map<String, String>? headers,
     Map<String, dynamic>? queryParams,
     bool requireAuth = true,
+    Duration? timeout,
   }) async {
+    final effectiveTimeout = timeout ?? defaultTimeout;
     return _requestWithRetry((attempt) async {
       Uri? uri;
       final stopwatch = Stopwatch()..start();
@@ -204,7 +215,14 @@ class ApiClient {
           headers: requestHeaders,
         );
 
-        final response = await _client.get(uri, headers: requestHeaders);
+        final response = await _client
+            .get(uri, headers: requestHeaders)
+            .timeout(
+              effectiveTimeout,
+              onTimeout: () => throw TimeoutException(
+                'GET timed out after ${effectiveTimeout.inSeconds}s',
+              ),
+            );
         stopwatch.stop();
 
         // Record Telemetry
@@ -238,9 +256,12 @@ class ApiClient {
         if (e is ApiException) {
           rethrow;
         }
+        if (e is TimeoutException) {
+          throw ApiException('Request timed out: ${e.message}');
+        }
         throw ApiException('Network error: ${e.toString()}');
       }
-    });
+    }, retryOnTimeout: false);
   }
 
   /// Make POST request
@@ -251,7 +272,9 @@ class ApiClient {
     Map<String, dynamic>? queryParams,
     body,
     bool requireAuth = true,
+    Duration? timeout,
   }) async {
+    final effectiveTimeout = timeout ?? defaultTimeout;
     return _requestWithRetry((attempt) async {
       final stopwatch = Stopwatch()..start();
       late Uri uri; // Declare uri outside try block for catch block access
@@ -275,11 +298,18 @@ class ApiClient {
           body: body,
         );
 
-        final response = await _client.post(
-          uri,
-          headers: requestHeaders,
-          body: body != null ? jsonEncode(body) : null,
-        );
+        final response = await _client
+            .post(
+              uri,
+              headers: requestHeaders,
+              body: body != null ? jsonEncode(body) : null,
+            )
+            .timeout(
+              effectiveTimeout,
+              onTimeout: () => throw TimeoutException(
+                'POST timed out after ${effectiveTimeout.inSeconds}s',
+              ),
+            );
 
         stopwatch.stop();
 
@@ -314,9 +344,12 @@ class ApiClient {
         if (e is ApiException) {
           rethrow;
         }
+        if (e is TimeoutException) {
+          throw ApiException('Request timed out: ${e.message}');
+        }
         throw ApiException('Network error: ${e.toString()}');
       }
-    });
+    }, retryOnTimeout: false);
   }
 
   /// Make PUT request
@@ -327,7 +360,9 @@ class ApiClient {
     Map<String, dynamic>? queryParams,
     body,
     bool requireAuth = true,
+    Duration? timeout,
   }) async {
+    final effectiveTimeout = timeout ?? defaultTimeout;
     return _requestWithRetry((attempt) async {
       try {
         final uri = _buildUri(endpoint, queryParams: queryParams);
@@ -338,11 +373,18 @@ class ApiClient {
         );
 
         final stopwatch = Stopwatch()..start();
-        final response = await _client.put(
-          uri,
-          headers: requestHeaders,
-          body: body != null ? jsonEncode(body) : null,
-        );
+        final response = await _client
+            .put(
+              uri,
+              headers: requestHeaders,
+              body: body != null ? jsonEncode(body) : null,
+            )
+            .timeout(
+              effectiveTimeout,
+              onTimeout: () => throw TimeoutException(
+                'PUT timed out after ${effectiveTimeout.inSeconds}s',
+              ),
+            );
         stopwatch.stop();
 
         // Record Telemetry
@@ -360,9 +402,12 @@ class ApiClient {
         if (e is ApiException) {
           rethrow;
         }
+        if (e is TimeoutException) {
+          throw ApiException('Request timed out: ${e.message}');
+        }
         throw ApiException('Network error: ${e.toString()}');
       }
-    });
+    }, retryOnTimeout: false);
   }
 
   /// Make DELETE request
@@ -373,7 +418,9 @@ class ApiClient {
     Map<String, dynamic>? queryParams,
     body,
     bool requireAuth = true,
+    Duration? timeout,
   }) async {
+    final effectiveTimeout = timeout ?? defaultTimeout;
     return _requestWithRetry((attempt) async {
       try {
         final uri = _buildUri(endpoint, queryParams: queryParams);
@@ -384,11 +431,18 @@ class ApiClient {
         );
 
         final stopwatch = Stopwatch()..start();
-        final response = await _client.delete(
-          uri,
-          headers: requestHeaders,
-          body: body != null ? jsonEncode(body) : null,
-        );
+        final response = await _client
+            .delete(
+              uri,
+              headers: requestHeaders,
+              body: body != null ? jsonEncode(body) : null,
+            )
+            .timeout(
+              effectiveTimeout,
+              onTimeout: () => throw TimeoutException(
+                'DELETE timed out after ${effectiveTimeout.inSeconds}s',
+              ),
+            );
         stopwatch.stop();
 
         // Record Telemetry
@@ -406,9 +460,12 @@ class ApiClient {
         if (e is ApiException) {
           rethrow;
         }
+        if (e is TimeoutException) {
+          throw ApiException('Request timed out: ${e.message}');
+        }
         throw ApiException('Network error: ${e.toString()}');
       }
-    });
+    }, retryOnTimeout: false);
   }
 
   /// Close the HTTP client

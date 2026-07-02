@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:am_dashboard_ui/data/repositories/dashboard_repository.dart';
 import 'package:am_dashboard_ui/domain/models/activity_item.dart';
 import 'package:am_dashboard_ui/domain/models/allocation_response.dart';
@@ -13,11 +15,18 @@ import 'package:am_common/am_common.dart';
 
 part 'dashboard_provider.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<DashboardRepository> dashboardRepository(Ref ref) async {
   final apiClient = await ref.watch(analysisApiClientProvider.future);
   final stompClient = GetIt.I<AmStompClient>();
   return DashboardRepository(apiClient, stompClient);
+}
+
+void _attachDashboardStreaming(Ref ref, String userId) {
+  if (userId.isEmpty) return;
+  unawaited(
+    ref.read(dashboardStreamingSessionProvider(userId).future).catchError((_) {}),
+  );
 }
 
 /// Starts dashboard STOMP session (subscribe + queue bindings). Watch from DashboardPage.
@@ -28,8 +37,22 @@ Future<void> dashboardStreamingSession(Ref ref, String userId) async {
   await repository.trySubscribeToDashboard();
   ref.onDispose(() {
     repository.unsubscribeFromDashboard();
-    repository.dispose();
   });
+}
+
+/// Eagerly starts all dashboard REST providers in parallel on mount.
+@riverpod
+void dashboardParallelKickoff(
+  Ref ref,
+  String userId, {
+  String timeFrame = '1D',
+}) {
+  if (userId.isEmpty) return;
+  ref.watch(dashboardStreamProvider(userId));
+  ref.watch(historyStreamProvider(userId, timeFrame: timeFrame));
+  ref.watch(moversStreamProvider(userId, timeFrame: timeFrame));
+  ref.watch(portfolioOverviewsProvider(userId));
+  ref.watch(recentActivityProvider(userId, page: 0, size: 10));
 }
 
 @riverpod
@@ -45,8 +68,8 @@ Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   yield await repository.getSummary(userId);
 
+  _attachDashboardStreaming(ref, userId);
   try {
-    await ref.watch(dashboardStreamingSessionProvider(userId).future);
     yield* repository.watchSummary();
   } catch (e) {
     AppLogger.warning('Dashboard summary live stream unavailable', error: e);
@@ -61,8 +84,8 @@ Stream<List<ActivityItem>> activityStream(Ref ref, String userId) async* {
   final initial = await repository.getRecentActivity(userId, size: 10);
   yield initial.items;
 
+  _attachDashboardStreaming(ref, userId);
   try {
-    await ref.watch(dashboardStreamingSessionProvider(userId).future);
     yield* repository.watchActivity();
   } catch (e) {
     AppLogger.warning('Dashboard activity live stream unavailable', error: e);
@@ -76,8 +99,8 @@ Stream<AllocationResponse> allocationStream(Ref ref, String userId) async* {
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   yield await repository.getAllocation(userId);
 
+  _attachDashboardStreaming(ref, userId);
   try {
-    await ref.watch(dashboardStreamingSessionProvider(userId).future);
     yield* repository.watchAllocation();
   } catch (e) {
     AppLogger.warning('Dashboard allocation live stream unavailable', error: e);
@@ -91,8 +114,8 @@ Stream<TopMoversResponse> moversStream(Ref ref, String userId, {String timeFrame
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   yield await repository.getTopMovers(userId, timeFrame: timeFrame);
 
+  _attachDashboardStreaming(ref, userId);
   try {
-    await ref.watch(dashboardStreamingSessionProvider(userId).future);
     yield* repository.watchMovers(timeFrame: timeFrame);
   } catch (e) {
     AppLogger.warning('Dashboard movers live stream unavailable', error: e);
@@ -106,8 +129,8 @@ Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFr
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   yield await repository.getPerformance(userId, timeFrame: timeFrame);
 
+  _attachDashboardStreaming(ref, userId);
   try {
-    await ref.watch(dashboardStreamingSessionProvider(userId).future);
     yield* repository.watchHistory();
   } catch (e) {
     AppLogger.warning('Dashboard history live stream unavailable', error: e);

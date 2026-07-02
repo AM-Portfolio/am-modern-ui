@@ -43,8 +43,13 @@ class _GlobalPortfolioWrapperState
     return null;
   }
 
-  void _selectPortfolio(
-    BuildContext innerContext,
+  bool get _portfolioDetailFetchAllowed =>
+      widget.streamingTab == 'Portfolio' || widget.streamingTab == 'Trade';
+
+  bool get _portfolioListNeeded =>
+      _portfolioDetailFetchAllowed || _portfolioIdFromUrl(context) != null;
+
+  void _rememberPortfolioSelection(
     String id,
     String name, {
     bool notifyUrl = true,
@@ -56,6 +61,21 @@ class _GlobalPortfolioWrapperState
       _selectedPortfolioName = name;
     });
 
+    if (notifyUrl) {
+      widget.onPortfolioChanged?.call(id, name);
+    }
+  }
+
+  void _selectPortfolio(
+    BuildContext innerContext,
+    String id,
+    String name, {
+    bool notifyUrl = true,
+  }) {
+    _rememberPortfolioSelection(id, name, notifyUrl: notifyUrl);
+
+    if (!_portfolioDetailFetchAllowed) return;
+
     try {
       innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
             portfolioId: id,
@@ -64,10 +84,6 @@ class _GlobalPortfolioWrapperState
       innerContext.read<PortfolioCubit>().loadPortfolioById(id);
     } catch (_) {
       // PortfolioCubit not ready yet — selection stored for when service loads.
-    }
-
-    if (notifyUrl) {
-      widget.onPortfolioChanged?.call(id, name);
     }
   }
 
@@ -128,11 +144,23 @@ class _GlobalPortfolioWrapperState
 
   void _syncPortfolioStreaming(PortfolioCubit cubit) {
     cubit.setPortfolioStreamingAllowed(_portfolioStreamingAllowed);
-    if (_portfolioStreamingAllowed && _selectedPortfolioId != null) {
-      cubit.subscribeToPortfolioUpdates(
-        portfolioId: _selectedPortfolioId,
-        forceResubscribe: true,
-      );
+
+    if (!_portfolioDetailFetchAllowed) return;
+
+    if (_portfolioListNeeded &&
+        cubit.state.portfolioList == null &&
+        cubit.state is! PortfolioListLoaded &&
+        cubit.state is! PortfolioListLoading) {
+      cubit.loadPortfoliosList();
+    }
+
+    if (_selectedPortfolioId != null) {
+      if (_portfolioStreamingAllowed) {
+        cubit.subscribeToPortfolioUpdates(
+          portfolioId: _selectedPortfolioId,
+          forceResubscribe: true,
+        );
+      }
       cubit.loadPortfolioById(_selectedPortfolioId!);
     }
   }
@@ -172,7 +200,9 @@ class _GlobalPortfolioWrapperState
           create: (context) {
             final cubit = PortfolioCubit(service);
             cubit.setPortfolioStreamingAllowed(_portfolioStreamingAllowed);
-            cubit.loadPortfoliosList();
+            if (_portfolioListNeeded) {
+              cubit.loadPortfoliosList();
+            }
             return cubit;
           },
           child: Builder(
@@ -193,11 +223,18 @@ class _GlobalPortfolioWrapperState
                     if (_selectedPortfolioId == null &&
                         state.portfolioList!.portfolios.isNotEmpty) {
                       final first = state.portfolioList!.portfolios.first;
-                      _selectPortfolio(
-                        innerContext,
-                        first.portfolioId,
-                        first.portfolioName,
-                      );
+                      if (_portfolioDetailFetchAllowed) {
+                        _selectPortfolio(
+                          innerContext,
+                          first.portfolioId,
+                          first.portfolioName,
+                        );
+                      } else {
+                        _rememberPortfolioSelection(
+                          first.portfolioId,
+                          first.portfolioName,
+                        );
+                      }
                     }
                   }
                 },

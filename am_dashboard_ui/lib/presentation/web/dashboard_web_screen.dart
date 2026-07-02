@@ -21,19 +21,62 @@ class DashboardWebScreen extends ConsumerWidget {
 
   const DashboardWebScreen({super.key, required this.userId});
 
-  Widget _buildLoadingCard(double height) {
+  Widget _buildLoadingCard(double height, {String? label}) {
     return AmGlassCard(
       child: SizedBox(
         height: height,
         width: double.infinity,
-        child: const ShimmerLoading(
-          child: SkeletonBox(
-            width: double.infinity,
-            height: double.infinity,
-            borderRadius: BorderRadius.all(Radius.circular(8)),
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: const ShimmerLoading(
+                child: SkeletonBox(
+                  width: double.infinity,
+                  height: double.infinity,
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+              ),
+            ),
+            if (label != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                  fontFamily: 'Inter',
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ],
         ),
       ),
+    );
+  }
+
+  void _listenDashboardFirstData(WidgetRef ref, String tfCode) {
+    void markIfReady(AsyncValue<dynamic> next) {
+      if (!_dashboardDataMarked && next.hasValue) {
+        _dashboardDataMarked = true;
+        BootTrace.instance.mark('dashboard_first_data');
+      }
+    }
+
+    ref.listen(dashboardStreamProvider(userId), (_, next) => markIfReady(next));
+    ref.listen(
+      moversStreamProvider(userId, timeFrame: tfCode),
+      (_, next) => markIfReady(next),
+    );
+    ref.listen(
+      recentActivityProvider(userId, page: 0, size: 10),
+      (_, next) => markIfReady(next),
+    );
+    ref.listen(portfolioOverviewsProvider(userId), (_, next) => markIfReady(next));
+    ref.listen(
+      historyStreamProvider(userId, timeFrame: tfCode),
+      (_, next) => markIfReady(next),
     );
   }
 
@@ -44,7 +87,7 @@ class DashboardWebScreen extends ConsumerWidget {
             ref.watch(historyStreamProvider(userId, timeFrame: tfCode));
         return performanceAsync.when(
           data: (performance) => DashboardChartWidget(performance: performance),
-          loading: () => _buildLoadingCard(280),
+          loading: () => _buildLoadingCard(280, label: 'Loading chart…'),
           error: (err, stack) => AmErrorWidget(
             message: 'Failed to load chart',
             onRetry: () => ref.invalidate(
@@ -75,13 +118,6 @@ class DashboardWebScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(dashboardStreamProvider(userId), (previous, next) {
-      if (!_dashboardDataMarked && next.hasValue) {
-        _dashboardDataMarked = true;
-        BootTrace.instance.mark('dashboard_first_data');
-      }
-    });
-
     ref.watch(dashboardStreamingSessionProvider(userId));
     ref.listen(appTimeFrameProvider, (previous, next) {
       if (previous != next) {
@@ -90,6 +126,9 @@ class DashboardWebScreen extends ConsumerWidget {
     });
     final timeFrame = ref.watch(appTimeFrameProvider);
     final tfCode = timeFrame.code;
+
+    ref.watch(dashboardParallelKickoffProvider(userId, timeFrame: tfCode));
+    _listenDashboardFirstData(ref, tfCode);
 
     final dashboardAsync = ref.watch(dashboardStreamProvider(userId));
     final overviewsAsync = ref.watch(portfolioOverviewsProvider(userId));
