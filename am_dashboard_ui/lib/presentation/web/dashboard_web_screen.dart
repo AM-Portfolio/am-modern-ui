@@ -35,6 +35,58 @@ class DashboardWebScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildSummaryLoading(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final isMobile = width < 960;
+
+        if (isMobile) {
+          return Column(
+            children: [
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _buildLoadingCard(120)),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildLoadingCard(120)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _buildLoadingCard(120)),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildLoadingCard(120)),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _buildLoadingCard(120)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildLoadingCard(120)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildLoadingCard(120)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildLoadingCard(120)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildPerformanceChart(WidgetRef ref, String tfCode) {
     return Consumer(
       builder: (context, ref, child) {
@@ -248,7 +300,7 @@ class DashboardWebScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
                     dashboardAsync.when(
                       data: (summary) => DashboardSummaryWidget(summary: summary),
-                      loading: () => _buildLoadingCard(120),
+                      loading: () => _buildSummaryLoading(context),
                       error: (err, stack) => AmErrorWidget(
                         message: 'Failed to load summary',
                         onRetry: () => ref.invalidate(dashboardStreamProvider(userId)),
