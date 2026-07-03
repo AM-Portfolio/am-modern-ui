@@ -38,6 +38,8 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   String _heatmapTimeframe = '1D';
   bool _showingIndices = true; // Use separate state for Heatmap section drill-down
   bool _isHeatmapExpanded = true; // Control visibility of the heatmap grid
+  
+  final ScrollController _scrollController = ScrollController();
 
 
   // _selectedSymbol is used for General Analysis (Seasonality/Historical)
@@ -56,16 +58,24 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _fetchData() {
-    // 1. Fetch General Analysis Data
+    _fetchGeneralData();
+    _fetchHeatmapData();
+  }
+
+  void _fetchGeneralData() {
+    // 1. Fetch General Analysis Data (Seasonality & Historical)
     if (_selectedSymbol.isNotEmpty && _selectedSymbol != "INDICES") {
         context.read<MarketProvider>().loadHistoricalPerformance(_selectedSymbol);
         context.read<MarketProvider>().loadSeasonality(_selectedSymbol);
     }
-    
+  }
+
+  void _fetchHeatmapData() {
     // 2. Fetch Heatmap Data
     // Target: if showing indices -> "INDICES"
     // If showing constituents -> _selectedSymbol
@@ -79,8 +89,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final provider = context.watch<MarketProvider>();
-    final data = provider.historicalPerformance;
+    final provider = provider_pkg.Provider.of<MarketProvider>(context, listen: false);
 
     // Listen to global timeframe changes and synchronize internal data state
     ref.listen<TimeFrame>(appTimeFrameProvider, (previous, next) {
@@ -88,7 +97,8 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
         setState(() {
           _heatmapTimeframe = next.code;
         });
-        _fetchData();
+        // Only fetch heatmap data when timeframe changes, historical/seasonality are independent
+        _fetchHeatmapData();
       }
     });
 
@@ -206,18 +216,23 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                            )
                          ],
                        ),
-                       child: Center(
-                         child: provider.isLoading 
-                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                             : const Text(
-                                 'GO',
-                                 style: TextStyle(
-                                   color: Colors.white,
-                                   fontWeight: FontWeight.bold,
-                                   fontSize: 16,
-                                 ),
-                               ),
-                       ),
+                        child: Center(
+                          child: provider_pkg.Selector<MarketProvider, bool>(
+                            selector: (_, p) => p.isLoading,
+                            builder: (context, isLoading, child) {
+                              return isLoading 
+                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                  : const Text(
+                                      'GO',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    );
+                            },
+                          ),
+                        ),
                      ),
                    ),
                 ],
@@ -248,6 +263,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
         Expanded(
           child: _showingIndices
             ? SingleChildScrollView(
+                controller: _scrollController,
                 child: Column(
                   children: [
                     _buildHeatmapSection(),
@@ -273,16 +289,23 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                   ],
                 ),
               )
-            : SingleChildScrollView(
-                child: Column(
-                  children: [
-                    _buildHeatmapSection(),
-                    const SizedBox(height: 16),
-                    data == null 
-                        ? SizedBox(
-                            height: 200,
-                            child: Center(child: Text(provider.isLoading ? 'Loading...' : 'No data available', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)))
-                          )
+            : provider_pkg.Selector<MarketProvider, (HistoricalPerformanceResponse?, SeasonalityResponse?, bool)>(
+                selector: (_, p) => (p.historicalPerformance, p.seasonality, p.isLoading),
+                builder: (context, dataTuple, child) {
+                  final hData = dataTuple.$1;
+                  final sData = dataTuple.$2;
+                  final isLoading = dataTuple.$3;
+                  return SingleChildScrollView(
+                    controller: _scrollController,
+                    child: Column(
+                      children: [
+                        _buildHeatmapSection(),
+                        const SizedBox(height: 16),
+                        hData == null 
+                            ? SizedBox(
+                                height: 200,
+                                child: Center(child: Text(isLoading ? 'Loading...' : 'No data available', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)))
+                              )
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -306,13 +329,13 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                      // Overall Return Header (Optional)
-                                     if (data.overallReturn != null)
+                                     if (hData.overallReturn != null)
                                        Padding(
                                          padding: const EdgeInsets.only(bottom: 16.0),
                                          child: Text(
-                                           "Overall Return (${data.startYear}-${data.endYear}): ${data.overallReturn}%",
+                                           "Overall Return (${hData.startYear}-${hData.endYear}): ${hData.overallReturn}%",
                                            style: TextStyle(
-                                               color: _getColorForChange(data.overallReturn!),
+                                               color: _getColorForChange(hData.overallReturn!),
                                                fontWeight: FontWeight.bold,
                                                fontSize: 16
                                            ),
@@ -355,7 +378,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                                                   const SizedBox(height: 8),
 
                                                   // Data Rows
-                                                  ...data.yearlyPerformance.map((yearly) {
+                                                  ...hData.yearlyPerformance.map((yearly) {
                                                       return Padding(
                                                         padding: const EdgeInsets.symmetric(vertical: 6.0),
                                                         child: Row(
@@ -422,14 +445,16 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                                   ],
                                 ),
                             ),
-                            const SizedBox(height: 16),
-                            if (provider.seasonality != null) _buildSeasonality(provider.seasonality!),
-                            const SizedBox(height: 16), // Bottom padding
-                           ],
-                          ),
-                  ],
+                             const SizedBox(height: 16),
+                             if (sData != null) _buildSeasonality(sData),
+                             const SizedBox(height: 16), // Bottom padding
+                            ],
+                           ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-              ),
         ),
       ],
     ),
@@ -761,7 +786,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
       setState(() {
           _heatmapTimeframe = tf;
       });
-      _fetchData();
+      _fetchHeatmapData();
   }
 
   void _onHeatmapItemTap(String symbol, double value) {
@@ -787,10 +812,11 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   }
 
   Widget _buildHeatmapGrid() {
-      return provider_pkg.Consumer<MarketProvider>(
-          builder: (context, provider, child) {
-              final data = provider.heatmapValues; // Map<String, double>
-              if (provider.isLoading && (data == null || data.isEmpty)) {
+      return provider_pkg.Selector<MarketProvider, Map<String, double>?>(
+          selector: (_, p) => p.heatmapValues,
+          builder: (context, data, child) {
+              final isLoading = provider_pkg.Provider.of<MarketProvider>(context, listen: false).isLoading;
+              if (isLoading && (data == null || data.isEmpty)) {
                   return const Center(child: Padding(
                       padding: EdgeInsets.all(20),
                       child: CircularProgressIndicator(strokeWidth: 2),

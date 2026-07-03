@@ -56,6 +56,7 @@ export 'features/attachment/internal/presentation/widgets/attachment_picker/atta
 export 'features/attachment/internal/presentation/widgets/attachment_picker/shared/attachment_preview_grid.dart';
 export 'features/attachment/internal/presentation/models/pending_attachment.dart';
 export 'features/charts/presentation/common_performance_chart.dart';
+export 'package:am_design_system/shared/widgets/charts/chart_types.dart';
 
 // Navigation Widgets
 export 'features/navigation/widgets/vertical_scroll_navigator.dart';

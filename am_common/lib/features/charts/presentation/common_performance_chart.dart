@@ -7,6 +7,7 @@ class CommonPerformanceChart extends StatefulWidget {
   final String title;
   final List<CommonChartDataPoint> primaryData;
   final List<CommonChartDataPoint>? secondaryData;
+  final List<ChartLineData>? lines; // Multi-line comparison option
   
   // Custom labels for the toggle buttons
   final String primaryToggleLabel;
@@ -28,6 +29,7 @@ class CommonPerformanceChart extends StatefulWidget {
     required this.title,
     required this.primaryData,
     this.secondaryData,
+    this.lines,
     this.primaryToggleLabel = '\$',
     this.secondaryToggleLabel = '%',
     this.externalFormat,
@@ -55,6 +57,9 @@ class _CommonPerformanceChartState extends State<CommonPerformanceChart> {
         ? widget.secondaryData!
         : widget.primaryData;
 
+    final bool hasMultiLines = widget.lines != null && widget.lines!.isNotEmpty;
+    final int dataLength = hasMultiLines ? widget.lines!.first.points.length : activeData.length;
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,7 +71,7 @@ class _CommonPerformanceChartState extends State<CommonPerformanceChart> {
                 widget.title,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              if (showToggle)
+              if (showToggle && !hasMultiLines)
                 AppSegmentedControl<ChartFormat>(
                   selectedValue: activeFormat,
                   children: {
@@ -86,7 +91,7 @@ class _CommonPerformanceChartState extends State<CommonPerformanceChart> {
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
-              final double calculatedWidth = activeData.length * widget.minPointWidth;
+              final double calculatedWidth = dataLength * widget.minPointWidth;
               final bool needsScroll = widget.enableScrolling && (calculatedWidth > constraints.maxWidth);
               
               final double chartWidth = needsScroll ? calculatedWidth : constraints.maxWidth;
@@ -96,6 +101,7 @@ class _CommonPerformanceChartState extends State<CommonPerformanceChart> {
                 height: widget.height,
                 child: ChartFactory.line(
                   data: activeData,
+                  lines: widget.lines,
                   config: CommonChartConfig(
                     showGrid: widget.showGrid,
                     showTitles: true,
@@ -116,6 +122,36 @@ class _CommonPerformanceChartState extends State<CommonPerformanceChart> {
               return chartWidget;
             },
           ),
+          if (hasMultiLines) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: widget.lines!.map((line) {
+                final Color bulletColor = line.color ?? widget.chartColor ?? AppColors.primary;
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: bulletColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      line.label,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).hintColor,
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ],
         ],
       ),
     );
