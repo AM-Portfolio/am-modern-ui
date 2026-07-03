@@ -6,6 +6,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_common/models/market_data.dart';
 import 'package:am_market_ui/features/market_analysis/providers/market_analysis_providers.dart';
+import 'package:am_common/am_common.dart';
 
 /// V2 Glassmorphic Indices Performance View with Architecture Cards
 class IndicesPerformanceViewV2 extends ConsumerStatefulWidget {
@@ -77,6 +78,25 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
         });
     });
 
+    // Synchronize timeframe from global Riverpod state to MarketProvider ChangeNotifier
+    ref.listen<TimeFrame>(appTimeFrameProvider, (previous, next) {
+      final mp = provider_pkg.Provider.of<MarketProvider>(context, listen: false);
+      if (mp.selectedIndicesTimeframe != next.code) {
+        mp.setIndicesTimeframe(next.code);
+      }
+    });
+
+    // Sync initial timeframe state after build frame finishes
+    final globalTimeFrame = ref.watch(appTimeFrameProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        final mp = provider_pkg.Provider.of<MarketProvider>(context, listen: false);
+        if (mp.selectedIndicesTimeframe != globalTimeFrame.code) {
+          mp.setIndicesTimeframe(globalTimeFrame.code);
+        }
+      }
+    });
+
     return provider_pkg.Consumer<MarketProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading || provider.isLoadingBasePrices) {
@@ -118,9 +138,12 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Container(
-          decoration: AppGlassmorphismV2.techBackground(isDark: isDark),
+          decoration: const BoxDecoration(
+            color: Colors.transparent, // Blends seamlessly into main page gradient background
+          ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            physics: const BouncingScrollPhysics(), // Native scroll momentum for mobile UX
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -346,6 +369,7 @@ class _AutoScrollingTickerState extends State<_AutoScrollingTicker> {
       child: ListView.builder(
         controller: _scrollController,
         scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // Smooth native momentum on swiping
         itemCount: displayList.length,
         itemBuilder: (context, index) {
           final data = displayList[index];

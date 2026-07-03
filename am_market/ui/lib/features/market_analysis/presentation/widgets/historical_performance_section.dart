@@ -134,22 +134,51 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                 width: totalWidth,
                                 child: Column(
                                   children: [
-                                    // Header Row
-                                    Row(
-                                      children: [
-                                        SizedBox(width: yearColWidth), 
-                                        ...shortMonths.map((m) => SizedBox(
-                                          width: cellWidth,
-                                          child: Center(
-                                            child: Text(
-                                              m,
-                                              style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontWeight: FontWeight.bold, fontSize: isMobile ? 10 : 12),
+                                    // Header Row Container
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? const Color(0xFF1E1E32).withOpacity(0.8) : Colors.black.withOpacity(0.04),
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
+                                            width: 1.0,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          SizedBox(
+                                            width: yearColWidth,
+                                            child: Center(
+                                              child: Text(
+                                                'YEAR',
+                                                style: TextStyle(
+                                                  color: isDark ? Colors.white54 : Colors.black54,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: isMobile ? 10 : 11,
+                                                  letterSpacing: 0.8,
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        )),
-                                      ],
+                                          ...shortMonths.map((m) => SizedBox(
+                                            width: cellWidth,
+                                            child: Center(
+                                              child: Text(
+                                                m,
+                                                style: TextStyle(
+                                                  color: isDark ? Colors.white54 : Colors.black54,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: isMobile ? 10 : 12,
+                                                ),
+                                              ),
+                                            ),
+                                          )),
+                                        ],
+                                      ),
                                     ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 12),
                                     
                                     // Year Rows
                                     ...sortedYears.map((year) {

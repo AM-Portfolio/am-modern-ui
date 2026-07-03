@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as provider_pkg;
+import 'package:provider/provider.dart' show ReadContext, WatchContext;
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_ui/shared/widgets/glass_container.dart';
@@ -7,15 +8,18 @@ import 'package:intl/intl.dart';
 import 'package:am_market_common/models/historical_performance_model.dart';
 import 'package:am_market_common/models/seasonality_model.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/historical_performance_section.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_common/am_common.dart';
+import 'package:am_design_system/shared/widgets/selectors/global_time_frame_bar.dart';
 
-class HeatmapExplorerView extends StatefulWidget {
+class HeatmapExplorerView extends ConsumerStatefulWidget {
   const HeatmapExplorerView({super.key});
 
   @override
-  State<HeatmapExplorerView> createState() => _HeatmapExplorerViewState();
+  ConsumerState<HeatmapExplorerView> createState() => _HeatmapExplorerViewState();
 }
 
-class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
+class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
   String _selectedSymbol = 'NIFTY BANK'; // Default symbol
   final List<String> _months = [
@@ -78,13 +82,43 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
     final provider = context.watch<MarketProvider>();
     final data = provider.historicalPerformance;
 
-    return Column(
-      children: [
-        // 1. Header & Search
-        Container(
-          padding: const EdgeInsets.all(16),
+    // Listen to global timeframe changes and synchronize internal data state
+    ref.listen<TimeFrame>(appTimeFrameProvider, (previous, next) {
+      if (next.code != _heatmapTimeframe) {
+        setState(() {
+          _heatmapTimeframe = next.code;
+        });
+        _fetchData();
+      }
+    });
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [
+                  Color(0xFF0F0F1A), // Deep shadow
+                  Color(0xFF151524), // Custom base shade (rgba(21, 21, 36, 1))
+                  Color(0xFF1F1F35), // Subtle lighter highlight
+                ]
+              : const [
+                  Color(0xFFF5F5FC), // Light lilac backdrop
+                  Color(0xFFECECF8), // Base light theme shade
+                  Color(0xFFE2E2F2), // Subtle accent light highlight
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: const [0.0, 0.5, 1.0],
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // 1. Header & Search
+            Container(
+              padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkCard : AppColors.lightCard,
+            color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
             boxShadow: isDark
@@ -220,7 +254,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                     const SizedBox(height: 16),
                     Container(
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                        color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
                         boxShadow: isDark
@@ -255,7 +289,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                                 Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                                  color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
                                   boxShadow: isDark
@@ -398,7 +432,9 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
               ),
         ),
       ],
-    );
+    ),
+  ),
+);
      
   }
 
@@ -413,7 +449,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+        color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
         boxShadow: isDark
@@ -628,13 +664,9 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
   }
 
   Color _getColorForChange(double pChange) {
-      if (pChange >= 10) return const Color(0xFF00C853);
-      if (pChange >= 5) return const Color(0xFF00E676);
-      if (pChange > 0) return const Color(0xFF69F0AE);
-      if (pChange == 0) return Colors.grey.withOpacity(0.5);
-      if (pChange > -5) return const Color(0xFFFF8A80);
-      if (pChange > -10) return const Color(0xFFFF5252);
-      return const Color(0xFFD50000); 
+      if (pChange > 0) return const Color(0xFF47E266); // Success Green
+      if (pChange == 0) return const Color(0xFF918FA0); // Outline/Neutral Gray
+      return const Color(0xFFFFB4AB); // Error Red
   }
 
   // --- New Market Heatmap Section ---
@@ -646,7 +678,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
 
       return Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkCard : AppColors.lightCard,
+            color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
             boxShadow: isDark
@@ -701,38 +733,9 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                               ],
                           ),
                           // Timeframe Selector
+                          // Align global timeframe bar cleanly on the right (or stacked on mobile)
                           if (_isHeatmapExpanded)
-                          SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y'].map((tf) {
-                                      final isSelected = _heatmapTimeframe == tf;
-                                      return Padding(
-                                          padding: const EdgeInsets.only(left: 8),
-                                          child: InkWell(
-                                              onTap: () => _onHeatmapTimeframeChanged(tf),
-                                              child: Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                                  decoration: BoxDecoration(
-                                                      color: isSelected ? const Color(0xFF0055FF) : (isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.05)),
-                                                      borderRadius: BorderRadius.circular(12),
-                                                      border: Border.all(color: isSelected ? const Color(0xFF00D1FF) : (isDark ? Colors.white10 : Colors.black12)),
-                                                  ),
-                                                  child: Text(
-                                                      tf,
-                                                      style: TextStyle(
-                                                          color: isSelected ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
-                                                          fontSize: 12,
-                                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                                      ),
-                                                  ),
-                                              ),
-                                          ),
-                                      );
-                                  }).toList(),
-                              ),
-                          ),
+                            GlobalTimeFrameBar(),
                       ],
                   ),
                   if (_isHeatmapExpanded) ...[
@@ -784,7 +787,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
   }
 
   Widget _buildHeatmapGrid() {
-      return Consumer<MarketProvider>(
+      return provider_pkg.Consumer<MarketProvider>(
           builder: (context, provider, child) {
               final data = provider.heatmapValues; // Map<String, double>
               if (provider.isLoading && (data == null || data.isEmpty)) {
@@ -819,20 +822,64 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
 
   Widget _buildHeatmapCard(String symbol, double value) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
+      
+      // Stitch color tokens
+      Color cardColor;
+      Color textColor;
+      Color borderOutlineColor;
+      List<BoxShadow> glowShadows;
+
+      if (value > 0) {
+        cardColor = const Color(0xFF47E266); // Success Green
+        textColor = const Color(0xFF47E266);
+        borderOutlineColor = cardColor.withOpacity(0.12);
+        glowShadows = [
+          BoxShadow(
+            color: cardColor.withOpacity(0.12),
+            blurRadius: 12,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
+          ),
+        ];
+      } else if (value < 0) {
+        cardColor = const Color(0xFFFFB4AB); // Error Red
+        textColor = const Color(0xFFFFB4AB);
+        borderOutlineColor = cardColor.withOpacity(0.12);
+        glowShadows = [
+          BoxShadow(
+            color: cardColor.withOpacity(0.12),
+            blurRadius: 12,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
+          ),
+        ];
+      } else {
+        cardColor = const Color(0xFF918FA0); // Outline / Neutral Gray
+        textColor = const Color(0xFF918FA0);
+        borderOutlineColor = cardColor.withOpacity(0.12);
+        glowShadows = [];
+      }
+
       return InkWell(
           onTap: () => _onHeatmapItemTap(symbol, value),
           child: Container(
               decoration: BoxDecoration(
-                  color: _getColorForChange(value).withOpacity(0.2),
+                  color: cardColor.withOpacity(0.06), // Soft pastel fill (bg-tertiary/5, bg-error/5)
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _getColorForChange(value).withOpacity(0.5)),
+                  border: Border.all(color: borderOutlineColor, width: 1.0),
+                  boxShadow: isDark ? glowShadows : [], // Glow effect in dark mode
               ),
               child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                       Text(
                           symbol, 
-                          style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 13), 
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black87, 
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 12,
+                            fontFamily: 'Hanken Grotesk',
+                          ), 
                           textAlign: TextAlign.center,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -840,7 +887,12 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                       const SizedBox(height: 4),
                       Text(
                           "${value > 0 ? '+' : ''}${value.toStringAsFixed(2)}%", 
-                          style: TextStyle(color: _getColorForChange(value), fontSize: 12, fontWeight: FontWeight.bold)
+                          style: TextStyle(
+                            color: textColor, 
+                            fontSize: 11, 
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'JetBrains Mono',
+                          )
                       ),
                   ],
               ),
