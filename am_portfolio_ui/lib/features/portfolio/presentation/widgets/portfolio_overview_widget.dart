@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'allocation_panel_widget.dart';
-import 'portfolio_top_movers_panel.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_analysis_ui/widgets/analysis_allocation_widget.dart';
 import 'package:am_analysis_ui/widgets/analysis_performance_widget.dart';
+import 'package:am_analysis_core/am_analysis_core.dart' hide TimeFrame;
+import 'portfolio_top_movers_panel.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
-
 import 'package:intl/intl.dart';
 
 import '../cubit/portfolio_cubit.dart';
@@ -16,7 +18,7 @@ import 'package:am_common/am_common.dart';
 import 'portfolio_metric_card.dart';
 
 /// Portfolio overview widget showing summary and key metrics
-class PortfolioOverviewWidget extends StatefulWidget {
+class PortfolioOverviewWidget extends ConsumerStatefulWidget {
   const PortfolioOverviewWidget({
     this.portfolioId,
     super.key,
@@ -24,17 +26,27 @@ class PortfolioOverviewWidget extends StatefulWidget {
   final String? portfolioId;
 
   @override
-  State<PortfolioOverviewWidget> createState() =>
+  ConsumerState<PortfolioOverviewWidget> createState() =>
       _PortfolioOverviewWidgetState();
 }
 
-class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
-  ds.TimeFrame _selectedTimeFrame = ds.TimeFrame.oneYear;
-
+class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidget> {
   static const _upSparkData = [8.0, 10.0, 9.0, 12.0, 14.0, 13.0, 16.0];
   static const _downSparkData = [16.0, 14.0, 15.0, 11.0, 9.0, 10.0, 7.0];
   static const _flatSparkData = [11.0, 12.0, 11.0, 13.0, 12.0, 13.0, 12.0];
 
+  void _reloadAnalytics(ds.TimeFrame timeFrame) {
+    if (widget.portfolioId != null) {
+      try {
+        context.read<PortfolioAnalyticsCubit>().loadAnalytics(
+          widget.portfolioId!,
+          timeFrame: timeFrame,
+        );
+      } catch (_) {
+        // Cubit may not be in tree, safe to ignore
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -61,7 +73,7 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
           try {
             context.read<PortfolioAnalyticsCubit>().loadAnalytics(
                   widget.portfolioId!,
-                  timeFrame: _selectedTimeFrame,
+                  timeFrame: ref.read(appTimeFrameProvider),
                 );
           } catch (_) {
             // Cubit may not be in tree, safe to ignore
@@ -91,7 +103,11 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
   @override
   Widget build(BuildContext context) {
     final portfolioId = widget.portfolioId;
-
+    ref.listen(appTimeFrameProvider, (previous, next) {
+      if (previous != next) _reloadAnalytics(next);
+    });
+    final selectedTimeFrame = ref.watch(appTimeFrameProvider);
+    
     ds.CommonLogger.debug(
         '[PortfolioOverview] Building with portfolioId=$portfolioId',
         tag: 'PortfolioUI');
@@ -267,10 +283,9 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                               SizedBox(
                                 width: isMobile ? constraints.maxWidth - 32 : 550,
                                 child: ds.TimeFrameSelector(
-                                  selectedTimeFrame: _selectedTimeFrame,
+                                  selectedTimeFrame: selectedTimeFrame,
                                   onTimeFrameChanged: (tf) {
-                                    setState(() => _selectedTimeFrame = tf);
-                                    _triggerLoad();
+                                    ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf);
                                   },
                                   availableTimeFrames: ds.TimeFrame.webTimeFrames,
                                   compact: false,
@@ -329,10 +344,9 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                           SizedBox(
                             height: 340,
                             child: AnalysisPerformanceWidget(
-                              key: ValueKey(
-                                  'perf_${_selectedTimeFrame.code}'),
+                              key: ValueKey('perf_${selectedTimeFrame.code}'),
                               portfolioId: portfolioId,
-                              initialTimeFrame: _selectedTimeFrame,
+                              initialTimeFrame: selectedTimeFrame,
                               showTimeFrameSelector: false,
                               height: 340,
                             ),
@@ -340,35 +354,24 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                           const SizedBox(height: 16),
                           PortfolioTopMoversPanel(
                             portfolioId: portfolioId,
-                            timeFrame: _selectedTimeFrame,
+                            timeFrame: selectedTimeFrame,
                             showTimeFrameSelector: false,
                           ),
                           const SizedBox(height: 16),
                           SizedBox(
-                            height: 500,
-                            child: BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
-                              builder: (context, state) {
-                                if (state is PortfolioAnalyticsLoading) {
-                                  return const AllocationPanelWidget(isLoading: true);
-                                } else if (state is PortfolioAnalyticsLoaded) {
-                                  final isLoading = state.isLoadingType(AnalyticsDataType.sectorAllocation);
-                                  final error = state.getErrorForType(AnalyticsDataType.sectorAllocation);
-                                  return AllocationPanelWidget(
-                                    sectorAllocation: state.sectorAllocation,
-                                    isLoading: isLoading,
-                                    error: error,
-                                  );
-                                } else if (state is PortfolioAnalyticsError) {
-                                  return AllocationPanelWidget(error: state.message);
-                                }
-                                return const AllocationPanelWidget(isLoading: true);
-                              },
+                            height: isSmallMobile ? 280 : 340,
+                            child: AnalysisAllocationWidget(
+                              key: ValueKey('alloc_${selectedTimeFrame.code}'),
+                              portfolioId: portfolioId,
+                              initialTimeFrame: selectedTimeFrame,
+                              groupBy: GroupBy.sector,
+                              height: isSmallMobile ? 280 : 340,
                             ),
                           ),
                         ] else
                           _MoversAllocationRow(
                             portfolioId: portfolioId,
-                            selectedTimeFrame: _selectedTimeFrame,
+                            selectedTimeFrame: selectedTimeFrame,
                           ),
                         const SizedBox(height: 20),
                       ],

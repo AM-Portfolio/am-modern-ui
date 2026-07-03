@@ -38,6 +38,16 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   StreamSubscription<StompStatus>? _statusSubscription;
 
   bool isLiveDataActive = false;
+  bool _portfolioStreamingAllowed = false;
+
+  /// When false (e.g. Dashboard tab active), skip STOMP portfolio interest registration.
+  void setPortfolioStreamingAllowed(bool allowed) {
+    if (_portfolioStreamingAllowed == allowed) return;
+    _portfolioStreamingAllowed = allowed;
+    if (!allowed) {
+      unsubscribeFromPortfolioUpdates();
+    }
+  }
 
   /// Subscribe to portfolio updates via WebSocket
   void subscribeToPortfolioUpdates({
@@ -47,6 +57,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     if (portfolioId != null) {
       _subPortfolioId = portfolioId;
     }
+
+    if (!_portfolioStreamingAllowed) return;
 
     _ensureStatusListener();
 
@@ -87,7 +99,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         );
       }
       
-      if (status == StompStatus.connected) {
+      if (status == StompStatus.connected && _portfolioStreamingAllowed) {
         CommonLogger.info(
           '[$_debugId] PortfolioCubit: Connected event received, calling _performSubscription',
           tag: 'PortfolioCubit',
@@ -109,8 +121,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   }
 
   void _performSubscription({bool forceResubscribe = false}) {
-    // AmStompClient handles idempotent subscriptions, but we can double check
-    // effectively, we just want to ensure we call subscribe once valid.
+    if (!_portfolioStreamingAllowed) return;
 
     CommonLogger.info('[$_debugId] Hello', tag: 'PortfolioCubit');
 

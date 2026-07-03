@@ -1,6 +1,7 @@
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
+import 'package:am_common/am_common.dart';
 import '../shared/widgets/dashboard_summary_widget.dart';
-import '../shared/widgets/dashboard_allocation_widget.dart';
 import '../shared/widgets/dashboard_chart_widget.dart';
 import '../shared/widgets/dashboard_ranking_widget.dart';
 import '../shared/widgets/dashboard_recent_activity_widget.dart';
@@ -34,8 +35,53 @@ class DashboardWebScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildPerformanceChart(WidgetRef ref, String tfCode) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final performanceAsync =
+            ref.watch(historyStreamProvider(userId, timeFrame: tfCode));
+        return performanceAsync.when(
+          data: (performance) => DashboardChartWidget(performance: performance),
+          loading: () => _buildLoadingCard(280),
+          error: (err, stack) => AmErrorWidget(
+            message: 'Failed to load chart',
+            onRetry: () => ref.invalidate(
+              historyStreamProvider(userId, timeFrame: tfCode),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMoversPanel(WidgetRef ref, String tfCode) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final topMoversAsync =
+            ref.watch(moversStreamProvider(userId, timeFrame: tfCode));
+        return topMoversAsync.when(
+          data: (topMovers) => DashboardRankingWidget(
+            gainers: topMovers.gainers,
+            losers: topMovers.losers,
+          ),
+          loading: () => _buildLoadingCard(280),
+          error: (err, stack) => DashboardRankingWidget.errorState(),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(dashboardStreamingSessionProvider(userId));
+    ref.listen(appTimeFrameProvider, (previous, next) {
+      if (previous != next) {
+        onDashboardTimeFrameChanged(ref, userId, next);
+      }
+    });
+    final timeFrame = ref.watch(appTimeFrameProvider);
+    final tfCode = timeFrame.code;
+
     final dashboardAsync = ref.watch(dashboardStreamProvider(userId));
     final overviewsAsync = ref.watch(portfolioOverviewsProvider(userId));
 
@@ -43,7 +89,6 @@ class DashboardWebScreen extends ConsumerWidget {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isCompactWeb = screenWidth < 1280;
 
-    // Dynamic Colors based on theme
     final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
     final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
     final borderColor = isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE2E8F0);
@@ -57,7 +102,6 @@ class DashboardWebScreen extends ConsumerWidget {
       backgroundColor: isDark ? const Color(0xFF0B1120) : const Color(0xFFF8FAFC),
       body: Stack(
         children: [
-          // Background Glow Orbs - Only in Dark Theme
           if (isDark) ...[
             Positioned(
               top: -100,
@@ -93,7 +137,6 @@ class DashboardWebScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            // Backdrop filter for extra glass effect on orbs
             Positioned.fill(
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
@@ -101,8 +144,6 @@ class DashboardWebScreen extends ConsumerWidget {
               ),
             ),
           ],
-
-          // ── Main Content ──
           SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
             child: Center(
@@ -111,7 +152,6 @@ class DashboardWebScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Header Row (Wrap for responsiveness) ──
                     SizedBox(
                       width: double.infinity,
                       child: Wrap(
@@ -139,6 +179,8 @@ class DashboardWebScreen extends ConsumerWidget {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              const GlobalTimeFrameBar(),
+                              const SizedBox(width: 12),
                               Container(
                                 decoration: BoxDecoration(
                                   color: btnBgColor,
@@ -150,6 +192,7 @@ class DashboardWebScreen extends ConsumerWidget {
                                   onPressed: () {
                                     ref.invalidate(dashboardStreamProvider(userId));
                                     ref.invalidate(portfolioOverviewsProvider(userId));
+                                    onDashboardTimeFrameChanged(ref, userId, timeFrame);
                                   },
                                 ),
                               ),
@@ -203,8 +246,6 @@ class DashboardWebScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-
-                    // ── Row 2: KPI Summary Card ──
                     dashboardAsync.when(
                       data: (summary) => DashboardSummaryWidget(summary: summary),
                       loading: () => _buildLoadingCard(120),
@@ -214,47 +255,15 @@ class DashboardWebScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-
-                    // ── Row 3: Performance & Market Movers ──
                     if (isCompactWeb) ...[
                       SizedBox(
                         height: 380,
-                        child: Consumer(
-                          builder: (context, ref, child) {
-                            final performanceAsync =
-                                ref.watch(dashboardPerformanceProvider(userId));
-                            return performanceAsync.when(
-                              data: (performance) => DashboardChartWidget(
-                                performance: performance,
-                                onTimeFrameChanged: (timeFrame) {
-                                  ref.invalidate(dashboardPerformanceProvider(userId));
-                                },
-                              ),
-                              loading: () => _buildLoadingCard(280),
-                              error: (err, stack) => AmErrorWidget(
-                                message: 'Failed to load chart',
-                                onRetry: () => ref.invalidate(dashboardPerformanceProvider(userId)),
-                              ),
-                            );
-                          },
-                        ),
+                        child: _buildPerformanceChart(ref, tfCode),
                       ),
                       const SizedBox(height: 24),
                       SizedBox(
                         height: 380,
-                        child: Consumer(
-                          builder: (context, ref, child) {
-                            final topMoversAsync = ref.watch(topMoversProvider(userId));
-                            return topMoversAsync.when(
-                              data: (topMovers) => DashboardRankingWidget(
-                                gainers: topMovers.gainers,
-                                losers: topMovers.losers,
-                              ),
-                              loading: () => _buildLoadingCard(280),
-                              error: (err, stack) => DashboardRankingWidget.errorState(),
-                            );
-                          },
-                        ),
+                        child: _buildMoversPanel(ref, tfCode),
                       ),
                     ] else ...[
                       SizedBox(
@@ -262,66 +271,16 @@ class DashboardWebScreen extends ConsumerWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(
-                              flex: 70,
-                              child: Consumer(
-                                builder: (context, ref, child) {
-                                  final performanceAsync =
-                                      ref.watch(dashboardPerformanceProvider(userId));
-                                  return performanceAsync.when(
-                                    data: (performance) => DashboardChartWidget(
-                                      performance: performance,
-                                      onTimeFrameChanged: (timeFrame) {
-                                        ref.invalidate(dashboardPerformanceProvider(userId));
-                                      },
-                                    ),
-                                    loading: () => _buildLoadingCard(280),
-                                    error: (err, stack) => AmErrorWidget(
-                                      message: 'Failed to load chart',
-                                      onRetry: () => ref.invalidate(dashboardPerformanceProvider(userId)),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
+                            Expanded(flex: 70, child: _buildPerformanceChart(ref, tfCode)),
                             const SizedBox(width: 24),
-                            Expanded(
-                              flex: 30,
-                              child: Consumer(
-                                builder: (context, ref, child) {
-                                  final topMoversAsync = ref.watch(topMoversProvider(userId));
-                                  return topMoversAsync.when(
-                                    data: (topMovers) => DashboardRankingWidget(
-                                      gainers: topMovers.gainers,
-                                      losers: topMovers.losers,
-                                    ),
-                                    loading: () => _buildLoadingCard(280),
-                                    error: (err, stack) => DashboardRankingWidget.errorState(),
-                                  );
-                                },
-                              ),
-                            ),
+                            Expanded(flex: 30, child: _buildMoversPanel(ref, tfCode)),
                           ],
                         ),
                       ),
                     ],
                     const SizedBox(height: 24),
-
-                    // ── Row 4: Recent Activity & Your Portfolios ──
                     if (isCompactWeb) ...[
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final activitiesAsync = ref.watch(recentActivityProvider(userId));
-                          return activitiesAsync.when(
-                            data: (activities) => DashboardRecentActivityWidget(activities: activities),
-                            loading: () => _buildLoadingCard(200),
-                            error: (err, stack) => AmErrorWidget(
-                              message: 'Failed to load recent activity',
-                              onRetry: () => ref.invalidate(recentActivityProvider(userId)),
-                            ),
-                          );
-                        },
-                      ),
+                      DashboardRecentActivitySection(userId: userId),
                       const SizedBox(height: 24),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -339,13 +298,17 @@ class DashboardWebScreen extends ConsumerWidget {
                           overviewsAsync.when(
                             data: (overviews) => Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: overviews.map((overview) => Padding(
-                                padding: const EdgeInsets.only(bottom: 16.0),
-                                child: DashboardPortfolioOverviewCard(
-                                  overview: overview,
-                                  onTap: () {},
-                                ),
-                              )).toList(),
+                              children: overviews
+                                  .map(
+                                    (overview) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 16.0),
+                                      child: DashboardPortfolioOverviewCard(
+                                        overview: overview,
+                                        onTap: () {},
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
                             ),
                             loading: () => _buildLoadingCard(100),
                             error: (err, stack) => AmErrorWidget(
@@ -361,19 +324,7 @@ class DashboardWebScreen extends ConsumerWidget {
                         children: [
                           Expanded(
                             flex: 70,
-                            child: Consumer(
-                              builder: (context, ref, child) {
-                                final activitiesAsync = ref.watch(recentActivityProvider(userId));
-                                return activitiesAsync.when(
-                                  data: (activities) => DashboardRecentActivityWidget(activities: activities),
-                                  loading: () => _buildLoadingCard(200),
-                                  error: (err, stack) => AmErrorWidget(
-                                    message: 'Failed to load recent activity',
-                                    onRetry: () => ref.invalidate(recentActivityProvider(userId)),
-                                  ),
-                                );
-                              },
-                            ),
+                            child: DashboardRecentActivitySection(userId: userId),
                           ),
                           const SizedBox(width: 24),
                           Expanded(
@@ -394,13 +345,17 @@ class DashboardWebScreen extends ConsumerWidget {
                                 overviewsAsync.when(
                                   data: (overviews) => Column(
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: overviews.map((overview) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 16.0),
-                                      child: DashboardPortfolioOverviewCard(
-                                        overview: overview,
-                                        onTap: () {},
-                                      ),
-                                    )).toList(),
+                                    children: overviews
+                                        .map(
+                                          (overview) => Padding(
+                                            padding: const EdgeInsets.only(bottom: 16.0),
+                                            child: DashboardPortfolioOverviewCard(
+                                              overview: overview,
+                                              onTap: () {},
+                                            ),
+                                          ),
+                                        )
+                                        .toList(),
                                   ),
                                   loading: () => _buildLoadingCard(100),
                                   error: (err, stack) => AmErrorWidget(

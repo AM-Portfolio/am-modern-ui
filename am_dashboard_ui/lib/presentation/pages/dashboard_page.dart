@@ -83,9 +83,6 @@ class DashboardPage extends ConsumerWidget {
                   return performanceAsync.when(
                     data: (performance) => DashboardChartWidget(
                       performance: performance,
-                      onTimeFrameChanged: (timeFrame) {
-                        ref.invalidate(historyStreamProvider(userId));
-                      },
                     ),
                     loading: () => const SkeletonBox(height: 250),
                     error: (err, stack) => AmErrorWidget(

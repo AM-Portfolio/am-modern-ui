@@ -12,10 +12,13 @@ import '../../providers/portfolio_providers.dart';
 class GlobalPortfolioWrapper extends ConsumerStatefulWidget {
   final Widget child;
   final Function(String, String)? onPortfolioChanged;
+  /// Active app-shell tab title (e.g. `Dashboard`, `Portfolio`).
+  final String streamingTab;
 
   const GlobalPortfolioWrapper({
     required this.child,
     this.onPortfolioChanged,
+    this.streamingTab = 'Dashboard',
     super.key,
   });
 
@@ -99,6 +102,47 @@ class _GlobalPortfolioWrapperState
     );
   }
 
+  bool get _portfolioStreamingAllowed => widget.streamingTab == 'Portfolio';
+
+  @override
+  void didUpdateWidget(GlobalPortfolioWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.streamingTab != widget.streamingTab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final cubit = _tryReadCubit();
+        if (cubit != null) _syncPortfolioStreaming(cubit);
+      });
+    }
+  }
+
+  PortfolioCubit? _tryReadCubit() {
+    try {
+      return context.read<PortfolioCubit>();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _syncPortfolioStreaming(PortfolioCubit cubit) {
+    cubit.setPortfolioStreamingAllowed(_portfolioStreamingAllowed);
+    if (_portfolioStreamingAllowed && _selectedPortfolioId != null) {
+      cubit.subscribeToPortfolioUpdates(
+        portfolioId: _selectedPortfolioId,
+        forceResubscribe: true,
+      );
+      cubit.loadPortfolioById(_selectedPortfolioId!);
+    }
+  }
+
+  void _maybeSubscribe(PortfolioCubit cubit, String portfolioId) {
+    if (!_portfolioStreamingAllowed) return;
+    cubit.subscribeToPortfolioUpdates(
+      portfolioId: portfolioId,
+      forceResubscribe: true,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final portfolioServiceAsync = ref.watch(portfolioServiceProvider);
@@ -124,6 +168,7 @@ class _GlobalPortfolioWrapperState
         BlocProvider<PortfolioCubit>(
           create: (context) {
             final cubit = PortfolioCubit(service);
+            cubit.setPortfolioStreamingAllowed(_portfolioStreamingAllowed);
             cubit.loadPortfoliosList();
             return cubit;
           },

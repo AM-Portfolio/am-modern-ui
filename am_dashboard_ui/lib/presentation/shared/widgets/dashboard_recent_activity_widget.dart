@@ -1,33 +1,171 @@
 import 'package:am_dashboard_ui/domain/models/activity_item.dart';
+import 'package:am_dashboard_ui/domain/models/recent_activity_response.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'glass_card.dart';
 
-/// Pixel-perfect Lumina recent activity widget matching the image.
-/// Now dynamically scales with backend data and allows scrolling if needed.
-class DashboardRecentActivityWidget extends StatelessWidget {
-  final List<ActivityItem> activities;
+/// Maps UI column index + direction to API [sortBy] query param.
+String activitySortByForColumn(int columnIndex, SortDirection direction) {
+  switch (columnIndex) {
+    case 0:
+      return 'SYMBOL';
+    case 1:
+      return 'QUANTITY';
+    case 2:
+      return 'TIMESTAMP';
+    case 3:
+      return 'CURRENT_VALUE';
+    case 4:
+      return direction == SortDirection.ascending
+          ? 'PROFIT_LOSS_ASC'
+          : 'PROFIT_LOSS_PERCENT';
+    default:
+      return 'TIMESTAMP';
+  }
+}
 
+/// Recent activity with server-side sort and pagination.
+class DashboardRecentActivitySection extends ConsumerStatefulWidget {
+  const DashboardRecentActivitySection({super.key, required this.userId});
+
+  final String userId;
+
+  @override
+  ConsumerState<DashboardRecentActivitySection> createState() =>
+      _DashboardRecentActivitySectionState();
+}
+
+class _DashboardRecentActivitySectionState
+    extends ConsumerState<DashboardRecentActivitySection> {
+  int _page = 0;
+  int _pageSize = 10;
+  String _sortBy = 'TIMESTAMP';
+  int _sortColumnIndex = 2;
+  SortDirection _sortDirection = SortDirection.descending;
+
+  @override
+  Widget build(BuildContext context) {
+    ref.watch(activityStreamProvider(widget.userId));
+    ref.listen(activityStreamProvider(widget.userId), (prev, next) {
+      if (_page == 0 && next.hasValue) {
+        ref.invalidate(
+          recentActivityProvider(
+            widget.userId,
+            page: _page,
+            size: _pageSize,
+            sortBy: _sortBy,
+          ),
+        );
+      }
+    });
+
+    final activityAsync = ref.watch(
+      recentActivityProvider(
+        widget.userId,
+        page: _page,
+        size: _pageSize,
+        sortBy: _sortBy,
+      ),
+    );
+
+    return activityAsync.when(
+      data: (response) => DashboardRecentActivityWidget(
+        response: response,
+        pageSize: _pageSize,
+        sortColumnIndex: _sortColumnIndex,
+        sortDirection: _sortDirection,
+        onPageChanged: (page) => setState(() => _page = page),
+        onPageSizeChanged: (size) => setState(() {
+          _pageSize = size;
+          _page = 0;
+        }),
+        onSort: (columnIndex, direction) {
+          setState(() {
+            _sortColumnIndex = columnIndex;
+            _sortDirection = direction;
+            _sortBy = activitySortByForColumn(columnIndex, direction);
+            _page = 0;
+          });
+        },
+        onViewAll: () => setState(() {
+          _pageSize = 25;
+          _page = 0;
+        }),
+      ),
+      loading: () => const SizedBox(
+        height: 320,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => AmGlassCard(
+        padding: const EdgeInsets.all(16),
+        child: AmErrorWidget(
+          message: 'Failed to load recent activity',
+          onRetry: () => ref.invalidate(
+            recentActivityProvider(
+              widget.userId,
+              page: _page,
+              size: _pageSize,
+              sortBy: _sortBy,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Lumina recent activity table — server paginated when [response] metadata is set.
+class DashboardRecentActivityWidget extends StatelessWidget {
   const DashboardRecentActivityWidget({
     super.key,
-    required this.activities,
+    required this.response,
+    this.pageSize = 10,
+    this.sortColumnIndex = 2,
+    this.sortDirection = SortDirection.descending,
+    this.onPageChanged,
+    this.onPageSizeChanged,
+    this.onSort,
+    this.onViewAll,
   });
+
+  final RecentActivityResponse response;
+  final int pageSize;
+  final int sortColumnIndex;
+  final SortDirection sortDirection;
+  final ValueChanged<int>? onPageChanged;
+  final ValueChanged<int>? onPageSizeChanged;
+  final void Function(int columnIndex, SortDirection direction)? onSort;
+  final VoidCallback? onViewAll;
+
+  List<ActivityItem> get activities => response.items;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
     final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final primary = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2E3192);
+    final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
+    final dateFormat = DateFormat('MMM d, yyyy');
+    final headerStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      color: onSurfaceVariant,
+      fontFamily: 'Inter',
+    );
+    final rowStyle = TextStyle(
+      fontSize: 12,
+      color: onSurface,
+      fontFamily: 'Inter',
+    );
 
     return AmGlassCard(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -40,188 +178,136 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                   fontFamily: 'Inter',
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Table Headers
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.transparent : const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 100,
+              if (response.totalItems > pageSize)
+                InkWell(
+                  onTap: onViewAll,
+                  hoverColor: Colors.transparent,
                   child: Text(
-                    'Symbol',
+                    'View All (${response.totalItems}) →',
                     style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: onSurfaceVariant,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    'Units',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: onSurfaceVariant,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 100,
-                  child: Text(
-                    'Date',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: onSurfaceVariant,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 80,
-                  child: Text(
-                    'Amount',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: onSurfaceVariant,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F5F9)),
-          const SizedBox(height: 8),
-
-          // Activity list
-          if (activities.isEmpty)
-            _buildEmptyState(onSurfaceVariant)
-          else
-            SizedBox(
-              height: 220,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: activities.length,
-                itemBuilder: (context, index) {
-                  return _buildActivityItem(context, activities[index], isDark, onSurface, onSurfaceVariant);
-                },
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(Color onSurfaceVariant) {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
-      child: Center(
-        child: Text(
-          'No recent activity',
-          style: TextStyle(
-            color: onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Inter',
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActivityItem(
-    BuildContext context, 
-    ActivityItem activity, 
-    bool isDark, 
-    Color onSurface, 
-    Color onSurfaceVariant
-  ) {
-    final dateFormat = DateFormat('MMM d, yyyy').format(activity.timestamp);
-    final subtitle = activity.description; 
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {},
-        hoverColor: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(6),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Symbol
-              SizedBox(
-                width: 100,
-                child: Tooltip(
-                  message: activity.title,
-                  child: Text(
-                    activity.title.toUpperCase(),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
                       fontSize: 12,
-                      color: onSurface,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2E3192),
                       fontFamily: 'Inter',
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-              // Action / Units
-              Expanded(
-                child: Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: onSurfaceVariant,
-                    fontFamily: 'Inter',
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              // Date
-              SizedBox(
-                width: 100,
-                child: Text(
-                  dateFormat,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: onSurfaceVariant,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
-              // Amount
-              SizedBox(
-                width: 80,
-                child: Text(
-                  activity.amount ?? '',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: onSurface,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
             ],
           ),
-        ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 300,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final table = PaginatedSortableTable<ActivityItem>(
+                  items: activities,
+                  pageSize: pageSize,
+                  pageSizeOptions: const [10, 25, 50],
+                  initialSortColumnIndex: sortColumnIndex,
+                  initialSortDirection: sortDirection,
+                  serverPagination: true,
+                  serverTotalItems: response.totalItems,
+                  serverTotalPages: response.totalPages,
+                  serverCurrentPage: response.page,
+                  onServerPageChanged: onPageChanged,
+                  onServerPageSizeChanged: onPageSizeChanged,
+                  onServerSort: onSort,
+                  headerTextStyle: headerStyle,
+                  rowTextStyle: rowStyle,
+                  headerBackgroundColor:
+                      isDark ? Colors.transparent : const Color(0xFFF8FAFC),
+                  rowHoverColor: isDark
+                      ? Colors.white.withValues(alpha: 0.04)
+                      : const Color(0xFFF8FAFC),
+                  emptyMessage: 'No recent activity',
+                  columns: [
+                    SortableColumn<ActivityItem>(
+                      title: 'Symbol',
+                      flex: 2,
+                      sortBy: (item) => item.symbol ?? item.title,
+                      builder: (item) => Text(
+                        (item.symbol ?? item.title).toUpperCase(),
+                        style: rowStyle.copyWith(fontWeight: FontWeight.w700),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SortableColumn<ActivityItem>(
+                      title: 'Units',
+                      flex: 2,
+                      sortBy: (item) => item.quantity ?? 0,
+                      builder: (item) => Text(
+                        item.quantity != null
+                            ? item.quantity!.toStringAsFixed(0)
+                            : item.description,
+                        style: rowStyle.copyWith(color: onSurfaceVariant),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SortableColumn<ActivityItem>(
+                      title: 'Date',
+                      flex: 2,
+                      sortBy: (item) => item.timestamp,
+                      builder: (item) => Text(
+                        dateFormat.format(item.timestamp),
+                        style: rowStyle.copyWith(
+                          fontSize: 11,
+                          color: onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    SortableColumn<ActivityItem>(
+                      title: 'Amount',
+                      flex: 2,
+                      textAlign: TextAlign.end,
+                      sortBy: (item) => item.currentValue ?? 0,
+                      builder: (item) => Text(
+                        item.amount ??
+                            (item.currentValue != null
+                                ? currencyFormat.format(item.currentValue)
+                                : '—'),
+                        textAlign: TextAlign.right,
+                        style: rowStyle.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    SortableColumn<ActivityItem>(
+                      title: 'P&L %',
+                      flex: 2,
+                      textAlign: TextAlign.end,
+                      sortBy: (item) => item.profitLossPercent ?? 0,
+                      builder: (item) {
+                        final pct = item.profitLossPercent;
+                        if (pct == null) {
+                          return const Text('—', textAlign: TextAlign.right);
+                        }
+                        final positive = pct >= 0;
+                        return Text(
+                          '${positive ? '+' : ''}${pct.toStringAsFixed(2)}%',
+                          textAlign: TextAlign.right,
+                          style: rowStyle.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: positive
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFEF4444),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+
+                if (constraints.maxWidth < 520) {
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(width: 520, child: table),
+                  );
+                }
+                return table;
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

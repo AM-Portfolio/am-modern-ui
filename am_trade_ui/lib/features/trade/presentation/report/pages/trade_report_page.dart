@@ -35,15 +35,21 @@ class _TradeReportPageState extends ConsumerState<TradeReportPage> {
   @override
   void initState() {
     super.initState();
-    _currentConfig = MetricsFilterConfig(
-      dateRange: DateRangeFilter(
-        startDate: DateTime(DateTime.now().year, 1, 1),
-        endDate: DateTime.now(),
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyGlobalTimeFrame(ref.read(appTimeFrameProvider));
+    });
+  }
+
+  void _applyGlobalTimeFrame(TimeFrame timeFrame) {
+    final range = timeFrame.dateRange;
+    _applyFilter(
+      MetricsFilterConfig(
+        dateRange: DateRangeFilter(
+          startDate: range.start,
+          endDate: range.end,
+        ),
       ),
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _applyFilter(_currentConfig);
-    });
   }
 
   @override
@@ -97,6 +103,9 @@ class _TradeReportPageState extends ConsumerState<TradeReportPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(appTimeFrameProvider, (previous, next) {
+      if (previous != next) _applyGlobalTimeFrame(next);
+    });
     final cubitAsync = ref.watch(tradeReportCubitProvider);
     final currency = ref.watch(userCurrencyProvider);
 
@@ -141,6 +150,8 @@ class _TradeReportPageState extends ConsumerState<TradeReportPage> {
 
     return Row(
       children: [
+        const GlobalTimeFrameBar(),
+        const SizedBox(width: 16),
         // Date Range Picker Display
         GestureDetector(
             onTap: () => _showDatePicker(context),

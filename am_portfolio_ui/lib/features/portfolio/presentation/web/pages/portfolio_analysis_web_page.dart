@@ -1,9 +1,9 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_common/am_common.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:am_design_system/am_design_system.dart';
 import '../../../internal/domain/entities/portfolio_analytics_request.dart';
 import '../../../internal/domain/entities/portfolio_summary.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
@@ -29,18 +29,14 @@ class PortfolioAnalysisWebPage extends ConsumerStatefulWidget {
 
 class _PortfolioAnalysisWebPageState
     extends ConsumerState<PortfolioAnalysisWebPage> {
-  String _selectedTimeframe = '1M';
   String _selectedAnalysisType = 'Performance';
-  PortfolioAnalyticsRequest? _analyticsRequest;
+  late final PortfolioAnalyticsRequest _baseAnalyticsRequest;
 
   @override
   void initState() {
     super.initState();
-  }
-
-  void _updateRequest(String activePortfolioId) {
-    _analyticsRequest = PortfolioAnalyticsRequest(
-      coreIdentifiers: CoreIdentifiers(portfolioId: activePortfolioId),
+    _baseAnalyticsRequest = PortfolioAnalyticsRequest(
+      coreIdentifiers: CoreIdentifiers(portfolioId: widget.portfolioId),
       featureToggles: const FeatureToggles(
         includeHeatmap: true,
         includeMovers: true,
@@ -61,12 +57,28 @@ class _PortfolioAnalysisWebPageState
   @override
   Widget build(BuildContext context) {
     final activePortfolioId = context.selectedPortfolioId ?? widget.portfolioId;
-    _updateRequest(activePortfolioId);
+    final timeFrameCode = ref.watch(appTimeFrameProvider).code;
+    ref.listen(appTimeFrameProvider, (previous, next) {
+      if (previous != next) {
+        ref.invalidate(portfolioSummaryProvider(activePortfolioId));
+        ref.invalidate(portfolioHoldingsProvider(activePortfolioId));
+      }
+    });
+    
+    final analyticsRequest = PortfolioAnalyticsRequest(
+      coreIdentifiers: CoreIdentifiers(portfolioId: activePortfolioId),
+      featureToggles: _baseAnalyticsRequest.featureToggles,
+      featureConfiguration: _baseAnalyticsRequest.featureConfiguration,
+      pagination: _baseAnalyticsRequest.pagination,
+      fromDate: _baseAnalyticsRequest.fromDate,
+      toDate: _baseAnalyticsRequest.toDate,
+      timeFrame: timeFrameCode,
+    );
 
     final summaryAsync = ref.watch(
       portfolioSummaryProvider(activePortfolioId),
     );
-    final analyticsAsync = ref.watch(portfolioAnalyticsProvider(_analyticsRequest!));
+    final analyticsAsync = ref.watch(portfolioAnalyticsProvider(analyticsRequest));
     final holdingsAsync = ref.watch(
       portfolioHoldingsProvider(activePortfolioId),
     );
@@ -96,7 +108,7 @@ class _PortfolioAnalysisWebPageState
                       // Performance Chart Section
                       Expanded(
                         flex: 2,
-                        child: _buildPerformanceSection(context, summaryAsync)
+                        child: _buildPerformanceSection(context, summaryAsync, timeFrameCode)
                             .animate()
                             .fadeIn(duration: 600.ms, delay: 200.ms)
                             .slideX(begin: -0.1, end: 0),
@@ -183,39 +195,7 @@ class _PortfolioAnalysisWebPageState
 
       const Spacer(),
 
-      // Timeframe Selector
-      Text(
-        'Timeframe:',
-        style: Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(width: 12),
-
-      DropdownButton<String>(
-        value: _selectedTimeframe,
-        underline: Container(),
-        items: const [
-          DropdownMenuItem(value: '1W', child: Text('1 Week')),
-          DropdownMenuItem(value: '1M', child: Text('1 Month')),
-          DropdownMenuItem(value: '3M', child: Text('3 Months')),
-          DropdownMenuItem(value: '6M', child: Text('6 Months')),
-          DropdownMenuItem(value: '1Y', child: Text('1 Year')),
-          DropdownMenuItem(value: 'YTD', child: Text('Year to Date')),
-          DropdownMenuItem(value: 'ALL', child: Text('All Time')),
-        ],
-        onChanged: (value) {
-          if (value != null) {
-            setState(() {
-              _selectedTimeframe = value;
-            });
-            final activePortfolioId = context.selectedPortfolioId ?? widget.portfolioId;
-            ref.invalidate(portfolioSummaryProvider(activePortfolioId));
-            ref.invalidate(portfolioAnalyticsProvider(_analyticsRequest!));
-            ref.invalidate(portfolioHoldingsProvider(activePortfolioId));
-          }
-        },
-      ),
+      const GlobalTimeFrameBar(),
 
       const SizedBox(width: 16),
 
@@ -234,6 +214,7 @@ class _PortfolioAnalysisWebPageState
   Widget _buildPerformanceSection(
     BuildContext context,
     AsyncValue<PortfolioSummary> summaryAsync,
+    String timeFrameCode,
   ) => Card(
     margin: const EdgeInsets.all(16),
     child: Padding(
@@ -246,7 +227,7 @@ class _PortfolioAnalysisWebPageState
               const Icon(Icons.trending_up, color: Colors.green),
               const SizedBox(width: 8),
               Text(
-                'Portfolio Performance - $_selectedTimeframe',
+                'Portfolio Performance - $timeFrameCode',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -257,7 +238,7 @@ class _PortfolioAnalysisWebPageState
 
           Expanded(
             child: summaryAsync.when(
-              data: (summary) => _buildPerformanceChart(context, summary),
+              data: (summary) => _buildPerformanceChart(context, summary, timeFrameCode),
               loading: () => _buildPerformanceChartSkeleton(context),
               error: (error, stack) => _buildErrorPlaceholder(
                 context,
@@ -274,6 +255,7 @@ class _PortfolioAnalysisWebPageState
   Widget _buildPerformanceChart(
     BuildContext context,
     PortfolioSummary summary,
+    String timeFrameCode,
   ) => Container(
     decoration: BoxDecoration(
       color: Colors.grey.shade50,
@@ -301,7 +283,7 @@ class _PortfolioAnalysisWebPageState
           ),
           const SizedBox(height: 4),
           Text(
-            'Time Period: $_selectedTimeframe',
+            'Time Period: $timeFrameCode',
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
