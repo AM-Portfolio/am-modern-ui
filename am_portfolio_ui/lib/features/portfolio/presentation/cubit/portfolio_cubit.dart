@@ -276,14 +276,23 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         tag: 'PortfolioCubit',
       );
 
-      // Use portfolio service to fetch data concurrently
-      final results = await Future.wait([
-        _portfolioService.getPortfolioHoldings(),
-        _portfolioService.getPortfolioSummary(),
-      ]);
+      // Progressive Loading: Fetch Summary first (Fast)
+      final summary = await _portfolioService.getPortfolioSummary();
 
-      final holdings = results[0] as PortfolioHoldings;
-      final summary = results[1] as PortfolioSummary;
+      if (!isClosed) {
+        emit(
+          PortfolioLoaded(
+            portfolioId: 'GLOBAL',
+            summary: summary,
+            holdings: const [],
+            portfolioList: state.portfolioList,
+            isHoldingsLoading: true,
+          ),
+        );
+      }
+
+      // Then fetch Holdings (Slow)
+      final holdings = await _portfolioService.getPortfolioHoldings();
 
       CommonLogger.stateChange(
         'PortfolioLoading',
@@ -302,6 +311,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
             summary: summary,
             holdings: holdings.holdings,
             portfolioList: state.portfolioList,
+            isHoldingsLoading: false,
           ),
         );
       }
@@ -385,14 +395,23 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         tag: 'PortfolioCubit',
       );
 
-      // Use portfolio service to fetch data concurrently by portfolio ID
-      final results = await Future.wait([
-        _portfolioService.getPortfolioHoldingsById(portfolioId),
-        _portfolioService.getPortfolioSummaryById(portfolioId),
-      ]);
+      // Progressive Loading: Fetch Summary first (Fast)
+      final summary = await _portfolioService.getPortfolioSummaryById(portfolioId);
 
-      final holdings = results[0] as PortfolioHoldings;
-      final summary = results[1] as PortfolioSummary;
+      if (!isClosed) {
+        emit(
+          PortfolioLoaded(
+            portfolioId: portfolioId,
+            summary: summary,
+            holdings: const [],
+            portfolioList: state.portfolioList,
+            isHoldingsLoading: true,
+          ),
+        );
+      }
+
+      // Then fetch Holdings (Slow)
+      final holdings = await _portfolioService.getPortfolioHoldingsById(portfolioId);
 
       CommonLogger.stateChange(
         'PortfolioLoading',
@@ -411,6 +430,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
             summary: summary,
             holdings: holdings.holdings,
             portfolioList: state.portfolioList,
+            isHoldingsLoading: false,
           ),
         );
       }

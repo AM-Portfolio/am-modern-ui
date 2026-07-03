@@ -9,6 +9,7 @@ import '../../../internal/domain/entities/portfolio_summary.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../internal/domain/entities/portfolio_analytics.dart';
 import '../../../providers/portfolio_providers.dart';
+import '../../widgets/global_portfolio_wrapper.dart';
 
 /// Web-specific portfolio analysis page with comprehensive analytics
 class PortfolioAnalysisWebPage extends ConsumerStatefulWidget {
@@ -30,13 +31,16 @@ class _PortfolioAnalysisWebPageState
     extends ConsumerState<PortfolioAnalysisWebPage> {
   String _selectedTimeframe = '1M';
   String _selectedAnalysisType = 'Performance';
-  late final PortfolioAnalyticsRequest _analyticsRequest;
+  PortfolioAnalyticsRequest? _analyticsRequest;
 
   @override
   void initState() {
     super.initState();
+  }
+
+  void _updateRequest(String activePortfolioId) {
     _analyticsRequest = PortfolioAnalyticsRequest(
-      coreIdentifiers: CoreIdentifiers(portfolioId: widget.portfolioId),
+      coreIdentifiers: CoreIdentifiers(portfolioId: activePortfolioId),
       featureToggles: const FeatureToggles(
         includeHeatmap: true,
         includeMovers: true,
@@ -56,12 +60,15 @@ class _PortfolioAnalysisWebPageState
 
   @override
   Widget build(BuildContext context) {
+    final activePortfolioId = context.selectedPortfolioId ?? widget.portfolioId;
+    _updateRequest(activePortfolioId);
+
     final summaryAsync = ref.watch(
-      portfolioSummaryProvider(widget.portfolioId),
+      portfolioSummaryProvider(activePortfolioId),
     );
-    final analyticsAsync = ref.watch(portfolioAnalyticsProvider(_analyticsRequest));
+    final analyticsAsync = ref.watch(portfolioAnalyticsProvider(_analyticsRequest!));
     final holdingsAsync = ref.watch(
-      portfolioHoldingsProvider(widget.portfolioId),
+      portfolioHoldingsProvider(activePortfolioId),
     );
 
     return Scaffold(
@@ -202,10 +209,10 @@ class _PortfolioAnalysisWebPageState
             setState(() {
               _selectedTimeframe = value;
             });
-            // Refresh data to simulate timeframe change
-            ref.invalidate(portfolioSummaryProvider(widget.portfolioId));
-            ref.invalidate(portfolioAnalyticsProvider(_analyticsRequest));
-            ref.invalidate(portfolioHoldingsProvider(widget.portfolioId));
+            final activePortfolioId = context.selectedPortfolioId ?? widget.portfolioId;
+            ref.invalidate(portfolioSummaryProvider(activePortfolioId));
+            ref.invalidate(portfolioAnalyticsProvider(_analyticsRequest!));
+            ref.invalidate(portfolioHoldingsProvider(activePortfolioId));
           }
         },
       ),

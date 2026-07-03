@@ -89,7 +89,7 @@ class MoversWidget extends StatelessWidget {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
                       child: Text(
-                        'View All (${math.max(movers!.topGainers.length, movers!.topLosers.length)})',
+                        'See Top 10',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,

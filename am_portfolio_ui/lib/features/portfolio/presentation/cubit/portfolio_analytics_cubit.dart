@@ -12,6 +12,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
 
   Future<void>? _loadingFuture;
   String? _currentPortfolioId;
+  TimeFrame? _lastLoadedTimeFrame;
 
   /// Load all analytics data for a portfolio
   Future<void> loadAnalytics(String portfolioId, {TimeFrame? timeFrame}) async {
@@ -21,6 +22,16 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         tag: 'PortfolioAnalyticsCubit',
       );
       return _loadingFuture;
+    }
+
+    if (state is PortfolioAnalyticsLoaded &&
+        _currentPortfolioId == portfolioId &&
+        _lastLoadedTimeFrame == timeFrame) {
+      CommonLogger.debug(
+        '🔍 PortfolioAnalyticsCubit: Data already loaded for $portfolioId and timeFrame: ${timeFrame?.name}',
+        tag: 'PortfolioAnalyticsCubit',
+      );
+      return;
     }
 
     _currentPortfolioId = portfolioId;
@@ -61,9 +72,41 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         tag: 'PortfolioAnalyticsCubit',
       );
 
-      // Load all analytics data with single API call (more efficient)
-      final analytics = await _analyticsService
-          .getPortfolioAnalyticsWithDefaults(portfolioId, timeFrame: timeFrame);
+      // Start full analytics fetch (takes ~58s due to live market data for Movers/Heatmap)
+      final fullAnalyticsFuture = _analyticsService.getPortfolioAnalyticsWithDefaults(
+        portfolioId, 
+        timeFrame: timeFrame,
+      );
+
+      // Fast fetch for allocations (uses MongoDB / fast current market data, ~100ms)
+      try {
+        final allocations = await _analyticsService.getPortfolioAllocations(portfolioId);
+        
+        if (!isClosed) {
+          CommonLogger.debug(
+            '🔍 Fast allocations loaded, emitting partial state',
+            tag: 'PortfolioAnalyticsCubit',
+          );
+          emit(
+            PortfolioAnalyticsLoaded(
+              sectorAllocation: allocations.sectorAllocation,
+              marketCapAllocation: allocations.marketCapAllocation,
+              loadingTypes: const {
+                AnalyticsDataType.heatmap, 
+                AnalyticsDataType.movers,
+              },
+            ),
+          );
+        }
+      } catch (e) {
+        CommonLogger.warning(
+          'Fast allocation fetch failed, waiting for full analytics: $e',
+          tag: 'PortfolioAnalyticsCubit',
+        );
+      }
+
+      // Wait for the slow features to complete
+      final analytics = await fullAnalyticsFuture;
 
       CommonLogger.debug(
         '🔍 Analytics service call completed, processing results',
@@ -80,6 +123,8 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       );
 
       if (isClosed) return;
+      
+      _lastLoadedTimeFrame = timeFrame;
       emit(
         PortfolioAnalyticsLoaded(
           sectorAllocation: analytics.analytics.sectorAllocation,

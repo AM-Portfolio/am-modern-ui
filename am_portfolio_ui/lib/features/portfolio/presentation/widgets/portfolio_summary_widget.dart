@@ -40,7 +40,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
             children: [
               Expanded(child: _buildPremiumActionCard(context, 'View Holdings', Icons.list_alt, onViewHoldings)),
               const SizedBox(width: 12),
-              Expanded(child: _buildPremiumActionCard(context, 'Analysis', Icons.analytics_outlined, onViewAnalysis)),
+              Expanded(child: _buildPremiumActionCard(context, 'Refresh Data', Icons.refresh, () {})), // Placeholder to maintain layout
             ],
           ),
         ],

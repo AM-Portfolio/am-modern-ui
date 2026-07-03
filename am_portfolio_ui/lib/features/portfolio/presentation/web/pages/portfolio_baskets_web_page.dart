@@ -21,11 +21,7 @@ class PortfolioBasketsWebPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Basket Opportunities',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 16),
+
           Expanded(
             child: BasketExplorer(portfolioId: portfolioId!),
           ),

@@ -7,6 +7,7 @@ import '../../../providers/portfolio_providers.dart';
 import '../../cubit/portfolio_analytics_cubit.dart';
 import '../../cubit/portfolio_heatmap_cubit.dart';
 import '../../widgets/portfolio_heatmap_widget.dart';
+import '../../widgets/global_portfolio_wrapper.dart';
 
 /// Web-specific portfolio heatmap page.
 /// Self-contained with its own providers to support direct linking.
@@ -22,41 +23,22 @@ class PortfolioHeatmapWebPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (portfolioId == null) {
+    final activePortfolioId = context.selectedPortfolioId ?? portfolioId;
+    final activePortfolioName = context.selectedPortfolioName ?? portfolioName;
+
+    if (activePortfolioId == null) {
       return const Center(child: Text('Please select a portfolio'));
     }
 
-    final analyticsServiceAsync = ref.watch(portfolioAnalyticsServiceProvider);
-
-    return analyticsServiceAsync.when(
-      data: (analyticsService) {
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider(
-              create: (context) => PortfolioAnalyticsCubit(analyticsService),
-            ),
-            BlocProvider(
-              create: (context) => PortfolioHeatmapCubit(
-                context.read<PortfolioAnalyticsCubit>(),
-              ),
-            ),
-          ],
-          child: _PortfolioHeatmapView(
-            portfolioId: portfolioId!,
-            portfolioName: portfolioName,
-          ),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) {
-        CommonLogger.error(
-          'Failed to load analytics service',
-          tag: 'PortfolioHeatmapWebPage',
-          error: error,
-          stackTrace: stack,
-        );
-        return Center(child: Text('Error loading dependencies: $error'));
-      },
+    return BlocProvider(
+      key: ValueKey(activePortfolioId), // Force recreation of heatmap cubit
+      create: (context) => PortfolioHeatmapCubit(
+        context.read<PortfolioAnalyticsCubit>(),
+      ),
+      child: _PortfolioHeatmapView(
+        portfolioId: activePortfolioId,
+        portfolioName: activePortfolioName,
+      ),
     );
   }
 }

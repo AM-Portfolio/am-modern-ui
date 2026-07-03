@@ -343,23 +343,26 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                             showTimeFrameSelector: false,
                           ),
                           const SizedBox(height: 16),
-                          BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
-                            builder: (context, state) {
-                              if (state is PortfolioAnalyticsLoading) {
+                          SizedBox(
+                            height: 500,
+                            child: BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+                              builder: (context, state) {
+                                if (state is PortfolioAnalyticsLoading) {
+                                  return const AllocationPanelWidget(isLoading: true);
+                                } else if (state is PortfolioAnalyticsLoaded) {
+                                  final isLoading = state.isLoadingType(AnalyticsDataType.sectorAllocation);
+                                  final error = state.getErrorForType(AnalyticsDataType.sectorAllocation);
+                                  return AllocationPanelWidget(
+                                    sectorAllocation: state.sectorAllocation,
+                                    isLoading: isLoading,
+                                    error: error,
+                                  );
+                                } else if (state is PortfolioAnalyticsError) {
+                                  return AllocationPanelWidget(error: state.message);
+                                }
                                 return const AllocationPanelWidget(isLoading: true);
-                              } else if (state is PortfolioAnalyticsLoaded) {
-                                final isLoading = state.isLoadingType(AnalyticsDataType.sectorAllocation);
-                                final error = state.getErrorForType(AnalyticsDataType.sectorAllocation);
-                                return AllocationPanelWidget(
-                                  sectorAllocation: state.sectorAllocation,
-                                  isLoading: isLoading,
-                                  error: error,
-                                );
-                              } else if (state is PortfolioAnalyticsError) {
-                                return AllocationPanelWidget(error: state.message);
-                              }
-                              return const AllocationPanelWidget(isLoading: true);
-                            },
+                              },
+                            ),
                           ),
                         ] else
                           _MoversAllocationRow(
@@ -625,9 +628,14 @@ class _MoversAllocationRowState extends State<_MoversAllocationRow> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    return BlocListener<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+      listener: (context, state) {
+        // When state changes (e.g. loading to loaded), remeasure the left column
+        WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
+      },
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
         // ── Left column: Chart + Movers ──
         Expanded(
           flex: 2,
@@ -683,6 +691,7 @@ class _MoversAllocationRowState extends State<_MoversAllocationRow> {
           ),
         ),
       ],
+    ),
     );
   }
 }

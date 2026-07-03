@@ -161,7 +161,9 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
       // Construct full URI from portfolio config with portfolioId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.holdings);
-      final fullUri = '$baseUri?portfolioId=$portfolioId';
+      final fullUri = portfolioId == 'all'
+          ? baseUri
+          : '$baseUri?portfolioId=$portfolioId';
 
       // Use ApiClient for consistent error handling and logging
       final holdingsResponse = await _apiClient.get<PortfolioHoldingsDto>(
@@ -323,7 +325,9 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
       // Construct full URI from portfolio config with portfolioId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.summary);
-      final fullUri = '$baseUri?portfolioId=$portfolioId';
+      final fullUri = portfolioId == 'all'
+          ? baseUri
+          : '$baseUri?portfolioId=$portfolioId';
 
       // Use ApiClient for consistent error handling and logging
       final summaryResponse = await _apiClient.get<PortfolioSummaryDto>(

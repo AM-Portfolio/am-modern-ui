@@ -2,6 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
@@ -202,7 +203,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   void initState() {
     super.initState();
     final initialIndex = _tabIndexFromSlug(widget.initialTab);
-    _tabController = TabController(length: 5, vsync: this, initialIndex: initialIndex);
+    _tabController = TabController(length: 4, vsync: this, initialIndex: initialIndex);
     _tabController.addListener(() {
       if (mounted && !_tabController.indexIsChanging) {
         setState(() {});
@@ -328,24 +329,27 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             onTap: () => setState(() => _tabController.index = 1),
           ),
           SecondarySidebarItem(
-            title: 'Analysis',
-            icon: Icons.analytics_outlined,
+            title: 'Heatmap',
+            icon: Icons.grid_view,
             isSelected: _tabController.index == 2,
             onTap: () => setState(() => _tabController.index = 2),
           ),
           SecondarySidebarItem(
-            title: 'Heatmap',
-            icon: Icons.grid_view,
+            title: 'Baskets',
+            icon: Icons.shopping_basket_outlined,
             isSelected: _tabController.index == 3,
             onTap: () => setState(() => _tabController.index = 3),
           ),
-          SecondarySidebarItem(
-            title: 'Trade',
-            icon: Icons.show_chart,
-            isSelected: _tabController.index == 4,
-            onTap: () => setState(() => _tabController.index = 4),
-          ),
         ],
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            context.go('/portfolio/basket/creator');
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('New Trade'),
+          backgroundColor: Theme.of(context).primaryColor,
+          foregroundColor: Colors.white,
+        ),
         body: PortfolioTabContentWidget(
           tabController: _tabController,
           currentPortfolioId: _currentPortfolioId!,

@@ -185,8 +185,8 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
     }
 
     final weights = widget.sectorAllocation!.sectorWeights;
-    final visibleWeights = _showAllSectors ? weights : weights.take(5).toList();
-    final hasMore = weights.length > 5;
+    final visibleWeights = weights;
+    final hasMore = false;
 
     return Column(
       mainAxisSize: MainAxisSize.max,
