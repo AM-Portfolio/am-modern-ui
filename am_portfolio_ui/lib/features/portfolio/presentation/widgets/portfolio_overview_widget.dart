@@ -265,13 +265,14 @@ class _PortfolioOverviewWidgetState extends State<PortfolioOverviewWidget> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               SizedBox(
-                                width: isMobile ? constraints.maxWidth - 32 : 400,
-                                child: ds.TimeFrameSelector.portfolio(
+                                width: isMobile ? constraints.maxWidth - 32 : 550,
+                                child: ds.TimeFrameSelector(
                                   selectedTimeFrame: _selectedTimeFrame,
                                   onTimeFrameChanged: (tf) {
                                     setState(() => _selectedTimeFrame = tf);
                                     _triggerLoad();
                                   },
+                                  availableTimeFrames: ds.TimeFrame.webTimeFrames,
                                   compact: false,
                                 ),
                               ),
