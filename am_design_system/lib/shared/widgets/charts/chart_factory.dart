@@ -14,6 +14,7 @@ class ChartFactory extends StatelessWidget {
   final CommonChartConfig config;
   final Color? primaryColor;
   final double height;
+  final List<ChartLineData>? lines;
 
   const ChartFactory({
     required this.type,
@@ -22,6 +23,7 @@ class ChartFactory extends StatelessWidget {
     this.config = const CommonChartConfig(),
     this.primaryColor,
     this.height = 300,
+    this.lines,
   });
 
   /// Factory constructor for Line Chart
@@ -30,6 +32,7 @@ class ChartFactory extends StatelessWidget {
     CommonChartConfig config = const CommonChartConfig(),
     Color? color,
     double height = 300,
+    List<ChartLineData>? lines,
   }) {
     return ChartFactory(
       type: ChartType.line,
@@ -37,6 +40,7 @@ class ChartFactory extends StatelessWidget {
       config: config,
       primaryColor: color,
       height: height,
+      lines: lines,
     );
   }
 
@@ -119,6 +123,33 @@ class ChartFactory extends StatelessWidget {
     final color = primaryColor ?? designConfig.primaryColor;
     final gridColor = config.gridColor ?? theme.dividerColor.withOpacity(0.1);
     
+    final bool hasMultiLines = lines != null && lines!.isNotEmpty;
+
+    // Resolve bars: either map multi-lines or create single bar from data
+    final List<LineChartBarData> bars = hasMultiLines
+        ? lines!.map((lineData) => LineChartBarData(
+            spots: lineData.points.map((d) => FlSpot(d.x, d.y)).toList(),
+            isCurved: true,
+            color: lineData.color ?? color,
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: const FlDotData(show: false),
+          )).toList()
+        : [
+            LineChartBarData(
+              spots: data.map((d) => FlSpot(d.x, d.y)).toList(),
+              isCurved: true,
+              color: color,
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: type == ChartType.area,
+                color: color.withOpacity(0.15),
+              ),
+            ),
+          ];
+
     return LineChart(
       LineChartData(
         gridData: FlGridData(
@@ -136,13 +167,15 @@ class ChartFactory extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                // Simple index-based label retrieval
                 final index = value.toInt();
-                if (index >= 0 && index < data.length) {
+                final List<CommonChartDataPoint> activePoints = hasMultiLines
+                    ? lines!.first.points
+                    : data;
+                if (index >= 0 && index < activePoints.length) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
-                      data[index].xLabel ?? '',
+                      activePoints[index].xLabel ?? '',
                       style: TextStyle(fontSize: 10, color: theme.hintColor),
                     ),
                   );
@@ -166,29 +199,22 @@ class ChartFactory extends StatelessWidget {
           ),
         ),
         borderData: FlBorderData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: data.map((d) => FlSpot(d.x, d.y)).toList(),
-            isCurved: true,
-            color: color,
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: type == ChartType.area,
-              color: color.withOpacity(0.15),
-            ),
-          ),
-        ],
+        lineBarsData: bars,
         lineTouchData: LineTouchData(
           enabled: config.showTooltips,
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (_) => AppColors.darkBackground.withOpacity(0.9),
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
-                final point = data[spot.spotIndex];
+                final List<CommonChartDataPoint> activePoints = hasMultiLines
+                    ? lines![spot.barIndex].points
+                    : data;
+                final point = activePoints[spot.spotIndex];
+                final String lineLabel = hasMultiLines
+                    ? '${lines![spot.barIndex].label}: '
+                    : '';
                 return LineTooltipItem(
-                  '${point.yLabel ?? point.y.toString()}\n',
+                  '$lineLabel${point.yLabel ?? point.y.toString()}\n',
                   const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   children: [
                     TextSpan(

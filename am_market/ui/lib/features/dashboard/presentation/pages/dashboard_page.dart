@@ -493,7 +493,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Market Analysis',
         subtitle: 'Detailed charts',
         icon: Icons.analytics_rounded,
-        page: _wrapPage(const AnalysisPage()),
+        page: _wrapPage(const HeatmapExplorerView()),
         accentColor: accentColor,
       ),
     ];
