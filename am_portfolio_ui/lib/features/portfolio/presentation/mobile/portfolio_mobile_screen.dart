@@ -15,7 +15,7 @@ import 'widgets/portfolio_logout_handler.dart';
 import 'package:am_common/am_common.dart';
 
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
-class PortfolioMobileScreen extends ConsumerWidget {
+class PortfolioMobileScreen extends ConsumerStatefulWidget {
   const PortfolioMobileScreen({
     super.key,
     this.selectedPortfolioId,
@@ -25,6 +25,7 @@ class PortfolioMobileScreen extends ConsumerWidget {
     this.onBack,
     this.initialTab,
     this.onTabChanged,
+    this.addTradeBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -33,9 +34,15 @@ class PortfolioMobileScreen extends ConsumerWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
+  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PortfolioMobileScreen> createState() => _PortfolioMobileScreenState();
+}
+
+class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
+  @override
+  Widget build(BuildContext context) {
     CommonLogger.info(
       'Building PortfolioMobileScreen',
       tag: 'PortfolioMobileScreen',
@@ -63,13 +70,14 @@ class PortfolioMobileScreen extends ConsumerWidget {
           data: (analyticsService) => BlocProvider(
             create: (context) => PortfolioAnalyticsCubit(analyticsService),
             child: PortfolioMobileView(
-              selectedPortfolioId: selectedPortfolioId,
-              selectedPortfolioName: selectedPortfolioName,
-              portfolios: portfolios,
-              onPortfolioChanged: onPortfolioChanged,
-              onBack: onBack,
-              initialTab: initialTab,
-              onTabChanged: onTabChanged,
+              selectedPortfolioId: widget.selectedPortfolioId,
+              selectedPortfolioName: widget.selectedPortfolioName,
+              portfolios: widget.portfolios,
+              onPortfolioChanged: widget.onPortfolioChanged,
+              onBack: widget.onBack,
+              initialTab: widget.initialTab,
+              onTabChanged: widget.onTabChanged,
+              addTradeBuilder: widget.addTradeBuilder,
             ),
           ),
           loading: () =>
@@ -147,6 +155,7 @@ class PortfolioMobileView extends StatefulWidget {
     this.onBack,
     this.initialTab,
     this.onTabChanged,
+    this.addTradeBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -155,6 +164,7 @@ class PortfolioMobileView extends StatefulWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
+  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
@@ -164,6 +174,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     with TickerProviderStateMixin {
   late TabController _tabController;
   String? _currentPortfolioId;
+  bool _isAddingTrade = false;
 
   int _tabIndexFromSlug(String? slug) {
     switch (slug?.toLowerCase()) {
@@ -171,12 +182,10 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         return 0;
       case 'holdings':
         return 1;
-      case 'analysis':
-        return 2;
       case 'heatmap':
+        return 2;
+      case 'baskets':
         return 3;
-      case 'trade':
-        return 4;
       default:
         return 0;
     }
@@ -189,11 +198,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       case 1:
         return 'holdings';
       case 2:
-        return 'analysis';
-      case 3:
         return 'heatmap';
-      case 4:
-        return 'trade';
+      case 3:
+        return 'baskets';
       default:
         return 'overview';
     }
@@ -289,7 +296,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
 
     String currentName = 'Select Portfolio';
-    if (_currentPortfolioId != null && widget.portfolios != null) {
+    if (_currentPortfolioId == 'all') {
+      currentName = 'All Portfolios';
+    } else if (_currentPortfolioId != null && widget.portfolios != null) {
       final match = widget.portfolios!.where(
         (p) => p.portfolioId == _currentPortfolioId,
       );
@@ -341,19 +350,40 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             onTap: () => setState(() => _tabController.index = 3),
           ),
         ],
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            context.go('/portfolio/basket/creator');
-          },
-          icon: const Icon(Icons.add),
-          label: const Text('New Trade'),
-          backgroundColor: Theme.of(context).primaryColor,
-          foregroundColor: Colors.white,
-        ),
-        body: PortfolioTabContentWidget(
-          tabController: _tabController,
-          currentPortfolioId: _currentPortfolioId!,
-        ),
+        floatingActionButton: (!_isAddingTrade && _currentPortfolioId != null && _currentPortfolioId != 'all')
+            ? FloatingActionButton.extended(
+                onPressed: () {
+                  if (widget.addTradeBuilder != null) {
+                    setState(() {
+                      _isAddingTrade = true;
+                    });
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Trade feature not available here')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('New Trade'),
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+              )
+            : null,
+        body: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
+            ? widget.addTradeBuilder!(
+                context,
+                _currentPortfolioId!,
+                currentName,
+                () {
+                  setState(() {
+                    _isAddingTrade = false;
+                  });
+                },
+              )
+            : PortfolioTabContentWidget(
+                tabController: _tabController,
+                currentPortfolioId: _currentPortfolioId!,
+              ),
       ),
     );
   }
@@ -395,7 +425,13 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             ),
             const SizedBox(height: 8),
             if (widget.portfolios != null)
-              ...widget.portfolios!.map(
+              ...[
+                const PortfolioItem(
+                  portfolioId: 'all',
+                  portfolioName: 'All Portfolios',
+                ),
+                ...widget.portfolios!
+              ].map(
                 (p) => ListTile(
                   leading: Icon(
                     Icons.account_balance_wallet,

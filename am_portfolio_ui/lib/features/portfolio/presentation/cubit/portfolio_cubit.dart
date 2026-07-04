@@ -360,6 +360,35 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     }
   }
 
+  /// Load merged data for all portfolios
+  Future<void> loadAllPortfolios() async {
+    CommonLogger.methodEntry('loadAllPortfolios', tag: 'PortfolioCubit');
+    if (!isClosed) {
+      emit(PortfolioLoading(portfolioList: state.portfolioList));
+    }
+
+    try {
+      final summary = await _portfolioService.getPortfolioSummary();
+      final holdings = await _portfolioService.getPortfolioHoldings();
+      
+      if (!isClosed) {
+        emit(
+          PortfolioLoaded(
+            portfolioId: 'all',
+            summary: summary,
+            holdings: holdings.holdings,
+            portfolioList: state.portfolioList,
+          ),
+        );
+      }
+    } catch (e) {
+      CommonLogger.error('loadAllPortfolios Error', error: e, tag: 'PortfolioCubit');
+      if (!isClosed) {
+        emit(PortfolioError(e.toString(), portfolioList: state.portfolioList));
+      }
+    }
+  }
+
   /// Load portfolio data for a specific portfolio ID
   Future<void> loadPortfolioById(String portfolioId) async {
     CommonLogger.methodEntry(

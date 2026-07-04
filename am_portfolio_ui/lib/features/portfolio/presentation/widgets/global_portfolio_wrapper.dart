@@ -53,11 +53,15 @@ class _GlobalPortfolioWrapperState
       _selectedPortfolioName = name;
     });
 
-    innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
-          portfolioId: id,
-          forceResubscribe: true,
-        );
-    innerContext.read<PortfolioCubit>().loadPortfolioById(id);
+    if (id == 'all') {
+      innerContext.read<PortfolioCubit>().loadAllPortfolios();
+    } else {
+      innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+            portfolioId: id,
+            forceResubscribe: true,
+          );
+      innerContext.read<PortfolioCubit>().loadPortfolioById(id);
+    }
 
     if (notifyUrl) {
       widget.onPortfolioChanged?.call(id, name);

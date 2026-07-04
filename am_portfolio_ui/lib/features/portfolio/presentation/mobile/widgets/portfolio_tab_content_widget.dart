@@ -13,7 +13,7 @@ import '../pages/portfolio_heatmap_mobile_page.dart';
 import '../portfolio_analysis_widget.dart';
 import 'portfolio_holdings_widget.dart';
 import '../pages/trade_portfolio_list_mobile_page.dart';
-import '../../../../basket/presentation/widgets/basket_explorer.dart';
+import '../../../../basket/presentation/basket_navigation.dart';
 
 /// Widget that handles portfolio tab content based on state
 class PortfolioTabContentWidget extends ConsumerWidget {
@@ -183,13 +183,30 @@ class _HeatmapTab extends StatelessWidget {
   const _HeatmapTab({required this.currentPortfolioId, });
   final String currentPortfolioId;
   @override
-  Widget build(BuildContext context) => BlocProvider<PortfolioHeatmapCubit>(
-    create: (context) => PortfolioHeatmapCubit(),
-    child: PortfolioHeatmapMobilePage(
-      portfolioId: currentPortfolioId,
-      portfolioName: _getPortfolioName(context),
-    ),
-  );
+  Widget build(BuildContext context) {
+    if (currentPortfolioId == 'all') {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline, size: 48, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'Select a specific portfolio to view the Heatmap',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+    return BlocProvider<PortfolioHeatmapCubit>(
+      create: (context) => PortfolioHeatmapCubit(),
+      child: PortfolioHeatmapMobilePage(
+        portfolioId: currentPortfolioId,
+        portfolioName: _getPortfolioName(context),
+      ),
+    );
+  }
 
   /// Get portfolio name from the current portfolio state
   String? _getPortfolioName(BuildContext context) => 'Heatmap';
@@ -211,7 +228,10 @@ class _BasketsTab extends StatelessWidget {
           children: [
 
             Expanded(
-              child: BasketExplorer(portfolioId: currentPortfolioId),
+              child: BasketSectionNavigator(
+                userId: 'default_user',
+                portfolioId: currentPortfolioId,
+              ),
             ),
           ],
         ),

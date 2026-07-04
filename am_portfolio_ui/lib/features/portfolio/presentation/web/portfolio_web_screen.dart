@@ -12,7 +12,6 @@ import '../cubit/portfolio_cubit.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'pages/portfolio_overview_web_page.dart';
 import 'pages/portfolio_holdings_web_page.dart';
-import 'pages/portfolio_analysis_web_page.dart';
 import 'pages/portfolio_heatmap_web_page.dart';
 import 'pages/portfolio_baskets_web_page.dart';
 import 'package:am_user_ui/am_user_ui.dart';
@@ -317,25 +316,24 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                   showIndicator: true,
                   indicatorPosition: IndicatorPosition.bottom,
                 )),
-      footer: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SidebarPrimaryAction(
-          title: 'New Trade',
-          icon: Icons.add,
-          accentColor: ModuleColors.portfolio,
-          onTap: () {
-            if (widget.addTradeBuilder != null && _currentPortfolioId != null) {
-              setState(() {
-                _isAddingTrade = true;
-              });
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Select a portfolio first')),
-              );
-            }
-          },
-        ),
-      ),
+      footer: (_currentPortfolioId == null || _currentPortfolioId == 'all')
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: const EdgeInsets.all(16),
+              child: SidebarPrimaryAction(
+                title: 'New Trade',
+                icon: Icons.add,
+                accentColor: ModuleColors.portfolio,
+                isActive: _isAddingTrade,
+                onTap: () {
+                  if (widget.addTradeBuilder != null) {
+                    setState(() {
+                      _isAddingTrade = true;
+                    });
+                  }
+                },
+              ),
+            ),
       sections: [
         if (widget.portfolios != null && widget.portfolios!.isNotEmpty)
           SecondarySidebarSection(

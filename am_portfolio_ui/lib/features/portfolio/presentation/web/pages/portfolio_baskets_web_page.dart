@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../basket/presentation/widgets/basket_explorer.dart';
+import '../../../../basket/presentation/basket_navigation.dart';
 
 /// Web-specific baskets page
 class PortfolioBasketsWebPage extends StatelessWidget {
@@ -23,7 +23,10 @@ class PortfolioBasketsWebPage extends StatelessWidget {
         children: [
 
           Expanded(
-            child: BasketExplorer(portfolioId: portfolioId!),
+            child: BasketSectionNavigator(
+              userId: 'default_user',
+              portfolioId: portfolioId!,
+            ),
           ),
         ],
       ),

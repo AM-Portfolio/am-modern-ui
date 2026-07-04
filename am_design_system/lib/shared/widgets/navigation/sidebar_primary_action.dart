@@ -10,6 +10,7 @@ class SidebarPrimaryAction extends StatefulWidget {
     this.icon = Icons.add,
     this.accentColor,
     this.isCompact = false,
+    this.isActive = false,
     super.key,
   });
 
@@ -18,6 +19,7 @@ class SidebarPrimaryAction extends StatefulWidget {
   final IconData icon;
   final Color? accentColor;
   final bool isCompact;
+  final bool isActive;
 
   @override
   State<SidebarPrimaryAction> createState() => _SidebarPrimaryActionState();
@@ -81,7 +83,9 @@ class _SidebarPrimaryActionState extends State<SidebarPrimaryAction> with Single
         color: color,
         borderRadius: BorderRadius.circular(12),
         gradient: LinearGradient(
-          colors: [color, color.withOpacity(0.8)],
+          colors: widget.isActive 
+              ? [color.withOpacity(0.9), color.withOpacity(1.0)] 
+              : [color, color.withOpacity(0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -91,7 +95,7 @@ class _SidebarPrimaryActionState extends State<SidebarPrimaryAction> with Single
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
-          if (_isHovered)
+          if (_isHovered || widget.isActive)
              BoxShadow(
               color: color.withOpacity(0.3),
               blurRadius: 20,
@@ -119,13 +123,15 @@ class _SidebarPrimaryActionState extends State<SidebarPrimaryAction> with Single
 
   Widget _buildCompact(Color color) {
     return Container(
-      height: 48,
       width: 48,
-       decoration: BoxDecoration(
+      height: 48,
+      decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(12),
         gradient: LinearGradient(
-          colors: [color, color.withOpacity(0.8)],
+          colors: widget.isActive 
+              ? [color.withOpacity(0.9), color.withOpacity(1.0)] 
+              : [color, color.withOpacity(0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -135,6 +141,12 @@ class _SidebarPrimaryActionState extends State<SidebarPrimaryAction> with Single
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
+          if (_isHovered || widget.isActive)
+             BoxShadow(
+              color: color.withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
         ],
       ),
       child: Center(

@@ -3,7 +3,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'allocation_panel_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:am_analysis_ui/widgets/analysis_allocation_widget.dart';
 import 'package:am_analysis_ui/widgets/analysis_performance_widget.dart';
 import 'package:am_analysis_core/am_analysis_core.dart' hide TimeFrame;
 import 'portfolio_top_movers_panel.dart';
@@ -70,13 +69,15 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     if (widget.portfolioId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          try {
-            context.read<PortfolioAnalyticsCubit>().loadAnalytics(
-                  widget.portfolioId!,
-                  timeFrame: ref.read(appTimeFrameProvider),
-                );
-          } catch (_) {
-            // Cubit may not be in tree, safe to ignore
+          if (widget.portfolioId != 'all') {
+            try {
+              context.read<PortfolioAnalyticsCubit>().loadAnalytics(
+                    widget.portfolioId!,
+                    timeFrame: ref.read(appTimeFrameProvider),
+                  );
+            } catch (_) {
+              // Cubit may not be in tree, safe to ignore
+            }
           }
 
           if (currentState is PortfolioLoaded &&
@@ -84,7 +85,11 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             return;
           }
 
-          cubit.loadPortfolioById(widget.portfolioId!);
+          if (widget.portfolioId == 'all') {
+            cubit.loadAllPortfolios();
+          } else {
+            cubit.loadPortfolioById(widget.portfolioId!);
+          }
         }
       });
     } else {
@@ -359,13 +364,26 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                           ),
                           const SizedBox(height: 16),
                           SizedBox(
-                            height: isSmallMobile ? 280 : 340,
-                            child: AnalysisAllocationWidget(
-                              key: ValueKey('alloc_${selectedTimeFrame.code}'),
-                              portfolioId: portfolioId,
-                              initialTimeFrame: selectedTimeFrame,
-                              groupBy: GroupBy.sector,
-                              height: isSmallMobile ? 280 : 340,
+                            height: isSmallMobile ? 320 : 360,
+                            child: BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+                              builder: (context, state) {
+                                if (state is PortfolioAnalyticsLoading) {
+                                  return const AllocationPanelWidget(isLoading: true);
+                                } else if (state is PortfolioAnalyticsLoaded) {
+                                  final isLoading =
+                                      state.isLoadingType(AnalyticsDataType.sectorAllocation);
+                                  final error =
+                                      state.getErrorForType(AnalyticsDataType.sectorAllocation);
+                                  return AllocationPanelWidget(
+                                    sectorAllocation: state.sectorAllocation,
+                                    isLoading: isLoading,
+                                    error: error,
+                                  );
+                                } else if (state is PortfolioAnalyticsError) {
+                                  return AllocationPanelWidget(error: state.message);
+                                }
+                                return const AllocationPanelWidget(isLoading: true);
+                              },
                             ),
                           ),
                         ] else
