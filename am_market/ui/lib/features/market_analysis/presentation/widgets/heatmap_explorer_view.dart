@@ -396,23 +396,10 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                                                             ..._months.map((monthKey) {
                                                                 final val = yearly.monthlyReturns[monthKey];
                                                                 return Expanded(
-                                                                  child: Container(
-                                                                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                                                                    height: 32,
-                                                                    decoration: BoxDecoration(
-                                                                      color: val != null ? _getColorForChange(val).withOpacity(0.8) : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
-                                                                      borderRadius: BorderRadius.circular(6),
-                                                                    ),
-                                                                    child: Center(
-                                                                      child: Text(
-                                                                        val != null ? val.toStringAsFixed(1) : '-',
-                                                                        style: TextStyle(
-                                                                          color: Colors.white, 
-                                                                          fontSize: 11,
-                                                                          fontWeight: val != null ? FontWeight.w600 : FontWeight.normal
-                                                                        ),
-                                                                      ),
-                                                                    ),
+                                                                  child: _HoverableHeatmapCell(
+                                                                    val: val,
+                                                                    isDark: isDark,
+                                                                    getColorForChange: _getColorForChange,
                                                                   ),
                                                                 );
                                                             }).toList(),
@@ -693,6 +680,76 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
       if (pChange == 0) return const Color(0xFF918FA0); // Outline/Neutral Gray
       return const Color(0xFFFFB4AB); // Error Red
   }
+
+class _HoverableHeatmapCell extends StatefulWidget {
+  final double? val;
+  final bool isDark;
+  final Color Function(double) getColorForChange;
+
+  const _HoverableHeatmapCell({
+    Key? key,
+    required this.val,
+    required this.isDark,
+    required this.getColorForChange,
+  }) : super(key: key);
+
+  @override
+  State<_HoverableHeatmapCell> createState() => _HoverableHeatmapCellState();
+}
+
+class _HoverableHeatmapCellState extends State<_HoverableHeatmapCell> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasData = widget.val != null;
+    final bool isPositive = hasData && widget.val! >= 0;
+    
+    final baseColor = hasData
+        ? widget.getColorForChange(widget.val!).withOpacity(0.8)
+        : (widget.isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05));
+
+    final glowColor = (isPositive ? const Color(0xFF47E266) : const Color(0xFFFFB4AB)).withOpacity(0.4);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered && hasData ? 1.15 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutBack,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          height: 32,
+          decoration: BoxDecoration(
+            color: baseColor,
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: _isHovered && hasData
+                ? [
+                    BoxShadow(
+                      color: glowColor,
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    )
+                  ]
+                : [],
+          ),
+          child: Center(
+            child: Text(
+              hasData ? widget.val!.toStringAsFixed(1) : '-',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: hasData ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
   // --- New Market Heatmap Section ---
 
