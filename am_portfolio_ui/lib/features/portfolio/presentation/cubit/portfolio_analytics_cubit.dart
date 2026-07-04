@@ -3,6 +3,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_common/am_common.dart';
+import '../../internal/domain/entities/portfolio_analytics.dart';
 import '../../internal/services/portfolio_analytics_service.dart';
 import 'portfolio_analytics_state.dart';
 
