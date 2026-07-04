@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -66,47 +67,55 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       ),
     );
 
+    SectorAllocation? fastSectorAllocation;
+    MarketCapAllocation? fastMarketCapAllocation;
+
+    // Start full analytics fetch (takes ~58s due to live market data for Movers/Heatmap)
+    final fullAnalyticsFuture = _analyticsService.getPortfolioAnalyticsWithDefaults(
+      portfolioId, 
+      timeFrame: timeFrame,
+    );
+
+    // Fast fetch for allocations (uses MongoDB / fast current market data, ~100ms)
+    try {
+      final allocations = await _analyticsService.getPortfolioAllocations(portfolioId);
+      fastSectorAllocation = allocations.sectorAllocation;
+      fastMarketCapAllocation = allocations.marketCapAllocation;
+      
+      if (!isClosed) {
+        CommonLogger.debug(
+          '🔍 Fast allocations loaded, emitting partial state',
+          tag: 'PortfolioAnalyticsCubit',
+        );
+        emit(
+          PortfolioAnalyticsLoaded(
+            sectorAllocation: fastSectorAllocation,
+            marketCapAllocation: fastMarketCapAllocation,
+            loadingTypes: const {
+              AnalyticsDataType.heatmap, 
+              AnalyticsDataType.movers,
+            },
+          ),
+        );
+      }
+    } catch (e) {
+      CommonLogger.warning(
+        'Fast allocation fetch failed, waiting for full analytics: $e',
+        tag: 'PortfolioAnalyticsCubit',
+      );
+    }
+
+    // Wait for the slow features to complete
     try {
       CommonLogger.debug(
-        '🔍 Starting to load analytics data concurrently',
+        '🔍 Starting to await full analytics data',
         tag: 'PortfolioAnalyticsCubit',
       );
 
-      // Start full analytics fetch (takes ~58s due to live market data for Movers/Heatmap)
-      final fullAnalyticsFuture = _analyticsService.getPortfolioAnalyticsWithDefaults(
-        portfolioId, 
-        timeFrame: timeFrame,
+      final analytics = await fullAnalyticsFuture.timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException('Full analytics timed out after 30s'),
       );
-
-      // Fast fetch for allocations (uses MongoDB / fast current market data, ~100ms)
-      try {
-        final allocations = await _analyticsService.getPortfolioAllocations(portfolioId);
-        
-        if (!isClosed) {
-          CommonLogger.debug(
-            '🔍 Fast allocations loaded, emitting partial state',
-            tag: 'PortfolioAnalyticsCubit',
-          );
-          emit(
-            PortfolioAnalyticsLoaded(
-              sectorAllocation: allocations.sectorAllocation,
-              marketCapAllocation: allocations.marketCapAllocation,
-              loadingTypes: const {
-                AnalyticsDataType.heatmap, 
-                AnalyticsDataType.movers,
-              },
-            ),
-          );
-        }
-      } catch (e) {
-        CommonLogger.warning(
-          'Fast allocation fetch failed, waiting for full analytics: $e',
-          tag: 'PortfolioAnalyticsCubit',
-        );
-      }
-
-      // Wait for the slow features to complete
-      final analytics = await fullAnalyticsFuture;
 
       CommonLogger.debug(
         '🔍 Analytics service call completed, processing results',
@@ -127,8 +136,8 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       _lastLoadedTimeFrame = timeFrame;
       emit(
         PortfolioAnalyticsLoaded(
-          sectorAllocation: analytics.analytics.sectorAllocation,
-          marketCapAllocation: analytics.analytics.marketCapAllocation,
+          sectorAllocation: analytics.analytics.sectorAllocation ?? fastSectorAllocation,
+          marketCapAllocation: analytics.analytics.marketCapAllocation ?? fastMarketCapAllocation,
           heatmap: analytics.analytics.heatmap,
           movers: analytics.analytics.movers,
         ),
@@ -148,7 +157,23 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       );
 
       if (isClosed) return;
-      emit(PortfolioAnalyticsError(error.toString()));
+
+      if (fastSectorAllocation != null || fastMarketCapAllocation != null) {
+        _lastLoadedTimeFrame = timeFrame;
+        emit(
+          PortfolioAnalyticsLoaded(
+            sectorAllocation: fastSectorAllocation,
+            marketCapAllocation: fastMarketCapAllocation,
+            errors: {
+              AnalyticsDataType.heatmap: error.toString(),
+              AnalyticsDataType.movers: error.toString(),
+            },
+          ),
+        );
+      } else {
+        emit(PortfolioAnalyticsError(error.toString()));
+      }
+
       CommonLogger.methodExit(
         'loadAnalytics',
         tag: 'PortfolioAnalyticsCubit',
