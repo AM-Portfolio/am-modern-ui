@@ -69,7 +69,7 @@ class ChartFactory extends StatelessWidget {
   }
 
   Widget _buildChart(BuildContext context) {
-    if (data.isEmpty) {
+    if (data.isEmpty && (lines == null || lines!.isEmpty)) {
       return Center(
         child: Text(
           'No data available',
@@ -166,6 +166,7 @@ class ChartFactory extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
+              interval: 1, // Fix repeating dates
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 final List<CommonChartDataPoint> activePoints = hasMultiLines
@@ -191,10 +192,24 @@ class ChartFactory extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 40,
-              getTitlesWidget: (value, meta) => Text(
-                value.toInt().toString(),
-                style: TextStyle(fontSize: 10, color: theme.hintColor),
-              ),
+              getTitlesWidget: (value, meta) {
+                // Smart formatter: if max value is very small (like %), show decimals
+                String text;
+                if (value.abs() < 10) {
+                  text = value.toStringAsFixed(2);
+                } else if (value.abs() >= 1e5) {
+                  text = '${(value / 1e5).toStringAsFixed(1)}L';
+                } else {
+                  text = value.toInt().toString();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(left: 4.0),
+                  child: Text(
+                    text,
+                    style: TextStyle(fontSize: 10, color: theme.hintColor),
+                  ),
+                );
+              },
             ),
           ),
         ),

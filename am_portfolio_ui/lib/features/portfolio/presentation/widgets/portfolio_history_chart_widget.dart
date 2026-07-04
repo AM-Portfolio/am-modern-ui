@@ -73,7 +73,8 @@ class _PortfolioHistoryChartWidgetState
   // ── Broker Tab Switcher ─────────────────────────────────────────────────
 
   Widget _buildBrokerTabs(List<String> brokers) {
-    if (brokers.length <= 1) return const SizedBox.shrink();
+    // If there is only 1 real broker (ALL + 1), hide the tabs to prevent confusion.
+    if (brokers.length <= 2) return const SizedBox.shrink();
     return SizedBox(
       height: 36,
       child: ListView.separated(
@@ -116,72 +117,30 @@ class _PortfolioHistoryChartWidgetState
 
   Widget _buildContent(PortfolioHistoryLoaded state) {
     if (state.snapshots.isEmpty) return _buildEmpty();
+
+    // Can only compare if there are 2+ real brokers (ALL + broker1 + broker2)
+    final bool canCompare = state.availableBrokers.length > 2;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Broker tabs (only shown when > 1 broker exists)
-        _buildBrokerTabs(state.availableBrokers),
-        if (state.availableBrokers.length > 1) const SizedBox(height: 12),
-        // Chart
-        _selectedBroker == 'ALL'
-            ? _buildMultiLineChart(state)
-            : _buildSingleLineChart(state),
+        // Show tabs ONLY when multiple brokers can be compared
+        if (canCompare) ...[
+          _buildBrokerTabs(state.availableBrokers),
+          const SizedBox(height: 12),
+        ],
+        // Always use single-line chart so that 'All Portfolios' plots the aggregate total wealth,
+        // and individual tabs plot the individual broker wealth.
+        _buildSingleLineChart(state, canCompare: canCompare),
       ],
     );
   }
 
-  /// ALL mode: one line per broker, using ChartLineData multi-line comparison
-  Widget _buildMultiLineChart(PortfolioHistoryLoaded state) {
-    // Group snapshots by brokerType → list of (index, date, close)
-    final Map<String, List<CommonChartDataPoint>> brokerPoints = {};
 
-    for (int i = 0; i < state.snapshots.length; i++) {
-      final snap = state.snapshots[i];
-      final label = _formatDate(snap.snapshotDate);
-      for (final entry in snap.portfolios) {
-        final broker = entry.brokerType ?? 'Unknown';
-        brokerPoints.putIfAbsent(broker, () => []);
-        brokerPoints[broker]!.add(CommonChartDataPoint(
-          x: i.toDouble(),
-          y: entry.close ?? 0,
-          xLabel: label,
-          yLabel: '₹${_formatNum(entry.close ?? 0)}',
-        ));
-      }
-    }
-
-    // One color per broker
-    final colors = [
-      AppColors.primary,
-      const Color(0xFF4FC3F7), // light blue
-      const Color(0xFFFFB74D), // amber
-      const Color(0xFF81C784), // green
-      const Color(0xFFBA68C8), // purple
-    ];
-
-    final lines = <ChartLineData>[];
-    final brokerList = brokerPoints.keys.toList()..sort();
-    for (int i = 0; i < brokerList.length; i++) {
-      lines.add(ChartLineData(
-        label: _brokerLabel(brokerList[i]),
-        points: brokerPoints[brokerList[i]]!,
-        color: colors[i % colors.length],
-      ));
-    }
-
-    return CommonPerformanceChart(
-      title: 'Portfolio Journey',
-      primaryData: const [], // Bypassed — lines takes over
-      lines: lines,
-      height: widget.height,
-      showGrid: true,
-      enableScrolling: true,
-    );
-  }
 
   /// Single broker / specific portfolio: single line + ₹/% toggle
-  Widget _buildSingleLineChart(PortfolioHistoryLoaded state) {
+  Widget _buildSingleLineChart(PortfolioHistoryLoaded state, {bool canCompare = false}) {
     // Filter snapshots to the selected broker only
     final List<CommonChartDataPoint> primaryPoints = [];
     final List<CommonChartDataPoint> secondaryPoints = [];
@@ -224,8 +183,14 @@ class _PortfolioHistoryChartWidgetState
       ));
     }
 
+    // Smart title: "Portfolio Journey" in single-broker mode,
+    // broker name when user picks a specific tab in compare mode
+    final String chartTitle = canCompare
+        ? _brokerLabel(_selectedBroker)
+        : 'Portfolio Journey';
+
     return CommonPerformanceChart(
-      title: _brokerLabel(_selectedBroker),
+      title: chartTitle,
       primaryData: primaryPoints,
       secondaryData: secondaryPoints,
       primaryToggleLabel: '₹',
@@ -257,7 +222,7 @@ class _PortfolioHistoryChartWidgetState
   String _brokerLabel(String broker) {
     switch (broker.toUpperCase()) {
       case 'ALL':
-        return 'All';
+        return 'All Portfolios';
       case 'ZERODHA':
         return 'Zerodha';
       case 'DHAN':
