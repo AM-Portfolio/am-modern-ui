@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../cubit/portfolio_analytics_cubit.dart';
+import '../cubit/portfolio_history_cubit.dart';
 import '../../providers/portfolio_providers.dart';
 
 /// A wrapper that provides a global [PortfolioCubit] and handles
@@ -179,6 +180,11 @@ class _GlobalPortfolioWrapperState
         ),
         BlocProvider<PortfolioAnalyticsCubit>(
           create: (context) => PortfolioAnalyticsCubit(analyticsService),
+        ),
+        BlocProvider<PortfolioHistoryCubit>(
+          create: (context) => PortfolioHistoryCubit(
+            ref.read(portfolioRemoteDataSourceProvider).requireValue,
+          ),
         ),
       ],
       child: Builder(

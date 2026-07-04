@@ -3,7 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'allocation_panel_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:am_analysis_ui/widgets/analysis_performance_widget.dart';
+import 'portfolio_history_chart_widget.dart';
 import 'package:am_analysis_core/am_analysis_core.dart' hide TimeFrame;
 import 'portfolio_top_movers_panel.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
@@ -346,15 +346,11 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
 
                         // ── ROW 2: Chart + Allocation (or stacked on mobile) ──
                         if (isMobile) ...[
-                          SizedBox(
-                            height: 340,
-                            child: AnalysisPerformanceWidget(
-                              key: ValueKey('perf_${selectedTimeFrame.code}'),
-                              portfolioId: portfolioId,
-                              initialTimeFrame: selectedTimeFrame,
-                              showTimeFrameSelector: false,
-                              height: 340,
-                            ),
+                          PortfolioHistoryChartWidget(
+                            key: ValueKey('hist_${portfolioId}_${selectedTimeFrame.code}'),
+                            portfolioId: portfolioId,
+                            timeFrame: selectedTimeFrame,
+                            height: 320,
                           ),
                           const SizedBox(height: 16),
                           PortfolioTopMoversPanel(
@@ -665,15 +661,11 @@ class _MoversAllocationRowState extends State<_MoversAllocationRow> {
             key: _leftKey,
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
-                height: 420,
-                child: AnalysisPerformanceWidget(
-                  key: ValueKey('perf_${widget.selectedTimeFrame.code}'),
-                  portfolioId: widget.portfolioId,
-                  initialTimeFrame: widget.selectedTimeFrame,
-                  showTimeFrameSelector: false,
-                  height: 360,
-                ),
+              PortfolioHistoryChartWidget(
+                key: ValueKey('hist_${widget.portfolioId}_${widget.selectedTimeFrame.code}'),
+                portfolioId: widget.portfolioId,
+                timeFrame: widget.selectedTimeFrame,
+                height: 360,
               ),
               const SizedBox(height: 16),
               PortfolioTopMoversPanel(
