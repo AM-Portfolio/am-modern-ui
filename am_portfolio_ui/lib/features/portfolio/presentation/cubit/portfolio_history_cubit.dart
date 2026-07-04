@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_design_system/am_design_system.dart' show CommonLogger;
 import '../../internal/data/datasources/portfolio_remote_data_source.dart';
 import 'portfolio_history_state.dart';
 
