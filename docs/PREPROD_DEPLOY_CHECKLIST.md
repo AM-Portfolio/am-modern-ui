@@ -3,7 +3,9 @@
 Use this before committing and deploying `am-modern-ui` to preprod (`am.asrax.in`).
 
 **Related docs:**
+- [CACHE_STRATEGY.md](../docs/CACHE_STRATEGY.md) — env-wise static cache policy (dev/preprod no-store, prod revalidate)
 - [FIRST_URL_TO_AUTH.md](FIRST_URL_TO_AUTH.md) — startup timeline
+- [RELOAD_AND_TAB_FIXES.md](RELOAD_AND_TAB_FIXES.md) — reload JS cache + portfolio/trade tab bugs
 - [LOAD_TIME_PROBLEM_ANALYSIS.md](LOAD_TIME_PROBLEM_ANALYSIS.md) — problems + fix status
 - [FAST_BOOT_PERFORMANCE.md](FAST_BOOT_PERFORMANCE.md) — implementation details
 - [DOCKER_README.md](../DOCKER_README.md) — container build
@@ -23,6 +25,7 @@ Use this before committing and deploying `am-modern-ui` to preprod (`am.asrax.in
 | UX | `dashboard_web_screen.dart`, `dashboard_mobile_screen.dart` | Chart label, mobile reorder, BootTrace first-widget |
 | Lazy Hive | `portfolio_local_data_source.dart`, `portfolio_providers.dart` | Init on first cache access |
 | Auth Dio timeout | `injection.dart` | 15s connect / 30s receive on identity calls |
+| Cache strategy | `nginx.profiles/`, `docker-entrypoint.sh`, `inject_build_id.sh` | Dev/preprod no-store; prod revalidate; CI build ID |
 | Generated | `dashboard_provider.g.dart` | Regenerated — **must be committed** |
 
 ---
@@ -68,14 +71,15 @@ npm run build:app:preprod:trace
 
 Use `?bootTrace=1` in browser after deploy to verify timings.
 
-### 5. Bump cache buster on production deploy
+### 5. Cache headers (after deploy)
 
-When deploying a new version to users, update in [`am_app/web/index.html`](../am_app/web/index.html):
+See [CACHE_STRATEGY.md](CACHE_STRATEGY.md). Preprod must return `Cache-Control: no-store` on `main.dart.js`:
 
-- `AM_BUILD_ID` (e.g. `'4'` → `'5'`)
-- `flutter_bootstrap.js?v=` query param (same version)
+```bash
+curl -I https://am.asrax.in/main.dart.js
+```
 
-Only needed when you want to force SW cache purge for all clients.
+Confirm Cloudflare **bypasses cache** for `am.asrax.in` if stale UI appears after deploy.
 
 ---
 
@@ -110,7 +114,7 @@ npm run build:app:preprod
 | ID | Item | Owner | Notes |
 |----|------|-------|-------|
 | P15 | Backend API slowness (24–102s) | am-core-services | Root cause for slow chart/portfolio on degraded preprod |
-| P14 | nginx JS cache tuning | Platform | `am_app/nginx.conf` — optional repeat-visit improvement |
+| P14 | Env-specific nginx cache | Platform | `nginx.profiles/` + `docker-entrypoint.sh` — see [CACHE_STRATEGY.md](CACHE_STRATEGY.md) |
 | P1 | Debug compile (dev only) | N/A | Use release build for testing |
 
 Deploy UI fixes even if backend is slow — users get progressive dashboard + timeouts instead of infinite spinners.

@@ -151,6 +151,7 @@ final tradeCalendarProvider = FutureProvider.family<TradeCalendar, String>((
 /// Provider for watching trade holdings (stream) - returns view models
 final tradeHoldingsStreamProvider =
     StreamProvider.family<TradeHoldingsViewModel, String>((ref, portfolioId) async* {
+      if (portfolioId.isEmpty) return;
       final useCase = await ref.watch(_getTradeHoldingsProvider.future);
       yield* useCase.watch(portfolioId).map(TradeHoldingsViewModel.fromEntity);
     });
@@ -160,6 +161,7 @@ final tradeSummaryStreamProvider = StreamProvider.family<TradeSummary, String>((
   ref,
   portfolioId,
 ) async* {
+  if (portfolioId.isEmpty) return;
   final useCase = await ref.watch(_getTradeSummaryProvider.future);
   yield* useCase.watch(portfolioId);
 });
@@ -173,6 +175,7 @@ final tradePortfoliosStreamProvider = StreamProvider<List<TradePortfolioViewMode
 /// Provider for watching trade calendar (stream) - returns view models
 final tradeCalendarStreamProvider =
     StreamProvider.family<TradeCalendarViewModel, String>((ref, portfolioId) async* {
+      if (portfolioId.isEmpty) return;
       final useCase = await ref.watch(_getTradeCalendarProvider.future);
       yield* useCase.watch(portfolioId).map(TradeCalendarViewModel.fromEntity);
     });

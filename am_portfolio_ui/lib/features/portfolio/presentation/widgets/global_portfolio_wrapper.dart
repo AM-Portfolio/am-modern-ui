@@ -128,15 +128,17 @@ class _GlobalPortfolioWrapperState
     if (oldWidget.streamingTab != widget.streamingTab) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        final cubit = _tryReadCubit();
+        final cubit = _readPortfolioCubit();
         if (cubit != null) _syncPortfolioStreaming(cubit);
       });
     }
   }
 
-  PortfolioCubit? _tryReadCubit() {
+  PortfolioCubit? _readPortfolioCubit() {
+    final innerContext = _portfolioBlocContext;
+    if (innerContext == null) return null;
     try {
-      return context.read<PortfolioCubit>();
+      return innerContext.read<PortfolioCubit>();
     } catch (_) {
       return null;
     }
@@ -147,10 +149,10 @@ class _GlobalPortfolioWrapperState
 
     if (!_portfolioDetailFetchAllowed) return;
 
-    if (_portfolioListNeeded &&
-        cubit.state.portfolioList == null &&
-        cubit.state is! PortfolioListLoaded &&
-        cubit.state is! PortfolioListLoading) {
+    final hasList = cubit.state is PortfolioListLoaded ||
+        cubit.state.portfolioList != null;
+
+    if (_portfolioListNeeded && !hasList && cubit.state is! PortfolioListLoading) {
       cubit.loadPortfoliosList();
     }
 
@@ -162,15 +164,13 @@ class _GlobalPortfolioWrapperState
         );
       }
       cubit.loadPortfolioById(_selectedPortfolioId!);
+    } else if (hasList &&
+        cubit.state.portfolioList!.portfolios.isNotEmpty) {
+      final inner = _portfolioBlocContext;
+      if (inner == null) return;
+      final first = cubit.state.portfolioList!.portfolios.first;
+      _selectPortfolio(inner, first.portfolioId, first.portfolioName);
     }
-  }
-
-  void _maybeSubscribe(PortfolioCubit cubit, String portfolioId) {
-    if (!_portfolioStreamingAllowed) return;
-    cubit.subscribeToPortfolioUpdates(
-      portfolioId: portfolioId,
-      forceResubscribe: true,
-    );
   }
 
   @override
@@ -200,9 +200,10 @@ class _GlobalPortfolioWrapperState
           create: (context) {
             final cubit = PortfolioCubit(service);
             cubit.setPortfolioStreamingAllowed(_portfolioStreamingAllowed);
-            if (_portfolioListNeeded) {
-              cubit.loadPortfoliosList();
-            }
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              _syncPortfolioStreaming(cubit);
+            });
             return cubit;
           },
           child: Builder(
@@ -217,6 +218,24 @@ class _GlobalPortfolioWrapperState
                     }
                     if (urlPortfolioId != null) {
                       _validateUrlPortfolio(innerContext, state);
+                      return;
+                    }
+
+                    if (_selectedPortfolioId != null &&
+                        _portfolioDetailFetchAllowed) {
+                      _selectPortfolio(
+                        innerContext,
+                        _selectedPortfolioId!,
+                        _selectedPortfolioName ??
+                            state.portfolioList!.portfolios
+                                .firstWhere(
+                                  (p) => p.portfolioId == _selectedPortfolioId,
+                                  orElse: () =>
+                                      state.portfolioList!.portfolios.first,
+                                )
+                                .portfolioName,
+                        notifyUrl: false,
+                      );
                       return;
                     }
 

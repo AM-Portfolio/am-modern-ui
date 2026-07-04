@@ -28,12 +28,19 @@ GoRouter createAppRouter({
     refreshListenable: refreshListenable,
     redirect: (context, state) {
       final authState = authCubit.state;
-      final isAuthenticated = authState is Authenticated;
       final location = state.matchedLocation;
+      final isAuthenticated = authState is Authenticated;
+      final authPending = authState is AuthInitial || authState is AuthLoading;
 
       // Browser opens http://localhost:9000/ — no page registered for `/`.
       if (location == '/' || location.isEmpty) {
+        if (authPending) return AppRoutes.dashboard;
         return isAuthenticated ? AppRoutes.dashboard : AppRoutes.login;
+      }
+
+      // Restoring session — stay on current /app/* URL (avoids login flash on reload).
+      if (authPending && AppRoutes.isAuthenticatedAppRoute(location)) {
+        return null;
       }
 
       if (!isAuthenticated && AppRoutes.isAuthenticatedAppRoute(location)) {

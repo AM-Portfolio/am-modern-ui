@@ -26,7 +26,7 @@ This document lists **every major bottleneck**, **exact file/line area**, **meas
 | P11 | Chart skeleton dominates UX | Perceived empty | **Fixed** | Chart label + mobile reorder |
 | P12 | BootTrace summary-only metric | Misleading | **Fixed** | First-widget-wins listeners |
 | P13 | Hive init on shell mount | **100–500ms** | **Fixed** | Lazy `ensureInitialized()` |
-| P14 | nginx no-cache on JS | Full re-download | Open | `nginx.conf` (follow-up) |
+| P14 | nginx JS cache policy | Full re-download vs stale UI | **Fixed** | `nginx.profiles/` + `docker-entrypoint.sh` |
 | P15 | Backend preprod slowness | **1.6s–74s** | Open (backend) | am-core-services |
 | — | Auth refresh hang (expired token) | Up to 74s+ | **Fixed** | Dio 15s/30s timeout in `injection.dart` |
 
@@ -273,14 +273,14 @@ API Res: GET https://am.asrax.in/analysis/v1/analysis/dashboard/performance?time
 
 ---
 
-### P14 — nginx no-cache on all JavaScript
+### P14 — nginx no-cache on static assets (dev + preprod)
 
 | Field | Detail |
 |-------|--------|
-| **Where** | [`am_app/nginx.conf`](../am_app/nginx.conf) lines 23–30 — `Cache-Control: no-store` on `*.js` |
-| **Why** | Prevents stale broken bundles in prod |
-| **Side effect** | Every reload re-downloads full Flutter JS (~MB) |
-| **Fix** | Hash-based filenames already used; allow immutable cache on hashed assets only (already partial) |
+| **Where** | [`am_app/nginx.profiles/nocache.conf`](../am_app/nginx.profiles/nocache.conf) (dev/preprod), [`revalidate.conf`](../am_app/nginx.profiles/revalidate.conf) (prod) |
+| **Why** | Daily deploys to dev/preprod — cached JS caused stale UI after deploy |
+| **Side effect** | Every reload re-downloads full Flutter bundle (~4–8s release build) |
+| **Status** | **Fixed** — 7-day JS cache removed; prod env-specific revalidate planned separately |
 
 ---
 
@@ -351,7 +351,7 @@ am-modern-ui/
 | **P2** | P13 — lazy Hive init | **Done** |
 | **P3** | P15 — backend API perf | Open (backend team) |
 | **Dev** | P1 — use release build for testing | Open (workflow) |
-| **Follow-up** | P14 — nginx JS cache tuning | Open |
+| **Follow-up** | P14 — prod revalidate nginx (env-specific) | Planned |
 
 ---
 

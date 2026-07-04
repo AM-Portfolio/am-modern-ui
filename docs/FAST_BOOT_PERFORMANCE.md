@@ -4,7 +4,7 @@ Technical documentation for startup load-time work on the AM Investment Platform
 
 **Last updated:** July 2026  
 **Scope:** Phase 0 (BootTrace) + Phase 1 (critical-path) + Phase 2 (dashboard load fixes) — shipped  
-**Related docs:** [LOAD_TIME_PROBLEM_ANALYSIS.md](LOAD_TIME_PROBLEM_ANALYSIS.md) | [FIRST_URL_TO_AUTH.md](FIRST_URL_TO_AUTH.md) | [PREPROD_DEPLOY_CHECKLIST.md](PREPROD_DEPLOY_CHECKLIST.md)
+**Related docs:** [LOAD_TIME_PROBLEM_ANALYSIS.md](LOAD_TIME_PROBLEM_ANALYSIS.md) | [FIRST_URL_TO_AUTH.md](FIRST_URL_TO_AUTH.md) | [PREPROD_DEPLOY_CHECKLIST.md](PREPROD_DEPLOY_CHECKLIST.md) | [CACHE_STRATEGY.md](CACHE_STRATEGY.md)
 
 ---
 

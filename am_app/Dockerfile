@@ -1,8 +1,9 @@
 # Multi-stage Flutter web build
-# Use official Flutter image
 FROM ghcr.io/cirruslabs/flutter:stable AS build-env
 
-# Create app directory
+ARG BUILD_ID=local
+ENV BUILD_ID=$BUILD_ID
+
 WORKDIR /app
 
 # ── CORE MODULES ──────────────────────────────────────────────────────────
@@ -24,45 +25,42 @@ COPY am_doc_intelligence_ui/ ./am_doc_intelligence_ui/
 COPY am_subscription_ui/ ./am_subscription_ui/
 
 # ── CODE GENERATION ──────────────────────────────────────────────────────
-# Generate code for all modules that use build_runner
 RUN for d in am_common am_design_system am_market/common am_analysis/common am_market/ui am_analysis/ui am_auth_ui am_dashboard_ui am_portfolio_ui am_trade_ui am_doc_intelligence_ui am_subscription_ui; do \
     echo "Generating code for $d..." && \
     cd /app/$d && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs; \
     done
 
+# ── BUILD SCRIPTS + ENV ───────────────────────────────────────────────────
+COPY scripts/inject_build_id.sh scripts/docker_build_web.sh /app/scripts/
+COPY .env.preprod /app/.env.preprod
+
 # ── MAIN APPLICATION ─────────────────────────────────────────────────────
-# Copy app shell pubspec first for better caching
 COPY am_app/pubspec.* ./am_app/
 WORKDIR /app/am_app
-
-# Get dependencies for the app shell
 RUN flutter pub get
 
-# Copy the rest of the application shell
 COPY am_app/ .
 
-# Build the web application
-RUN flutter build web --release
-
-# Staging nginx config for runtime
-COPY am_app/nginx.conf /app/nginx.conf
+RUN chmod +x /app/scripts/inject_build_id.sh /app/scripts/docker_build_web.sh && \
+    /app/scripts/inject_build_id.sh && \
+    /app/scripts/docker_build_web.sh
 
 # ── RUNTIME STAGE ────────────────────────────────────────────────────────
 FROM nginx:alpine
 
-# Copy built web files from build stage
 COPY --from=build-env /app/am_app/build/web /usr/share/nginx/html
 
-# Copy nginx configuration from build stage (context-independent)
-COPY --from=build-env /app/nginx.conf /etc/nginx/conf.d/default.conf
+COPY am_app/nginx-docker.conf /etc/nginx/nginx-docker.conf
+COPY am_app/nginx.profiles/ /etc/nginx/profiles/
+COPY am_app/docker-entrypoint.sh /docker-entrypoint.sh
 
-# Support non-root execution (satisfies runAsNonRoot: true)
-# Ensure nginx can write to cache, pid and run directories as UID 1000
-RUN touch /var/run/nginx.pid && \
-    chown -R 1000:1000 /var/run/nginx.pid /var/cache/nginx /var/log/nginx /usr/share/nginx/html
+RUN chmod +x /docker-entrypoint.sh && \
+    mkdir -p /tmp/nginx /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp && \
+    touch /tmp/nginx.pid && \
+    chown -R 1000:1000 /tmp/nginx /tmp/nginx.pid /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp /var/cache/nginx /var/log/nginx /usr/share/nginx/html /etc/nginx/profiles
 
-# Expose port 8080
+USER 1000
+
 EXPOSE 8080
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

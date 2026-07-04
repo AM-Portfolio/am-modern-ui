@@ -60,6 +60,18 @@ class LoginPage extends StatelessWidget {
             }
           },
           builder: (context, state) {
+            final redirect =
+                GoRouterState.of(context).uri.queryParameters['redirect'];
+            if ((state is AuthInitial || state is AuthLoading) &&
+                redirect != null &&
+                redirect.startsWith('/app')) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+
             return BlocBuilder<ThemeCubit, ThemeState>(
               builder: (context, themeState) {
                 return LayoutBuilder(

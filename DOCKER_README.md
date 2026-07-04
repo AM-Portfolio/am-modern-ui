@@ -140,7 +140,8 @@ docker-compose restart am-app
 am_modern_ui/
 ├── am_app/                   # Main application shell
 │   ├── Dockerfile
-│   └── nginx.conf
+│   ├── docker-entrypoint.sh
+│   └── nginx.profiles/       # nocache (dev/preprod) + revalidate (prod)
 ├── am_market_ui/
 │   └── live/                 # Standalone market app
 │       └── Dockerfile

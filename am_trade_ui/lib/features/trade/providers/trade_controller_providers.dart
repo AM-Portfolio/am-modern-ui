@@ -83,7 +83,8 @@ final tradeControllerCubitForPortfolioProvider = FutureProvider.family.autoDispo
   portfolioId,
 ) async {
   final cubit = await ref.watch(tradeControllerCubitProvider.future);
-  // Optionally load trades immediately for this portfolio
-  cubit.loadTrades(portfolioId: portfolioId);
+  if (portfolioId.isNotEmpty) {
+    cubit.loadTrades(portfolioId: portfolioId);
+  }
   return cubit;
 });

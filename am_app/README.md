@@ -70,6 +70,8 @@ npm run run:app:local:notrace    # trace OFF
 
 **Preprod deploy checklist:** [PREPROD_DEPLOY_CHECKLIST.md](../docs/PREPROD_DEPLOY_CHECKLIST.md)
 
+**Static cache policy (dev/preprod/prod):** [CACHE_STRATEGY.md](../docs/CACHE_STRATEGY.md)
+
 ---
 
 ## 🚀 **Getting Started**
