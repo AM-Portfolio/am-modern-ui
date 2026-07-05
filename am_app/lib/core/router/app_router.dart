@@ -9,6 +9,7 @@ import 'package:am_portfolio_ui/am_portfolio_ui.dart';
 import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
 import 'package:am_trade_ui/am_trade_ui.dart';
 import 'package:am_user_ui/am_user_ui.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -24,13 +25,16 @@ GoRouter createAppRouter({
   required AuthRefreshListenable refreshListenable,
 }) {
   return GoRouter(
-    initialLocation: AppRoutes.login,
+    initialLocation: resolveLaunchLocation(),
+    overridePlatformDefaultLocation: kIsWeb,
     refreshListenable: refreshListenable,
     redirect: (context, state) {
       final authState = authCubit.state;
       final location = state.matchedLocation;
       final isAuthenticated = authState is Authenticated;
-      final authPending = authState is AuthInitial || authState is AuthLoading;
+      final authPending = authState is AuthInitial ||
+          authState is AuthLoading ||
+          authState is AuthRestoreFailed;
 
       // Browser opens http://localhost:9000/ — no page registered for `/`.
       if (location == '/' || location.isEmpty) {
@@ -44,7 +48,7 @@ GoRouter createAppRouter({
       }
 
       if (!isAuthenticated && AppRoutes.isAuthenticatedAppRoute(location)) {
-        final redirect = Uri.encodeComponent(state.uri.toString());
+        final redirect = Uri.encodeComponent(_redirectTarget(state.uri));
         return '${AppRoutes.login}?redirect=$redirect';
       }
 
@@ -324,5 +328,28 @@ String? _portfolioIdOnlyRedirect(String location) {
 String _userId(BuildContext context) {
   final authState = context.read<AuthCubit>().state;
   return authState is Authenticated ? authState.user.id : '';
+}
+
+/// Browser URL on web reload; dashboard fallback when path is empty or `/`.
+String resolveLaunchLocation() {
+  if (kIsWeb) {
+    final uri = Uri.base;
+    final path = uri.path.isEmpty ? '/' : uri.path;
+    if (path != '/' && AppRoutes.isAuthenticatedAppRoute(path)) {
+      return uri.hasQuery ? '$path?${uri.query}' : path;
+    }
+    if (path == AppRoutes.login ||
+        path == AppRoutes.register ||
+        path == AppRoutes.forgotPassword ||
+        path == AppRoutes.resetPassword) {
+      return uri.hasQuery ? '$path?${uri.query}' : path;
+    }
+  }
+  return AppRoutes.dashboard;
+}
+
+String _redirectTarget(Uri uri) {
+  final path = uri.path.isEmpty ? '/' : uri.path;
+  return uri.hasQuery ? '$path?${uri.query}' : path;
 }
 

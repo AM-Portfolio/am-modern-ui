@@ -4,6 +4,10 @@ Map<String, int> get webMarks => const {};
 
 void syncWebMarks(BootTrace trace) {}
 
+bool isReloadNavigation() => false;
+
+Map<String, dynamic> collectResourceMetrics() => const {};
+
 void emitTelemetryEvent(
   String name,
   int delta,
@@ -12,3 +16,5 @@ void emitTelemetryEvent(
 ) {}
 
 void publishSummary(Map<String, dynamic> json) {}
+
+void publishRumSummary(Map<String, dynamic> json) {}

@@ -6,7 +6,7 @@ set -e
 cd /app/am_app
 
 ENV_FILE="${ENV_FILE:-/app/.env.preprod}"
-DEFINES="--dart-define=AM_BOOT_TRACE=false"
+DEFINES="--dart-define=AM_BOOT_TRACE=false --dart-define=AM_BOOT_RUM=true"
 
 if [ -f "$ENV_FILE" ]; then
   echo "[docker_build_web] Loading $ENV_FILE"

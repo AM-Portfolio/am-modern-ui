@@ -59,6 +59,9 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       SchedulerBinding.instance.addPostFrameCallback((_) {
         BootTrace.instance.mark('first_flutter_frame');
         configureFeatureDependencies();
+        BootRumCollector.instance.schedulePublish(
+          delay: const Duration(seconds: 6),
+        );
         BootTrace.instance.scheduleSummary(
           delay: const Duration(seconds: 6),
         );
@@ -90,18 +93,21 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     }
 
     if (_app == null) {
-      return const MaterialApp(
+      final restoring = Uri.base.path.startsWith('/app/');
+      return MaterialApp(
         home: Scaffold(
-          backgroundColor: Color(0xFF0B1120),
+          backgroundColor: const Color(0xFF0B1120),
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircularProgressIndicator(color: Color(0xFF6366F1)),
-                SizedBox(height: 20),
+                const CircularProgressIndicator(color: Color(0xFF6366F1)),
+                const SizedBox(height: 20),
                 Text(
-                  'Starting AM Investment Platform…',
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
+                  restoring
+                      ? 'Restoring your session…'
+                      : 'Starting AM Investment Platform…',
+                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
                 ),
               ],
             ),

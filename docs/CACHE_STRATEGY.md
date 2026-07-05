@@ -19,7 +19,7 @@ API responses are never cached by this nginx config — only static files (`*.js
 |-------------|-----|----------------------|---------------|-----------|----------------------|------------------|-----------|
 | **Local** | `localhost` | — | Flutter dev server | N/A | Hot reload | Hot reload | N/A |
 | **Dev cluster** | `am-dev.asrax.in` | `dev` | `nocache` | **no-store** | Always 200 (fresh) | Always fresh | Always fresh |
-| **Preprod** | `am.asrax.in` | `preprod` | `nocache` | **no-store** | Always 200 (fresh) | Always fresh | Always fresh |
+| **Preprod** | `am.asrax.in` | `preprod` | `nocache` (tiered) | **no-store** app JS; **cache** CanvasKit | Fresh app JS every reload; CanvasKit from disk on 2nd reload | Fresh app JS after deploy | Fresh app JS |
 | **Prod** | prod host | `prod` | `revalidate` | **must-revalidate** | **304** (~0.5–1.5s) | **200** (new file) | Fresh (no disk cache) |
 
 ---
@@ -59,7 +59,17 @@ Files:
 5. No manual `AM_BUILD_ID` bump — CI injects git SHA on each build
 6. No hard refresh needed on preprod/dev
 
-**Expectation:** preprod reload re-downloads JS (~4–8s release build). Correct tradeoff for daily testing.
+**Expectation:** preprod reload fetches fresh `main.dart.js` every time (~2–7 MB). CanvasKit (~13 MB) served from browser cache on repeat reloads. See [BOOT_RUM.md](BOOT_RUM.md) for timing breakdown.
+
+### Tiered preprod cache (July 2026)
+
+| Path | Cache-Control |
+|------|---------------|
+| `index.html`, `flutter_bootstrap.js`, `main.dart.js`, `config*.json` | **no-store** |
+| `/canvaskit/**` | **public, max-age=604800, must-revalidate** |
+| `/assets/**`, fonts, icons | **public, max-age=86400, must-revalidate** |
+
+Testers always see latest UI after deploy because **only app JS is never cached**. CanvasKit changes only when Flutter SDK in Docker image changes.
 
 ---
 

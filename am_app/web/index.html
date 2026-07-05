@@ -64,7 +64,7 @@
 <body>
   <div id="am-boot">
     <div class="spinner" aria-hidden="true"></div>
-    <div>Loading AM Investment Platform…</div>
+    <div id="am-boot-msg">Loading AM Investment Platform…</div>
     <pre id="am-boot-error"></pre>
   </div>
 
@@ -72,6 +72,13 @@
     var AM_BUILD_ID = 'local';
     window.__AM_BOOT_T0__ = performance.now();
     window.__AM_BOOT_TRACE__ = window.__AM_BOOT_TRACE__ || { marks: {} };
+
+    (function () {
+      var msg = document.getElementById('am-boot-msg');
+      if (msg && location.pathname.indexOf('/app/') === 0) {
+        msg.textContent = 'Restoring your session…';
+      }
+    })();
 
     function bootTraceEnabled() {
       try {

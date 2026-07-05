@@ -12,7 +12,11 @@ external _BootTraceHolder? get _holder;
 extension type _BootTraceHolder._(JSObject _) implements JSObject {
   external JSObject? get marks;
   external set summary(String? value);
+  external set rum(String? value);
 }
+
+@JS('performance.getEntriesByType')
+external JSArray _getEntriesByType(JSString type);
 
 Map<String, int> get webMarks {
   try {
@@ -35,6 +39,60 @@ void syncWebMarks(BootTrace trace) {
       trace.mark('web_${entry.key}', meta: {'elapsedMs': entry.value});
     }
   }
+}
+
+bool isReloadNavigation() {
+  try {
+    final entries = _getEntriesByType('navigation'.toJS).dartify();
+    if (entries is! List || entries.isEmpty) return false;
+    final nav = entries.first;
+    if (nav is! Map) return false;
+    return nav['type']?.toString() == 'reload';
+  } catch (_) {
+    return false;
+  }
+}
+
+Map<String, dynamic> collectResourceMetrics() {
+  var mainDartJsMs = 0;
+  var canvaskitMs = 0;
+  var totalTransferMs = 0;
+  var mainDartJsCached = false;
+  var canvaskitCached = false;
+
+  try {
+    final entries = _getEntriesByType('resource'.toJS).dartify();
+    if (entries is List) {
+      for (final raw in entries) {
+        if (raw is! Map) continue;
+        final name = raw['name']?.toString() ?? '';
+        final duration = ((raw['duration'] as num?) ?? 0).toInt();
+        final transfer = ((raw['transferSize'] as num?) ?? 0).toInt();
+        final encoded = ((raw['encodedBodySize'] as num?) ?? 0).toInt();
+        final fromCache = transfer == 0 && encoded > 0;
+
+        totalTransferMs += duration;
+
+        if (name.contains('main.dart.js')) {
+          mainDartJsMs = duration;
+          mainDartJsCached = fromCache;
+        } else if (name.contains('canvaskit') && name.endsWith('.wasm')) {
+          canvaskitMs += duration;
+          if (fromCache) canvaskitCached = true;
+        }
+      }
+    }
+  } catch (_) {}
+
+  return {
+    'mainDartJsMs': mainDartJsMs,
+    'canvaskitMs': canvaskitMs,
+    'totalTransferMs': totalTransferMs,
+    'cacheHit': {
+      'mainDartJs': mainDartJsCached,
+      'canvaskit': canvaskitCached,
+    },
+  };
 }
 
 void emitTelemetryEvent(
@@ -64,7 +122,14 @@ void publishSummary(Map<String, dynamic> json) {
     if (holder != null) {
       holder.summary = jsonEncode(json);
     }
-  } catch (_) {
-    // Ignore if JS object is unavailable.
-  }
+  } catch (_) {}
+}
+
+void publishRumSummary(Map<String, dynamic> json) {
+  try {
+    final holder = _holder;
+    if (holder != null) {
+      holder.rum = jsonEncode(json);
+    }
+  } catch (_) {}
 }

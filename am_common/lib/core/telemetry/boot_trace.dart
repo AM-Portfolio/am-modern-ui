@@ -4,16 +4,23 @@ import 'package:flutter/foundation.dart';
 
 import 'boot_trace_platform.dart' as platform;
 
-/// Startup performance tracing — enable with `?bootTrace=1` or
-/// `--dart-define=AM_BOOT_TRACE=true`.
+/// Startup performance tracing.
+///
+/// - **Recording** (marks + RUM): always on web builds when [AM_BOOT_RUM] is true (default).
+/// - **Verbose console**: `?bootTrace=1` or `--dart-define=AM_BOOT_TRACE=true`.
 class BootTrace {
   BootTrace._();
 
   static final BootTrace instance = BootTrace._();
 
   static const _bootTraceFromDefine = bool.fromEnvironment('AM_BOOT_TRACE');
+  static const _bootRumFromDefine = bool.fromEnvironment(
+    'AM_BOOT_RUM',
+    defaultValue: true,
+  );
 
-  static bool _enabled = _bootTraceFromDefine;
+  static bool _verbose = false;
+  static bool _recording = false;
   static bool _summaryPrinted = false;
 
   final Stopwatch _sw = Stopwatch();
@@ -22,25 +29,30 @@ class BootTrace {
   final Map<String, Map<String, dynamic>> _meta = {};
   int _lastTotal = 0;
 
-  static bool get enabled => _enabled;
+  static bool get enabled => _recording;
+  static bool get verbose => _verbose;
 
   /// Call once at app entry (before [runApp]).
   static void configure({bool? forceEnabled}) {
     if (forceEnabled != null) {
-      _enabled = forceEnabled;
+      _verbose = forceEnabled;
+      _recording = forceEnabled;
     } else {
-      _enabled = _bootTraceFromDefine ||
+      _verbose = _bootTraceFromDefine ||
           Uri.base.queryParameters['bootTrace'] == '1';
+      _recording = _verbose ||
+          (_bootRumFromDefine && kIsWeb);
     }
 
-    if (!_enabled) return;
+    if (!_recording) return;
 
     instance._sw.start();
+    platform.syncWebMarks(instance);
     instance.mark('flutter_main_enter');
   }
 
   void mark(String name, {Map<String, dynamic>? meta}) {
-    if (!_enabled) return;
+    if (!_recording) return;
 
     final elapsed = _sw.elapsedMilliseconds;
     final delta = elapsed - _lastTotal;
@@ -51,11 +63,13 @@ class BootTrace {
       _meta[name] = Map<String, dynamic>.from(meta);
     }
 
-    final metaSuffix =
-        meta != null && meta.isNotEmpty ? ' ${jsonEncode(meta)}' : '';
-    debugPrint(
-      '[BootTrace] +${delta}ms → $name (total ${elapsed}ms)$metaSuffix',
-    );
+    if (_verbose) {
+      final metaSuffix =
+          meta != null && meta.isNotEmpty ? ' ${jsonEncode(meta)}' : '';
+      debugPrint(
+        '[BootTrace] +${delta}ms → $name (total ${elapsed}ms)$metaSuffix',
+      );
+    }
 
     _emitTelemetry(name, delta, elapsed, meta);
   }
@@ -82,7 +96,7 @@ class BootTrace {
       };
 
   void printSummary() {
-    if (!_enabled || _summaryPrinted) return;
+    if (!_recording || _summaryPrinted || !_verbose) return;
     _summaryPrinted = true;
 
     final buffer = StringBuffer('\n══════ AM Boot Trace Summary ══════\n');
@@ -119,9 +133,9 @@ class BootTrace {
     platform.publishSummary(toJson());
   }
 
-  /// Schedule summary after the last expected milestone.
+  /// Schedule verbose summary after the last expected milestone.
   void scheduleSummary({Duration delay = const Duration(milliseconds: 150)}) {
-    if (!_enabled) return;
+    if (!_verbose) return;
     Future<void>.delayed(delay, printSummary);
   }
 }

@@ -78,3 +78,49 @@ After Issue 2 fix, Trade tab gets valid portfolio ID and APIs should return 200.
 [ ] Trade tab — no 400 when portfolio selected
 [ ] Trade discovery — no API calls with empty portfolioId
 ```
+
+---
+
+## Issue 4 — Reload shows login flash before dashboard
+
+### Symptom
+Reload on `/app/dashboard` (or any `/app/*`) shows bootstrap spinner → login form → dashboard.
+
+### Root cause
+1. **AppShell** duplicated auth redirect to `/login` while router already handled session restore
+2. **Auth refresh network failure** (530) emitted `Unauthenticated` instead of recoverable state
+3. Double bootstrap spinners (HTML + Flutter)
+
+### Fix (shipped)
+- Removed AppShell login redirect — **GoRouter only**
+- Added `AuthRestoreFailed` for transient refresh failures; session-restore overlay on `/app/*`
+- Login page spinner when `?redirect=/app/*` during restore
+- Context-aware copy: “Restoring your session…” on `/app/*` reload
+- See [BOOT_RUM.md](BOOT_RUM.md) for automatic timing on every visit (no query param)
+
+### Verify
+```
+[ ] Reload /app/dashboard — no login form at any point
+[ ] Reload /app/portfolio/{id}/overview — URL preserved
+[ ] Visit https://am.asrax.in — window.__AM_BOOT_TRACE__.rum populated after ~6s
+```
+
+---
+
+## Issue 5 — CanvasKit re-downloaded every reload
+
+### Symptom
+Every reload downloads ~15 MB including CanvasKit WASM (~13 MB).
+
+### Fix (shipped)
+Tiered nginx in [`nginx.profiles/nocache.conf`](../am_app/nginx.profiles/nocache.conf):
+- **no-store:** `main.dart.js`, bootstrap, index.html, config
+- **cache:** `/canvaskit/**` (7 days, must-revalidate)
+
+### Verify
+```
+[ ] curl -I main.dart.js → Cache-Control: no-store
+[ ] curl -I canvaskit/canvaskit.wasm → public, max-age=604800
+[ ] 2nd reload DevTools → canvaskit from disk cache
+[ ] After deploy → main.dart.js 200, UI changes visible
+```

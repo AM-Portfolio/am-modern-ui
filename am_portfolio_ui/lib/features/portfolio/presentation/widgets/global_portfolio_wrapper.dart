@@ -105,6 +105,16 @@ class _GlobalPortfolioWrapperState
       }
     }
 
+    if (urlId.startsWith('mock-')) {
+      final fallback = portfolios.first;
+      _selectPortfolio(
+        innerContext,
+        fallback.portfolioId,
+        fallback.portfolioName,
+      );
+      return;
+    }
+
     final fallback = portfolios.first;
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
