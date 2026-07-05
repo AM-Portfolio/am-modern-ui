@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:am_common/am_common.dart';
@@ -42,17 +41,6 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
     super.initState();
     _selectedTimeFrame = widget.initialTimeFrame;
     _initService();
-  }
-
-  @override
-  void didUpdateWidget(covariant AnalysisPerformanceWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.initialTimeFrame != oldWidget.initialTimeFrame) {
-      if (_selectedTimeFrame != widget.initialTimeFrame) {
-        _selectedTimeFrame = widget.initialTimeFrame;
-        _loadData();
-      }
-    }
   }
 
   Future<void> _initService() async {
@@ -109,31 +97,13 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         final height = widget.height ?? (isMobile ? 280 : isTablet ? 260 : 250);
         final padding = isMobile ? 16.0 : 20.0;
 
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(isMobile ? 16 : 20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
+        return Container(
           height: height,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [
-                      const Color(0xFF0D1B2A).withOpacity(0.9),
-                      const Color(0xFF0A1628).withOpacity(0.75),
-                    ]
-                  : [
-                      Colors.white.withOpacity(0.9),
-                      const Color(0xFFF5F7FF).withOpacity(0.8),
-                    ],
-            ),
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(isMobile ? 16 : 20),
             border: Border.all(
-              color: Colors.white.withOpacity(isDark ? 0.07 : 0.4),
-              width: 1,
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             ),
           ),
           padding: EdgeInsets.all(padding),
@@ -194,7 +164,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
               ),
             ],
           ),
-        )));
+        );
       },
     );
   }
@@ -363,9 +333,8 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
           drawVerticalLine: false,
           horizontalInterval: (maxY - minY) / 4,
           getDrawingHorizontalLine: (value) => FlLine(
-            color: Colors.white.withOpacity(0.06),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             strokeWidth: 1,
-            dashArray: [4, 6],
           ),
         ),
         titlesData: FlTitlesData(
@@ -421,12 +390,8 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
             spots: spots,
             isCurved: _chartType == ChartType.area || _chartType == ChartType.line,
             color: chartColor,
-            barWidth: 2.5,
+            barWidth: 3,
             isStrokeCapRound: true,
-            shadow: Shadow(
-              color: chartColor.withOpacity(0.5),
-              blurRadius: 10,
-            ),
             dotData: const FlDotData(show: false),
             belowBarData: _chartType == ChartType.area
                 ? BarAreaData(
@@ -435,8 +400,8 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        chartColor.withOpacity(0.38),
-                        chartColor.withOpacity(0.0),
+                        chartColor.withValues(alpha: 0.3),
+                        chartColor.withValues(alpha: 0.0),
                       ],
                     ),
                   )

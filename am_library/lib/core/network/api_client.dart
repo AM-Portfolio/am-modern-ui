@@ -156,8 +156,6 @@ class ApiClient {
             if (e.statusCode != 408) {
               shouldRetry = false;
             }
-          } else if (e.statusCode == 500) {
-            shouldRetry = false; // Don't retry internal server errors (backend failure)
           }
         }
 
