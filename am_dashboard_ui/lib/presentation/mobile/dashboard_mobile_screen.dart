@@ -1,6 +1,7 @@
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
+import 'package:am_common/am_common.dart';
 import '../shared/widgets/dashboard_summary_widget.dart';
-import '../shared/widgets/dashboard_allocation_widget.dart';
 import '../shared/widgets/dashboard_chart_widget.dart';
 import '../shared/widgets/dashboard_ranking_widget.dart';
 import '../shared/widgets/dashboard_recent_activity_widget.dart';
@@ -36,6 +37,15 @@ class DashboardMobileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(dashboardStreamingSessionProvider(userId));
+    ref.listen(appTimeFrameProvider, (previous, next) {
+      if (previous != next) {
+        onDashboardTimeFrameChanged(ref, userId, next);
+      }
+    });
+    final timeFrame = ref.watch(appTimeFrameProvider);
+    final tfCode = timeFrame.code;
+
     final dashboardAsync = ref.watch(dashboardStreamProvider(userId));
     final overviewsAsync = ref.watch(portfolioOverviewsProvider(userId));
 
@@ -61,16 +71,18 @@ class DashboardMobileScreen extends ConsumerWidget {
         elevation: 0,
         iconTheme: IconThemeData(color: onSurface),
         actions: [
-          IconButton(
-            icon: Icon(Icons.notifications_outlined, color: onSurfaceVariant),
-            onPressed: () {},
-          ),
+          const GlobalTimeFrameBar(),
           IconButton(
             icon: Icon(Icons.refresh, color: onSurfaceVariant),
             onPressed: () {
               ref.invalidate(dashboardStreamProvider(userId));
               ref.invalidate(portfolioOverviewsProvider(userId));
+              onDashboardTimeFrameChanged(ref, userId, timeFrame);
             },
+          ),
+          IconButton(
+            icon: Icon(Icons.notifications_outlined, color: onSurfaceVariant),
+            onPressed: () {},
           ),
         ],
       ),
@@ -155,41 +167,24 @@ class DashboardMobileScreen extends ConsumerWidget {
                       child: Consumer(
                         builder: (context, ref, child) {
                           final performanceAsync =
-                              ref.watch(dashboardPerformanceProvider(userId));
+                              ref.watch(historyStreamProvider(userId, timeFrame: tfCode));
                           return performanceAsync.when(
-                            data: (performance) => DashboardChartWidget(
-                              performance: performance,
-                              onTimeFrameChanged: (timeFrame) {
-                                ref.invalidate(dashboardPerformanceProvider(userId));
-                              },
+                            data: (performance) => SizedBox(
+                              height: 350,
+                              child: DashboardChartWidget(
+                                performance: performance,
+                              ),
                             ),
                             loading: () => _buildLoadingCard(350),
                             error: (err, stack) => AmErrorWidget(
                               message: 'Failed to load chart',
-                              onRetry: () =>
-                                  ref.invalidate(dashboardPerformanceProvider(userId)),
+                              onRetry: () => ref.invalidate(
+                                historyStreamProvider(userId, timeFrame: tfCode),
+                              ),
                             ),
                           );
                         },
                       ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-                  // ── Allocation ──
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    sliver: SliverToBoxAdapter(
-                      child: ref.watch(dashboardAllocationProvider(userId)).when(
-                            data: (allocation) =>
-                                DashboardAllocationWidget(allocation: allocation),
-                            loading: () => _buildLoadingCard(300),
-                            error: (err, stack) => AmErrorWidget(
-                              message: 'Failed to load allocation data',
-                              onRetry: () =>
-                                  ref.invalidate(dashboardAllocationProvider(userId)),
-                            ),
-                          ),
                     ),
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 16)),
@@ -198,22 +193,7 @@ class DashboardMobileScreen extends ConsumerWidget {
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     sliver: SliverToBoxAdapter(
-                      child: Consumer(
-                        builder: (context, ref, child) {
-                          final activitiesAsync =
-                              ref.watch(recentActivityProvider(userId));
-                          return activitiesAsync.when(
-                            data: (activities) =>
-                                DashboardRecentActivityWidget(activities: activities),
-                            loading: () => _buildLoadingCard(300),
-                            error: (err, stack) => AmErrorWidget(
-                              message: 'Failed to load recent activity',
-                              onRetry: () =>
-                                  ref.invalidate(recentActivityProvider(userId)),
-                            ),
-                          );
-                        },
-                      ),
+                      child: DashboardRecentActivitySection(userId: userId),
                     ),
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 16)),
@@ -224,11 +204,15 @@ class DashboardMobileScreen extends ConsumerWidget {
                     sliver: SliverToBoxAdapter(
                       child: Consumer(
                         builder: (context, ref, child) {
-                          final topMoversAsync = ref.watch(topMoversProvider(userId));
+                          final topMoversAsync =
+                              ref.watch(moversStreamProvider(userId, timeFrame: tfCode));
                           return topMoversAsync.when(
-                            data: (topMovers) => DashboardRankingWidget(
-                              gainers: topMovers.gainers,
-                              losers: topMovers.losers,
+                            data: (topMovers) => SizedBox(
+                              height: 350,
+                              child: DashboardRankingWidget(
+                                gainers: topMovers.gainers,
+                                losers: topMovers.losers,
+                              ),
                             ),
                             loading: () => _buildLoadingCard(350),
                             error: (err, stack) => DashboardRankingWidget.errorState(),

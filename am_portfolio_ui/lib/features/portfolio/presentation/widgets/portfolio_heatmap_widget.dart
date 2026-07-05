@@ -89,7 +89,6 @@ class _PortfolioHeatmapWidgetState
     extends ConsumerState<PortfolioHeatmapWidget> {
   // Current selections with config-based defaults
   late MetricType _selectedMetric;
-  late TimeFrame _selectedTimeframe;
   SectorType? _selectedSector;
   MarketCapType? _selectedMarketCap;
   late HeatmapLayoutType _selectedLayout;
@@ -101,7 +100,6 @@ class _PortfolioHeatmapWidgetState
 
     // Initialize with config defaults
     _selectedMetric = MetricType.changePercent;
-    _selectedTimeframe = TimeFrame.oneDay;
     _selectedLayout = widget.config.defaultLayout;
 
     CommonLogger.info(
@@ -118,12 +116,13 @@ class _PortfolioHeatmapWidgetState
   }
 
   void _loadHeatmapData() {
+    final selectedTimeframe = ref.read(appTimeFrameProvider);
     CommonLogger.methodEntry(
       '_loadHeatmapData',
       tag: '${widget.config.logTag}.Data',
       metadata: {
         'portfolioId': widget.portfolioId,
-        'timeFrame': _selectedTimeframe.name,
+        'timeFrame': selectedTimeframe.name,
         'metric': _selectedMetric.name,
         'sector': _selectedSector?.name ?? 'all',
         'marketCap': _selectedMarketCap?.name ?? 'all',
@@ -135,7 +134,7 @@ class _PortfolioHeatmapWidgetState
 
     // Load analytics data first
     portfolioAnalyticsCubit
-        .loadAnalytics(widget.portfolioId, timeFrame: _selectedTimeframe)
+        .loadAnalytics(widget.portfolioId, timeFrame: selectedTimeframe)
         .then((_) {
           final analyticsState = portfolioAnalyticsCubit.state;
           if (analyticsState is PortfolioAnalyticsError) {
@@ -154,7 +153,7 @@ class _PortfolioHeatmapWidgetState
 
           portfolioHeatmapCubit.loadHeatmapData(
             portfolioId: widget.portfolioId,
-            timeFrame: _selectedTimeframe,
+            timeFrame: selectedTimeframe,
             metric: _selectedMetric,
             sector: _selectedSector ?? SectorType.all,
             marketCap: _selectedMarketCap ?? MarketCapType.all,
@@ -170,7 +169,7 @@ class _PortfolioHeatmapWidgetState
 
           portfolioHeatmapCubit.loadHeatmapData(
             portfolioId: widget.portfolioId,
-            timeFrame: _selectedTimeframe,
+            timeFrame: selectedTimeframe,
             metric: _selectedMetric,
             sector: _selectedSector ?? SectorType.all,
             marketCap: _selectedMarketCap ?? MarketCapType.all,
@@ -186,6 +185,11 @@ class _PortfolioHeatmapWidgetState
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(appTimeFrameProvider, (previous, next) {
+      if (previous != next) _loadHeatmapData();
+    });
+    ref.watch(appTimeFrameProvider);
+
     // Wrap in LayoutBuilder so _buildLoadedWidget always receives a bounded
     // height constraint — without this, Expanded inside the Column gets 0.
     return LayoutBuilder(
@@ -315,6 +319,7 @@ class _PortfolioHeatmapWidgetState
 
   /// Builds loaded state UI with heatmap
   Widget _buildLoadedWidget(PortfolioHeatmapLoaded state) {
+    final selectedTimeFrame = ref.watch(appTimeFrameProvider);
     CommonLogger.info(
       'Showing heatmap: ${state.heatmapData.tiles.length} tiles',
       tag: '${widget.config.logTag}.UI',
@@ -386,7 +391,7 @@ class _PortfolioHeatmapWidgetState
               config: _mapToWidgetConfig(customConfig),
               showSelectors: false,
               compactMode: widget.config.compactMode,
-              selectedTimeFrame: _selectedTimeframe,
+              selectedTimeFrame: selectedTimeFrame,
               selectedMetric: _selectedMetric,
               selectedSector: _selectedSector,
               selectedMarketCap: _selectedMarketCap,
@@ -429,7 +434,7 @@ class _PortfolioHeatmapWidgetState
                     config: _mapToWidgetConfig(customConfig),
                     showSelectors: false,
                     compactMode: widget.config.compactMode,
-                    selectedTimeFrame: _selectedTimeframe,
+                    selectedTimeFrame: selectedTimeFrame,
                     selectedMetric: _selectedMetric,
                     selectedSector: _selectedSector,
                     selectedMarketCap: _selectedMarketCap,
@@ -624,22 +629,27 @@ class _PortfolioHeatmapWidgetState
         );
 
         if (isNarrow) {
-          // Stack vertically on narrow screens
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               titleRow,
               const SizedBox(height: 8),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: GlobalTimeFrameBar(),
+              ),
+              const SizedBox(height: 8),
               legendRow,
             ],
           );
         } else {
-          // Side-by-side on wide screens
           return Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               titleRow,
               const Spacer(),
+              const GlobalTimeFrameBar(),
+              const SizedBox(width: 16),
               legendRow,
             ],
           );
@@ -866,9 +876,7 @@ class _PortfolioHeatmapWidgetState
 
     // Update local state
     if (timeFrame != null) {
-      setState(() {
-        _selectedTimeframe = timeFrame;
-      });
+      ref.read(appTimeFrameProvider.notifier).setTimeFrame(timeFrame);
     }
     if (metric != null) {
       setState(() {
@@ -895,8 +903,12 @@ class _PortfolioHeatmapWidgetState
       );
     }
 
-    // Reload heatmap data with new selections
-    _loadHeatmapData();
+    // Reload heatmap data with new selections (timeframe reloads via provider listen)
+    if (timeFrame == null) {
+      _loadHeatmapData();
+    } else if (metric != null || sector != null || marketCap != null || layout != null) {
+      _loadHeatmapData();
+    }
   }
 
   HeatmapConfig _mapToWidgetConfig(HeatmapConfig modelConfig) {

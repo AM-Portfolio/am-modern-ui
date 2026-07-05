@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_market_common/models/market_data.dart';
 import 'package:am_market_ui/features/market/widgets/market_colors.dart';
-import 'timeframe_selector.dart';
 import 'drawer_index_card.dart';
 
 class AllIndicesDrawer extends StatefulWidget {
@@ -27,17 +26,10 @@ class AllIndicesDrawer extends StatefulWidget {
 }
 
 class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
-  late String _selectedTimeframe;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedTimeframe = widget.initialTimeframe;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final basePricesForTf = widget.allTimeframeBasePrices[_selectedTimeframe] ?? {};
+    final basePricesForTf =
+        widget.allTimeframeBasePrices[widget.initialTimeframe] ?? {};
 
     return Container(
       width: 460,
@@ -89,18 +81,6 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
 
           const SizedBox(height: 12),
 
-          // Timeframe Selector inside Drawer
-          TimeframeSelector(
-            selectedTimeframe: _selectedTimeframe,
-            onTimeframeChanged: (tf) {
-              setState(() {
-                _selectedTimeframe = tf;
-              });
-            },
-          ),
-
-          const SizedBox(height: 16),
-
           // Index Grid inside Drawer
           Expanded(
             child: GridView.builder(
@@ -119,7 +99,7 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
                 return DrawerIndexCard(
                   data: data,
                   isSelected: isSelected,
-                  timeframe: _selectedTimeframe,
+                  timeframe: widget.initialTimeframe,
                   basePrice: basePrice,
                   onTap: () => widget.onIndexSelected(data),
                 );

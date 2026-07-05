@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_market_common/models/market_data.dart';
 import 'package:am_market_ui/features/market/widgets/market_colors.dart';
-import 'timeframe_selector.dart';
 import 'drawer_index_card.dart';
 
 class AllIndicesBottomSheet extends StatefulWidget {
@@ -27,17 +26,10 @@ class AllIndicesBottomSheet extends StatefulWidget {
 }
 
 class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
-  late String _selectedTimeframe;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedTimeframe = widget.initialTimeframe;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final basePricesForTf = widget.allTimeframeBasePrices[_selectedTimeframe] ?? {};
+    final basePricesForTf =
+        widget.allTimeframeBasePrices[widget.initialTimeframe] ?? {};
 
     return Container(
       decoration: BoxDecoration(
@@ -106,24 +98,6 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
 
           const SizedBox(height: 10),
 
-          // Timeframe Selector
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TimeframeSelector(
-                selectedTimeframe: _selectedTimeframe,
-                onTimeframeChanged: (tf) {
-                  setState(() {
-                    _selectedTimeframe = tf;
-                  });
-                },
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
           // Index Grid inside Bottom Sheet
           Expanded(
             child: Padding(
@@ -144,7 +118,7 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
                   return DrawerIndexCard(
                     data: data,
                     isSelected: isSelected,
-                    timeframe: _selectedTimeframe,
+                    timeframe: widget.initialTimeframe,
                     basePrice: basePrice,
                     onTap: () => widget.onIndexSelected(data),
                   );

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'dart:async'; // Required for Timer-based staggered preloading of background historical base prices
+import 'package:provider/provider.dart' hide Consumer;
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_common/models/market_data.dart';
 import 'package:am_market_common/models/top_mover_stock.dart';
 // REMOVED: import 'package:am_market_ui/shared/widgets/index_card.dart';
 import 'package:am_market_ui/features/market/widgets/market_header.dart';
-import 'package:am_market_ui/features/market/widgets/timeframe_selector.dart';
 import 'package:am_market_ui/features/market/widgets/pinned_indices_grid.dart';
 import 'package:am_market_ui/features/market/widgets/all_indices_drawer.dart';
 import 'package:am_market_ui/features/market/widgets/all_indices_bottom_sheet.dart';
@@ -15,14 +17,14 @@ import 'package:am_market_ui/features/market_analysis/presentation/widgets/multi
 import 'package:am_market_common/services/api_service.dart';
 
 /// User Dashboard page with API-driven features
-class UserDashboardPage extends StatefulWidget {
+class UserDashboardPage extends ConsumerStatefulWidget {
   const UserDashboardPage({super.key});
 
   @override
-  State<UserDashboardPage> createState() => _UserDashboardPageState();
+  ConsumerState<UserDashboardPage> createState() => _UserDashboardPageState();
 }
 
-class _UserDashboardPageState extends State<UserDashboardPage> with TickerProviderStateMixin {
+class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with TickerProviderStateMixin {
   late final ApiService _apiService;
   
   // Selected index for top movers (default: NIFTY 50)
@@ -40,7 +42,6 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
   Map<String, List<Map<String, dynamic>>> historicalData = {};
   bool isLoadingChart = false;
   String? chartError;
-  String selectedTimeframe = '1D'; // Default 1D
   bool isBarChart = false; // Chart type toggle
   
   // REMOVED: final ScrollController _indicesScrollController = ScrollController();
@@ -55,105 +56,251 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
   };
   bool isLoadingAllTimeframes = false;
 
+  /// [SIP Optimization] Tracks which historical timeframes have been fully loaded and cached in memory.
+  /// Initialized with '1D' because daily calculations are processed in real-time.
+  final Set<String> _loadedTimeframes = {'1D'};
+
+  /// [SIP Optimization] The queue of historical timeframes remaining to be preloaded in the background.
+  final List<String> _preloadingQueue = ['1W', '1M', '3M', '6M', '1Y', '5Y'];
+
+  /// [SIP Optimization] The active timer used to manage the staggered preloading intervals.
+  Timer? _preloadTimer;
+
+  /// [SIP Optimization] Indicates whether a background preloading network request is actively in-flight.
+  bool _isPreloadingActive = false;
+
+  /// [SIP Optimization] Triggers the background preloading process after a 2-second idle delay.
+  /// It targets only the top 6 pinned indices that are visible in the dashboard grid,
+  /// reducing the initial startup network load by 80% (from 30 symbols down to 6).
   void _triggerBasePricesLoadingIfNeeded(MarketProvider provider) {
-    if (provider.allIndicesData.isNotEmpty && allTimeframeBasePrices.length <= 1 && !isLoadingAllTimeframes) {
-      final symbols = provider.allIndicesData.map((e) => e.indexSymbol).toList();
-      _loadAllTimeframeBasePrices(symbols);
+    if (provider.allIndicesData.isNotEmpty && _preloadTimer == null && _preloadingQueue.isNotEmpty) {
+      // Extract the top 6 indices that are displayed in the dashboard grid
+      final pinnedSymbols = provider.allIndicesData.take(6).map((e) => e.indexSymbol).toList();
+      
+      // Delay the start of background fetches by 2.0 seconds. This ensures that
+      // the initial page rendering and main chart data queries complete without contention.
+      _preloadTimer = Timer(const Duration(seconds: 2), () {
+        if (mounted) {
+          _preloadNextInQueue(pinnedSymbols);
+        }
+      });
     }
   }
 
-  Future<void> _loadAllTimeframeBasePrices(List<String> symbols) async {
-    if (symbols.isEmpty) return;
-    if (mounted) {
-      setState(() {
-        isLoadingAllTimeframes = true;
-      });
+  /// [SIP Optimization] Recursively processes the preloading queue one timeframe at a time.
+  /// Throttles API requests at a 1.5-second interval to prevent server thread exhaustion.
+  Future<void> _preloadNextInQueue(List<String> symbols) async {
+    if (_preloadingQueue.isEmpty || !mounted) return;
+
+    // Retrieve the next timeframe from the queue
+    final String nextTf = _preloadingQueue.first;
+
+    // If the timeframe has already been loaded via an on-demand priority click, skip it
+    if (_loadedTimeframes.contains(nextTf)) {
+      _preloadingQueue.removeAt(0);
+      _preloadNextInQueue(symbols);
+      return;
     }
+
+    setState(() {
+      _isPreloadingActive = true;
+    });
+
     try {
-      final now = DateTime.now();
-      final timeframes = ['1W', '1M', '3M', '6M', '1Y', '5Y'];
-      for (final tf in timeframes) {
-        DateTime fromDate;
-        switch (tf) {
-          case '1W': fromDate = now.subtract(const Duration(days: 7)); break;
-          case '1M': fromDate = DateTime(now.year, now.month - 1, now.day); break;
-          case '3M': fromDate = DateTime(now.year, now.month - 3, now.day); break;
-          case '6M': fromDate = DateTime(now.year, now.month - 6, now.day); break;
-          case '1Y': fromDate = DateTime(now.year - 1, now.month, now.day); break;
-          case '5Y': fromDate = DateTime(now.year - 5, now.month, now.day); break;
-          default: fromDate = now.subtract(const Duration(days: 7));
-        }
-
-        DateTime toDate;
-        switch (tf) {
-          case '1W': toDate = fromDate.add(const Duration(days: 3)); break;
-          case '1M': toDate = fromDate.add(const Duration(days: 5)); break;
-          case '3M': toDate = fromDate.add(const Duration(days: 7)); break;
-          case '6M': toDate = fromDate.add(const Duration(days: 7)); break;
-          case '1Y': toDate = fromDate.add(const Duration(days: 10)); break;
-          case '5Y': toDate = fromDate.add(const Duration(days: 10)); break;
-          default: toDate = fromDate.add(const Duration(days: 3));
-        }
-
-        if (toDate.isAfter(now)) {
-          toDate = now;
-        }
-
-        final fromStr = fromDate.toIso8601String().split('T')[0];
-        final toStr = toDate.toIso8601String().split('T')[0];
-
-        final history = await _apiService.fetchHistoricalData(
-          symbols: symbols,
-          from: fromStr,
-          to: toStr,
-          interval: '1d',
-          isIndexSymbol: true,
-        );
-
-        final Map<String, double> basePrices = {};
-        if (history.containsKey('data')) {
-          final dataMap = history['data'] as Map<String, dynamic>;
-          dataMap.forEach((sym, val) {
-            if (val is Map && val.containsKey('dataPoints')) {
-              final points = List.from(val['dataPoints']);
-              if (points.isNotEmpty) {
-                for (int i = points.length - 1; i >= 0; i--) {
-                  final point = points[i];
-                  final p = point['close'] ?? point['lastPrice'] ?? point['price'];
-                  if (p != null && (p as num) > 0) {
-                    basePrices[sym] = p.toDouble();
-                    break;
-                  }
-                }
-              }
-            }
-          });
-        }
-        allTimeframeBasePrices[tf] = basePrices;
-      }
+      // Fetch base prices for the single targeted timeframe
+      await _loadBasePricesForTimeframe(symbols, nextTf);
+      _loadedTimeframes.add(nextTf);
     } catch (e) {
-      CommonLogger.error('Error loading all timeframe base prices', tag: 'UserDashboardPage', error: e);
+      CommonLogger.error('SIP background preloader error for timeframe $nextTf', tag: 'UserDashboardPage', error: e);
     } finally {
       if (mounted) {
         setState(() {
-          isLoadingAllTimeframes = false;
+          _isPreloadingActive = false;
+          _preloadingQueue.removeAt(0);
+        });
+
+        // Schedule the next preloading task after a 1.5-second cooling period
+        _preloadTimer = Timer(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            _preloadNextInQueue(symbols);
+          }
         });
       }
     }
   }
 
+  /// [SIP Optimization] Executes the actual historical API request for a specific list of symbols and timeframe.
+  Future<void> _loadBasePricesForTimeframe(List<String> symbols, String tf) async {
+    if (symbols.isEmpty) return;
+
+    final now = DateTime.now();
+    DateTime fromDate;
+    
+    // Calculate the from-date based on the requested timeframe.
+    // Daily historical timeframes are computed using standard lookback offsets.
+    switch (tf) {
+      case '1W': fromDate = now.subtract(const Duration(days: 7)); break;
+      case '1M': fromDate = DateTime(now.year, now.month - 1, now.day); break;
+      case '3M': fromDate = DateTime(now.year, now.month - 3, now.day); break;
+      case '6M': fromDate = DateTime(now.year, now.month - 6, now.day); break;
+      case '1Y': fromDate = DateTime(now.year - 1, now.month, now.day); break;
+      case '5Y': fromDate = DateTime(now.year - 5, now.month, now.day); break;
+      default: fromDate = now.subtract(const Duration(days: 7));
+    }
+
+    DateTime toDate;
+    
+    // Calculate the to-date to fetch a small window of data points at the start
+    // of the timeframe to find the reference base price.
+    switch (tf) {
+      case '1W': toDate = fromDate.add(const Duration(days: 3)); break;
+      case '1M': toDate = fromDate.add(const Duration(days: 5)); break;
+      case '3M': toDate = fromDate.add(const Duration(days: 7)); break;
+      case '6M': toDate = fromDate.add(const Duration(days: 7)); break;
+      case '1Y': toDate = fromDate.add(const Duration(days: 10)); break;
+      case '5Y': toDate = fromDate.add(const Duration(days: 10)); break;
+      default: toDate = fromDate.add(const Duration(days: 3));
+    }
+
+    if (toDate.isAfter(now)) {
+      toDate = now;
+    }
+
+    final fromStr = fromDate.toIso8601String().split('T')[0];
+    final toStr = toDate.toIso8601String().split('T')[0];
+
+    // Fetch the historical candles/data points from the api service
+    final history = await _apiService.fetchHistoricalData(
+      symbols: symbols,
+      from: fromStr,
+      to: toStr,
+      interval: '1d',
+      isIndexSymbol: true,
+    );
+
+    final Map<String, double> basePrices = {};
+    if (history.containsKey('data')) {
+      final dataMap = history['data'] as Map<String, dynamic>;
+      dataMap.forEach((sym, val) {
+        if (val is Map && val.containsKey('dataPoints')) {
+          final points = List.from(val['dataPoints']);
+          if (points.isNotEmpty) {
+            // Find the first valid positive close price to use as the historical baseline
+            for (int i = 0; i < points.length; i++) {
+              final point = points[i];
+              final p = point['close'] ?? point['lastPrice'] ?? point['price'];
+              if (p != null && (p as num) > 0) {
+                basePrices[sym] = p.toDouble();
+                break;
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Cache the base prices in our memory map.
+    // If the map already has entries for other symbols in this timeframe, preserve them.
+    if (allTimeframeBasePrices.containsKey(tf)) {
+      allTimeframeBasePrices[tf]!.addAll(basePrices);
+    } else {
+      allTimeframeBasePrices[tf] = basePrices;
+    }
+
+    // [SIP Optimization] Push newly fetched base prices directly to the MarketProvider cache
+    if (mounted) {
+      context.read<MarketProvider>().updateTimeframeBasePrices(tf, basePrices);
+    }
+  }
+
+  /// [SIP Optimization] Instantly triggers a prioritized, on-demand fetch of a timeframe
+  /// if the user clicks a tab before the background preloader has processed it.
+  /// Temporarily pauses the background preloader timer to avoid network queue congestion.
+  Future<void> _loadTimeframeOnDemand(List<String> symbols, String tf) async {
+    // If all target symbols are already cached for this timeframe, exit early
+    final cachedForTf = allTimeframeBasePrices[tf] ?? {};
+    final bool allCached = symbols.every((sym) => cachedForTf.containsKey(sym));
+    if (allCached) {
+      _loadedTimeframes.add(tf);
+      // [SIP Optimization] Ensure the MarketProvider is in sync with our local cache when bypassing fetch
+      if (mounted) {
+        context.read<MarketProvider>().updateTimeframeBasePrices(tf, cachedForTf);
+      }
+      return;
+    }
+
+    // Pause the active staggered background preloader timer
+    _preloadTimer?.cancel();
+
+    try {
+      // Perform the priority fetch for the requested symbols
+      await _loadBasePricesForTimeframe(symbols, tf);
+      
+      // If we fetched the main pinned symbols, mark this timeframe as loaded for them
+      final pinnedSymbols = context.read<MarketProvider>().allIndicesData.take(6).map((e) => e.indexSymbol).toSet();
+      final bool containsAllPinned = symbols.every((sym) => pinnedSymbols.contains(sym));
+      if (containsAllPinned) {
+        _loadedTimeframes.add(tf);
+        _preloadingQueue.remove(tf);
+      }
+    } catch (e) {
+      CommonLogger.error('On-demand priority load error for timeframe $tf', tag: 'UserDashboardPage', error: e);
+    } finally {
+      if (mounted) {
+        setState(() {});
+
+        // Resume the staggered background preloading queue for remaining timeframes after a 1.5s delay
+        if (_preloadingQueue.isNotEmpty) {
+          final provider = context.read<MarketProvider>();
+          final pinnedList = provider.allIndicesData.take(6).map((e) => e.indexSymbol).toList();
+          _preloadTimer = Timer(const Duration(milliseconds: 1500), () {
+            if (mounted) {
+              _preloadNextInQueue(pinnedList);
+            }
+          });
+        }
+      }
+    }
+  }
+
+  String get _selectedTimeframe => ref.read(appTimeFrameProvider).code;
+
+  void _onGlobalTimeFrameChanged(String tf, MarketProvider provider) {
+    provider.setIndicesTimeframe(tf);
+    _loadHistoricalData();
+    _loadTopMovers();
+    final pinnedSymbols =
+        provider.allIndicesData.take(6).map((e) => e.indexSymbol).toList();
+    _loadTimeframeOnDemand(pinnedSymbols, tf);
+  }
+
+  /// [SIP Optimization] Opens the desktop drawer and lazy-loads the base prices
+  /// for the remaining 24 non-pinned indices for the current timeframe so they display correct percentages.
   void _openDrawer() {
     setState(() {
       _isDrawerVisible = true;
     });
     _drawerController.forward();
+    
+    // Fetch base prices for all 30 indices on-demand. Since this only requests 1 timeframe,
+    // it is very lightweight and runs only when the user explicitly opens the drawer.
+    final provider = context.read<MarketProvider>();
+    final allSymbols = provider.allIndicesData.map((e) => e.indexSymbol).toList();
+    _loadTimeframeOnDemand(allSymbols, _selectedTimeframe);
   }
 
   void _closeDrawer() {
     _drawerController.reverse();
   }
 
+  /// [SIP Optimization] Opens the mobile bottom sheet and lazy-loads the base prices
+  /// for all 30 indices for the current timeframe so they display correct percentages.
   void _showMobileAllIndicesBottomSheet(BuildContext context, MarketProvider provider) {
+    // Fetch base prices for all 30 indices on-demand. Since this only requests 1 timeframe,
+    // it is very lightweight and runs only when the user explicitly opens the bottom sheet.
+    final allSymbols = provider.allIndicesData.map((e) => e.indexSymbol).toList();
+    _loadTimeframeOnDemand(allSymbols, _selectedTimeframe);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -166,7 +313,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
         expand: false,
         builder: (context, scrollController) => AllIndicesBottomSheet(
           scrollController: scrollController,
-          initialTimeframe: selectedTimeframe,
+          initialTimeframe: _selectedTimeframe,
           indices: provider.allIndicesData,
           selectedIndexSymbol: selectedIndexForMovers,
           onIndexSelected: (data) {
@@ -185,6 +332,8 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
   @override
   void dispose() {
     // REMOVED: _indicesScrollController.dispose();
+    // [SIP Optimization] Cancel the background preloading timer to prevent memory leaks or state updates after widget disposal.
+    _preloadTimer?.cancel();
     _drawerController.dispose();
     super.dispose();
   }
@@ -214,7 +363,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
       _loadHistoricalData();
       if (mounted) {
         final provider = context.read<MarketProvider>();
-        provider.setIndicesTimeframe(selectedTimeframe);
+        provider.setIndicesTimeframe(_selectedTimeframe);
         _triggerBasePricesLoadingIfNeeded(provider);
       }
     });
@@ -233,7 +382,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
       final unifiedData = await _apiService.fetchMoversUnified(
         limit: 5,
         indexSymbol: selectedIndexForMovers,
-        timeFrame: selectedTimeframe,
+        timeFrame: _selectedTimeframe,
       );
       
       if (!mounted) return;
@@ -262,7 +411,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
     });
 
     try {
-      final data = await _apiService.fetchHistoryBatch(selectedIndicesForChart, selectedTimeframe);
+      final data = await _apiService.fetchHistoryBatch(selectedIndicesForChart, _selectedTimeframe);
 
       if (!mounted) return;
       
@@ -341,23 +490,30 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final selectedTimeframe = ref.watch(appTimeFrameProvider).code;
+
+    ref.listen(appTimeFrameProvider, (previous, next) {
+      if (previous == next) return;
+      final marketProvider = context.read<MarketProvider>();
+      _onGlobalTimeFrameChanged(next.code, marketProvider);
+    });
     
-    return Consumer<MarketProvider>(
-      builder: (context, provider, _) {
-        // Loading state
-        if (provider.isLoading && provider.allIndicesData.isEmpty) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFF00D1FF),
-            ),
-          );
-        }
+    final marketProvider = context.watch<MarketProvider>();
 
-        // Trigger pre-fetching of base prices if needed
-        _triggerBasePricesLoadingIfNeeded(provider);
+    // Loading state
+    if (marketProvider.isLoading && marketProvider.allIndicesData.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF00D1FF),
+        ),
+      );
+    }
 
-        // Main content
-        return Stack(
+    // Trigger pre-fetching of base prices if needed
+    _triggerBasePricesLoadingIfNeeded(marketProvider);
+
+    // Main content
+    return Stack(
           children: [
             Container(
               decoration: AppGlassmorphismV2.techBackground(isDark: isDark),
@@ -368,18 +524,9 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
                   children: [
                     // Header Section
                     MarketHeader(
-                      selectedTimeframe: selectedTimeframe,
-                      onTimeframeChanged: (tf) {
-                        setState(() {
-                          selectedTimeframe = tf;
-                        });
-                        provider.setIndicesTimeframe(tf);
-                        _loadHistoricalData();
-                        _loadTopMovers();
-                      },
                       onAllIndicesPressed: () {
                         if (MediaQuery.of(context).size.width < 768) {
-                          _showMobileAllIndicesBottomSheet(context, provider);
+                          _showMobileAllIndicesBottomSheet(context, marketProvider);
                         } else {
                           _openDrawer();
                         }
@@ -397,24 +544,9 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
                     
                     const SizedBox(height: 24),
 
-                    if (MediaQuery.of(context).size.width < 768) ...[
-                      TimeframeSelector(
-                        selectedTimeframe: selectedTimeframe,
-                        onTimeframeChanged: (tf) {
-                          setState(() {
-                            selectedTimeframe = tf;
-                          });
-                          provider.setIndicesTimeframe(tf);
-                          _loadHistoricalData();
-                          _loadTopMovers();
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-
                     // Pinned Index Cards Grid
                     PinnedIndicesGrid(
-                      indices: provider.allIndicesData,
+                      indices: marketProvider.allIndicesData,
                       selectedIndexSymbol: selectedIndexForMovers,
                       onIndexSelected: (data) {
                         setState(() {
@@ -583,7 +715,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
                             // Add Index Button
                             IconButton(
                               icon: const Icon(Icons.add_circle_outline, color: Color(0xFF00D1FF)),
-                              onPressed: () => _showAddIndexDialog(provider),
+                              onPressed: () => _showAddIndexDialog(marketProvider),
                               tooltip: 'Add Index',
                             ),
                           ],
@@ -715,8 +847,8 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
                 ),
               ),
               child: AllIndicesDrawer(
-                indices: provider.allIndicesData,
-                initialTimeframe: selectedTimeframe,
+                indices: marketProvider.allIndicesData,
+                initialTimeframe: _selectedTimeframe,
                 selectedIndexSymbol: selectedIndexForMovers,
                 onIndexSelected: (data) {
                   setState(() {
@@ -732,7 +864,5 @@ class _UserDashboardPageState extends State<UserDashboardPage> with TickerProvid
           ),
       ],
     );
-  },
-);
-}
+  }
 }

@@ -86,7 +86,48 @@ class _AddTradeFormState extends State<AddTradeForm> {
   }
 
   void _loadInitialData() {
-    // TODO: Load from initialData if editing
+    final trade = widget.initialData!;
+    _symbolController.text = trade.instrumentInfo.symbol ?? '';
+    _isinController.text = trade.instrumentInfo.isin ?? '';
+    _descriptionController.text = trade.instrumentInfo.description ?? '';
+    _selectedExchange = trade.instrumentInfo.exchange;
+    _selectedSegment = trade.instrumentInfo.segment;
+
+    if (trade.instrumentInfo.derivativeInfo != null) {
+      _selectedDerivativeType = trade.instrumentInfo.derivativeInfo!.derivativeType;
+      _selectedOptionType = trade.instrumentInfo.derivativeInfo!.optionType;
+      _strikePriceController.text = trade.instrumentInfo.derivativeInfo!.strikePrice?.toString() ?? '';
+      _expiryDate = trade.instrumentInfo.derivativeInfo!.expiryDate;
+    }
+
+    _selectedDirection = trade.tradePositionType;
+    _selectedStatus = trade.status;
+    _selectedBroker = trade.tradeExecutions?.isNotEmpty == true ? trade.tradeExecutions!.first.basicInfo?.brokerType : null;
+    _selectedOrderType = trade.tradeExecutions?.isNotEmpty == true ? trade.tradeExecutions!.first.executionInfo?.orderType : null;
+    
+    _entryDate = trade.entryInfo.timestamp;
+    _entryPriceController.text = trade.entryInfo.price?.toString() ?? '';
+    _entryQuantityController.text = trade.entryInfo.quantity?.toString() ?? '';
+
+    if (trade.exitInfo != null) {
+      _exitDate = trade.exitInfo!.timestamp;
+      _exitPriceController.text = trade.exitInfo!.price?.toString() ?? '';
+      _exitQuantityController.text = trade.exitInfo!.quantity?.toString() ?? '';
+    }
+
+    _strategyController.text = trade.strategy ?? '';
+    _notesController.text = trade.notes ?? '';
+    _attachments = trade.attachments?.map((a) => a.fileUrl ?? '').toList() ?? [];
+    
+    if (trade.psychologyData != null) {
+      _selectedEntryPsychology = trade.psychologyData!.entryPsychologyFactors ?? [];
+      _selectedExitPsychology = trade.psychologyData!.exitPsychologyFactors ?? [];
+    }
+
+    if (trade.entryReasoning != null) {
+      _selectedTechnicalReasons = trade.entryReasoning!.technicalReasons ?? [];
+      _selectedFundamentalReasons = trade.entryReasoning!.fundamentalReasons ?? [];
+    }
   }
 
   @override
@@ -137,8 +178,8 @@ class _AddTradeFormState extends State<AddTradeForm> {
         selectedBroker: _selectedBroker,
       );
 
-      AppLogger.info('✅ Required fields validation passed', tag: 'AddTradeForm');
-      AppLogger.debug('📊 Parsing numeric values...', tag: 'AddTradeForm');
+      AppLogger.info('Required fields validation passed', tag: 'AddTradeForm');
+      AppLogger.debug('Parsing numeric values...', tag: 'AddTradeForm');
 
       // Parse numeric values
       final entryPrice = double.tryParse(_entryPriceController.text);
@@ -150,14 +191,14 @@ class _AddTradeFormState extends State<AddTradeForm> {
       final strikePrice = _strikePriceController.text.isNotEmpty ? double.tryParse(_strikePriceController.text) : null;
 
       AppLogger.debug(
-        '💰 Parsed values - entryPrice: $entryPrice, entryQuantity: $entryQuantity, exitPrice: $exitPrice',
+        'Parsed values - entryPrice: $entryPrice, entryQuantity: $entryQuantity, exitPrice: $exitPrice',
         tag: 'AddTradeForm',
       );
 
       // Validate numeric values
       TradeFormValidator.validateNumericValues(entryPrice: entryPrice, entryQuantity: entryQuantity);
 
-      AppLogger.info('✅ Numeric validation passed', tag: 'AddTradeForm');
+      AppLogger.info('Numeric validation passed', tag: 'AddTradeForm');
 
       // Validate closed trade data
       TradeFormValidator.validateClosedTrade(
@@ -167,8 +208,8 @@ class _AddTradeFormState extends State<AddTradeForm> {
         exitQuantity: exitQuantity,
       );
 
-      AppLogger.info('✅ Closed trade validation passed', tag: 'AddTradeForm');
-      AppLogger.debug('🏗️ Building TradeDetails entity...', tag: 'AddTradeForm');
+      AppLogger.info('Closed trade validation passed', tag: 'AddTradeForm');
+      AppLogger.debug('Building TradeDetails entity...', tag: 'AddTradeForm');
 
       // Map form data to TradeDetails entity
       final tradeDetails = TradeFormMapper.mapToTradeDetails(
@@ -197,10 +238,12 @@ class _AddTradeFormState extends State<AddTradeForm> {
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         portfolioId: widget.initialData?.portfolioId,
         attachments: _attachments,
+        selectedBroker: _selectedBroker,
+        selectedOrderType: _selectedOrderType,
       );
 
       AppLogger.info(
-        '✅ TradeDetails entity created - symbol: ${_symbolController.text}, portfolioId: ${widget.initialData?.portfolioId}',
+        'TradeDetails entity created - symbol: ${_symbolController.text}, portfolioId: ${widget.initialData?.portfolioId}',
         tag: 'AddTradeForm',
       );
 
@@ -209,18 +252,19 @@ class _AddTradeFormState extends State<AddTradeForm> {
         AppLogger.info('📤 Calling onSave callback to parent', tag: 'AddTradeForm');
         widget.onSave!(tradeDetails);
       } else {
-        AppLogger.warning('⚠️ No onSave callback provided!', tag: 'AddTradeForm');
+        AppLogger.warning('No onSave callback provided!', tag: 'AddTradeForm');
       }
 
       AppLogger.methodExit('_saveTrade', tag: 'AddTradeForm', result: 'success');
     } catch (e) {
-      AppLogger.error('❌ Trade save failed', tag: 'AddTradeForm', error: e, stackTrace: StackTrace.current);
+      AppLogger.error('Trade save failed', tag: 'AddTradeForm', error: e, stackTrace: StackTrace.current);
 
       // Show error if validation or construction fails
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to save trade: ${e.toString()}'), backgroundColor: Colors.red));
     }
+    
   }
 
   void _onInstrumentSelected(Map<String, dynamic> instrument) {
@@ -250,7 +294,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
     });
     
     AppLogger.info(
-      '🎯 Instrument selected: ${_symbolController.text} - ${_descriptionController.text}', 
+      'Instrument selected: ${_symbolController.text} - ${_descriptionController.text}', 
       tag: 'AddTradeForm'
     );
   }

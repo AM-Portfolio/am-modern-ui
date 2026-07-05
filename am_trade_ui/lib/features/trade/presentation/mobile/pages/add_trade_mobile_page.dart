@@ -17,12 +17,14 @@ class AddTradeMobilePage extends StatefulWidget {
     this.portfolioName,
     this.onTradeAdded,
     this.onCancel,
+    this.existingTrade,
   });
 
   final String portfolioId;
   final String? portfolioName;
   final VoidCallback? onTradeAdded;
   final VoidCallback? onCancel;
+  final TradeDetails? existingTrade;
 
   @override
   State<AddTradeMobilePage> createState() => _AddTradeMobilePageState();
@@ -44,10 +46,15 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
     final tradeToSave = tradeDetails.copyWith();
 
     AppLogger.debug('📋 Trade Details (without explicit userId, handled by token): ${tradeToSave.toString()}', tag: 'AddTradeMobilePage');
-    AppLogger.info('🚀 Calling TradeControllerCubit.addNewTrade()', tag: 'AddTradeMobilePage');
-
-    // Trigger the trade save action
-    context.read<TradeControllerCubit>().addNewTrade(tradeToSave);
+    
+    if (widget.existingTrade != null) {
+      AppLogger.info('🚀 Calling TradeControllerCubit.updateExistingTrade()', tag: 'AddTradeMobilePage');
+      final tradeToUpdate = tradeToSave.copyWith(tradeId: widget.existingTrade!.tradeId);
+      context.read<TradeControllerCubit>().updateExistingTrade(tradeId: tradeToUpdate.tradeId, tradeDetails: tradeToUpdate);
+    } else {
+      AppLogger.info('🚀 Calling TradeControllerCubit.addNewTrade()', tag: 'AddTradeMobilePage');
+      context.read<TradeControllerCubit>().addNewTrade(tradeToSave);
+    }
   }
 
   void _handleCancel() {
@@ -111,6 +118,30 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
                 context,
               ).showSnackBar(SnackBar(content: Text('Error: $message'), backgroundColor: theme.colorScheme.error));
             },
+            updateSuccess: (trade) {
+              AppLogger.info('✅ Trade updated successfully!', tag: 'AddTradeMobilePage');
+              setState(() => _isLoading = false);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('✅ Trade updated successfully!'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+
+              // Call callback and navigate back
+              if (widget.onTradeAdded != null) {
+                widget.onTradeAdded!();
+              } else {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop(true);
+                } else {
+                  Navigator.of(context).pushReplacementNamed('/');
+                }
+              }
+            },
             addSuccess: (trade) {
               AppLogger.info('✅ Trade saved successfully!', tag: 'AddTradeMobilePage');
               setState(() => _isLoading = false);
@@ -146,7 +177,7 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
                 onSave: _handleSave,
                 onCancel: _handleCancel,
                 isLoading: _isLoading,
-                initialData: TradeDetails.empty().copyWith(portfolioId: widget.portfolioId),
+                initialData: widget.existingTrade ?? TradeDetails.empty().copyWith(portfolioId: widget.portfolioId),
               ),
 
               // Loading overlay

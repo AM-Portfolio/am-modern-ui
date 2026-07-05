@@ -22,12 +22,16 @@ class PortfolioMobileScreen extends ConsumerWidget {
     this.portfolios,
     this.onPortfolioChanged,
     this.onBack,
+    this.initialTab,
+    this.onTabChanged,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final List<PortfolioItem>? portfolios;
   final Function(String portfolioId, String portfolioName)? onPortfolioChanged;
   final VoidCallback? onBack;
+  final String? initialTab;
+  final ValueChanged<String>? onTabChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,6 +67,8 @@ class PortfolioMobileScreen extends ConsumerWidget {
               portfolios: portfolios,
               onPortfolioChanged: onPortfolioChanged,
               onBack: onBack,
+              initialTab: initialTab,
+              onTabChanged: onTabChanged,
             ),
           ),
           loading: () =>
@@ -138,12 +144,16 @@ class PortfolioMobileView extends StatefulWidget {
     this.portfolios,
     this.onPortfolioChanged,
     this.onBack,
+    this.initialTab,
+    this.onTabChanged,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
   final List<PortfolioItem>? portfolios;
   final Function(String portfolioId, String portfolioName)? onPortfolioChanged;
   final VoidCallback? onBack;
+  final String? initialTab;
+  final ValueChanged<String>? onTabChanged;
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
@@ -154,10 +164,51 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   late TabController _tabController;
   String? _currentPortfolioId;
 
+  int _tabIndexFromSlug(String? slug) {
+    switch (slug?.toLowerCase()) {
+      case 'overview':
+        return 0;
+      case 'holdings':
+        return 1;
+      case 'analysis':
+        return 2;
+      case 'heatmap':
+        return 3;
+      case 'trade':
+        return 4;
+      default:
+        return 0;
+    }
+  }
+
+  String _tabSlugFromIndex(int index) {
+    switch (index) {
+      case 0:
+        return 'overview';
+      case 1:
+        return 'holdings';
+      case 2:
+        return 'analysis';
+      case 3:
+        return 'heatmap';
+      case 4:
+        return 'trade';
+      default:
+        return 'overview';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    final initialIndex = _tabIndexFromSlug(widget.initialTab);
+    _tabController = TabController(length: 5, vsync: this, initialIndex: initialIndex);
+    _tabController.addListener(() {
+      if (mounted && !_tabController.indexIsChanging) {
+        setState(() {});
+        widget.onTabChanged?.call(_tabSlugFromIndex(_tabController.index));
+      }
+    });
     _currentPortfolioId = widget.selectedPortfolioId;
 
     // Load portfolio data
@@ -195,6 +246,13 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         )
         ..loadPortfolioById(widget.selectedPortfolioId!);
     }
+
+    if (widget.initialTab != oldWidget.initialTab) {
+      final newIndex = _tabIndexFromSlug(widget.initialTab);
+      if (newIndex != _tabController.index) {
+        _tabController.animateTo(newIndex);
+      }
+    }
   }
 
   @override
@@ -229,6 +287,16 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       );
     }
 
+    String currentName = 'Select Portfolio';
+    if (_currentPortfolioId != null && widget.portfolios != null) {
+      final match = widget.portfolios!.where(
+        (p) => p.portfolioId == _currentPortfolioId,
+      );
+      if (match.isNotEmpty) {
+        currentName = match.first.portfolioName;
+      }
+    }
+
     return BlocListener<PortfolioCubit, PortfolioState>(
       listener: (context, state) {
         if (state is PortfolioError) {
@@ -240,68 +308,49 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           );
         }
       },
-      child: Scaffold(
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: PortfolioTabContentWidget(
-                  tabController: _tabController,
-                  currentPortfolioId: _currentPortfolioId!,
-                  ),
-              ),
-            ],
+      child: UnifiedSidebarScaffold(
+        module: ModuleType.portfolio,
+        title: currentName,
+        showModuleBottomNavigation: false,
+        onBackToGlobal: widget.onBack,
+        onMobileMenuTap: () => _showMenuBottomSheet(context),
+        items: [
+          SecondarySidebarItem(
+            title: 'Overview',
+            icon: Icons.dashboard_outlined,
+            isSelected: _tabController.index == 0,
+            onTap: () => setState(() => _tabController.index = 0),
           ),
+          SecondarySidebarItem(
+            title: 'Holdings',
+            icon: Icons.wallet,
+            isSelected: _tabController.index == 1,
+            onTap: () => setState(() => _tabController.index = 1),
+          ),
+          SecondarySidebarItem(
+            title: 'Analysis',
+            icon: Icons.analytics_outlined,
+            isSelected: _tabController.index == 2,
+            onTap: () => setState(() => _tabController.index = 2),
+          ),
+          SecondarySidebarItem(
+            title: 'Heatmap',
+            icon: Icons.grid_view,
+            isSelected: _tabController.index == 3,
+            onTap: () => setState(() => _tabController.index = 3),
+          ),
+          SecondarySidebarItem(
+            title: 'Trade',
+            icon: Icons.show_chart,
+            isSelected: _tabController.index == 4,
+            onTap: () => setState(() => _tabController.index = 4),
+          ),
+        ],
+        body: PortfolioTabContentWidget(
+          tabController: _tabController,
+          currentPortfolioId: _currentPortfolioId!,
         ),
-        bottomNavigationBar: _buildBottomNavigationBar(context),
       ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar(BuildContext context) {
-    // Standard Portfolio Tabs
-    final tabs = [
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.dashboard_outlined),
-        label: 'Overview',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.wallet),
-        label: 'Holdings',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.analytics_outlined),
-        label: 'Analysis',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.grid_view),
-        label: 'Heatmap',
-      ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.show_chart),
-        label: 'Trade',
-      ),
-      // We add 'Menu' as the last functional item
-      const BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
-    ];
-
-    return ModuleBottomNavigation(
-      items: tabs,
-      currentIndex: _tabController.index,
-      accentColor: Theme.of(context).primaryColor,
-      onBackToGlobal: widget.onBack,
-      onTap: (index) {
-        if (index < 5) {
-          // Tab Switch
-          setState(() {
-            _tabController.animateTo(index);
-          });
-        } else {
-          // Menu
-          _showMenuBottomSheet(context);
-        }
-      },
-      // Using generic styling, no special FAB here strictly needed unless we want 'Trade' to be FAB?
     );
   }
 

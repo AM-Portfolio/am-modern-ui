@@ -90,7 +90,7 @@ def load_env(env_name):
     return env_vars
 
 def get_available_device():
-    """Detect available flutter devices and return the best match."""
+    """Prefer Chrome/Edge so Flutter launches the browser; fall back to web-server."""
     try:
         is_windows = os.name == "nt"
         result = subprocess.run(
@@ -98,18 +98,16 @@ def get_available_device():
             capture_output=True,
             text=True,
             encoding="utf-8",
-            errors="replace",
             shell=is_windows,
         )
         output = result.stdout.lower()
         if "chrome" in output:
             return "chrome"
-        elif "edge" in output:
+        if "edge" in output:
             return "edge"
-        else:
-            return "web-server"
     except Exception:
-        return "chrome"
+        pass
+    return "web-server"
 
 def run_cmd(package, cmd_parts, env_vars=None):
     """Run a terminal command inside the specified package directory."""
@@ -192,7 +190,12 @@ def handle_run(pkg, env_name):
     device = get_available_device()
     port = get_web_port(package, env_vars)
     
-    cmd = ["flutter", "run", "-d", device, f"--web-port={port}"] + defines
+    cmd = [
+        "flutter", "run", "-d", device,
+        f"--web-port={port}",
+        "--no-web-resources-cdn",
+        f"--web-launch-url=http://localhost:{port}/login",
+    ] + defines
     run_cmd(package, cmd, env_vars)
 
 def handle_build(pkg, env_name):
@@ -201,7 +204,7 @@ def handle_build(pkg, env_name):
     env_vars['AM_ENV'] = env_name
     defines = construct_dart_defines(env_vars)
     
-    cmd = ["flutter", "build", "web", "--release", "--no-wasm-dry-run"] + defines
+    cmd = ["flutter", "build", "web", "--release", "--no-wasm-dry-run", "--no-web-resources-cdn"] + defines
     run_cmd(package, cmd, env_vars)
 
 def handle_clean(pkg):

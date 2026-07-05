@@ -19,32 +19,37 @@ class AppGlassmorphism {
     double blur = 10.0,
     List<Color>? gradientColors,
     double borderRadius = 16.0,
+    bool isDark = true,
   }) {
     return BoxDecoration(
       gradient: LinearGradient(
-        colors: gradientColors ?? [
+        colors: gradientColors ?? (isDark ? [
           Colors.white.withOpacity(0.05),
           Colors.white.withOpacity(0.02),
-        ],
+        ] : [
+          Colors.white.withOpacity(0.85),
+          Colors.white.withOpacity(0.65),
+        ]),
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
       borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(
-        color: borderColor ?? Colors.white.withOpacity(0.1),
+        color: borderColor ?? (isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.08)),
         width: borderWidth,
       ),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.1),
+          color: Colors.black.withOpacity(isDark ? 0.1 : 0.05),
           blurRadius: blur,
           offset: const Offset(0, 4),
         ),
-        BoxShadow(
-          color: Colors.white.withOpacity(0.05),
-          blurRadius: blur / 2,
-          offset: const Offset(0, -2),
-        ),
+        if (isDark)
+          BoxShadow(
+            color: Colors.white.withOpacity(0.05),
+            blurRadius: blur / 2,
+            offset: const Offset(0, -2),
+          ),
       ],
     );
   }
