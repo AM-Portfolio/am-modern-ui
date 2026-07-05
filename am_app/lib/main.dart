@@ -53,12 +53,12 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     try {
       await ConfigService.initialize();
       await configureCoreDependencies();
+      await configureFeatureDependencies();
       if (!mounted) return;
       setState(() => _app = const AMApp());
 
       SchedulerBinding.instance.addPostFrameCallback((_) {
         BootTrace.instance.mark('first_flutter_frame');
-        configureFeatureDependencies();
         BootRumCollector.instance.schedulePublish(
           delay: const Duration(seconds: 6),
         );

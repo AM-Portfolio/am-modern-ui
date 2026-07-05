@@ -58,7 +58,8 @@ final _tradeRemoteDataSourceProvider = FutureProvider<TradeRemoteDataSource>((re
 /// Provider for trade repository
 final _tradeRepositoryProvider = FutureProvider<TradeRepository>((ref) async {
   final remoteDataSource = await ref.watch(_tradeRemoteDataSourceProvider.future);
-  final stompClient = GetIt.I<AmStompClient>();
+  final stompClient =
+      GetIt.instance.isRegistered<AmStompClient>() ? GetIt.instance<AmStompClient>() : null;
 
   return TradeRepositoryImpl(
     remoteDataSource: remoteDataSource,
@@ -113,6 +114,13 @@ final getTradeCalendarByDateRangeProvider = FutureProvider<GetTradeCalendarByDat
   final repository = await ref.watch(_tradeRepositoryProvider.future);
   return GetTradeCalendarByDateRange(repository);
 });
+
+/// Invalidates trade data providers so the next watch triggers fresh API calls.
+void invalidateTradeData(WidgetRef ref) {
+  ref.invalidate(_tradeRepositoryProvider);
+  ref.invalidate(tradePortfoliosProvider);
+  ref.invalidate(tradePortfoliosStreamProvider);
+}
 
 /// Provider for trade portfolios list
 final tradePortfoliosProvider = FutureProvider<TradePortfolioList>((ref) async {

@@ -6,7 +6,6 @@ import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard_ui;
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_library/am_library.dart';
 import 'package:am_subscription_ui/am_subscription_ui.dart' as subscription_ui;
-import 'package:am_market_ui/features/market_analysis/services/market_analysis_service.dart';
 
 final getIt = GetIt.instance;
 bool _featureDependenciesConfigured = false;
@@ -52,20 +51,11 @@ Future<void> configureCoreDependencies() async {
   common.BootTrace.instance.mark('di_core_done');
 }
 
-/// Feature dependencies that can load after first frame (subscription, market, etc.).
+/// Feature DI — lightweight services needed by deferred modules when they load.
 Future<void> configureFeatureDependencies() async {
   if (_featureDependenciesConfigured) return;
   _featureDependenciesConfigured = true;
-
-  _registerPortfolioDependencies();
-  _registerTradeDependencies();
-  _registerMarketDependencies();
-  _registerUserDependencies();
-  _registerAiDependencies();
-  _registerDiagnosticDependencies();
-  _registerAnalysisDependencies();
   _registerSubscriptionDependencies();
-
   common.BootTrace.instance.mark('di_feature_done');
 }
 
@@ -147,26 +137,6 @@ void _registerDashboardDependencies() {
     );
   });
 }
-
-void _registerMarketDependencies() {
-  if (!getIt.isRegistered<MarketAnalysisService>()) {
-    getIt.registerLazySingleton<MarketAnalysisService>(
-      () => MarketAnalysisService(),
-    );
-  }
-}
-
-void _registerPortfolioDependencies() {}
-
-void _registerTradeDependencies() {}
-
-void _registerUserDependencies() {}
-
-void _registerAiDependencies() {}
-
-void _registerDiagnosticDependencies() {}
-
-void _registerAnalysisDependencies() {}
 
 void _registerSubscriptionDependencies() {
   String baseUrl = common.EnvDomains.subscription;

@@ -68,3 +68,12 @@ class MarketAnalysisService {
     }
   }
 }
+
+/// Registers [MarketAnalysisService] in GetIt after the market deferred chunk loads.
+void registerMarketAnalysisServiceDi() {
+  if (!GetIt.I.isRegistered<MarketAnalysisService>()) {
+    GetIt.I.registerLazySingleton<MarketAnalysisService>(
+      () => MarketAnalysisService(),
+    );
+  }
+}

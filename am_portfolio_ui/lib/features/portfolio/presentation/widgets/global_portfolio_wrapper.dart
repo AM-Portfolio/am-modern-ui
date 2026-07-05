@@ -61,8 +61,21 @@ class _GlobalPortfolioWrapperState
       _selectedPortfolioName = name;
     });
 
+    context.selectPortfolio(id, name);
+
     if (notifyUrl) {
       widget.onPortfolioChanged?.call(id, name);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final inheritedId = context.selectedPortfolioId;
+    final inheritedName = context.selectedPortfolioName;
+    if (inheritedId != null) {
+      _selectedPortfolioId = inheritedId;
+      _selectedPortfolioName = inheritedName;
     }
   }
 
@@ -188,17 +201,7 @@ class _GlobalPortfolioWrapperState
     final portfolioServiceAsync = ref.watch(portfolioServiceProvider);
     final urlPortfolioId = _portfolioIdFromUrl(context);
 
-    final shellChild = _SelectedPortfolioProvider(
-      selectedId: _selectedPortfolioId,
-      selectedName: _selectedPortfolioName,
-      onSelect: (id, name) {
-        final innerContext = _portfolioBlocContext;
-        if (innerContext != null) {
-          _selectPortfolio(innerContext, id, name, notifyUrl: true);
-        }
-      },
-      child: widget.child,
-    );
+    final shellChild = widget.child;
 
     return portfolioServiceAsync.when(
       data: (service) {
@@ -279,35 +282,3 @@ class _GlobalPortfolioWrapperState
   }
 }
 
-class _SelectedPortfolioProvider extends InheritedWidget {
-  final String? selectedId;
-  final String? selectedName;
-  final Function(String, String) onSelect;
-
-  const _SelectedPortfolioProvider({
-    required this.selectedId,
-    required this.selectedName,
-    required this.onSelect,
-    required super.child,
-  });
-
-  static _SelectedPortfolioProvider? of(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<_SelectedPortfolioProvider>();
-  }
-
-  @override
-  bool updateShouldNotify(_SelectedPortfolioProvider oldWidget) {
-    return oldWidget.selectedId != selectedId ||
-        oldWidget.selectedName != selectedName;
-  }
-}
-
-extension PortfolioSelectionExtension on BuildContext {
-  String? get selectedPortfolioId =>
-      _SelectedPortfolioProvider.of(this)?.selectedId;
-  String? get selectedPortfolioName =>
-      _SelectedPortfolioProvider.of(this)?.selectedName;
-  void selectPortfolio(String id, String name) =>
-      _SelectedPortfolioProvider.of(this)?.onSelect(id, name);
-}

@@ -5,7 +5,6 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart' as common;
-import 'package:am_portfolio_ui/am_portfolio_ui.dart';
 
 import '../../core/router/app_routes.dart';
 import '../../core/router/share_url_builder.dart';
@@ -27,6 +26,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   bool _sessionRestored = false;
   bool _shellMarked = false;
+  bool _portfolioSeeded = false;
 
   List<_MoreMenuItem> _moreMenuItemsFor({required bool isAdmin}) => [
         const _MoreMenuItem(
@@ -77,7 +77,27 @@ class _AppShellState extends State<AppShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialAuthAndConnect();
       _restoreSessionNav();
+      _seedPortfolioSelectionFromSession();
     });
+  }
+
+  Future<void> _seedPortfolioSelectionFromSession() async {
+    if (_portfolioSeeded) return;
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! Authenticated) return;
+    _portfolioSeeded = true;
+
+    final session =
+        await common.SessionPersistenceService.instance.load(authState.user.id);
+    if (session?.portfolioId == null || !mounted) return;
+
+    final portfolioId = session!.portfolioId!;
+    if (_isDevMockPortfolioId(portfolioId)) return;
+
+    common.PortfolioSelectionScope.maybeStateOf(context)?.seedSelection(
+      portfolioId,
+      session.portfolioName,
+    );
   }
 
   Future<void> _restoreSessionNav() async {
@@ -139,6 +159,11 @@ class _AppShellState extends State<AppShell> {
     final portfolioId = ShareUrlBuilder.portfolioIdFromLocation(location);
     final portfolioTab = ShareUrlBuilder.portfolioTabFromLocation(location);
 
+    if (portfolioId != null) {
+      common.PortfolioSelectionScope.maybeStateOf(context)
+          ?.seedSelection(portfolioId, null);
+    }
+
     common.SessionPersistenceService.instance.patch(
       userId,
       (s) => s.copyWith(
@@ -168,19 +193,6 @@ class _AppShellState extends State<AppShell> {
     common.SessionPersistenceService.instance.patch(
       userId,
       (s) => s.copyWith(globalNav: title, clearBasket: title != 'Portfolio'),
-    );
-  }
-
-  void _onGlobalPortfolioChanged(String portfolioId, String portfolioName) {
-    final authState = context.read<AuthCubit>().state;
-    if (authState is! Authenticated) return;
-
-    common.SessionPersistenceService.instance.patch(
-      authState.user.id,
-      (s) => s.copyWith(
-        portfolioId: portfolioId,
-        portfolioName: portfolioName,
-      ),
     );
   }
 
@@ -256,9 +268,12 @@ class _AppShellState extends State<AppShell> {
               }
               if (context.mounted) {
                 stompCubit.updateToken(token, userId: state.user.id);
+                _portfolioSeeded = false;
                 _restoreSessionNav();
+                _seedPortfolioSelectionFromSession();
               }
             } else if (state is Unauthenticated) {
+              _portfolioSeeded = false;
               common.AppLogger.info(
                 'AppShell: AuthState changed to Unauthenticated. Disconnecting STOMP...',
               );
@@ -318,11 +333,7 @@ class _AppShellState extends State<AppShell> {
                       ),
                     Expanded(
                       child: authState is Authenticated
-                          ? GlobalPortfolioWrapper(
-                              streamingTab: _activeNavItem.isEmpty
-                                  ? 'Dashboard'
-                                  : _activeNavItem,
-                              onPortfolioChanged: _onGlobalPortfolioChanged,
+                          ? common.PortfolioSelectionScope(
                               child: widget.child,
                             )
                           : widget.child,

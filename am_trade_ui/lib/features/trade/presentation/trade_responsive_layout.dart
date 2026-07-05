@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:am_portfolio_ui/am_portfolio_ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_common/am_common.dart';
 
+import '../providers/trade_internal_providers.dart';
 import 'mobile/trade_mobile_screen.dart';
 import 'web/trade_web_screen.dart';
 
@@ -25,7 +27,7 @@ import 'web/trade_web_screen.dart';
 /// [TradeViewType] enum length of 9 (indices 0–8). We track this as the
 /// special constant [_webAddTradeIndex]. When switching to mobile at this
 /// index, [TradeMobileScreen] shows its own "Add Trade" tab (index 3).
-class TradeResponsiveLayout extends StatefulWidget {
+class TradeResponsiveLayout extends ConsumerStatefulWidget {
   const TradeResponsiveLayout({
     super.key,
     this.initialPortfolioId,
@@ -68,10 +70,11 @@ class TradeResponsiveLayout extends StatefulWidget {
       _tabSlugs[index.clamp(0, _tabSlugs.length - 1)];
 
   @override
-  State<TradeResponsiveLayout> createState() => TradeResponsiveLayoutState();
+  ConsumerState<TradeResponsiveLayout> createState() =>
+      TradeResponsiveLayoutState();
 }
 
-class TradeResponsiveLayoutState extends State<TradeResponsiveLayout> {
+class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
   /// Raw SwipeNavigationController index from the active screen.
   late int _currentTabIndex;
   final GlobalKey<TradeWebScreenState> _webScreenKey = GlobalKey<TradeWebScreenState>();
@@ -81,6 +84,13 @@ class TradeResponsiveLayoutState extends State<TradeResponsiveLayout> {
     super.initState();
     _currentTabIndex = TradeResponsiveLayout.tabIndexFromSlug(widget.initialTab);
     _currentPortfolioId = widget.initialPortfolioId;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrapTradeData());
+  }
+
+  void _bootstrapTradeData() {
+    if (!mounted) return;
+    invalidateTradeData(ref);
+    ref.read(tradePortfoliosProvider.future).ignore();
   }
 
   @override

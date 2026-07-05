@@ -73,6 +73,7 @@ export 'core/config/env_domains.dart';
 export 'core/config/upload_config.dart';
 export 'core/config/user_currency_config.dart';
 export 'core/session/app_session_state.dart';
+export 'core/session/portfolio_selection_scope.dart';
 export 'core/session/session_persistence_service.dart';
 export 'core/telemetry/boot_trace.dart';
 export 'core/telemetry/boot_rum_collector.dart';

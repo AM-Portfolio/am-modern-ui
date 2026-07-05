@@ -175,7 +175,9 @@ class ConfigService {
     final usersUrl = _services['users'] ?? '$api/users';
     final portfolioUrl = _services['portfolio'] ?? '$api/portfolio';
     final marketUrl = _services['market'] ?? '$api/market';
-    final tradesUrl = _services['trades'] ?? '$api/trades';
+    final tradesUrl = _services['trade'] ??
+        _services['trades'] ??
+        '$api/trade';
     final analysisUrl = _services['analysis'] ?? '$api/analysis';
     final gmailUrl = _services['gmail'] ?? '$api/gmail';
     final marketWsUrl =
