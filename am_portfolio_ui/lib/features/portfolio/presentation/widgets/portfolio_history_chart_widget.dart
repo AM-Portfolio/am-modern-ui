@@ -5,10 +5,24 @@ import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:intl/intl.dart';
 
+import '../../internal/data/dtos/portfolio_snapshot_dto.dart';
+import '../../internal/domain/entities/portfolio_list.dart';
+import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_history_cubit.dart';
 import '../cubit/portfolio_history_state.dart';
-import '../../internal/data/dtos/portfolio_snapshot_dto.dart';
+import '../cubit/portfolio_state.dart';
+import 'global_portfolio_wrapper.dart';
 
+// ignore_for_file: unused_import
+export '../../internal/data/dtos/portfolio_snapshot_dto.dart';
+
+/// A self-contained widget that renders the portfolio history chart.
+///
+/// Features:
+/// - Always shows portfolio switcher tabs ([All Portfolios], [Dhan], [Zerodha]…)
+/// - Reacts to global portfolio selection changes
+/// - Carries forward last known wealth on days with missing data (no zero-dips)
+/// - Reloads on both portfolioId and timeFrame changes
 class PortfolioHistoryChartWidget extends ConsumerStatefulWidget {
   const PortfolioHistoryChartWidget({
     super.key,
@@ -28,88 +42,170 @@ class PortfolioHistoryChartWidget extends ConsumerStatefulWidget {
 
 class _PortfolioHistoryChartWidgetState
     extends ConsumerState<PortfolioHistoryChartWidget> {
-  String _selectedBroker = 'ALL';
+  // ── Local State ──────────────────────────────────────────────────────────
+  String? _localSelectedId;
+  String? _localSelectedName;
+
+  // ── Lifecycle ────────────────────────────────────────────────────────────
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _scheduleLoad();
   }
 
   @override
-  void didUpdateWidget(covariant PortfolioHistoryChartWidget old) {
-    super.didUpdateWidget(old);
-    if (old.timeFrame != widget.timeFrame ||
-        old.portfolioId != widget.portfolioId) {
-      _selectedBroker = 'ALL'; // Reset broker tab on context change
+  void didUpdateWidget(PortfolioHistoryChartWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload whenever portfolioId OR timeFrame changes
+    if (oldWidget.portfolioId != widget.portfolioId ||
+        oldWidget.timeFrame != widget.timeFrame) {
+      if (oldWidget.portfolioId != widget.portfolioId) {
+        _localSelectedId = null;
+        _localSelectedName = null;
+      }
       context.read<PortfolioHistoryCubit>().invalidate();
-      _load();
+      _scheduleLoad();
     }
   }
 
-  void _load() {
+  /// Schedule load after the current frame so that inherited widgets
+  /// (GlobalPortfolioWrapper → context.selectedPortfolioId) are ready.
+  void _scheduleLoad() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<PortfolioHistoryCubit>().loadHistory(
-          widget.portfolioId,
-          widget.timeFrame,
-        );
-      }
+      if (!mounted) return;
+      _load();
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<PortfolioHistoryCubit, PortfolioHistoryState>(
-      builder: (context, state) {
-        if (state is PortfolioHistoryLoading) return _buildShimmer();
-        if (state is PortfolioHistoryError) return _buildError(state.message);
-        if (state is PortfolioHistoryLoaded) return _buildContent(state);
-        return _buildShimmer();
-      },
+  void _load() {
+    // Chart fetches data based on local selection first, falls back to global
+    final selectedId = _localSelectedId ?? context.selectedPortfolioId;
+    final id = (selectedId == null || selectedId == 'all')
+        ? widget.portfolioId
+        : selectedId;
+    context.read<PortfolioHistoryCubit>().loadHistory(
+      id,
+      widget.timeFrame,
     );
   }
 
-  // ── Broker Tab Switcher ─────────────────────────────────────────────────
+  // ── Build ────────────────────────────────────────────────────────────────
 
-  Widget _buildBrokerTabs(List<String> brokers) {
-    // If there is only 1 real broker (ALL + 1), hide the tabs to prevent confusion.
-    if (brokers.length <= 2) return const SizedBox.shrink();
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: brokers.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final broker = brokers[i];
-          final isSelected = _selectedBroker == broker;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedBroker = broker),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.primary
-                      : Colors.grey.withOpacity(0.35),
-                ),
-              ),
-              child: Text(
-                _brokerLabel(broker),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  color: isSelected ? Colors.white : Colors.grey,
-                ),
-              ),
-            ),
-          );
+  @override
+  Widget build(BuildContext context) {
+    // Listen to the global PortfolioCubit so that when the user taps a tab
+    // inside the chart (which calls context.selectPortfolio → changes
+    // _SelectedPortfolioProvider → triggers PortfolioCubit.loadPortfolioById),
+    // we invalidate and reload the chart data automatically.
+    return BlocListener<PortfolioCubit, PortfolioState>(
+      listenWhen: (prev, curr) {
+        if (curr is! PortfolioLoaded) return false;
+        if (prev is PortfolioLoaded) {
+          return prev.portfolioId != curr.portfolioId;
+        }
+        return true;
+      },
+      listener: (context, state) {
+        // Global portfolio changed. Reset local selection so chart matches global.
+        setState(() {
+          _localSelectedId = null;
+          _localSelectedName = null;
+        });
+        context.read<PortfolioHistoryCubit>().invalidate();
+        _load();
+      },
+      child: BlocBuilder<PortfolioHistoryCubit, PortfolioHistoryState>(
+        builder: (context, state) {
+          if (state is PortfolioHistoryLoading) return _buildShimmer();
+          if (state is PortfolioHistoryError) return _buildError(state.message);
+          if (state is PortfolioHistoryLoaded) return _buildContent(state);
+          return _buildShimmer();
         },
       ),
+    );
+  }
+
+  // ── Portfolio Tab Switcher ───────────────────────────────────────────────
+
+  /// Builds tabs from the global portfolio list.
+  /// Uses a [Builder] so that [ctx.selectedPortfolioId] is resolved against
+  /// the [_SelectedPortfolioProvider] InheritedWidget and updates whenever
+  /// a tab is tapped—without relying on a BlocBuilder to refresh the highlight.
+  Widget _buildPortfolioTabs() {
+    return Builder(
+      builder: (ctx) {
+        return BlocBuilder<PortfolioCubit, PortfolioState>(
+          buildWhen: (prev, curr) => prev.portfolioList != curr.portfolioList,
+          builder: (bCtx, state) {
+            final portfolios = state.portfolioList?.portfolios ?? [];
+            if (portfolios.isEmpty) return const SizedBox.shrink();
+
+            // Always prepend an "All Portfolios" aggregate tab
+            final allItem = PortfolioItem(
+              portfolioId: 'all',
+              portfolioName: 'All Portfolios',
+            );
+            final items = <PortfolioItem>[allItem, ...portfolios];
+
+            // Read from local state first, fallback to context
+            final currentId =
+                _localSelectedId ?? ctx.selectedPortfolioId ?? widget.portfolioId ?? 'all';
+
+            return SizedBox(
+              height: 36,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.zero,
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final item = items[i];
+                  final isSelected = currentId == item.portfolioId;
+
+                  return GestureDetector(
+                    onTap: () {
+                      if (!isSelected) {
+                        setState(() {
+                          _localSelectedId = item.portfolioId;
+                          _localSelectedName = item.portfolioName;
+                        });
+                        _load(); // Only reload the chart's data
+                      }
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primary
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.grey.withOpacity(0.35),
+                        ),
+                      ),
+                      child: Text(
+                        item.portfolioName,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: isSelected ? Colors.white : Colors.grey,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -118,76 +214,77 @@ class _PortfolioHistoryChartWidgetState
   Widget _buildContent(PortfolioHistoryLoaded state) {
     if (state.snapshots.isEmpty) return _buildEmpty();
 
-    // Can only compare if there are 2+ real brokers (ALL + broker1 + broker2)
-    final bool canCompare = state.availableBrokers.length > 2;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Show tabs ONLY when multiple brokers can be compared
-        if (canCompare) ...[
-          _buildBrokerTabs(state.availableBrokers),
-          const SizedBox(height: 12),
-        ],
-        // Always use single-line chart so that 'All Portfolios' plots the aggregate total wealth,
-        // and individual tabs plot the individual broker wealth.
-        _buildSingleLineChart(state, canCompare: canCompare),
+        _buildPortfolioTabs(),
+        const SizedBox(height: 12),
+        _buildChart(state),
       ],
     );
   }
 
+  // ── Chart Rendering ──────────────────────────────────────────────────────
 
-
-  /// Single broker / specific portfolio: single line + ₹/% toggle
-  Widget _buildSingleLineChart(PortfolioHistoryLoaded state, {bool canCompare = false}) {
-    // Filter snapshots to the selected broker only
+  Widget _buildChart(PortfolioHistoryLoaded state) {
     final List<CommonChartDataPoint> primaryPoints = [];
     final List<CommonChartDataPoint> secondaryPoints = [];
 
-    double? firstValue;
+    double? firstValidValue;
+    double lastValidValue = 0.0;
+    int plotIndex = 0;
 
-    for (int i = 0; i < state.snapshots.length; i++) {
-      final snap = state.snapshots[i];
-      final label = _formatDate(snap.snapshotDate);
+    for (final snap in state.snapshots) {
+      double value = snap.totalUserWealth ?? 0.0;
 
-      double value;
-      if (_selectedBroker == 'ALL') {
-        value = snap.totalUserWealth ?? 0;
+      // ── Zero-dip interpolation ──────────────────────────────────────────
+      // The backend returns 0.0 when the sync failed or there was no data
+      // for that day. We carry forward the last known valid value so the
+      // chart stays flat on bad days instead of dipping to zero.
+      if (value <= 0.0) {
+        if (lastValidValue > 0) {
+          value = lastValidValue; // carry forward
+        } else {
+          // No valid value yet → skip this point entirely
+          continue;
+        }
       } else {
-        // Find matching broker entry
-        final entry = snap.portfolios.firstWhere(
-          (p) => p.brokerType == _selectedBroker,
-          orElse: () => const PortfolioSnapshotEntryDto(close: 0),
-        );
-        value = entry.close ?? 0;
+        lastValidValue = value;
       }
 
-      firstValue ??= value;
-      final pct = (firstValue != 0)
-          ? ((value - firstValue) / firstValue) * 100
+      firstValidValue ??= value;
+
+      final pct = (firstValidValue > 0)
+          ? ((value - firstValidValue) / firstValidValue) * 100
           : 0.0;
 
+      final label = _formatDate(snap.snapshotDate);
+
       primaryPoints.add(CommonChartDataPoint(
-        x: i.toDouble(),
+        x: plotIndex.toDouble(),
         y: value,
         xLabel: label,
         yLabel: '₹${_formatNum(value)}',
       ));
 
       secondaryPoints.add(CommonChartDataPoint(
-        x: i.toDouble(),
+        x: plotIndex.toDouble(),
         y: pct,
         xLabel: label,
         yLabel: '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
       ));
+
+      plotIndex++;
     }
 
-    // Smart title: "Portfolio Journey" in single-broker mode,
-    // broker name when user picks a specific tab in compare mode
-    final String chartTitle = canCompare
-        ? _brokerLabel(_selectedBroker)
-        : 'Portfolio Journey';
+    // All snapshots had zero/missing data
+    if (primaryPoints.isEmpty) return _buildEmpty();
+
+    // Use locally selected name if available, otherwise global
+    final chartTitle = _localSelectedName ??
+        context.selectedPortfolioName ??
+        'Portfolio Journey';
 
     return CommonPerformanceChart(
       title: chartTitle,
@@ -201,42 +298,30 @@ class _PortfolioHistoryChartWidgetState
     );
   }
 
-  // ── Utility helpers ──────────────────────────────────────────────────────
+  // ── Utility Helpers ──────────────────────────────────────────────────────
 
+  /// Formats a raw ISO date string (e.g. "2026-06-28") to "Jun 28"
   String _formatDate(String? raw) {
-    if (raw == null) return '';
+    if (raw == null || raw.isEmpty) return '';
     try {
       final dt = DateTime.parse(raw);
-      return DateFormat('MMM d').format(dt); // "Jun 9"
+      return DateFormat('MMM d').format(dt);
     } catch (_) {
       return raw;
     }
   }
 
+  /// Formats a raw rupee value to a compact string:
+  ///   ≥ 1 Cr  → "1.23Cr"
+  ///   ≥ 1 L   → "8.65L"
+  ///   else    → "99500"
   String _formatNum(double value) {
     if (value >= 1e7) return '${(value / 1e7).toStringAsFixed(2)}Cr';
     if (value >= 1e5) return '${(value / 1e5).toStringAsFixed(2)}L';
     return value.toStringAsFixed(0);
   }
 
-  String _brokerLabel(String broker) {
-    switch (broker.toUpperCase()) {
-      case 'ALL':
-        return 'All Portfolios';
-      case 'ZERODHA':
-        return 'Zerodha';
-      case 'DHAN':
-        return 'Dhan';
-      case 'GROWW':
-        return 'Groww';
-      case 'UPSTOX':
-        return 'Upstox';
-      default:
-        return broker;
-    }
-  }
-
-  // ── Loading / Error / Empty states ───────────────────────────────────────
+  // ── Loading / Error / Empty States ───────────────────────────────────────
 
   Widget _buildShimmer() => SizedBox(
         height: widget.height + 50,
@@ -246,22 +331,32 @@ class _PortfolioHistoryChartWidgetState
   Widget _buildError(String msg) => SizedBox(
         height: widget.height,
         child: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.bar_chart_rounded, size: 40, color: Colors.grey),
-            const SizedBox(height: 8),
-            Text('Could not load history',
-                style: TextStyle(color: Colors.grey[600])),
-            TextButton(onPressed: _load, child: const Text('Retry')),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.bar_chart_rounded, size: 40, color: Colors.grey),
+              const SizedBox(height: 8),
+              Text(
+                'Could not load history',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              TextButton(
+                onPressed: _load,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
         ),
       );
 
   Widget _buildEmpty() => SizedBox(
         height: widget.height,
         child: const Center(
-          child: Text('No history yet.\nCheck back after market close.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey)),
+          child: Text(
+            'No history yet.\nCheck back after market close.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey),
+          ),
         ),
       );
 }
