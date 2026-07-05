@@ -99,6 +99,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         return _docTypes.where((t) => t == 'COMBINE_PORTFOLIO' || t == 'TRADE_EQ').toList();
       case 'MSTOCK':
         return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
+      case 'UPSTOX':
+        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
       case 'OTHER':
       default:
         return _docTypes;
