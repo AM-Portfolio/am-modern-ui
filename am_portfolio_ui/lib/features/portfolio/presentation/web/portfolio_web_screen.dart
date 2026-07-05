@@ -324,7 +324,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                 title: 'New Trade',
                 icon: Icons.add,
                 accentColor: ModuleColors.portfolio,
-                isActive: _isAddingTrade,
+
                 onTap: () {
                   if (widget.addTradeBuilder != null) {
                     setState(() {
