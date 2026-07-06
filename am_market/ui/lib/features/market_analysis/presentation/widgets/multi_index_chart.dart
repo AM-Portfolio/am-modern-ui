@@ -832,7 +832,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                   Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
+                      color: (Theme.of(context).brightness == Brightness.dark)
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.black.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -922,9 +924,12 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     required VoidCallback onTap,
     bool isEnabled = true,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = isSelected
         ? const Color(0xFF00D1FF)
-        : (isEnabled ? Colors.white70 : Colors.white24);
+        : (isEnabled 
+            ? (isDark ? Colors.white70 : Colors.black87) 
+            : (isDark ? Colors.white24 : Colors.black26));
     final bgColor = isSelected
         ? const Color(0xFF00D1FF).withOpacity(0.15)
         : Colors.transparent;
@@ -1252,6 +1257,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                           }).toList(),
                           barTouchData: BarTouchData(
                             touchTooltipData: BarTouchTooltipData(
+                              fitInsideHorizontally: true,
+                              fitInsideVertically: true,
                               getTooltipItem:
                                   (group, groupIndex, rod, rodIndex) {
                                 final dateStr =
@@ -1601,6 +1608,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                           lineBarsData: _buildLineBars(chartData),
                           lineTouchData: LineTouchData(
                             touchTooltipData: LineTouchTooltipData(
+                              fitInsideHorizontally: true,
+                              fitInsideVertically: true,
                               getTooltipItems: (touchedSpots) {
                                 return touchedSpots.map((spot) {
                                   final index = spot.x.toInt();

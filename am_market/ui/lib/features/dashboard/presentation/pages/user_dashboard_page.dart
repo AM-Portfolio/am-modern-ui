@@ -689,21 +689,21 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
                             // Toggle Chart Type
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
+                                color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
                                 children: [
                                   IconButton(
                                     icon: Icon(Icons.show_chart, 
-                                        color: !isBarChart ? const Color(0xFF00D1FF) : Colors.white54,
+                                        color: !isBarChart ? const Color(0xFF00D1FF) : (isDark ? Colors.white54 : Colors.black54),
                                         size: 20),
                                     onPressed: () => setState(() => isBarChart = false),
                                     tooltip: 'Line Chart',
                                   ),
                                   IconButton(
                                     icon: Icon(Icons.bar_chart, 
-                                        color: isBarChart ? const Color(0xFF00D1FF) : Colors.white54,
+                                        color: isBarChart ? const Color(0xFF00D1FF) : (isDark ? Colors.white54 : Colors.black54),
                                         size: 20),
                                     onPressed: () => setState(() => isBarChart = true),
                                     tooltip: 'Bar Chart',
