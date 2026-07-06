@@ -24,6 +24,7 @@ class PortfolioMobileScreen extends ConsumerWidget {
     this.onBack,
     this.initialTab,
     this.onTabChanged,
+    this.addTradeBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -32,6 +33,12 @@ class PortfolioMobileScreen extends ConsumerWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String portfolioName,
+    VoidCallback onComplete,
+  )? addTradeBuilder;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -69,6 +76,7 @@ class PortfolioMobileScreen extends ConsumerWidget {
               onBack: onBack,
               initialTab: initialTab,
               onTabChanged: onTabChanged,
+              addTradeBuilder: addTradeBuilder,
             ),
           ),
           loading: () =>
@@ -146,6 +154,7 @@ class PortfolioMobileView extends StatefulWidget {
     this.onBack,
     this.initialTab,
     this.onTabChanged,
+    this.addTradeBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -154,6 +163,12 @@ class PortfolioMobileView extends StatefulWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String portfolioName,
+    VoidCallback onComplete,
+  )? addTradeBuilder;
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
@@ -163,6 +178,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     with TickerProviderStateMixin {
   late TabController _tabController;
   String? _currentPortfolioId;
+  bool _isAddingTrade = false;
 
   int _tabIndexFromSlug(String? slug) {
     switch (slug?.toLowerCase()) {
@@ -346,10 +362,33 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             onTap: () => setState(() => _tabController.index = 4),
           ),
         ],
-        body: PortfolioTabContentWidget(
-          tabController: _tabController,
-          currentPortfolioId: _currentPortfolioId!,
-        ),
+        body: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
+            ? widget.addTradeBuilder!(
+                context,
+                _currentPortfolioId!,
+                currentName,
+                () {
+                  setState(() {
+                    _isAddingTrade = false;
+                  });
+                },
+              )
+            : PortfolioTabContentWidget(
+                tabController: _tabController,
+                currentPortfolioId: _currentPortfolioId!,
+              ),
+        floatingActionButton: (!_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
+            ? FloatingActionButton.extended(
+                onPressed: () {
+                  setState(() {
+                    _isAddingTrade = true;
+                  });
+                },
+                label: const Text('Add Trade'),
+                icon: const Icon(Icons.add),
+                backgroundColor: ModuleColors.portfolio,
+              )
+            : null,
       ),
     );
   }
