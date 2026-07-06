@@ -1608,6 +1608,17 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                           lineBarsData: _buildLineBars(chartData),
                           lineTouchData: LineTouchData(
                             touchTooltipData: LineTouchTooltipData(
+                              showOnTopOfTheChartBoxArea: true,
+                              tooltipMargin: 8.0,
+                              getTooltipColor: (spot) => (Theme.of(context).brightness == Brightness.dark)
+                                  ? Colors.black.withOpacity(0.75)
+                                  : Colors.white.withOpacity(0.85),
+                              tooltipBorder: BorderSide(
+                                color: (Theme.of(context).brightness == Brightness.dark)
+                                    ? Colors.white.withOpacity(0.15)
+                                    : Colors.black.withOpacity(0.15),
+                                width: 1,
+                              ),
                               fitInsideHorizontally: true,
                               fitInsideVertically: true,
                               getTooltipItems: (touchedSpots) {
