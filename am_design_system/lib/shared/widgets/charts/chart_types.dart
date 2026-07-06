@@ -58,3 +58,16 @@ class CommonChartConfig {
     this.barAlignment,
   });
 }
+
+/// Data container for a single line in a multi-line comparison chart
+class ChartLineData {
+  final String label;
+  final List<CommonChartDataPoint> points;
+  final Color? color;
+
+  const ChartLineData({
+    required this.label,
+    required this.points,
+    this.color,
+  });
+}
