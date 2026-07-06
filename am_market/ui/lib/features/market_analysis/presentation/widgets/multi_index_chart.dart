@@ -66,7 +66,7 @@ class MultiIndexChart extends StatefulWidget {
 
 class _MultiIndexChartState extends State<MultiIndexChart> {
   late ScrollController _scrollController;
-  double _zoomScale = 1.0;
+  double _zoomScale = 0.5;
 
   // Viewport-based calculated min/max for the first index
   double _viewportMinY = -5.0;
@@ -1610,15 +1610,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                             touchTooltipData: LineTouchTooltipData(
                               showOnTopOfTheChartBoxArea: true,
                               tooltipMargin: 8.0,
-                              getTooltipColor: (spot) => (Theme.of(context).brightness == Brightness.dark)
-                                  ? Colors.black.withOpacity(0.75)
-                                  : Colors.white.withOpacity(0.85),
-                              tooltipBorder: BorderSide(
-                                color: (Theme.of(context).brightness == Brightness.dark)
-                                    ? Colors.white.withOpacity(0.15)
-                                    : Colors.black.withOpacity(0.15),
-                                width: 1,
-                              ),
+                              getTooltipColor: (spot) => Colors.transparent,
+                              tooltipBorder: BorderSide.none,
                               fitInsideHorizontally: true,
                               fitInsideVertically: true,
                               getTooltipItems: (touchedSpots) {
@@ -1646,14 +1639,43 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                                       _viewportMinY2);
                                     }
 
-                                    return LineTooltipItem(
-                                      '${_getTooltipDateFormat(chartData).format(date)}\n$symbol: ${_showAbsoluteValues ? displayVal.toStringAsFixed(2) : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%'}',
-                                      const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    );
+                                    final isFirst = spot == touchedSpots.first;
+                                    final activeIndex = _activeIndices.indexOf(symbol);
+                                    final symbolColor = activeIndex >= 0 
+                                        ? MultiIndexChart.indexColors[activeIndex % MultiIndexChart.indexColors.length]
+                                        : Colors.white;
+                                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                                    final dateColor = isDark ? Colors.white60 : Colors.black54;
+
+                                    if (isFirst) {
+                                      return LineTooltipItem(
+                                        '${_getTooltipDateFormat(chartData).format(date)}\n',
+                                        TextStyle(
+                                          color: dateColor,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 10,
+                                        ),
+                                        children: [
+                                          TextSpan(
+                                            text: '$symbol: ${_showAbsoluteValues ? displayVal.toStringAsFixed(2) : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%'}',
+                                            style: TextStyle(
+                                              color: symbolColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    } else {
+                                      return LineTooltipItem(
+                                        '$symbol: ${_showAbsoluteValues ? displayVal.toStringAsFixed(2) : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%'}',
+                                        TextStyle(
+                                          color: symbolColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      );
+                                    }
                                   }
                                   return null;
                                 }).toList();
