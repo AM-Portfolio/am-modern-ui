@@ -733,6 +733,11 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
                         isLoading: isLoadingChart,
                         error: chartError,
                         isBarChart: isBarChart,
+                        onRemoveIndex: (symbol) {
+                          setState(() {
+                            selectedIndicesForChart = List.from(selectedIndicesForChart)..remove(symbol);
+                          });
+                        },
                       ),
                     ),
                   ],
