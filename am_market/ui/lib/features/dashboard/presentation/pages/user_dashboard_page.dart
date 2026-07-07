@@ -50,6 +50,13 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
   late AnimationController _drawerController;
   bool _isDrawerVisible = false;
 
+  // Anchored popover state for indices comparison
+  final OverlayPortalController _popoverController = OverlayPortalController();
+  final LayerLink _popoverLink = LayerLink();
+  late final AnimationController _popoverAnimationController;
+  String _popoverSearchQuery = '';
+
+
   // Cache for all timeframe base prices
   final Map<String, Map<String, double>> allTimeframeBasePrices = {
     '1D': {}, // Empty, since 1D uses data.pChange directly
@@ -335,6 +342,7 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
     // [SIP Optimization] Cancel the background preloading timer to prevent memory leaks or state updates after widget disposal.
     _preloadTimer?.cancel();
     _drawerController.dispose();
+    _popoverAnimationController.dispose();
     super.dispose();
   }
 
@@ -346,6 +354,10 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
     _drawerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
+    );
+    _popoverAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
     );
     _drawerController.addStatusListener((status) {
       if (status == AnimationStatus.dismissed) {
@@ -429,62 +441,20 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
     }
   }
 
-  void _showAddIndexDialog(MarketProvider provider) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Compare Indices', style: TextStyle(color: Colors.white)),
-              backgroundColor: const Color(0xFF1E293B),
-              content: SizedBox(
-                width: double.maxFinite,
-                height: 400,
-                child: ListView.builder(
-                  itemCount: provider.allIndicesData.length,
-                  itemBuilder: (context, index) {
-                    final data = provider.allIndicesData[index];
-                    final isSelected = selectedIndicesForChart.contains(data.indexSymbol);
-                    return CheckboxListTile(
-                      title: Text(data.indexSymbol, style: const TextStyle(color: Colors.white)),
-                      value: isSelected,
-                      activeColor: const Color(0xFF00D1FF),
-                      checkColor: Colors.black,
-                      onChanged: (bool? value) {
-                        setDialogState(() {
-                          if (value == true) {
-                            if (selectedIndicesForChart.length < 5) {
-                              selectedIndicesForChart.add(data.indexSymbol);
-                            }
-                          } else {
-                            if (selectedIndicesForChart.length > 1) {
-                              selectedIndicesForChart.remove(data.indexSymbol);
-                            }
-                          }
-                        });
-                      },
-                    );
-                  },
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // Start reload
-                    _loadHistoricalData();
-                    // Parent setState to reflect changes if needed
-                    this.setState(() {}); 
-                  },
-                  child: const Text('Done', style: TextStyle(color: Color(0xFF00D1FF))),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+  void _togglePopover() {
+    if (_popoverController.isShowing) {
+      _popoverAnimationController.reverse().then((_) {
+        if (mounted) {
+          _popoverController.hide();
+        }
+      });
+    } else {
+      setState(() {
+        _popoverSearchQuery = '';
+      });
+      _popoverController.show();
+      _popoverAnimationController.forward();
+    }
   }
 
   @override
@@ -712,12 +682,257 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
                               ),
                             ),
                             const SizedBox(width: 8),
-                            // Add Index Button
-                            IconButton(
-                              icon: const Icon(Icons.add_circle_outline, color: Color(0xFF00D1FF)),
-                              onPressed: () => _showAddIndexDialog(marketProvider),
-                              tooltip: 'Add Index',
-                            ),
+                             // Add Index Button (Anchored Popover)
+                             CompositedTransformTarget(
+                               link: _popoverLink,
+                               child: OverlayPortal(
+                                 controller: _popoverController,
+                                 overlayChildBuilder: (context) {
+                                   return Stack(
+                                     children: [
+                                       // Tap outside barrier
+                                       Positioned.fill(
+                                         child: GestureDetector(
+                                           behavior: HitTestBehavior.translucent,
+                                           onTap: _togglePopover,
+                                           child: Container(color: Colors.transparent),
+                                         ),
+                                       ),
+                                       // Popover Content
+                                       Positioned(
+                                         child: CompositedTransformFollower(
+                                           link: _popoverLink,
+                                           showWhenUnlinked: false,
+                                           offset: const Offset(0, 40),
+                                           targetAnchor: Alignment.bottomRight,
+                                           followerAnchor: Alignment.topRight,
+                                           child: AnimatedBuilder(
+                                             animation: _popoverAnimationController,
+                                             builder: (context, child) {
+                                               final scale = CurvedAnimation(
+                                                 parent: _popoverAnimationController,
+                                                 curve: Curves.easeOutCubic,
+                                               ).value;
+                                               final opacity = CurvedAnimation(
+                                                 parent: _popoverAnimationController,
+                                                 curve: Curves.easeOutCubic,
+                                               ).value;
+
+                                               return Transform.scale(
+                                                 scale: scale,
+                                                 alignment: Alignment.topRight,
+                                                 child: Opacity(
+                                                   opacity: opacity,
+                                                   child: child,
+                                                 ),
+                                               );
+                                             },
+                                             child: Material(
+                                               color: Colors.transparent,
+                                               child: Container(
+                                                 width: 280,
+                                                 constraints: const BoxConstraints(maxHeight: 400),
+                                                 decoration: BoxDecoration(
+                                                   color: Theme.of(context).colorScheme.surface,
+                                                   borderRadius: BorderRadius.circular(12),
+                                                   border: Border.all(
+                                                     color: Theme.of(context).dividerColor.withOpacity(0.15),
+                                                   ),
+                                                   boxShadow: [
+                                                     BoxShadow(
+                                                       color: Colors.black.withOpacity(0.2),
+                                                       blurRadius: 10,
+                                                       offset: const Offset(0, 4),
+                                                     ),
+                                                   ],
+                                                 ),
+                                                 child: StatefulBuilder(
+                                                   builder: (context, setPopoverState) {
+                                                     final filteredIndices = marketProvider.allIndicesData.where((data) =>
+                                                       data.indexSymbol.toLowerCase().contains(_popoverSearchQuery.toLowerCase())
+                                                     ).toList();
+
+                                                     return Column(
+                                                       mainAxisSize: MainAxisSize.min,
+                                                       crossAxisAlignment: CrossAxisAlignment.stretch,
+                                                       children: [
+                                                         Padding(
+                                                           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                                                           child: Text(
+                                                             'Compare Indices',
+                                                             style: TextStyle(
+                                                               fontSize: 14,
+                                                               fontWeight: FontWeight.bold,
+                                                               color: Theme.of(context).colorScheme.onSurface,
+                                                             ),
+                                                           ),
+                                                         ),
+                                                         // Search input field
+                                                         Padding(
+                                                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                                           child: TextField(
+                                                             onChanged: (value) {
+                                                               setPopoverState(() {
+                                                                 _popoverSearchQuery = value;
+                                                               });
+                                                             },
+                                                             controller: TextEditingController.fromValue(
+                                                               TextEditingValue(
+                                                                 text: _popoverSearchQuery,
+                                                                 selection: TextSelection.collapsed(offset: _popoverSearchQuery.length),
+                                                               ),
+                                                             ),
+                                                             style: TextStyle(
+                                                               fontSize: 12,
+                                                               color: Theme.of(context).colorScheme.onSurface,
+                                                             ),
+                                                             decoration: InputDecoration(
+                                                               hintText: 'Search indices...',
+                                                               hintStyle: TextStyle(
+                                                                 fontSize: 12,
+                                                                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                                                               ),
+                                                               prefixIcon: Icon(
+                                                                 Icons.search,
+                                                                 size: 16,
+                                                                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                                               ),
+                                                               suffixIcon: _popoverSearchQuery.isNotEmpty
+                                                                   ? IconButton(
+                                                                       icon: const Icon(Icons.clear, size: 14),
+                                                                       padding: EdgeInsets.zero,
+                                                                       constraints: const BoxConstraints(),
+                                                                       onPressed: () {
+                                                                         setPopoverState(() {
+                                                                           _popoverSearchQuery = '';
+                                                                         });
+                                                                       },
+                                                                     )
+                                                                   : null,
+                                                               isDense: true,
+                                                               contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                                               filled: true,
+                                                               fillColor: isDark
+                                                                   ? Colors.white.withOpacity(0.04)
+                                                                   : Colors.black.withOpacity(0.03),
+                                                               border: OutlineInputBorder(
+                                                                 borderRadius: BorderRadius.circular(8),
+                                                                 borderSide: BorderSide(
+                                                                   color: Theme.of(context).dividerColor.withOpacity(0.1),
+                                                                 ),
+                                                               ),
+                                                               enabledBorder: OutlineInputBorder(
+                                                                 borderRadius: BorderRadius.circular(8),
+                                                                 borderSide: BorderSide(
+                                                                   color: Theme.of(context).dividerColor.withOpacity(0.1),
+                                                                 ),
+                                                               ),
+                                                               focusedBorder: OutlineInputBorder(
+                                                                 borderRadius: BorderRadius.circular(8),
+                                                                 borderSide: const BorderSide(
+                                                                   color: Color(0xFF00D1FF),
+                                                                 ),
+                                                               ),
+                                                             ),
+                                                           ),
+                                                         ),
+                                                         const SizedBox(height: 4),
+                                                         const Divider(height: 1),
+                                                          Flexible(
+                                                            child: filteredIndices.isEmpty
+                                                                ? Padding(
+                                                                    padding: const EdgeInsets.all(24.0),
+                                                                    child: Text(
+                                                                      'No indices found',
+                                                                      textAlign: TextAlign.center,
+                                                                      style: TextStyle(
+                                                                        fontSize: 12,
+                                                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                                                      ),
+                                                                    ),
+                                                                  )
+                                                                : ListView.builder(
+                                                                    shrinkWrap: true,
+                                                                    padding: EdgeInsets.zero,
+                                                                    itemCount: filteredIndices.length,
+                                                                    itemBuilder: (context, index) {
+                                                                      final data = filteredIndices[index];
+                                                                      final isSelected = selectedIndicesForChart.contains(data.indexSymbol);
+                                                                      return CheckboxListTile(
+                                                                        title: Text(
+                                                                          data.indexSymbol,
+                                                                          style: TextStyle(
+                                                                            fontSize: 13,
+                                                                            color: Theme.of(context).colorScheme.onSurface,
+                                                                          ),
+                                                                        ),
+                                                                        value: isSelected,
+                                                                        activeColor: const Color(0xFF00D1FF),
+                                                                        checkColor: Colors.black,
+                                                                        dense: true,
+                                                                        visualDensity: VisualDensity.compact,
+                                                                        onChanged: (bool? value) {
+                                                                          setPopoverState(() {
+                                                                            if (value == true) {
+                                                                              if (selectedIndicesForChart.length < 5) {
+                                                                                selectedIndicesForChart.add(data.indexSymbol);
+                                                                              }
+                                                                            } else {
+                                                                              if (selectedIndicesForChart.length > 1) {
+                                                                                selectedIndicesForChart.remove(data.indexSymbol);
+                                                                              }
+                                                                            }
+                                                                          });
+                                                                          setState(() {});
+                                                                        },
+                                                                      );
+                                                                    },
+                                                                  ),
+                                                          ),
+                                                          const Divider(height: 1),
+                                                          Padding(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                            child: Row(
+                                                              mainAxisAlignment: MainAxisAlignment.end,
+                                                              children: [
+                                                                TextButton(
+                                                                  onPressed: () {
+                                                                    _togglePopover();
+                                                                    _loadHistoricalData();
+                                                                  },
+                                                                  child: const Text(
+                                                                    'Done',
+                                                                    style: TextStyle(
+                                                                      color: Color(0xFF00D1FF),
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                       ],
+                                                     );
+                                                   },
+                                                 ),
+                                               ),
+                                             ),
+                                           ),
+                                         ),
+                                       ),
+                                     ],
+                                   );
+                                 },
+                                 child: IconButton(
+                                   icon: RotationTransition(
+                                     turns: Tween<double>(begin: 0.0, end: 0.125).animate(_popoverAnimationController),
+                                     child: const Icon(Icons.add, color: Color(0xFF00D1FF)),
+                                   ),
+                                   onPressed: _togglePopover,
+                                   tooltip: 'Compare Indices',
+                                 ),
+                               ),
+                             ),
                           ],
                         ),
                       ],

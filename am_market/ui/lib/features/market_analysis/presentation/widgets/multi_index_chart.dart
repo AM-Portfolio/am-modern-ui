@@ -980,6 +980,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         final isHidden = _hiddenIndices.contains(symbol);
 
         return AmClickCapsule(
+          triggerOnHover: true,
           popupContent: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
