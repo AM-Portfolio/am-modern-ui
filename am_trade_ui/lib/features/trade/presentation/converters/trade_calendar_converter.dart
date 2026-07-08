@@ -148,7 +148,7 @@ class TradeCalendarConverter {
       trades: [...existingCard.trades, newTradeData],
       metadata: {
         ...?existingCard.metadata,
-        'totalValue': (existingCard.metadata?['totalValue'] ?? 0.0) + newTrade.entryInfo.totalValue,
+        'totalValue': (existingCard.metadata?['totalValue'] ?? 0.0) + (newTrade.entryInfo.totalValue ?? 0.0),
         'avgPnL': updatedTradeCount > 0 ? updatedPnL / updatedTradeCount : 0.0,
       },
     );

@@ -28,6 +28,7 @@ class AddTradeWebPage extends StatefulWidget {
 
 class _AddTradeWebPageState extends State<AddTradeWebPage> {
   bool _isLoading = false;
+  bool _isSaving = false; // Guard against double-tap / double-submission
 
   @override
   void initState() {
@@ -40,6 +41,16 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
 
   void _handleSave(TradeDetails tradeDetails) {
     AppLogger.methodEntry('_handleSave', tag: 'AddTradeWebPage');
+
+    // CRITICAL: Prevent double-tap / double-submission
+    // _isSaving is set synchronously before any async work, so there is no
+    // race window between two rapid taps on the Save button.
+    if (_isSaving) {
+      AppLogger.warning('⚠️ _handleSave called while already saving — ignoring duplicate.', tag: 'AddTradeWebPage');
+      return;
+    }
+    _isSaving = true;
+
     AppLogger.info(
       '💾 Starting trade save process - portfolioId: ${widget.portfolioId}, symbol: ${tradeDetails.instrumentInfo.symbol}',
       tag: 'AddTradeWebPage',
@@ -146,7 +157,10 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
               '✅ [TradeControllerCubit] Trade added successfully - tradeId: ${trade.tradeId}',
               tag: 'AddTradeWebPage',
             );
-            setState(() => _isLoading = false);
+            setState(() {
+              _isLoading = false;
+              _isSaving = false; // Reset guard on success
+            });
 
             ScaffoldMessenger.of(
               context,
@@ -161,7 +175,10 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
           },
           updateSuccess: (trade) {
             AppLogger.info('[TradeControllerCubit] State: Trade updated successfully', tag: 'AddTradeWebPage');
-            setState(() => _isLoading = false);
+            setState(() {
+              _isLoading = false;
+              _isSaving = false; // Reset guard on success
+            });
 
             ScaffoldMessenger.of(
               context,
@@ -178,7 +195,10 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
           },
           error: (message, error) {
             AppLogger.error('❌ [TradeControllerCubit] Error: $message', tag: 'AddTradeWebPage', error: error);
-            setState(() => _isLoading = false);
+            setState(() {
+              _isLoading = false;
+              _isSaving = false; // Reset guard on error so user can retry
+            });
 
             ScaffoldMessenger.of(
               context,

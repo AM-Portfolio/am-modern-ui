@@ -34,7 +34,12 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String portfolioName,
+    VoidCallback onComplete,
+  )? addTradeBuilder;
 
   @override
   ConsumerState<PortfolioMobileScreen> createState() => _PortfolioMobileScreenState();
@@ -164,7 +169,16 @@ class PortfolioMobileView extends StatefulWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
+<<<<<<< HEAD
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+=======
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String portfolioName,
+    VoidCallback onComplete,
+  )? addTradeBuilder;
+>>>>>>> origin/main
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
@@ -350,25 +364,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             onTap: () => setState(() => _tabController.index = 3),
           ),
         ],
-        floatingActionButton: (!_isAddingTrade && _currentPortfolioId != null && _currentPortfolioId != 'all')
-            ? FloatingActionButton.extended(
-                onPressed: () {
-                  if (widget.addTradeBuilder != null) {
-                    setState(() {
-                      _isAddingTrade = true;
-                    });
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Trade feature not available here')),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('New Trade'),
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-              )
-            : null,
         body: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
             ? widget.addTradeBuilder!(
                 context,
@@ -384,6 +379,18 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                 tabController: _tabController,
                 currentPortfolioId: _currentPortfolioId!,
               ),
+        floatingActionButton: (!_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
+            ? FloatingActionButton.extended(
+                onPressed: () {
+                  setState(() {
+                    _isAddingTrade = true;
+                  });
+                },
+                label: const Text('Add Trade'),
+                icon: const Icon(Icons.add),
+                backgroundColor: ModuleColors.portfolio,
+              )
+            : null,
       ),
     );
   }

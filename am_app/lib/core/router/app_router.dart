@@ -11,6 +11,7 @@ import 'package:am_trade_ui/am_trade_ui.dart';
 import 'package:am_user_ui/am_user_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
@@ -154,6 +155,26 @@ GoRouter createAppRouter({
                           tab;
                   context.go(AppRoutes.portfolioPath(id, currentTab));
                 },
+                addTradeBuilder: (context, portfolioId, portfolioName, onComplete) {
+                  return Consumer(
+                    builder: (context, ref, _) {
+                      final cubitAsync = ref.watch(tradeControllerCubitProvider);
+                      return cubitAsync.when(
+                        data: (cubit) => BlocProvider<TradeControllerCubit>.value(
+                          value: cubit,
+                          child: AddTradeWebPage(
+                            portfolioId: portfolioId,
+                            portfolioName: portfolioName,
+                            onTradeAdded: onComplete,
+                            onCancel: onComplete,
+                          ),
+                        ),
+                        loading: () => const Center(child: CircularProgressIndicator()),
+                        error: (err, stack) => Center(child: Text('Error: $err')),
+                      );
+                    },
+                  );
+                },
               );
             },
           ),
@@ -167,6 +188,26 @@ GoRouter createAppRouter({
                     context.go(AppRoutes.portfolioLegacyTabPath(slug)),
                 onPortfolioChanged: (id, name) {
                   context.go(AppRoutes.portfolioPath(id, tab));
+                },
+                addTradeBuilder: (context, portfolioId, portfolioName, onComplete) {
+                  return Consumer(
+                    builder: (context, ref, _) {
+                      final cubitAsync = ref.watch(tradeControllerCubitProvider);
+                      return cubitAsync.when(
+                        data: (cubit) => BlocProvider<TradeControllerCubit>.value(
+                          value: cubit,
+                          child: AddTradeWebPage(
+                            portfolioId: portfolioId,
+                            portfolioName: portfolioName,
+                            onTradeAdded: onComplete,
+                            onCancel: onComplete,
+                          ),
+                        ),
+                        loading: () => const Center(child: CircularProgressIndicator()),
+                        error: (err, stack) => Center(child: Text('Error: $err')),
+                      );
+                    },
+                  );
                 },
               );
             },

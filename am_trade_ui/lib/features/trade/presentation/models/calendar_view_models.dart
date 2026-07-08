@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:flutter/material.dart';
 
 import '../../internal/domain/entities/trade_controller_entities.dart';
 
@@ -112,7 +113,7 @@ abstract class MonthlyCalendarData with _$MonthlyCalendarData implements Calenda
   int get activeDays => days.where((d) => d.totalTrades > 0).length;
 
   /// Get total days in month
-  int get totalDaysInMonth => DateTime(year, month + 1, 0).day;
+  int get totalDaysInMonth => DateUtils.getDaysInMonth(year, month);
 }
 
 /// Daily calendar data model

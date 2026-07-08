@@ -61,8 +61,8 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
   void initState() {
     super.initState();
 
-    // Initialize with 2020 as default year (where trade data exists)
-    _selectedYear = 2020; // Default to 2020 where historical trade data is available
+    // Initialize with current year
+    _selectedYear = DateTime.now().year;
 
     // Initialize cubit after the frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {

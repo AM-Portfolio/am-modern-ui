@@ -35,18 +35,18 @@ class TradeDetailSummary extends StatelessWidget {
                  Row(
                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                    children: [
-                      Expanded(child: _buildStatColumn('POSITION', trade.tradePositionType ?? 'N/A')),
-                      Expanded(child: _buildStatColumn('QTY', trade.displayQuantity)),
-                      Expanded(child: _buildStatColumn('EXECS', '${trade.executionCount}')),
+                      Expanded(child: _buildStatColumn(context, 'POSITION', trade.tradePositionType ?? 'N/A')),
+                      Expanded(child: _buildStatColumn(context, 'QTY', trade.displayQuantity)),
+                      Expanded(child: _buildStatColumn(context, 'EXECS', '${trade.executionCount}')),
                    ]
                  ),
                  const SizedBox(height: 16),
                  Row(
                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                    children: [
-                      Expanded(child: _buildStatColumn('AVG. PRICE', trade.displayAvgPrice)),
-                      Expanded(child: _buildStatColumn('HOLD', trade.displayHoldingPeriod)),
-                      Expanded(child: _buildStatColumn('CURRENCY', trade.displayCurrency)),
+                      Expanded(child: _buildStatColumn(context, 'AVG. PRICE', trade.displayAvgPrice)),
+                      Expanded(child: _buildStatColumn(context, 'HOLD', trade.displayHoldingPeriod)),
+                      Expanded(child: _buildStatColumn(context, 'CURRENCY', trade.displayCurrency)),
                    ]
                  )
               ]
@@ -63,7 +63,7 @@ class TradeDetailSummary extends StatelessWidget {
             iconColor: const Color(0xFF90CAF9), // Light blue
             icon: Icons.attach_money,
             children: [
-               _buildValueRow('Entry', trade.displayEntryPrice, 'Exit', trade.displayExitPrice),
+               _buildValueRow(context, 'Entry', trade.displayEntryPrice, 'Exit', trade.displayExitPrice),
                const SizedBox(height: 24),
                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -72,7 +72,7 @@ class TradeDetailSummary extends StatelessWidget {
                      Text('Total Value', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                      Text(
                         trade.displayCurrentValue, 
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)
                      ),
                   ],
                )
@@ -90,7 +90,7 @@ class TradeDetailSummary extends StatelessWidget {
             iconColor: const Color(0xFFA5D6A7), // Light green
             icon: Icons.bar_chart,
             children: [
-               _buildValueRow('Realized', trade.displayProfitLoss, 'ROE', trade.displayReturnOnEquity, value2Color: Colors.greenAccent),
+               _buildValueRow(context, 'Realized', trade.displayProfitLoss, 'ROE', trade.displayReturnOnEquity, value2Color: Colors.greenAccent),
                const SizedBox(height: 24),
                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -102,7 +102,7 @@ class TradeDetailSummary extends StatelessWidget {
                      ),
                      Text(
                         trade.displayRiskRewardRatio, 
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)
                      ),
                   ],
                )
@@ -159,7 +159,7 @@ class TradeDetailSummary extends StatelessWidget {
                         child: Icon(icon, size: 16, color: iconColor),
                      ),
                      const SizedBox(width: 8),
-                     Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white))
+                     Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface))
                   ],
                ),
                const SizedBox(height: 24),
@@ -169,31 +169,31 @@ class TradeDetailSummary extends StatelessWidget {
       );
   }
 
-  Widget _buildValueRow(String label1, String value1, String label2, String value2, {Color? value2Color}) {
+  Widget _buildValueRow(BuildContext context, String label1, String value1, String label2, String value2, {Color? value2Color}) {
      return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(label1, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
               const SizedBox(height: 4),
-              Text(value1, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white))
+              Text(value1, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface))
            ])),
            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [ 
               Text(label2, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
               const SizedBox(height: 4),
-              Text(value2, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: value2Color ?? Colors.white))
+              Text(value2, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: value2Color ?? Theme.of(context).colorScheme.onSurface))
            ])),
         ],
      );
   }
 
-  Widget _buildStatColumn(String label, String value, {Color? valueColor}) {
+  Widget _buildStatColumn(BuildContext context, String label, String value, {Color? valueColor}) {
      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
            Text(label.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500, letterSpacing: 0.5)),
            const SizedBox(height: 4),
-           Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: valueColor ?? Colors.white)),
+           Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: valueColor ?? Theme.of(context).colorScheme.onSurface)),
         ]
      );
   }
@@ -228,54 +228,32 @@ class TradeDetailSummary extends StatelessWidget {
   Widget _buildMobileLayout(BuildContext context, bool isProfit) {
     return Column(
       children: [
-        // Trade Overview Section (Mobile: Grid inside Card)
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
-             boxShadow: [
-               BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
-             ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                 children: [
-                    Container(
-                       padding: const EdgeInsets.all(6),
-                       decoration: BoxDecoration(color: const Color(0xFFF3E5F5), borderRadius: BorderRadius.circular(8)),
-                       child: const Icon(Icons.receipt_long, color: Color(0xFF7B1FA2), size: 16),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                       'Trade Overview',
-                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87),
-                    ),
-                 ],
-              ),
-              const SizedBox(height: 16),
-              // Mobile Grid for Overview Items
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                childAspectRatio: 2.5,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                children: [
-                  _buildOverviewItem(context, 'POSITION', trade.tradePositionType ?? 'N/A', isBold: true),
-                  _buildOverviewItem(context, 'QTY', trade.displayQuantity, isBold: true),
-                  _buildOverviewItem(context, 'EXECS', '${trade.executionCount}', isBold: true),
-                  _buildOverviewItem(context, 'AVG. PRICE', trade.displayAvgPrice),
-                  _buildOverviewItem(context, 'HOLD', trade.displayHoldingPeriod),
-                  _buildOverviewItem(context, 'CURRENCY', trade.displayCurrency, isBold: true),
-                ],
-              ),
-            ],
-          ),
+        // Trade Overview Section (Stacked vertically on mobile)
+        _buildSpecificCard(
+          context,
+          title: 'Trade Overview',
+          accentColor: const Color(0xFF311B92).withOpacity(0.3), // Dark Purple
+          iconColor: const Color(0xFFB39DDB), // Light Purple
+          icon: Icons.receipt_long,
+          children: [
+             Row(
+               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+               children: [
+                  Expanded(child: _buildStatColumn(context, 'POSITION', trade.tradePositionType ?? 'N/A')),
+                  Expanded(child: _buildStatColumn(context, 'QTY', trade.displayQuantity)),
+                  Expanded(child: _buildStatColumn(context, 'EXECS', '${trade.executionCount}')),
+               ]
+             ),
+             const SizedBox(height: 16),
+             Row(
+               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+               children: [
+                  Expanded(child: _buildStatColumn(context, 'AVG. PRICE', trade.displayAvgPrice)),
+                  Expanded(child: _buildStatColumn(context, 'HOLD', trade.displayHoldingPeriod)),
+                  Expanded(child: _buildStatColumn(context, 'CURRENCY', trade.displayCurrency)),
+               ]
+             )
+          ]
         ),
         const SizedBox(height: 16),
 
@@ -287,7 +265,7 @@ class TradeDetailSummary extends StatelessWidget {
            iconColor: const Color(0xFF1976D2),
            icon: Icons.attach_money,
            children: [
-              _buildValueRow('Entry', trade.displayEntryPrice, 'Exit', trade.displayExitPrice),
+              _buildValueRow(context, 'Entry', trade.displayEntryPrice, 'Exit', trade.displayExitPrice),
               const SizedBox(height: 16),
               Row(
                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -313,7 +291,7 @@ class TradeDetailSummary extends StatelessWidget {
            iconColor: const Color(0xFF388E3C),
            icon: Icons.bar_chart,
            children: [
-              _buildValueRow('Realized', trade.displayProfitLoss, 'ROE', trade.displayReturnOnEquity),
+              _buildValueRow(context, 'Realized', trade.displayProfitLoss, 'ROE', trade.displayReturnOnEquity),
               const SizedBox(height: 16),
               Row(
                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -322,7 +300,7 @@ class TradeDetailSummary extends StatelessWidget {
                     Text('Risk/Reward', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                     Text(
                        trade.displayRiskRewardRatio, 
-                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)
+                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)
                     ),
                  ],
               )
@@ -353,9 +331,9 @@ class TradeDetailSummary extends StatelessWidget {
                            child: const Icon(Icons.attach_file, color: Color(0xFFEF6C00), size: 16),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                            'Attachments',
-                           style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87),
+                           style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                         ),
                         const Spacer(),
                         // Mobile simplified upload button
@@ -417,7 +395,7 @@ class TradeDetailSummary extends StatelessWidget {
      return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-           color: Colors.white,
+           color: Theme.of(context).colorScheme.surface,
            borderRadius: BorderRadius.circular(16),
            boxShadow: [
               BoxShadow(
@@ -435,7 +413,7 @@ class TradeDetailSummary extends StatelessWidget {
               Text(value, style: TextStyle(
                  fontSize: 15, 
                  fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-                 color: Colors.black87
+                 color: Theme.of(context).colorScheme.onSurface
               ), maxLines: 1, overflow: TextOverflow.ellipsis)
            ],
         ),

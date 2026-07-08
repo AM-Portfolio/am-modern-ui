@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/gestures.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/theme/app_typography.dart';
 import 'package:am_design_system/core/config/design_system_provider.dart';
 import 'chart_types.dart';
-
 
 
 /// Factory widget for creating standardized charts
@@ -122,6 +123,7 @@ class ChartFactory extends StatelessWidget {
     final designConfig = DesignSystemProvider.of(context);
     final color = primaryColor ?? designConfig.primaryColor;
     final gridColor = config.gridColor ?? theme.dividerColor.withOpacity(0.1);
+    final isDark = theme.brightness == Brightness.dark;
     
     final bool hasMultiLines = lines != null && lines!.isNotEmpty;
 
@@ -150,7 +152,7 @@ class ChartFactory extends StatelessWidget {
             ),
           ];
 
-    return LineChart(
+    final chart = LineChart(
       LineChartData(
         gridData: FlGridData(
           show: config.showGrid,
@@ -218,7 +220,17 @@ class ChartFactory extends StatelessWidget {
         lineTouchData: LineTouchData(
           enabled: config.showTooltips,
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (_) => AppColors.darkBackground.withOpacity(0.9),
+            // [Interactive] Lock to top boundary when flag is set (Google Finance style)
+            showOnTopOfTheChartBoxArea: config.lockTooltipToTop,
+            tooltipMargin: config.lockTooltipToTop ? 8.0 : 16.0,
+            getTooltipColor: config.lockTooltipToTop
+                ? (_) => Colors.transparent
+                : (_) => AppColors.darkBackground.withOpacity(0.9),
+            tooltipBorder: config.lockTooltipToTop
+                ? BorderSide.none
+                : const BorderSide(color: Colors.transparent),
+            fitInsideHorizontally: true,
+            fitInsideVertically: true,
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
                 final List<CommonChartDataPoint> activePoints = hasMultiLines
@@ -228,13 +240,20 @@ class ChartFactory extends StatelessWidget {
                 final String lineLabel = hasMultiLines
                     ? '${lines![spot.barIndex].label}: '
                     : '';
+                // [Interactive] Color tooltip text to match the line color when top-locked
+                final Color textColor = config.lockTooltipToTop && hasMultiLines
+                    ? (lines![spot.barIndex].color ?? Colors.white)
+                    : Colors.white;
+                final Color dateColor = config.lockTooltipToTop
+                    ? (isDark ? Colors.white60 : Colors.black54)
+                    : Colors.white70;
                 return LineTooltipItem(
                   '$lineLabel${point.yLabel ?? point.y.toString()}\n',
-                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  TextStyle(color: textColor, fontWeight: FontWeight.bold),
                   children: [
                     TextSpan(
                       text: point.xLabel ?? '',
-                      style: const TextStyle(color: Colors.white70, fontSize: 10),
+                      style: TextStyle(color: dateColor, fontSize: 10),
                     ),
                   ],
                 );
@@ -245,6 +264,16 @@ class ChartFactory extends StatelessWidget {
       ),
       duration: config.animate ? config.animationDuration : Duration.zero,
     );
+
+    // [Interactive] Wrap with zoom controls when enableZoom is true
+    if (config.enableZoom) {
+      return _ZoomableChartWrapper(
+        initialZoomScale: config.initialZoomScale,
+        child: chart,
+      );
+    }
+
+    return chart;
   }
 
   Widget _buildBarChart(BuildContext context) {
@@ -356,6 +385,142 @@ class ChartFactory extends StatelessWidget {
         sectionsSpace: 2,
       ),
       swapAnimationDuration: config.animate ? config.animationDuration : Duration.zero,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Private Zoom Wrapper
+// Used internally by ChartFactory when config.enableZoom == true.
+// Wraps any chart child with Zoom-In / Zoom-Out buttons and Ctrl+Wheel support.
+// ─────────────────────────────────────────────────────────────────────────────
+class _ZoomableChartWrapper extends StatefulWidget {
+  final Widget child;
+  final double initialZoomScale;
+
+  const _ZoomableChartWrapper({
+    required this.child,
+    this.initialZoomScale = 1.0,
+  });
+
+  @override
+  State<_ZoomableChartWrapper> createState() => _ZoomableChartWrapperState();
+}
+
+class _ZoomableChartWrapperState extends State<_ZoomableChartWrapper> {
+  late double _zoomScale;
+
+  static const double _minZoom = 0.2;
+  static const double _maxZoom = 3.0;
+  static const double _zoomStep = 0.2;
+
+  @override
+  void initState() {
+    super.initState();
+    _zoomScale = widget.initialZoomScale.clamp(_minZoom, _maxZoom);
+  }
+
+  void _adjustZoom(double delta) {
+    setState(() {
+      _zoomScale = (_zoomScale + delta).clamp(_minZoom, _maxZoom);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final controlBg = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.06);
+    final controlFg = isDark ? Colors.white70 : Colors.black54;
+
+    return Listener(
+      // Ctrl + Mouse Wheel to zoom
+      onPointerSignal: (event) {
+        if (event is PointerScrollEvent) {
+          final isCtrl = HardwareKeyboard.instance.logicalKeysPressed
+              .any((k) => k == LogicalKeyboardKey.controlLeft || k == LogicalKeyboardKey.controlRight);
+          if (isCtrl) {
+            final delta = event.scrollDelta.dy < 0 ? _zoomStep : -_zoomStep;
+            _adjustZoom(delta);
+          }
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Zoom control bar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              _ZoomButton(
+                icon: Icons.remove,
+                onTap: () => _adjustZoom(-_zoomStep),
+                bg: controlBg,
+                fg: controlFg,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  '${(_zoomScale * 100).toInt()}%',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: controlFg,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              _ZoomButton(
+                icon: Icons.add,
+                onTap: () => _adjustZoom(_zoomStep),
+                bg: controlBg,
+                fg: controlFg,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Chart scaled by zoom
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const ClampingScrollPhysics(),
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * _zoomScale,
+                child: widget.child,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ZoomButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color bg;
+  final Color fg;
+
+  const _ZoomButton({
+    required this.icon,
+    required this.onTap,
+    required this.bg,
+    required this.fg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+        child: Icon(icon, size: 14, color: fg),
+      ),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 /// Helper classes to smoothly animate the Y-axis range
 class ChartViewportRange {
@@ -38,6 +39,7 @@ class MultiIndexChart extends StatefulWidget {
   final bool isLoading;
   final String? error;
   final bool isBarChart;
+  final void Function(String symbol)? onRemoveIndex;
 
   const MultiIndexChart({
     super.key,
@@ -46,6 +48,7 @@ class MultiIndexChart extends StatefulWidget {
     this.isLoading = false,
     this.error,
     this.isBarChart = false,
+    this.onRemoveIndex,
   });
 
   // Color palette for different indices
@@ -63,7 +66,7 @@ class MultiIndexChart extends StatefulWidget {
 
 class _MultiIndexChartState extends State<MultiIndexChart> {
   late ScrollController _scrollController;
-  double _zoomScale = 1.0;
+  double _zoomScale = 0.5;
 
   // Viewport-based calculated min/max for the first index
   double _viewportMinY = -5.0;
@@ -92,6 +95,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   bool _showAbsoluteValues = false;
   List<Map<String, dynamic>> _chartData = [];
   List<String> _activeIndices = [];
+  Set<String> _hiddenIndices = {}; // Track indices hidden by the user
 
   /// [SIP/Absolute Value Optimization] Helper getter to verify if the chart meets all safety conditions
   /// required to enable Dual-Label Y-Axis scaling. This requires Absolute Mode to be active, exactly 2
@@ -828,7 +832,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                   Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
+                      color: (Theme.of(context).brightness == Brightness.dark)
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.black.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -918,9 +924,12 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     required VoidCallback onTap,
     bool isEnabled = true,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = isSelected
         ? const Color(0xFF00D1FF)
-        : (isEnabled ? Colors.white70 : Colors.white24);
+        : (isEnabled 
+            ? (isDark ? Colors.white70 : Colors.black87) 
+            : (isDark ? Colors.white24 : Colors.black26));
     final bgColor = isSelected
         ? const Color(0xFF00D1FF).withOpacity(0.15)
         : Colors.transparent;
@@ -968,28 +977,63 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         final symbol = entry.value;
         final color = MultiIndexChart
             .indexColors[index % MultiIndexChart.indexColors.length];
+        final isHidden = _hiddenIndices.contains(symbol);
 
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 16,
-              height: 3,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(2),
+        return AmClickCapsule(
+          triggerOnHover: true,
+          popupContent: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(isHidden ? Icons.visibility_off : Icons.visibility, color: Colors.white, size: 18),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () {
+                  setState(() {
+                    if (isHidden) {
+                      _hiddenIndices.remove(symbol);
+                    } else {
+                      _hiddenIndices.add(symbol);
+                    }
+                  });
+                },
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              symbol,
-              style: TextStyle(
-                color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+              const SizedBox(width: 12),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () {
+                  if (widget.onRemoveIndex != null) {
+                    widget.onRemoveIndex!(symbol);
+                  }
+                },
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 16,
+                height: 3,
+                decoration: BoxDecoration(
+                  color: isHidden ? Colors.grey : color,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                symbol,
+                style: TextStyle(
+                  color: isHidden ? Colors.grey : theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                  decoration: isHidden ? TextDecoration.lineThrough : null,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         );
       }).toList(),
     );
@@ -1181,6 +1225,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                               barRods: _activeIndices
                                   .asMap()
                                   .entries
+                                  .where((entry) => !_hiddenIndices.contains(entry.value))
                                   .map((idxEntry) {
                                 final idx = idxEntry.key;
                                 final symbol = idxEntry.value;
@@ -1213,12 +1258,15 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                           }).toList(),
                           barTouchData: BarTouchData(
                             touchTooltipData: BarTouchTooltipData(
+                              fitInsideHorizontally: true,
+                              fitInsideVertically: true,
                               getTooltipItem:
                                   (group, groupIndex, rod, rodIndex) {
                                 final dateStr =
                                     chartData[group.x]['time'] as String;
                                 final date = DateTime.parse(dateStr);
-                                final symbol = _activeIndices[rodIndex];
+                                final visibleIndices = _activeIndices.where((s) => !_hiddenIndices.contains(s)).toList();
+                                final symbol = visibleIndices[rodIndex];
                                 return BarTooltipItem(
                                   '${_getTooltipDateFormat(chartData).format(date)}\n$symbol\n${_showAbsoluteValues ? rod.toY.toStringAsFixed(2) : '${rod.toY >= 0 ? '+' : ''}${rod.toY.toStringAsFixed(2)}%'}',
                                   const TextStyle(
@@ -1561,6 +1609,12 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                           lineBarsData: _buildLineBars(chartData),
                           lineTouchData: LineTouchData(
                             touchTooltipData: LineTouchTooltipData(
+                              showOnTopOfTheChartBoxArea: true,
+                              tooltipMargin: 8.0,
+                              getTooltipColor: (spot) => Colors.transparent,
+                              tooltipBorder: BorderSide.none,
+                              fitInsideHorizontally: true,
+                              fitInsideVertically: true,
                               getTooltipItems: (touchedSpots) {
                                 return touchedSpots.map((spot) {
                                   final index = spot.x.toInt();
@@ -1568,8 +1622,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                     final dateStr =
                                         chartData[index]['time'] as String;
                                     final date = DateTime.parse(dateStr);
-                                    final symbol =
-                                        _activeIndices[spot.barIndex];
+                                    final visibleIndices = _activeIndices.where((s) => !_hiddenIndices.contains(s)).toList();
+                                    final symbol = visibleIndices[spot.barIndex];
 
                                     // [SIP/Absolute Value Optimization] If in Dual-Label Mode and hovering the second line,
                                     // reverse-map the scaled canvas Y coordinate back to its original raw price level.
@@ -1586,14 +1640,43 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                                       _viewportMinY2);
                                     }
 
-                                    return LineTooltipItem(
-                                      '${_getTooltipDateFormat(chartData).format(date)}\n$symbol: ${_showAbsoluteValues ? displayVal.toStringAsFixed(2) : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%'}',
-                                      const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    );
+                                    final isFirst = spot == touchedSpots.first;
+                                    final activeIndex = _activeIndices.indexOf(symbol);
+                                    final symbolColor = activeIndex >= 0 
+                                        ? MultiIndexChart.indexColors[activeIndex % MultiIndexChart.indexColors.length]
+                                        : Colors.white;
+                                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                                    final dateColor = isDark ? Colors.white60 : Colors.black54;
+
+                                    if (isFirst) {
+                                      return LineTooltipItem(
+                                        '${_getTooltipDateFormat(chartData).format(date)}\n',
+                                        TextStyle(
+                                          color: dateColor,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 10,
+                                        ),
+                                        children: [
+                                          TextSpan(
+                                            text: '$symbol: ${_showAbsoluteValues ? displayVal.toStringAsFixed(2) : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%'}',
+                                            style: TextStyle(
+                                              color: symbolColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    } else {
+                                      return LineTooltipItem(
+                                        '$symbol: ${_showAbsoluteValues ? displayVal.toStringAsFixed(2) : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%'}',
+                                        TextStyle(
+                                          color: symbolColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      );
+                                    }
                                   }
                                   return null;
                                 }).toList();
@@ -1624,7 +1707,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   }                  // closes _buildChart
 
   List<LineChartBarData> _buildLineBars(List<Map<String, dynamic>> chartData) {
-    return _activeIndices.asMap().entries.map((entry) {
+    return _activeIndices.asMap().entries.where((entry) => !_hiddenIndices.contains(entry.value)).map((entry) {
       final index = entry.key;
       final symbol = entry.value;
       final color = MultiIndexChart

@@ -23,6 +23,7 @@ import '../pages/trade_market_page.dart';
 import '../pages/trade_unified_view_page.dart';
 import '../trade_navigation.dart';
 import '../../providers/trade_controller_providers.dart';
+import '../../trade_calendar_providers.dart';
 import '../../internal/domain/enums/exchange_types.dart';
 import '../../internal/domain/enums/market_segments.dart';
 import '../../internal/domain/enums/series_types.dart';
@@ -283,6 +284,16 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                         existingTrade: _existingTradeToEdit,
                         onTradeAdded: () {
                            setState(() => _existingTradeToEdit = null);
+                           
+                           // Refresh calendar data so it reflects the new trade
+                           if (_currentPortfolioId != null) {
+                             ref.read(tradeCalendarCubitProvider(_currentPortfolioId!).future)
+                               .then((cubit) => cubit.loadTradeCalendar(
+                                  portfolioId: _currentPortfolioId!, 
+                                  forceReload: true,
+                               ));
+                           }
+                           
                            _swipeController.navigateTo(3); // Navigate to trades on success
                         },
                         onCancel: () {
@@ -301,7 +312,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     ];
   }
 
-  void _onPortfolioSelected(String portfolioId, String portfolioName) {
+  void _onPortfolioSelected(String portfolioId, String portfolioName, {bool autoSelect = false}) {
     final currentIndex = _swipeController.currentIndex;
 
     setState(() {
@@ -313,8 +324,8 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
 
       // If we were on a portfolio-specific page but had no portfolio selected (prompt shown),
       // we stay on the same page index, but now it shows data.
-      // If we were on Portfolios list (index 0) and selected one, go to Holdings (index 1).
-      if (currentIndex == 0) {
+      // If we were on Portfolios list (index 0) and selected one manually, go to Holdings (index 1).
+      if (currentIndex == 0 && !autoSelect) {
         _swipeController.navigateTo(1);
       }
     });
@@ -325,11 +336,22 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     AppLogger.info('Portfolio selected: $portfolioName ($portfolioId)', tag: 'TradeWebScreen');
   }
 
+
   @override
   Widget build(BuildContext context) {
     // Watch portfolios stream
     final portfoliosAsyncValue = ref.watch(tradePortfoliosStreamProvider);
     final portfolios = portfoliosAsyncValue.asData?.value ?? const [];
+
+    // Automatically select the first portfolio if none is selected
+    if (portfolios.isNotEmpty && _currentPortfolioId == null) {
+      final defaultPortfolio = portfolios.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _onPortfolioSelected(defaultPortfolio.id, defaultPortfolio.name, autoSelect: true);
+        }
+      });
+    }
 
     return NotificationListener<OpenAddTradeNotification>(
       onNotification: (notification) {

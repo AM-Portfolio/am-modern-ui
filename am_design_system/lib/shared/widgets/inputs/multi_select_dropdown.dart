@@ -186,24 +186,28 @@ class _MultiSelectDropdownState<T> extends State<MultiSelectDropdown<T>> {
 
   Widget _buildOptionItem(T value, StateSetter setOverlayState) {
     final isSelected = _tempSelected.contains(value);
-    return CheckboxListTile(
-      title: Text(
-        widget.formatter(value),
-        style: const TextStyle(fontSize: 12),
+    return _HoverableCheckboxOption(
+      isSelected: isSelected,
+      child: CheckboxListTile(
+        hoverColor: Colors.transparent,
+        title: Text(
+          widget.formatter(value),
+          style: const TextStyle(fontSize: 12),
+        ),
+        value: isSelected,
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        visualDensity: VisualDensity.compact,
+        onChanged: (checked) {
+          setOverlayState(() {
+            if (checked == true) {
+              _tempSelected.add(value);
+            } else {
+              _tempSelected.remove(value);
+            }
+          });
+        },
       ),
-      value: isSelected,
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-      visualDensity: VisualDensity.compact,
-      onChanged: (checked) {
-        setOverlayState(() {
-          if (checked == true) {
-            _tempSelected.add(value);
-          } else {
-            _tempSelected.remove(value);
-          }
-        });
-      },
     );
   }
 
@@ -307,6 +311,51 @@ class _MultiSelectDropdownState<T> extends State<MultiSelectDropdown<T>> {
         isPlaceholder: isPlaceholder,
       ),
       overflow: TextOverflow.ellipsis,
+    );
+  }
+}
+
+class _HoverableCheckboxOption extends StatefulWidget {
+  final Widget child;
+  final bool isSelected;
+
+  const _HoverableCheckboxOption({
+    required this.child,
+    required this.isSelected,
+  });
+
+  @override
+  State<_HoverableCheckboxOption> createState() => _HoverableCheckboxOptionState();
+}
+
+class _HoverableCheckboxOptionState extends State<_HoverableCheckboxOption> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          color: _isHovered 
+              ? theme.primaryColor.withValues(alpha: 0.08) 
+              : (widget.isSelected ? theme.primaryColor.withValues(alpha: 0.04) : Colors.transparent),
+        ),
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          style: TextStyle(
+            color: _isHovered || widget.isSelected ? theme.primaryColor : theme.colorScheme.onSurface,
+            fontWeight: _isHovered || widget.isSelected ? FontWeight.w600 : FontWeight.w500,
+          ),
+          child: widget.child,
+        ),
+      ),
     );
   }
 }

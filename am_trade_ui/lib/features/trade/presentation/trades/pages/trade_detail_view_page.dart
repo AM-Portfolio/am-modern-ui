@@ -7,6 +7,7 @@ import '../widgets/trade_detail_widgets/attachments_grid_view.dart';
 import '../widgets/trade_detail_widgets/modern_trade_header.dart';
 import '../widgets/trade_detail_widgets/similar_trades_section.dart';
 import '../widgets/trade_detail_widgets/trade_detail_summary.dart';
+import '../widgets/trade_detail_widgets/trade_detail_chart_section.dart';
 import '../widgets/trade_detail_widgets/vertical_attachments_feed.dart';
 
 /// Dedicated page for displaying detailed trade information in a modular layout
@@ -30,6 +31,13 @@ class TradeDetailViewPage extends ConsumerStatefulWidget {
 
 class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
   String? _symbolFilter;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,8 +65,11 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
           // Scrollable Content
           Expanded(
             child: SingleChildScrollView(
+              controller: _scrollController,
               child: Column(
                 children: [
+
+                  
                   // Summary Cards (Trade Details, Price, Fees, Performance)
                   Padding(
                     padding: const EdgeInsets.all(24),
