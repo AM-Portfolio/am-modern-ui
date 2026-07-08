@@ -34,12 +34,7 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
-  final Widget Function(
-    BuildContext context,
-    String portfolioId,
-    String portfolioName,
-    VoidCallback onComplete,
-  )? addTradeBuilder;
+  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
 
   @override
   ConsumerState<PortfolioMobileScreen> createState() => _PortfolioMobileScreenState();
@@ -169,16 +164,7 @@ class PortfolioMobileView extends StatefulWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
-<<<<<<< HEAD
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
-=======
-  final Widget Function(
-    BuildContext context,
-    String portfolioId,
-    String portfolioName,
-    VoidCallback onComplete,
-  )? addTradeBuilder;
->>>>>>> origin/main
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();

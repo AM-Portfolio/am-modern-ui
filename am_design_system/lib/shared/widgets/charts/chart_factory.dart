@@ -45,6 +45,24 @@ class ChartFactory extends StatelessWidget {
     );
   }
 
+  /// Factory constructor for Area Chart
+  factory ChartFactory.area({
+    required List<CommonChartDataPoint> data,
+    CommonChartConfig config = const CommonChartConfig(),
+    Color? color,
+    double height = 300,
+    List<ChartLineData>? lines,
+  }) {
+    return ChartFactory(
+      type: ChartType.area,
+      data: data,
+      config: config,
+      primaryColor: color,
+      height: height,
+      lines: lines,
+    );
+  }
+
   /// Factory constructor for Bar Chart
   factory ChartFactory.bar({
     required List<CommonChartDataPoint> data,
@@ -127,6 +145,40 @@ class ChartFactory extends StatelessWidget {
     
     final bool hasMultiLines = lines != null && lines!.isNotEmpty;
 
+    // Calculate minY and maxY dynamically with 15% padding so the line doesn't hit the ceiling
+    double? calculatedMinY;
+    double? calculatedMaxY;
+    if (data.isNotEmpty || hasMultiLines) {
+      double minVal = double.infinity;
+      double maxVal = double.negativeInfinity;
+
+      void processPoints(List<CommonChartDataPoint> pts) {
+        for (var p in pts) {
+          if (p.y < minVal) minVal = p.y;
+          if (p.y > maxVal) maxVal = p.y;
+        }
+      }
+
+      if (hasMultiLines) {
+        for (var l in lines!) processPoints(l.points);
+      } else {
+        processPoints(data);
+      }
+
+      if (minVal != double.infinity && maxVal != double.negativeInfinity) {
+        final double range = (maxVal - minVal).abs();
+        final double padding = range == 0 ? maxVal.abs() * 0.15 : range * 0.15;
+        
+        calculatedMinY = minVal - padding;
+        calculatedMaxY = maxVal + padding;
+
+        // If all values are non-negative, don't let minY go below 0 (unless we want to show negative drops)
+        if (minVal >= 0 && calculatedMinY < 0) {
+          calculatedMinY = 0;
+        }
+      }
+    }
+
     // Resolve bars: either map multi-lines or create single bar from data
     final List<LineChartBarData> bars = hasMultiLines
         ? lines!.map((lineData) => LineChartBarData(
@@ -147,13 +199,22 @@ class ChartFactory extends StatelessWidget {
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: type == ChartType.area,
-                color: color.withOpacity(0.15),
+                gradient: LinearGradient(
+                  colors: [
+                    color.withValues(alpha: 0.3),
+                    color.withValues(alpha: 0.0),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
               ),
             ),
           ];
 
     final chart = LineChart(
       LineChartData(
+        minY: calculatedMinY,
+        maxY: calculatedMaxY,
         gridData: FlGridData(
           show: config.showGrid,
           drawVerticalLine: false,
@@ -188,9 +249,15 @@ class ChartFactory extends StatelessWidget {
               reservedSize: 30,
             ),
           ),
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: AxisTitles(
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 16, // Acts as internal top padding to prevent left Y-axis labels from clipping
+              getTitlesWidget: (value, meta) => const SizedBox.shrink(),
+            ),
+          ),
+          leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 40,
@@ -199,13 +266,15 @@ class ChartFactory extends StatelessWidget {
                 String text;
                 if (value.abs() < 10) {
                   text = value.toStringAsFixed(2);
+                } else if (value.abs() >= 1e7) {
+                  text = '${(value / 1e7).toStringAsFixed(2)}Cr';
                 } else if (value.abs() >= 1e5) {
-                  text = '${(value / 1e5).toStringAsFixed(1)}L';
+                  text = '${(value / 1e5).toStringAsFixed(2)}L';
                 } else {
                   text = value.toInt().toString();
                 }
                 return Padding(
-                  padding: const EdgeInsets.only(left: 4.0),
+                  padding: const EdgeInsets.only(right: 8.0),
                   child: Text(
                     text,
                     style: TextStyle(fontSize: 10, color: theme.hintColor),
@@ -263,6 +332,7 @@ class ChartFactory extends StatelessWidget {
         ),
       ),
       duration: config.animate ? config.animationDuration : Duration.zero,
+      curve: Curves.easeInOutCubic,
     );
 
     // [Interactive] Wrap with zoom controls when enableZoom is true

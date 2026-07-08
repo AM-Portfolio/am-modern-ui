@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -286,15 +287,60 @@ class _PortfolioHistoryChartWidgetState
         context.selectedPortfolioName ??
         'Portfolio Journey';
 
-    return CommonPerformanceChart(
-      title: chartTitle,
-      primaryData: primaryPoints,
-      secondaryData: secondaryPoints,
-      primaryToggleLabel: '₹',
-      secondaryToggleLabel: '%',
-      height: widget.height,
-      showGrid: true,
-      enableScrolling: true,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color cardBase = isDark ? const Color(0xFF0D1B2A) : const Color(0xFFFFFFFF);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                cardBase.withValues(alpha: isDark ? 0.55 : 0.9),
+                cardBase.withValues(alpha: isDark ? 0.3 : 0.7),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: isDark ? 0.07 : 0.4),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: CommonPerformanceChart(
+            title: chartTitle,
+            primaryData: primaryPoints,
+            secondaryData: secondaryPoints,
+            primaryToggleLabel: '₹',
+            secondaryToggleLabel: '%',
+            height: widget.height,
+            showGrid: true,
+            enableScrolling: false, // ChartFactory Zoom wrapper handles scrolling
+            useCard: false,
+            isAreaChart: true,
+            config: const CommonChartConfig(
+              enableZoom: true,
+              initialZoomScale: 0.5,
+              lockTooltipToTop: true,
+              showGrid: true,
+              showTitles: true,
+              showTooltips: true,
+            ),
+          ),
+        ),
+      ),
     );
   }
 

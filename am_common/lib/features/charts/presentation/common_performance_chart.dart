@@ -23,6 +23,9 @@ class CommonPerformanceChart extends StatefulWidget {
   final bool showGrid;
   final bool enableScrolling;
   final double minPointWidth; // Pixel spacing per point when scrolling is enabled
+  final CommonChartConfig? config;
+  final bool useCard;
+  final bool isAreaChart;
 
   const CommonPerformanceChart({
     super.key,
@@ -39,6 +42,9 @@ class CommonPerformanceChart extends StatefulWidget {
     this.showGrid = false,
     this.enableScrolling = true,
     this.minPointWidth = 40.0,
+    this.config,
+    this.useCard = true,
+    this.isAreaChart = false,
   });
 
   @override
@@ -60,8 +66,7 @@ class _CommonPerformanceChartState extends State<CommonPerformanceChart> {
     final bool hasMultiLines = widget.lines != null && widget.lines!.isNotEmpty;
     final int dataLength = hasMultiLines ? widget.lines!.first.points.length : activeData.length;
 
-    return AppCard(
-      child: Column(
+    Widget content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -99,17 +104,29 @@ class _CommonPerformanceChartState extends State<CommonPerformanceChart> {
               Widget chartWidget = SizedBox(
                 width: chartWidth,
                 height: widget.height,
-                child: ChartFactory.line(
-                  data: activeData,
-                  lines: widget.lines,
-                  config: CommonChartConfig(
-                    showGrid: widget.showGrid,
-                    showTitles: true,
-                    showLegend: false,
-                    showTooltips: true,
-                  ),
-                  color: widget.chartColor ?? AppColors.primary,
-                ),
+                child: widget.isAreaChart 
+                  ? ChartFactory.area(
+                      data: activeData,
+                      lines: widget.lines,
+                      config: widget.config ?? CommonChartConfig(
+                        showGrid: widget.showGrid,
+                        showTitles: true,
+                        showLegend: false,
+                        showTooltips: true,
+                      ),
+                      color: widget.chartColor ?? AppColors.primary,
+                    )
+                  : ChartFactory.line(
+                      data: activeData,
+                      lines: widget.lines,
+                      config: widget.config ?? CommonChartConfig(
+                        showGrid: widget.showGrid,
+                        showTitles: true,
+                        showLegend: false,
+                        showTooltips: true,
+                      ),
+                      color: widget.chartColor ?? AppColors.primary,
+                    ),
               );
 
               if (needsScroll) {
@@ -153,7 +170,8 @@ class _CommonPerformanceChartState extends State<CommonPerformanceChart> {
             ),
           ],
         ],
-      ),
-    );
+      );
+
+    return widget.useCard ? AppCard(child: content) : content;
   }
 }

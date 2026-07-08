@@ -65,7 +65,7 @@ class CommonChartConfig {
     this.showLegend = true,
     this.showTooltips = true,
     this.animate = true,
-    this.animationDuration = const Duration(milliseconds: 300),
+    this.animationDuration = const Duration(milliseconds: 500),
     this.gridColor,
     this.axisColor,
     this.axisWidth = 1.0,
