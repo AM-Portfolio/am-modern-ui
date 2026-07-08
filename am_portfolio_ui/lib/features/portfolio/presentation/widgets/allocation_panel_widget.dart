@@ -28,7 +28,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
   
   bool _showAllSectors = false;
   int? _hoveredIndex;
-  Offset? _hoverPosition;
+  int? _previousHoveredIndex;
 
   @override
   void initState() {
@@ -68,7 +68,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
         oldWidget.sectorAllocation != widget.sectorAllocation) {
       _donutController.forward(from: 0);
       _hoveredIndex = null;
-      _hoverPosition = null;
+      _previousHoveredIndex = null;
       _hoverController.reset();
     }
   }
@@ -92,23 +92,24 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
       return;
     }
 
+    double totalWeight = weights.fold(0.0, (sum, item) => sum + item.weightPercentage);
+    if (totalWeight <= 0) totalWeight = 100.0;
+
     double angle = math.atan2(dy, dx);
     angle = (angle + math.pi / 2 + 2 * math.pi) % (2 * math.pi);
 
     double cumulative = 0;
     for (int i = 0; i < weights.length; i++) {
-      cumulative += (weights[i].weightPercentage / 100) * (2 * math.pi);
+      double normalizedWeight = (weights[i].weightPercentage / totalWeight) * 100;
+      cumulative += (normalizedWeight / 100) * (2 * math.pi);
+      
       if (angle <= cumulative) {
         if (_hoveredIndex != i) {
           setState(() {
+            _previousHoveredIndex = _hoveredIndex;
             _hoveredIndex = i;
-            _hoverPosition = localPosition;
           });
           _hoverController.forward(from: 0);
-        } else {
-          setState(() {
-            _hoverPosition = localPosition;
-          });
         }
         return;
       }
@@ -119,10 +120,16 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
   void _onHoverExit() {
     if (_hoveredIndex != null) {
       setState(() {
+        _previousHoveredIndex = _hoveredIndex;
         _hoveredIndex = null;
-        _hoverPosition = null;
       });
-      _hoverController.reverse();
+      _hoverController.forward(from: 0).then((_) {
+        if (mounted && _hoveredIndex == null) {
+          setState(() {
+            _previousHoveredIndex = null;
+          });
+        }
+      });
     }
   }
 
@@ -283,123 +290,71 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                               progress: _donutAnimation.value,
                               pulse: _pulseAnimation.value,
                               hoveredIndex: _hoveredIndex,
+                              previousHoveredIndex: _previousHoveredIndex,
                               hoverProgress: _hoverAnimation.value,
                             ),
                           ),
                         ),
                       ),
                     ),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 280),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      transitionBuilder: (child, anim) => FadeTransition(
-                        opacity: anim,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.15),
-                            end: Offset.zero,
-                          ).animate(anim),
-                          child: child,
-                        ),
-                      ),
-                      child: _hoveredIndex == null
-                          ? Column(
-                              key: const ValueKey('default_center'),
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Sectors',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 22,
-                                      ),
-                                ),
-                                Text(
-                                  'Tap to explore',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: _isDark
-                                            ? Colors.white.withValues(alpha: 0.45)
-                                            : Colors.black.withValues(alpha: 0.45),
-                                        fontSize: 12,
-                                      ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              key: ValueKey('hovered_$_hoveredIndex'),
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '${weights[_hoveredIndex!].weightPercentage.toStringAsFixed(1)}%',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 24,
-                                        color: _getGradientColors(_hoveredIndex!).first,
-                                      ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  child: Text(
-                                    weights[_hoveredIndex!].sectorName,
+                    AnimatedBuilder(
+                      animation: _hoverAnimation,
+                      builder: (context, _) {
+                        double hoverProgress = _hoverAnimation.value;
+                        
+                        double defaultOpacity;
+                        if (_hoveredIndex != null && _previousHoveredIndex == null) {
+                          defaultOpacity = 1.0 - hoverProgress;
+                        } else if (_hoveredIndex == null && _previousHoveredIndex != null) {
+                          defaultOpacity = hoverProgress;
+                        } else if (_hoveredIndex == null && _previousHoveredIndex == null) {
+                          defaultOpacity = 1.0;
+                        } else {
+                          defaultOpacity = 0.0;
+                        }
+
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.center,
+                          children: [
+                            Opacity(
+                              opacity: defaultOpacity,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Sectors',
+                                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 22,
+                                        ),
+                                  ),
+                                  Text(
+                                    'Tap to explore',
                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                           color: _isDark
-                                              ? Colors.white.withValues(alpha: 0.7)
-                                              : Colors.black.withValues(alpha: 0.7),
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
+                                              ? Colors.white.withValues(alpha: 0.45)
+                                              : Colors.black.withValues(alpha: 0.45),
+                                          fontSize: 12,
                                         ),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                              ],
-                            ),
-                    ),
-                    if (_hoveredIndex != null && _hoverPosition != null)
-                      Positioned(
-                        left: _hoverPosition!.dx + 15,
-                        top: _hoverPosition!.dy - 10,
-                        child: FadeTransition(
-                          opacity: _hoverAnimation,
-                          child: IgnorePointer(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: _isDark 
-                                    ? Colors.black.withValues(alpha: 0.85)
-                                    : Colors.white.withValues(alpha: 0.95),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: _getGradientColors(_hoveredIndex!).first.withValues(alpha: 0.5),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _getGradientColors(_hoveredIndex!).first.withValues(alpha: 0.3),
-                                    blurRadius: 10,
-                                    spreadRadius: 1,
-                                  )
                                 ],
                               ),
-                              child: Text(
-                                '${weights[_hoveredIndex!].sectorName}  ${weights[_hoveredIndex!].weightPercentage.toStringAsFixed(1)}%',
-                                style: TextStyle(
-                                  color: _getGradientColors(_hoveredIndex!).first,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
                             ),
-                          ),
-                        ),
-                      ),
+                            if (_hoveredIndex != null)
+                              Opacity(
+                                opacity: hoverProgress,
+                                child: _buildCenterText(_hoveredIndex!, weights),
+                              ),
+                            if (_previousHoveredIndex != null)
+                              Opacity(
+                                opacity: 1.0 - hoverProgress,
+                                child: _buildCenterText(_previousHoveredIndex!, weights),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                   ],
                 );
               },
@@ -575,24 +530,60 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
   }
 
   List<Color> _getGradientColors(int index) {
-    const palette = [
-      [Color(0xFF00B894), Color(0xFF4ADE80)],
-      [Color(0xFFFF7675), Color(0xFFFCA5A5)],
-      [Color(0xFF60A5FA), Color(0xFF6C5DD3)],
-      [Color(0xFFFBBF24), Color(0xFFFFD700)],
-      [Color(0xFFF472B6), Color(0xFFEC4899)],
-      [Color(0xFF34D399), Color(0xFF10B981)],
-    ];
-    final idx = index % palette.length;
-    return palette[idx];
+    final color = _kPalette[index % _kPalette.length];
+    return [color, color.withValues(alpha: 0.8)];
+  }
+
+  Widget _buildCenterText(int index, List<SectorWeight> weights) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '${weights[index].weightPercentage.toStringAsFixed(1)}%',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+                color: _kPalette[index % _kPalette.length],
+              ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            weights[index].sectorName,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: _isDark
+                      ? Colors.white.withValues(alpha: 0.7)
+                      : Colors.black.withValues(alpha: 0.7),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
   }
 }
+
+const List<Color> _kPalette = [
+  Color(0xFF00B894),
+  Color(0xFFFF7675),
+  Color(0xFF60A5FA),
+  Color(0xFFFBBF24),
+  Color(0xFFF472B6),
+  Color(0xFF34D399),
+  Color(0xFFA78BFA),
+  Color(0xFFFB923C),
+];
 
 class _GlowingDonutPainter extends CustomPainter {
   final List<SectorWeight> sectorWeights;
   final double progress;
   final double pulse;
   final int? hoveredIndex;
+  final int? previousHoveredIndex;
   final double hoverProgress;
 
   _GlowingDonutPainter(
@@ -600,19 +591,9 @@ class _GlowingDonutPainter extends CustomPainter {
     this.progress = 1.0,
     this.pulse = 0.0,
     this.hoveredIndex,
+    this.previousHoveredIndex,
     this.hoverProgress = 0.0,
   });
-
-  static const _palette = [
-    Color(0xFF00B894),
-    Color(0xFFFF7675),
-    Color(0xFF60A5FA),
-    Color(0xFFFBBF24),
-    Color(0xFFF472B6),
-    Color(0xFF34D399),
-    Color(0xFFA78BFA),
-    Color(0xFFFB923C),
-  ];
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -624,47 +605,72 @@ class _GlowingDonutPainter extends CustomPainter {
     const gapAngle = 0.045;
     double startAngle = -math.pi / 2;
 
+    double totalWeight = sectorWeights.fold(0.0, (sum, item) => sum + item.weightPercentage);
+    if (totalWeight <= 0) totalWeight = 100.0;
+
     for (int i = 0; i < sectorWeights.length; i++) {
       final weight = sectorWeights[i];
-      final color = _palette[i % _palette.length];
+      final color = _kPalette[i % _kPalette.length];
       
-      final bool isHovered = i == hoveredIndex;
-      final bool isAnythingHovered = hoveredIndex != null;
+      double getTargetColorAlpha(int? activeHover) {
+        if (activeHover == null) return 1.0;
+        if (i == activeHover) return 1.0;
+        return 0.35;
+      }
       
-      final double currentHoverProg = isHovered ? hoverProgress : 0.0;
+      double getTargetGlowAlpha(int? activeHover) {
+        if (activeHover == null) return 0.3;
+        if (i == activeHover) return 0.65;
+        return 0.1;
+      }
       
-      final double currentPulse = (i == 0 && !isAnythingHovered && progress == 1.0) ? pulse : 0.0;
+      double getTargetHoverProg(int? activeHover) {
+        if (activeHover == null) return 0.0;
+        if (i == activeHover) return 1.0;
+        return 0.0;
+      }
+
+      double startColorAlpha = getTargetColorAlpha(previousHoveredIndex);
+      double endColorAlpha = getTargetColorAlpha(hoveredIndex);
+      double colorAlpha = startColorAlpha + (endColorAlpha - startColorAlpha) * hoverProgress;
+
+      double startGlowAlpha = getTargetGlowAlpha(previousHoveredIndex);
+      double endGlowAlpha = getTargetGlowAlpha(hoveredIndex);
+      double glowAlpha = startGlowAlpha + (endGlowAlpha - startGlowAlpha) * hoverProgress;
+
+      double startProg = getTargetHoverProg(previousHoveredIndex);
+      double endProg = getTargetHoverProg(hoveredIndex);
+      double currentHoverProg = startProg + (endProg - startProg) * hoverProgress;
+      
+      bool isIdle = hoveredIndex == null && (previousHoveredIndex == null || hoverProgress >= 0.99);
+      final double currentPulse = (i == 0 && isIdle && progress > 0.98) ? pulse : 0.0;
 
       final double outerRadius = baseRadius + (8 * currentHoverProg) + (2 * currentPulse);
       final double strokeWidth = 24.0 + (4 * currentHoverProg) + (1 * currentPulse);
       
-      final double glowAlpha = isHovered ? 0.65 : (isAnythingHovered ? 0.1 : 0.3);
-      final double colorAlpha = isAnythingHovered && !isHovered ? 0.35 + (0.65 * (1 - hoverProgress)) : 1.0;
-      
       final rect = Rect.fromCircle(center: center, radius: outerRadius);
 
-      double fullSweep = (weight.weightPercentage / 100) * (2 * math.pi);
+      double normalizedWeight = (weight.weightPercentage / totalWeight) * 100;
+      double fullSweep = (normalizedWeight / 100) * (2 * math.pi);
       if (fullSweep < gapAngle + 0.01) fullSweep = gapAngle + 0.01;
 
       final animatedSweep = fullSweep * progress;
       final actualSweep = (animatedSweep - gapAngle).clamp(0.0, animatedSweep);
 
       if (actualSweep > 0) {
-        // Glow pass
         final glowPaint = Paint()
           ..color = color.withValues(alpha: glowAlpha * colorAlpha)
           ..style = PaintingStyle.stroke
           ..strokeWidth = strokeWidth + 6 + (8 * currentHoverProg)
-          ..strokeCap = StrokeCap.round
+          ..strokeCap = StrokeCap.butt
           ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6 + (10 * currentHoverProg));
         canvas.drawArc(rect, startAngle, actualSweep, false, glowPaint);
 
-        // Main arc
         final paint = Paint()
           ..color = color.withValues(alpha: colorAlpha)
           ..style = PaintingStyle.stroke
           ..strokeWidth = strokeWidth
-          ..strokeCap = StrokeCap.round;
+          ..strokeCap = StrokeCap.butt;
         canvas.drawArc(rect, startAngle, actualSweep, false, paint);
       }
 
@@ -678,5 +684,6 @@ class _GlowingDonutPainter extends CustomPainter {
       oldDelegate.progress != progress ||
       oldDelegate.pulse != pulse ||
       oldDelegate.hoveredIndex != hoveredIndex ||
+      oldDelegate.previousHoveredIndex != previousHoveredIndex ||
       oldDelegate.hoverProgress != hoverProgress;
 }
