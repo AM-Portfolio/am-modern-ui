@@ -211,6 +211,10 @@ class ChartFactory extends StatelessWidget {
             ),
           ];
 
+    final int dataLength = hasMultiLines ? lines!.first.points.length : data.length;
+    double calculatedInterval = (dataLength / 6).ceil().toDouble();
+    if (calculatedInterval < 1) calculatedInterval = 1;
+
     final chart = LineChart(
       LineChartData(
         minY: calculatedMinY,
@@ -229,7 +233,7 @@ class ChartFactory extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: 1, // Fix repeating dates
+              interval: calculatedInterval, // Dynamically space out dates to prevent overlap
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 final List<CommonChartDataPoint> activePoints = hasMultiLines
@@ -260,7 +264,7 @@ class ChartFactory extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 40,
+              reservedSize: 48, // Increased slightly to prevent large labels like 10.00L from being squished against the edge
               getTitlesWidget: (value, meta) {
                 // Smart formatter: if max value is very small (like %), show decimals
                 String text;

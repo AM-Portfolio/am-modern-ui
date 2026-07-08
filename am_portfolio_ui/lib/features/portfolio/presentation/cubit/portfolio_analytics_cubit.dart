@@ -57,16 +57,18 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       metadata: {'portfolioId': portfolioId, 'timeFrame': timeFrame?.name},
     );
 
-    emit(
-      const PortfolioAnalyticsLoading(
-        loadingTypes: {
-          AnalyticsDataType.sectorAllocation,
-          AnalyticsDataType.marketCapAllocation,
-          AnalyticsDataType.heatmap,
-          AnalyticsDataType.movers,
-        },
-      ),
-    );
+    final loadingTypes = const {
+      AnalyticsDataType.sectorAllocation,
+      AnalyticsDataType.marketCapAllocation,
+      AnalyticsDataType.heatmap,
+      AnalyticsDataType.movers,
+    };
+
+    if (state is PortfolioAnalyticsLoaded) {
+      emit((state as PortfolioAnalyticsLoaded).copyWith(loadingTypes: loadingTypes));
+    } else {
+      emit(PortfolioAnalyticsLoading(loadingTypes: loadingTypes));
+    }
 
     SectorAllocation? fastSectorAllocation;
     MarketCapAllocation? fastMarketCapAllocation;
@@ -88,16 +90,27 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
           '🔍 Fast allocations loaded, emitting partial state',
           tag: 'PortfolioAnalyticsCubit',
         );
-        emit(
-          PortfolioAnalyticsLoaded(
+        if (state is PortfolioAnalyticsLoaded) {
+          emit((state as PortfolioAnalyticsLoaded).copyWith(
             sectorAllocation: fastSectorAllocation,
             marketCapAllocation: fastMarketCapAllocation,
             loadingTypes: const {
               AnalyticsDataType.heatmap, 
               AnalyticsDataType.movers,
             },
-          ),
-        );
+          ));
+        } else {
+          emit(
+            PortfolioAnalyticsLoaded(
+              sectorAllocation: fastSectorAllocation,
+              marketCapAllocation: fastMarketCapAllocation,
+              loadingTypes: const {
+                AnalyticsDataType.heatmap, 
+                AnalyticsDataType.movers,
+              },
+            ),
+          );
+        }
       }
     } catch (e) {
       CommonLogger.warning(
@@ -114,8 +127,8 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       );
 
       final analytics = await fullAnalyticsFuture.timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw TimeoutException('Full analytics timed out after 30s'),
+        const Duration(seconds: 90),
+        onTimeout: () => throw TimeoutException('Full analytics timed out after 90s'),
       );
 
       CommonLogger.debug(

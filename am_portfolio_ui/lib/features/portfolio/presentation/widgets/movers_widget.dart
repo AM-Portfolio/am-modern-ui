@@ -6,7 +6,7 @@ import '../../internal/domain/entities/portfolio_analytics.dart';
 
 /// Top movers panel — Gainers left, Losers right.
 /// Each tile uses the Stitch design: colored squircle arrow + ticker + price + pill badge.
-class MoversWidget extends StatelessWidget {
+class MoversWidget extends StatefulWidget {
   const MoversWidget({
     super.key,
     this.movers,
@@ -18,6 +18,13 @@ class MoversWidget extends StatelessWidget {
   final bool isLoading;
   final String? error;
   final ValueChanged<Movers>? onViewAll;
+
+  @override
+  State<MoversWidget> createState() => _MoversWidgetState();
+}
+
+class _MoversWidgetState extends State<MoversWidget> {
+  bool _showGainers = true;
 
   @override
   Widget build(BuildContext context) {
@@ -78,9 +85,9 @@ class MoversWidget extends StatelessWidget {
                         ),
                   ),
                   const Spacer(),
-                  if (onViewAll != null && movers != null && (movers!.topGainers.length > 5 || movers!.topLosers.length > 5))
+                  if (widget.onViewAll != null && widget.movers != null && (widget.movers!.topGainers.length > 5 || widget.movers!.topLosers.length > 5))
                     TextButton(
-                      onPressed: () => onViewAll!(movers!),
+                      onPressed: () => widget.onViewAll!(widget.movers!),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         minimumSize: Size.zero,
@@ -109,14 +116,14 @@ class MoversWidget extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    if (isLoading) {
+    if (widget.isLoading) {
       return const SizedBox(
         height: 200,
         child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       );
     }
 
-    if (error != null) {
+    if (widget.error != null) {
       return SizedBox(
         height: 200,
         child: Center(
@@ -131,7 +138,7 @@ class MoversWidget extends StatelessWidget {
                       color: Theme.of(context).colorScheme.error,
                       fontSize: 14)),
               const SizedBox(height: 4),
-              Text(error!,
+              Text(widget.error!,
                   style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 12),
@@ -142,7 +149,7 @@ class MoversWidget extends StatelessWidget {
       );
     }
 
-    if (movers == null) {
+    if (widget.movers == null) {
       return SizedBox(
         height: 200,
         child: Center(
@@ -165,17 +172,94 @@ class MoversWidget extends StatelessWidget {
       );
     }
 
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Mobile Toggle ──
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _showGainers = true),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _showGainers ? ds.AppColors.profit.withValues(alpha: 0.15) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Gainers',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: _showGainers ? FontWeight.bold : FontWeight.w500,
+                            color: _showGainers ? ds.AppColors.profit : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _showGainers = false),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: !_showGainers ? ds.AppColors.loss.withValues(alpha: 0.15) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Losers',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: !_showGainers ? FontWeight.bold : FontWeight.w500,
+                            color: !_showGainers ? ds.AppColors.loss : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // ── Active List ──
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _showGainers
+                ? _buildColumn(context, 'Gainers', widget.movers!.topGainers, true)
+                : _buildColumn(context, 'Losers', widget.movers!.topLosers, false),
+          ),
+        ],
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child:
-              _buildColumn(context, 'Gainers', movers!.topGainers, true),
+              _buildColumn(context, 'Gainers', widget.movers!.topGainers, true),
         ),
         const SizedBox(width: 20),
         Expanded(
           child:
-              _buildColumn(context, 'Losers', movers!.topLosers, false),
+              _buildColumn(context, 'Losers', widget.movers!.topLosers, false),
         ),
       ],
     );

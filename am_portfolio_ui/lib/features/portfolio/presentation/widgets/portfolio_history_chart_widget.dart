@@ -289,6 +289,7 @@ class _PortfolioHistoryChartWidgetState
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     final Color cardBase = isDark ? const Color(0xFF0D1B2A) : const Color(0xFFFFFFFF);
 
@@ -327,12 +328,12 @@ class _PortfolioHistoryChartWidgetState
             secondaryToggleLabel: '%',
             height: widget.height,
             showGrid: true,
-            enableScrolling: false, // ChartFactory Zoom wrapper handles scrolling
+            enableScrolling: isMobile, // ChartFactory Zoom wrapper handles scrolling on web, standard touch on mobile
             useCard: false,
             isAreaChart: true,
-            config: const CommonChartConfig(
-              enableZoom: true,
-              initialZoomScale: 0.5,
+            config: CommonChartConfig(
+              enableZoom: !isMobile,
+              initialZoomScale: isMobile ? 1.0 : 0.5,
               lockTooltipToTop: true,
               showGrid: true,
               showTitles: true,
