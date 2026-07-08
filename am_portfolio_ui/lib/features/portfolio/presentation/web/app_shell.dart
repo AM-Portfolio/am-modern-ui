@@ -65,7 +65,13 @@ class AppShell extends StatelessWidget {
                 customWidget: SharedPortfolioSelector<PortfolioItem>(
                   currentPortfolioId: context.selectedPortfolioId,
                   currentPortfolioName: context.selectedPortfolioName,
-                  portfolios: portfolios,
+                  portfolios: [
+                    const PortfolioItem(
+                      portfolioId: 'all',
+                      portfolioName: 'All Portfolios',
+                    ),
+                    ...portfolios,
+                  ],
                   onPortfolioSelected: (id, name) {
                     context.selectPortfolio(id, name);
                     // Refresh current route? Usually needed if the route depends on ID.
@@ -97,13 +103,7 @@ class AppShell extends StatelessWidget {
                   onTap: () => context.go('/portfolio/holdings'),
                   accentColor: ModuleColors.portfolio,
                 ),
-                SecondarySidebarItem(
-                  title: 'Analysis',
-                  icon: Icons.analytics_outlined,
-                  isSelected: location == '/portfolio/analysis',
-                  onTap: () => context.go('/portfolio/analysis'),
-                  accentColor: ModuleColors.portfolio,
-                ),
+
                 SecondarySidebarItem(
                   title: 'Heatmap',
                   icon: Icons.grid_on_outlined,

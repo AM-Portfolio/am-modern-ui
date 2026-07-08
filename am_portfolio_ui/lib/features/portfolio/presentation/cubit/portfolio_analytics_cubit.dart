@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_common/am_common.dart';
+import '../../internal/domain/entities/portfolio_analytics.dart';
 import '../../internal/services/portfolio_analytics_service.dart';
 import 'portfolio_analytics_state.dart';
 
@@ -12,6 +14,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
 
   Future<void>? _loadingFuture;
   String? _currentPortfolioId;
+  TimeFrame? _lastLoadedTimeFrame;
 
   /// Load all analytics data for a portfolio
   Future<void> loadAnalytics(String portfolioId, {TimeFrame? timeFrame}) async {
@@ -21,6 +24,16 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         tag: 'PortfolioAnalyticsCubit',
       );
       return _loadingFuture;
+    }
+
+    if (state is PortfolioAnalyticsLoaded &&
+        _currentPortfolioId == portfolioId &&
+        _lastLoadedTimeFrame == timeFrame) {
+      CommonLogger.debug(
+        '🔍 PortfolioAnalyticsCubit: Data already loaded for $portfolioId and timeFrame: ${timeFrame?.name}',
+        tag: 'PortfolioAnalyticsCubit',
+      );
+      return;
     }
 
     _currentPortfolioId = portfolioId;
@@ -44,26 +57,79 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       metadata: {'portfolioId': portfolioId, 'timeFrame': timeFrame?.name},
     );
 
-    emit(
-      const PortfolioAnalyticsLoading(
-        loadingTypes: {
-          AnalyticsDataType.sectorAllocation,
-          AnalyticsDataType.marketCapAllocation,
-          AnalyticsDataType.heatmap,
-          AnalyticsDataType.movers,
-        },
-      ),
+    final loadingTypes = const {
+      AnalyticsDataType.sectorAllocation,
+      AnalyticsDataType.marketCapAllocation,
+      AnalyticsDataType.heatmap,
+      AnalyticsDataType.movers,
+    };
+
+    if (state is PortfolioAnalyticsLoaded) {
+      emit((state as PortfolioAnalyticsLoaded).copyWith(loadingTypes: loadingTypes));
+    } else {
+      emit(PortfolioAnalyticsLoading(loadingTypes: loadingTypes));
+    }
+
+    SectorAllocation? fastSectorAllocation;
+    MarketCapAllocation? fastMarketCapAllocation;
+
+    // Start full analytics fetch (takes ~58s due to live market data for Movers/Heatmap)
+    final fullAnalyticsFuture = _analyticsService.getPortfolioAnalyticsWithDefaults(
+      portfolioId, 
+      timeFrame: timeFrame,
     );
 
+    // Fast fetch for allocations (uses MongoDB / fast current market data, ~100ms)
+    try {
+      final allocations = await _analyticsService.getPortfolioAllocations(portfolioId);
+      fastSectorAllocation = allocations.sectorAllocation;
+      fastMarketCapAllocation = allocations.marketCapAllocation;
+      
+      if (!isClosed) {
+        CommonLogger.debug(
+          '🔍 Fast allocations loaded, emitting partial state',
+          tag: 'PortfolioAnalyticsCubit',
+        );
+        if (state is PortfolioAnalyticsLoaded) {
+          emit((state as PortfolioAnalyticsLoaded).copyWith(
+            sectorAllocation: fastSectorAllocation,
+            marketCapAllocation: fastMarketCapAllocation,
+            loadingTypes: const {
+              AnalyticsDataType.heatmap, 
+              AnalyticsDataType.movers,
+            },
+          ));
+        } else {
+          emit(
+            PortfolioAnalyticsLoaded(
+              sectorAllocation: fastSectorAllocation,
+              marketCapAllocation: fastMarketCapAllocation,
+              loadingTypes: const {
+                AnalyticsDataType.heatmap, 
+                AnalyticsDataType.movers,
+              },
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      CommonLogger.warning(
+        'Fast allocation fetch failed, waiting for full analytics: $e',
+        tag: 'PortfolioAnalyticsCubit',
+      );
+    }
+
+    // Wait for the slow features to complete
     try {
       CommonLogger.debug(
-        '🔍 Starting to load analytics data concurrently',
+        '🔍 Starting to await full analytics data',
         tag: 'PortfolioAnalyticsCubit',
       );
 
-      // Load all analytics data with single API call (more efficient)
-      final analytics = await _analyticsService
-          .getPortfolioAnalyticsWithDefaults(portfolioId, timeFrame: timeFrame);
+      final analytics = await fullAnalyticsFuture.timeout(
+        const Duration(seconds: 90),
+        onTimeout: () => throw TimeoutException('Full analytics timed out after 90s'),
+      );
 
       CommonLogger.debug(
         '🔍 Analytics service call completed, processing results',
@@ -80,10 +146,12 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       );
 
       if (isClosed) return;
+      
+      _lastLoadedTimeFrame = timeFrame;
       emit(
         PortfolioAnalyticsLoaded(
-          sectorAllocation: analytics.analytics.sectorAllocation,
-          marketCapAllocation: analytics.analytics.marketCapAllocation,
+          sectorAllocation: analytics.analytics.sectorAllocation ?? fastSectorAllocation,
+          marketCapAllocation: analytics.analytics.marketCapAllocation ?? fastMarketCapAllocation,
           heatmap: analytics.analytics.heatmap,
           movers: analytics.analytics.movers,
         ),
@@ -103,7 +171,23 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       );
 
       if (isClosed) return;
-      emit(PortfolioAnalyticsError(error.toString()));
+
+      if (fastSectorAllocation != null || fastMarketCapAllocation != null) {
+        _lastLoadedTimeFrame = timeFrame;
+        emit(
+          PortfolioAnalyticsLoaded(
+            sectorAllocation: fastSectorAllocation,
+            marketCapAllocation: fastMarketCapAllocation,
+            errors: {
+              AnalyticsDataType.heatmap: error.toString(),
+              AnalyticsDataType.movers: error.toString(),
+            },
+          ),
+        );
+      } else {
+        emit(PortfolioAnalyticsError(error.toString()));
+      }
+
       CommonLogger.methodExit(
         'loadAnalytics',
         tag: 'PortfolioAnalyticsCubit',

@@ -9,6 +9,7 @@ import '../../../internal/domain/entities/portfolio_summary.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../internal/domain/entities/portfolio_analytics.dart';
 import '../../../providers/portfolio_providers.dart';
+import '../../widgets/global_portfolio_wrapper.dart';
 
 /// Web-specific portfolio analysis page with comprehensive analytics
 class PortfolioAnalysisWebPage extends ConsumerStatefulWidget {
@@ -55,15 +56,17 @@ class _PortfolioAnalysisWebPageState
 
   @override
   Widget build(BuildContext context) {
+    final activePortfolioId = context.selectedPortfolioId ?? widget.portfolioId;
     final timeFrameCode = ref.watch(appTimeFrameProvider).code;
     ref.listen(appTimeFrameProvider, (previous, next) {
       if (previous != next) {
-        ref.invalidate(portfolioSummaryProvider(widget.portfolioId));
-        ref.invalidate(portfolioHoldingsProvider(widget.portfolioId));
+        ref.invalidate(portfolioSummaryProvider(activePortfolioId));
+        ref.invalidate(portfolioHoldingsProvider(activePortfolioId));
       }
     });
+    
     final analyticsRequest = PortfolioAnalyticsRequest(
-      coreIdentifiers: _baseAnalyticsRequest.coreIdentifiers,
+      coreIdentifiers: CoreIdentifiers(portfolioId: activePortfolioId),
       featureToggles: _baseAnalyticsRequest.featureToggles,
       featureConfiguration: _baseAnalyticsRequest.featureConfiguration,
       pagination: _baseAnalyticsRequest.pagination,
@@ -73,11 +76,11 @@ class _PortfolioAnalysisWebPageState
     );
 
     final summaryAsync = ref.watch(
-      portfolioSummaryProvider(widget.portfolioId),
+      portfolioSummaryProvider(activePortfolioId),
     );
     final analyticsAsync = ref.watch(portfolioAnalyticsProvider(analyticsRequest));
     final holdingsAsync = ref.watch(
-      portfolioHoldingsProvider(widget.portfolioId),
+      portfolioHoldingsProvider(activePortfolioId),
     );
 
     return Scaffold(

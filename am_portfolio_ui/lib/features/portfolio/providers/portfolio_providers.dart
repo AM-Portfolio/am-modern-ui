@@ -30,7 +30,7 @@ part 'portfolio_providers.g.dart';
 /// They manage the portfolio feature's internal dependencies and use cases.
 
 /// Data layer providers
-@riverpod
+@Riverpod(keepAlive: true)
 Future<PortfolioRemoteDataSource> portfolioRemoteDataSource(Ref ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
   final appConfig = await ref.watch(appConfigProvider.future);
@@ -51,7 +51,7 @@ final portfolioLocalDataSourceProvider =
       return dataSource;
     });
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<PortfolioRepository> portfolioRepository(Ref ref) async {
   CommonLogger.debug(
     'Creating PortfolioRepository instance',
@@ -75,7 +75,7 @@ Future<PortfolioRepository> portfolioRepository(Ref ref) async {
 }
 
 /// Use case providers
-@riverpod
+@Riverpod(keepAlive: true)
 Future<GetPortfolioHoldings> getPortfolioHoldings(Ref ref) async {
   CommonLogger.debug(
     'Creating GetPortfolioHoldings use case',
@@ -85,7 +85,7 @@ Future<GetPortfolioHoldings> getPortfolioHoldings(Ref ref) async {
   return GetPortfolioHoldings(repository);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<GetPortfolioSummary> getPortfolioSummary(Ref ref) async {
   CommonLogger.debug(
     'Creating GetPortfolioSummary use case',
@@ -95,7 +95,7 @@ Future<GetPortfolioSummary> getPortfolioSummary(Ref ref) async {
   return GetPortfolioSummary(repository);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<GetPortfoliosList> getPortfoliosList(Ref ref) async {
   CommonLogger.debug(
     'Creating GetPortfoliosList use case',
@@ -106,7 +106,7 @@ Future<GetPortfoliosList> getPortfoliosList(Ref ref) async {
 }
 
 /// Analytics providers
-@riverpod
+@Riverpod(keepAlive: true)
 Future<PortfolioAnalyticsRepository> portfolioAnalyticsRepository(
   Ref ref,
 ) async {
@@ -120,7 +120,7 @@ Future<PortfolioAnalyticsRepository> portfolioAnalyticsRepository(
   return PortfolioAnalyticsRepositoryImpl(remoteDataSource: remoteDataSource);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<GetPortfolioAnalytics> getPortfolioAnalytics(Ref ref) async {
   CommonLogger.debug(
     'Creating GetPortfolioAnalytics use case',
@@ -133,7 +133,7 @@ Future<GetPortfolioAnalytics> getPortfolioAnalytics(Ref ref) async {
 }
 
 /// Service layer providers
-@riverpod
+@Riverpod(keepAlive: true)
 Future<PortfolioService> portfolioService(Ref ref) async {
   CommonLogger.debug(
     'Creating PortfolioService instance',
@@ -146,7 +146,7 @@ Future<PortfolioService> portfolioService(Ref ref) async {
   return PortfolioService(getHoldings, getSummary, getPortfoliosList);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<PortfolioAnalyticsService> portfolioAnalyticsService(Ref ref) async {
   CommonLogger.debug(
     'Creating PortfolioAnalyticsService instance',
@@ -158,32 +158,32 @@ Future<PortfolioAnalyticsService> portfolioAnalyticsService(Ref ref) async {
 }
 
 /// Data providers - Auto-dispose (can be recreated when needed)
-@riverpod
+@Riverpod(keepAlive: true)
 Future<PortfolioHoldings> portfolioHoldings(Ref ref, String portfolioId) async {
   final useCase = await ref.watch(getPortfolioHoldingsProvider.future);
   return useCase.call(portfolioId);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<PortfolioSummary> portfolioSummary(Ref ref, String portfolioId) async {
   final useCase = await ref.watch(getPortfolioSummaryProvider.future);
   return useCase.call(portfolioId);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Stream<PortfolioHoldings> portfolioHoldingsStream(Ref ref) async* {
   final useCase = await ref.watch(getPortfolioHoldingsProvider.future);
   yield* useCase.watchHoldings();
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Stream<PortfolioSummary> portfolioSummaryStream(Ref ref) async* {
   final useCase = await ref.watch(getPortfolioSummaryProvider.future);
   yield* useCase.watchSummary();
 }
 
 /// Analytics data providers - Auto-dispose (can be recreated when needed)
-@riverpod
+@Riverpod(keepAlive: true)
 Future<PortfolioAnalytics> portfolioAnalytics(
   Ref ref,
   PortfolioAnalyticsRequest request,
@@ -192,13 +192,13 @@ Future<PortfolioAnalytics> portfolioAnalytics(
   return useCase.call(request);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<Heatmap?> portfolioHeatmap(Ref ref, String portfolioId) async {
   final service = await ref.watch(portfolioAnalyticsServiceProvider.future);
   return service.getPortfolioHeatmap(portfolioId);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<Movers?> portfolioMovers(
   Ref ref,
   String portfolioId, {
@@ -208,7 +208,7 @@ Future<Movers?> portfolioMovers(
   return service.getPortfolioMovers(portfolioId, limit: limit);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<AllocationData> portfolioAllocations(Ref ref, String portfolioId) async {
   final service = await ref.watch(portfolioAnalyticsServiceProvider.future);
   return service.getPortfolioAllocations(portfolioId);

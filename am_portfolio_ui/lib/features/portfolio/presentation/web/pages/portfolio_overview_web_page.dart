@@ -7,6 +7,7 @@ import '../../../providers/portfolio_providers.dart';
 import '../../cubit/portfolio_analytics_state.dart';
 import '../../cubit/portfolio_analytics_cubit.dart';
 import '../../cubit/portfolio_cubit.dart';
+import '../../widgets/global_portfolio_wrapper.dart';
 
 /// Web-specific portfolio overview page.
 /// It uses the global [PortfolioCubit] provided by GlobalPortfolioWrapper.
@@ -22,31 +23,20 @@ class PortfolioOverviewWebPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (portfolioId != null) {
-      final analyticsServiceAsync = ref.watch(portfolioAnalyticsServiceProvider);
-      
-      return analyticsServiceAsync.when(
-        data: (analyticsService) {
-          return BlocProvider<PortfolioAnalyticsCubit>(
-            create: (context) {
-              final cubit = PortfolioAnalyticsCubit(analyticsService);
-              cubit.loadSpecificAnalytics(portfolioId!, AnalyticsDataType.sectorAllocation);
-              return cubit;
-            },
-            child: _PortfolioOverviewView(
-              portfolioId: portfolioId,
-              portfolioName: portfolioName,
-            ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error loading analytics service: $error')),
+    // Read the active portfolio ID dynamically so it rebuilds on dropdown change
+    final activePortfolioId = context.selectedPortfolioId ?? portfolioId;
+    final activePortfolioName = context.selectedPortfolioName ?? portfolioName;
+
+    if (activePortfolioId != null) {
+      return _PortfolioOverviewView(
+        portfolioId: activePortfolioId,
+        portfolioName: activePortfolioName,
       );
     }
 
     return _PortfolioOverviewView(
-      portfolioId: portfolioId,
-      portfolioName: portfolioName,
+      portfolioId: activePortfolioId,
+      portfolioName: activePortfolioName,
     );
   }
 }

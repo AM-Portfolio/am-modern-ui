@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
+import '../cubit/portfolio_analytics_cubit.dart';
+import '../cubit/portfolio_history_cubit.dart';
 import '../../providers/portfolio_providers.dart';
 
 /// A wrapper that provides a global [PortfolioCubit] and handles
@@ -52,11 +54,15 @@ class _GlobalPortfolioWrapperState
       _selectedPortfolioName = name;
     });
 
-    innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
-          portfolioId: id,
-          forceResubscribe: true,
-        );
-    innerContext.read<PortfolioCubit>().loadPortfolioById(id);
+    if (id == 'all') {
+      innerContext.read<PortfolioCubit>().loadAllPortfolios();
+    } else {
+      innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+            portfolioId: id,
+            forceResubscribe: true,
+          );
+      innerContext.read<PortfolioCubit>().loadPortfolioById(id);
+    }
 
     if (notifyUrl) {
       widget.onPortfolioChanged?.call(id, name);
@@ -73,6 +79,11 @@ class _GlobalPortfolioWrapperState
     _validatedUrlPortfolioId = urlId;
     final portfolios = state.portfolioList!.portfolios;
     if (portfolios.isEmpty) return;
+
+    if (urlId == 'all') {
+      _selectPortfolio(innerContext, 'all', 'All Portfolios', notifyUrl: false);
+      return;
+    }
 
     for (final p in portfolios) {
       if (p.portfolioId == urlId) {
@@ -140,51 +151,71 @@ class _GlobalPortfolioWrapperState
   @override
   Widget build(BuildContext context) {
     final portfolioServiceAsync = ref.watch(portfolioServiceProvider);
+    final analyticsServiceAsync = ref.watch(portfolioAnalyticsServiceProvider);
     final urlPortfolioId = _portfolioIdFromUrl(context);
 
-    return portfolioServiceAsync.when(
-      data: (service) {
-        return BlocProvider<PortfolioCubit>(
+    if (portfolioServiceAsync.isLoading || analyticsServiceAsync.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (portfolioServiceAsync.hasError) {
+      return Scaffold(body: Center(child: Text('Error: ${portfolioServiceAsync.error}')));
+    }
+    if (analyticsServiceAsync.hasError) {
+      return Scaffold(body: Center(child: Text('Error: ${analyticsServiceAsync.error}')));
+    }
+
+    final service = portfolioServiceAsync.value!;
+    final analyticsService = analyticsServiceAsync.value!;
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<PortfolioCubit>(
           create: (context) {
             final cubit = PortfolioCubit(service);
             cubit.setPortfolioStreamingAllowed(_portfolioStreamingAllowed);
             cubit.loadPortfoliosList();
             return cubit;
           },
-          child: Builder(
-            builder: (innerContext) => BlocListener<PortfolioCubit, PortfolioState>(
-              listener: (context, state) {
-                if (state is PortfolioListLoaded) {
-                  if (urlPortfolioId != null) {
-                    _validateUrlPortfolio(innerContext, state);
-                    return;
-                  }
-
-                  if (_selectedPortfolioId == null &&
-                      state.portfolioList!.portfolios.isNotEmpty) {
-                    final first = state.portfolioList!.portfolios.first;
-                    _selectPortfolio(
-                      innerContext,
-                      first.portfolioId,
-                      first.portfolioName,
-                    );
-                  }
-                }
-              },
-              child: _SelectedPortfolioProvider(
-                selectedId: _selectedPortfolioId,
-                selectedName: _selectedPortfolioName,
-                onSelect: (id, name) =>
-                    _selectPortfolio(innerContext, id, name, notifyUrl: true),
-                child: widget.child,
-              ),
-            ),
+        ),
+        BlocProvider<PortfolioAnalyticsCubit>(
+          create: (context) => PortfolioAnalyticsCubit(analyticsService),
+        ),
+        BlocProvider<PortfolioHistoryCubit>(
+          create: (context) => PortfolioHistoryCubit(
+            ref.read(portfolioRemoteDataSourceProvider).requireValue,
           ),
-        );
-      },
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
+        ),
+      ],
+      child: Builder(
+        builder: (innerContext) => BlocListener<PortfolioCubit, PortfolioState>(
+          listener: (context, state) {
+            if (state is PortfolioListLoaded) {
+              if (urlPortfolioId != null) {
+                _validateUrlPortfolio(innerContext, state);
+                return;
+              }
+
+              if (_selectedPortfolioId == null &&
+                  state.portfolioList!.portfolios.isNotEmpty) {
+                final first = state.portfolioList!.portfolios.first;
+                _selectPortfolio(
+                  innerContext,
+                  first.portfolioId,
+                  first.portfolioName,
+                );
+              }
+            }
+          },
+          child: _SelectedPortfolioProvider(
+            selectedId: _selectedPortfolioId,
+            selectedName: _selectedPortfolioName,
+            onSelect: (id, name) =>
+                _selectPortfolio(innerContext, id, name, notifyUrl: true),
+            child: widget.child,
+          ),
+        ),
+      ),
     );
   }
 }

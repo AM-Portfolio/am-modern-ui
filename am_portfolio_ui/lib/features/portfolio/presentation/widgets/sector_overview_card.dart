@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-// import 'package:am_design_system/am_design_system.dart' as ui_config;
-// import 'package:am_design_system/am_design_system.dart';
+import 'package:am_design_system/am_design_system.dart' as ui_config;
+import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
 import '../mappers/sector_heatmap_converter.dart';
+import '../config/portfolio_heatmap_config.dart';
 
 /// Widget displaying sector allocation overview with visual heatmap
 /// Shows sector performance with color-coded rectangles representing sector weightage
@@ -52,22 +53,22 @@ class SectorOverviewCard extends StatelessWidget {
       );
     }
 
-    // Create raw data for universal widget (commented out for now)
-    // final rawData = <String, dynamic>{
-    //   'holdings': heatmapData.tiles
-    //       .map(
-    //         (tile) => {
-    //           'id': tile.id,
-    //           'name': tile.name,
-    //           'displayName': tile.displayName,
-    //           'weightage': tile.weightage,
-    //           'performance': tile.performance,
-    //           'value': tile.value,
-    //           'metadata': tile.metadata,
-    //         },
-    //       )
-    //       .toList(),
-    // };
+    // Create raw data for universal widget
+    final rawData = <String, dynamic>{
+      'holdings': heatmapData.tiles
+          .map(
+            (tile) => {
+              'id': tile.id,
+              'name': tile.name,
+              'displayName': tile.displayName,
+              'weightage': tile.weightage,
+              'performance': tile.performance,
+              'value': tile.value,
+              'metadata': tile.metadata,
+            },
+          )
+          .toList(),
+    };
 
     return Card(
       child: Padding(
@@ -88,21 +89,18 @@ class SectorOverviewCard extends StatelessWidget {
             const SizedBox(height: 16),
             SizedBox(
               height: 300,
-              // TODO: Re-enable UniversalHeatmapWidget when ready
-              child: Center(
-                child: Text(
-                  'Heatmap temporarily disabled',
-                  style: Theme.of(context).textTheme.bodyMedium,
+              child: UniversalHeatmapWidget(
+                investmentType: InvestmentType.portfolio,
+                heatmapData: heatmapData,
+                title: heatmapData.title,
+                config: PortfolioHeatmapConfig.getHeatmapConfig(
+                  title: heatmapData.title,
+                  showSubCards: showSubCards,
                 ),
+                templateType: UniversalTemplateType.minimal,
+                showSelectors: false,
+                compactMode: true,
               ),
-              // child: UniversalHeatmapWidget(
-              //   investmentType: InvestmentType.portfolio,
-              //   rawData: rawData,
-              //   config: ui_config.HeatmapConfig.mobilePortfolio(),
-              //   templateType: UniversalTemplateType.minimal,
-              //   showSelectors: false,
-              //   compactMode: true,
-              // ),
             ),
           ],
         ),

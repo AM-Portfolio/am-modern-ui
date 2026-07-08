@@ -73,6 +73,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
 
   /// Ensures STOMP queue + backend watch are active for the selected portfolio.
   void _ensureStreamActive(String portfolioId) {
+    if (portfolioId == 'all') return;
     if (_streamActivatedForId == portfolioId) return;
     _streamActivatedForId = portfolioId;
     context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
@@ -107,6 +108,12 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   /// Auto-selects portfolio from URL, global wrapper, or first available.
   void _autoSelectFirstPortfolio(List<PortfolioItem> portfolios) {
     if (portfolios.isEmpty) return;
+
+    if (selectedPortfolioId == 'all' || context.selectedPortfolioId == 'all') return;
+    if (selectedPortfolioId != null) {
+      _ensureStreamActive(selectedPortfolioId!);
+      return;
+    }
 
     final urlId = widget.initialPortfolioId;
     if (urlId != null) {
@@ -377,18 +384,17 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   }) {
     if (widget.isMobile) {
       return PortfolioMobileScreen(
-        key: ValueKey('portfolio_mobile_$portfolioId'),
         selectedPortfolioId: portfolioId,
         selectedPortfolioName: portfolioName,
         portfolios: portfolios,
         initialTab: widget.initialTab,
         onTabChanged: widget.onTabChanged,
         onPortfolioChanged: _onPortfolioChanged,
+        addTradeBuilder: widget.addTradeBuilder,
         onBack: widget.onBack,
       );
     } else {
       return PortfolioWebScreen(
-        key: ValueKey('portfolio_web_$portfolioId'),
         selectedPortfolioId: portfolioId,
         selectedPortfolioName: portfolioName,
         portfolios: portfolios,
