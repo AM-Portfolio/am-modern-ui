@@ -115,165 +115,137 @@ class PortfolioMetricCard extends StatelessWidget {
                           ),
                         ],
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                child: Stack(
+                  clipBehavior: Clip.none,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // ── Header: Title + Icon badge ──
-                          Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
+                    // ── Huge Watermark Icon ──
+                    Positioned(
+                      right: -10,
+                      bottom: -15,
+                      child: Transform.rotate(
+                        angle: -math.pi / 12,
+                        child: Icon(
+                          icon,
+                          size: compact ? 60 : 90,
+                          color: isHighlight
+                              ? Colors.white.withValues(alpha: 0.15)
+                              : accentColor.withValues(alpha: 0.06),
+                        ),
+                      ),
+                    ),
+                    
+                    // ── Main Content ──
+                    Positioned.fill(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // ── Header: Title ──
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodySmall?.copyWith(
+                                fontSize: compact ? 10 : 11,
+                                color: isHighlight
+                                    ? Colors.white
+                                        .withValues(alpha: 0.85)
+                                    : (isDark
+                                        ? Colors.white
+                                            .withValues(alpha: 0.5)
+                                        : Colors.black
+                                            .withValues(alpha: 0.45)),
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                            const Spacer(flex: 2),
+
+                            // ── Main value with neon text shadow ──
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
                                 child: Text(
-                                  title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: textTheme.bodySmall?.copyWith(
-                                    fontSize: compact ? 10 : 11,
+                                  value,
+                                  style: textTheme.headlineSmall?.copyWith(
+                                    fontSize: compact ? 18 : 22,
+                                    fontWeight: FontWeight.bold,
                                     color: isHighlight
                                         ? Colors.white
-                                            .withValues(alpha: 0.85)
-                                        : (isDark
-                                            ? Colors.white
-                                                .withValues(alpha: 0.5)
-                                            : Colors.black
-                                                .withValues(alpha: 0.45)),
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.4,
+                                        : (glowBorder
+                                            ? accentColor
+                                            : (isDark
+                                                ? Colors.white
+                                                : const Color(
+                                                    0xFF1A1A2E))),
+                                    height: 1.1,
+                                    shadows: glowBorder
+                                        ? [
+                                            Shadow(
+                                              color: accentColor
+                                                  .withValues(alpha: 0.6),
+                                              blurRadius: 12,
+                                            ),
+                                          ]
+                                        : null,
                                   ),
-                                ),
-                              ),
-                              Container(
-                                padding:
-                                    EdgeInsets.all(compact ? 5 : 7),
-                                decoration: BoxDecoration(
-                                  color: isHighlight
-                                      ? Colors.white
-                                          .withValues(alpha: 0.2)
-                                      : accentColor
-                                          .withValues(alpha: 0.12),
-                                  borderRadius:
-                                      BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  icon,
-                                  size: compact ? 12 : 14,
-                                  color: isHighlight
-                                      ? Colors.white
-                                      : accentColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: compact ? 8 : 12),
-
-                          // ── Main value with neon text shadow ──
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                value,
-                                style: textTheme.headlineSmall?.copyWith(
-                                  fontSize: compact ? 18 : 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: isHighlight
-                                      ? Colors.white
-                                      : (glowBorder
-                                          ? accentColor
-                                          : (isDark
-                                              ? Colors.white
-                                              : const Color(
-                                                  0xFF1A1A2E))),
-                                  height: 1.1,
-                                  shadows: glowBorder
-                                      ? [
-                                          Shadow(
-                                            color: accentColor
-                                                .withValues(alpha: 0.6),
-                                            blurRadius: 12,
-                                          ),
-                                        ]
-                                      : null,
                                 ),
                               ),
                             ),
-                          ),
-                          SizedBox(height: compact ? 6 : 8),
+                            const Spacer(flex: 1),
 
-                          // ── Subtitle with directional indicator ──
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (isPositive != null) ...[
-                                Icon(
-                                  isPositive!
-                                      ? Icons.arrow_upward_rounded
-                                      : Icons.arrow_downward_rounded,
-                                  size: compact ? 10 : 12,
-                                  color: isHighlight
-                                      ? Colors.white
-                                          .withValues(alpha: 0.9)
-                                      : accentColor,
-                                ),
-                                const SizedBox(width: 2),
-                              ],
-                              Flexible(
-                                child: Text(
-                                  subtitle,
-                                  style: textTheme.bodySmall?.copyWith(
-                                    fontSize: compact ? 9 : 11,
+                            // ── Subtitle with directional indicator ──
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isPositive != null) ...[
+                                  Icon(
+                                    isPositive!
+                                        ? Icons.arrow_upward_rounded
+                                        : Icons.arrow_downward_rounded,
+                                    size: compact ? 10 : 12,
                                     color: isHighlight
                                         ? Colors.white
-                                            .withValues(alpha: 0.75)
-                                        : (isPositive != null
-                                            ? accentColor
-                                                .withValues(alpha: 0.9)
-                                            : (isDark
-                                                ? Colors.white
-                                                    .withValues(alpha: 0.4)
-                                                : Colors.black
-                                                    .withValues(
-                                                        alpha: 0.4))),
-                                    fontWeight:
-                                        (isPositive != null && isPositive!)
-                                            ? FontWeight.w600
-                                            : FontWeight.w400,
+                                            .withValues(alpha: 0.9)
+                                        : accentColor,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
+                                  const SizedBox(width: 2),
+                                ],
+                                Flexible(
+                                  child: Text(
+                                    subtitle,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      fontSize: compact ? 9 : 11,
+                                      color: isHighlight
+                                          ? Colors.white
+                                              .withValues(alpha: 0.75)
+                                          : (isPositive != null
+                                              ? accentColor
+                                                  .withValues(alpha: 0.9)
+                                              : (isDark
+                                                  ? Colors.white
+                                                      .withValues(alpha: 0.4)
+                                                  : Colors.black
+                                                      .withValues(
+                                                          alpha: 0.4))),
+                                      fontWeight:
+                                          (isPositive != null && isPositive!)
+                                              ? FontWeight.w600
+                                              : FontWeight.w400,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // ── Sparkline with glow ──
-                    if (sparklineData != null &&
-                        sparklineData!.isNotEmpty) ...[
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 60,
-                        height: 40,
-                        child: CustomPaint(
-                          painter: SparklinePainter(
-                            data: sparklineData!,
-                            color: isHighlight
-                                ? Colors.white.withValues(alpha: 0.9)
-                                : accentColor,
-                            drawGlow: glowBorder,
-                          ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ),

@@ -418,13 +418,13 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             : (summaryToUse.totalGainLoss > 0
                 ? const Color(0xFF00B894)
                 : const Color(0xFFFF7675)),
-        icon: Icons.show_chart,
+        icon: summaryToUse.totalGainLoss >= 0
+            ? Icons.trending_up_rounded
+            : Icons.trending_down_rounded,
         isPositive: summaryToUse.totalGainLoss == 0
             ? null
             : summaryToUse.totalGainLoss > 0,
         glowBorder: true,
-        sparklineData:
-            summaryToUse.totalGainLoss >= 0 ? _upSparkData : _downSparkData,
         tooltip: 'Total unrealized profit or loss across all holdings',
       ),
       PortfolioMetricCard(
@@ -437,13 +437,13 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             : (summaryToUse.todayChange > 0
                 ? const Color(0xFF00B894)
                 : const Color(0xFFFF7675)),
-        icon: Icons.trending_up,
+        icon: summaryToUse.todayChange >= 0
+            ? Icons.keyboard_double_arrow_up_rounded
+            : Icons.keyboard_double_arrow_down_rounded,
         isPositive: summaryToUse.todayChange == 0
             ? null
             : summaryToUse.todayChange > 0,
         glowBorder: true,
-        sparklineData:
-            summaryToUse.todayChange >= 0 ? _upSparkData : _downSparkData,
         tooltip: "Unrealized profit or loss for today",
       ),
       PortfolioMetricCard(
@@ -451,10 +451,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         value: _formatCurrency(summaryToUse.totalValue),
         subtitle: '${summaryToUse.totalAssets} Active Holdings',
         accentColor: ds.AppColors.primary,
-        icon: Icons.account_balance_wallet,
+        icon: Icons.account_balance_rounded,
         isPositive: null,
         glowBorder: false,
-        sparklineData: _flatSparkData,
         tooltip:
             'Total value of all holdings based on current market price',
       ),
@@ -463,11 +462,10 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         value: _formatCurrency(summaryToUse.investmentValue),
         subtitle: 'Total Principal',
         accentColor: ds.AppColors.info,
-        icon: Icons.savings_outlined,
+        icon: Icons.paid_rounded,
         isPositive: null,
         isHighlight: true,
         glowBorder: false,
-        sparklineData: _flatSparkData,
         tooltip: 'Total principal amount invested',
       ),
     ];
