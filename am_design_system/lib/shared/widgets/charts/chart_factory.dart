@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/gestures.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/theme/app_typography.dart';
 import 'package:am_design_system/core/config/design_system_provider.dart';
 import 'chart_types.dart';
-
 
 
 /// Factory widget for creating standardized charts
@@ -44,6 +45,24 @@ class ChartFactory extends StatelessWidget {
     );
   }
 
+  /// Factory constructor for Area Chart
+  factory ChartFactory.area({
+    required List<CommonChartDataPoint> data,
+    CommonChartConfig config = const CommonChartConfig(),
+    Color? color,
+    double height = 300,
+    List<ChartLineData>? lines,
+  }) {
+    return ChartFactory(
+      type: ChartType.area,
+      data: data,
+      config: config,
+      primaryColor: color,
+      height: height,
+      lines: lines,
+    );
+  }
+
   /// Factory constructor for Bar Chart
   factory ChartFactory.bar({
     required List<CommonChartDataPoint> data,
@@ -69,7 +88,7 @@ class ChartFactory extends StatelessWidget {
   }
 
   Widget _buildChart(BuildContext context) {
-    if (data.isEmpty) {
+    if (data.isEmpty && (lines == null || lines!.isEmpty)) {
       return Center(
         child: Text(
           'No data available',
@@ -122,8 +141,43 @@ class ChartFactory extends StatelessWidget {
     final designConfig = DesignSystemProvider.of(context);
     final color = primaryColor ?? designConfig.primaryColor;
     final gridColor = config.gridColor ?? theme.dividerColor.withOpacity(0.1);
+    final isDark = theme.brightness == Brightness.dark;
     
     final bool hasMultiLines = lines != null && lines!.isNotEmpty;
+
+    // Calculate minY and maxY dynamically with 15% padding so the line doesn't hit the ceiling
+    double? calculatedMinY;
+    double? calculatedMaxY;
+    if (data.isNotEmpty || hasMultiLines) {
+      double minVal = double.infinity;
+      double maxVal = double.negativeInfinity;
+
+      void processPoints(List<CommonChartDataPoint> pts) {
+        for (var p in pts) {
+          if (p.y < minVal) minVal = p.y;
+          if (p.y > maxVal) maxVal = p.y;
+        }
+      }
+
+      if (hasMultiLines) {
+        for (var l in lines!) processPoints(l.points);
+      } else {
+        processPoints(data);
+      }
+
+      if (minVal != double.infinity && maxVal != double.negativeInfinity) {
+        final double range = (maxVal - minVal).abs();
+        final double padding = range == 0 ? maxVal.abs() * 0.15 : range * 0.15;
+        
+        calculatedMinY = minVal - padding;
+        calculatedMaxY = maxVal + padding;
+
+        // If all values are non-negative, don't let minY go below 0 (unless we want to show negative drops)
+        if (minVal >= 0 && calculatedMinY < 0) {
+          calculatedMinY = 0;
+        }
+      }
+    }
 
     // Resolve bars: either map multi-lines or create single bar from data
     final List<LineChartBarData> bars = hasMultiLines
@@ -145,13 +199,26 @@ class ChartFactory extends StatelessWidget {
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: type == ChartType.area,
-                color: color.withOpacity(0.15),
+                gradient: LinearGradient(
+                  colors: [
+                    color.withValues(alpha: 0.3),
+                    color.withValues(alpha: 0.0),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
               ),
             ),
           ];
 
-    return LineChart(
+    final int dataLength = hasMultiLines ? lines!.first.points.length : data.length;
+    double calculatedInterval = (dataLength / 6).ceil().toDouble();
+    if (calculatedInterval < 1) calculatedInterval = 1;
+
+    final chart = LineChart(
       LineChartData(
+        minY: calculatedMinY,
+        maxY: calculatedMaxY,
         gridData: FlGridData(
           show: config.showGrid,
           drawVerticalLine: false,
@@ -166,6 +233,7 @@ class ChartFactory extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
+              interval: calculatedInterval, // Dynamically space out dates to prevent overlap
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 final List<CommonChartDataPoint> activePoints = hasMultiLines
@@ -185,16 +253,38 @@ class ChartFactory extends StatelessWidget {
               reservedSize: 30,
             ),
           ),
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: AxisTitles(
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (value, meta) => Text(
-                value.toInt().toString(),
-                style: TextStyle(fontSize: 10, color: theme.hintColor),
-              ),
+              reservedSize: 16, // Acts as internal top padding to prevent left Y-axis labels from clipping
+              getTitlesWidget: (value, meta) => const SizedBox.shrink(),
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 48, // Increased slightly to prevent large labels like 10.00L from being squished against the edge
+              getTitlesWidget: (value, meta) {
+                // Smart formatter: if max value is very small (like %), show decimals
+                String text;
+                if (value.abs() < 10) {
+                  text = value.toStringAsFixed(2);
+                } else if (value.abs() >= 1e7) {
+                  text = '${(value / 1e7).toStringAsFixed(2)}Cr';
+                } else if (value.abs() >= 1e5) {
+                  text = '${(value / 1e5).toStringAsFixed(2)}L';
+                } else {
+                  text = value.toInt().toString();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: Text(
+                    text,
+                    style: TextStyle(fontSize: 10, color: theme.hintColor),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -203,7 +293,17 @@ class ChartFactory extends StatelessWidget {
         lineTouchData: LineTouchData(
           enabled: config.showTooltips,
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (_) => AppColors.darkBackground.withOpacity(0.9),
+            // [Interactive] Lock to top boundary when flag is set (Google Finance style)
+            showOnTopOfTheChartBoxArea: config.lockTooltipToTop,
+            tooltipMargin: config.lockTooltipToTop ? 8.0 : 16.0,
+            getTooltipColor: config.lockTooltipToTop
+                ? (_) => Colors.transparent
+                : (_) => AppColors.darkBackground.withOpacity(0.9),
+            tooltipBorder: config.lockTooltipToTop
+                ? BorderSide.none
+                : const BorderSide(color: Colors.transparent),
+            fitInsideHorizontally: true,
+            fitInsideVertically: true,
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
                 final List<CommonChartDataPoint> activePoints = hasMultiLines
@@ -213,13 +313,20 @@ class ChartFactory extends StatelessWidget {
                 final String lineLabel = hasMultiLines
                     ? '${lines![spot.barIndex].label}: '
                     : '';
+                // [Interactive] Color tooltip text to match the line color when top-locked
+                final Color textColor = config.lockTooltipToTop && hasMultiLines
+                    ? (lines![spot.barIndex].color ?? Colors.white)
+                    : Colors.white;
+                final Color dateColor = config.lockTooltipToTop
+                    ? (isDark ? Colors.white60 : Colors.black54)
+                    : Colors.white70;
                 return LineTooltipItem(
                   '$lineLabel${point.yLabel ?? point.y.toString()}\n',
-                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  TextStyle(color: textColor, fontWeight: FontWeight.bold),
                   children: [
                     TextSpan(
                       text: point.xLabel ?? '',
-                      style: const TextStyle(color: Colors.white70, fontSize: 10),
+                      style: TextStyle(color: dateColor, fontSize: 10),
                     ),
                   ],
                 );
@@ -229,7 +336,18 @@ class ChartFactory extends StatelessWidget {
         ),
       ),
       duration: config.animate ? config.animationDuration : Duration.zero,
+      curve: Curves.easeInOutCubic,
     );
+
+    // [Interactive] Wrap with zoom controls when enableZoom is true
+    if (config.enableZoom) {
+      return _ZoomableChartWrapper(
+        initialZoomScale: config.initialZoomScale,
+        child: chart,
+      );
+    }
+
+    return chart;
   }
 
   Widget _buildBarChart(BuildContext context) {
@@ -341,6 +459,142 @@ class ChartFactory extends StatelessWidget {
         sectionsSpace: 2,
       ),
       swapAnimationDuration: config.animate ? config.animationDuration : Duration.zero,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Private Zoom Wrapper
+// Used internally by ChartFactory when config.enableZoom == true.
+// Wraps any chart child with Zoom-In / Zoom-Out buttons and Ctrl+Wheel support.
+// ─────────────────────────────────────────────────────────────────────────────
+class _ZoomableChartWrapper extends StatefulWidget {
+  final Widget child;
+  final double initialZoomScale;
+
+  const _ZoomableChartWrapper({
+    required this.child,
+    this.initialZoomScale = 1.0,
+  });
+
+  @override
+  State<_ZoomableChartWrapper> createState() => _ZoomableChartWrapperState();
+}
+
+class _ZoomableChartWrapperState extends State<_ZoomableChartWrapper> {
+  late double _zoomScale;
+
+  static const double _minZoom = 0.2;
+  static const double _maxZoom = 3.0;
+  static const double _zoomStep = 0.2;
+
+  @override
+  void initState() {
+    super.initState();
+    _zoomScale = widget.initialZoomScale.clamp(_minZoom, _maxZoom);
+  }
+
+  void _adjustZoom(double delta) {
+    setState(() {
+      _zoomScale = (_zoomScale + delta).clamp(_minZoom, _maxZoom);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final controlBg = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.06);
+    final controlFg = isDark ? Colors.white70 : Colors.black54;
+
+    return Listener(
+      // Ctrl + Mouse Wheel to zoom
+      onPointerSignal: (event) {
+        if (event is PointerScrollEvent) {
+          final isCtrl = HardwareKeyboard.instance.logicalKeysPressed
+              .any((k) => k == LogicalKeyboardKey.controlLeft || k == LogicalKeyboardKey.controlRight);
+          if (isCtrl) {
+            final delta = event.scrollDelta.dy < 0 ? _zoomStep : -_zoomStep;
+            _adjustZoom(delta);
+          }
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Zoom control bar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              _ZoomButton(
+                icon: Icons.remove,
+                onTap: () => _adjustZoom(-_zoomStep),
+                bg: controlBg,
+                fg: controlFg,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  '${(_zoomScale * 100).toInt()}%',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: controlFg,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              _ZoomButton(
+                icon: Icons.add,
+                onTap: () => _adjustZoom(_zoomStep),
+                bg: controlBg,
+                fg: controlFg,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Chart scaled by zoom
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const ClampingScrollPhysics(),
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * _zoomScale,
+                child: widget.child,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ZoomButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color bg;
+  final Color fg;
+
+  const _ZoomButton({
+    required this.icon,
+    required this.onTap,
+    required this.bg,
+    required this.fg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+        child: Icon(icon, size: 14, color: fg),
+      ),
     );
   }
 }

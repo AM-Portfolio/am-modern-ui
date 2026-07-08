@@ -16,11 +16,17 @@ import 'package:am_portfolio_ui/features/portfolio/presentation/pages/portfolio_
     deferred as portfolio_pages;
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/global_portfolio_wrapper.dart'
     deferred as portfolio_shell;
+import 'package:am_trade_ui/features/trade/presentation/add_trade/pages/add_trade_web_page.dart'
+    deferred as trade_add;
 import 'package:am_trade_ui/features/trade/presentation/trade_responsive_layout.dart'
     deferred as trade_ui;
+import 'package:am_trade_ui/features/trade/providers/trade_controller_providers.dart'
+    deferred as trade_providers;
 import 'package:am_user_ui/features/profile/presentation/pages/profile_settings_page.dart'
     deferred as user_ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/shell/skeletons/module_skeletons.dart';
 import '../di/injection.dart';
@@ -35,7 +41,45 @@ Future<void> _loadPortfolioLibraries() => Future.wait([
 
 Future<void> _loadPortfolio() async {
   await _ensureFeatureDi();
-  await _loadPortfolioLibraries();
+  await Future.wait([
+    _loadPortfolioLibraries(),
+    trade_ui.loadLibrary(),
+    trade_add.loadLibrary(),
+    trade_providers.loadLibrary(),
+  ]);
+}
+
+typedef PortfolioAddTradeBuilder = Widget Function(
+  BuildContext context,
+  String portfolioId,
+  String? portfolioName,
+  VoidCallback onComplete,
+);
+
+Widget _defaultPortfolioAddTradeBuilder(
+  BuildContext context,
+  String portfolioId,
+  String? portfolioName,
+  VoidCallback onComplete,
+) {
+  return Consumer(
+    builder: (context, ref, _) {
+      final cubitAsync = ref.watch(trade_providers.tradeControllerCubitProvider);
+      return cubitAsync.when(
+        data: (cubit) => BlocProvider.value(
+          value: cubit,
+          child: trade_add.AddTradeWebPage(
+            portfolioId: portfolioId,
+            portfolioName: portfolioName,
+            onTradeAdded: onComplete,
+            onCancel: onComplete,
+          ),
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
+      );
+    },
+  );
 }
 
 Future<void> _loadTrade() async {
@@ -75,7 +119,9 @@ Widget buildPortfolioRoute({
   required String tab,
   required void Function(String slug) onTabChanged,
   required void Function(String id, String name) onPortfolioChanged,
+  PortfolioAddTradeBuilder? addTradeBuilder,
 }) {
+  final tradeBuilder = addTradeBuilder ?? _defaultPortfolioAddTradeBuilder;
   return DeferredModuleLoader(
     load: _loadPortfolio,
     skeleton: const PortfolioModuleSkeleton(),
@@ -88,6 +134,7 @@ Widget buildPortfolioRoute({
         initialTab: tab,
         onTabChanged: onTabChanged,
         onPortfolioChanged: onPortfolioChanged,
+        addTradeBuilder: tradeBuilder,
       ),
     ),
   );

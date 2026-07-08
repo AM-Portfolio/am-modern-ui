@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:am_common/am_common.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
+import '../cubit/portfolio_analytics_cubit.dart';
+import '../cubit/portfolio_history_cubit.dart';
 import '../../providers/portfolio_providers.dart';
 
 /// A wrapper that provides a global [PortfolioCubit] and handles
@@ -90,11 +92,18 @@ class _GlobalPortfolioWrapperState
     if (!_portfolioDetailFetchAllowed) return;
 
     try {
-      innerContext.read<PortfolioCubit>().subscribeToPortfolioUpdates(
+      final cubit = innerContext.read<PortfolioCubit>();
+      if (id == 'all') {
+        cubit.loadAllPortfolios();
+      } else {
+        if (_portfolioStreamingAllowed) {
+          cubit.subscribeToPortfolioUpdates(
             portfolioId: id,
             forceResubscribe: true,
           );
-      innerContext.read<PortfolioCubit>().loadPortfolioById(id);
+        }
+        cubit.loadPortfolioById(id);
+      }
     } catch (_) {
       // PortfolioCubit not ready yet — selection stored for when service loads.
     }
@@ -110,6 +119,11 @@ class _GlobalPortfolioWrapperState
     _validatedUrlPortfolioId = urlId;
     final portfolios = state.portfolioList!.portfolios;
     if (portfolios.isEmpty) return;
+
+    if (urlId == 'all') {
+      _selectPortfolio(innerContext, 'all', 'All Portfolios', notifyUrl: false);
+      return;
+    }
 
     for (final p in portfolios) {
       if (p.portfolioId == urlId) {
@@ -180,13 +194,17 @@ class _GlobalPortfolioWrapperState
     }
 
     if (_selectedPortfolioId != null) {
-      if (_portfolioStreamingAllowed) {
-        cubit.subscribeToPortfolioUpdates(
-          portfolioId: _selectedPortfolioId,
-          forceResubscribe: true,
-        );
+      if (_selectedPortfolioId == 'all') {
+        cubit.loadAllPortfolios();
+      } else {
+        if (_portfolioStreamingAllowed) {
+          cubit.subscribeToPortfolioUpdates(
+            portfolioId: _selectedPortfolioId,
+            forceResubscribe: true,
+          );
+        }
+        cubit.loadPortfolioById(_selectedPortfolioId!);
       }
-      cubit.loadPortfolioById(_selectedPortfolioId!);
     } else if (hasList &&
         cubit.state.portfolioList!.portfolios.isNotEmpty) {
       final inner = _portfolioBlocContext;
@@ -199,17 +217,37 @@ class _GlobalPortfolioWrapperState
   @override
   Widget build(BuildContext context) {
     final portfolioServiceAsync = ref.watch(portfolioServiceProvider);
+    final analyticsServiceAsync = ref.watch(portfolioAnalyticsServiceProvider);
+    final remoteDataSourceAsync = ref.watch(portfolioRemoteDataSourceProvider);
     final urlPortfolioId = _portfolioIdFromUrl(context);
-
     final shellChild = widget.child;
 
-    return portfolioServiceAsync.when(
-      data: (service) {
-        if (!_portfolioServiceMarked) {
-          _portfolioServiceMarked = true;
-          BootTrace.instance.mark('portfolio_service_ready');
-        }
-        return BlocProvider<PortfolioCubit>(
+    final isLoading = portfolioServiceAsync.isLoading ||
+        analyticsServiceAsync.isLoading ||
+        remoteDataSourceAsync.isLoading;
+    if (isLoading) {
+      return shellChild;
+    }
+
+    final hasError = portfolioServiceAsync.hasError ||
+        analyticsServiceAsync.hasError ||
+        remoteDataSourceAsync.hasError;
+    if (hasError) {
+      return shellChild;
+    }
+
+    final service = portfolioServiceAsync.requireValue;
+    final analyticsService = analyticsServiceAsync.requireValue;
+    final remoteDataSource = remoteDataSourceAsync.requireValue;
+
+    if (!_portfolioServiceMarked) {
+      _portfolioServiceMarked = true;
+      BootTrace.instance.mark('portfolio_service_ready');
+    }
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<PortfolioCubit>(
           create: (context) {
             final cubit = PortfolioCubit(service);
             cubit.setPortfolioStreamingAllowed(_portfolioStreamingAllowed);
@@ -219,66 +257,69 @@ class _GlobalPortfolioWrapperState
             });
             return cubit;
           },
-          child: Builder(
-            builder: (innerContext) {
-              _portfolioBlocContext = innerContext;
-              return BlocListener<PortfolioCubit, PortfolioState>(
-                listener: (context, state) {
-                  if (state is PortfolioListLoaded) {
-                    if (!_portfolioListMarked) {
-                      _portfolioListMarked = true;
-                      BootTrace.instance.mark('portfolio_list_done');
-                    }
-                    if (urlPortfolioId != null) {
-                      _validateUrlPortfolio(innerContext, state);
-                      return;
-                    }
+        ),
+        BlocProvider<PortfolioAnalyticsCubit>(
+          create: (context) => PortfolioAnalyticsCubit(analyticsService),
+        ),
+        BlocProvider<PortfolioHistoryCubit>(
+          create: (context) => PortfolioHistoryCubit(remoteDataSource),
+        ),
+      ],
+      child: Builder(
+        builder: (innerContext) {
+          _portfolioBlocContext = innerContext;
+          return BlocListener<PortfolioCubit, PortfolioState>(
+            listener: (context, state) {
+              if (state is PortfolioListLoaded) {
+                if (!_portfolioListMarked) {
+                  _portfolioListMarked = true;
+                  BootTrace.instance.mark('portfolio_list_done');
+                }
+                if (urlPortfolioId != null) {
+                  _validateUrlPortfolio(innerContext, state);
+                  return;
+                }
 
-                    if (_selectedPortfolioId != null &&
-                        _portfolioDetailFetchAllowed) {
-                      _selectPortfolio(
-                        innerContext,
-                        _selectedPortfolioId!,
-                        _selectedPortfolioName ??
-                            state.portfolioList!.portfolios
-                                .firstWhere(
-                                  (p) => p.portfolioId == _selectedPortfolioId,
-                                  orElse: () =>
-                                      state.portfolioList!.portfolios.first,
-                                )
-                                .portfolioName,
-                        notifyUrl: false,
-                      );
-                      return;
-                    }
+                if (_selectedPortfolioId != null &&
+                    _portfolioDetailFetchAllowed) {
+                  _selectPortfolio(
+                    innerContext,
+                    _selectedPortfolioId!,
+                    _selectedPortfolioName ??
+                        state.portfolioList!.portfolios
+                            .firstWhere(
+                              (p) => p.portfolioId == _selectedPortfolioId,
+                              orElse: () =>
+                                  state.portfolioList!.portfolios.first,
+                            )
+                            .portfolioName,
+                    notifyUrl: false,
+                  );
+                  return;
+                }
 
-                    if (_selectedPortfolioId == null &&
-                        state.portfolioList!.portfolios.isNotEmpty) {
-                      final first = state.portfolioList!.portfolios.first;
-                      if (_portfolioDetailFetchAllowed) {
-                        _selectPortfolio(
-                          innerContext,
-                          first.portfolioId,
-                          first.portfolioName,
-                        );
-                      } else {
-                        _rememberPortfolioSelection(
-                          first.portfolioId,
-                          first.portfolioName,
-                        );
-                      }
-                    }
+                if (_selectedPortfolioId == null &&
+                    state.portfolioList!.portfolios.isNotEmpty) {
+                  final first = state.portfolioList!.portfolios.first;
+                  if (_portfolioDetailFetchAllowed) {
+                    _selectPortfolio(
+                      innerContext,
+                      first.portfolioId,
+                      first.portfolioName,
+                    );
+                  } else {
+                    _rememberPortfolioSelection(
+                      first.portfolioId,
+                      first.portfolioName,
+                    );
                   }
-                },
-                child: shellChild,
-              );
+                }
+              }
             },
-          ),
-        );
-      },
-      loading: () => shellChild,
-      error: (err, stack) => shellChild,
+            child: shellChild,
+          );
+        },
+      ),
     );
   }
 }
-

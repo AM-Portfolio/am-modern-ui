@@ -222,6 +222,10 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
 
   /// Refresh trade calendar data with current filter preserved
   Future<void> refresh({required String portfolioId, bool forceReload = false}) async {
+    if (forceReload) {
+      _clearCache();
+    }
+    
     final currentState = state;
     DateSelection? currentFilter;
 
@@ -229,12 +233,13 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
       currentFilter = currentState.selectedDateRange;
     }
 
-    await loadTradeCalendar(
-      portfolioId: portfolioId,
-      dateFilter: currentFilter,
-      isRefresh: true,
-      forceReload: forceReload,
-    );
+    // Always use the hierarchical data loader to maintain current view state
+    await _loadDataForCurrentView(portfolioId);
+    
+    // Re-apply the filter if one existed
+    if (currentFilter != null) {
+      await applyDateFilter(portfolioId: portfolioId, dateSelection: currentFilter);
+    }
   }
 
   /// Initialize trade calendar with optimal default settings

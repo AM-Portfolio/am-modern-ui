@@ -13,6 +13,7 @@ import '../pages/portfolio_heatmap_mobile_page.dart';
 import '../portfolio_analysis_widget.dart';
 import 'portfolio_holdings_widget.dart';
 import '../pages/trade_portfolio_list_mobile_page.dart';
+import '../../../../basket/presentation/basket_navigation.dart';
 
 /// Widget that handles portfolio tab content based on state
 class PortfolioTabContentWidget extends ConsumerWidget {
@@ -32,9 +33,8 @@ class PortfolioTabContentWidget extends ConsumerWidget {
       children: [
         _OverviewTab(currentPortfolioId: currentPortfolioId, ),
         _HoldingsTab(currentPortfolioId: currentPortfolioId, ),
-        _AnalysisTab(currentPortfolioId: currentPortfolioId, ),
         _HeatmapTab(currentPortfolioId: currentPortfolioId, ),
-        _TradeTab(ref: ref),
+        _BasketsTab(ref: ref, currentPortfolioId: currentPortfolioId),
       ],
     );
 }
@@ -178,85 +178,65 @@ class _HoldingsTab extends StatelessWidget {
   }
 }
 
-/// Analysis tab widget
-class _AnalysisTab extends StatelessWidget {
-  const _AnalysisTab({required this.currentPortfolioId, });
-  final String currentPortfolioId;
-  @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<PortfolioCubit, PortfolioState>(
-        builder: (context, state) {
-          if (state is PortfolioLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state is PortfolioError) {
-            return _buildErrorWithRefresh(context, state.message);
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => _refreshPortfolio(context),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: PortfolioAnalysisWidget(
-                key: ValueKey('analysis_$currentPortfolioId'),
-                portfolioId: currentPortfolioId,
-              ),
-            ),
-          );
-        },
-      );
-
-  Widget _buildErrorWithRefresh(BuildContext context, String message) =>
-      RefreshIndicator(
-        onRefresh: () => _refreshPortfolio(context),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.7,
-            child: PortfolioErrorWidget(
-              message: message,
-              onRetry: () => _refreshPortfolio(context),
-            ),
-          ),
-        ),
-      );
-
-  Future<void> _refreshPortfolio(BuildContext context) async {
-    CommonLogger.userAction(
-      'Pull to Refresh Analysis',
-      tag: 'PortfolioAnalysisTab',
-      metadata: {'portfolioId': currentPortfolioId},
-    );
-    context.read<PortfolioCubit>().refreshPortfolioById(currentPortfolioId);
-  }
-}
-
 /// Heatmap tab widget using the new mobile heatmap page
 class _HeatmapTab extends StatelessWidget {
   const _HeatmapTab({required this.currentPortfolioId, });
   final String currentPortfolioId;
   @override
-  Widget build(BuildContext context) => BlocProvider<PortfolioHeatmapCubit>(
-    create: (context) => PortfolioHeatmapCubit(),
-    child: PortfolioHeatmapMobilePage(
-      portfolioId: currentPortfolioId,
-      portfolioName: _getPortfolioName(context),
-    ),
-  );
+  Widget build(BuildContext context) {
+    if (currentPortfolioId == 'all') {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline, size: 48, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'Select a specific portfolio to view the Heatmap',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+    return BlocProvider<PortfolioHeatmapCubit>(
+      create: (context) => PortfolioHeatmapCubit(),
+      child: PortfolioHeatmapMobilePage(
+        portfolioId: currentPortfolioId,
+        portfolioName: _getPortfolioName(context),
+      ),
+    );
+  }
 
   /// Get portfolio name from the current portfolio state
   String? _getPortfolioName(BuildContext context) => 'Heatmap';
 }
 
-/// Trade tab widget using the trade mobile page with Riverpod
-class _TradeTab extends StatelessWidget {
-  const _TradeTab({required this.ref});
+/// Baskets tab widget using the BasketExplorer
+class _BasketsTab extends StatelessWidget {
+  const _BasketsTab({required this.ref, required this.currentPortfolioId});
   final WidgetRef ref;
+  final String currentPortfolioId;
 
   @override
   Widget build(BuildContext context) {
-    return TradePortfolioListMobilePage();
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            Expanded(
+              child: BasketSectionNavigator(
+                userId: 'default_user',
+                portfolioId: currentPortfolioId,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

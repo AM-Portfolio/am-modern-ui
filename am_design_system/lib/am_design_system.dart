@@ -82,6 +82,7 @@ export 'shared/widgets/inputs/dropdown_styles.dart';
 export 'shared/widgets/inputs/compact_date_range_picker.dart';
 
 // --- Display & Cards ---
+export 'shared/widgets/am_click_capsule.dart';
 export 'shared/widgets/display/pill_selector.dart';
 export 'shared/widgets/display/glass_card.dart';
 export 'shared/widgets/display/architecture_card.dart';

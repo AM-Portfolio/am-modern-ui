@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../../../features/trade/internal/domain/enums/trade_directions.dart';
 import '../../../../../features/trade/internal/domain/enums/enum_extensions.dart';
 import '../../../../../features/trade/internal/domain/enums/trade_statuses.dart';
-import '../../../../../features/trade/internal/domain/enums/enum_extensions.dart';
 
 /// Compact inline Direction & Status selector for trade forms
 class DirectionStatusSelector extends StatelessWidget {
@@ -139,46 +139,31 @@ class DirectionStatusSelector extends StatelessWidget {
     ],
   );
 
-  Widget _buildStatusDropdown(ThemeData theme, bool isMobile) => Container(
-    decoration: BoxDecoration(
-      color: theme.colorScheme.surface.withOpacity(0.6),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: theme.colorScheme.outline.withOpacity(0.25)),
-    ),
-    padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12, vertical: isMobile ? 4 : 6),
-    child: DropdownButtonHideUnderline(
-      child: DropdownButton<TradeStatuses>(
-        value: selectedStatus,
-        isDense: true,
-        isExpanded: isMobile,
-        icon: Icon(Icons.arrow_drop_down, size: isMobile ? 20 : 24),
-        onChanged: (newValue) {
-          if (newValue != null) {
-            onStatusChanged(newValue);
-          }
-        },
-        items: TradeStatuses.values
-            .map(
-              (status) => DropdownMenuItem<TradeStatuses>(
-                value: status,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(_getStatusIcon(status), size: isMobile ? 16 : 18, color: _getStatusColor(status)),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        status.displayName,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    ),
+  Widget _buildStatusDropdown(ThemeData theme, bool isMobile) => CustomDropdown<TradeStatuses>(
+    value: selectedStatus,
+    isExpanded: isMobile,
+    height: isMobile ? 36 : 44,
+    borderRadius: 8,
+    backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.6),
+    borderColor: theme.colorScheme.outline.withValues(alpha: 0.25),
+    contentPadding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12),
+    iconSize: isMobile ? 20 : 24,
+    onChanged: (newValue) {
+      if (newValue != null) {
+        onStatusChanged(newValue);
+      }
+    },
+    items: TradeStatuses.values
+        .map(
+          (status) => status.toDropdownItem(
+            text: status.displayName,
+            icon: _getStatusIcon(status),
+            iconColor: _getStatusColor(status),
+            iconSize: isMobile ? 16 : 18,
+            expandText: isMobile,
+          ),
+        )
+        .toList(),
   );
 
   IconData _getStatusIcon(TradeStatuses status) {

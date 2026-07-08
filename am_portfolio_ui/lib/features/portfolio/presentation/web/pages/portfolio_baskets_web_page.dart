@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../basket/presentation/widgets/basket_explorer.dart';
+import '../../../../basket/presentation/basket_navigation.dart';
 
 /// Web-specific baskets page
 class PortfolioBasketsWebPage extends StatelessWidget {
@@ -21,13 +21,12 @@ class PortfolioBasketsWebPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Basket Opportunities',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 16),
+
           Expanded(
-            child: BasketExplorer(portfolioId: portfolioId!),
+            child: BasketSectionNavigator(
+              userId: 'default_user',
+              portfolioId: portfolioId!,
+            ),
           ),
         ],
       ),

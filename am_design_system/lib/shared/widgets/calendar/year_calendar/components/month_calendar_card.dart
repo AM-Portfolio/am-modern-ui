@@ -29,8 +29,7 @@ class MonthCalendarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firstDay = DateTime(year, month);
-    final lastDay = DateTime(year, month + 1, 0);
-    final daysInMonth = lastDay.day;
+    final daysInMonth = DateUtils.getDaysInMonth(year, month);
     final firstWeekday = firstDay.weekday; // 1 = Monday, 7 = Sunday
 
     // Calculate month statistics

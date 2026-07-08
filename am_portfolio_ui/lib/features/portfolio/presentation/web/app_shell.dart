@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
+import 'package:am_common/am_common.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
-import '../widgets/global_portfolio_wrapper.dart'; // Correct relative import
 import '../../internal/domain/entities/portfolio_list.dart';
 
 class AppShell extends StatelessWidget {
@@ -65,7 +65,13 @@ class AppShell extends StatelessWidget {
                 customWidget: SharedPortfolioSelector<PortfolioItem>(
                   currentPortfolioId: context.selectedPortfolioId,
                   currentPortfolioName: context.selectedPortfolioName,
-                  portfolios: portfolios,
+                  portfolios: [
+                    const PortfolioItem(
+                      portfolioId: 'all',
+                      portfolioName: 'All Portfolios',
+                    ),
+                    ...portfolios,
+                  ],
                   onPortfolioSelected: (id, name) {
                     context.selectPortfolio(id, name);
                     // Refresh current route? Usually needed if the route depends on ID.
@@ -97,13 +103,7 @@ class AppShell extends StatelessWidget {
                   onTap: () => context.go('/portfolio/holdings'),
                   accentColor: ModuleColors.portfolio,
                 ),
-                SecondarySidebarItem(
-                  title: 'Analysis',
-                  icon: Icons.analytics_outlined,
-                  isSelected: location == '/portfolio/analysis',
-                  onTap: () => context.go('/portfolio/analysis'),
-                  accentColor: ModuleColors.portfolio,
-                ),
+
                 SecondarySidebarItem(
                   title: 'Heatmap',
                   icon: Icons.grid_on_outlined,

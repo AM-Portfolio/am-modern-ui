@@ -1,6 +1,7 @@
 import 'package:am_common/am_common.dart';
 import '../../internal/domain/entities/trade_controller_entities.dart';
 import '../models/calendar_view_models.dart';
+import 'package:flutter/material.dart';
 
 /// Service for aggregating trade calendar data into view models
 class CalendarAggregationService {
@@ -112,7 +113,7 @@ class CalendarAggregationService {
     var tradingDays = 0;
 
     final dailyPnLs = <double>[];
-    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final daysInMonth = DateUtils.getDaysInMonth(year, month);
 
     // Process each day in the month
     for (var day = 1; day <= daysInMonth; day++) {
@@ -244,7 +245,7 @@ class CalendarAggregationService {
 
   List<TradeDetails> _getMonthData(Map<String, List<TradeDetails>> calendarData, int year, int month) {
     final allTrades = <TradeDetails>[];
-    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final daysInMonth = DateUtils.getDaysInMonth(year, month);
 
     for (var day = 1; day <= daysInMonth; day++) {
       final dateKey = _formatDateKey(year, month, day);
