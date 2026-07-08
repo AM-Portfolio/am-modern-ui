@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_common/am_common.dart';
 
 import '../../../providers/portfolio_providers.dart';
 import '../../cubit/portfolio_analytics_cubit.dart';
 import '../../cubit/portfolio_heatmap_cubit.dart';
 import '../../widgets/portfolio_heatmap_widget.dart';
-import '../../widgets/global_portfolio_wrapper.dart';
 
 /// Web-specific portfolio heatmap page.
 /// Self-contained with its own providers to support direct linking.

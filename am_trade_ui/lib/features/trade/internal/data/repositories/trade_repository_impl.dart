@@ -374,13 +374,17 @@ class TradeRepositoryImpl implements TradeRepository {
 
     if (_cachedPortfolioList != null) {
       Future.microtask(() => _portfoliosController.add(_cachedPortfolioList!));
-    } else {
-      getTradePortfolios().catchError((error) {
-        AppLogger.error('Failed to fetch initial portfolios for stream', tag: 'TradeRepository', error: error);
-        _portfoliosController.addError(error);
-        return TradePortfolioList.empty('');
-      });
     }
+
+    getTradePortfolios().catchError((error) {
+      AppLogger.error(
+        'Failed to fetch initial portfolios for stream',
+        tag: 'TradeRepository',
+        error: error,
+      );
+      _portfoliosController.addError(error);
+      return TradePortfolioList.empty('');
+    });
 
     return _portfoliosController.stream;
   }

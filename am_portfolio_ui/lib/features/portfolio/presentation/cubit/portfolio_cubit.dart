@@ -40,6 +40,9 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   bool isLiveDataActive = false;
   bool _portfolioStreamingAllowed = false;
 
+  String? _loadingPortfolioId;
+  String? _loadedPortfolioId;
+
   /// When false (e.g. Dashboard tab active), skip STOMP portfolio interest registration.
   void setPortfolioStreamingAllowed(bool allowed) {
     if (_portfolioStreamingAllowed == allowed) return;
@@ -391,6 +394,18 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
   /// Load portfolio data for a specific portfolio ID
   Future<void> loadPortfolioById(String portfolioId) async {
+    if (_loadingPortfolioId == portfolioId) return;
+
+    final currentState = state;
+    if (_loadedPortfolioId == portfolioId &&
+        currentState is PortfolioLoaded &&
+        currentState.portfolioId == portfolioId &&
+        !currentState.isStale) {
+      return;
+    }
+
+    _loadingPortfolioId = portfolioId;
+
     CommonLogger.methodEntry(
       'loadPortfolioById',
       tag: 'PortfolioCubit',
@@ -464,6 +479,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       );
 
       if (!isClosed) {
+        _loadedPortfolioId = portfolioId;
         emit(
           PortfolioLoaded(
             portfolioId: portfolioId,
@@ -505,6 +521,10 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         tag: 'PortfolioCubit',
         metadata: {'status': 'error'},
       );
+    } finally {
+      if (_loadingPortfolioId == portfolioId) {
+        _loadingPortfolioId = null;
+      }
     }
   }
 

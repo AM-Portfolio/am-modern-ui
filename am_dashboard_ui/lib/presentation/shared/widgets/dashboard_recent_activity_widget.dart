@@ -48,20 +48,6 @@ class _DashboardRecentActivitySectionState
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(activityStreamProvider(widget.userId));
-    ref.listen(activityStreamProvider(widget.userId), (prev, next) {
-      if (_page == 0 && next.hasValue) {
-        ref.invalidate(
-          recentActivityProvider(
-            widget.userId,
-            page: _page,
-            size: _pageSize,
-            sortBy: _sortBy,
-          ),
-        );
-      }
-    });
-
     final activityAsync = ref.watch(
       recentActivityProvider(
         widget.userId,

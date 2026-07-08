@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'glass_card.dart';
 
-/// Performance chart ? timeframe is controlled globally via [dashboardTimeFrameProvider].
+/// Performance chart — timeframe is controlled globally via [dashboardTimeFrameProvider].
 class DashboardChartWidget extends StatefulWidget {
   final PerformanceResponse performance;
 
@@ -40,7 +40,7 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
     final emptyStateBg =
         isDark ? const Color(0xFF1E293B).withValues(alpha: 0.5) : const Color(0xFFFAFAFA);
 
-    final currencyFormat = NumberFormat.currency(symbol: '?', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
     final returnPct = widget.performance.totalReturnPercentage;
     final returnVal = widget.performance.totalReturnValue;
     final isPositive = returnPct >= 0;
@@ -266,7 +266,7 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
   }
 
   Widget _buildTableView(Color onSurface, Color onSurfaceVariant, bool isDark) {
-    final currencyFormat = NumberFormat.currency(symbol: '?', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 2);
     final reversedData = List<DataPoint>.from(_chartData.reversed);
 
     return Container(

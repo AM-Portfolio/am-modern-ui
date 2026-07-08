@@ -14,6 +14,13 @@ class PortfolioLocalDataSource {
   static const String _summaryBoxName = 'portfolio_summary_v2';
   static const String _listBoxName = 'user_portfolios';
 
+  Future<void>? _initFuture;
+
+  Future<void> ensureInitialized() {
+    _initFuture ??= init();
+    return _initFuture!;
+  }
+
   /// Initialize Hive and open boxes
   Future<void> init() async {
     await Hive.initFlutter();
@@ -37,6 +44,7 @@ class PortfolioLocalDataSource {
 
   /// Get cached holdings
   Future<PortfolioHoldings?> getLastHoldings(String portfolioId) async {
+    await ensureInitialized();
     try {
       final box = Hive.box<PortfolioHoldingsHiveModel>(_holdingsBoxName);
       final hiveModel = box.get(portfolioId);
@@ -53,6 +61,7 @@ class PortfolioLocalDataSource {
 
   /// Cache holdings
   Future<void> cacheHoldings(String portfolioId, PortfolioHoldings data) async {
+    await ensureInitialized();
     try {
       final box = Hive.box<PortfolioHoldingsHiveModel>(_holdingsBoxName);
       await box.put(portfolioId, PortfolioHoldingsHiveModel.fromDomain(data));
@@ -71,6 +80,7 @@ class PortfolioLocalDataSource {
 
   /// Get cached summary
   Future<PortfolioSummary?> getLastSummary(String portfolioId) async {
+    await ensureInitialized();
     try {
       final box = Hive.box<PortfolioSummaryHiveModel>(_summaryBoxName);
       final hiveModel = box.get(portfolioId);
@@ -87,6 +97,7 @@ class PortfolioLocalDataSource {
 
   /// Cache summary
   Future<void> cacheSummary(String portfolioId, PortfolioSummary data) async {
+    await ensureInitialized();
     try {
       final box = Hive.box<PortfolioSummaryHiveModel>(_summaryBoxName);
       await box.put(portfolioId, PortfolioSummaryHiveModel.fromDomain(data));
@@ -105,6 +116,7 @@ class PortfolioLocalDataSource {
 
   /// Get cached portfolio list
   Future<PortfolioList?> getLastPortfolioList() async {
+    await ensureInitialized();
     try {
       final box = Hive.box<PortfolioListHiveModel>(_listBoxName);
       final hiveModel = box.get('current_user');
@@ -121,6 +133,7 @@ class PortfolioLocalDataSource {
 
   /// Cache portfolio list
   Future<void> cachePortfolioList(PortfolioList data) async {
+    await ensureInitialized();
     try {
       final box = Hive.box<PortfolioListHiveModel>(_listBoxName);
       await box.put('current_user', PortfolioListHiveModel.fromDomain(data));

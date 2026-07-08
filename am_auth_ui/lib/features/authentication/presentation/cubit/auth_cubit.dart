@@ -1,9 +1,9 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_design_system/core/errors/failures.dart';
 import 'package:am_common/am_common.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:am_common/am_common.dart';
 import '../../domain/usecases/check_auth_status_usecase.dart';
 import '../../domain/usecases/demo_login_usecase.dart';
 import '../../domain/usecases/email_login_usecase.dart';
@@ -96,6 +96,7 @@ class AuthCubit extends Cubit<AuthState> {
   /// Check authentication status and restore session if valid
   Future<void> checkAuthStatus() async {
     CommonLogger.methodEntry('checkAuthStatus', tag: 'AuthCubit');
+    BootTrace.instance.mark('auth_check_start');
     CommonLogger.debug(
       '🔍 Starting authentication status check...',
       tag: 'AuthCubit',
@@ -111,6 +112,14 @@ class AuthCubit extends Cubit<AuthState> {
           tag: 'AuthCubit',
           error: failure,
         );
+        if (failure is NetworkFailure || _isTransientServerFailure(failure)) {
+          CommonLogger.debug(
+            '🔄 Emitting AuthRestoreFailed (transient) — stay on current page',
+            tag: 'AuthCubit',
+          );
+          emit(AuthRestoreFailed(failure.message));
+          return;
+        }
         CommonLogger.debug(
           '🔄 Emitting Unauthenticated state due to check failure',
           tag: 'AuthCubit',
@@ -194,6 +203,7 @@ class AuthCubit extends Cubit<AuthState> {
       },
     );
 
+    BootTrace.instance.mark('auth_check_done');
     CommonLogger.methodExit('checkAuthStatus', tag: 'AuthCubit');
   }
 
@@ -266,5 +276,11 @@ class AuthCubit extends Cubit<AuthState> {
       emit(AuthError(e.toString()));
     }
   }
+}
+
+bool _isTransientServerFailure(Failure failure) {
+  if (failure is! ServerFailure) return false;
+  final status = int.tryParse(failure.code ?? '');
+  return status != null && status >= 500;
 }
 

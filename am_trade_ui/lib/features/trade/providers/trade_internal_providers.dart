@@ -58,7 +58,8 @@ final _tradeRemoteDataSourceProvider = FutureProvider<TradeRemoteDataSource>((re
 /// Provider for trade repository
 final _tradeRepositoryProvider = FutureProvider<TradeRepository>((ref) async {
   final remoteDataSource = await ref.watch(_tradeRemoteDataSourceProvider.future);
-  final stompClient = GetIt.I<AmStompClient>();
+  final stompClient =
+      GetIt.instance.isRegistered<AmStompClient>() ? GetIt.instance<AmStompClient>() : null;
 
   return TradeRepositoryImpl(
     remoteDataSource: remoteDataSource,
@@ -114,6 +115,13 @@ final getTradeCalendarByDateRangeProvider = FutureProvider<GetTradeCalendarByDat
   return GetTradeCalendarByDateRange(repository);
 });
 
+/// Invalidates trade data providers so the next watch triggers fresh API calls.
+void invalidateTradeData(WidgetRef ref) {
+  ref.invalidate(_tradeRepositoryProvider);
+  ref.invalidate(tradePortfoliosProvider);
+  ref.invalidate(tradePortfoliosStreamProvider);
+}
+
 /// Provider for trade portfolios list
 final tradePortfoliosProvider = FutureProvider<TradePortfolioList>((ref) async {
   final useCase = await ref.watch(_getTradePortfoliosProvider.future);
@@ -151,6 +159,7 @@ final tradeCalendarProvider = FutureProvider.family<TradeCalendar, String>((
 /// Provider for watching trade holdings (stream) - returns view models
 final tradeHoldingsStreamProvider =
     StreamProvider.family<TradeHoldingsViewModel, String>((ref, portfolioId) async* {
+      if (portfolioId.isEmpty) return;
       final useCase = await ref.watch(_getTradeHoldingsProvider.future);
       yield* useCase.watch(portfolioId).map(TradeHoldingsViewModel.fromEntity);
     });
@@ -160,6 +169,7 @@ final tradeSummaryStreamProvider = StreamProvider.family<TradeSummary, String>((
   ref,
   portfolioId,
 ) async* {
+  if (portfolioId.isEmpty) return;
   final useCase = await ref.watch(_getTradeSummaryProvider.future);
   yield* useCase.watch(portfolioId);
 });
@@ -173,6 +183,7 @@ final tradePortfoliosStreamProvider = StreamProvider<List<TradePortfolioViewMode
 /// Provider for watching trade calendar (stream) - returns view models
 final tradeCalendarStreamProvider =
     StreamProvider.family<TradeCalendarViewModel, String>((ref, portfolioId) async* {
+      if (portfolioId.isEmpty) return;
       final useCase = await ref.watch(_getTradeCalendarProvider.future);
       yield* useCase.watch(portfolioId).map(TradeCalendarViewModel.fromEntity);
     });

@@ -7,7 +7,6 @@ import '../../../providers/portfolio_providers.dart';
 import '../../cubit/portfolio_analytics_state.dart';
 import '../../cubit/portfolio_analytics_cubit.dart';
 import '../../cubit/portfolio_cubit.dart';
-import '../../widgets/global_portfolio_wrapper.dart';
 
 /// Web-specific portfolio overview page.
 /// It uses the global [PortfolioCubit] provided by GlobalPortfolioWrapper.

@@ -40,16 +40,9 @@ Future<PortfolioRemoteDataSource> portfolioRemoteDataSource(Ref ref) async {
   );
 }
 
-final portfolioLocalDataSourceProvider =
-    FutureProvider<PortfolioLocalDataSource>((ref) async {
-      CommonLogger.debug(
-        'Creating PortfolioLocalDataSource instance',
-        tag: 'PortfolioProviders',
-      );
-      final dataSource = PortfolioLocalDataSource();
-      await dataSource.init();
-      return dataSource;
-    });
+final portfolioLocalDataSourceProvider = Provider<PortfolioLocalDataSource>(
+  (ref) => PortfolioLocalDataSource(),
+);
 
 @Riverpod(keepAlive: true)
 Future<PortfolioRepository> portfolioRepository(Ref ref) async {
@@ -60,9 +53,7 @@ Future<PortfolioRepository> portfolioRepository(Ref ref) async {
   final remoteDataSource = await ref.watch(
     portfolioRemoteDataSourceProvider.future,
   );
-  final localDataSource = await ref.watch(
-    portfolioLocalDataSourceProvider.future,
-  );
+  final localDataSource = ref.watch(portfolioLocalDataSourceProvider);
 
   // AmStompClient is managed by ServiceRegistry (GetIt)
   final stompClient = GetIt.I<AmStompClient>();

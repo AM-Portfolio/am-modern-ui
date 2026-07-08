@@ -112,7 +112,20 @@ class DiagnosticDashboardPage extends ConsumerWidget {
                     itemCount: ref.watch(telemetryLogProvider).length,
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     itemBuilder: (context, index) {
-                      final event = ref.watch(telemetryLogProvider)[index];
+                      final events = ref.watch(telemetryLogProvider);
+                      final event = events[index];
+                      if (index == 0 &&
+                          event.category == 'Boot' &&
+                          event.label == 'boot_summary') {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _BootSummaryCard(metadata: event.metadata ?? {}),
+                            const SizedBox(height: 8),
+                            _TelemetryListTile(event: event),
+                          ],
+                        );
+                      }
                       return _TelemetryListTile(event: event);
                     },
                   ),
@@ -126,6 +139,69 @@ class DiagnosticDashboardPage extends ConsumerWidget {
   }
 }
 
+class _BootSummaryCard extends StatelessWidget {
+  const _BootSummaryCard({required this.metadata});
+
+  final Map<String, dynamic> metadata;
+
+  @override
+  Widget build(BuildContext context) {
+    final buckets = metadata['buckets'] as Map<String, dynamic>? ?? {};
+    final slowest = metadata['slowestPhase']?.toString() ?? 'unknown';
+    final totalMs = metadata['totalMs']?.toString() ?? '?';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.indigoAccent.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.indigoAccent.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Boot RUM Summary',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Total: ${totalMs}ms · Slowest: $slowest',
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            children: [
+              _bucketChip('Network', buckets['networkMs']),
+              _bucketChip('Engine', buckets['engineMs']),
+              _bucketChip('App boot', buckets['appBootMs']),
+              _bucketChip('Data', buckets['dataMs']),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bucketChip(String label, dynamic ms) {
+    return Chip(
+      label: Text(
+        '$label: ${ms ?? '?'}ms',
+        style: const TextStyle(fontSize: 11),
+      ),
+      backgroundColor: Colors.white12,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
 class _TelemetryListTile extends StatelessWidget {
   final TelemetryEvent event;
 
@@ -134,7 +210,12 @@ class _TelemetryListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isError = event.type == TelemetryType.apiError;
-    final color = isError ? Colors.redAccent : Colors.greenAccent;
+    final isBoot = event.category == 'Boot';
+    final color = isError
+        ? Colors.redAccent
+        : isBoot
+            ? Colors.indigoAccent
+            : Colors.greenAccent;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 8.0),
