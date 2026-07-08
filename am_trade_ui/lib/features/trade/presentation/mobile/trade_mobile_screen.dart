@@ -6,6 +6,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
 import '../../providers/trade_controller_providers.dart';
 import '../../providers/trade_internal_providers.dart';
+import '../../trade_calendar_providers.dart';
 import '../components/templates/trade_portfolio_discovery_template.dart';
 import '../cubit/trade_controller_cubit.dart';
 import '../models/trade_portfolio_view_model.dart';
@@ -326,6 +327,13 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                 // Refresh holdings when trade is added
                 if (_currentPortfolioId != null) {
                   ref.invalidate(tradeHoldingsStreamProvider(_currentPortfolioId!));
+                  
+                  // Refresh calendar data so it reflects the new trade
+                  ref.read(tradeCalendarCubitProvider(_currentPortfolioId!).future)
+                      .then((cubit) => cubit.loadTradeCalendar(
+                         portfolioId: _currentPortfolioId!, 
+                         forceReload: true,
+                      ));
                 }
                 // Switch back to holdings view after adding trade
                 setState(() => _selectedView = MobileTradeViewType.holdings);

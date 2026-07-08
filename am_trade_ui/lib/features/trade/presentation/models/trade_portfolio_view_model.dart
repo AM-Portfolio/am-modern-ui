@@ -27,7 +27,9 @@ class TradePortfolioViewModel {
     id: entity.id,
     name: entity.name,
     ownerId: entity.ownerId,
-    totalValue: entity.totalValue ?? 0.0,
+    totalValue: (entity.totalValue != null && entity.totalValue != 0.0) 
+        ? entity.totalValue! 
+        : (entity.netProfitLoss ?? 0.0),
     totalGainLoss: entity.totalGainLoss ?? 0.0,
     totalGainLossPercentage: entity.totalGainLossPercentage ?? 0.0,
     holdingsCount: entity.holdingsCount,
@@ -64,15 +66,15 @@ class TradePortfolioViewModel {
 
   /// Computed properties for UI
   String get displayName => name;
-  String get displayValue => '\$${totalValue.toStringAsFixed(2)}';
-  String get displayGainLoss => '\$${totalGainLoss.toStringAsFixed(2)}';
+  String get displayValue => '₹${totalValue.toStringAsFixed(2)}';
+  String get displayGainLoss => '₹${totalGainLoss.toStringAsFixed(2)}';
   String get displayGainLossPercentage => '${totalGainLossPercentage.toStringAsFixed(2)}%';
   String get displayHoldingsCount => '$holdingsCount holdings';
   bool get isProfit => totalGainLoss >= 0;
 
   // Trade metrics computed properties
   String get displayTotalTrades => '$totalTrades';
-  String get displayNetProfitLoss => '\$${(netProfitLoss ?? 0.0).toStringAsFixed(2)}';
+  String get displayNetProfitLoss => '₹${(netProfitLoss ?? 0.0).toStringAsFixed(2)}';
   String get displayNetProfitLossPercentage => '${(netProfitLossPercentage ?? 0.0).toStringAsFixed(2)}%';
   String get displayWinRate => '${(winRate ?? 0.0).toStringAsFixed(1)}%';
   String get displayOpenPositions => '$openPositions';

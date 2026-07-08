@@ -59,10 +59,11 @@ class DropdownStyles {
   }) {
     if (!enabled) return Colors.grey.shade500;
     if (textColor != null) return textColor;
-    final effectivePrimaryColor = getPrimaryColor(context, primaryColor);
+    
+    final theme = Theme.of(context);
     return isPlaceholder
-        ? effectivePrimaryColor.withOpacity(hintOpacity)
-        : effectivePrimaryColor;
+        ? theme.colorScheme.onSurface.withValues(alpha: 0.6)
+        : theme.colorScheme.onSurface;
   }
 
   /// Get effective icon color
