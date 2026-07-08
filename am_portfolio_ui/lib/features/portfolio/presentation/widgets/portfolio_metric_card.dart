@@ -67,8 +67,7 @@ class PortfolioMetricCard extends StatelessWidget {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
               child: Container(
-                padding:
-                    EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
+                width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
                   gradient: isHighlight
@@ -84,10 +83,8 @@ class PortfolioMetricCard extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            cardBase.withValues(
-                                alpha: isDark ? 0.55 : 0.9),
-                            cardBase.withValues(
-                                alpha: isDark ? 0.3 : 0.7),
+                            cardBase.withValues(alpha: isDark ? 0.55 : 0.9),
+                            cardBase.withValues(alpha: isDark ? 0.3 : 0.7),
                           ],
                         ),
                   border: Border.all(
@@ -115,34 +112,35 @@ class PortfolioMetricCard extends StatelessWidget {
                           ),
                         ],
                 ),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // ── Huge Watermark Icon ──
-                    Positioned(
-                      right: -10,
-                      bottom: -15,
-                      child: Transform.rotate(
-                        angle: -math.pi / 12,
-                        child: Icon(
-                          icon,
-                          size: compact ? 60 : 90,
-                          color: isHighlight
-                              ? Colors.white.withValues(alpha: 0.15)
-                              : accentColor.withValues(alpha: 0.06),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Stack(
+                    children: [
+                      // ── Watermark Icon (clipped by card) ──
+                      Positioned(
+                        right: 0,
+                        bottom: -4,
+                        child: Transform.rotate(
+                          angle: -math.pi / 12,
+                          child: Icon(
+                            icon,
+                            size: compact ? 56 : 76,
+                            color: isHighlight
+                                ? Colors.white.withValues(alpha: 0.14)
+                                : accentColor.withValues(alpha: 0.07),
+                          ),
                         ),
                       ),
-                    ),
-                    
-                    // ── Main Content ──
-                    Positioned.fill(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
+
+                      // ── Main Content ──
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: hPad, vertical: vPad),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            // ── Header: Title ──
+                            // Title
                             Text(
                               title,
                               maxLines: 1,
@@ -150,55 +148,48 @@ class PortfolioMetricCard extends StatelessWidget {
                               style: textTheme.bodySmall?.copyWith(
                                 fontSize: compact ? 10 : 11,
                                 color: isHighlight
-                                    ? Colors.white
-                                        .withValues(alpha: 0.85)
+                                    ? Colors.white.withValues(alpha: 0.85)
                                     : (isDark
-                                        ? Colors.white
-                                            .withValues(alpha: 0.5)
-                                        : Colors.black
-                                            .withValues(alpha: 0.45)),
+                                        ? Colors.white.withValues(alpha: 0.5)
+                                        : Colors.black.withValues(alpha: 0.45)),
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.4,
                               ),
                             ),
-                            const Spacer(flex: 2),
+                            SizedBox(height: compact ? 8 : 12),
 
-                            // ── Main value with neon text shadow ──
-                            Align(
+                            // Main value
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
                               alignment: Alignment.centerLeft,
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  value,
-                                  style: textTheme.headlineSmall?.copyWith(
-                                    fontSize: compact ? 18 : 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: isHighlight
-                                        ? Colors.white
-                                        : (glowBorder
-                                            ? accentColor
-                                            : (isDark
-                                                ? Colors.white
-                                                : const Color(
-                                                    0xFF1A1A2E))),
-                                    height: 1.1,
-                                    shadows: glowBorder
-                                        ? [
-                                            Shadow(
-                                              color: accentColor
-                                                  .withValues(alpha: 0.6),
-                                              blurRadius: 12,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
+                              child: Text(
+                                value,
+                                style: textTheme.headlineSmall?.copyWith(
+                                  fontSize: compact ? 18 : 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: isHighlight
+                                      ? Colors.white
+                                      : (glowBorder
+                                          ? accentColor
+                                          : (isDark
+                                              ? Colors.white
+                                              : const Color(0xFF1A1A2E))),
+                                  height: 1.1,
+                                  shadows: glowBorder
+                                      ? [
+                                          Shadow(
+                                            color: accentColor
+                                                .withValues(alpha: 0.6),
+                                            blurRadius: 12,
+                                          ),
+                                        ]
+                                      : null,
                                 ),
                               ),
                             ),
-                            const Spacer(flex: 1),
+                            SizedBox(height: compact ? 6 : 8),
 
-                            // ── Subtitle with directional indicator ──
+                            // Subtitle
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -209,8 +200,7 @@ class PortfolioMetricCard extends StatelessWidget {
                                         : Icons.arrow_downward_rounded,
                                     size: compact ? 10 : 12,
                                     color: isHighlight
-                                        ? Colors.white
-                                            .withValues(alpha: 0.9)
+                                        ? Colors.white.withValues(alpha: 0.9)
                                         : accentColor,
                                   ),
                                   const SizedBox(width: 2),
@@ -221,8 +211,7 @@ class PortfolioMetricCard extends StatelessWidget {
                                     style: textTheme.bodySmall?.copyWith(
                                       fontSize: compact ? 9 : 11,
                                       color: isHighlight
-                                          ? Colors.white
-                                              .withValues(alpha: 0.75)
+                                          ? Colors.white.withValues(alpha: 0.75)
                                           : (isPositive != null
                                               ? accentColor
                                                   .withValues(alpha: 0.9)
@@ -230,8 +219,7 @@ class PortfolioMetricCard extends StatelessWidget {
                                                   ? Colors.white
                                                       .withValues(alpha: 0.4)
                                                   : Colors.black
-                                                      .withValues(
-                                                          alpha: 0.4))),
+                                                      .withValues(alpha: 0.4))),
                                       fontWeight:
                                           (isPositive != null && isPositive!)
                                               ? FontWeight.w600
@@ -245,8 +233,8 @@ class PortfolioMetricCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
