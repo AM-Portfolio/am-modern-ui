@@ -361,24 +361,31 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                           const SizedBox(height: 16),
                           SizedBox(
                             height: isSmallMobile ? 480 : 520, // Increased to give the pie chart and list enough vertical space
-                            child: BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
-                              builder: (context, state) {
-                                if (state is PortfolioAnalyticsLoading) {
-                                  return const AllocationPanelWidget(isLoading: true);
-                                } else if (state is PortfolioAnalyticsLoaded) {
-                                  final isLoading =
-                                      state.isLoadingType(AnalyticsDataType.sectorAllocation);
-                                  final error =
-                                      state.getErrorForType(AnalyticsDataType.sectorAllocation);
-                                  return AllocationPanelWidget(
-                                    sectorAllocation: state.sectorAllocation,
-                                    isLoading: isLoading,
-                                    error: error,
-                                  );
-                                } else if (state is PortfolioAnalyticsError) {
-                                  return AllocationPanelWidget(error: state.message);
-                                }
-                                return const AllocationPanelWidget(isLoading: true);
+                            child: BlocBuilder<PortfolioCubit, PortfolioState>(
+                              builder: (context, portfolioState) {
+                                final holdings = portfolioState is PortfolioLoaded ? portfolioState.holdings : null;
+                                return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+                                  builder: (context, state) {
+                                    if (state is PortfolioAnalyticsLoading) {
+                                      return const AllocationPanelWidget(isLoading: true);
+                                    } else if (state is PortfolioAnalyticsLoaded) {
+                                      final isLoading =
+                                          state.isLoadingType(AnalyticsDataType.sectorAllocation);
+                                      final error =
+                                          state.getErrorForType(AnalyticsDataType.sectorAllocation);
+                                      return AllocationPanelWidget(
+                                        sectorAllocation: state.sectorAllocation,
+                                        marketCapAllocation: state.marketCapAllocation,
+                                        holdings: holdings,
+                                        isLoading: isLoading,
+                                        error: error,
+                                      );
+                                    } else if (state is PortfolioAnalyticsError) {
+                                      return AllocationPanelWidget(error: state.message);
+                                    }
+                                    return const AllocationPanelWidget(isLoading: true);
+                                  },
+                                );
                               },
                             ),
                           ),
@@ -680,24 +687,31 @@ class _MoversAllocationRowState extends State<_MoversAllocationRow> {
           flex: 1,
           child: SizedBox(
             height: _leftHeight ?? 800, // fallback to tall box until measured
-            child: BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
-              builder: (context, state) {
-                if (state is PortfolioAnalyticsLoading) {
-                  return const AllocationPanelWidget(isLoading: true);
-                } else if (state is PortfolioAnalyticsLoaded) {
-                  final isLoading =
-                      state.isLoadingType(AnalyticsDataType.sectorAllocation);
-                  final error =
-                      state.getErrorForType(AnalyticsDataType.sectorAllocation);
-                  return AllocationPanelWidget(
-                    sectorAllocation: state.sectorAllocation,
-                    isLoading: isLoading,
-                    error: error,
-                  );
-                } else if (state is PortfolioAnalyticsError) {
-                  return AllocationPanelWidget(error: state.message);
-                }
-                return const AllocationPanelWidget(isLoading: true);
+            child: BlocBuilder<PortfolioCubit, PortfolioState>(
+              builder: (context, portfolioState) {
+                final holdings = portfolioState is PortfolioLoaded ? portfolioState.holdings : null;
+                return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+                  builder: (context, state) {
+                    if (state is PortfolioAnalyticsLoading) {
+                      return const AllocationPanelWidget(isLoading: true);
+                    } else if (state is PortfolioAnalyticsLoaded) {
+                      final isLoading =
+                          state.isLoadingType(AnalyticsDataType.sectorAllocation);
+                      final error =
+                          state.getErrorForType(AnalyticsDataType.sectorAllocation);
+                      return AllocationPanelWidget(
+                        sectorAllocation: state.sectorAllocation,
+                        marketCapAllocation: state.marketCapAllocation,
+                        holdings: holdings,
+                        isLoading: isLoading,
+                        error: error,
+                      );
+                    } else if (state is PortfolioAnalyticsError) {
+                      return AllocationPanelWidget(error: state.message);
+                    }
+                    return const AllocationPanelWidget(isLoading: true);
+                  },
+                );
               },
             ),
           ),

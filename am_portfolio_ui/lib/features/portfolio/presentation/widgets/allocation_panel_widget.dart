@@ -1,15 +1,20 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
+import '../../internal/domain/entities/portfolio_holding.dart';
 
 class AllocationPanelWidget extends StatefulWidget {
   const AllocationPanelWidget({
     super.key,
     this.sectorAllocation,
+    this.marketCapAllocation,
+    this.holdings,
     this.isLoading = false,
     this.error,
   });
   final SectorAllocation? sectorAllocation;
+  final MarketCapAllocation? marketCapAllocation;
+  final List<PortfolioHolding>? holdings;
   final bool isLoading;
   final String? error;
 
@@ -26,6 +31,8 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
   late final AnimationController _hoverController;
   late final Animation<double> _hoverAnimation;
   
+  int _selectedTab = 0; // 0 = Sector, 1 = Industry, 2 = Cap
+  String? _expandedId;
   bool _showAllSectors = false;
   int? _hoveredIndex;
   int? _previousHoveredIndex;
@@ -253,14 +260,59 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
       );
     }
 
-    final weights = widget.sectorAllocation!.sectorWeights;
+    List<SectorWeight> weights = [];
+    String sectionTitle = 'Distribution';
+    String emptyText = 'No allocation data available';
+    
+    if (_selectedTab == 0 && widget.sectorAllocation != null) {
+      weights = widget.sectorAllocation!.sectorWeights;
+      sectionTitle = 'Sector Distribution';
+      emptyText = 'No sector data available';
+    } else if (_selectedTab == 1 && widget.sectorAllocation != null) {
+      weights = widget.sectorAllocation!.industryWeights.map((w) => SectorWeight(
+        sectorName: w.industryName,
+        weightPercentage: w.weightPercentage,
+        marketCap: w.marketCap,
+        topStocks: w.topStocks,
+      )).toList();
+      sectionTitle = 'Industry Distribution';
+      emptyText = 'No industry data available';
+    } else if (_selectedTab == 2 && widget.marketCapAllocation != null) {
+      weights = widget.marketCapAllocation!.segments.map((w) => SectorWeight(
+        sectorName: w.segmentName,
+        weightPercentage: w.weightPercentage,
+        marketCap: w.segmentValue,
+        topStocks: w.topStocks,
+      )).toList();
+      sectionTitle = 'Market Cap Distribution';
+      emptyText = 'No market cap data available';
+    }
+
+    if (weights.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_selectedTab == 0 || _selectedTab == 1) _buildTabs(),
+            const SizedBox(height: 20),
+            const Icon(Icons.data_usage_outlined, size: 48),
+            const SizedBox(height: 8),
+            Text(emptyText, style: const TextStyle(fontSize: 14)),
+          ],
+        ),
+      );
+    }
+
     final visibleWeights = weights;
-    final hasMore = false;
 
     return Column(
       mainAxisSize: MainAxisSize.max,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── SECTION 0: Tabs ──
+        _buildTabs(),
+        const SizedBox(height: 20),
+
         // ── SECTION 1: Sector Distribution – Donut View (TOP) ──
         Center(
           child: SizedBox(
@@ -368,7 +420,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
         Align(
           alignment: Alignment.centerLeft,
           child: Text(
-            'Sector Distribution',
+            sectionTitle,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: _isDark
                       ? Colors.white.withValues(alpha: 0.45)
@@ -397,130 +449,126 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                       final colors = _getGradientColors(index);
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        margin: const EdgeInsets.only(right: 8),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: colors.first,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          weight.sectorName,
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13,
-                                              ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  '${weight.weightPercentage.toStringAsFixed(1)}%',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                        color: colors.first,
-                                      ),
-                                ),
-                              ],
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (_expandedId == weight.sectorName) {
+                                _expandedId = null;
+                              } else {
+                                _expandedId = weight.sectorName;
+                              }
+                            });
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            decoration: BoxDecoration(
+                              color: _expandedId == weight.sectorName ? colors.first.withValues(alpha: 0.05) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              border: _expandedId == weight.sectorName ? Border.all(color: colors.first.withValues(alpha: 0.2)) : Border.all(color: Colors.transparent),
                             ),
-                            const SizedBox(height: 8),
-                            TweenAnimationBuilder<double>(
-                              key: ValueKey(weight.sectorName),
-                              tween: Tween<double>(begin: 0, end: weight.weightPercentage / 100),
-                              duration: const Duration(milliseconds: 900),
-                              curve: Curves.easeOutQuart,
-                              builder: (context, value, _) {
-                                return LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    return Stack(
-                                      children: [
-                                        Container(
-                                          height: 6,
-                                          width: double.infinity,
-                                          decoration: BoxDecoration(
-                                            color: _isDark
-                                                ? Colors.white.withValues(alpha: 0.08)
-                                                : Colors.black.withValues(alpha: 0.07),
-                                            borderRadius: BorderRadius.circular(3),
-                                          ),
-                                        ),
-                                        Container(
-                                          height: 6,
-                                          width: constraints.maxWidth * value,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(3),
-                                            gradient: LinearGradient(
-                                              colors: colors,
-                                              begin: Alignment.centerLeft,
-                                              end: Alignment.centerRight,
+                            padding: _expandedId == weight.sectorName ? const EdgeInsets.all(12) : EdgeInsets.zero,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            margin: const EdgeInsets.only(right: 8),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: colors.first,
                                             ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: colors.first.withValues(alpha: 0.45),
-                                                blurRadius: 6,
-                                              ),
-                                            ],
                                           ),
-                                        ),
-                                      ],
+                                          Expanded(
+                                            child: Text(
+                                              weight.sectorName,
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 13,
+                                                  ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      '${weight.weightPercentage.toStringAsFixed(1)}%',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                            color: colors.first,
+                                          ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    AnimatedRotation(
+                                      turns: _expandedId == weight.sectorName ? 0.5 : 0,
+                                      duration: const Duration(milliseconds: 300),
+                                      child: Icon(Icons.keyboard_arrow_down, size: 16, color: colors.first),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                TweenAnimationBuilder<double>(
+                                  key: ValueKey(weight.sectorName),
+                                  tween: Tween<double>(begin: 0, end: weight.weightPercentage / 100),
+                                  duration: const Duration(milliseconds: 900),
+                                  curve: Curves.easeOutQuart,
+                                  builder: (context, value, _) {
+                                    return LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        return Stack(
+                                          children: [
+                                            Container(
+                                              height: 6,
+                                              width: double.infinity,
+                                              decoration: BoxDecoration(
+                                                color: _isDark
+                                                    ? Colors.white.withValues(alpha: 0.08)
+                                                    : Colors.black.withValues(alpha: 0.07),
+                                                borderRadius: BorderRadius.circular(3),
+                                              ),
+                                            ),
+                                            Container(
+                                              height: 6,
+                                              width: constraints.maxWidth * value,
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(3),
+                                                gradient: LinearGradient(
+                                                  colors: colors,
+                                                  begin: Alignment.centerLeft,
+                                                  end: Alignment.centerRight,
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: colors.first.withValues(alpha: 0.45),
+                                                    blurRadius: 6,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
                                     );
                                   },
-                                );
-                              },
+                                ),
+                                if (_expandedId == weight.sectorName)
+                                  _buildExpandedHoldings(weight, colors.first),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       );
                     }),
                   ),
                 ),
-                if (hasMore) ...[
-                  const SizedBox(height: 4),
-                  Center(
-                    child: TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _showAllSectors = !_showAllSectors;
-                        });
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Theme.of(context).primaryColor,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _showAllSectors ? 'Show Less' : 'Show ${weights.length - 5} More',
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                          ),
-                          const SizedBox(width: 6),
-                          AnimatedRotation(
-                            turns: _showAllSectors ? 0.5 : 0,
-                            duration: const Duration(milliseconds: 300),
-                            child: const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -562,6 +610,195 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
             overflow: TextOverflow.ellipsis,
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildTabs() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _isDark ? const Color(0xFF132337) : const Color(0xFFF0F4FA),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+        ),
+      ),
+      padding: const EdgeInsets.all(2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildTabOption(0, 'Sector'),
+          _buildTabOption(1, 'Industry'),
+          _buildTabOption(2, 'Cap'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabOption(int index, String label) {
+    final isSelected = _selectedTab == index;
+    return GestureDetector(
+      onTap: () {
+        if (_selectedTab != index) {
+          setState(() {
+            _selectedTab = index;
+            _expandedId = null;
+            _hoveredIndex = null;
+            _previousHoveredIndex = null;
+            _showAllSectors = false;
+            _donutController.forward(from: 0);
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected 
+                ? Colors.white 
+                : (_isDark ? Colors.white70 : Colors.black87),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpandedHoldings(SectorWeight weight, Color color) {
+    if (widget.holdings == null || widget.holdings!.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 12),
+        child: Text("No holdings data"),
+      );
+    }
+
+    Iterable<PortfolioHolding> filteredHoldings;
+    if (_selectedTab == 0) {
+      filteredHoldings = widget.holdings!.where((h) => h.sector == weight.sectorName);
+    } else if (_selectedTab == 1) {
+      filteredHoldings = widget.holdings!.where((h) => h.industry == weight.sectorName);
+    } else {
+      filteredHoldings = widget.holdings!.where((h) => weight.topStocks.contains(h.symbol));
+    }
+
+    final groupHoldings = filteredHoldings.toList()
+      ..sort((a, b) => b.portfolioWeight.compareTo(a.portfolioWeight));
+
+    final topHoldings = groupHoldings.take(7).toList();
+
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        Divider(height: 1, color: color.withValues(alpha: 0.2)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Text(
+                "HOLDING",
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                "% GROUP",
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                "% PORTFOLIO",
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...topHoldings.map((h) {
+          final groupPercent = weight.weightPercentage > 0 
+              ? (h.portfolioWeight / weight.weightPercentage) * 100 
+              : 0.0;
+              
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    h.symbol,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    '${groupPercent.toStringAsFixed(1)}%',
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: color,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    '${h.portfolioWeight.toStringAsFixed(1)}%',
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+        if (groupHoldings.length > 7)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '+ ${groupHoldings.length - 7} more holdings',
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w500,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
       ],
     );
   }
