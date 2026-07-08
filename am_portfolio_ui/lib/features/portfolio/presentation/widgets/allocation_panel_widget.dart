@@ -263,11 +263,13 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
     List<SectorWeight> weights = [];
     String sectionTitle = 'Distribution';
     String emptyText = 'No allocation data available';
+    String centerTitle = 'Sectors';
     
     if (_selectedTab == 0 && widget.sectorAllocation != null) {
       weights = widget.sectorAllocation!.sectorWeights;
       sectionTitle = 'Sector Distribution';
       emptyText = 'No sector data available';
+      centerTitle = 'Sectors';
     } else if (_selectedTab == 1 && widget.sectorAllocation != null) {
       weights = widget.sectorAllocation!.industryWeights.map((w) => SectorWeight(
         sectorName: w.industryName,
@@ -277,6 +279,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
       )).toList();
       sectionTitle = 'Industry Distribution';
       emptyText = 'No industry data available';
+      centerTitle = 'Industries';
     } else if (_selectedTab == 2 && widget.marketCapAllocation != null) {
       weights = widget.marketCapAllocation!.segments.map((w) => SectorWeight(
         sectorName: w.segmentName,
@@ -286,6 +289,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
       )).toList();
       sectionTitle = 'Market Cap Distribution';
       emptyText = 'No market cap data available';
+      centerTitle = 'Market Cap';
     }
 
     if (weights.isEmpty) {
@@ -375,7 +379,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    'Sectors',
+                                    centerTitle,
                                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 22,
