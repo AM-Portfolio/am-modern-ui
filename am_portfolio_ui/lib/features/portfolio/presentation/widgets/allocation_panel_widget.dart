@@ -23,7 +23,12 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
   late final Animation<double> _donutAnimation;
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
+  late final AnimationController _hoverController;
+  late final Animation<double> _hoverAnimation;
+  
   bool _showAllSectors = false;
+  int? _hoveredIndex;
+  Offset? _hoverPosition;
 
   @override
   void initState() {
@@ -38,10 +43,18 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
     );
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2500),
     )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+    _pulseAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _hoverController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _hoverAnimation = CurvedAnimation(
+      parent: _hoverController,
+      curve: Curves.easeOutCubic,
     );
     if (widget.sectorAllocation != null) {
       _donutController.forward();
@@ -54,6 +67,9 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
     if (widget.sectorAllocation != null &&
         oldWidget.sectorAllocation != widget.sectorAllocation) {
       _donutController.forward(from: 0);
+      _hoveredIndex = null;
+      _hoverPosition = null;
+      _hoverController.reset();
     }
   }
 
@@ -61,7 +77,53 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
   void dispose() {
     _donutController.dispose();
     _pulseController.dispose();
+    _hoverController.dispose();
     super.dispose();
+  }
+
+  void _onHover(Offset localPosition, List<SectorWeight> weights) {
+    final center = const Offset(110, 110);
+    final dx = localPosition.dx - center.dx;
+    final dy = localPosition.dy - center.dy;
+    final dist = math.sqrt(dx * dx + dy * dy);
+
+    if (dist < 68 || dist > 115) {
+      _onHoverExit();
+      return;
+    }
+
+    double angle = math.atan2(dy, dx);
+    angle = (angle + math.pi / 2 + 2 * math.pi) % (2 * math.pi);
+
+    double cumulative = 0;
+    for (int i = 0; i < weights.length; i++) {
+      cumulative += (weights[i].weightPercentage / 100) * (2 * math.pi);
+      if (angle <= cumulative) {
+        if (_hoveredIndex != i) {
+          setState(() {
+            _hoveredIndex = i;
+            _hoverPosition = localPosition;
+          });
+          _hoverController.forward(from: 0);
+        } else {
+          setState(() {
+            _hoverPosition = localPosition;
+          });
+        }
+        return;
+      }
+    }
+    _onHoverExit();
+  }
+
+  void _onHoverExit() {
+    if (_hoveredIndex != null) {
+      setState(() {
+        _hoveredIndex = null;
+        _hoverPosition = null;
+      });
+      _hoverController.reverse();
+    }
   }
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
@@ -198,46 +260,146 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
             width: 220,
             height: 220,
             child: AnimatedBuilder(
-              animation: Listenable.merge([_donutAnimation, _pulseAnimation]),
+              animation: Listenable.merge([_donutAnimation, _pulseAnimation, _hoverAnimation]),
               builder: (context, _) {
                 return Stack(
+                  clipBehavior: Clip.none,
                   alignment: Alignment.center,
                   children: [
-                    SizedBox(
-                      width: 220,
-                      height: 220,
-                      child: CustomPaint(
-                        painter: _GlowingDonutPainter(
-                          weights,
-                          progress: _donutAnimation.value,
-                          pulse: _donutAnimation.value == 1.0 ? _pulseAnimation.value : 1.0,
+                    MouseRegion(
+                      onHover: (event) => _onHover(event.localPosition, weights),
+                      onExit: (_) => _onHoverExit(),
+                      child: GestureDetector(
+                        onTapDown: (d) => _onHover(d.localPosition, weights),
+                        onTapUp: (d) => _onHover(d.localPosition, weights),
+                        onPanUpdate: (d) => _onHover(d.localPosition, weights),
+                        onPanEnd: (_) => _onHoverExit(),
+                        child: SizedBox(
+                          width: 220,
+                          height: 220,
+                          child: CustomPaint(
+                            painter: _GlowingDonutPainter(
+                              weights,
+                              progress: _donutAnimation.value,
+                              pulse: _pulseAnimation.value,
+                              hoveredIndex: _hoveredIndex,
+                              hoverProgress: _hoverAnimation.value,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '100%',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 24,
-                              ),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 280),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, anim) => FadeTransition(
+                        opacity: anim,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.15),
+                            end: Offset.zero,
+                          ).animate(anim),
+                          child: child,
                         ),
-                        Text(
-                          'Allocated',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: _isDark
-                                    ? Colors.white.withValues(alpha: 0.45)
-                                    : Colors.black.withValues(alpha: 0.45),
-                                fontSize: 12,
-                              ),
-                        ),
-                      ],
+                      ),
+                      child: _hoveredIndex == null
+                          ? Column(
+                              key: const ValueKey('default_center'),
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Sectors',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 22,
+                                      ),
+                                ),
+                                Text(
+                                  'Tap to explore',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: _isDark
+                                            ? Colors.white.withValues(alpha: 0.45)
+                                            : Colors.black.withValues(alpha: 0.45),
+                                        fontSize: 12,
+                                      ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              key: ValueKey('hovered_$_hoveredIndex'),
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${weights[_hoveredIndex!].weightPercentage.toStringAsFixed(1)}%',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 24,
+                                        color: _getGradientColors(_hoveredIndex!).first,
+                                      ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text(
+                                    weights[_hoveredIndex!].sectorName,
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: _isDark
+                                              ? Colors.white.withValues(alpha: 0.7)
+                                              : Colors.black.withValues(alpha: 0.7),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
+                    if (_hoveredIndex != null && _hoverPosition != null)
+                      Positioned(
+                        left: _hoverPosition!.dx + 15,
+                        top: _hoverPosition!.dy - 10,
+                        child: FadeTransition(
+                          opacity: _hoverAnimation,
+                          child: IgnorePointer(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _isDark 
+                                    ? Colors.black.withValues(alpha: 0.85)
+                                    : Colors.white.withValues(alpha: 0.95),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _getGradientColors(_hoveredIndex!).first.withValues(alpha: 0.5),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _getGradientColors(_hoveredIndex!).first.withValues(alpha: 0.3),
+                                    blurRadius: 10,
+                                    spreadRadius: 1,
+                                  )
+                                ],
+                              ),
+                              child: Text(
+                                '${weights[_hoveredIndex!].sectorName}  ${weights[_hoveredIndex!].weightPercentage.toStringAsFixed(1)}%',
+                                style: TextStyle(
+                                  color: _getGradientColors(_hoveredIndex!).first,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 );
               },
@@ -430,8 +592,16 @@ class _GlowingDonutPainter extends CustomPainter {
   final List<SectorWeight> sectorWeights;
   final double progress;
   final double pulse;
+  final int? hoveredIndex;
+  final double hoverProgress;
 
-  _GlowingDonutPainter(this.sectorWeights, {this.progress = 1.0, this.pulse = 1.0});
+  _GlowingDonutPainter(
+    this.sectorWeights, {
+    this.progress = 1.0,
+    this.pulse = 0.0,
+    this.hoveredIndex,
+    this.hoverProgress = 0.0,
+  });
 
   static const _palette = [
     Color(0xFF00B894),
@@ -449,41 +619,52 @@ class _GlowingDonutPainter extends CustomPainter {
     if (sectorWeights.isEmpty) return;
 
     final center = Offset(size.width / 2, size.height / 2);
-    final outerRadius = (size.shortestSide / 2) - 8;
-    final rect = Rect.fromCircle(center: center, radius: outerRadius);
+    final baseRadius = (size.shortestSide / 2) - 14;
 
-    const strokeWidth = 24.0;
     const gapAngle = 0.045;
     double startAngle = -math.pi / 2;
 
     for (int i = 0; i < sectorWeights.length; i++) {
       final weight = sectorWeights[i];
       final color = _palette[i % _palette.length];
+      
+      final bool isHovered = i == hoveredIndex;
+      final bool isAnythingHovered = hoveredIndex != null;
+      
+      final double currentHoverProg = isHovered ? hoverProgress : 0.0;
+      
+      final double currentPulse = (i == 0 && !isAnythingHovered && progress == 1.0) ? pulse : 0.0;
 
-      double fullSweep =
-          (weight.weightPercentage / 100) * (2 * math.pi);
+      final double outerRadius = baseRadius + (8 * currentHoverProg) + (2 * currentPulse);
+      final double strokeWidth = 24.0 + (4 * currentHoverProg) + (1 * currentPulse);
+      
+      final double glowAlpha = isHovered ? 0.65 : (isAnythingHovered ? 0.1 : 0.3);
+      final double colorAlpha = isAnythingHovered && !isHovered ? 0.35 + (0.65 * (1 - hoverProgress)) : 1.0;
+      
+      final rect = Rect.fromCircle(center: center, radius: outerRadius);
+
+      double fullSweep = (weight.weightPercentage / 100) * (2 * math.pi);
       if (fullSweep < gapAngle + 0.01) fullSweep = gapAngle + 0.01;
 
       final animatedSweep = fullSweep * progress;
-      final actualSweep =
-          (animatedSweep - gapAngle).clamp(0.0, animatedSweep);
+      final actualSweep = (animatedSweep - gapAngle).clamp(0.0, animatedSweep);
 
       if (actualSweep > 0) {
         // Glow pass
         final glowPaint = Paint()
-          ..color = color.withValues(alpha: 0.3)
+          ..color = color.withValues(alpha: glowAlpha * colorAlpha)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = (strokeWidth + 6) * pulse
-          ..strokeCap = StrokeCap.butt
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+          ..strokeWidth = strokeWidth + 6 + (8 * currentHoverProg)
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6 + (10 * currentHoverProg));
         canvas.drawArc(rect, startAngle, actualSweep, false, glowPaint);
 
         // Main arc
         final paint = Paint()
-          ..color = color
+          ..color = color.withValues(alpha: colorAlpha)
           ..style = PaintingStyle.stroke
           ..strokeWidth = strokeWidth
-          ..strokeCap = StrokeCap.butt;
+          ..strokeCap = StrokeCap.round;
         canvas.drawArc(rect, startAngle, actualSweep, false, paint);
       }
 
@@ -495,5 +676,7 @@ class _GlowingDonutPainter extends CustomPainter {
   bool shouldRepaint(covariant _GlowingDonutPainter oldDelegate) =>
       oldDelegate.sectorWeights != sectorWeights ||
       oldDelegate.progress != progress ||
-      oldDelegate.pulse != pulse;
+      oldDelegate.pulse != pulse ||
+      oldDelegate.hoveredIndex != hoveredIndex ||
+      oldDelegate.hoverProgress != hoverProgress;
 }
