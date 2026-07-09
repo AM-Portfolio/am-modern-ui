@@ -47,6 +47,17 @@ class _PortfolioHistoryChartWidgetState
   String? _localSelectedId;
   String? _localSelectedName;
 
+  // Active chart format toggle (₹ or %)
+  ChartFormat _activeFormat = ChartFormat.primary;
+
+  // Custom zoom state managed externally
+  double _zoomScale = 1.0;
+  void Function(double)? _adjustZoom;
+
+  // Chart range state for end-of-line badges
+  double? _chartMinY;
+  double? _chartMaxY;
+
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
   @override
@@ -110,8 +121,8 @@ class _PortfolioHistoryChartWidgetState
       listener: (context, state) {
         // Global portfolio changed. Reset local selection so chart matches global.
         setState(() {
-          _localSelectedId = null;
-          _localSelectedName = null;
+          _localSelectedId = context.selectedPortfolioId;
+          _localSelectedName = context.selectedPortfolioName;
         });
         context.read<PortfolioHistoryCubit>().invalidate();
         _load();
@@ -137,7 +148,7 @@ class _PortfolioHistoryChartWidgetState
     return Builder(
       builder: (ctx) {
         return BlocBuilder<PortfolioCubit, PortfolioState>(
-          buildWhen: (prev, curr) => prev.portfolioList != curr.portfolioList,
+          buildWhen: (prev, curr) => prev.portfolioList != curr.portfolioList || curr is PortfolioLoaded,
           builder: (bCtx, state) {
             final portfolios = state.portfolioList?.portfolios ?? [];
             if (portfolios.isEmpty) return const SizedBox.shrink();
@@ -228,7 +239,135 @@ class _PortfolioHistoryChartWidgetState
 
   // ── Chart Rendering ──────────────────────────────────────────────────────
 
+  /// Color palette — one per broker in a consistent order so the same broker
+  /// always gets the same colour regardless of render order.
+  static const List<Color> _brokerPalette = [
+    Color(0xFF7C5CFC), // Purple  (e.g. Zerodha)
+    Color(0xFF00E676), // Green   (e.g. Groww)
+    Color(0xFF2979FF), // Blue    (e.g. Dhan)
+    Color(0xFFFF6D00), // Orange  (e.g. Angel One)
+    Color(0xFFE040FB), // Magenta (5th broker)
+    Color(0xFF00BCD4), // Cyan    (6th broker)
+  ];
+
   Widget _buildChart(PortfolioHistoryLoaded state) {
+    final bool isAllPortfolios =
+        (_localSelectedId ?? context.selectedPortfolioId ?? widget.portfolioId ?? 'all') == 'all';
+
+    // ── Multi-line mode — "All Portfolios" selected ─────────────────────────
+    if (isAllPortfolios && _hasMultipleBrokers(state)) {
+      return _buildMultiLineChart(state);
+    }
+
+    // ── Single-line mode — one portfolio selected ───────────────────────────
+    return _buildSingleLineChart(state);
+  }
+
+  /// Returns true if the snapshot data contains entries from more than 1 broker.
+  bool _hasMultipleBrokers(PortfolioHistoryLoaded state) {
+    final brokers = <String>{};
+    for (final snap in state.snapshots) {
+      for (final p in snap.portfolios) {
+        if (p.brokerType != null && p.brokerType!.isNotEmpty) {
+          brokers.add(p.brokerType!);
+        }
+      }
+    }
+    return brokers.length > 1;
+  }
+
+  /// Builds a multi-line chart — one line per broker.
+  Widget _buildMultiLineChart(PortfolioHistoryLoaded state) {
+    // Collect all unique brokers in stable order
+    final List<String> brokers = [];
+    for (final snap in state.snapshots) {
+      for (final p in snap.portfolios) {
+        final b = p.brokerType ?? '';
+        if (b.isNotEmpty && !brokers.contains(b)) brokers.add(b);
+      }
+    }
+    brokers.sort();
+
+    // Per-broker: points lists + first-valid tracker for % calc
+    final Map<String, List<CommonChartDataPoint>> primaryMap = {
+      for (final b in brokers) b: [],
+    };
+    final Map<String, List<CommonChartDataPoint>> secondaryMap = {
+      for (final b in brokers) b: [],
+    };
+    final Map<String, double?> firstValidMap = {};
+    final Map<String, double> lastValidMap = {};
+
+    // Use the longest broker's point count as X axis
+    int plotIndex = 0;
+    for (final snap in state.snapshots) {
+      final label = _formatDate(snap.snapshotDate);
+      bool anyValid = false;
+
+      for (final broker in brokers) {
+        // Find this broker's entry in this snapshot
+        final entry = snap.portfolios.cast<dynamic>().firstWhere(
+          (p) => (p.brokerType ?? '') == broker,
+          orElse: () => null,
+        );
+        double value = (entry?.close as double?) ?? 0.0;
+
+        // Zero-dip interpolation per broker
+        if (value <= 0.0) {
+          value = lastValidMap[broker] ?? 0.0;
+          if (value <= 0.0) continue; // skip if no known value yet
+        } else {
+          lastValidMap[broker] = value;
+        }
+
+        firstValidMap[broker] ??= value;
+        final firstVal = firstValidMap[broker]!;
+        final pct = firstVal > 0 ? ((value - firstVal) / firstVal) * 100 : 0.0;
+
+        primaryMap[broker]!.add(CommonChartDataPoint(
+          x: plotIndex.toDouble(),
+          y: value,
+          xLabel: label,
+          yLabel: '₹${_formatNum(value)}',
+        ));
+        secondaryMap[broker]!.add(CommonChartDataPoint(
+          x: plotIndex.toDouble(),
+          y: pct,
+          xLabel: label,
+          yLabel: '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
+        ));
+        anyValid = true;
+      }
+      if (anyValid) plotIndex++;
+    }
+
+    // Build ChartLineData list — filter out brokers with no valid points
+    final List<ChartLineData> primaryLines = [];
+    final List<ChartLineData> secondaryLines = [];
+    for (int i = 0; i < brokers.length; i++) {
+      final broker = brokers[i];
+      if (primaryMap[broker]!.isEmpty) continue;
+      final color = _brokerPalette[i % _brokerPalette.length];
+      // Capitalise broker label
+      final label = broker.substring(0, 1).toUpperCase() + broker.substring(1).toLowerCase();
+      primaryLines.add(ChartLineData(label: label, points: primaryMap[broker]!, color: color));
+      secondaryLines.add(ChartLineData(label: label, points: secondaryMap[broker]!, color: color));
+    }
+
+    if (primaryLines.isEmpty) return _buildEmpty();
+
+    final activeLines = _activeFormat == ChartFormat.secondary ? secondaryLines : primaryLines;
+
+    return _buildChartContainer(
+      activeLines: activeLines,
+      isMultiLine: true,
+      allPrimaryLines: primaryLines,
+      allSecondaryLines: secondaryLines,
+    );
+  }
+
+  /// Builds the original single-line area chart.
+  Widget _buildSingleLineChart(PortfolioHistoryLoaded state) {
     final List<CommonChartDataPoint> primaryPoints = [];
     final List<CommonChartDataPoint> secondaryPoints = [];
 
@@ -236,18 +375,20 @@ class _PortfolioHistoryChartWidgetState
     double lastValidValue = 0.0;
     int plotIndex = 0;
 
-    for (final snap in state.snapshots) {
-      double value = snap.totalUserWealth ?? 0.0;
+    final bool isAllPortfolios =
+        (_localSelectedId ?? context.selectedPortfolioId ?? widget.portfolioId ?? 'all') == 'all';
 
-      // ── Zero-dip interpolation ──────────────────────────────────────────
-      // The backend returns 0.0 when the sync failed or there was no data
-      // for that day. We carry forward the last known valid value so the
-      // chart stays flat on bad days instead of dipping to zero.
+    for (final snap in state.snapshots) {
+      double value = isAllPortfolios
+          ? (snap.totalUserWealth ?? 0.0)
+          : (snap.portfolios.isNotEmpty 
+              ? (snap.portfolios.first.close ?? snap.totalUserWealth ?? 0.0) 
+              : (snap.totalUserWealth ?? 0.0));
+
       if (value <= 0.0) {
         if (lastValidValue > 0) {
-          value = lastValidValue; // carry forward
+          value = lastValidValue;
         } else {
-          // No valid value yet → skip this point entirely
           continue;
         }
       } else {
@@ -255,11 +396,9 @@ class _PortfolioHistoryChartWidgetState
       }
 
       firstValidValue ??= value;
-
       final pct = (firstValidValue > 0)
           ? ((value - firstValidValue) / firstValidValue) * 100
           : 0.0;
-
       final label = _formatDate(snap.snapshotDate);
 
       primaryPoints.add(CommonChartDataPoint(
@@ -268,29 +407,36 @@ class _PortfolioHistoryChartWidgetState
         xLabel: label,
         yLabel: '₹${_formatNum(value)}',
       ));
-
       secondaryPoints.add(CommonChartDataPoint(
         x: plotIndex.toDouble(),
         y: pct,
         xLabel: label,
         yLabel: '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
       ));
-
       plotIndex++;
     }
 
-    // All snapshots had zero/missing data
     if (primaryPoints.isEmpty) return _buildEmpty();
 
-    // Use locally selected name if available, otherwise global
-    final chartTitle = _localSelectedName ??
-        context.selectedPortfolioName ??
-        'Portfolio Journey';
+    final activeData = _activeFormat == ChartFormat.secondary ? secondaryPoints : primaryPoints;
 
+    return _buildChartContainer(
+      singleData: activeData,
+      isMultiLine: false,
+    );
+  }
+
+  /// Shared chart container (glassmorphism card + controls + chart area).
+  Widget _buildChartContainer({
+    List<CommonChartDataPoint>? singleData,
+    List<ChartLineData>? activeLines,
+    bool isMultiLine = false,
+    List<ChartLineData>? allPrimaryLines,
+    List<ChartLineData>? allSecondaryLines,
+  }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
+    final isDesktop = MediaQuery.of(context).size.width >= 1100;
     final Color cardBase = isDark ? const Color(0xFF0D1B2A) : const Color(0xFFFFFFFF);
 
     return ClipRRect(
@@ -309,38 +455,179 @@ class _PortfolioHistoryChartWidgetState
               ],
             ),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: isDark ? 0.07 : 0.4),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: isDark ? 0.07 : 0.4)),
             boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, 8)),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Top Control Row ────────────────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Multi-line legend (broker color dots)
+                  if (isMultiLine && activeLines != null)
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 6,
+                      children: activeLines.map((line) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 3,
+                              decoration: BoxDecoration(
+                                color: line.color,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              line.label,
+                              style: TextStyle(fontSize: 11, color: theme.hintColor),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    )
+                  else
+                    const SizedBox.shrink(),
+
+                  // Toggle + Zoom controls
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppSegmentedControl<ChartFormat>(
+                        selectedValue: _activeFormat,
+                        children: const {
+                          ChartFormat.primary: '₹',
+                          ChartFormat.secondary: '%',
+                        },
+                        onValueChanged: (val) {
+                          setState(() {
+                            _activeFormat = val;
+                            // Update multi-line active set when toggle changes
+                          });
+                        },
+                      ),
+                      if (isDesktop && _adjustZoom != null) ...[
+                        const SizedBox(width: 16),
+                        _buildZoomButton(Icons.remove, () => _adjustZoom!(-0.2), isDark),
+                        const SizedBox(width: 8),
+                        Text('${(_zoomScale * 100).toInt()}%',
+                            style: TextStyle(fontSize: 12, color: theme.hintColor)),
+                        const SizedBox(width: 8),
+                        _buildZoomButton(Icons.add, () => _adjustZoom!(0.2), isDark),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // ── Chart Area ─────────────────────────────────────────────
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final int dataLen = isMultiLine
+                      ? (activeLines?.first.points.length ?? 0)
+                      : (singleData?.length ?? 0);
+                  final double calculatedWidth = dataLen * 40.0;
+                  final bool needsScroll = !isDesktop && (calculatedWidth > constraints.maxWidth);
+                  final double chartWidth = needsScroll ? calculatedWidth : constraints.maxWidth;
+
+                  // Resolve the correct lines for the current toggle state in multi-line mode
+                  final List<ChartLineData>? resolvedLines = isMultiLine
+                      ? (_activeFormat == ChartFormat.secondary ? allSecondaryLines : allPrimaryLines)
+                      : null;
+
+                  Widget chartWidget = SizedBox(
+                    width: chartWidth,
+                    height: widget.height,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        ChartFactory.area(
+                          data: singleData ?? const [],
+                          lines: resolvedLines,
+                          color: AppColors.primary,
+                          config: CommonChartConfig(
+                            enableZoom: isDesktop,
+                            initialZoomScale: _zoomScale,
+                            lockTooltipToTop: false,
+                            showGrid: true,
+                            showTitles: true,
+                            showTooltips: true,
+                            onZoomChanged: (scale, adjust) {
+                              if (_zoomScale != scale || _adjustZoom != adjust) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  if (mounted) setState(() { _zoomScale = scale; _adjustZoom = adjust; });
+                                });
+                              }
+                            },
+                          ),
+                          onMinMaxCalculated: (min, max) {
+                            if (_chartMinY != min || _chartMaxY != max) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) setState(() { _chartMinY = min; _chartMaxY = max; });
+                              });
+                            }
+                          },
+                        ),
+                        // End-of-line badges
+                        if (_chartMinY != null && _chartMaxY != null) ...[
+                          if (isMultiLine && resolvedLines != null)
+                            // One badge per broker line, stacked with slight vertical offset if they overlap
+                            ...resolvedLines.asMap().entries.map((entry) {
+                              return _EndOfLineBadge(
+                                lastPoint: entry.value.points.last,
+                                minY: _chartMinY!,
+                                maxY: _chartMaxY!,
+                                chartHeight: widget.height,
+                                isSecondary: _activeFormat == ChartFormat.secondary,
+                                color: entry.value.color,
+                                stackIndex: entry.key,
+                              );
+                            })
+                          else if (singleData != null && singleData.isNotEmpty)
+                            _EndOfLineBadge(
+                              lastPoint: singleData.last,
+                              minY: _chartMinY!,
+                              maxY: _chartMaxY!,
+                              chartHeight: widget.height,
+                              isSecondary: _activeFormat == ChartFormat.secondary,
+                            ),
+                        ],
+                      ],
+                    ),
+                  );
+
+                  if (needsScroll) {
+                    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: chartWidget);
+                  }
+                  return chartWidget;
+                },
               ),
             ],
           ),
-          child: CommonPerformanceChart(
-            title: chartTitle,
-            primaryData: primaryPoints,
-            secondaryData: secondaryPoints,
-            primaryToggleLabel: '₹',
-            secondaryToggleLabel: '%',
-            height: widget.height,
-            showGrid: true,
-            enableScrolling: isMobile, // ChartFactory Zoom wrapper handles scrolling on web, standard touch on mobile
-            useCard: false,
-            isAreaChart: true,
-            config: CommonChartConfig(
-              enableZoom: !isMobile,
-              initialZoomScale: isMobile ? 1.0 : 0.5,
-              lockTooltipToTop: true,
-              showGrid: true,
-              showTitles: true,
-              showTooltips: true,
-            ),
-          ),
         ),
+      ),
+    );
+  }
+
+
+  Widget _buildZoomButton(IconData icon, VoidCallback onTap, bool isDark) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(icon, size: 14, color: isDark ? Colors.white70 : Colors.black54),
       ),
     );
   }
@@ -406,4 +693,70 @@ class _PortfolioHistoryChartWidgetState
           ),
         ),
       );
+}
+
+class _EndOfLineBadge extends StatelessWidget {
+  final CommonChartDataPoint lastPoint;
+  final double minY;
+  final double maxY;
+  final double chartHeight;
+  final bool isSecondary;
+  /// When set (multi-line mode), this colour overrides the default logic.
+  final Color? color;
+  /// Used to nudge overlapping badges apart (0 = no offset).
+  final int stackIndex;
+
+  const _EndOfLineBadge({
+    required this.lastPoint,
+    required this.minY,
+    required this.maxY,
+    required this.chartHeight,
+    required this.isSecondary,
+    this.color,
+    this.stackIndex = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // fl_chart draws the line area bounded by titles.
+    // By default, bottom titles take 30px, top titles take 16px.
+    // The actual drawing area is chartHeight - 30 - 16 = chartHeight - 46.
+    final double drawingHeight = chartHeight - 46;
+
+    final double range = maxY - minY;
+    final double percentFromBottom = range == 0 ? 0.5 : (lastPoint.y - minY) / range;
+    final double topPixels = 16 + (drawingHeight * (1 - percentFromBottom));
+
+    // Nudge stacked badges apart by ~22px each so they don't sit directly on top
+    final double nudge = stackIndex * 22.0;
+
+    // Resolve badge color
+    final Color badgeColor = color ??
+        (isSecondary
+            ? (lastPoint.y < 0 ? const Color(0xFF4A89FF) : const Color(0xFF00E676))
+            : AppColors.primary);
+
+    return Positioned(
+      top: (topPixels - 12 + nudge).clamp(0.0, chartHeight - 24),
+      right: 0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: badgeColor,
+          borderRadius: BorderRadius.circular(4),
+          boxShadow: [
+            BoxShadow(color: badgeColor.withOpacity(0.4), blurRadius: 4, offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Text(
+          lastPoint.yLabel ?? lastPoint.y.toStringAsFixed(2),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
 }

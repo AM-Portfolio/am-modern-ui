@@ -59,6 +59,9 @@ class CommonChartConfig {
   /// (Google Finance style) instead of floating next to the cursor.
   final bool lockTooltipToTop;
 
+  /// Callback when zoom scale changes, used to build external zoom controls.
+  final void Function(double zoomScale, void Function(double delta) adjustZoom)? onZoomChanged;
+
   const CommonChartConfig({
     this.showGrid = true,
     this.showTitles = true,
@@ -76,6 +79,7 @@ class CommonChartConfig {
     this.initialZoomScale = 1.0,
     this.enableInteractiveLegend = false,
     this.lockTooltipToTop = false,
+    this.onZoomChanged,
   });
 }
 

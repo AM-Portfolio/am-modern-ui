@@ -16,6 +16,7 @@ class ChartFactory extends StatelessWidget {
   final Color? primaryColor;
   final double height;
   final List<ChartLineData>? lines;
+  final void Function(double min, double max)? onMinMaxCalculated;
 
   const ChartFactory({
     required this.type,
@@ -25,6 +26,7 @@ class ChartFactory extends StatelessWidget {
     this.primaryColor,
     this.height = 300,
     this.lines,
+    this.onMinMaxCalculated,
   });
 
   /// Factory constructor for Line Chart
@@ -34,6 +36,7 @@ class ChartFactory extends StatelessWidget {
     Color? color,
     double height = 300,
     List<ChartLineData>? lines,
+    void Function(double, double)? onMinMaxCalculated,
   }) {
     return ChartFactory(
       type: ChartType.line,
@@ -42,6 +45,7 @@ class ChartFactory extends StatelessWidget {
       primaryColor: color,
       height: height,
       lines: lines,
+      onMinMaxCalculated: onMinMaxCalculated,
     );
   }
 
@@ -52,6 +56,7 @@ class ChartFactory extends StatelessWidget {
     Color? color,
     double height = 300,
     List<ChartLineData>? lines,
+    void Function(double, double)? onMinMaxCalculated,
   }) {
     return ChartFactory(
       type: ChartType.area,
@@ -60,6 +65,7 @@ class ChartFactory extends StatelessWidget {
       primaryColor: color,
       height: height,
       lines: lines,
+      onMinMaxCalculated: onMinMaxCalculated,
     );
   }
 
@@ -173,9 +179,32 @@ class ChartFactory extends StatelessWidget {
         calculatedMaxY = maxVal + padding;
 
         // If all values are non-negative, don't let minY go below 0 (unless we want to show negative drops)
-        if (minVal >= 0 && calculatedMinY < 0) {
+        if (minVal >= 0 && calculatedMinY! < 0) {
           calculatedMinY = 0;
         }
+      }
+    } // end of: if (data.isNotEmpty || hasMultiLines)
+    
+    if (onMinMaxCalculated != null && calculatedMinY != null && calculatedMaxY != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        onMinMaxCalculated!(calculatedMinY!, calculatedMaxY!);
+      });
+    }
+
+    double? calculatedYInterval;
+    if (calculatedMinY != null && calculatedMaxY != null) {
+      final double range = calculatedMaxY! - calculatedMinY!;
+      if (range > 0) {
+        if (range <= 10) calculatedYInterval = 2;
+        else if (range <= 50) calculatedYInterval = 10;
+        else if (range <= 100) calculatedYInterval = 20;
+        else if (range <= 500) calculatedYInterval = 100;
+        else if (range <= 1000) calculatedYInterval = 200;
+        else if (range <= 5000) calculatedYInterval = 1000;
+        else if (range <= 10000) calculatedYInterval = 2000;
+        else if (range <= 50000) calculatedYInterval = 10000;
+        else if (range <= 100000) calculatedYInterval = 20000;
+        else calculatedYInterval = range / 5;
       }
     }
 
@@ -264,11 +293,21 @@ class ChartFactory extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 48, // Increased slightly to prevent large labels like 10.00L from being squished against the edge
+              interval: calculatedYInterval, // Use calculated interval for clean spacing
+              reservedSize: 48,
               getTitlesWidget: (value, meta) {
-                // Smart formatter: if max value is very small (like %), show decimals
+                // Hide exact min/max if they don't align with our interval to prevent overlapping labels
+                if (calculatedYInterval != null && (value == calculatedMinY || value == calculatedMaxY)) {
+                  if ((value % calculatedYInterval!) != 0) {
+                    return const SizedBox.shrink();
+                  }
+                }
+                
+                // Smart formatter: cleanly format 0, and show decimals for small non-zero numbers
                 String text;
-                if (value.abs() < 10) {
+                if (value == 0) {
+                  text = '0';
+                } else if (value.abs() < 10) {
                   text = value.toStringAsFixed(2);
                 } else if (value.abs() >= 1e7) {
                   text = '${(value / 1e7).toStringAsFixed(2)}Cr';
@@ -277,6 +316,7 @@ class ChartFactory extends StatelessWidget {
                 } else {
                   text = value.toInt().toString();
                 }
+                
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: Text(
@@ -292,6 +332,28 @@ class ChartFactory extends StatelessWidget {
         lineBarsData: bars,
         lineTouchData: LineTouchData(
           enabled: config.showTooltips,
+          getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
+            return spotIndexes.map((spotIndex) {
+              return TouchedSpotIndicatorData(
+                FlLine(
+                  color: Colors.white.withOpacity(0.3),
+                  strokeWidth: 1.5,
+                  dashArray: [4, 4],
+                ),
+                FlDotData(
+                  show: true,
+                  getDotPainter: (spot, percent, barData, index) {
+                    return FlDotCirclePainter(
+                      radius: 5,
+                      color: barData.color ?? theme.primaryColor,
+                      strokeWidth: 2,
+                      strokeColor: Colors.white,
+                    );
+                  },
+                ),
+              );
+            }).toList();
+          },
           touchTooltipData: LineTouchTooltipData(
             // [Interactive] Lock to top boundary when flag is set (Google Finance style)
             showOnTopOfTheChartBoxArea: config.lockTooltipToTop,
@@ -316,17 +378,19 @@ class ChartFactory extends StatelessWidget {
                 // [Interactive] Color tooltip text to match the line color when top-locked
                 final Color textColor = config.lockTooltipToTop && hasMultiLines
                     ? (lines![spot.barIndex].color ?? Colors.white)
-                    : Colors.white;
+                    : (hasMultiLines ? (lines![spot.barIndex].color ?? Colors.white) : Colors.white);
                 final Color dateColor = config.lockTooltipToTop
                     ? (isDark ? Colors.white60 : Colors.black54)
                     : Colors.white70;
+                
+                // If locked to top, we might want a different layout, but for now just show date first
                 return LineTooltipItem(
-                  '$lineLabel${point.yLabel ?? point.y.toString()}\n',
-                  TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                  '${point.xLabel ?? ''}\n',
+                  TextStyle(color: dateColor, fontSize: 10),
                   children: [
                     TextSpan(
-                      text: point.xLabel ?? '',
-                      style: TextStyle(color: dateColor, fontSize: 10),
+                      text: '$lineLabel${point.yLabel ?? point.y.toString()}',
+                      style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                   ],
                 );
@@ -343,6 +407,7 @@ class ChartFactory extends StatelessWidget {
     if (config.enableZoom) {
       return _ZoomableChartWrapper(
         initialZoomScale: config.initialZoomScale,
+        onZoomChanged: config.onZoomChanged,
         child: chart,
       );
     }
@@ -471,10 +536,12 @@ class ChartFactory extends StatelessWidget {
 class _ZoomableChartWrapper extends StatefulWidget {
   final Widget child;
   final double initialZoomScale;
+  final void Function(double zoomScale, void Function(double) adjustZoom)? onZoomChanged;
 
   const _ZoomableChartWrapper({
     required this.child,
     this.initialZoomScale = 1.0,
+    this.onZoomChanged,
   });
 
   @override
@@ -492,12 +559,18 @@ class _ZoomableChartWrapperState extends State<_ZoomableChartWrapper> {
   void initState() {
     super.initState();
     _zoomScale = widget.initialZoomScale.clamp(_minZoom, _maxZoom);
+    // Notify parent on init so it can build its own controls
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onZoomChanged?.call(_zoomScale, _adjustZoom);
+    });
   }
 
   void _adjustZoom(double delta) {
     setState(() {
       _zoomScale = (_zoomScale + delta).clamp(_minZoom, _maxZoom);
     });
+    // Notify parent of new zoom scale and the adjustZoom callback
+    widget.onZoomChanged?.call(_zoomScale, _adjustZoom);
   }
 
   @override
@@ -521,52 +594,17 @@ class _ZoomableChartWrapperState extends State<_ZoomableChartWrapper> {
           }
         }
       },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // Zoom control bar
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              _ZoomButton(
-                icon: Icons.remove,
-                onTap: () => _adjustZoom(-_zoomStep),
-                bg: controlBg,
-                fg: controlFg,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  '${(_zoomScale * 100).toInt()}%',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: controlFg,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              _ZoomButton(
-                icon: Icons.add,
-                onTap: () => _adjustZoom(_zoomStep),
-                bg: controlBg,
-                fg: controlFg,
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          // Chart scaled by zoom
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const ClampingScrollPhysics(),
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width * _zoomScale,
-                child: widget.child,
-              ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const ClampingScrollPhysics(),
+            child: SizedBox(
+              width: constraints.maxWidth * _zoomScale,
+              child: widget.child,
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

@@ -48,15 +48,59 @@ class MoversDetailModal extends StatelessWidget {
   }
 }
 
-class _ModalContainer extends StatelessWidget {
+class _ModalContainer extends StatefulWidget {
   final Movers movers;
   final ScrollController? scrollController;
 
   const _ModalContainer({required this.movers, this.scrollController});
 
   @override
+  State<_ModalContainer> createState() => _ModalContainerState();
+}
+
+class _ModalContainerState extends State<_ModalContainer> {
+  int _selectedTab = 0; // 0 for Gainers, 1 for Losers
+
+  Widget _buildTabButton(BuildContext context, String title, bool isSelected, VoidCallback onTap) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? const Color(0xFF1D283A) : Colors.white)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected && !isDark
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          title,
+          style: TextStyle(
+            color: isSelected
+                ? Theme.of(context).primaryColor
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isMobile = MediaQuery.of(context).size.width < 600;
     
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24), bottom: Radius.circular(24)),
@@ -138,23 +182,63 @@ class _ModalContainer extends StatelessWidget {
               ),
               const Divider(height: 1, thickness: 1),
               
+              if (isMobile)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16), // Added 16px bottom padding
+                  child: Container(
+                    height: 40,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildTabButton(
+                            context,
+                            'Gainers',
+                            _selectedTab == 0,
+                            () => setState(() => _selectedTab = 0),
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildTabButton(
+                            context,
+                            'Losers',
+                            _selectedTab == 1,
+                            () => setState(() => _selectedTab = 1),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              
               // ── Content ──
               Flexible(
                 child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(24),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _buildColumn(context, 'Gainers', movers.topGainers, true),
+                  controller: widget.scrollController,
+                  padding: EdgeInsets.fromLTRB(24, isMobile ? 8 : 24, 24, 24), // Reduced top padding on mobile since we added it to the tabs
+                  child: isMobile 
+                    ? _buildColumn(
+                        context, 
+                        _selectedTab == 0 ? 'Gainers' : 'Losers', 
+                        _selectedTab == 0 ? widget.movers.topGainers : widget.movers.topLosers, 
+                        _selectedTab == 0
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _buildColumn(context, 'Gainers', widget.movers.topGainers, true),
+                          ),
+                          const SizedBox(width: 24),
+                          Expanded(
+                            child: _buildColumn(context, 'Losers', widget.movers.topLosers, false),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        child: _buildColumn(context, 'Losers', movers.topLosers, false),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ],

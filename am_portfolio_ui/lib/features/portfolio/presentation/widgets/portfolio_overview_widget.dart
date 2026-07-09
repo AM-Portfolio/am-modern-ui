@@ -360,7 +360,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                           ),
                           const SizedBox(height: 16),
                           SizedBox(
-                            height: isSmallMobile ? 480 : 520, // Increased to give the pie chart and list enough vertical space
+                            height: isSmallMobile ? 650 : 700, // Increased significantly so the sector list doesn't get clipped
                             child: BlocBuilder<PortfolioCubit, PortfolioState>(
                               builder: (context, portfolioState) {
                                 final holdings = portfolioState is PortfolioLoaded ? portfolioState.holdings : null;

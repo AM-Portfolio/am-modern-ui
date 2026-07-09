@@ -121,6 +121,7 @@ class PortfolioHoldingsMapper {
       case 'upstox':
       case 'UPSTOX':
         return 'Upstox';
+      case 'grow':
       case 'groww':
       case 'GROWW':
         return 'Groww';

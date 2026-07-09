@@ -62,24 +62,28 @@ class AppShell extends StatelessWidget {
             if (portfolios != null && portfolios.isNotEmpty)
               SecondarySidebarSection(
                 title: '',
-                customWidget: SharedPortfolioSelector<PortfolioItem>(
-                  currentPortfolioId: context.selectedPortfolioId,
-                  currentPortfolioName: context.selectedPortfolioName,
-                  portfolios: [
-                    const PortfolioItem(
-                      portfolioId: 'all',
-                      portfolioName: 'All Portfolios',
-                    ),
-                    ...portfolios,
-                  ],
-                  onPortfolioSelected: (id, name) {
-                    context.selectPortfolio(id, name);
-                    // Refresh current route? Usually needed if the route depends on ID.
-                    // Ideally, we force a refresh or the pages listen to the ID change via provider.
-                  },
-                  idExtractor: (p) => p.portfolioId,
-                  nameExtractor: (p) => p.portfolioName,
-                  accentColor: ModuleColors.portfolio,
+                customWidget: Builder(
+                  builder: (ctx) {
+                    final selectedId = ctx.selectedPortfolioId;
+                    final selectedName = ctx.selectedPortfolioName;
+                    return SharedPortfolioSelector<PortfolioItem>(
+                      currentPortfolioId: selectedId,
+                      currentPortfolioName: selectedName,
+                      portfolios: [
+                        const PortfolioItem(
+                          portfolioId: 'all',
+                          portfolioName: 'All Portfolios',
+                        ),
+                        ...portfolios,
+                      ],
+                      onPortfolioSelected: (id, name) {
+                        context.selectPortfolio(id, name);
+                      },
+                      idExtractor: (p) => p.portfolioId,
+                      nameExtractor: (p) => p.portfolioName,
+                      accentColor: ModuleColors.portfolio,
+                    );
+                  }
                 ),
               ),
 

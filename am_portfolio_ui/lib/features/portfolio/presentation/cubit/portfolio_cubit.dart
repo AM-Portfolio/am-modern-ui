@@ -420,12 +420,20 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         }
       } else {
         if (!isClosed) {
-          emit(PortfolioLoading(portfolioList: state.portfolioList));
+          if (state is PortfolioLoaded) {
+            emit((state as PortfolioLoaded).copyWith(isStale: true, isHoldingsLoading: true));
+          } else {
+            emit(PortfolioLoading(portfolioList: state.portfolioList));
+          }
         }
       }
     } catch (e) {
       if (!isClosed) {
-        emit(PortfolioLoading(portfolioList: state.portfolioList));
+        if (state is PortfolioLoaded) {
+          emit((state as PortfolioLoaded).copyWith(isStale: true, isHoldingsLoading: true));
+        } else {
+          emit(PortfolioLoading(portfolioList: state.portfolioList));
+        }
       }
     }
 
