@@ -42,10 +42,7 @@ class LoginPage extends StatelessWidget {
               if (router != null) {
                 final redirect =
                     GoRouterState.of(context).uri.queryParameters['redirect'];
-                final target = redirect != null &&
-                        redirect.startsWith('/app')
-                    ? redirect
-                    : '/app/dashboard';
+                final target = _sanitizeAppRedirect(redirect) ?? '/app/dashboard';
                 context.go(target);
               } else {
                 Navigator.of(context).pushReplacementNamed('/home');
@@ -60,6 +57,28 @@ class LoginPage extends StatelessWidget {
             }
           },
           builder: (context, state) {
+            final redirect =
+                GoRouterState.of(context).uri.queryParameters['redirect'];
+            final restoringSession = redirect != null &&
+                redirect.startsWith('/app') &&
+                (state is AuthInitial ||
+                    state is AuthLoading ||
+                    state is AuthRestoreFailed);
+            if (restoringSession) {
+              return const Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('Restoring your session…'),
+                    ],
+                  ),
+                ),
+              );
+            }
+
             return BlocBuilder<ThemeCubit, ThemeState>(
               builder: (context, themeState) {
                 return LayoutBuilder(
@@ -242,4 +261,21 @@ class LoginPage extends StatelessWidget {
       ],
     );
   }
+}
+
+String? _sanitizeAppRedirect(String? redirect) {
+  if (redirect == null || redirect.isEmpty) return null;
+
+  var candidate = redirect;
+  if (candidate.startsWith('http://') || candidate.startsWith('https://')) {
+    try {
+      final uri = Uri.parse(candidate);
+      candidate = uri.hasQuery ? '${uri.path}?${uri.query}' : uri.path;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  if (!candidate.startsWith('/app')) return null;
+  return candidate;
 }

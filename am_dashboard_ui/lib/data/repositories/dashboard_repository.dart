@@ -182,6 +182,7 @@ class DashboardRepository {
       return await _apiClient.get(
         '/v1/analysis/dashboard/performance',
         queryParams: {'timeFrame': timeFrame},
+        timeout: const Duration(seconds: 15),
         parser: (data) => PerformanceResponse.fromJson(
           DashboardJsonSanitizer.performance(
             data as Map<String, dynamic>,

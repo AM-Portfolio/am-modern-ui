@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../mobile/widgets/portfolio_holdings_widget.dart';
-import '../../widgets/global_portfolio_wrapper.dart';
+import 'package:am_common/am_common.dart';
 
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_design_system/am_design_system.dart';

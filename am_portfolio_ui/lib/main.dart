@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart' hide SecureStorageService;
 import 'package:am_common/am_common.dart' as common;
+import 'package:am_common/am_common.dart' show PortfolioSelectionContext;
 import 'package:am_portfolio_ui/features/portfolio/presentation/pages/portfolio_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:am_portfolio_ui/features/basket/presentation/pages/basket_preview_page.dart';
@@ -12,7 +13,6 @@ import 'package:get_it/get_it.dart';
 import 'package:am_portfolio_ui/features/basket/domain/models/basket_opportunity.dart';
 import 'package:am_analysis_ui/am_analysis_ui.dart';
 
-import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/global_portfolio_wrapper.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/web/app_shell.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfolio_overview_web_page.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfolio_holdings_web_page.dart';

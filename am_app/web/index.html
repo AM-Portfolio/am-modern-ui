@@ -17,6 +17,9 @@
   <title>AM Investment Platform</title>
   <link rel="manifest" href="manifest.json">
 
+  <link rel="preload" href="main.dart.js" as="script">
+  <link rel="preload" href="canvaskit/canvaskit.wasm" as="fetch" crossorigin>
+
   <style>
     html, body {
       margin: 0;
@@ -61,16 +64,51 @@
 <body>
   <div id="am-boot">
     <div class="spinner" aria-hidden="true"></div>
-    <div>Loading AM Investment Platform…</div>
+    <div id="am-boot-msg">Loading AM Investment Platform…</div>
     <pre id="am-boot-error"></pre>
   </div>
 
   <script>
-    // Stale production service workers can cache broken assets and cause a blank page.
+    var AM_BUILD_ID = 'local';
+    window.__AM_BOOT_T0__ = performance.now();
+    window.__AM_BOOT_TRACE__ = window.__AM_BOOT_TRACE__ || { marks: {} };
+
+    (function () {
+      var msg = document.getElementById('am-boot-msg');
+      if (msg && location.pathname.indexOf('/app/') === 0) {
+        msg.textContent = 'Restoring your session…';
+      }
+    })();
+
+    function bootTraceEnabled() {
+      try {
+        if (new URLSearchParams(location.search).get('bootTrace') === '1') return true;
+        return localStorage.getItem('am_boot_trace') === '1';
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function bootMark(name) {
+      var ms = Math.round(performance.now() - window.__AM_BOOT_T0__);
+      window.__AM_BOOT_TRACE__.marks[name] = ms;
+      if (bootTraceEnabled()) {
+        console.log('[BootTrace] ' + name + ' @ ' + ms + 'ms (html)');
+      }
+    }
+
+    bootMark('html_loaded');
+
+    // Only purge stale service workers when build version changes.
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function (regs) {
-        regs.forEach(function (reg) { reg.unregister(); });
-      });
+      var storedBuild = null;
+      try { storedBuild = localStorage.getItem('am_build_id'); } catch (e) {}
+      if (storedBuild !== AM_BUILD_ID) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (reg) { reg.unregister(); });
+        });
+        try { localStorage.setItem('am_build_id', AM_BUILD_ID); } catch (e) {}
+      }
     }
 
     function showBootError(message) {
@@ -92,10 +130,11 @@
     });
 
     document.addEventListener('dart-app-ready', function () {
+      bootMark('flutter_dart_ready');
       var boot = document.getElementById('am-boot');
       if (boot) boot.remove();
     });
   </script>
-  <script src="flutter_bootstrap.js?v=3" async></script>
+  <script src="flutter_bootstrap.js?v=local" async></script>
 </body>
 </html>

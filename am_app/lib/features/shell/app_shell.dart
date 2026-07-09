@@ -5,10 +5,13 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart' as common;
-import 'package:am_portfolio_ui/am_portfolio_ui.dart';
 
 import '../../core/router/app_routes.dart';
 import '../../core/router/share_url_builder.dart';
+
+/// Dev mock portfolio IDs (trade mock JSON) must not be restored from session.
+bool _isDevMockPortfolioId(String portfolioId) =>
+    portfolioId.startsWith('mock-');
 
 /// Main application shell with navigation — hosts [ShellRoute] child pages.
 class AppShell extends StatefulWidget {
@@ -22,6 +25,8 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   bool _sessionRestored = false;
+  bool _shellMarked = false;
+  bool _portfolioSeeded = false;
 
   List<_MoreMenuItem> _moreMenuItemsFor({required bool isAdmin}) => [
         const _MoreMenuItem(
@@ -72,40 +77,104 @@ class _AppShellState extends State<AppShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialAuthAndConnect();
       _restoreSessionNav();
+      _seedPortfolioSelectionFromSession();
     });
+  }
+
+  Future<void> _seedPortfolioSelectionFromSession() async {
+    if (_portfolioSeeded) return;
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! Authenticated) return;
+    _portfolioSeeded = true;
+
+    final session =
+        await common.SessionPersistenceService.instance.load(authState.user.id);
+    if (session?.portfolioId == null || !mounted) return;
+
+    final portfolioId = session!.portfolioId!;
+    if (_isDevMockPortfolioId(portfolioId)) return;
+
+    common.PortfolioSelectionScope.maybeStateOf(context)?.seedSelection(
+      portfolioId,
+      session.portfolioName,
+    );
   }
 
   Future<void> _restoreSessionNav() async {
     if (_sessionRestored) return;
     final authState = context.read<AuthCubit>().state;
     if (authState is! Authenticated) return;
+
+    final userId = authState.user.id;
+    final current = GoRouterState.of(context).matchedLocation;
+
+    if (ShareUrlBuilder.isReloadableAppRoute(current) ||
+        ShareUrlBuilder.isExplicitDeepLink(current)) {
+      _sessionRestored = true;
+      _syncSessionFromLocation(userId, current);
+      return;
+    }
+
     _sessionRestored = true;
 
     final session =
-        await common.SessionPersistenceService.instance.load(authState.user.id);
+        await common.SessionPersistenceService.instance.load(userId);
     if (session == null || !mounted) return;
 
-    final current = GoRouterState.of(context).matchedLocation;
     if (ShareUrlBuilder.isExplicitDeepLink(current)) return;
 
     var savedPath = AppRoutes.pathForNavTitle(session.globalNav);
     if (savedPath == null) return;
 
-    if (session.portfolioId != null) {
+    final portfolioId = session.portfolioId;
+    final restoredPortfolioId =
+        portfolioId != null && _isDevMockPortfolioId(portfolioId)
+            ? null
+            : portfolioId;
+
+    if (restoredPortfolioId != null) {
       if (session.globalNav == 'Portfolio') {
         savedPath = AppRoutes.portfolioPath(
-          session.portfolioId!,
+          restoredPortfolioId,
           AppRoutes.portfolioTab(session.portfolioTabIndex),
         );
       } else if (session.globalNav == 'Trade') {
-        savedPath = AppRoutes.tradePath(session.portfolioId!, 'portfolios');
+        savedPath = AppRoutes.tradePath(restoredPortfolioId, 'portfolios');
       }
+    } else if (portfolioId != null && restoredPortfolioId == null) {
+      common.SessionPersistenceService.instance.patch(
+        userId,
+        (s) => s.copyWith(clearPortfolio: true),
+      );
     }
 
     if (current == AppRoutes.dashboard && savedPath != AppRoutes.dashboard) {
       _applyStreamingTabCoordinator(session.globalNav);
       context.go(savedPath);
     }
+  }
+
+  void _syncSessionFromLocation(String userId, String location) {
+    final nav = AppRoutes.activeNavTitleForLocation(location);
+    final portfolioId = ShareUrlBuilder.portfolioIdFromLocation(location);
+    final portfolioTab = ShareUrlBuilder.portfolioTabFromLocation(location);
+
+    if (portfolioId != null) {
+      common.PortfolioSelectionScope.maybeStateOf(context)
+          ?.seedSelection(portfolioId, null);
+    }
+
+    common.SessionPersistenceService.instance.patch(
+      userId,
+      (s) => s.copyWith(
+        globalNav: nav,
+        portfolioId: portfolioId,
+        portfolioTabIndex: portfolioTab != null
+            ? AppRoutes.portfolioTabIndex(portfolioTab)
+            : s.portfolioTabIndex,
+        clearPortfolio: portfolioId == null,
+      ),
+    );
   }
 
   void _applyStreamingTabCoordinator(String tabTitle) {
@@ -124,19 +193,6 @@ class _AppShellState extends State<AppShell> {
     common.SessionPersistenceService.instance.patch(
       userId,
       (s) => s.copyWith(globalNav: title, clearBasket: title != 'Portfolio'),
-    );
-  }
-
-  void _onGlobalPortfolioChanged(String portfolioId, String portfolioName) {
-    final authState = context.read<AuthCubit>().state;
-    if (authState is! Authenticated) return;
-
-    common.SessionPersistenceService.instance.patch(
-      authState.user.id,
-      (s) => s.copyWith(
-        portfolioId: portfolioId,
-        portfolioName: portfolioName,
-      ),
     );
   }
 
@@ -212,8 +268,12 @@ class _AppShellState extends State<AppShell> {
               }
               if (context.mounted) {
                 stompCubit.updateToken(token, userId: state.user.id);
+                _portfolioSeeded = false;
+                _restoreSessionNav();
+                _seedPortfolioSelectionFromSession();
               }
             } else if (state is Unauthenticated) {
+              _portfolioSeeded = false;
               common.AppLogger.info(
                 'AppShell: AuthState changed to Unauthenticated. Disconnecting STOMP...',
               );
@@ -225,37 +285,33 @@ class _AppShellState extends State<AppShell> {
       ],
       child: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
-          if (authState is AuthInitial || authState is AuthLoading) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+          final authPending = authState is AuthInitial ||
+              authState is AuthLoading ||
+              authState is AuthRestoreFailed;
+
+          if (authState is! Authenticated && !authPending) {
+            return const SizedBox.shrink();
           }
 
-          if (authState is! Authenticated) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!context.mounted) return;
-              final redirect = Uri.encodeComponent(
-                GoRouterState.of(context).uri.toString(),
-              );
-              context.go('${AppRoutes.login}?redirect=$redirect');
-            });
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+          if (!_shellMarked && authState is Authenticated) {
+            _shellMarked = true;
+            common.BootTrace.instance.mark('shell_visible');
           }
 
-          final userId = authState.user.id;
-          final isAdmin = authState.user.isAdmin;
+          final userId =
+              authState is Authenticated ? authState.user.id : '';
+          final isAdmin =
+              authState is Authenticated && authState.user.isAdmin;
           final isDark = Theme.of(context).brightness == Brightness.dark;
 
-          return LayoutBuilder(
+          final shell = LayoutBuilder(
             builder: (context, constraints) {
               final isDesktop = constraints.maxWidth > 1100;
 
               return Scaffold(
                 body: Row(
                   children: [
-                    if (isDesktop)
+                    if (isDesktop && authState is Authenticated)
                       GlobalSidebar(
                         activeNavItem: _activeNavItem,
                         isDarkMode: isDark,
@@ -276,23 +332,23 @@ class _AppShellState extends State<AppShell> {
                         items: _sidebarItemsFor(isAdmin: isAdmin),
                       ),
                     Expanded(
-                      child: GlobalPortfolioWrapper(
-                        streamingTab: _activeNavItem.isEmpty
-                            ? 'Dashboard'
-                            : _activeNavItem,
-                        onPortfolioChanged: _onGlobalPortfolioChanged,
-                        child: widget.child,
-                      ),
+                      child: authState is Authenticated
+                          ? common.PortfolioSelectionScope(
+                              child: widget.child,
+                            )
+                          : widget.child,
                     ),
                   ],
                 ),
-                bottomNavigationBar: !isDesktop
+                bottomNavigationBar: !isDesktop && authState is Authenticated
                     ? GlobalBottomNavigation(
                         activeNavItem: _activeNavItem,
                         isDarkMode: isDark,
                         userName: authState.user.displayName,
-                        onMenuTap: () => _showMoreMenu(context, userId, isDark, isAdmin),
-                        onNavigate: (title) => _onGlobalNavigate(title, userId),
+                        onMenuTap: () =>
+                            _showMoreMenu(context, userId, isDark, isAdmin),
+                        onNavigate: (title) =>
+                            _onGlobalNavigate(title, userId),
                         items: const [
                           SidebarItem(
                               title: 'Dashboard',
@@ -314,6 +370,43 @@ class _AppShellState extends State<AppShell> {
                     : null,
               );
             },
+          );
+
+          if (!authPending) return shell;
+
+          return Stack(
+            children: [
+              shell,
+              ColoredBox(
+                color: const Color(0xFF0B1120),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(color: Color(0xFF6366F1)),
+                      const SizedBox(height: 20),
+                      Text(
+                        authState is AuthRestoreFailed
+                            ? 'Connection issue — retrying session…'
+                            : 'Restoring your session…',
+                        style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 16,
+                        ),
+                      ),
+                      if (authState is AuthRestoreFailed) ...[
+                        const SizedBox(height: 16),
+                        FilledButton(
+                          onPressed: () =>
+                              context.read<AuthCubit>().checkAuthStatus(),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),

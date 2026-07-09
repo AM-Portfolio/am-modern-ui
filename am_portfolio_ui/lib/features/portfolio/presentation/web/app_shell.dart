@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
+import 'package:am_common/am_common.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
-import '../widgets/global_portfolio_wrapper.dart'; // Correct relative import
 import '../../internal/domain/entities/portfolio_list.dart';
 
 class AppShell extends StatelessWidget {

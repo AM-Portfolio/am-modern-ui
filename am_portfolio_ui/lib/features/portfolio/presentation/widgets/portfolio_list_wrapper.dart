@@ -9,7 +9,6 @@ import '../../internal/domain/entities/portfolio_list.dart';
 import 'package:am_common/am_common.dart';
 import '../mobile/portfolio_mobile_screen.dart';
 import '../web/portfolio_web_screen.dart';
-import 'global_portfolio_wrapper.dart';
 import 'gmail_sync/gmail_connect_button.dart';
 
 /// Wrapper widget that handles portfolio list loading and selection

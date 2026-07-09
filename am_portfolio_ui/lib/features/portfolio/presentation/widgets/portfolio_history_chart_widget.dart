@@ -12,7 +12,6 @@ import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_history_cubit.dart';
 import '../cubit/portfolio_history_state.dart';
 import '../cubit/portfolio_state.dart';
-import 'global_portfolio_wrapper.dart';
 
 // ignore_for_file: unused_import
 export '../../internal/data/dtos/portfolio_snapshot_dto.dart';

@@ -9,7 +9,6 @@ import '../../../internal/domain/entities/portfolio_summary.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../internal/domain/entities/portfolio_analytics.dart';
 import '../../../providers/portfolio_providers.dart';
-import '../../widgets/global_portfolio_wrapper.dart';
 
 /// Web-specific portfolio analysis page with comprehensive analytics
 class PortfolioAnalysisWebPage extends ConsumerStatefulWidget {

@@ -305,7 +305,15 @@ class AuthRepositoryImpl implements AuthRepository {
 
         final result = await this.refreshToken(refreshToken);
         return result.fold(
-          (failure) => const Right(false),
+          (failure) {
+            // Invalid or expired session — treat as logged out.
+            if (failure is AuthFailure) return const Right(false);
+            if (failure is ServerFailure && _isInvalidSessionStatus(failure.code)) {
+              return const Right(false);
+            }
+            // Transient network/5xx — propagate so UI can retry without login flash.
+            return Left(failure);
+          },
           (tokens) => const Right(true),
         );
       }
@@ -417,5 +425,10 @@ class AuthRepositoryImpl implements AuthRepository {
         user: _userWithRolesFromToken(entity.user, entity.tokens.accessToken),
         tokens: entity.tokens,
       );
+
+  static bool _isInvalidSessionStatus(String? code) {
+    final status = int.tryParse(code ?? '');
+    return status == 401 || status == 403;
+  }
 }
 
