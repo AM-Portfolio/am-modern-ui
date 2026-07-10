@@ -29,11 +29,13 @@ class PortfolioHistoryChartWidget extends ConsumerStatefulWidget {
     required this.portfolioId,
     required this.timeFrame,
     this.height = 320,
+    this.onPeriodStats,
   });
 
   final String? portfolioId;
   final TimeFrame timeFrame;
   final double height;
+  final void Function(double start, double end)? onPeriodStats;
 
   @override
   ConsumerState<PortfolioHistoryChartWidget> createState() =>
@@ -56,6 +58,12 @@ class _PortfolioHistoryChartWidgetState
   // Chart range state for end-of-line badges
   double? _chartMinY;
   double? _chartMaxY;
+
+  void _handleZoomAdjust(double delta) {
+    setState(() {
+      _zoomScale = (_zoomScale + delta).clamp(1.0, 5.0);
+    });
+  }
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -225,15 +233,7 @@ class _PortfolioHistoryChartWidgetState
   Widget _buildContent(PortfolioHistoryLoaded state) {
     if (state.snapshots.isEmpty) return _buildEmpty();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildPortfolioTabs(),
-        const SizedBox(height: 12),
-        _buildChart(state),
-      ],
-    );
+    return _buildChart(state);
   }
 
   // ── Chart Rendering ──────────────────────────────────────────────────────
@@ -277,9 +277,12 @@ class _PortfolioHistoryChartWidgetState
 
   /// Builds a multi-line chart — one line per broker.
   Widget _buildMultiLineChart(PortfolioHistoryLoaded state) {
+    // 1. Pad data to stretch X-axis for young portfolios
+    final paddedSnapshots = _padSnapshots(state.snapshots, widget.timeFrame);
+
     // Collect all unique brokers in stable order
     final List<String> brokers = [];
-    for (final snap in state.snapshots) {
+    for (final snap in paddedSnapshots) {
       for (final p in snap.portfolios) {
         final b = p.brokerType ?? '';
         if (b.isNotEmpty && !brokers.contains(b)) brokers.add(b);
@@ -297,10 +300,17 @@ class _PortfolioHistoryChartWidgetState
     final Map<String, double?> firstValidMap = {};
     final Map<String, double> lastValidMap = {};
 
+    final String tfCode = widget.timeFrame.code;
+    final thinnedSnapshots = _thinSnapshots(paddedSnapshots, tfCode);
+
     // Use the longest broker's point count as X axis
     int plotIndex = 0;
-    for (final snap in state.snapshots) {
-      final label = _formatDate(snap.snapshotDate);
+    String? lastPeriodUnit;
+    for (final snap in thinnedSnapshots) {
+      final label = _getXLabel(snap.snapshotDate, tfCode, lastPeriodUnit);
+      if (label.isNotEmpty) {
+        lastPeriodUnit = _getPeriodUnit(snap.snapshotDate, tfCode);
+      }
       bool anyValid = false;
 
       for (final broker in brokers) {
@@ -311,29 +321,34 @@ class _PortfolioHistoryChartWidgetState
         );
         double value = (entry?.close as double?) ?? 0.0;
 
-        // Zero-dip interpolation per broker
-        if (value <= 0.0) {
+        if (snap.totalUserWealth?.isNaN == true) {
+          value = double.nan;
+        } else if (value <= 0.0) {
           value = lastValidMap[broker] ?? 0.0;
-          if (value <= 0.0) continue; // skip if no known value yet
+          if (value <= 0.0) {
+            value = double.nan; // Still keep point as a gap if no previous valid value
+          }
         } else {
           lastValidMap[broker] = value;
         }
 
-        firstValidMap[broker] ??= value;
-        final firstVal = firstValidMap[broker]!;
-        final pct = firstVal > 0 ? ((value - firstVal) / firstVal) * 100 : 0.0;
+        if (!value.isNaN) {
+          firstValidMap[broker] ??= value;
+        }
+        final firstVal = firstValidMap[broker] ?? 0.0;
+        final pct = (firstVal > 0 && !value.isNaN) ? ((value - firstVal) / firstVal) * 100 : 0.0;
 
         primaryMap[broker]!.add(CommonChartDataPoint(
           x: plotIndex.toDouble(),
           y: value,
           xLabel: label,
-          yLabel: '₹${_formatNum(value)}',
+          yLabel: value.isNaN ? '' : '₹${_formatNum(value)}',
         ));
         secondaryMap[broker]!.add(CommonChartDataPoint(
           x: plotIndex.toDouble(),
-          y: pct,
+          y: value.isNaN ? double.nan : pct,
           xLabel: label,
-          yLabel: '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
+          yLabel: value.isNaN ? '' : '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
         ));
         anyValid = true;
       }
@@ -357,6 +372,15 @@ class _PortfolioHistoryChartWidgetState
 
     final activeLines = _activeFormat == ChartFormat.secondary ? secondaryLines : primaryLines;
 
+    final firstLine = primaryLines.first;
+    if (firstLine.points.isNotEmpty) {
+      final start = firstLine.points.first.y;
+      final end = firstLine.points.last.y;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onPeriodStats?.call(start, end);
+      });
+    }
+
     return _buildChartContainer(
       activeLines: activeLines,
       isMultiLine: true,
@@ -377,40 +401,83 @@ class _PortfolioHistoryChartWidgetState
     final bool isAllPortfolios =
         (_localSelectedId ?? context.selectedPortfolioId ?? widget.portfolioId ?? 'all') == 'all';
 
-    for (final snap in state.snapshots) {
-      double value = isAllPortfolios
-          ? (snap.totalUserWealth ?? 0.0)
-          : (snap.portfolios.isNotEmpty 
-              ? (snap.portfolios.first.close ?? snap.totalUserWealth ?? 0.0) 
-              : (snap.totalUserWealth ?? 0.0));
+    final String tfCode = widget.timeFrame.code;
+    
+    // 1. Pad data to stretch X-axis for young portfolios
+    final paddedSnapshots = _padSnapshots(state.snapshots, widget.timeFrame);
+    final thinnedSnapshots = _thinSnapshots(paddedSnapshots, tfCode);
+
+    String? lastPeriodUnit;
+    for (final snap in thinnedSnapshots) {
+      // Extract value — preserve NaN from padding snapshots
+      final rawWealth = snap.totalUserWealth;
+      double value;
+      if (rawWealth != null && rawWealth.isNaN) {
+        value = double.nan;
+      } else if (isAllPortfolios) {
+        value = rawWealth ?? 0.0;
+      } else {
+        value = snap.portfolios.isNotEmpty
+            ? (snap.portfolios.first.close ?? rawWealth ?? 0.0)
+            : (rawWealth ?? 0.0);
+      }
+
+      if (value.isNaN) {
+        // It's a padding point, keep the gap but increment index
+        final label = _getXLabel(snap.snapshotDate, tfCode, lastPeriodUnit);
+        if (label.isNotEmpty) lastPeriodUnit = _getPeriodUnit(snap.snapshotDate, tfCode);
+        
+        primaryPoints.add(CommonChartDataPoint(
+          x: plotIndex.toDouble(),
+          y: double.nan,
+          xLabel: label,
+          yLabel: '',
+        ));
+        secondaryPoints.add(CommonChartDataPoint(
+          x: plotIndex.toDouble(),
+          y: double.nan,
+          xLabel: label,
+          yLabel: '',
+        ));
+        plotIndex++;
+        continue;
+      }
 
       if (value <= 0.0) {
         if (lastValidValue > 0) {
           value = lastValidValue;
         } else {
-          continue;
+          // If no previous valid value, treat as gap
+          value = double.nan;
         }
       } else {
         lastValidValue = value;
       }
 
-      firstValidValue ??= value;
-      final pct = (firstValidValue > 0)
-          ? ((value - firstValidValue) / firstValidValue) * 100
+      if (!value.isNaN) {
+        firstValidValue ??= value;
+      }
+      
+      final pct = (firstValidValue != null && firstValidValue! > 0 && !value.isNaN)
+          ? ((value - firstValidValue!) / firstValidValue!) * 100
           : 0.0;
-      final label = _formatDate(snap.snapshotDate);
+          
+      final label = _getXLabel(snap.snapshotDate, tfCode, lastPeriodUnit);
+      if (label.isNotEmpty) {
+        lastPeriodUnit = _getPeriodUnit(snap.snapshotDate, tfCode);
+      }
 
       primaryPoints.add(CommonChartDataPoint(
         x: plotIndex.toDouble(),
         y: value,
         xLabel: label,
-        yLabel: '₹${_formatNum(value)}',
+        yLabel: value.isNaN ? '' : '₹${_formatNum(value)}',
       ));
       secondaryPoints.add(CommonChartDataPoint(
         x: plotIndex.toDouble(),
-        y: pct,
+        y: value.isNaN ? double.nan : pct,
         xLabel: label,
-        yLabel: '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
+        yLabel: value.isNaN ? '' : '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
       ));
       plotIndex++;
     }
@@ -418,6 +485,14 @@ class _PortfolioHistoryChartWidgetState
     if (primaryPoints.isEmpty) return _buildEmpty();
 
     final activeData = _activeFormat == ChartFormat.secondary ? secondaryPoints : primaryPoints;
+
+    if (primaryPoints.isNotEmpty) {
+      final start = primaryPoints.first.y;
+      final end = primaryPoints.last.y;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onPeriodStats?.call(start, end);
+      });
+    }
 
     return _buildChartContainer(
       singleData: activeData,
@@ -443,7 +518,7 @@ class _PortfolioHistoryChartWidgetState
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -465,36 +540,13 @@ class _PortfolioHistoryChartWidgetState
             children: [
               // ── Top Control Row ────────────────────────────────────────
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Multi-line legend (broker color dots)
-                  if (isMultiLine && activeLines != null)
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 6,
-                      children: activeLines.map((line) {
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 3,
-                              decoration: BoxDecoration(
-                                color: line.color,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              line.label,
-                              style: TextStyle(fontSize: 11, color: theme.hintColor),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    )
-                  else
-                    const SizedBox.shrink(),
+                  // Portfolio Tabs taking available space
+                  Expanded(
+                    child: _buildPortfolioTabs(),
+                  ),
+                  const SizedBox(width: 12),
 
                   // Toggle + Zoom controls
                   Row(
@@ -513,19 +565,46 @@ class _PortfolioHistoryChartWidgetState
                           });
                         },
                       ),
-                      if (isDesktop && _adjustZoom != null) ...[
+                      if (isDesktop) ...[
                         const SizedBox(width: 16),
-                        _buildZoomButton(Icons.remove, () => _adjustZoom!(-0.2), isDark),
+                        _buildZoomButton(Icons.remove, () => _handleZoomAdjust(-0.2), isDark),
                         const SizedBox(width: 8),
                         Text('${(_zoomScale * 100).toInt()}%',
                             style: TextStyle(fontSize: 12, color: theme.hintColor)),
                         const SizedBox(width: 8),
-                        _buildZoomButton(Icons.add, () => _adjustZoom!(0.2), isDark),
+                        _buildZoomButton(Icons.add, () => _handleZoomAdjust(0.2), isDark),
                       ],
                     ],
                   ),
                 ],
               ),
+              if (isMultiLine && activeLines != null) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 6,
+                  children: activeLines.map((line) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: line.color,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          line.label,
+                          style: TextStyle(fontSize: 11, color: theme.hintColor),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ],
               const SizedBox(height: 16),
               // ── Chart Area ─────────────────────────────────────────────
               LayoutBuilder(
@@ -533,8 +612,9 @@ class _PortfolioHistoryChartWidgetState
                   final int dataLen = isMultiLine
                       ? (activeLines?.first.points.length ?? 0)
                       : (singleData?.length ?? 0);
-                  final double calculatedWidth = dataLen * 40.0;
-                  final bool needsScroll = !isDesktop && (calculatedWidth > constraints.maxWidth);
+                  final double baseWidth = dataLen * 40.0;
+                  final double calculatedWidth = (baseWidth * _zoomScale).clamp(constraints.maxWidth, double.infinity);
+                  final bool needsScroll = calculatedWidth > constraints.maxWidth;
                   final double chartWidth = needsScroll ? calculatedWidth : constraints.maxWidth;
 
                   // Resolve the correct lines for the current toggle state in multi-line mode
@@ -553,12 +633,24 @@ class _PortfolioHistoryChartWidgetState
                           lines: resolvedLines,
                           color: AppColors.primary,
                           config: CommonChartConfig(
-                            enableZoom: isDesktop,
-                            initialZoomScale: _zoomScale,
+                            xInterval: 1, // Evaluate every index so our sparse labels are shown
+                            enableZoom: false,
                             lockTooltipToTop: false,
                             showGrid: true,
                             showTitles: true,
                             showTooltips: true,
+                            formatYLabel: (val) {
+                              if (val == 0) return '0';
+                              final showPercentage = _activeFormat == ChartFormat.secondary;
+                              if (showPercentage) {
+                                return '${val.toStringAsFixed(2)}%';
+                              } else {
+                                if (val.abs() < 10) return val.toStringAsFixed(2);
+                                if (val.abs() >= 1e7) return '${(val / 1e7).toStringAsFixed(2)}Cr';
+                                if (val.abs() >= 1e5) return '${(val / 1e5).toStringAsFixed(2)}L';
+                                return val.toInt().toString();
+                              }
+                            },
                             onZoomChanged: (scale, adjust) {
                               if (_zoomScale != scale || _adjustZoom != adjust) {
                                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -633,14 +725,163 @@ class _PortfolioHistoryChartWidgetState
 
   // ── Utility Helpers ──────────────────────────────────────────────────────
 
-  /// Formats a raw ISO date string (e.g. "2026-06-28") to "Jun 28"
-  String _formatDate(String? raw) {
+  int _isoWeekNumber(DateTime date) {
+    int dayOfYear = int.parse(DateFormat("D").format(date));
+    int woy = ((dayOfYear - date.weekday + 10) / 7).floor();
+    if (woy < 1) {
+      woy = 52;
+    } else if (woy > 52) {
+      woy = 1;
+    }
+    return woy;
+  }
+
+  List<PortfolioSnapshotDto> _keepLastPerGroup<T extends PortfolioSnapshotDto>(List<T> raw, String Function(T) groupBy) {
+    if (raw.isEmpty) return raw;
+    final map = <String, PortfolioSnapshotDto>{};
+    for (final item in raw) {
+      final key = groupBy(item);
+      final existing = map[key];
+      // Prefer real data over NaN padding — only overwrite if new item is not NaN
+      // OR there is no existing entry yet
+      final itemIsNaN = item.totalUserWealth?.isNaN == true;
+      final existingIsNaN = existing?.totalUserWealth?.isNaN == true;
+      if (existing == null || existingIsNaN || !itemIsNaN) {
+        map[key] = item;
+      }
+    }
+    return map.values.toList();
+  }
+
+  /// Pads the start of the snapshots list with dummy points so the X-axis
+  /// perfectly reflects the selected timeframe, even if the portfolio is brand new.
+  List<PortfolioSnapshotDto> _padSnapshots(List<PortfolioSnapshotDto> raw, TimeFrame tf) {
+    if (raw.isEmpty || tf == TimeFrame.all) return raw;
+    final startDate = tf.dateRange.start;
+    final firstRealDate = DateTime.tryParse(raw.first.snapshotDate ?? '');
+    
+    if (firstRealDate != null && firstRealDate.isAfter(startDate)) {
+      final startDay = DateTime(startDate.year, startDate.month, startDate.day);
+      final firstDay = DateTime(firstRealDate.year, firstRealDate.month, firstRealDate.day);
+      final daysToPad = firstDay.difference(startDay).inDays;
+      
+      if (daysToPad > 0) {
+        final padding = <PortfolioSnapshotDto>[];
+        for (int i = 0; i < daysToPad; i++) {
+          final d = startDate.add(Duration(days: i));
+          final isShortTimeframe = tf == TimeFrame.oneDay || tf == TimeFrame.oneWeek;
+          padding.add(PortfolioSnapshotDto(
+            snapshotDate: d.toIso8601String(),
+            totalUserWealth: isShortTimeframe ? raw.first.totalUserWealth : double.nan,
+            portfolios: isShortTimeframe ? raw.first.portfolios : [], // empty for padding on long timeframes
+          ));
+        }
+        return [...padding, ...raw];
+      }
+    }
+    return raw;
+  }
+
+  List<PortfolioSnapshotDto> _thinSnapshots(List<PortfolioSnapshotDto> raw, String code) {
+    if (raw.length < 30) return raw;
+
+    switch (code) {
+      case '1Y':
+      case '3Y':
+      case '5Y':
+      case 'All':
+        return _keepLastPerGroup(raw, (s) {
+          final dt = DateTime.tryParse(s.snapshotDate ?? '');
+          if (dt == null) return '?';
+          final week = _isoWeekNumber(dt);
+          return '${dt.year}-$week';
+        });
+      case '6M':
+      case 'YTD':
+        return _keepLastPerGroup(raw, (s) {
+          final dt = DateTime.tryParse(s.snapshotDate ?? '');
+          if (dt == null) return '?';
+          final week = _isoWeekNumber(dt);
+          return '${dt.year}-${(week / 2).floor()}';
+        });
+      default:
+        return raw;
+    }
+  }
+
+  /// Returns the "deduplication key" for a date at a given timeframe.
+  /// Used to detect when a new period boundary has been crossed.
+  String _getPeriodUnit(String? raw, String tfCode) {
     if (raw == null || raw.isEmpty) return '';
     try {
       final dt = DateTime.parse(raw);
-      return DateFormat('MMM d').format(dt);
+      switch (tfCode) {
+        case '1D':
+          return '${dt.year}-${dt.month}-${dt.day}-${dt.hour}';
+        case '1W':
+          return '${dt.year}-${dt.month}-${dt.day}';
+        case '1M':
+          // Label every ~7 days: use the week-of-month as the key
+          return '${dt.year}-${dt.month}-${(dt.day / 7).floor()}';
+        case '3M':
+        case '6M':
+        case 'YTD':
+        case '1Y':
+          return '${dt.year}-${dt.month}';
+        case '3Y':
+        case '5Y':
+        case 'All':
+          return '${dt.year}';
+        default:
+          return '${dt.year}-${dt.month}';
+      }
     } catch (_) {
-      return raw;
+      return '';
+    }
+  }
+
+  /// Returns the X-axis label for this data point, or an EMPTY STRING if the
+  /// label should be suppressed (i.e., the same period unit as the last label).
+  ///
+  /// Rules by timeframe:
+  ///  1D   → label every new hour:     "9 AM", "11 AM"
+  ///  1W   → label every new day:      "Mon 7", "Tue 8"
+  ///  1M   → label every ~7 days:      "Jun 27", "Jul 4"
+  ///  3M   → label every new month:    "Jun", "Jul", "Aug"
+  ///  6M   → label every new month:    "Jan", "Feb", …
+  ///  1Y   → label every new month:    "Jun '26", "Jul '26"
+  ///  3Y/5Y → label every new year:   "2024", "2025", "2026"
+  String _getXLabel(String? raw, String tfCode, String? lastPeriodUnit) {
+    if (raw == null || raw.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(raw);
+      final currentUnit = _getPeriodUnit(raw, tfCode);
+
+      // Suppress duplicate labels — show only when period unit changes
+      if (currentUnit == lastPeriodUnit && lastPeriodUnit != null) return '';
+
+      switch (tfCode) {
+        case '1D':
+          return DateFormat('h a').format(dt);        // "9 AM"
+        case '1W':
+          return DateFormat('EEE d').format(dt);      // "Mon 7"
+        case '1M':
+          return DateFormat('MMM d').format(dt);      // "Jun 27"
+        case '3M':
+        case '6M':
+        case 'YTD':
+          return DateFormat('MMM').format(dt);        // "Jun"
+        case '1Y':
+          return DateFormat("MMM ''yy").format(dt);   // "Jun '26"
+        case '3Y':
+        case '5Y':
+        case 'All':
+          return DateFormat('yyyy').format(dt);       // "2026"
+        default:
+          return DateFormat('MMM d').format(dt);
+      }
+    } catch (_) {
+      return raw ?? '';
     }
   }
 
@@ -718,9 +959,9 @@ class _EndOfLineBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // fl_chart draws the line area bounded by titles.
-    // By default, bottom titles take 30px, top titles take 16px.
-    // The actual drawing area is chartHeight - 30 - 16 = chartHeight - 46.
-    final double drawingHeight = chartHeight - 46;
+    // By default, top titles take 16px, bottom titles take 14px.
+    // The actual drawing area is chartHeight - 14 - 16 = chartHeight - 30.
+    final double drawingHeight = chartHeight - 30;
 
     final double range = maxY - minY;
     final double percentFromBottom = range == 0 ? 0.5 : (lastPoint.y - minY) / range;

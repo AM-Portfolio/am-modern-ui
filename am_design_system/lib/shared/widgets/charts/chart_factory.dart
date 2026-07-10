@@ -160,6 +160,7 @@ class ChartFactory extends StatelessWidget {
 
       void processPoints(List<CommonChartDataPoint> pts) {
         for (var p in pts) {
+          if (p.y.isNaN || p.y.isInfinite) continue; // skip NaN/gap padding points
           if (p.y < minVal) minVal = p.y;
           if (p.y > maxVal) maxVal = p.y;
         }
@@ -211,21 +212,43 @@ class ChartFactory extends StatelessWidget {
     // Resolve bars: either map multi-lines or create single bar from data
     final List<LineChartBarData> bars = hasMultiLines
         ? lines!.map((lineData) => LineChartBarData(
-            spots: lineData.points.map((d) => FlSpot(d.x, d.y)).toList(),
+            spots: lineData.points.map((d) => d.y.isNaN ? FlSpot.nullSpot : FlSpot(d.x, d.y)).toList(),
             isCurved: true,
             color: lineData.color ?? color,
             barWidth: 3,
             isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
+            dotData: FlDotData(
+              show: true,
+              checkToShowDot: (spot, barData) {
+                final index = barData.spots.indexOf(spot);
+                if (barData.spots.length <= 1) return true;
+                final prev = index > 0 ? barData.spots[index - 1] : null;
+                final next = index < barData.spots.length - 1 ? barData.spots[index + 1] : null;
+                final isPrevNull = prev == null || prev.y.isNaN || prev == FlSpot.nullSpot;
+                final isNextNull = next == null || next.y.isNaN || next == FlSpot.nullSpot;
+                return isPrevNull && isNextNull;
+              },
+            ),
           )).toList()
         : [
             LineChartBarData(
-              spots: data.map((d) => FlSpot(d.x, d.y)).toList(),
+              spots: data.map((d) => d.y.isNaN ? FlSpot.nullSpot : FlSpot(d.x, d.y)).toList(),
               isCurved: true,
               color: color,
               barWidth: 3,
               isStrokeCapRound: true,
-              dotData: const FlDotData(show: false),
+              dotData: FlDotData(
+                show: true,
+                checkToShowDot: (spot, barData) {
+                  final index = barData.spots.indexOf(spot);
+                  if (barData.spots.length <= 1) return true;
+                  final prev = index > 0 ? barData.spots[index - 1] : null;
+                  final next = index < barData.spots.length - 1 ? barData.spots[index + 1] : null;
+                  final isPrevNull = prev == null || prev.y.isNaN || prev == FlSpot.nullSpot;
+                  final isNextNull = next == null || next.y.isNaN || next == FlSpot.nullSpot;
+                  return isPrevNull && isNextNull;
+                },
+              ),
               belowBarData: BarAreaData(
                 show: type == ChartType.area,
                 gradient: LinearGradient(
@@ -262,24 +285,21 @@ class ChartFactory extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: calculatedInterval, // Dynamically space out dates to prevent overlap
+              interval: config.xInterval ?? calculatedInterval, // Dynamically space out dates to prevent overlap
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 final List<CommonChartDataPoint> activePoints = hasMultiLines
                     ? lines!.first.points
                     : data;
                 if (index >= 0 && index < activePoints.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      activePoints[index].xLabel ?? '',
-                      style: TextStyle(fontSize: 10, color: theme.hintColor),
-                    ),
+                  return Text(
+                    activePoints[index].xLabel ?? '',
+                    style: TextStyle(fontSize: 10, color: theme.hintColor),
                   );
                 }
                 return const SizedBox();
               },
-              reservedSize: 30,
+              reservedSize: 14,
             ),
           ),
           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -305,7 +325,9 @@ class ChartFactory extends StatelessWidget {
                 
                 // Smart formatter: cleanly format 0, and show decimals for small non-zero numbers
                 String text;
-                if (value == 0) {
+                if (config.formatYLabel != null) {
+                  text = config.formatYLabel!(value);
+                } else if (value == 0) {
                   text = '0';
                 } else if (value.abs() < 10) {
                   text = value.toStringAsFixed(2);

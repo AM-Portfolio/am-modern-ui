@@ -70,14 +70,19 @@ class _GlobalPortfolioWrapperState
     }
   }
 
+  bool _initialized = false;
+
   @override
-  void initState() {
-    super.initState();
-    final inheritedId = context.selectedPortfolioId;
-    final inheritedName = context.selectedPortfolioName;
-    if (inheritedId != null) {
-      _selectedPortfolioId = inheritedId;
-      _selectedPortfolioName = inheritedName;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      final inheritedId = context.selectedPortfolioId;
+      final inheritedName = context.selectedPortfolioName;
+      if (inheritedId != null) {
+        _selectedPortfolioId = inheritedId;
+        _selectedPortfolioName = inheritedName;
+      }
     }
   }
 
