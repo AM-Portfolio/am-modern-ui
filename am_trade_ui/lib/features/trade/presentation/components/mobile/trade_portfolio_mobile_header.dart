@@ -21,11 +21,13 @@ class TradePortfolioMobileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.02),
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
+        color: isDark ? Theme.of(context).colorScheme.primary.withOpacity(0.02) : Theme.of(context).colorScheme.surface,
+        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(isDark ? 0.1 : 0.2))),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -109,12 +111,21 @@ class TradePortfolioMobileHeader extends StatelessWidget {
     required Color iconBgColor,
     Color? valueColor,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E30),
+        color: isDark ? const Color(0xFF1E1E30) : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF2D2D45)),
+        border: Border.all(color: isDark ? const Color(0xFF2D2D45) : Theme.of(context).colorScheme.outline.withOpacity(0.2)),
+        boxShadow: isDark ? null : [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -137,7 +148,9 @@ class TradePortfolioMobileHeader extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 10,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  color: isDark 
+                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.5)
+                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.2,
                 ),

@@ -177,12 +177,6 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
           isSelected: _selectedView == MobileTradeViewType.calendar,
           onTap: () => _onViewChanged(MobileTradeViewType.calendar),
         ),
-        SecondarySidebarItem(
-          title: 'Add Trade',
-          icon: Icons.add_circle_outline,
-          isSelected: _selectedView == MobileTradeViewType.addTrade,
-          onTap: () => _onViewChanged(MobileTradeViewType.addTrade),
-        ),
       ],
       body: _buildMainContent(context),
     );
@@ -431,10 +425,19 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
     ),
   );
 
-  /// Build floating action button for adding new trade
   Widget? _buildFloatingActionButton(BuildContext context) {
-    // FAB removed - Add Trade now in bottom navigation
-    return null;
+    // Hide FAB if we're already on the Add Trade view
+    if (_selectedView == MobileTradeViewType.addTrade) {
+      return null;
+    }
+    
+    return FloatingActionButton(
+      onPressed: () => _onViewChanged(MobileTradeViewType.addTrade),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      elevation: 4,
+      child: const Icon(Icons.add),
+    );
   }
 }
 
