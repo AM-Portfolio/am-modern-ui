@@ -49,7 +49,7 @@ class MonthHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '\$${stats['totalPnL'] >= 0 ? '+' : ''}${stats['totalPnL'].toStringAsFixed(0)}',
+                    '₹${stats['totalPnL'] >= 0 ? '+' : ''}${stats['totalPnL'].toStringAsFixed(0)}',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
