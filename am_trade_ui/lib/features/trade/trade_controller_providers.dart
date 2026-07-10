@@ -43,6 +43,7 @@ final tradeDetailsByPortfolioProvider =
 /// Provider to watch trade details for a portfolio with real-time updates
 /// Returns a StreamProvider with trade details that update automatically
 final watchTradesByPortfolioProvider = StreamProvider.family<List<TradeDetails>, String>((ref, portfolioId) async* {
+  if (portfolioId.isEmpty) return;
   final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
   yield* repository.watchTradeDetailsByPortfolio(portfolioId);
 });

@@ -33,13 +33,13 @@ class PortfolioSidebar extends StatelessWidget {
         isSelected: currentPage == 'Holdings',
         onTap: () => onPageSelected('Holdings'),
       ),
-      SecondarySidebarItem(
-        title: 'Analysis',
-        icon: Icons.analytics_outlined,
-        accentColor: portfolioAccent,
-        isSelected: currentPage == 'Analysis',
-        onTap: () => onPageSelected('Analysis'),
-      ),
+      // SecondarySidebarItem(
+      //   title: 'Analysis',
+      //   icon: Icons.analytics_outlined,
+      //   accentColor: portfolioAccent,
+      //   isSelected: currentPage == 'Analysis',
+      //   onTap: () => onPageSelected('Analysis'),
+      // ),
       SecondarySidebarItem(
         title: 'Heatmap',
         icon: Icons.grid_on_outlined,

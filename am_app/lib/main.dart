@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:am_common/am_common.dart';
@@ -9,6 +10,7 @@ import 'app.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  BootTrace.configure();
 
   ErrorWidget.builder = (details) => Material(
         color: const Color(0xFF1E1E2E),
@@ -27,7 +29,6 @@ void main() {
     usePathUrlStrategy();
   }
 
-  // Show UI immediately — never leave a blank page while async init runs.
   runApp(const ProviderScope(child: _BootstrapApp()));
 }
 
@@ -51,9 +52,20 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   Future<void> _initialize() async {
     try {
       await ConfigService.initialize();
-      await configureDependencies();
+      await configureCoreDependencies();
+      await configureFeatureDependencies();
       if (!mounted) return;
       setState(() => _app = const AMApp());
+
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        BootTrace.instance.mark('first_flutter_frame');
+        BootRumCollector.instance.schedulePublish(
+          delay: const Duration(seconds: 6),
+        );
+        BootTrace.instance.scheduleSummary(
+          delay: const Duration(seconds: 6),
+        );
+      });
     } catch (error, stackTrace) {
       debugPrint('AMApp startup failed: $error\n$stackTrace');
       if (!mounted) return;
@@ -81,18 +93,21 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     }
 
     if (_app == null) {
-      return const MaterialApp(
+      final restoring = Uri.base.path.startsWith('/app/');
+      return MaterialApp(
         home: Scaffold(
-          backgroundColor: Color(0xFF0B1120),
+          backgroundColor: const Color(0xFF0B1120),
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircularProgressIndicator(color: Color(0xFF6366F1)),
-                SizedBox(height: 20),
+                const CircularProgressIndicator(color: Color(0xFF6366F1)),
+                const SizedBox(height: 20),
                 Text(
-                  'Starting AM Investment Platform…',
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
+                  restoring
+                      ? 'Restoring your session…'
+                      : 'Starting AM Investment Platform…',
+                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
                 ),
               ],
             ),

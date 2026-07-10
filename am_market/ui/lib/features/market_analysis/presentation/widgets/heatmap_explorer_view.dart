@@ -395,24 +395,13 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                                                             // Monthly Cells
                                                             ..._months.map((monthKey) {
                                                                 final val = yearly.monthlyReturns[monthKey];
+                                                                final baseColor = val != null ? _getColorForChange(val).withOpacity(0.8) : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05));
+                                                                final glowColor = (val != null && val >= 0) ? const Color(0xFF47E266).withOpacity(0.3) : const Color(0xFFFFB4AB).withOpacity(0.3);
                                                                 return Expanded(
-                                                                  child: Container(
-                                                                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                                                                    height: 32,
-                                                                    decoration: BoxDecoration(
-                                                                      color: val != null ? _getColorForChange(val).withOpacity(0.8) : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
-                                                                      borderRadius: BorderRadius.circular(6),
-                                                                    ),
-                                                                    child: Center(
-                                                                      child: Text(
-                                                                        val != null ? val.toStringAsFixed(1) : '-',
-                                                                        style: TextStyle(
-                                                                          color: Colors.white, 
-                                                                          fontSize: 11,
-                                                                          fontWeight: val != null ? FontWeight.w600 : FontWeight.normal
-                                                                        ),
-                                                                      ),
-                                                                    ),
+                                                                  child: _HoverableHeatmapCell(
+                                                                     val: val,
+                                                                     baseColor: baseColor,
+                                                                     glowColor: glowColor,
                                                                   ),
                                                                 );
                                                             }).toList(),
@@ -848,81 +837,11 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
 
   Widget _buildHeatmapCard(String symbol, double value) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
-      
-      // Stitch color tokens
-      Color cardColor;
-      Color textColor;
-      Color borderOutlineColor;
-      List<BoxShadow> glowShadows;
-
-      if (value > 0) {
-        cardColor = const Color(0xFF47E266); // Success Green
-        textColor = const Color(0xFF47E266);
-        borderOutlineColor = cardColor.withOpacity(0.12);
-        glowShadows = [
-          BoxShadow(
-            color: cardColor.withOpacity(0.12),
-            blurRadius: 12,
-            spreadRadius: 1,
-            offset: const Offset(0, 4),
-          ),
-        ];
-      } else if (value < 0) {
-        cardColor = const Color(0xFFFFB4AB); // Error Red
-        textColor = const Color(0xFFFFB4AB);
-        borderOutlineColor = cardColor.withOpacity(0.12);
-        glowShadows = [
-          BoxShadow(
-            color: cardColor.withOpacity(0.12),
-            blurRadius: 12,
-            spreadRadius: 1,
-            offset: const Offset(0, 4),
-          ),
-        ];
-      } else {
-        cardColor = const Color(0xFF918FA0); // Outline / Neutral Gray
-        textColor = const Color(0xFF918FA0);
-        borderOutlineColor = cardColor.withOpacity(0.12);
-        glowShadows = [];
-      }
-
-      return InkWell(
-          onTap: () => _onHeatmapItemTap(symbol, value),
-          child: Container(
-              decoration: BoxDecoration(
-                  color: cardColor.withOpacity(0.06), // Soft pastel fill (bg-tertiary/5, bg-error/5)
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderOutlineColor, width: 1.0),
-                  boxShadow: isDark ? glowShadows : [], // Glow effect in dark mode
-              ),
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                      Text(
-                          symbol, 
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black87, 
-                            fontWeight: FontWeight.bold, 
-                            fontSize: 12,
-                            fontFamily: 'Hanken Grotesk',
-                          ), 
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                          "${value > 0 ? '+' : ''}${value.toStringAsFixed(2)}%", 
-                          style: TextStyle(
-                            color: textColor, 
-                            fontSize: 11, 
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'JetBrains Mono',
-                          )
-                      ),
-                  ],
-              ),
-          ),
+      return _HoverableMarketHeatmapCard(
+        symbol: symbol,
+        value: value,
+        isDark: isDark,
+        onTap: () => _onHeatmapItemTap(symbol, value),
       );
   }
 
@@ -961,4 +880,190 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
     );
   }
 
+}
+
+class _HoverableHeatmapCell extends StatefulWidget {
+  final double? val;
+  final Color baseColor;
+  final Color glowColor;
+
+  const _HoverableHeatmapCell({
+    Key? key,
+    required this.val,
+    required this.baseColor,
+    required this.glowColor,
+  }) : super(key: key);
+
+  @override
+  State<_HoverableHeatmapCell> createState() => _HoverableHeatmapCellState();
+}
+
+class _HoverableHeatmapCellState extends State<_HoverableHeatmapCell> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered && widget.val != null ? 1.12 : 1.0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          height: 32,
+          decoration: BoxDecoration(
+            color: widget.baseColor,
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: _isHovered && widget.val != null
+                ? [
+                    BoxShadow(
+                      color: widget.glowColor.withOpacity(0.6), // Boosted glow opacity
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    )
+                  ]
+                : [],
+          ),
+          child: Center(
+            child: Text(
+              widget.val != null ? widget.val!.toStringAsFixed(1) : '-',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: widget.val != null ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HoverableMarketHeatmapCard extends StatefulWidget {
+  final String symbol;
+  final double value;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _HoverableMarketHeatmapCard({
+    Key? key,
+    required this.symbol,
+    required this.value,
+    required this.isDark,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  State<_HoverableMarketHeatmapCard> createState() => _HoverableMarketHeatmapCardState();
+}
+
+class _HoverableMarketHeatmapCardState extends State<_HoverableMarketHeatmapCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    Color cardColor;
+    Color textColor;
+    Color borderOutlineColor;
+    List<BoxShadow> glowShadows;
+
+    if (widget.value > 0) {
+      cardColor = const Color(0xFF47E266);
+      textColor = const Color(0xFF47E266);
+      borderOutlineColor = cardColor.withOpacity(0.12);
+      glowShadows = _isHovered ? [
+        BoxShadow(
+          color: cardColor.withOpacity(0.6),
+          blurRadius: 16,
+          spreadRadius: 1,
+          offset: const Offset(0, 4),
+        )
+      ] : (widget.isDark ? [
+        BoxShadow(
+          color: cardColor.withOpacity(0.12),
+          blurRadius: 12,
+          spreadRadius: 1,
+          offset: const Offset(0, 4),
+        )
+      ] : []);
+    } else if (widget.value < 0) {
+      cardColor = const Color(0xFFFFB4AB);
+      textColor = const Color(0xFFFFB4AB);
+      borderOutlineColor = cardColor.withOpacity(0.12);
+      glowShadows = _isHovered ? [
+        BoxShadow(
+          color: cardColor.withOpacity(0.6),
+          blurRadius: 16,
+          spreadRadius: 1,
+          offset: const Offset(0, 4),
+        )
+      ] : (widget.isDark ? [
+        BoxShadow(
+          color: cardColor.withOpacity(0.12),
+          blurRadius: 12,
+          spreadRadius: 1,
+          offset: const Offset(0, 4),
+        )
+      ] : []);
+    } else {
+      cardColor = const Color(0xFF918FA0);
+      textColor = const Color(0xFF918FA0);
+      borderOutlineColor = cardColor.withOpacity(0.12);
+      glowShadows = [];
+    }
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.08 : 1.0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            decoration: BoxDecoration(
+              color: cardColor.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderOutlineColor, width: 1.0),
+              boxShadow: glowShadows,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  widget.symbol,
+                  style: TextStyle(
+                    color: widget.isDark ? Colors.white : Colors.black87,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    fontFamily: 'Hanken Grotesk',
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "${widget.value > 0 ? '+' : ''}${widget.value.toStringAsFixed(2)}%",
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'JetBrains Mono',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

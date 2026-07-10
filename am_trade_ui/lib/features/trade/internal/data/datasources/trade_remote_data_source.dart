@@ -80,17 +80,10 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     AppLogger.methodEntry('getTradePortfolios', tag: 'TradeRemoteDataSource', params: {});
 
     try {
-      // Trade API Spec: GET /v1/portfolio-summary/by-owner/{ownerId}
-      final baseUri = _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioListResource);
-      var fullUri = baseUri;
-
-      // The cloud API Gateway requires the user ID to be appended to the path
-      if (fullUri.endsWith('by-owner')) {
-        final userId = await SecureStorageService().getUserId() ?? '';
-        if (userId.isNotEmpty) {
-          fullUri = '$fullUri/$userId';
-        }
-      }
+      // Trade API: GET /v1/portfolio-summary/by-owner — owner from JWT (UserContext).
+      // Do not append userId: /by-owner/{id} is a different fallback endpoint (single summary).
+      final fullUri =
+          _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioListResource);
 
       final response = await _apiClient.get<TradePortfolioListDto>(
         fullUri,

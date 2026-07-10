@@ -74,8 +74,26 @@ void main() {
         ShareUrlBuilder.sanitizeRedirect('/app/portfolio/p1/holdings'),
         '/app/portfolio/p1/holdings',
       );
+      expect(
+        ShareUrlBuilder.sanitizeRedirect(
+          'https://am.asrax.in/app/market/all-indices',
+        ),
+        '/app/market/all-indices',
+      );
       expect(ShareUrlBuilder.sanitizeRedirect('https://evil.com'), isNull);
       expect(ShareUrlBuilder.sanitizeRedirect(null), isNull);
+    });
+
+    test('isReloadableAppRoute detects non-dashboard app paths', () {
+      expect(
+        ShareUrlBuilder.isReloadableAppRoute('/app/market/all-indices'),
+        isTrue,
+      );
+      expect(
+        ShareUrlBuilder.isReloadableAppRoute('/app/portfolio/overview'),
+        isTrue,
+      );
+      expect(ShareUrlBuilder.isReloadableAppRoute('/app/dashboard'), isFalse);
     });
 
     test('tab slug helpers', () {

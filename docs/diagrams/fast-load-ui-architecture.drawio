@@ -1,0 +1,458 @@
+<mxfile host="65bd71144e">
+    <diagram id="components" name="01 Components Map">
+        <mxGraphModel dx="876" dy="651" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1200" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="t1" value="&lt;b&gt;am_app — Fast-Load UI Architecture (Component Map)&lt;/b&gt;&lt;br&gt;See tabs 02–08 for flows, UI wireframes, refactor detail, and debug vs release." style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=16;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="20" width="1000" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="L1" value="Layer 1 — Main bundle (boot, always loaded)" style="swimlane;startSize=30;fillColor=#EEF2FF;strokeColor=#4F46E5;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="90" width="1280" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="b1" value="index.html + config.json&lt;br&gt;(no-store bootstrap)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6366F1;fontColor=#fff;" parent="L1" vertex="1">
+                    <mxGeometry x="30" y="45" width="170" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="b2" value="main.dart.js&lt;br&gt;_BootstrapApp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4F46E5;fontColor=#fff;" parent="L1" vertex="1">
+                    <mxGeometry x="220" y="45" width="150" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="b3" value="am_auth_ui&lt;br&gt;AuthCubit · login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4F46E5;fontColor=#fff;" parent="L1" vertex="1">
+                    <mxGeometry x="390" y="45" width="150" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="b4" value="am_dashboard_ui&lt;br&gt;DashboardScreen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4F46E5;fontColor=#fff;" parent="L1" vertex="1">
+                    <mxGeometry x="560" y="45" width="160" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="b5" value="am_subscription_ui&lt;br&gt;SubscriptionCubit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4F46E5;fontColor=#fff;" parent="L1" vertex="1">
+                    <mxGeometry x="740" y="45" width="170" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="b6" value="AppShellLite&lt;br&gt;sidebar · bottom nav" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#312E81;fontColor=#fff;" parent="L1" vertex="1">
+                    <mxGeometry x="930" y="45" width="160" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="b7" value="PortfolioSelectionScope&lt;br&gt;(am_common, ID only)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#312E81;fontColor=#fff;" parent="L1" vertex="1">
+                    <mxGeometry x="1110" y="45" width="150" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="L2" value="Layer 2 — Deferred chunks (*.part.js, release only)" style="swimlane;startSize=30;fillColor=#F0FDF4;strokeColor=#059669;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="250" width="1280" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="d1" value="am_portfolio_ui&lt;br&gt;PortfolioScreen&lt;br&gt;GlobalPortfolioWrapper" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="L2" vertex="1">
+                    <mxGeometry x="30" y="45" width="180" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="d2" value="am_trade_ui&lt;br&gt;TradeResponsiveLayout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="L2" vertex="1">
+                    <mxGeometry x="230" y="45" width="170" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="d3" value="am_market_ui&lt;br&gt;MarketPage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="L2" vertex="1">
+                    <mxGeometry x="420" y="45" width="150" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="d4" value="am_ai_ui&lt;br&gt;AiChatScreen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="L2" vertex="1">
+                    <mxGeometry x="590" y="45" width="140" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="d5" value="am_analysis_ui&lt;br&gt;AnalysisDashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="L2" vertex="1">
+                    <mxGeometry x="750" y="45" width="160" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="d6" value="am_doc_intelligence_ui" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="L2" vertex="1">
+                    <mxGeometry x="930" y="45" width="170" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="d7" value="Module skeletons&lt;br&gt;(am_app, main bundle)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#047857;fontColor=#fff;dashed=1;" parent="L2" vertex="1">
+                    <mxGeometry x="1120" y="45" width="140" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="L3" value="Layer 3 — Data (after skeleton visible)" style="swimlane;startSize=30;fillColor=#FFF7ED;strokeColor=#F59E0B;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="400" width="1280" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="da1" value="REST APIs&lt;br&gt;portfolio · trade · market" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F59E0B;fontColor=#fff;" parent="L3" vertex="1">
+                    <mxGeometry x="80" y="45" width="200" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="da2" value="STOMP WebSocket&lt;br&gt;AmStompClient" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F59E0B;fontColor=#fff;" parent="L3" vertex="1">
+                    <mxGeometry x="310" y="45" width="180" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="da3" value="SessionPersistence&lt;br&gt;app_session_v1_{userId}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F59E0B;fontColor=#fff;" parent="L3" vertex="1">
+                    <mxGeometry x="520" y="45" width="200" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="L4" value="Router + loaders (am_app/lib/core/router)" style="swimlane;startSize=30;fillColor=#F1F5F9;strokeColor=#64748B;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="530" width="1280" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="r1" value="app_router.dart&lt;br&gt;GoRouter · ShellRoute" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748B;fontColor=#fff;" parent="L4" vertex="1">
+                    <mxGeometry x="40" y="45" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="r2" value="deferred_routes.dart&lt;br&gt;deferred import + loadLibrary()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748B;fontColor=#fff;" parent="L4" vertex="1">
+                    <mxGeometry x="250" y="45" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="r3" value="deferred_module_loader.dart&lt;br&gt;skeleton → builder" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748B;fontColor=#fff;" parent="L4" vertex="1">
+                    <mxGeometry x="500" y="45" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="r4" value="injection.dart&lt;br&gt;configureCore + Feature DI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748B;fontColor=#fff;" parent="L4" vertex="1">
+                    <mxGeometry x="750" y="45" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="L5" value="Static assets + nginx (preprod)" style="swimlane;startSize=30;fillColor=#ECFDF5;strokeColor=#059669;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="670" width="620" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="n1" value="index.html / config → no-store" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="L5" vertex="1">
+                    <mxGeometry x="30" y="40" width="180" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="n2" value="main.dart.js + *.part.js → must-revalidate + ETag" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="L5" vertex="1">
+                    <mxGeometry x="230" y="40" width="260" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="L6" value="Targets (release, warm cache)" style="swimlane;startSize=30;fillColor=#FEE2E2;strokeColor=#DC2626;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="670" width="620" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="tg1" value="Shell visible &amp;lt; 1.5s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DC2626;fontColor=#fff;" parent="L6" vertex="1">
+                    <mxGeometry x="30" y="40" width="160" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="tg2" value="Route interactive &amp;lt; 3s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DC2626;fontColor=#fff;" parent="L6" vertex="1">
+                    <mxGeometry x="210" y="40" width="170" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="tg3" value="Market reload: main + 1 part.js only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DC2626;fontColor=#fff;" parent="L6" vertex="1">
+                    <mxGeometry x="400" y="40" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend" value="&lt;b&gt;Diagram tabs&lt;/b&gt;&lt;br&gt;02 Current vs Proposed (Market reload)&lt;br&gt;03 Boot flow — Market hard refresh&lt;br&gt;04 AppShellLite wireframe&lt;br&gt;05 Module skeleton layouts&lt;br&gt;06 PortfolioSelectionScope refactor&lt;br&gt;07 Implementation phases A–D&lt;br&gt;08 Debug vs Release network" style="shape=note;whiteSpace=wrap;html=1;size=16;verticalAlign=top;align=left;fillColor=#FEF3C7;strokeColor=#F59E0B;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="790" width="380" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="gap" value="&lt;b&gt;Today (before Phase A):&lt;/b&gt;&lt;br&gt;am_portfolio_ui eager in app_shell + app_router.&lt;br&gt;GlobalPortfolioWrapper wraps ALL authenticated routes.&lt;br&gt;Market reload still pulls portfolio JS into main bundle." style="shape=note;whiteSpace=wrap;html=1;size=16;verticalAlign=top;align=left;fillColor=#FEE2E2;strokeColor=#DC2626;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="790" width="420" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#94A3B8;strokeWidth=2;endArrow=classic;" parent="1" source="L1" target="L2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#94A3B8;strokeWidth=2;endArrow=classic;" parent="1" source="L2" target="L3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="current-vs-proposed" name="02 Current vs Proposed">
+        <mxGraphModel dx="745" dy="553" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="t2" value="&lt;b&gt;Market Reload — Current vs Proposed (release build)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=18;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="20" width="800" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="cur" value="&lt;b&gt;CURRENT 05/07/2026&lt;/b&gt;" style="swimlane;startSize=28;fillColor=#FEE2E2;strokeColor=#DC2626;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="80" width="620" height="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="c1" value="Hard refresh /app/market/dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DC2626;fontColor=#fff;" parent="cur" vertex="1">
+                    <mxGeometry x="30" y="40" width="560" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="c2" value="main.dart.js loads" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F87171;fontColor=#fff;" parent="cur" vertex="1">
+                    <mxGeometry x="30" y="100" width="260" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="c3" value="am_portfolio_ui IN main bundle&lt;br&gt;(GlobalPortfolioWrapper on AppShell)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F87171;fontColor=#fff;" parent="cur" vertex="1">
+                    <mxGeometry x="310" y="100" width="280" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="c4" value="market *.part.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F87171;fontColor=#fff;" parent="cur" vertex="1">
+                    <mxGeometry x="30" y="170" width="180" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="c5" value="Debug only: trade + ai + portfolio&lt;br&gt;*.dart.lib.js (~1990 requests)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#991B1B;fontColor=#fff;dashed=1;" parent="cur" vertex="1">
+                    <mxGeometry x="230" y="170" width="360" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="c6" value="PortfolioCubit may init even on Market tab&lt;br&gt;(wrapper mounted, list fetch skipped but JS loaded)" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;" parent="cur" vertex="1">
+                    <mxGeometry x="30" y="240" width="560" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="prop" value="&lt;b&gt;PROPOSED (Phase A–B)&lt;/b&gt;" style="swimlane;startSize=28;fillColor=#ECFDF5;strokeColor=#059669;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="80" width="620" height="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="p1" value="Hard refresh /app/market/dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="prop" vertex="1">
+                    <mxGeometry x="30" y="40" width="560" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="p2" value="main.dart.js + AppShellLite&lt;br&gt;+ PortfolioSelectionScope (tiny)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#34D399;fontColor=#fff;" parent="prop" vertex="1">
+                    <mxGeometry x="30" y="100" width="280" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="p3" value="MarketModuleSkeleton&lt;br&gt;(shimmer, shell stays visible)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#34D399;fontColor=#fff;" parent="prop" vertex="1">
+                    <mxGeometry x="330" y="100" width="260" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="p4" value="market *.part.js ONLY" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#34D399;fontColor=#fff;" parent="prop" vertex="1">
+                    <mxGeometry x="30" y="170" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="p5" value="NO portfolio / trade / ai chunks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#047857;fontColor=#fff;" parent="prop" vertex="1">
+                    <mxGeometry x="250" y="170" width="340" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="p6" value="Market API calls after skeleton paint&lt;br&gt;indices · heatmap · live prices" style="shape=note;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;" parent="prop" vertex="1">
+                    <mxGeometry x="30" y="240" width="560" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="nav" value="&lt;b&gt;In-app navigation (both states)&lt;/b&gt;&lt;br&gt;After first visit: JS cached → only API calls. This is correct SPA behavior." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#4F46E5;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="430" width="1280" height="50" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="boot-flow" name="03 Boot Flow Market">
+        <mxGraphModel dx="745" dy="553" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="900" pageHeight="1500" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="tb" value="&lt;b&gt;Flow — Hard refresh /app/market/dashboard (proposed)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=18;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="20" width="660" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="s1" value="&lt;b&gt;Step 1&lt;/b&gt;&lt;br&gt;Browser GET index.html + config.json&lt;br&gt;nginx: no-store (always fresh bootstrap)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6366F1;fontColor=#fff;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="70" width="500" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="s2" value="&lt;b&gt;Step 2&lt;/b&gt;&lt;br&gt;Download main.dart.js (304 if same deploy + ETag)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4F46E5;fontColor=#fff;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="150" width="500" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3" value="&lt;b&gt;Step 3&lt;/b&gt;&lt;br&gt;ConfigService.initialize() — parallel JSON fetch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4F46E5;fontColor=#fff;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="220" width="500" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="s4" value="&lt;b&gt;Step 4&lt;/b&gt;&lt;br&gt;configureCoreDependencies + configureFeatureDependencies&lt;br&gt;auth · theme · dashboard · subscription DI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4F46E5;fontColor=#fff;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="290" width="500" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="s5" value="&lt;b&gt;Step 5&lt;/b&gt;&lt;br&gt;AMApp mounts · AuthCubit.checkAuthStatus()&lt;br&gt;Bootstrap spinner → auth overlay if needed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4F46E5;fontColor=#fff;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="365" width="500" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="s6" value="&lt;b&gt;Step 6&lt;/b&gt;&lt;br&gt;GoRouter resolves /app/market/dashboard&lt;br&gt;AppShellLite paints sidebar + bottom nav" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#312E81;fontColor=#fff;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="440" width="500" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="s7" value="&lt;b&gt;Step 7&lt;/b&gt;&lt;br&gt;DeferredModuleLoader shows MarketModuleSkeleton&lt;br&gt;(ShimmerLoading — NOT full-screen spinner)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#312E81;fontColor=#fff;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="515" width="500" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="s8" value="&lt;b&gt;Step 8&lt;/b&gt;&lt;br&gt;market_ui.loadLibrary() → market *.part.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="590" width="500" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="s9" value="&lt;b&gt;Step 9&lt;/b&gt;&lt;br&gt;MarketPage builds · MarketProvider.loadIndices()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="660" width="500" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="s10" value="&lt;b&gt;Step 10&lt;/b&gt;&lt;br&gt;REST: /v1/indices · market-data APIs&lt;br&gt;User sees real index cards replace skeleton" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F59E0B;fontColor=#fff;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="730" width="500" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="s11" value="&lt;b&gt;Step 11 — later nav to Trade&lt;/b&gt;&lt;br&gt;trade *.part.js loads once · portfolio chunk if needed&lt;br&gt;Subsequent Trade visits: API only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748B;fontColor=#fff;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="810" width="500" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="es1" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#334155;strokeWidth=2;endArrow=block;" parent="1" source="s1" target="s2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#334155;strokeWidth=2;endArrow=block;" parent="1" source="s2" target="s3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#334155;strokeWidth=2;endArrow=block;" parent="1" source="s3" target="s4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#334155;strokeWidth=2;endArrow=block;" parent="1" source="s4" target="s5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es5" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#334155;strokeWidth=2;endArrow=block;" parent="1" source="s5" target="s6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es6" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#334155;strokeWidth=2;endArrow=block;" parent="1" source="s6" target="s7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es7" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#059669;strokeWidth=2;endArrow=block;" parent="1" source="s7" target="s8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es8" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#059669;strokeWidth=2;endArrow=block;" parent="1" source="s8" target="s9" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es9" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#F59E0B;strokeWidth=2;endArrow=block;" parent="1" source="s9" target="s10" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es10" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#64748B;strokeWidth=2;endArrow=block;dashed=1;" parent="1" source="s10" target="s11" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="shell-wireframe" name="04 Shell Wireframe">
+        <mxGraphModel dx="745" dy="553" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" background="#0B1120" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="wt" value="&lt;b&gt;AppShellLite — Instant chrome (Layer 1)&lt;/b&gt;&lt;br&gt;Background #0B1120 · Accent #6366F1" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=16;fontColor=#94A3B8;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="20" width="800" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="frame" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0B1120;strokeColor=#334155;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="80" width="1040" height="620" as="geometry"/>
+                </mxCell>
+                <mxCell id="sidebar" value="&lt;b&gt;GlobalSidebar&lt;/b&gt;&lt;br&gt;&lt;br&gt;◉ Dashboard&lt;br&gt;○ Portfolio&lt;br&gt;○ Trade&lt;br&gt;● Market&lt;br&gt;○ AI Chat&lt;br&gt;○ Doc Intel&lt;br&gt;○ Subscription&lt;br&gt;&lt;br&gt;Theme · Profile · Logout" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#475569;fontColor=#E2E8F0;align=left;spacingLeft=12;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="80" width="200" height="620" as="geometry"/>
+                </mxCell>
+                <mxCell id="content" value="&lt;b&gt;Content area — route skeleton OR real page&lt;/b&gt;&lt;br&gt;&lt;br&gt;While chunk loads: MarketModuleSkeleton&lt;br&gt;(index card grid shimmer, fixed heights)&lt;br&gt;&lt;br&gt;Shell NEVER replaced by full-screen spinner" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#334155;fontColor=#94A3B8;align=left;spacingLeft=16;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="80" width="840" height="560" as="geometry"/>
+                </mxCell>
+                <mxCell id="sk1" value="NIFTY 50&lt;br&gt;████ shimmer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#475569;fontColor=#64748B;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="180" width="180" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="sk2" value="NIFTY 100&lt;br&gt;████ shimmer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#475569;fontColor=#64748B;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="180" width="180" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="sk3" value="INDIA VIX&lt;br&gt;████ shimmer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#475569;fontColor=#64748B;" parent="1" vertex="1">
+                    <mxGeometry x="700" y="180" width="180" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="sk4" value="Chart strip shimmer ████████████" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#475569;fontColor=#64748B;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="300" width="580" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="bottomnav" value="Dashboard · Portfolio · Trade · Market · More" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#475569;fontColor=#94A3B8;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="640" width="840" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="note1" value="Fix: index cards use fixed height → no BOTTOM OVERFLOWED BY 28 PIXELS" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontColor=#991B1B;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="720" width="500" height="50" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="skeletons" name="05 Module Skeletons">
+        <mxGraphModel dx="745" dy="553" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="st" value="&lt;b&gt;Module Skeleton Widgets&lt;/b&gt; (am_app/lib/features/shell/skeletons/) — main bundle, no module imports" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=16;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="20" width="1000" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="m1" value="&lt;b&gt;MarketModuleSkeleton&lt;/b&gt;&lt;br&gt;Route: /app/market/*&lt;br&gt;&lt;br&gt;· 2×2 index card grid (fixed h=100)&lt;br&gt;· Chart strip&lt;br&gt;· Uses ShimmerLoading&lt;br&gt;&lt;br&gt;Replaces: Loading Market… spinner" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;align=left;spacingLeft=10;verticalAlign=top;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="80" width="300" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="m2" value="&lt;b&gt;TradeModuleSkeleton&lt;/b&gt;&lt;br&gt;Route: /app/trade/*&lt;br&gt;&lt;br&gt;· Left tab strip placeholder&lt;br&gt;· HoldingsSkeletonLoader rows&lt;br&gt;· Table header shimmer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#4F46E5;align=left;spacingLeft=10;verticalAlign=top;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="390" y="80" width="300" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="m3" value="&lt;b&gt;PortfolioModuleSkeleton&lt;/b&gt;&lt;br&gt;Route: /app/portfolio/*&lt;br&gt;&lt;br&gt;· Summary cards row&lt;br&gt;· Donut chart placeholder&lt;br&gt;· Holdings table shimmer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;align=left;spacingLeft=10;verticalAlign=top;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="80" width="300" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="m4" value="&lt;b&gt;GenericModuleSkeleton&lt;/b&gt;&lt;br&gt;AI · Analysis · DocIntel · Profile · Lab&lt;br&gt;&lt;br&gt;· Title bar shimmer&lt;br&gt;· 3 content blocks&lt;br&gt;· Reusable fallback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#64748B;align=left;spacingLeft=10;verticalAlign=top;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="290" width="400" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="loader" value="&lt;b&gt;DeferredModuleLoader (enhanced)&lt;/b&gt;&lt;br&gt;&lt;br&gt;load: () =&amp;gt; module.loadLibrary()&lt;br&gt;skeleton: const MarketModuleSkeleton()&lt;br&gt;builder: () =&amp;gt; market_ui.MarketPage(...)&lt;br&gt;&lt;br&gt;FutureBuilder: skeleton while loading,&lt;br&gt;builder() when done, error panel on fail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;align=left;spacingLeft=10;verticalAlign=top;spacingTop=8;fontFamily=Courier New;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="290" width="520" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="ds" value="&lt;b&gt;Design system reuse&lt;/b&gt;&lt;br&gt;am_design_system/lib/shared/widgets/feedback/shimmer_loading.dart&lt;br&gt;holdings_skeleton_loader.dart · heatmap_skeleton_loader.dart" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#F59E0B;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="470" width="960" height="60" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="portfolio-scope" name="06 Portfolio Scope">
+        <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="pt" value="&lt;b&gt;PortfolioSelectionScope Refactor&lt;/b&gt; — extract from GlobalPortfolioWrapper" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=18;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="20" width="800" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="before" value="&lt;b&gt;BEFORE&lt;/b&gt;" style="swimlane;startSize=28;fillColor=#FEE2E2;strokeColor=#DC2626;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="80" width="500" height="380" as="geometry"/>
+                </mxCell>
+                <mxCell id="bsh" value="AppShell" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DC2626;fontColor=#fff;" parent="before" vertex="1">
+                    <mxGeometry x="180" y="40" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="bgw" value="GlobalPortfolioWrapper&lt;br&gt;(am_portfolio_ui — EAGER)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F87171;fontColor=#fff;" parent="before" vertex="1">
+                    <mxGeometry x="140" y="100" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="bpc" value="PortfolioCubit + Riverpod&lt;br&gt;loads on ALL routes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F87171;fontColor=#fff;" parent="before" vertex="1">
+                    <mxGeometry x="140" y="170" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="bchild" value="MarketPage / Dashboard / Trade …" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCA5A5;fontColor=#fff;" parent="before" vertex="1">
+                    <mxGeometry x="140" y="240" width="220" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="bext" value="context.selectedPortfolioId&lt;br&gt;extension in portfolio_ui" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;" parent="before" vertex="1">
+                    <mxGeometry x="80" y="300" width="340" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="after" value="&lt;b&gt;AFTER (Phase A)&lt;/b&gt;" style="swimlane;startSize=28;fillColor=#ECFDF5;strokeColor=#059669;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="80" width="520" height="380" as="geometry"/>
+                </mxCell>
+                <mxCell id="ash" value="AppShellLite" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="after" vertex="1">
+                    <mxGeometry x="190" y="40" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="ascope" value="PortfolioSelectionScope&lt;br&gt;(am_common — ~40 lines)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#34D399;fontColor=#fff;" parent="after" vertex="1">
+                    <mxGeometry x="150" y="100" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="achild" value="DeferredModuleLoader → route child" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#34D399;fontColor=#fff;" parent="after" vertex="1">
+                    <mxGeometry x="150" y="170" width="220" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="atrade" value="Trade chunk: GlobalPortfolioWrapper&lt;br&gt;wraps TradeResponsiveLayout ONLY" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#047857;fontColor=#fff;" parent="after" vertex="1">
+                    <mxGeometry x="30" y="230" width="220" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="aport" value="Portfolio chunk: GlobalPortfolioWrapper&lt;br&gt;+ PortfolioScreen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#047857;fontColor=#fff;" parent="after" vertex="1">
+                    <mxGeometry x="270" y="230" width="220" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="amarket" value="Market chunk: MarketPage ONLY&lt;br&gt;no portfolio wrapper" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#047857;fontColor=#fff;" parent="after" vertex="1">
+                    <mxGeometry x="150" y="300" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="aext" value="Trade routes use am_common extension:&lt;br&gt;context.selectedPortfolioId" style="shape=note;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;" parent="after" vertex="1">
+                    <mxGeometry x="80" y="330" width="360" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="api" value="&lt;b&gt;PortfolioSelectionScope API&lt;/b&gt;&lt;br&gt;selectedPortfolioId · selectedPortfolioName · onSelect(id, name)&lt;br&gt;Session restore writes ID without mounting PortfolioCubit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#4F46E5;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="490" width="1080" height="60" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="phases" name="07 Implementation Phases">
+        <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1000" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="ph" value="&lt;b&gt;Implementation Phases A–D&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=18;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="20" width="500" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="pa" value="&lt;b&gt;Phase A — Shell split&lt;/b&gt; (~1 day) HIGHEST IMPACT&lt;br&gt;&lt;br&gt;1. PortfolioSelectionScope → am_common&lt;br&gt;2. Remove GlobalPortfolioWrapper from app_shell&lt;br&gt;3. Defer PortfolioScreen in deferred_routes&lt;br&gt;4. Wrap Portfolio+Trade builders with wrapper inside chunk&lt;br&gt;&lt;br&gt;&lt;b&gt;Files:&lt;/b&gt; app_shell.dart · app_router.dart · deferred_routes.dart" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;align=left;spacingLeft=12;verticalAlign=top;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="80" width="500" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="pb" value="&lt;b&gt;Phase B — Skeleton loaders&lt;/b&gt; (~0.5 day)&lt;br&gt;&lt;br&gt;1. skeleton param on DeferredModuleLoader&lt;br&gt;2. Market / Trade / Portfolio / Generic skeletons&lt;br&gt;3. Wire per-route in deferred_routes&lt;br&gt;&lt;br&gt;&lt;b&gt;Files:&lt;/b&gt; deferred_module_loader.dart · shell/skeletons/*.dart" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4F46E5;fontColor=#fff;align=left;spacingLeft=12;verticalAlign=top;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="80" width="500" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="pc" value="&lt;b&gt;Phase C — Market layout&lt;/b&gt; (~0.5 day)&lt;br&gt;&lt;br&gt;1. Fix index card overflow (fixed heights)&lt;br&gt;2. Remove am_market_dev from MarketPage prod path&lt;br&gt;&lt;br&gt;&lt;b&gt;Files:&lt;/b&gt; dashboard_page.dart · index card widgets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F59E0B;fontColor=#fff;align=left;spacingLeft=12;verticalAlign=top;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="270" width="500" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="pd" value="&lt;b&gt;Phase D — Release verify&lt;/b&gt; (~0.5 day)&lt;br&gt;&lt;br&gt;1. npm run build:app:preprod:trace&lt;br&gt;2. Hard refresh /app/market/dashboard&lt;br&gt;3. Confirm: main + market part only&lt;br&gt;4. Document debug vs release in docs&lt;br&gt;&lt;br&gt;&lt;b&gt;Success:&lt;/b&gt; no portfolio/trade/ai part.js on market reload" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748B;fontColor=#fff;align=left;spacingLeft=12;verticalAlign=top;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="270" width="500" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="di" value="&lt;b&gt;DI alignment&lt;/b&gt;&lt;br&gt;configureCoreDependencies: auth · theme · dashboard · STOMP&lt;br&gt;configureFeatureDependencies: subscription · MarketAnalysisService (lazy after Phase A)&lt;br&gt;PortfolioCubit: init inside deferred Portfolio/Trade chunk only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#4F46E5;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="430" width="1060" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="epa" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#059669;strokeWidth=2;endArrow=classic;" parent="1" source="pa" target="pb" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="epb" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4F46E5;strokeWidth=2;endArrow=classic;" parent="1" source="pb" target="pc" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="870" y="250"/>
+                            <mxPoint x="310" y="250"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="epc" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#F59E0B;strokeWidth=2;endArrow=classic;" parent="1" source="pc" target="pd" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="debug-release" name="08 Debug vs Release">
+        <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="dt" value="&lt;b&gt;Debug vs Release — Network tab expectations&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=18;" parent="1" vertex="1">
+                    <mxGeometry x="250" y="20" width="700" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="dbg" value="&lt;b&gt;DEBUG&lt;/b&gt; npm run run:app:local / preprod&lt;br&gt;localhost:9000" style="swimlane;startSize=28;fillColor=#FEE2E2;strokeColor=#DC2626;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="80" width="520" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="dgi" value="Initiator: ddc_module_loader.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DC2626;fontColor=#fff;" parent="dbg" vertex="1">
+                    <mxGeometry x="30" y="45" width="460" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="dgf" value="Files: *.dart.lib.js (one per Dart library)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F87171;fontColor=#fff;" parent="dbg" vertex="1">
+                    <mxGeometry x="30" y="95" width="460" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="dgc" value="~1990 requests · ~31s (304 cache still slow)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#991B1B;fontColor=#fff;" parent="dbg" vertex="1">
+                    <mxGeometry x="30" y="145" width="460" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="dgn" value="Deferred imports do NOT split like release.&lt;br&gt;Trade + AI + Portfolio JS often ALL appear.&lt;br&gt;&lt;b&gt;NOT used for perf sign-off.&lt;/b&gt;" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;" parent="dbg" vertex="1">
+                    <mxGeometry x="30" y="195" width="460" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel" value="&lt;b&gt;RELEASE&lt;/b&gt; Docker / build:app:preprod&lt;br&gt;am.asrax.in" style="swimlane;startSize=28;fillColor=#ECFDF5;strokeColor=#059669;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="80" width="520" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfi" value="Initiator: main.dart.js / part loader" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#fff;" parent="rel" vertex="1">
+                    <mxGeometry x="30" y="45" width="460" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="rff" value="Files: main.dart.js + ~19 *.part.js chunks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#34D399;fontColor=#fff;" parent="rel" vertex="1">
+                    <mxGeometry x="30" y="95" width="460" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfc" value="Market reload: 2–3 requests (main + market part)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#047857;fontColor=#fff;" parent="rel" vertex="1">
+                    <mxGeometry x="30" y="145" width="460" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfn" value="nginx must-revalidate + ETag on *.part.js&lt;br&gt;Repeat reload: 304, not full re-download.&lt;br&gt;&lt;b&gt;Use this for perf validation.&lt;/b&gt;" style="shape=note;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;" parent="rel" vertex="1">
+                    <mxGeometry x="30" y="195" width="460" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="cmd" value="&lt;b&gt;Validate locally:&lt;/b&gt; cd am-modern-ui &amp;amp;&amp;amp; npm run build:app:preprod:trace → serve am_app/build/web" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#4F46E5;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="390" width="1080" height="45" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
