@@ -402,7 +402,7 @@ class CalendarCard extends StatelessWidget {
       switch (config.type) {
         case calendar_types.CalendarCardType.pnlSummary:
           return {
-            'value': '\$${tradeData.pnl.toStringAsFixed(2)}',
+            'value': '₹${tradeData.pnl.toStringAsFixed(2)}',
             'subtitle': '${tradeData.tradeCount} trades',
           };
         case calendar_types.CalendarCardType.winLossRatio:
@@ -418,7 +418,7 @@ class CalendarCard extends StatelessWidget {
       switch (config.type) {
         case calendar_types.CalendarCardType.portfolioValue:
           return {
-            'value': '\$${portfolioData.totalValue.toStringAsFixed(0)}',
+            'value': '₹${portfolioData.totalValue.toStringAsFixed(0)}',
             'subtitle':
                 '${portfolioData.dailyChangePercent.toStringAsFixed(2)}%',
           };

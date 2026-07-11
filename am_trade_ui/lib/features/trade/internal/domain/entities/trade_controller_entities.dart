@@ -219,6 +219,7 @@ abstract class TradeDetails with _$TradeDetails {
     String? symbol,
     String? strategy,
     EntryExitInfo? exitInfo,
+    double? currentPrice,
     TradeMetrics? metrics,
     List<TradeModel>? tradeExecutions,
     String? notes,
