@@ -166,10 +166,11 @@ class _AddTradeFormState extends State<AddTradeForm> {
 
     try {
       AppLogger.debug('🔍 Validating required fields...', tag: 'AddTradeForm');
+      final cleanSymbol = _symbolController.text.trim().toUpperCase();
 
       // Validate required fields
       TradeFormValidator.validateRequiredFields(
-        symbol: _symbolController.text,
+        symbol: cleanSymbol,
         selectedExchange: _selectedExchange,
         selectedSegment: _selectedSegment,
         entryDate: _entryDate,
@@ -213,7 +214,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
 
       // Map form data to TradeDetails entity
       final tradeDetails = TradeFormMapper.mapToTradeDetails(
-        symbol: _symbolController.text,
+        symbol: cleanSymbol,
         exchange: _selectedExchange,
         segment: _selectedSegment,
         isin: _isinController.text.isNotEmpty ? _isinController.text : null,
@@ -243,7 +244,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
       );
 
       AppLogger.info(
-        'TradeDetails entity created - symbol: ${_symbolController.text}, portfolioId: ${widget.initialData?.portfolioId}',
+        'TradeDetails entity created - symbol: $cleanSymbol, portfolioId: ${widget.initialData?.portfolioId}',
         tag: 'AddTradeForm',
       );
 
