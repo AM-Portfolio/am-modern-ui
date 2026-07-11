@@ -19,7 +19,15 @@ def get_available_device():
     """Detect available flutter devices and return the best match."""
     try:
         is_windows = os.name == "nt"
-        result = subprocess.run(["flutter", "devices"], capture_output=True, text=True, encoding="utf-8", shell=is_windows)
+        env = dict(os.environ)
+        if is_windows:
+            flutter_paths = ["C:\\flutter\\bin", "C:\\src\\flutter\\bin", os.path.expanduser("~\\flutter\\bin")]
+            current_path = env.get("PATH", "")
+            for path in reversed(flutter_paths):
+                if os.path.exists(path) and path not in current_path:
+                    current_path = f"{path};{current_path}"
+            env["PATH"] = current_path
+        result = subprocess.run(["flutter", "devices"], capture_output=True, text=True, encoding="utf-8", shell=is_windows, env=env)
         output = result.stdout.lower()
         
         if "chrome" in output:
@@ -68,6 +76,7 @@ def run_flutter_cmd(package, command):
         
     # Append port if starting the app
     is_interactive = command.startswith("run")
+    device = "chrome"
     if is_interactive:
         # Replace default chrome with available device
         if "-d chrome" in command:
@@ -75,6 +84,10 @@ def run_flutter_cmd(package, command):
             if device != "chrome":
                 print(f"Default device 'chrome' not found. Using '{device}' instead.")
                 command = command.replace("-d chrome", f"-d {device}")
+        
+        # Append disable-web-security if browser is chrome/edge and not already there
+        if device in ("chrome", "edge") and "--web-browser-flag=" not in command:
+            command += " --web-browser-flag=--disable-web-security"
                 
         port = os.getenv("FLUTTER_WEB_PORT")
         if port:
@@ -83,10 +96,17 @@ def run_flutter_cmd(package, command):
     print(f"Running 'flutter {command}' in {package}...")
     is_windows = os.name == "nt"
     env = dict(os.environ)
+    if is_windows:
+        flutter_paths = ["C:\\flutter\\bin", "C:\\src\\flutter\\bin", os.path.expanduser("~\\flutter\\bin")]
+        current_path = env.get("PATH", "")
+        for path in reversed(flutter_paths):
+            if os.path.exists(path) and path not in current_path:
+                current_path = f"{path};{current_path}"
+        env["PATH"] = current_path
 
     if is_interactive:
         try:
-            result = subprocess.run(["flutter"] + command.split(), cwd=package_dir, shell=is_windows)
+            result = subprocess.run(["flutter"] + command.split(), cwd=package_dir, shell=is_windows, env=env)
             return result.returncode == 0
         except Exception as e:
             print(f"Execution failed: {e}")

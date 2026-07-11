@@ -93,12 +93,21 @@ def get_available_device():
     """Prefer Chrome/Edge so Flutter launches the browser; fall back to web-server."""
     try:
         is_windows = os.name == "nt"
+        env = dict(os.environ)
+        if is_windows:
+            flutter_paths = ["C:\\flutter\\bin", "C:\\src\\flutter\\bin", os.path.expanduser("~\\flutter\\bin")]
+            current_path = env.get("PATH", "")
+            for path in reversed(flutter_paths):
+                if os.path.exists(path) and path not in current_path:
+                    current_path = f"{path};{current_path}"
+            env["PATH"] = current_path
         result = subprocess.run(
             ["flutter", "devices"],
             capture_output=True,
             text=True,
             encoding="utf-8",
             shell=is_windows,
+            env=env,
         )
         output = result.stdout.lower()
         if "chrome" in output:
@@ -118,6 +127,13 @@ def run_cmd(package, cmd_parts, env_vars=None):
         
     is_windows = os.name == "nt"
     env = dict(os.environ)
+    if is_windows:
+        flutter_paths = ["C:\\flutter\\bin", "C:\\src\\flutter\\bin", os.path.expanduser("~\\flutter\\bin")]
+        current_path = env.get("PATH", "")
+        for path in reversed(flutter_paths):
+            if os.path.exists(path) and path not in current_path:
+                current_path = f"{path};{current_path}"
+        env["PATH"] = current_path
     if env_vars:
         env.update(env_vars)
         
@@ -232,9 +248,11 @@ def handle_run(pkg, env_name, flags):
     cmd = [
         "flutter", "run", "-d", device,
         f"--web-port={port}",
-        "--no-web-resources-cdn",
         f"--web-launch-url={launch_url}",
-    ] + defines
+    ]
+    if device in ("chrome", "edge"):
+        cmd.append("--web-browser-flag=--disable-web-security")
+    cmd += defines
     run_cmd(package, cmd, env_vars)
 
 
