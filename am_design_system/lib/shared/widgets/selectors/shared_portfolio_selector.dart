@@ -11,6 +11,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
     required this.onPortfolioSelected,
     required this.nameExtractor,
     required this.idExtractor,
+    this.onRenamePortfolio,
     this.isCompact = false,
     this.accentColor,
     this.isDark,
@@ -33,6 +34,9 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
 
   /// Function to extract Name from the portfolio object
   final String Function(T) nameExtractor;
+
+  /// Optional callback to trigger when rename is requested
+  final void Function(String id, String currentName)? onRenamePortfolio;
 
   /// Whether to show in compact mode (icon only)
   final bool isCompact;
@@ -58,6 +62,16 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
     // Background color for the card
     final cardBgColor = isDarkMode ? const Color(0xFF2C2C3E) : Colors.white;
     final cardBorderColor = isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
+
+    String displayName = 'Select Portfolio';
+    if (currentPortfolioName != null) {
+      displayName = currentPortfolioName!;
+    } else if (currentPortfolioId != null && portfolios.isNotEmpty) {
+      try {
+        final portfolio = portfolios.firstWhere((p) => idExtractor(p) == currentPortfolioId);
+        displayName = nameExtractor(portfolio);
+      } catch (_) {}
+    }
 
     if (isCompact) {
       if (portfolios.isEmpty) return const SizedBox.shrink();
@@ -141,6 +155,17 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (onRenamePortfolio != null)
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pop(); // Close the menu
+                          onRenamePortfolio!(pId, nameExtractor(portfolio));
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8.0, right: 4.0),
+                          child: Icon(Icons.edit, size: 16, color: subTextColor),
+                        ),
+                      ),
                     if (isSelected)
                       Icon(Icons.check, size: 16, color: effectiveAccent),
                   ],
@@ -158,7 +183,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      currentPortfolioName ?? 'Select Portfolio',
+                      displayName,
                       style: TextStyle(
                         color: textColor,
                         fontSize: 13,

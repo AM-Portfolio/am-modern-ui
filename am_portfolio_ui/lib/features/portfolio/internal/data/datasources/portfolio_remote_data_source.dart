@@ -8,6 +8,7 @@ import '../dtos/portfolio_analytics_request_dto.dart';
 import '../dtos/portfolio_analytics_response_dto.dart';
 import '../dtos/portfolio_holdings_dto.dart';
 import '../dtos/portfolio_list_dto.dart';
+import '../dtos/portfolio_snapshot_dto.dart';
 import '../dtos/portfolio_summary_dto.dart';
 import '../mappers/portfolio_analytics_mapper.dart';
 import '../mappers/portfolio_mapper.dart';
@@ -39,6 +40,14 @@ abstract class PortfolioRemoteDataSource {
 
   /// Get portfolios list from remote API
   Future<PortfolioListDto> getPortfoliosList();
+
+  /// Get historical snapshot data for chart rendering
+  /// [portfolioId] null or 'all' -> calls /v1/portfolios/history
+  /// [portfolioId] set -> calls /v1/portfolios/{id}/history
+  Future<List<PortfolioSnapshotDto>> getPortfolioHistory(
+    String? portfolioId,
+    String timeFrame,
+  );
 }
 
 /// Concrete implementation of portfolio remote data source
@@ -161,7 +170,9 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
       // Construct full URI from portfolio config with portfolioId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.holdings);
-      final fullUri = '$baseUri?portfolioId=$portfolioId';
+      final fullUri = portfolioId == 'all'
+          ? baseUri
+          : '$baseUri?portfolioId=$portfolioId';
 
       // Use ApiClient for consistent error handling and logging
       final holdingsResponse = await _apiClient.get<PortfolioHoldingsDto>(
@@ -323,7 +334,9 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
       // Construct full URI from portfolio config with portfolioId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.summary);
-      final fullUri = '$baseUri?portfolioId=$portfolioId';
+      final fullUri = portfolioId == 'all'
+          ? baseUri
+          : '$baseUri?portfolioId=$portfolioId';
 
       // Use ApiClient for consistent error handling and logging
       final summaryResponse = await _apiClient.get<PortfolioSummaryDto>(
@@ -615,6 +628,40 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         );
         rethrow;
       }
+    }
+  }
+
+  @override
+  Future<List<PortfolioSnapshotDto>> getPortfolioHistory(
+    String? portfolioId,
+    String timeFrame,
+  ) async {
+    CommonLogger.methodEntry('getPortfolioHistory',
+        tag: 'PortfolioRemoteDataSource');
+    try {
+      final String path = (portfolioId == null || portfolioId == 'all')
+          ? '/v1/portfolios/history'
+          : '/v1/portfolios/$portfolioId/history';
+      final String uri = _buildUri(_baseUrl, '$path?timeFrame=$timeFrame');
+
+      final response = await _apiClient.get<List<dynamic>>(
+        uri,
+        parser: (data) => data! as List<dynamic>,
+      );
+
+      final result = response
+          .map((e) => PortfolioSnapshotDto.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      CommonLogger.info(
+        'Portfolio history fetched successfully',
+        tag: 'PortfolioRemoteDataSource',
+      );
+      return result;
+    } catch (e) {
+      CommonLogger.error('Failed to fetch portfolio history',
+          tag: 'PortfolioRemoteDataSource', error: e);
+      rethrow;
     }
   }
 }

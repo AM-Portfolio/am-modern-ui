@@ -17,7 +17,10 @@ class EnvDomains {
   static String get users     => ConfigService.override('users')     ?? '$apiBase/users';
   static String get portfolio => ConfigService.override('portfolio') ?? '$apiBase/portfolio';
   static String get market    => ConfigService.override('market')    ?? '$apiBase/market';
-  static String get trades    => ConfigService.override('trades')    ?? '$apiBase/trades';
+  static String get trades =>
+      ConfigService.override('trade') ??
+      ConfigService.override('trades') ??
+      '$apiBase/trade';
   static String get analysis  => ConfigService.override('analysis')  ?? '$apiBase/analysis';
   static String get docs      => ConfigService.override('docs')      ?? '$apiBase/doc/processor';
   static String get gmail     => ConfigService.override('gmail')     ?? '$apiBase/gmail';

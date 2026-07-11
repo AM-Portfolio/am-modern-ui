@@ -33,6 +33,15 @@ final class Unauthenticated extends AuthState {
   const Unauthenticated();
 }
 
+/// Session restore failed transiently (network/server) — refresh token still present.
+final class AuthRestoreFailed extends AuthState {
+  const AuthRestoreFailed(this.message);
+  final String message;
+
+  @override
+  List<Object?> get props => [message];
+}
+
 /// Authentication error state
 final class AuthError extends AuthState {
   const AuthError(this.message);

@@ -50,6 +50,30 @@ am_app/
 
 ---
 
+## Performance
+
+Startup load-time work (BootTrace, two-lane boot architecture, Phase 1 optimizations) is documented in:
+
+**[Fast Boot Performance](../docs/FAST_BOOT_PERFORMANCE.md)**
+
+Quick start for timing:
+
+```bash
+cd am-modern-ui
+npm run run:app:local          # trace ON, opens /login?bootTrace=1
+npm run run:app:local:notrace    # trace OFF
+```
+
+**Detailed problem analysis (timings + file locations):** [LOAD_TIME_PROBLEM_ANALYSIS.md](../docs/LOAD_TIME_PROBLEM_ANALYSIS.md)
+
+**First URL → auth timeline (preprod):** [FIRST_URL_TO_AUTH.md](../docs/FIRST_URL_TO_AUTH.md)
+
+**Preprod deploy checklist:** [PREPROD_DEPLOY_CHECKLIST.md](../docs/PREPROD_DEPLOY_CHECKLIST.md)
+
+**Static cache policy (dev/preprod/prod):** [CACHE_STRATEGY.md](../docs/CACHE_STRATEGY.md)
+
+---
+
 ## 🚀 **Getting Started**
 
 ### Prerequisites

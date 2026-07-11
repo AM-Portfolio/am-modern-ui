@@ -4,11 +4,18 @@ import 'package:am_market_common/models/indices_performance_model.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/performance_ranking_dialog.dart';
 import 'package:am_market_ui/core/styles/am_text_styles.dart';
 
-class MonthlyPerformanceCard extends StatelessWidget {
+class MonthlyPerformanceCard extends StatefulWidget {
   final MonthlyIndicesPerformance data;
   final bool isCompactTable;
 
   const MonthlyPerformanceCard({Key? key, required this.data, this.isCompactTable = false}) : super(key: key);
+
+  @override
+  State<MonthlyPerformanceCard> createState() => _MonthlyPerformanceCardState();
+}
+
+class _MonthlyPerformanceCardState extends State<MonthlyPerformanceCard> {
+  bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -16,8 +23,8 @@ class MonthlyPerformanceCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     // Table Mode: Single Line (Top Performer Only)
-    if (isCompactTable) {
-       final perf = data.topPerformer;
+    if (widget.isCompactTable) {
+       final perf = widget.data.topPerformer;
        if (perf == null) return const SizedBox();
 
        final isPositive = perf.returnPercentage >= 0;
@@ -32,15 +39,29 @@ class MonthlyPerformanceCard extends StatelessWidget {
            ? (isPositive ? const Color(0xFF69F0AE) : const Color(0xFFFF5252))
            : (isPositive ? const Color(0xFF2E7D32) : const Color(0xFFC62828));
 
-       return InkWell(
-          onTap: () => _showRanking(context),
-          borderRadius: BorderRadius.circular(6),
+       return MouseRegion(
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: AnimatedScale(
+            scale: _isHovered ? 1.12 : 1.0,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            child: InkWell(
+              onTap: () => _showRanking(context),
+              borderRadius: BorderRadius.circular(6),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), // More internal padding
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: textColor.withOpacity(0.3)),
+              boxShadow: _isHovered ? [
+                BoxShadow(
+                  color: textColor.withOpacity(0.6),
+                  blurRadius: 12,
+                  spreadRadius: 1,
+                )
+              ] : [],
             ),
             child: Row(
               children: [
@@ -73,13 +94,22 @@ class MonthlyPerformanceCard extends StatelessWidget {
               ],
             ),
           ),
+            ),
+          ),
        );
     }
 
     // Default Card Mode
-    return InkWell(
-       onTap: () => _showRanking(context),
-       borderRadius: BorderRadius.circular(8),
+    return MouseRegion(
+       onEnter: (_) => setState(() => _isHovered = true),
+       onExit: (_) => setState(() => _isHovered = false),
+       child: AnimatedScale(
+         scale: _isHovered ? 1.02 : 1.0,
+         duration: const Duration(milliseconds: 250),
+         curve: Curves.easeOutCubic,
+         child: InkWell(
+           onTap: () => _showRanking(context),
+           borderRadius: BorderRadius.circular(8),
        child: Container(
          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
          decoration: BoxDecoration(
@@ -105,7 +135,7 @@ class MonthlyPerformanceCard extends StatelessWidget {
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
                  Text(
-                   '${data.monthName.substring(0, 3)} ${data.year}',
+                   '${widget.data.monthName.substring(0, 3)} ${widget.data.year}',
                    style: AmTextStyles.caption.copyWith(
                      color: isDark ? Colors.white54 : Colors.black54,
                      fontWeight: FontWeight.bold,
@@ -117,14 +147,16 @@ class MonthlyPerformanceCard extends StatelessWidget {
              
              const Spacer(),
 
-             if (data.topPerformer != null)
-               _buildCompactRow(context, "Top", data.topPerformer!),
+             if (widget.data.topPerformer != null)
+               _buildCompactRow(context, "Top", widget.data.topPerformer!),
                
              const SizedBox(height: 4),
              
-             if (data.worstPerformer != null)
-               _buildCompactRow(context, "Bot", data.worstPerformer!),
+             if (widget.data.worstPerformer != null)
+               _buildCompactRow(context, "Bot", widget.data.worstPerformer!),
            ],
+         ),
+       ),
          ),
        ),
     );
@@ -196,7 +228,7 @@ class MonthlyPerformanceCard extends StatelessWidget {
   void _showRanking(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => PerformanceRankingDialog(data: data),
+      builder: (ctx) => PerformanceRankingDialog(data: widget.data),
     );
   }
 }

@@ -66,9 +66,9 @@ class CalendarColorService {
   Color _getWinLossColor(CalendarDayData dayData, {double opacity = 1.0}) {
     switch (dayData.status) {
       case TradeDayStatus.win:
-        return Colors.green.withOpacity(opacity);
+        return Colors.greenAccent.withOpacity(opacity);
       case TradeDayStatus.loss:
-        return Colors.red.withOpacity(opacity);
+        return Colors.redAccent.withOpacity(opacity);
       case TradeDayStatus.breakeven:
         return Colors.grey.withOpacity(opacity);
       case TradeDayStatus.noTrades:
@@ -136,28 +136,26 @@ class CalendarColorService {
     }
 
     if (colorMode == CalendarColorMode.profitIntensity) {
-      final pnl = dayData.pnl;
-      final intensity = _calculateIntensity(pnl.abs());
-
-      // Use white text for high intensity, dark text for low intensity
-      return intensity > 0.6 ? Colors.white : Colors.black87;
+      // In dark theme, the cell background is always dark (opacity 0.18 on a dark surface),
+      // so we must always use a light text color to remain visible.
+      return Colors.white.withOpacity(0.9);
     }
 
-    // Win/loss mode - use color-appropriate text
+    // Win/loss mode - use color-appropriate bright text for dark theme
     switch (dayData.status) {
       case TradeDayStatus.win:
-        return Colors.green.shade900;
+        return Colors.greenAccent.shade100;
       case TradeDayStatus.loss:
-        return Colors.red.shade900;
+        return Colors.redAccent.shade100;
       case TradeDayStatus.breakeven:
-        return Colors.grey.shade800;
+        return Colors.grey.shade300;
       case TradeDayStatus.noTrades:
-        return Colors.grey.shade600;
+        return Colors.grey.shade500;
     }
   }
 
   /// Get border color for day cell
-  Color getBorderColor(CalendarDayData dayData, {double opacity = 0.6}) {
+  Color getBorderColor(CalendarDayData dayData, {double opacity = 0.8}) {
     if (!dayData.hasTrades) {
       return Colors.grey.withOpacity(0.2);
     }

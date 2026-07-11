@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../mobile/widgets/portfolio_holdings_widget.dart';
+import 'package:am_common/am_common.dart';
 
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -20,6 +21,7 @@ class PortfolioHoldingsWebPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PortfolioHoldingsWidget(portfolioId: portfolioId);
+    final activePortfolioId = context.selectedPortfolioId ?? portfolioId;
+    return PortfolioHoldingsWidget(portfolioId: activePortfolioId);
   }
 }

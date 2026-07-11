@@ -40,6 +40,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
   late AnimationController _refreshController;
   String _viewMode = 'table'; // 'table' or 'card'
   String _filterStatus = 'all'; // 'all', 'profit', 'loss'
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -80,10 +81,15 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
   int get _totalPages => (_filteredHoldings.length / widget.itemsPerPage).ceil();
 
   List<TradeHoldingViewModel> get _filteredHoldings => _sortedHoldings.where((holding) {
-    if (_filterStatus == 'profit') {
-      return holding.isProfit;
-    } else if (_filterStatus == 'loss') {
-      return !holding.isProfit;
+    if (_filterStatus == 'profit' && !holding.isProfit) return false;
+    if (_filterStatus == 'loss' && holding.isProfit) return false;
+    
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      if (!holding.displaySymbol.toLowerCase().contains(query) &&
+          !holding.displayCompanyName.toLowerCase().contains(query)) {
+        return false;
+      }
     }
     return true;
   }).toList();
@@ -254,6 +260,39 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
           ],
         ),
         const Spacer(),
+        // Search Bar
+        SizedBox(
+          width: 240,
+          height: 36,
+          child: TextField(
+            onChanged: (value) => setState(() {
+              _searchQuery = value;
+              _currentPage = 0; // Reset pagination on search
+            }),
+            decoration: InputDecoration(
+              hintText: 'Search symbol or company...',
+              hintStyle: TextStyle(fontSize: 13, color: Colors.grey.withOpacity(0.6)),
+              prefixIcon: Icon(Icons.search, size: 16, color: Colors.grey.withOpacity(0.6)),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              filled: true,
+              fillColor: Colors.grey.withOpacity(0.08),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 1.5),
+              ),
+            ),
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
+        const SizedBox(width: 12),
         // Refresh Button
         IconButton(
           onPressed: () {
@@ -364,10 +403,12 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
         child: Row(
           mainAxisAlignment: isNumeric ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.8)),
-              overflow: TextOverflow.ellipsis,
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.8)),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             if (isSorted)
               Icon(
@@ -408,13 +449,13 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
                 ),
                 Expanded(flex: 2, child: Text(holding.displayCompanyName, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
                 Expanded(flex: 1, child: Align(alignment: Alignment.centerLeft, child: _buildStatusBadge(holding.displayStatus))),
-                Expanded(flex: 1, child: Text(holding.displayQuantity, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13))),
-                Expanded(flex: 1, child: Text(holding.displayEntryPrice, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13))),
-                Expanded(flex: 1, child: Text(holding.displayCurrentPrice, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13))),
-                Expanded(flex: 1, child: Text(holding.displayCurrentValue, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13))),
+                Expanded(flex: 1, child: Text(holding.displayQuantity, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(fontSize: 13))),
+                Expanded(flex: 1, child: Text(holding.displayEntryPrice, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(fontSize: 13))),
+                Expanded(flex: 1, child: Text(holding.displayCurrentPrice, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(fontSize: 13))),
+                Expanded(flex: 1, child: Text(holding.displayCurrentValue, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(fontSize: 13))),
                 Expanded(flex: 1, child: Align(alignment: Alignment.centerRight, child: _buildPnLCell(holding.displayProfitLoss, isPositive))),
                 Expanded(flex: 1, child: Align(alignment: Alignment.centerRight, child: _buildPnLPercentageCell(holding.displayProfitLossPercentage, isPositive))),
-                Expanded(flex: 1, child: Text(holding.displayRiskRewardRatio, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13))),
+                Expanded(flex: 1, child: Text(holding.displayRiskRewardRatio, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(fontSize: 13))),
               ],
             ),
           ),
@@ -480,9 +521,13 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
         color: isPositive ? Colors.green : Colors.red,
       ),
       const SizedBox(width: 4),
-      Text(
-        value,
-        style: TextStyle(fontWeight: FontWeight.bold, color: isPositive ? Colors.green : Colors.red),
+      Flexible(
+        child: Text(
+          value,
+          style: TextStyle(fontWeight: FontWeight.bold, color: isPositive ? Colors.green : Colors.red),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
       ),
     ],
   );

@@ -1,0 +1,16 @@
+# Prod Environment — am-modern-ui
+environment: prod
+
+appConfig:
+  domain: "am.munish.org"
+
+replicaCount: 1
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: am.munish.org
+      paths:
+        - path: /
+          pathType: Prefix

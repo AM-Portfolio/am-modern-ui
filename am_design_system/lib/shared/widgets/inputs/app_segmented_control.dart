@@ -25,8 +25,9 @@ class AppSegmentedControl<T> extends StatelessWidget {
 
     return SegmentedButton<T>(
       segments: children.entries.map((e) => 
-        ButtonSegment<T>(value: e.key, label: Text(e.value))
+        ButtonSegment<T>(value: e.key, label: Text(e.value, maxLines: 1, softWrap: false))
       ).toList(),
+      showSelectedIcon: false,
       selected: {selectedValue},
       onSelectionChanged: (Set<T> newSelection) {
         if (newSelection.isNotEmpty) {
@@ -34,21 +35,27 @@ class AppSegmentedControl<T> extends StatelessWidget {
         }
       },
       style: ButtonStyle(
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+        padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
         backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
           if (states.contains(WidgetState.selected)) {
             return color;
           }
-          return enableGlass ? Colors.white.withOpacity(0.05) : Colors.transparent;
+          return Colors.white.withOpacity(0.05);
         }),
         foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
           if (states.contains(WidgetState.selected)) {
             return Colors.white;
           }
-          return enableGlass ? Colors.white70 : color;
+          return Colors.white70;
         }),
-        side: enableGlass ? WidgetStateProperty.all(
-          BorderSide(color: Colors.white.withOpacity(0.1)),
-        ) : null,
+        side: WidgetStateProperty.all(
+          BorderSide(color: Colors.white.withOpacity(0.15), width: 1),
+        ),
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
       ),
     );
   }

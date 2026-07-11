@@ -44,7 +44,7 @@ class TradePortfolioMobileHeader extends StatelessWidget {
             _buildModernStatBadge(
               context,
               label: 'Total Value',
-              value: '\$${_formatNum(totalValue)}',
+              value: '₹${_formatNum(totalValue)}',
               icon: Icons.account_balance_wallet_rounded,
               iconColor: Colors.white,
               iconBgColor: Colors.blue,
@@ -72,7 +72,7 @@ class TradePortfolioMobileHeader extends StatelessWidget {
             _buildModernStatBadge(
               context,
               label: 'Trade P&L',
-              value: '${totalNetProfitLoss >= 0 ? '+' : ''}\$${_formatNum(totalNetProfitLoss)}',
+              value: '${totalNetProfitLoss >= 0 ? '+' : ''}₹${_formatNum(totalNetProfitLoss)}',
               icon: totalNetProfitLoss >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
               iconColor: Colors.white,
               iconBgColor: totalNetProfitLoss >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444),

@@ -9,12 +9,12 @@ import '../mobile/trade_portfolio_mobile_filter.dart';
 import '../mobile/trade_portfolio_mobile_header.dart';
 
 // Dark theme constants matching the app's existing dark palette
-const _kCardBorder = Color(0xFF2A2A45);
-const _kCardHoverBorder = Color(0xFF7C3AED);
-const _kBadgeBg = Color(0xFF1E1E30);
-const _kBadgeBorder = Color(0xFF2D2D45);
-const _kSearchBg = Color(0xFF1E1E30);
-const _kSearchBorder = Color(0xFF2D2D45);
+Color _getCardBorder(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2A2A45) : Theme.of(context).colorScheme.outline.withOpacity(0.1);
+Color _getCardHoverBorder(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF7C3AED) : Theme.of(context).colorScheme.primary;
+Color _getBadgeBg(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E30) : Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5);
+Color _getBadgeBorder(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2D2D45) : Theme.of(context).colorScheme.outline.withOpacity(0.1);
+Color _getSearchBg(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E30) : Theme.of(context).colorScheme.surface;
+Color _getSearchBorder(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2D2D45) : Theme.of(context).colorScheme.outline.withOpacity(0.2);
 
 class TradePortfolioDiscoveryTemplate extends StatefulWidget {
   const TradePortfolioDiscoveryTemplate({
@@ -229,7 +229,7 @@ class _TradePortfolioDiscoveryTemplateState
                   children: [
                     _buildStatBadge(
                       label: 'Total Value',
-                      value: '\$${_formatNum(totalValue)}',
+                      value: '₹${_formatNum(totalValue)}',
                       icon: Icons.account_balance_wallet_rounded,
                       iconColor: Colors.white,
                       iconBgColor: const Color(0xFF7C3AED),
@@ -255,7 +255,7 @@ class _TradePortfolioDiscoveryTemplateState
                     _buildStatBadge(
                       label: 'Trade P&L',
                       value:
-                          '${totalNetProfitLoss >= 0 ? '+' : ''}\$${_formatNum(totalNetProfitLoss)}',
+                          '${totalNetProfitLoss >= 0 ? '+' : ''}₹${_formatNum(totalNetProfitLoss)}',
                       icon: totalNetProfitLoss >= 0
                           ? Icons.arrow_upward_rounded
                           : Icons.arrow_downward_rounded,
@@ -378,19 +378,19 @@ class _TradePortfolioDiscoveryTemplateState
                               )
                             : null,
                         filled: true,
-                        fillColor: _kSearchBg,
+                        fillColor: _getSearchBg(context),
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 0),
                         isDense: true,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide:
-                              const BorderSide(color: _kSearchBorder, width: 1),
+                              BorderSide(color: _getSearchBorder(context), width: 1),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide:
-                              const BorderSide(color: _kSearchBorder, width: 1),
+                              BorderSide(color: _getSearchBorder(context), width: 1),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -412,9 +412,9 @@ class _TradePortfolioDiscoveryTemplateState
                   height: 42,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: _kSearchBg,
+                    color: _getSearchBg(context),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: _kSearchBorder),
+                    border: Border.all(color: _getSearchBorder(context)),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
@@ -432,7 +432,7 @@ class _TradePortfolioDiscoveryTemplateState
                         fontWeight: FontWeight.w500,
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
-                      dropdownColor: const Color(0xFF1E1E30),
+                      dropdownColor: Theme.of(context).colorScheme.surface,
                       items: const [
                         DropdownMenuItem(
                             value: 'name', child: Text('Name')),
@@ -468,12 +468,12 @@ class _TradePortfolioDiscoveryTemplateState
                     decoration: BoxDecoration(
                       color: _showOnlyProfit
                           ? const Color(0xFF7C3AED).withValues(alpha: 0.15)
-                          : _kSearchBg,
+                          : _getSearchBg(context),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: _showOnlyProfit
                             ? const Color(0xFF7C3AED)
-                            : _kSearchBorder,
+                            : _getSearchBorder(context),
                         width: 1,
                       ),
                     ),
@@ -663,9 +663,9 @@ class _TradePortfolioDiscoveryTemplateState
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: _kBadgeBg,
+            color: _getBadgeBg(context),
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: _kBadgeBorder),
+            border: Border.all(color: _getBadgeBorder(context)),
           ),
           child: Icon(
             icon,
@@ -694,12 +694,12 @@ class _TradePortfolioDiscoveryTemplateState
             height: 32,
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
-              color: isCurrent ? const Color(0xFF7C3AED) : _kBadgeBg,
+              color: isCurrent ? const Color(0xFF7C3AED) : _getBadgeBg(context),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: isCurrent
                     ? const Color(0xFF7C3AED)
-                    : _kBadgeBorder,
+                    : _getBadgeBorder(context),
               ),
             ),
             alignment: Alignment.center,
@@ -748,9 +748,9 @@ class _StatBadge extends StatelessWidget {
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: _kBadgeBg,
+        color: _getBadgeBg(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _kBadgeBorder),
+        border: Border.all(color: _getBadgeBorder(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -828,19 +828,20 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
+            gradient: Theme.of(context).brightness == Brightness.dark ? const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xFF1E1B4B),
-                const Color(0xFF1C1C2E),
+                Color(0xFF1E1B4B),
+                Color(0xFF1C1C2E),
               ],
-            ),
+            ) : null,
+            color: Theme.of(context).brightness == Brightness.dark ? null : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: _isHovered
-                  ? _kCardHoverBorder.withValues(alpha: 0.7)
-                  : _kCardBorder,
+                  ? _getCardHoverBorder(context).withValues(alpha: 0.7)
+                  : _getCardBorder(context),
               width: 1,
             ),
             boxShadow: _isHovered
@@ -892,7 +893,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                         isProfit
                             ? Icons.trending_up_rounded
                             : Icons.assessment_rounded,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                         size: 17,
                       ),
                     ),
@@ -903,8 +904,8 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                         children: [
                           Text(
                             p.displayName,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                             ),
@@ -916,7 +917,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                             p.description ?? 'No description',
                             style: TextStyle(
                               color:
-                                  Colors.white.withValues(alpha: 0.5),
+                                  Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                               fontSize: 11,
                             ),
                             maxLines: 1,
@@ -929,15 +930,15 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(5),
                         border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.12)),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12)),
                       ),
-                      child: const Text(
+                      child: Text(
                         'TRADE',
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
@@ -954,7 +955,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                   padding: const EdgeInsets.symmetric(
                       vertical: 14, horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -969,7 +970,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                       Container(
                           width: 1,
                           height: 28,
-                          color: Colors.white.withValues(alpha: 0.08)),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08)),
                       _metric(
                         icon: Icons.trending_up_rounded,
                         iconColor: p.isTradeProfit
@@ -984,7 +985,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                       Container(
                           width: 1,
                           height: 28,
-                          color: Colors.white.withValues(alpha: 0.08)),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08)),
                       _metric(
                         icon: Icons.check_circle_outline_rounded,
                         iconColor: const Color(0xFF7C3AED),
@@ -997,7 +998,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
 
                 const SizedBox(height: 18),
                 Divider(
-                    color: Colors.white.withValues(alpha: 0.07), height: 1),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.07), height: 1),
                 const SizedBox(height: 18),
 
                 // ── Bottom: value + sparkline ────────────────────────
@@ -1012,7 +1013,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                             'Portfolio Value',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.45),
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1021,8 +1022,8 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                             children: [
                               Text(
                                 p.displayValue,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1069,15 +1070,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        SizedBox(
-                          width: 70,
-                          height: 28,
-                          child: CustomPaint(
-                            painter: _SparklinePainter(
-                              color: const Color(0xFF7C3AED),
-                            ),
-                          ),
-                        ),
+
                       ],
                     ),
                   ],
@@ -1113,7 +1106,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                 label,
                 style: TextStyle(
                   fontSize: 10,
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -1124,7 +1117,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: valueColor ?? Colors.white,
+              color: valueColor ?? Theme.of(context).colorScheme.onSurface,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1136,31 +1129,3 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
   }
 }
 
-// ─── SPARKLINE ────────────────────────────────────────────────────────────
-class _SparklinePainter extends CustomPainter {
-  final Color color;
-  _SparklinePainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.8
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path()
-      ..moveTo(0, size.height * 0.75)
-      ..quadraticBezierTo(
-          size.width * 0.25, size.height * 0.9, size.width * 0.4, size.height * 0.45)
-      ..quadraticBezierTo(
-          size.width * 0.55, size.height * 0.05, size.width * 0.7, size.height * 0.4)
-      ..quadraticBezierTo(
-          size.width * 0.85, size.height * 0.65, size.width, size.height * 0.25);
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
-}
