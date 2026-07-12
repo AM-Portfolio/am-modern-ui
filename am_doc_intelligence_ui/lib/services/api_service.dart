@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/browser_client.dart';
+import 'client_creator.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_library/am_library.dart';
 import 'package:get_it/get_it.dart';
@@ -12,15 +12,9 @@ enum AppEnvironment { local, preprod }
 class ApiService {
   AppEnvironment environment = AppEnvironment.preprod;
 
-  // Create a BrowserClient with withCredentials = false
-  // This ensures the browser doesn't send cookies/credentials,
-  // allowing the server's "Access-Control-Allow-Origin: *" to work.
+  // Create a Client with credentials disabled on Web
   http.Client _makeClient() {
-    if (kIsWeb) {
-      final client = BrowserClient()..withCredentials = false;
-      return client;
-    }
-    return http.Client();
+    return createClient();
   }
 
   // Base URLs resolved dynamically based on environment switcher selection

@@ -163,8 +163,8 @@ class DashboardWebScreen extends ConsumerWidget {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.arrow_back, color: onSurfaceVariant, size: 20),
-                              const SizedBox(width: 16),
+                              // Icon(Icons.arrow_back, color: onSurfaceVariant, size: 20),
+                              // const SizedBox(width: 16),
                               Text(
                                 'Dashboard',
                                 style: TextStyle(
@@ -180,36 +180,36 @@ class DashboardWebScreen extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const GlobalTimeFrameBar(),
-                              const SizedBox(width: 12),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: btnBgColor,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: borderColor),
-                                ),
-                                child: IconButton(
-                                  icon: Icon(Icons.refresh, color: onSurfaceVariant, size: 20),
-                                  onPressed: () {
-                                    ref.invalidate(dashboardStreamProvider(userId));
-                                    ref.invalidate(portfolioOverviewsProvider(userId));
-                                    onDashboardTimeFrameChanged(ref, userId, timeFrame);
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              const ShareLinkButton(),
-                              const SizedBox(width: 12),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: btnBgColor,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: borderColor),
-                                ),
-                                child: IconButton(
-                                  icon: Icon(Icons.notifications_outlined, color: onSurfaceVariant, size: 20),
-                                  onPressed: () {},
-                                ),
-                              ),
+                              // const SizedBox(width: 12),
+                              // Container(
+                              //   decoration: BoxDecoration(
+                              //     color: btnBgColor,
+                              //     shape: BoxShape.circle,
+                              //     border: Border.all(color: borderColor),
+                              //   ),
+                              //   child: IconButton(
+                              //     icon: Icon(Icons.refresh, color: onSurfaceVariant, size: 20),
+                              //     onPressed: () {
+                              //       ref.invalidate(dashboardStreamProvider(userId));
+                              //       ref.invalidate(portfolioOverviewsProvider(userId));
+                              //       onDashboardTimeFrameChanged(ref, userId, timeFrame);
+                              //     },
+                              //   ),
+                              // ),
+                              // const SizedBox(width: 12),
+                              // const ShareLinkButton(),
+                              // const SizedBox(width: 12),
+                              // Container(
+                              //   decoration: BoxDecoration(
+                              //     color: btnBgColor,
+                              //     shape: BoxShape.circle,
+                              //     border: Border.all(color: borderColor),
+                              //   ),
+                              //   child: IconButton(
+                              //     icon: Icon(Icons.notifications_outlined, color: onSurfaceVariant, size: 20),
+                              //     onPressed: () {},
+                              //   ),
+                              // ),
                               const SizedBox(width: 16),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

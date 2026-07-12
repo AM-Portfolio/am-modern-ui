@@ -115,19 +115,34 @@ class GlobalSidebar extends StatelessWidget {
   }
 
   Widget _buildAppLogo() {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: AppGlassmorphismV2.iconGlassContainer(
-        color: const Color(0xFF6C5DD3),
-        size: 48,
-        isDark: isDarkMode,
-      ),
-      alignment: Alignment.center,
-      child: Icon(
-        Icons.token, 
-        color: isDarkMode ? Colors.white : const Color(0xFF6C5DD3), 
-        size: 28
+    final logoAsset = isDarkMode
+        ? 'lib/assets/images/app_logo_dark.png'
+        : 'lib/assets/images/app_logo_light.png';
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => onNavigate('Dashboard'),
+        child: Container(
+          width: 64,
+          height: 40,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: isDarkMode ? const Color(0xFF0A0F1A) : Colors.white,
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.black.withOpacity(0.06),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Image.asset(
+            logoAsset,
+            package: 'am_design_system',
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
+          ),
+        ),
       ),
     );
   }
