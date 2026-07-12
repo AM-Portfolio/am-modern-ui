@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:am_library/am_library.dart';
+import '../telemetry/boot_trace.dart';
 import 'app_config.dart';
 
 /// Loads web config: [config.template.json] defaults, then [config.{env}.json],
@@ -31,18 +32,26 @@ class ConfigService {
   static Future<void> initialize() async {
     if (_config != null) return;
 
+    BootTrace.instance.mark('config_start');
     final merged = await _loadMergedConfig();
     _applyMergedConfig(merged);
     _config = _buildConfig();
+    BootTrace.instance.mark('config_done');
   }
 
   static Future<Map<String, dynamic>> _loadMergedConfig() async {
-    var merged = await _fetchJson('/config.template.json') ?? <String, dynamic>{
-      'domain': _domain,
-      'services': <String, dynamic>{},
-    };
+    final parallel = await Future.wait([
+      _fetchJson('/config.template.json'),
+      _fetchJson('/config.json'),
+    ]);
 
-    final bootstrap = await _fetchJson('/config.json');
+    var merged = parallel[0] ??
+        <String, dynamic>{
+          'domain': _domain,
+          'services': <String, dynamic>{},
+        };
+
+    final bootstrap = parallel[1];
     final env = _envFromDefine.isNotEmpty
         ? _envFromDefine
         : bootstrap?['env'] as String?;
@@ -81,7 +90,9 @@ class ConfigService {
     // Extract Google Sign-In Web Client ID dynamically
     final google = json['google'] as Map<String, dynamic>?;
     if (google != null) {
-      _googleClientId = google['webClientId']?.toString() ?? google['clientId']?.toString() ?? '';
+      _googleClientId = google['webClientId']?.toString() ??
+          google['clientId']?.toString() ??
+          '';
     } else if (json['googleWebClientId'] != null) {
       _googleClientId = json['googleWebClientId'].toString();
     }
@@ -101,17 +112,37 @@ class ConfigService {
   }
 
   static Future<Map<String, dynamic>?> _fetchJson(String path) async {
+    final fetchSw = Stopwatch()..start();
     try {
       final uri = Uri.base.resolve(path).replace(
         queryParameters: {
           'cb': DateTime.now().millisecondsSinceEpoch.toString(),
         },
       );
-      final res = await http.get(uri).timeout(const Duration(seconds: 3));
+      final res =
+          await http.get(uri).timeout(const Duration(milliseconds: 1500));
+      fetchSw.stop();
+      BootTrace.instance.mark(
+        'config_fetch_done',
+        meta: {
+          'path': path,
+          'status': res.statusCode,
+          'ms': fetchSw.elapsedMilliseconds,
+        },
+      );
       if (res.statusCode == 200) {
         return jsonDecode(res.body) as Map<String, dynamic>;
       }
-    } catch (_) {
+    } catch (e) {
+      fetchSw.stop();
+      BootTrace.instance.mark(
+        'config_fetch_done',
+        meta: {
+          'path': path,
+          'error': e.toString(),
+          'ms': fetchSw.elapsedMilliseconds,
+        },
+      );
       // Optional file — normal in CI or when template is bundled only
     }
     return null;
@@ -144,7 +175,9 @@ class ConfigService {
     final usersUrl = _services['users'] ?? '$api/users';
     final portfolioUrl = _services['portfolio'] ?? '$api/portfolio';
     final marketUrl = _services['market'] ?? '$api/market';
-    final tradesUrl = _services['trades'] ?? '$api/trades';
+    final tradesUrl = _services['trade'] ??
+        _services['trades'] ??
+        '$api/trade';
     final analysisUrl = _services['analysis'] ?? '$api/analysis';
     final gmailUrl = _services['gmail'] ?? '$api/gmail';
     final marketWsUrl =

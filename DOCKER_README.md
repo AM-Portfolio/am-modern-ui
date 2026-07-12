@@ -42,6 +42,22 @@ After starting the services:
 - **Portfolio UI**: http://localhost:9005
 - **Trade UI**: http://localhost:9006
 
+### Boot performance tracing (Docker / preprod)
+
+Performance optimizations are included in every release build. Boot timing trace is **off by default** in Docker; enable at runtime:
+
+```
+http://localhost:9000/login?bootTrace=1
+```
+
+Or build with trace baked in before `docker build`:
+
+```bash
+npm run build:app:preprod:trace
+```
+
+Full documentation: **[docs/FAST_BOOT_PERFORMANCE.md](docs/FAST_BOOT_PERFORMANCE.md)**
+
 ## ⚙️ Configuration
 
 ### Environment Variables
@@ -124,7 +140,8 @@ docker-compose restart am-app
 am_modern_ui/
 ├── am_app/                   # Main application shell
 │   ├── Dockerfile
-│   └── nginx.conf
+│   ├── docker-entrypoint.sh
+│   └── nginx.profiles/       # nocache (dev/preprod) + revalidate (prod)
 ├── am_market_ui/
 │   └── live/                 # Standalone market app
 │       └── Dockerfile

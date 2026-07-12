@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'url_strategy_noop.dart'
     if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart';
@@ -12,6 +13,7 @@ import 'app.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  BootTrace.configure();
 
   ErrorWidget.builder = (details) => Material(
         color: const Color(0xFF1E1E2E),
@@ -30,7 +32,6 @@ void main() {
     usePathUrlStrategy();
   }
 
-  // Show UI immediately — never leave a blank page while async init runs.
   runApp(const ProviderScope(child: _BootstrapApp()));
 }
 
@@ -63,10 +64,21 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   Future<void> _initialize() async {
     try {
       await ConfigService.initialize();
-      await configureDependencies();
+      await configureCoreDependencies();
+      await configureFeatureDependencies();
       if (!mounted) return;
       _app = const AMApp();
       setState(() => _initializationComplete = true);
+
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        BootTrace.instance.mark('first_flutter_frame');
+        BootRumCollector.instance.schedulePublish(
+          delay: const Duration(seconds: 6),
+        );
+        BootTrace.instance.scheduleSummary(
+          delay: const Duration(seconds: 6),
+        );
+      });
     } catch (error, stackTrace) {
       debugPrint('AMApp startup failed: $error\n$stackTrace');
       if (!mounted) return;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as provider_pkg;
+import 'package:provider/provider.dart' show ReadContext, WatchContext;
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_ui/shared/widgets/glass_container.dart';
@@ -7,15 +8,18 @@ import 'package:intl/intl.dart';
 import 'package:am_market_common/models/historical_performance_model.dart';
 import 'package:am_market_common/models/seasonality_model.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/historical_performance_section.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_common/am_common.dart';
+import 'package:am_design_system/shared/widgets/selectors/global_time_frame_bar.dart';
 
-class HeatmapExplorerView extends StatefulWidget {
+class HeatmapExplorerView extends ConsumerStatefulWidget {
   const HeatmapExplorerView({super.key});
 
   @override
-  State<HeatmapExplorerView> createState() => _HeatmapExplorerViewState();
+  ConsumerState<HeatmapExplorerView> createState() => _HeatmapExplorerViewState();
 }
 
-class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
+class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
   String _selectedSymbol = 'NIFTY BANK'; // Default symbol
   final List<String> _months = [
@@ -34,6 +38,8 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
   String _heatmapTimeframe = '1D';
   bool _showingIndices = true; // Use separate state for Heatmap section drill-down
   bool _isHeatmapExpanded = true; // Control visibility of the heatmap grid
+  
+  final ScrollController _scrollController = ScrollController();
 
 
   // _selectedSymbol is used for General Analysis (Seasonality/Historical)
@@ -52,16 +58,24 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _fetchData() {
-    // 1. Fetch General Analysis Data
+    _fetchGeneralData();
+    _fetchHeatmapData();
+  }
+
+  void _fetchGeneralData() {
+    // 1. Fetch General Analysis Data (Seasonality & Historical)
     if (_selectedSymbol.isNotEmpty && _selectedSymbol != "INDICES") {
         context.read<MarketProvider>().loadHistoricalPerformance(_selectedSymbol);
         context.read<MarketProvider>().loadSeasonality(_selectedSymbol);
     }
-    
+  }
+
+  void _fetchHeatmapData() {
     // 2. Fetch Heatmap Data
     // Target: if showing indices -> "INDICES"
     // If showing constituents -> _selectedSymbol
@@ -75,16 +89,46 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final provider = context.watch<MarketProvider>();
-    final data = provider.historicalPerformance;
+    final provider = provider_pkg.Provider.of<MarketProvider>(context, listen: false);
 
-    return Column(
-      children: [
-        // 1. Header & Search
-        Container(
-          padding: const EdgeInsets.all(16),
+    // Listen to global timeframe changes and synchronize internal data state
+    ref.listen<TimeFrame>(appTimeFrameProvider, (previous, next) {
+      if (next.code != _heatmapTimeframe) {
+        setState(() {
+          _heatmapTimeframe = next.code;
+        });
+        // Only fetch heatmap data when timeframe changes, historical/seasonality are independent
+        _fetchHeatmapData();
+      }
+    });
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [
+                  Color(0xFF0F0F1A), // Deep shadow
+                  Color(0xFF151524), // Custom base shade (rgba(21, 21, 36, 1))
+                  Color(0xFF1F1F35), // Subtle lighter highlight
+                ]
+              : const [
+                  Color(0xFFF5F5FC), // Light lilac backdrop
+                  Color(0xFFECECF8), // Base light theme shade
+                  Color(0xFFE2E2F2), // Subtle accent light highlight
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: const [0.0, 0.5, 1.0],
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // 1. Header & Search
+            Container(
+              padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkCard : AppColors.lightCard,
+            color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
             boxShadow: isDark
@@ -172,18 +216,23 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                            )
                          ],
                        ),
-                       child: Center(
-                         child: provider.isLoading 
-                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                             : const Text(
-                                 'GO',
-                                 style: TextStyle(
-                                   color: Colors.white,
-                                   fontWeight: FontWeight.bold,
-                                   fontSize: 16,
-                                 ),
-                               ),
-                       ),
+                        child: Center(
+                          child: provider_pkg.Selector<MarketProvider, bool>(
+                            selector: (_, p) => p.isLoading,
+                            builder: (context, isLoading, child) {
+                              return isLoading 
+                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                  : const Text(
+                                      'GO',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    );
+                            },
+                          ),
+                        ),
                      ),
                    ),
                 ],
@@ -214,13 +263,14 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
         Expanded(
           child: _showingIndices
             ? SingleChildScrollView(
+                controller: _scrollController,
                 child: Column(
                   children: [
                     _buildHeatmapSection(),
                     const SizedBox(height: 16),
                     Container(
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                        color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
                         boxShadow: isDark
@@ -239,23 +289,30 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                   ],
                 ),
               )
-            : SingleChildScrollView(
-                child: Column(
-                  children: [
-                    _buildHeatmapSection(),
-                    const SizedBox(height: 16),
-                    data == null 
-                        ? SizedBox(
-                            height: 200,
-                            child: Center(child: Text(provider.isLoading ? 'Loading...' : 'No data available', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)))
-                          )
+            : provider_pkg.Selector<MarketProvider, (HistoricalPerformanceResponse?, SeasonalityResponse?, bool)>(
+                selector: (_, p) => (p.historicalPerformance, p.seasonality, p.isLoading),
+                builder: (context, dataTuple, child) {
+                  final hData = dataTuple.$1;
+                  final sData = dataTuple.$2;
+                  final isLoading = dataTuple.$3;
+                  return SingleChildScrollView(
+                    controller: _scrollController,
+                    child: Column(
+                      children: [
+                        _buildHeatmapSection(),
+                        const SizedBox(height: 16),
+                        hData == null 
+                            ? SizedBox(
+                                height: 200,
+                                child: Center(child: Text(isLoading ? 'Loading...' : 'No data available', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)))
+                              )
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                                 Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                                  color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
                                   boxShadow: isDark
@@ -272,13 +329,13 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                      // Overall Return Header (Optional)
-                                     if (data.overallReturn != null)
+                                     if (hData.overallReturn != null)
                                        Padding(
                                          padding: const EdgeInsets.only(bottom: 16.0),
                                          child: Text(
-                                           "Overall Return (${data.startYear}-${data.endYear}): ${data.overallReturn}%",
+                                           "Overall Return (${hData.startYear}-${hData.endYear}): ${hData.overallReturn}%",
                                            style: TextStyle(
-                                               color: _getColorForChange(data.overallReturn!),
+                                               color: _getColorForChange(hData.overallReturn!),
                                                fontWeight: FontWeight.bold,
                                                fontSize: 16
                                            ),
@@ -321,7 +378,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                                                   const SizedBox(height: 8),
 
                                                   // Data Rows
-                                                  ...data.yearlyPerformance.map((yearly) {
+                                                  ...hData.yearlyPerformance.map((yearly) {
                                                       return Padding(
                                                         padding: const EdgeInsets.symmetric(vertical: 6.0),
                                                         child: Row(
@@ -338,24 +395,13 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                                                             // Monthly Cells
                                                             ..._months.map((monthKey) {
                                                                 final val = yearly.monthlyReturns[monthKey];
+                                                                final baseColor = val != null ? _getColorForChange(val).withOpacity(0.8) : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05));
+                                                                final glowColor = (val != null && val >= 0) ? const Color(0xFF47E266).withOpacity(0.3) : const Color(0xFFFFB4AB).withOpacity(0.3);
                                                                 return Expanded(
-                                                                  child: Container(
-                                                                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                                                                    height: 32,
-                                                                    decoration: BoxDecoration(
-                                                                      color: val != null ? _getColorForChange(val).withOpacity(0.8) : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
-                                                                      borderRadius: BorderRadius.circular(6),
-                                                                    ),
-                                                                    child: Center(
-                                                                      child: Text(
-                                                                        val != null ? val.toStringAsFixed(1) : '-',
-                                                                        style: TextStyle(
-                                                                          color: Colors.white, 
-                                                                          fontSize: 11,
-                                                                          fontWeight: val != null ? FontWeight.w600 : FontWeight.normal
-                                                                        ),
-                                                                      ),
-                                                                    ),
+                                                                  child: _HoverableHeatmapCell(
+                                                                     val: val,
+                                                                     baseColor: baseColor,
+                                                                     glowColor: glowColor,
                                                                   ),
                                                                 );
                                                             }).toList(),
@@ -388,17 +434,21 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                                   ],
                                 ),
                             ),
-                            const SizedBox(height: 16),
-                            if (provider.seasonality != null) _buildSeasonality(provider.seasonality!),
-                            const SizedBox(height: 16), // Bottom padding
-                           ],
-                          ),
-                  ],
+                             const SizedBox(height: 16),
+                             if (sData != null) _buildSeasonality(sData),
+                             const SizedBox(height: 16), // Bottom padding
+                            ],
+                           ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-              ),
         ),
       ],
-    );
+    ),
+  ),
+);
      
   }
 
@@ -413,7 +463,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+        color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
         boxShadow: isDark
@@ -628,13 +678,9 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
   }
 
   Color _getColorForChange(double pChange) {
-      if (pChange >= 10) return const Color(0xFF00C853);
-      if (pChange >= 5) return const Color(0xFF00E676);
-      if (pChange > 0) return const Color(0xFF69F0AE);
-      if (pChange == 0) return Colors.grey.withOpacity(0.5);
-      if (pChange > -5) return const Color(0xFFFF8A80);
-      if (pChange > -10) return const Color(0xFFFF5252);
-      return const Color(0xFFD50000); 
+      if (pChange > 0) return const Color(0xFF47E266); // Success Green
+      if (pChange == 0) return const Color(0xFF918FA0); // Outline/Neutral Gray
+      return const Color(0xFFFFB4AB); // Error Red
   }
 
   // --- New Market Heatmap Section ---
@@ -646,7 +692,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
 
       return Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkCard : AppColors.lightCard,
+            color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
             boxShadow: isDark
@@ -701,38 +747,9 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
                               ],
                           ),
                           // Timeframe Selector
+                          // Align global timeframe bar cleanly on the right (or stacked on mobile)
                           if (_isHeatmapExpanded)
-                          SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y'].map((tf) {
-                                      final isSelected = _heatmapTimeframe == tf;
-                                      return Padding(
-                                          padding: const EdgeInsets.only(left: 8),
-                                          child: InkWell(
-                                              onTap: () => _onHeatmapTimeframeChanged(tf),
-                                              child: Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                                  decoration: BoxDecoration(
-                                                      color: isSelected ? const Color(0xFF0055FF) : (isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.05)),
-                                                      borderRadius: BorderRadius.circular(12),
-                                                      border: Border.all(color: isSelected ? const Color(0xFF00D1FF) : (isDark ? Colors.white10 : Colors.black12)),
-                                                  ),
-                                                  child: Text(
-                                                      tf,
-                                                      style: TextStyle(
-                                                          color: isSelected ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
-                                                          fontSize: 12,
-                                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                                      ),
-                                                  ),
-                                              ),
-                                          ),
-                                      );
-                                  }).toList(),
-                              ),
-                          ),
+                            GlobalTimeFrameBar(),
                       ],
                   ),
                   if (_isHeatmapExpanded) ...[
@@ -758,7 +775,7 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
       setState(() {
           _heatmapTimeframe = tf;
       });
-      _fetchData();
+      _fetchHeatmapData();
   }
 
   void _onHeatmapItemTap(String symbol, double value) {
@@ -784,10 +801,11 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
   }
 
   Widget _buildHeatmapGrid() {
-      return Consumer<MarketProvider>(
-          builder: (context, provider, child) {
-              final data = provider.heatmapValues; // Map<String, double>
-              if (provider.isLoading && (data == null || data.isEmpty)) {
+      return provider_pkg.Selector<MarketProvider, Map<String, double>?>(
+          selector: (_, p) => p.heatmapValues,
+          builder: (context, data, child) {
+              final isLoading = provider_pkg.Provider.of<MarketProvider>(context, listen: false).isLoading;
+              if (isLoading && (data == null || data.isEmpty)) {
                   return const Center(child: Padding(
                       padding: EdgeInsets.all(20),
                       child: CircularProgressIndicator(strokeWidth: 2),
@@ -819,32 +837,11 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
 
   Widget _buildHeatmapCard(String symbol, double value) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
-      return InkWell(
-          onTap: () => _onHeatmapItemTap(symbol, value),
-          child: Container(
-              decoration: BoxDecoration(
-                  color: _getColorForChange(value).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _getColorForChange(value).withOpacity(0.5)),
-              ),
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                      Text(
-                          symbol, 
-                          style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 13), 
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                          "${value > 0 ? '+' : ''}${value.toStringAsFixed(2)}%", 
-                          style: TextStyle(color: _getColorForChange(value), fontSize: 12, fontWeight: FontWeight.bold)
-                      ),
-                  ],
-              ),
-          ),
+      return _HoverableMarketHeatmapCard(
+        symbol: symbol,
+        value: value,
+        isDark: isDark,
+        onTap: () => _onHeatmapItemTap(symbol, value),
       );
   }
 
@@ -883,4 +880,190 @@ class _HeatmapExplorerViewState extends State<HeatmapExplorerView> {
     );
   }
 
+}
+
+class _HoverableHeatmapCell extends StatefulWidget {
+  final double? val;
+  final Color baseColor;
+  final Color glowColor;
+
+  const _HoverableHeatmapCell({
+    Key? key,
+    required this.val,
+    required this.baseColor,
+    required this.glowColor,
+  }) : super(key: key);
+
+  @override
+  State<_HoverableHeatmapCell> createState() => _HoverableHeatmapCellState();
+}
+
+class _HoverableHeatmapCellState extends State<_HoverableHeatmapCell> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered && widget.val != null ? 1.12 : 1.0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          height: 32,
+          decoration: BoxDecoration(
+            color: widget.baseColor,
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: _isHovered && widget.val != null
+                ? [
+                    BoxShadow(
+                      color: widget.glowColor.withOpacity(0.6), // Boosted glow opacity
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    )
+                  ]
+                : [],
+          ),
+          child: Center(
+            child: Text(
+              widget.val != null ? widget.val!.toStringAsFixed(1) : '-',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: widget.val != null ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HoverableMarketHeatmapCard extends StatefulWidget {
+  final String symbol;
+  final double value;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _HoverableMarketHeatmapCard({
+    Key? key,
+    required this.symbol,
+    required this.value,
+    required this.isDark,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  State<_HoverableMarketHeatmapCard> createState() => _HoverableMarketHeatmapCardState();
+}
+
+class _HoverableMarketHeatmapCardState extends State<_HoverableMarketHeatmapCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    Color cardColor;
+    Color textColor;
+    Color borderOutlineColor;
+    List<BoxShadow> glowShadows;
+
+    if (widget.value > 0) {
+      cardColor = const Color(0xFF47E266);
+      textColor = const Color(0xFF47E266);
+      borderOutlineColor = cardColor.withOpacity(0.12);
+      glowShadows = _isHovered ? [
+        BoxShadow(
+          color: cardColor.withOpacity(0.6),
+          blurRadius: 16,
+          spreadRadius: 1,
+          offset: const Offset(0, 4),
+        )
+      ] : (widget.isDark ? [
+        BoxShadow(
+          color: cardColor.withOpacity(0.12),
+          blurRadius: 12,
+          spreadRadius: 1,
+          offset: const Offset(0, 4),
+        )
+      ] : []);
+    } else if (widget.value < 0) {
+      cardColor = const Color(0xFFFFB4AB);
+      textColor = const Color(0xFFFFB4AB);
+      borderOutlineColor = cardColor.withOpacity(0.12);
+      glowShadows = _isHovered ? [
+        BoxShadow(
+          color: cardColor.withOpacity(0.6),
+          blurRadius: 16,
+          spreadRadius: 1,
+          offset: const Offset(0, 4),
+        )
+      ] : (widget.isDark ? [
+        BoxShadow(
+          color: cardColor.withOpacity(0.12),
+          blurRadius: 12,
+          spreadRadius: 1,
+          offset: const Offset(0, 4),
+        )
+      ] : []);
+    } else {
+      cardColor = const Color(0xFF918FA0);
+      textColor = const Color(0xFF918FA0);
+      borderOutlineColor = cardColor.withOpacity(0.12);
+      glowShadows = [];
+    }
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.08 : 1.0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            decoration: BoxDecoration(
+              color: cardColor.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderOutlineColor, width: 1.0),
+              boxShadow: glowShadows,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  widget.symbol,
+                  style: TextStyle(
+                    color: widget.isDark ? Colors.white : Colors.black87,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    fontFamily: 'Hanken Grotesk',
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "${widget.value > 0 ? '+' : ''}${widget.value.toStringAsFixed(2)}%",
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'JetBrains Mono',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

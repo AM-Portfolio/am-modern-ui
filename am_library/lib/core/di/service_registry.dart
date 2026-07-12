@@ -20,26 +20,34 @@ class ServiceRegistry {
   }) {
     // 1. Storage, Logging & Telemetry
     if (!I.isRegistered<SecureStorageService>()) {
-      I.registerLazySingleton(() => SecureStorageService());
+      I.registerLazySingleton<SecureStorageService>(
+        () => SecureStorageService(),
+      );
     }
     if (!I.isRegistered<TelemetryService>()) {
-      I.registerLazySingleton(() => TelemetryService());
+      I.registerLazySingleton<TelemetryService>(() => TelemetryService());
     }
     AppLogger.initialize();
 
     // 2. Network Clients (REST)
     if (!I.isRegistered<ApiClient>()) {
-      I.registerLazySingleton(() => ApiClient(baseUrl: analysisBaseUrl));
+      I.registerLazySingleton<ApiClient>(
+        () => ApiClient(baseUrl: analysisBaseUrl),
+      );
     }
 
     // 3. Analysis SDK Wrapper
     if (!I.isRegistered<AnalysisApiClient>()) {
-      I.registerLazySingleton(() => AnalysisApiClient(baseUrl: analysisBaseUrl));
+      I.registerLazySingleton<AnalysisApiClient>(
+        () => AnalysisApiClient(baseUrl: analysisBaseUrl),
+      );
     }
 
     // 4. WebSocket (STOMP)
     if (!I.isRegistered<AmStompClient>()) {
-      I.registerLazySingleton(() => AmStompClient(url: wsUrl));
+      I.registerLazySingleton<AmStompClient>(
+        () => AmStompClient(url: wsUrl),
+      );
     }
     
     AppLogger.info('✅ ServiceRegistry: Core infrastructure initialized.', tag: 'Registry');

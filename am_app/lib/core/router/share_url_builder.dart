@@ -80,8 +80,29 @@ class ShareUrlBuilder {
   /// Validates redirect target from login query param.
   static String? sanitizeRedirect(String? redirect) {
     if (redirect == null || redirect.isEmpty) return null;
-    if (!redirect.startsWith('/app')) return null;
-    return redirect;
+
+    var candidate = redirect;
+    if (candidate.startsWith('http://') || candidate.startsWith('https://')) {
+      try {
+        candidate = Uri.parse(candidate).path;
+        final query = Uri.parse(redirect).hasQuery
+            ? '?${Uri.parse(redirect).query}'
+            : '';
+        candidate = '$candidate$query';
+      } catch (_) {
+        return null;
+      }
+    }
+
+    if (!candidate.startsWith('/app')) return null;
+    return candidate;
+  }
+
+  /// True when reload should keep the browser URL (any /app/* route with path).
+  static bool isReloadableAppRoute(String location) {
+    if (!AppRoutes.isAuthenticatedAppRoute(location)) return false;
+    if (location == AppRoutes.dashboard) return false;
+    return true;
   }
 
   static List<String> _pathSegments(String location) {

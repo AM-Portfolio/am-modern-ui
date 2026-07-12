@@ -1,5 +1,8 @@
 library am_portfolio_ui;
 
+export 'package:am_common/am_common.dart'
+    show PortfolioSelectionContext, PortfolioSelectionScope;
+
 // Exports temporarily disabled for Phase 1 to focus on Market UI
 export 'features/portfolio/presentation/pages/portfolio_screen.dart';
 

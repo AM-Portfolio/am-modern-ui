@@ -13,25 +13,70 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 
+bool _dashboardDataMarkedMobile = false;
+
 /// Pixel-perfect Lumina mobile dashboard screen with Glassmorphism and Dark Theme.
 class DashboardMobileScreen extends ConsumerWidget {
   final String userId;
 
   const DashboardMobileScreen({super.key, required this.userId});
 
-  Widget _buildLoadingCard(double height) {
+  Widget _buildLoadingCard(double height, {String? label}) {
     return AmGlassCard(
       child: SizedBox(
         height: height,
         width: double.infinity,
-        child: const ShimmerLoading(
-          child: SkeletonBox(
-            width: double.infinity,
-            height: double.infinity,
-            borderRadius: BorderRadius.all(Radius.circular(8)),
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: const ShimmerLoading(
+                child: SkeletonBox(
+                  width: double.infinity,
+                  height: double.infinity,
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+              ),
+            ),
+            if (label != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                  fontFamily: 'Inter',
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ],
         ),
       ),
+    );
+  }
+
+  void _listenDashboardFirstData(WidgetRef ref, String tfCode) {
+    void markIfReady(AsyncValue<dynamic> next) {
+      if (!_dashboardDataMarkedMobile && next.hasValue) {
+        _dashboardDataMarkedMobile = true;
+        BootTrace.instance.mark('dashboard_first_data');
+      }
+    }
+
+    ref.listen(dashboardStreamProvider(userId), (_, next) => markIfReady(next));
+    ref.listen(
+      moversStreamProvider(userId, timeFrame: tfCode),
+      (_, next) => markIfReady(next),
+    );
+    ref.listen(
+      recentActivityProvider(userId, page: 0, size: 10),
+      (_, next) => markIfReady(next),
+    );
+    ref.listen(portfolioOverviewsProvider(userId), (_, next) => markIfReady(next));
+    ref.listen(
+      historyStreamProvider(userId, timeFrame: tfCode),
+      (_, next) => markIfReady(next),
     );
   }
 
@@ -45,6 +90,9 @@ class DashboardMobileScreen extends ConsumerWidget {
     });
     final timeFrame = ref.watch(appTimeFrameProvider);
     final tfCode = timeFrame.code;
+
+    ref.watch(dashboardParallelKickoffProvider(userId, timeFrame: tfCode));
+    _listenDashboardFirstData(ref, tfCode);
 
     final dashboardAsync = ref.watch(dashboardStreamProvider(userId));
     final overviewsAsync = ref.watch(portfolioOverviewsProvider(userId));
@@ -154,45 +202,7 @@ class DashboardMobileScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  // ── Performance Chart ──
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    sliver: SliverToBoxAdapter(
-                      child: Consumer(
-                        builder: (context, ref, child) {
-                          final performanceAsync =
-                              ref.watch(historyStreamProvider(userId, timeFrame: tfCode));
-                          return performanceAsync.when(
-                            data: (performance) => SizedBox(
-                              height: 350,
-                              child: DashboardChartWidget(
-                                performance: performance,
-                              ),
-                            ),
-                            loading: () => _buildLoadingCard(350),
-                            error: (err, stack) => AmErrorWidget(
-                              message: 'Failed to load chart',
-                              onRetry: () => ref.invalidate(
-                                historyStreamProvider(userId, timeFrame: tfCode),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-                  // ── Recent Activity ──
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    sliver: SliverToBoxAdapter(
-                      child: DashboardRecentActivitySection(userId: userId),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-                  // ── Market Movers (Top Movers) ──
+                  // ── Market Movers (fast widget — before chart) ──
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     sliver: SliverToBoxAdapter(
@@ -215,7 +225,16 @@ class DashboardMobileScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+                  // ── Recent Activity ──
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    sliver: SliverToBoxAdapter(
+                      child: DashboardRecentActivitySection(userId: userId),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
                   // ── Portfolio Overviews ──
                   SliverPadding(
@@ -265,6 +284,36 @@ class DashboardMobileScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+                  // ── Performance Chart (slow widget — last) ──
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    sliver: SliverToBoxAdapter(
+                      child: Consumer(
+                        builder: (context, ref, child) {
+                          final performanceAsync =
+                              ref.watch(historyStreamProvider(userId, timeFrame: tfCode));
+                          return performanceAsync.when(
+                            data: (performance) => SizedBox(
+                              height: 350,
+                              child: DashboardChartWidget(
+                                performance: performance,
+                              ),
+                            ),
+                            loading: () => _buildLoadingCard(350, label: 'Loading chart…'),
+                            error: (err, stack) => AmErrorWidget(
+                              message: 'Failed to load chart',
+                              onRetry: () => ref.invalidate(
+                                historyStreamProvider(userId, timeFrame: tfCode),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
                   // Bottom padding for bottom nav
                   const SliverToBoxAdapter(child: SizedBox(height: 120)),
                 ],

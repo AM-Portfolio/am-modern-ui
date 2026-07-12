@@ -61,6 +61,16 @@ enum TimeFrame {
         TimeFrame.oneYear,
       ];
 
+  static List<TimeFrame> get chartTimeFrames => const [
+        TimeFrame.oneDay,
+        TimeFrame.oneWeek,
+        TimeFrame.oneMonth,
+        TimeFrame.threeMonths,
+        TimeFrame.sixMonths,
+        TimeFrame.oneYear,
+        TimeFrame.fiveYears,
+      ];
+
   static List<TimeFrame> get dashboardTimeFrames => appTimeFrames;
 
   /// Shared timeframe options for Dashboard, Portfolio, Market, and Trade.

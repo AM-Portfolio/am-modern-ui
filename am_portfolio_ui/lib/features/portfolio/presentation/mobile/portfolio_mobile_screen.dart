@@ -1,7 +1,10 @@
+import 'dart:async';
+import 'dart:ui';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
@@ -14,7 +17,7 @@ import 'widgets/portfolio_logout_handler.dart';
 import 'package:am_common/am_common.dart';
 
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
-class PortfolioMobileScreen extends ConsumerWidget {
+class PortfolioMobileScreen extends ConsumerStatefulWidget {
   const PortfolioMobileScreen({
     super.key,
     this.selectedPortfolioId,
@@ -24,6 +27,7 @@ class PortfolioMobileScreen extends ConsumerWidget {
     this.onBack,
     this.initialTab,
     this.onTabChanged,
+    this.addTradeBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -32,9 +36,15 @@ class PortfolioMobileScreen extends ConsumerWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
+  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PortfolioMobileScreen> createState() => _PortfolioMobileScreenState();
+}
+
+class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
+  @override
+  Widget build(BuildContext context) {
     CommonLogger.info(
       'Building PortfolioMobileScreen',
       tag: 'PortfolioMobileScreen',
@@ -62,13 +72,14 @@ class PortfolioMobileScreen extends ConsumerWidget {
           data: (analyticsService) => BlocProvider(
             create: (context) => PortfolioAnalyticsCubit(analyticsService),
             child: PortfolioMobileView(
-              selectedPortfolioId: selectedPortfolioId,
-              selectedPortfolioName: selectedPortfolioName,
-              portfolios: portfolios,
-              onPortfolioChanged: onPortfolioChanged,
-              onBack: onBack,
-              initialTab: initialTab,
-              onTabChanged: onTabChanged,
+              selectedPortfolioId: widget.selectedPortfolioId,
+              selectedPortfolioName: widget.selectedPortfolioName,
+              portfolios: widget.portfolios,
+              onPortfolioChanged: widget.onPortfolioChanged,
+              onBack: widget.onBack,
+              initialTab: widget.initialTab,
+              onTabChanged: widget.onTabChanged,
+              addTradeBuilder: widget.addTradeBuilder,
             ),
           ),
           loading: () =>
@@ -146,6 +157,7 @@ class PortfolioMobileView extends StatefulWidget {
     this.onBack,
     this.initialTab,
     this.onTabChanged,
+    this.addTradeBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -154,6 +166,7 @@ class PortfolioMobileView extends StatefulWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
+  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
@@ -163,6 +176,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     with TickerProviderStateMixin {
   late TabController _tabController;
   String? _currentPortfolioId;
+  bool _isAddingTrade = false;
+  bool _showScrollFab = false;
+  Timer? _scrollHideTimer;
 
   int _tabIndexFromSlug(String? slug) {
     switch (slug?.toLowerCase()) {
@@ -170,12 +186,10 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         return 0;
       case 'holdings':
         return 1;
-      case 'analysis':
-        return 2;
       case 'heatmap':
+        return 2;
+      case 'baskets':
         return 3;
-      case 'trade':
-        return 4;
       default:
         return 0;
     }
@@ -188,11 +202,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       case 1:
         return 'holdings';
       case 2:
-        return 'analysis';
-      case 3:
         return 'heatmap';
-      case 4:
-        return 'trade';
+      case 3:
+        return 'baskets';
       default:
         return 'overview';
     }
@@ -202,7 +214,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   void initState() {
     super.initState();
     final initialIndex = _tabIndexFromSlug(widget.initialTab);
-    _tabController = TabController(length: 5, vsync: this, initialIndex: initialIndex);
+    _tabController = TabController(length: 4, vsync: this, initialIndex: initialIndex);
     _tabController.addListener(() {
       if (mounted && !_tabController.indexIsChanging) {
         setState(() {});
@@ -258,6 +270,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollHideTimer?.cancel();
     super.dispose();
   }
 
@@ -274,6 +287,52 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     widget.onPortfolioChanged?.call(portfolioId, portfolioName);
   }
 
+  void _onScrollDetected() {
+    _scrollHideTimer?.cancel();
+    if (!_showScrollFab) setState(() => _showScrollFab = true);
+    _scrollHideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _showScrollFab = false);
+    });
+  }
+
+  Widget _buildGlassFab() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: GestureDetector(
+          onTap: () => setState(() => _isAddingTrade = true),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            decoration: BoxDecoration(
+              color: ModuleColors.portfolio.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(
+                color: ModuleColors.portfolio.withOpacity(0.6),
+                width: 1.2,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.add, color: Colors.white, size: 18),
+                const SizedBox(width: 6),
+                const Text(
+                  'Add Trade',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     CommonLogger.debug(
@@ -288,7 +347,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
 
     String currentName = 'Select Portfolio';
-    if (_currentPortfolioId != null && widget.portfolios != null) {
+    if (_currentPortfolioId == 'all') {
+      currentName = 'All Portfolios';
+    } else if (_currentPortfolioId != null && widget.portfolios != null) {
       final match = widget.portfolios!.where(
         (p) => p.portfolioId == _currentPortfolioId,
       );
@@ -318,38 +379,91 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           SecondarySidebarItem(
             title: 'Overview',
             icon: Icons.dashboard_outlined,
-            isSelected: _tabController.index == 0,
-            onTap: () => setState(() => _tabController.index = 0),
+            isSelected: _tabController.index == 0 && !_isAddingTrade,
+            onTap: () => setState(() {
+              _tabController.index = 0;
+              _isAddingTrade = false;
+            }),
           ),
           SecondarySidebarItem(
             title: 'Holdings',
             icon: Icons.wallet,
-            isSelected: _tabController.index == 1,
-            onTap: () => setState(() => _tabController.index = 1),
-          ),
-          SecondarySidebarItem(
-            title: 'Analysis',
-            icon: Icons.analytics_outlined,
-            isSelected: _tabController.index == 2,
-            onTap: () => setState(() => _tabController.index = 2),
+            isSelected: _tabController.index == 1 && !_isAddingTrade,
+            onTap: () => setState(() {
+              _tabController.index = 1;
+              _isAddingTrade = false;
+            }),
           ),
           SecondarySidebarItem(
             title: 'Heatmap',
             icon: Icons.grid_view,
-            isSelected: _tabController.index == 3,
-            onTap: () => setState(() => _tabController.index = 3),
+            isSelected: _tabController.index == 2 && !_isAddingTrade,
+            onTap: () => setState(() {
+              _tabController.index = 2;
+              _isAddingTrade = false;
+            }),
           ),
           SecondarySidebarItem(
-            title: 'Trade',
-            icon: Icons.show_chart,
-            isSelected: _tabController.index == 4,
-            onTap: () => setState(() => _tabController.index = 4),
+            title: 'Baskets',
+            icon: Icons.shopping_basket_outlined,
+            isSelected: _tabController.index == 3 && !_isAddingTrade,
+            onTap: () => setState(() {
+              _tabController.index = 3;
+              _isAddingTrade = false;
+            }),
+          ),
+          SecondarySidebarItem(
+            title: 'Add Trade',
+            icon: Icons.add,
+            isSelected: _isAddingTrade,
+            onTap: () => setState(() {
+              _isAddingTrade = true;
+            }),
           ),
         ],
-        body: PortfolioTabContentWidget(
-          tabController: _tabController,
-          currentPortfolioId: _currentPortfolioId!,
-        ),
+        body: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
+            ? widget.addTradeBuilder!(
+                context,
+                _currentPortfolioId!,
+                currentName,
+                () {
+                  setState(() {
+                    _isAddingTrade = false;
+                  });
+                },
+              )
+            : NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (_tabController.index == 0 &&
+                      notification is ScrollUpdateNotification &&
+                      (notification.scrollDelta ?? 0).abs() > 0) {
+                    _onScrollDetected();
+                  }
+                  return false;
+                },
+                child: Stack(
+                  children: [
+                    PortfolioTabContentWidget(
+                      tabController: _tabController,
+                      currentPortfolioId: _currentPortfolioId!,
+                    ),
+                    if (widget.addTradeBuilder != null && _tabController.index == 0)
+                      Positioned(
+                        bottom: 24,
+                        right: 16,
+                        child: AnimatedOpacity(
+                          opacity: _showScrollFab ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 300),
+                          child: IgnorePointer(
+                            ignoring: !_showScrollFab,
+                            child: _buildGlassFab(),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+        floatingActionButton: null,
       ),
     );
   }
@@ -391,7 +505,13 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             ),
             const SizedBox(height: 8),
             if (widget.portfolios != null)
-              ...widget.portfolios!.map(
+              ...[
+                const PortfolioItem(
+                  portfolioId: 'all',
+                  portfolioName: 'All Portfolios',
+                ),
+                ...widget.portfolios!
+              ].map(
                 (p) => ListTile(
                   leading: Icon(
                     Icons.account_balance_wallet,

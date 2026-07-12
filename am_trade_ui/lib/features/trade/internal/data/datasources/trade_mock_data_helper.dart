@@ -60,7 +60,7 @@ class TradeMockDataHelper {
     try {
       AppLogger.info('Loading mock trade calendar from assets', tag: 'TradeMockDataHelper');
 
-      final jsonString = await rootBundle.loadString('packages/am_trade_ui/assets/mock_data/trade/calander/trade_calendar.json');
+      final jsonString = await rootBundle.loadString('packages/am_trade_ui/assets/mock_data/trade/calendar/trade_calendar.json');
       final jsonData = json.decode(jsonString) as Map<String, dynamic>;
 
       return TradeCalendarDto.fromJson(jsonData);
@@ -76,7 +76,7 @@ class TradeMockDataHelper {
       AppLogger.info('Loading mock trade calendar by day from assets', tag: 'TradeMockDataHelper');
 
       final jsonString = await rootBundle.loadString(
-        'packages/am_trade_ui/assets/mock_data/trade/calander/calender-by-day-response.json',
+        'packages/am_trade_ui/assets/mock_data/trade/calendar/calendar-by-day-response.json',
       );
       final jsonData = json.decode(jsonString) as Map<String, dynamic>;
 
@@ -93,7 +93,7 @@ class TradeMockDataHelper {
       AppLogger.info('Loading mock trade calendar by date range from assets', tag: 'TradeMockDataHelper');
 
       final jsonString = await rootBundle.loadString(
-        'packages/am_trade_ui/assets/mock_data/trade/calander/calender-by-date-range-response.json',
+        'packages/am_trade_ui/assets/mock_data/trade/calendar/calendar-by-date-range-response.json',
       );
       final jsonData = json.decode(jsonString) as Map<String, dynamic>;
 

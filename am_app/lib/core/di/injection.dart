@@ -6,51 +6,26 @@ import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard_ui;
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_library/am_library.dart';
 import 'package:am_subscription_ui/am_subscription_ui.dart' as subscription_ui;
-import 'package:am_market_ui/features/market_analysis/services/market_analysis_service.dart';
 
 final getIt = GetIt.instance;
+bool _featureDependenciesConfigured = false;
 
-/// Configure all dependencies for the application
-Future<void> configureDependencies() async {
-  // 1. Initialize Technical Infrastructure (One Source of Truth)
+/// Core dependencies required before first paint (auth, theme, dashboard, router).
+Future<void> configureCoreDependencies() async {
   ServiceRegistry.initialize(
-    analysisBaseUrl: common.EnvDomains.analysis, // Standard Analysis Port
+    analysisBaseUrl: common.EnvDomains.analysis,
     wsUrl: common.EnvDomains.wsStream,
   );
 
-  // Register Theme Repository (required by ThemeCubit)
   getIt.registerLazySingleton<ThemeRepository>(() => ThemeRepository());
 
-  // Register Theme Cubit with repository
   getIt.registerLazySingleton<ThemeCubit>(
     () => ThemeCubit(getIt<ThemeRepository>()),
   );
 
-  // Register Auth-related dependencies first
   _registerAuthDependencies();
-
-  // Register Dashboard-related dependencies
   _registerDashboardDependencies();
 
-  // Register Portfolio-related dependencies
-  _registerPortfolioDependencies();
-
-  // Register Trade-related dependencies
-  _registerTradeDependencies();
-
-  // Register Market-related dependencies
-  _registerMarketDependencies();
-
-  // Register remaining module dependencies
-  _registerUserDependencies();
-  _registerAiDependencies();
-  _registerDiagnosticDependencies();
-  _registerAnalysisDependencies();
-  _registerSubscriptionDependencies();
-
-  // ────────────────────────────────────────────────────────────────────────
-
-  // Register Auth Cubit after dependencies
   getIt.registerFactory<auth_ui.AuthCubit>(() {
     return auth_ui.AuthCubit(
       emailLoginUseCase: getIt<auth_ui.EmailLoginUseCase>(),
@@ -63,22 +38,34 @@ Future<void> configureDependencies() async {
     );
   });
 
-  // Register Feature Flag Cubit
   getIt.registerLazySingleton<auth_ui.FeatureFlagCubit>(
     () => auth_ui.FeatureFlagCubit(),
   );
 
-  // Register Stomp Connection Cubit (Manages global WebSocket lifecycle)
   getIt.registerLazySingleton<common.StompConnectionCubit>(
     () => common.StompConnectionCubit(
       stompClient: getIt<common.AmStompClient>(),
     ),
   );
+
+  common.BootTrace.instance.mark('di_core_done');
+}
+
+/// Feature DI — lightweight services needed by deferred modules when they load.
+Future<void> configureFeatureDependencies() async {
+  if (_featureDependenciesConfigured) return;
+  _featureDependenciesConfigured = true;
+  _registerSubscriptionDependencies();
+  common.BootTrace.instance.mark('di_feature_done');
+}
+
+/// Backward-compatible entry — registers everything (used by standalone modules).
+Future<void> configureDependencies() async {
+  await configureCoreDependencies();
+  await configureFeatureDependencies();
 }
 
 void _registerAuthDependencies() {
-  // SecureStorageService is handled by ServiceRegistry.initialize()
-
   getIt.registerLazySingleton<auth_ui.MockDataService>(
     () => auth_ui.MockDataService(),
   );
@@ -87,12 +74,16 @@ void _registerAuthDependencies() {
     () => auth_ui.GoogleSignInService(),
   );
 
-  getIt.registerLazySingleton<Dio>(() => Dio());
+  getIt.registerLazySingleton<Dio>(() {
+    final dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 30),
+      ),
+    );
+    return dio;
+  });
 
-  // ApiClient now from ServiceRegistry
-  // ApiClient is handled by ServiceRegistry.initialize()
-
-  // Data sources
   getIt.registerLazySingleton<auth_ui.MockAuthDataSource>(
     () => auth_ui.MockAuthDataSource(getIt<auth_ui.MockDataService>()),
   );
@@ -105,7 +96,6 @@ void _registerAuthDependencies() {
     () => auth_ui.IdentityAuthRemoteDataSource(getIt<Dio>()),
   );
 
-  // Repository
   getIt.registerLazySingleton<auth_ui.AuthRepository>(
     () => auth_ui.AuthRepositoryImpl(
       getIt<auth_ui.MockAuthDataSource>(),
@@ -116,7 +106,6 @@ void _registerAuthDependencies() {
     ),
   );
 
-  // Use cases
   getIt.registerLazySingleton<auth_ui.EmailLoginUseCase>(
     () => auth_ui.EmailLoginUseCase(getIt<auth_ui.AuthRepository>()),
   );
@@ -140,60 +129,13 @@ void _registerAuthDependencies() {
   );
 }
 
-// ── SHARED INFRA — available for re-use when modules are re-enabled ─────────
-//
-// Call this once before registering Portfolio / Trade / Market deps:
-//   _registerSharedInfra();
-//
-// void _registerSharedInfra() {
-//   getIt.registerLazySingleton<common.AmStompClient>(
-//       () => ServiceRegistry.stomp);
-// }
-
 void _registerDashboardDependencies() {
-  // Dashboard uses ApiClient + AmStompClient from ServiceRegistry
-  // AmStompClient is handled by ServiceRegistry.initialize()
-
   getIt.registerLazySingleton<dashboard_ui.DashboardRepository>(() {
     return dashboard_ui.DashboardRepository(
       getIt<common.ApiClient>(),
       getIt<common.AmStompClient>(),
     );
   });
-}
-
-void _registerMarketDependencies() {
-  if (!getIt.isRegistered<MarketAnalysisService>()) {
-    getIt.registerLazySingleton<MarketAnalysisService>(
-      () => MarketAnalysisService(),
-    );
-  }
-}
-void _registerPortfolioDependencies() {
-  // Portfolio UI uses Riverpod providers for its internal dependencies
-  // Only shared/common dependencies need to be registered in GetIt
-}
-
-// ── TRADE (re-enable with am_trade_ui) ───────────────────────────────────────
-void _registerTradeDependencies() {
-  // Trade UI uses Riverpod providers for its internal dependencies
-  // Only shared/common dependencies need to be registered in GetIt
-}
-
-void _registerUserDependencies() {
-  // User UI registration placeholder
-}
-
-void _registerAiDependencies() {
-  // AI UI registration placeholder
-}
-
-void _registerDiagnosticDependencies() {
-  // Diagnostic UI registration placeholder
-}
-
-void _registerAnalysisDependencies() {
-  // Analysis UI registration placeholder
 }
 
 void _registerSubscriptionDependencies() {
@@ -214,7 +156,10 @@ void _registerSubscriptionDependencies() {
   subscriptionDio.interceptors.add(
     auth_ui.AuthInterceptor(getIt<auth_ui.SecureStorageService>()),
   );
-  getIt.registerSingleton<Dio>(subscriptionDio, instanceName: 'subscriptionDio');
+  getIt.registerSingleton<Dio>(
+    subscriptionDio,
+    instanceName: 'subscriptionDio',
+  );
 
   getIt.registerLazySingleton<subscription_ui.SubscriptionRemoteDataSource>(
     () => subscription_ui.SubscriptionRemoteDataSourceImpl(

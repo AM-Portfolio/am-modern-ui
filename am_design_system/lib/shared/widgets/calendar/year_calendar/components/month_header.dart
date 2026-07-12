@@ -12,143 +12,74 @@ class MonthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isTablet = screenWidth >= 600 && screenWidth < 900;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Mobile: Ultra compact design with inline stats
-    if (isMobile && stats['totalTrades'] > 0) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Month name with primary stat inline
-          Row(
-            children: [
-              Text(
-                monthData?.monthName ?? _getMonthName(month),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const SizedBox(width: 8),
-              // Compact P&L indicator
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red).withOpacity(0.4)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      stats['totalPnL'] >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                      size: 10,
-                      color: stats['totalPnL'] >= 0 ? Colors.green : Colors.red,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      '\$${stats['totalPnL'] >= 0 ? '+' : ''}${stats['totalPnL'].toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: stats['totalPnL'] >= 0 ? Colors.green.shade700 : Colors.red.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          // Compact stats row
-          Row(
-            children: [
-              _buildCompactStat(context, Icons.calendar_today, '${stats['tradeDays']}d', Colors.purple),
-              const SizedBox(width: 6),
-              _buildCompactStat(context, Icons.swap_horiz, '${stats['totalTrades']}', Colors.blue),
-              const SizedBox(width: 6),
-              _buildCompactStat(
-                context,
-                Icons.percent,
-                '${stats['winRate'].toStringAsFixed(0)}%',
-                stats['winRate'] >= 50 ? Colors.green : Colors.orange,
-              ),
-            ],
-          ),
-        ],
+    // Universal robust layout to prevent cramping in grid view
+    if (stats['totalTrades'] == 0) {
+      return Text(
+        monthData?.monthName ?? _getMonthName(month),
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 16),
+        overflow: TextOverflow.ellipsis,
       );
     }
 
-    // Tablet: Balanced compact design
-    if (isTablet && stats['totalTrades'] > 0) {
-      return Row(
-        children: [
-          Text(
-            monthData?.monthName ?? _getMonthName(month),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 15),
-          ),
-          const Spacer(),
-          // All stats in single row
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildIconStat(context, Icons.calendar_today, '${stats['tradeDays']}d', Colors.purple),
-              const SizedBox(width: 8),
-              _buildIconStat(context, Icons.swap_horiz, '${stats['totalTrades']}', Colors.blue),
-              const SizedBox(width: 8),
-              _buildIconStat(
-                context,
-                Icons.percent,
-                '${stats['winRate'].toStringAsFixed(1)}%',
-                stats['winRate'] >= 50 ? Colors.green : Colors.orange,
-              ),
-              const SizedBox(width: 8),
-              _buildIconStat(
-                context,
-                stats['totalPnL'] >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                '\$${stats['totalPnL'] >= 0 ? '+' : ''}${stats['totalPnL'].toStringAsFixed(0)}',
-                stats['totalPnL'] >= 0 ? Colors.green : Colors.red,
-              ),
-            ],
-          ),
-        ],
-      );
-    }
-
-    // Desktop: Icon-based stats design - all in one row
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Month name
-        Text(
-          monthData?.monthName ?? _getMonthName(month),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 16),
-          overflow: TextOverflow.ellipsis,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              monthData?.monthName ?? _getMonthName(month),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 16),
+              overflow: TextOverflow.ellipsis,
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red).withOpacity(0.4)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    stats['totalPnL'] >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                    size: 12,
+                    color: stats['totalPnL'] >= 0 ? Colors.green : Colors.red,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '₹${stats['totalPnL'] >= 0 ? '+' : ''}${stats['totalPnL'].toStringAsFixed(0)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: stats['totalPnL'] >= 0 
+                          ? (isDark ? Colors.greenAccent : Colors.green.shade800) 
+                          : (isDark ? Colors.redAccent : Colors.red.shade800),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        const Spacer(),
-        if (stats['totalTrades'] > 0)
-          // All stats in single horizontal row
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildIconStat(context, Icons.calendar_today, '${stats['tradeDays']} days', Colors.purple),
-              const SizedBox(width: 10),
-              _buildIconStat(context, Icons.swap_horiz, '${stats['totalTrades']} trades', Colors.blue),
-              const SizedBox(width: 10),
-              _buildIconStat(
-                context,
-                Icons.percent,
-                '${stats['winRate'].toStringAsFixed(1)}%',
-                stats['winRate'] >= 50 ? Colors.green : Colors.orange,
-              ),
-              const SizedBox(width: 10),
-              _buildIconStat(
-                context,
-                stats['totalPnL'] >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                '\$${stats['totalPnL'] >= 0 ? '+' : ''}${stats['totalPnL'].toStringAsFixed(0)}',
-                stats['totalPnL'] >= 0 ? Colors.green : Colors.red,
-              ),
-            ],
-          ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 12,
+          runSpacing: 6,
+          children: [
+            _buildIconStat(context, Icons.calendar_today, '${stats['tradeDays']} days', isDark ? Colors.purpleAccent : Colors.purple.shade700),
+            _buildIconStat(context, Icons.swap_horiz, '${stats['totalTrades']} trades', isDark ? Colors.lightBlueAccent : Colors.blue.shade700),
+            _buildIconStat(
+              context,
+              Icons.percent,
+              '${stats['winRate'].toStringAsFixed(1)}%',
+              stats['winRate'] >= 50 ? (isDark ? Colors.greenAccent : Colors.green.shade700) : (isDark ? Colors.orangeAccent : Colors.orange.shade800),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -178,7 +109,7 @@ class MonthHeader extends StatelessWidget {
       const SizedBox(width: 4),
       Text(
         label,
-        style: TextStyle(fontSize: 11, color: color.withOpacity(0.9), fontWeight: FontWeight.w600),
+        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
       ),
     ],
   );

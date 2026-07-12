@@ -55,6 +55,8 @@ export 'features/attachment/internal/presentation/widgets/shared_attachment_sect
 export 'features/attachment/internal/presentation/widgets/attachment_picker/attachment_picker.dart';
 export 'features/attachment/internal/presentation/widgets/attachment_picker/shared/attachment_preview_grid.dart';
 export 'features/attachment/internal/presentation/models/pending_attachment.dart';
+export 'features/charts/presentation/common_performance_chart.dart';
+export 'package:am_design_system/shared/widgets/charts/chart_types.dart';
 
 // Navigation Widgets
 export 'features/navigation/widgets/vertical_scroll_navigator.dart';
@@ -73,7 +75,10 @@ export 'core/config/env_domains.dart';
 export 'core/config/upload_config.dart';
 export 'core/config/user_currency_config.dart';
 export 'core/session/app_session_state.dart';
+export 'core/session/portfolio_selection_scope.dart';
 export 'core/session/session_persistence_service.dart';
+export 'core/telemetry/boot_trace.dart';
+export 'core/telemetry/boot_rum_collector.dart';
 export 'core/di/network_providers.dart';
 export 'core/constants/constants.dart';
 export 'core/network/websocket/am_websocket_client.dart';

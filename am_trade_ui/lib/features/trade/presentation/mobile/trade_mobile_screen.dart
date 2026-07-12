@@ -6,6 +6,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
 import '../../providers/trade_controller_providers.dart';
 import '../../providers/trade_internal_providers.dart';
+import '../../trade_calendar_providers.dart';
 import '../components/templates/trade_portfolio_discovery_template.dart';
 import '../cubit/trade_controller_cubit.dart';
 import '../models/trade_portfolio_view_model.dart';
@@ -176,12 +177,6 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
           isSelected: _selectedView == MobileTradeViewType.calendar,
           onTap: () => _onViewChanged(MobileTradeViewType.calendar),
         ),
-        SecondarySidebarItem(
-          title: 'Add Trade',
-          icon: Icons.add_circle_outline,
-          isSelected: _selectedView == MobileTradeViewType.addTrade,
-          onTap: () => _onViewChanged(MobileTradeViewType.addTrade),
-        ),
       ],
       body: _buildMainContent(context),
     );
@@ -326,6 +321,13 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                 // Refresh holdings when trade is added
                 if (_currentPortfolioId != null) {
                   ref.invalidate(tradeHoldingsStreamProvider(_currentPortfolioId!));
+                  
+                  // Refresh calendar data so it reflects the new trade
+                  ref.read(tradeCalendarCubitProvider(_currentPortfolioId!).future)
+                      .then((cubit) => cubit.loadTradeCalendar(
+                         portfolioId: _currentPortfolioId!, 
+                         forceReload: true,
+                      ));
                 }
                 // Switch back to holdings view after adding trade
                 setState(() => _selectedView = MobileTradeViewType.holdings);
@@ -423,10 +425,19 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
     ),
   );
 
-  /// Build floating action button for adding new trade
   Widget? _buildFloatingActionButton(BuildContext context) {
-    // FAB removed - Add Trade now in bottom navigation
-    return null;
+    // Hide FAB if we're already on the Add Trade view
+    if (_selectedView == MobileTradeViewType.addTrade) {
+      return null;
+    }
+    
+    return FloatingActionButton(
+      onPressed: () => _onViewChanged(MobileTradeViewType.addTrade),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      elevation: 4,
+      child: const Icon(Icons.add),
+    );
   }
 }
 

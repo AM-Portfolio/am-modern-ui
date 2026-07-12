@@ -40,7 +40,7 @@ class TradePortfolioDto {
       modifiedJson['losingTrades'] ??= metrics['losingTrades'];
       modifiedJson['openPositions'] ??= metrics['openPositions'];
       
-      modifiedJson['totalValue'] ??= metrics['totalValue'];
+      modifiedJson['totalValue'] ??= json['currentCapital'] ?? metrics['totalValue'];
       modifiedJson['totalGainLoss'] ??= metrics['netProfitLoss'];
       modifiedJson['totalGainLossPercentage'] ??= metrics['netProfitLossPercentage'];
       

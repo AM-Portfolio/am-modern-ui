@@ -70,16 +70,20 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
                        crossAxisAlignment: CrossAxisAlignment.start,
                        children: [
                           _buildBackButton(context),
-                          const SizedBox(height: 24),
-                          _buildDesktopInfoCard(context, statusColor, isProfit),
+                          if (_showDetails) ...[
+                            const SizedBox(height: 24),
+                            _buildDesktopInfoCard(context, statusColor, isProfit),
+                          ],
                        ],
                     ),
                  ),
                  Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                       _buildDesktopPnLCard(context, isProfit),
-                       const SizedBox(height: 24),
+                       if (_showDetails) ...[
+                         _buildDesktopPnLCard(context, isProfit),
+                         const SizedBox(height: 24),
+                       ],
                        _buildDetailsToggle(context),
                     ],
                  )

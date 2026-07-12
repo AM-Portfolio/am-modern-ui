@@ -40,6 +40,9 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   bool isLiveDataActive = false;
   bool _portfolioStreamingAllowed = false;
 
+  String? _loadingPortfolioId;
+  String? _loadedPortfolioId;
+
   /// When false (e.g. Dashboard tab active), skip STOMP portfolio interest registration.
   void setPortfolioStreamingAllowed(bool allowed) {
     if (_portfolioStreamingAllowed == allowed) return;
@@ -287,14 +290,23 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         tag: 'PortfolioCubit',
       );
 
-      // Use portfolio service to fetch data concurrently
-      final results = await Future.wait([
-        _portfolioService.getPortfolioHoldings(),
-        _portfolioService.getPortfolioSummary(),
-      ]);
+      // Progressive Loading: Fetch Summary first (Fast)
+      final summary = await _portfolioService.getPortfolioSummary();
 
-      final holdings = results[0] as PortfolioHoldings;
-      final summary = results[1] as PortfolioSummary;
+      if (!isClosed) {
+        emit(
+          PortfolioLoaded(
+            portfolioId: 'GLOBAL',
+            summary: summary,
+            holdings: const [],
+            portfolioList: state.portfolioList,
+            isHoldingsLoading: true,
+          ),
+        );
+      }
+
+      // Then fetch Holdings (Slow)
+      final holdings = await _portfolioService.getPortfolioHoldings();
 
       CommonLogger.stateChange(
         'PortfolioLoading',
@@ -313,6 +325,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
             summary: summary,
             holdings: holdings.holdings,
             portfolioList: state.portfolioList,
+            isHoldingsLoading: false,
           ),
         );
       }
@@ -350,8 +363,49 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     }
   }
 
+  /// Load merged data for all portfolios
+  Future<void> loadAllPortfolios() async {
+    CommonLogger.methodEntry('loadAllPortfolios', tag: 'PortfolioCubit');
+    if (!isClosed) {
+      emit(PortfolioLoading(portfolioList: state.portfolioList));
+    }
+
+    try {
+      final summary = await _portfolioService.getPortfolioSummary();
+      final holdings = await _portfolioService.getPortfolioHoldings();
+      
+      if (!isClosed) {
+        emit(
+          PortfolioLoaded(
+            portfolioId: 'all',
+            summary: summary,
+            holdings: holdings.holdings,
+            portfolioList: state.portfolioList,
+          ),
+        );
+      }
+    } catch (e) {
+      CommonLogger.error('loadAllPortfolios Error', error: e, tag: 'PortfolioCubit');
+      if (!isClosed) {
+        emit(PortfolioError(e.toString(), portfolioList: state.portfolioList));
+      }
+    }
+  }
+
   /// Load portfolio data for a specific portfolio ID
   Future<void> loadPortfolioById(String portfolioId) async {
+    if (_loadingPortfolioId == portfolioId) return;
+
+    final currentState = state;
+    if (_loadedPortfolioId == portfolioId &&
+        currentState is PortfolioLoaded &&
+        currentState.portfolioId == portfolioId &&
+        !currentState.isStale) {
+      return;
+    }
+
+    _loadingPortfolioId = portfolioId;
+
     CommonLogger.methodEntry(
       'loadPortfolioById',
       tag: 'PortfolioCubit',
@@ -381,12 +435,20 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         }
       } else {
         if (!isClosed) {
-          emit(PortfolioLoading(portfolioList: state.portfolioList));
+          if (state is PortfolioLoaded) {
+            emit((state as PortfolioLoaded).copyWith(isStale: true, isHoldingsLoading: true));
+          } else {
+            emit(PortfolioLoading(portfolioList: state.portfolioList));
+          }
         }
       }
     } catch (e) {
       if (!isClosed) {
-        emit(PortfolioLoading(portfolioList: state.portfolioList));
+        if (state is PortfolioLoaded) {
+          emit((state as PortfolioLoaded).copyWith(isStale: true, isHoldingsLoading: true));
+        } else {
+          emit(PortfolioLoading(portfolioList: state.portfolioList));
+        }
       }
     }
 
@@ -396,14 +458,23 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         tag: 'PortfolioCubit',
       );
 
-      // Use portfolio service to fetch data concurrently by portfolio ID
-      final results = await Future.wait([
-        _portfolioService.getPortfolioHoldingsById(portfolioId),
-        _portfolioService.getPortfolioSummaryById(portfolioId),
-      ]);
+      // Progressive Loading: Fetch Summary first (Fast)
+      final summary = await _portfolioService.getPortfolioSummaryById(portfolioId);
 
-      final holdings = results[0] as PortfolioHoldings;
-      final summary = results[1] as PortfolioSummary;
+      if (!isClosed) {
+        emit(
+          PortfolioLoaded(
+            portfolioId: portfolioId,
+            summary: summary,
+            holdings: const [],
+            portfolioList: state.portfolioList,
+            isHoldingsLoading: true,
+          ),
+        );
+      }
+
+      // Then fetch Holdings (Slow)
+      final holdings = await _portfolioService.getPortfolioHoldingsById(portfolioId);
 
       CommonLogger.stateChange(
         'PortfolioLoading',
@@ -416,12 +487,14 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       );
 
       if (!isClosed) {
+        _loadedPortfolioId = portfolioId;
         emit(
           PortfolioLoaded(
             portfolioId: portfolioId,
             summary: summary,
             holdings: holdings.holdings,
             portfolioList: state.portfolioList,
+            isHoldingsLoading: false,
           ),
         );
       }
@@ -456,6 +529,10 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         tag: 'PortfolioCubit',
         metadata: {'status': 'error'},
       );
+    } finally {
+      if (_loadingPortfolioId == portfolioId) {
+        _loadingPortfolioId = null;
+      }
     }
   }
 

@@ -437,7 +437,7 @@ class _CompactDateRangePickerDialogState extends State<CompactDateRangePickerDia
   Widget _buildCalendarGrid(ThemeData theme) {
       final year = _displayedMonth.year;
       final month = _displayedMonth.month;
-      final daysInMonth = DateTime(year, month + 1, 0).day;
+      final daysInMonth = DateUtils.getDaysInMonth(year, month);
       final firstDayWeekday = DateTime(year, month, 1).weekday % 7;
       final totalSlots = 42;
       

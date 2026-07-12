@@ -168,11 +168,43 @@ def resolve_package(pkg_name):
         
     return resolved
 
-def construct_dart_defines(env_vars):
+def parse_cli_args(argv):
+    """Split positional args and boot-trace flags from sys.argv[1:]."""
+    flags = set()
+    positional = []
+    for arg in argv:
+        if arg == "--boot-trace":
+            flags.add("boot_trace")
+        elif arg == "--no-boot-trace":
+            flags.add("no_boot_trace")
+        elif arg.startswith("-"):
+            print(f"[Error] Unknown option: {arg}")
+            sys.exit(1)
+        else:
+            positional.append(arg)
+    return positional, flags
+
+
+def resolve_boot_trace(env_vars, flags, action):
+    """Resolve boot trace: flags > AM_BOOT_TRACE env > default (on for run, off for build)."""
+    if "boot_trace" in flags:
+        return True
+    if "no_boot_trace" in flags:
+        return False
+    env_val = env_vars.get("AM_BOOT_TRACE", "").strip().lower()
+    if env_val in ("false", "0", "no"):
+        return False
+    if env_val in ("true", "1", "yes"):
+        return True
+    return action == "run"
+
+
+def construct_dart_defines(env_vars, boot_trace):
     defines = []
     for k, v in env_vars.items():
-        if k.startswith("AM_"):
+        if k.startswith("AM_") and k != "AM_BOOT_TRACE":
             defines.append(f"--dart-define={k}={v}")
+    defines.append(f"--dart-define=AM_BOOT_TRACE={'true' if boot_trace else 'false'}")
     return defines
 
 def get_web_port(package, env_vars):
@@ -181,29 +213,41 @@ def get_web_port(package, env_vars):
     base_package = package.replace("/live", "").replace("\\live", "")
     return DEFAULT_PORTS.get(base_package, "9000")
 
-def handle_run(pkg, env_name):
+def handle_run(pkg, env_name, flags):
     package = resolve_package(pkg)
     env_vars = load_env(env_name)
     env_vars['AM_ENV'] = env_name
-    defines = construct_dart_defines(env_vars)
-    
+    boot_trace = resolve_boot_trace(env_vars, flags, action="run")
+    defines = construct_dart_defines(env_vars, boot_trace)
+
     device = get_available_device()
     port = get_web_port(package, env_vars)
-    
+
+    launch_url = f"http://localhost:{port}/login"
+    if boot_trace:
+        launch_url += "?bootTrace=1"
+        print("[BootTrace] Enabled — console timing + summary after load")
+        print(f"[BootTrace] Launch URL: {launch_url}")
+
     cmd = [
         "flutter", "run", "-d", device,
         f"--web-port={port}",
         "--no-web-resources-cdn",
-        f"--web-launch-url=http://localhost:{port}/login",
+        f"--web-launch-url={launch_url}",
     ] + defines
     run_cmd(package, cmd, env_vars)
 
-def handle_build(pkg, env_name):
+
+def handle_build(pkg, env_name, flags):
     package = resolve_package(pkg)
     env_vars = load_env(env_name)
     env_vars['AM_ENV'] = env_name
-    defines = construct_dart_defines(env_vars)
-    
+    boot_trace = resolve_boot_trace(env_vars, flags, action="build")
+    defines = construct_dart_defines(env_vars, boot_trace)
+
+    if boot_trace:
+        print("[BootTrace] Enabled in release build — use ?bootTrace=1 in browser to view trace")
+
     cmd = ["flutter", "build", "web", "--release", "--no-wasm-dry-run", "--no-web-resources-cdn"] + defines
     run_cmd(package, cmd, env_vars)
 
@@ -271,23 +315,30 @@ def print_help():
     print("  get-all                   Run pub get in all modules")
     print("  gen-all                   Run build_runner in all modules")
     print("  test-all                  Run tests in all modules")
+    print("\nOptions:")
+    print("  --boot-trace              Enable startup timing trace (default: on for run, off for build)")
+    print("  --no-boot-trace           Disable startup timing trace")
+    print("  (or set AM_BOOT_TRACE=true|false in .env.<env>)")
     print("\nPackages:")
     print(f"  {', '.join(ALIAS_MAP.keys())}")
     print("\nEnvironments:")
     print("  local, dev, preprod, prod")
     print("\nExamples:")
     print("  python scripts/manage.py run app local")
-    print("  python scripts/manage.py run trade dev")
-    print("  python scripts/manage.py build app prod")
+    print("  python scripts/manage.py run app preprod --boot-trace")
+    print("  python scripts/manage.py run trade dev --no-boot-trace")
+    print("  python scripts/manage.py build app prod --boot-trace")
     print("  python scripts/manage.py gen common")
     sys.exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    positional, flags = parse_cli_args(sys.argv[1:])
+
+    if not positional:
         print_help()
-        
-    action = sys.argv[1].lower()
-    
+
+    action = positional[0].lower()
+
     if action == "clean-all":
         handle_clean_all()
     elif action == "get-all":
@@ -297,17 +348,17 @@ if __name__ == "__main__":
     elif action == "test-all":
         handle_test_all()
     else:
-        if len(sys.argv) < 3:
+        if len(positional) < 2:
             print(f"[Error] Action '{action}' requires a package name.")
             print_help()
-            
-        pkg = sys.argv[2]
-        env = sys.argv[3] if len(sys.argv) > 3 else "local"
-        
+
+        pkg = positional[1]
+        env = positional[2] if len(positional) > 2 else "local"
+
         if action == "run":
-            handle_run(pkg, env)
+            handle_run(pkg, env, flags)
         elif action == "build":
-            handle_build(pkg, env)
+            handle_build(pkg, env, flags)
         elif action == "clean":
             handle_clean(pkg)
         elif action == "get":

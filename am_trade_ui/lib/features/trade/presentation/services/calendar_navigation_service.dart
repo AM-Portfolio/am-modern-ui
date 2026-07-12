@@ -1,4 +1,5 @@
 import '../models/calendar_view_models.dart';
+import 'package:flutter/material.dart';
 
 /// Service for managing calendar view navigation and state transitions
 class CalendarNavigationService {
@@ -22,7 +23,7 @@ class CalendarNavigationService {
       throw StateError('Cannot navigate to daily view without selecting a month first');
     }
 
-    final daysInMonth = DateTime(currentState.year, currentState.month! + 1, 0).day;
+    final daysInMonth = DateUtils.getDaysInMonth(currentState.year, currentState.month!);
     if (day < 1 || day > daysInMonth) {
       throw ArgumentError('Day must be between 1 and $daysInMonth for the selected month');
     }

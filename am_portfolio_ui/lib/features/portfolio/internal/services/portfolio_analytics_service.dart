@@ -229,15 +229,12 @@ class PortfolioAnalyticsService {
         tag: 'PortfolioAnalyticsService',
       );
 
-      // Get both allocation types
-      final results = await Future.wait([
-        _getPortfolioAnalytics.getSectorAllocation(request),
-        _getPortfolioAnalytics.getMarketCapAllocation(request),
-      ]);
+      // Get both allocation types in a single backend call
+      final analytics = await _getPortfolioAnalytics(request);
 
       final allocationData = AllocationData(
-        sectorAllocation: results[0] as SectorAllocation?,
-        marketCapAllocation: results[1] as MarketCapAllocation?,
+        sectorAllocation: analytics.analytics.sectorAllocation,
+        marketCapAllocation: analytics.analytics.marketCapAllocation,
       );
 
       CommonLogger.info(
