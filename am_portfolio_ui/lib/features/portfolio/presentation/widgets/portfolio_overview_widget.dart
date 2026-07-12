@@ -34,6 +34,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
   static const _downSparkData = [16.0, 14.0, 15.0, 11.0, 9.0, 10.0, 7.0];
   static const _flatSparkData = [11.0, 12.0, 11.0, 13.0, 12.0, 13.0, 12.0];
 
+  double? _periodStartValue;
+  double? _periodEndValue;
+
   void _reloadAnalytics(ds.TimeFrame timeFrame) {
     if (widget.portfolioId != null) {
       try {
@@ -109,7 +112,13 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
   Widget build(BuildContext context) {
     final portfolioId = widget.portfolioId;
     ref.listen(appTimeFrameProvider, (previous, next) {
-      if (previous != next) _reloadAnalytics(next);
+      if (previous != next) {
+        setState(() {
+          _periodStartValue = null;
+          _periodEndValue = null;
+        });
+        _reloadAnalytics(next);
+      }
     });
     final selectedTimeFrame = ref.watch(appTimeFrameProvider);
     
@@ -285,15 +294,17 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              SizedBox(
-                                width: isMobile ? constraints.maxWidth - 32 : 550,
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: isMobile ? constraints.maxWidth - 32 : 550,
+                                ),
                                 child: ds.TimeFrameSelector(
                                   selectedTimeFrame: selectedTimeFrame,
                                   onTimeFrameChanged: (tf) {
                                     ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf);
                                   },
-                                  availableTimeFrames: ds.TimeFrame.webTimeFrames,
-                                  compact: false,
+                                  availableTimeFrames: ds.TimeFrame.chartTimeFrames,
+                                  compact: true,
                                 ),
                               ),
                             ],
@@ -351,6 +362,14 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                             portfolioId: portfolioId,
                             timeFrame: selectedTimeFrame,
                             height: 320,
+                            onPeriodStats: (start, end) {
+                              if (mounted) {
+                                setState(() {
+                                  _periodStartValue = start;
+                                  _periodEndValue = end;
+                                });
+                              }
+                            },
                           ),
                           const SizedBox(height: 16),
                           PortfolioTopMoversPanel(
@@ -360,7 +379,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                           ),
                           const SizedBox(height: 16),
                           SizedBox(
-                            height: isSmallMobile ? 480 : 520, // Increased to give the pie chart and list enough vertical space
+                            height: isSmallMobile ? 650 : 700, // Increased significantly so the sector list doesn't get clipped
                             child: BlocBuilder<PortfolioCubit, PortfolioState>(
                               builder: (context, portfolioState) {
                                 final holdings = portfolioState is PortfolioLoaded ? portfolioState.holdings : null;
@@ -393,6 +412,14 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                           _MoversAllocationRow(
                             portfolioId: portfolioId,
                             selectedTimeFrame: selectedTimeFrame,
+                            onPeriodStats: (start, end) {
+                              if (mounted) {
+                                setState(() {
+                                  _periodStartValue = start;
+                                  _periodEndValue = end;
+                                });
+                              }
+                            },
                           ),
                         const SizedBox(height: 20),
                       ],
@@ -413,26 +440,36 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
   /// Builds the 4 metric cards with real data from [state].
   List<Widget> _buildMetricCards(PortfolioLoaded state) {
     final summaryToUse = state.summary;
+    final selectedTimeFrame = ref.read(appTimeFrameProvider);
+
+    final bool hasPeriodData = _periodStartValue != null && _periodEndValue != null && _periodStartValue! > 0;
+    final double periodReturn = hasPeriodData
+        ? (_periodEndValue! - _periodStartValue!)
+        : summaryToUse.totalGainLoss;
+    final double periodReturnPct = hasPeriodData
+        ? (periodReturn / _periodStartValue!) * 100.0
+        : summaryToUse.totalGainLossPercentage;
+    final String periodLabel = hasPeriodData ? selectedTimeFrame.displayName : 'total';
 
     return [
       PortfolioMetricCard(
         title: 'Total Return',
-        value: _formatCurrency(summaryToUse.totalGainLoss),
+        value: _formatCurrency(periodReturn),
         subtitle:
-            '${summaryToUse.totalGainLossPercentage >= 0 ? "+" : ""}${summaryToUse.totalGainLossPercentage.toStringAsFixed(2)}% total',
-        accentColor: summaryToUse.totalGainLoss == 0
+            '${periodReturnPct >= 0 ? "+" : ""}${periodReturnPct.toStringAsFixed(2)}% in $periodLabel',
+        accentColor: periodReturn == 0
             ? Colors.grey
-            : (summaryToUse.totalGainLoss > 0
+            : (periodReturn > 0
                 ? const Color(0xFF00B894)
                 : const Color(0xFFFF7675)),
-        icon: summaryToUse.totalGainLoss >= 0
+        icon: periodReturn >= 0
             ? Icons.trending_up_rounded
             : Icons.trending_down_rounded,
-        isPositive: summaryToUse.totalGainLoss == 0
+        isPositive: periodReturn == 0
             ? null
-            : summaryToUse.totalGainLoss > 0,
+            : periodReturn > 0,
         glowBorder: true,
-        tooltip: 'Total unrealized profit or loss across all holdings',
+        tooltip: hasPeriodData ? 'Unrealized profit or loss in $periodLabel' : 'Total unrealized profit or loss across all holdings',
       ),
       PortfolioMetricCard(
         title: "Today's P&L",
@@ -458,7 +495,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         value: _formatCurrency(summaryToUse.totalValue),
         subtitle: '${summaryToUse.totalAssets} Active Holdings',
         accentColor: ds.AppColors.primary,
-        icon: Icons.account_balance_rounded,
+        icon: null,
         isPositive: null,
         glowBorder: false,
         tooltip:
@@ -469,9 +506,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         value: _formatCurrency(summaryToUse.investmentValue),
         subtitle: 'Total Principal',
         accentColor: ds.AppColors.info,
-        icon: Icons.paid_rounded,
+        icon: null,
         isPositive: null,
-        isHighlight: true,
+        isHighlight: false,
         glowBorder: false,
         tooltip: 'Total principal amount invested',
       ),
@@ -616,10 +653,12 @@ class _MoversAllocationRow extends StatefulWidget {
   const _MoversAllocationRow({
     required this.portfolioId,
     required this.selectedTimeFrame,
+    this.onPeriodStats,
   });
 
   final String portfolioId;
   final ds.TimeFrame selectedTimeFrame;
+  final void Function(double start, double end)? onPeriodStats;
 
   @override
   State<_MoversAllocationRow> createState() => _MoversAllocationRowState();
@@ -671,6 +710,7 @@ class _MoversAllocationRowState extends State<_MoversAllocationRow> {
                 portfolioId: widget.portfolioId,
                 timeFrame: widget.selectedTimeFrame,
                 height: 360,
+                onPeriodStats: widget.onPeriodStats,
               ),
               const SizedBox(height: 16),
               PortfolioTopMoversPanel(

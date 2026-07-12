@@ -27,14 +27,16 @@ class CalendarDayCell extends StatelessWidget {
     final hasData = dayData?.hasTrades ?? false;
     final service = colorService ?? CalendarColorService();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // Restore a slightly more intense background fill so the active dates stand out clearly,
     // using the base color with 0.15 opacity.
-    final backgroundColor = hasData ? service.getDayColor(dayData!, opacity: 0.15) : Colors.transparent;
+    final backgroundColor = hasData ? service.getDayColor(dayData!, opacity: 0.15, isDark: isDark) : Colors.transparent;
     final borderColor = hasData
-        ? service.getBorderColor(dayData!)
+        ? service.getBorderColor(dayData!, isDark: isDark)
         : Theme.of(context).colorScheme.outline.withOpacity(0.1);
     final textColor = hasData
-        ? service.getTextColor(dayData!)
+        ? service.getTextColor(dayData!, isDark: isDark)
         : Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
 
     final dayCell = Material(
@@ -48,7 +50,7 @@ class CalendarDayCell extends StatelessWidget {
               }
             : null,
         borderRadius: BorderRadius.circular(4),
-        hoverColor: hasData ? service.getDayColor(dayData!, opacity: 0.25) : Colors.grey.withOpacity(0.05),
+        hoverColor: hasData ? service.getDayColor(dayData!, opacity: 0.25, isDark: isDark) : Colors.grey.withOpacity(0.05),
         child: Container(
           height: compactMode ? 20 : 24,
           decoration: BoxDecoration(

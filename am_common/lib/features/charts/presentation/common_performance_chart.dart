@@ -69,75 +69,88 @@ class _CommonPerformanceChartState extends State<CommonPerformanceChart> {
     Widget content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Stack(
+            clipBehavior: Clip.none,
             children: [
-              Text(
-                widget.title,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              if (showToggle && !hasMultiLines)
-                AppSegmentedControl<ChartFormat>(
-                  selectedValue: activeFormat,
-                  children: {
-                    ChartFormat.primary: widget.primaryToggleLabel,
-                    ChartFormat.secondary: widget.secondaryToggleLabel,
-                  },
-                  onValueChanged: (val) {
-                    if (widget.onFormatChanged != null) {
-                      widget.onFormatChanged!(val);
-                    } else {
-                      setState(() => _internalFormat = val);
+              Padding(
+                padding: EdgeInsets.only(top: showToggle ? 40.0 : 16.0, right: 0.0), // Added spacing here!
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final double calculatedWidth = dataLength * widget.minPointWidth;
+                    final bool needsScroll = widget.enableScrolling && (calculatedWidth > constraints.maxWidth);
+                    
+                    final double chartWidth = needsScroll ? calculatedWidth : constraints.maxWidth;
+
+                    Widget chartWidget = SizedBox(
+                      width: chartWidth,
+                      height: widget.height,
+                      child: widget.isAreaChart 
+                        ? ChartFactory.area(
+                            data: activeData,
+                            lines: widget.lines,
+                            config: widget.config ?? CommonChartConfig(
+                              showGrid: widget.showGrid,
+                              showTitles: true,
+                              showLegend: false,
+                              showTooltips: true,
+                            ),
+                            color: widget.chartColor ?? AppColors.primary,
+                          )
+                        : ChartFactory.line(
+                            data: activeData,
+                            lines: widget.lines,
+                            config: widget.config ?? CommonChartConfig(
+                              showGrid: widget.showGrid,
+                              showTitles: true,
+                              showLegend: false,
+                              showTooltips: true,
+                            ),
+                            color: widget.chartColor ?? AppColors.primary,
+                          ),
+                    );
+
+                    if (needsScroll) {
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: chartWidget,
+                      );
                     }
+
+                    return chartWidget;
                   },
                 ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final double calculatedWidth = dataLength * widget.minPointWidth;
-              final bool needsScroll = widget.enableScrolling && (calculatedWidth > constraints.maxWidth);
-              
-              final double chartWidth = needsScroll ? calculatedWidth : constraints.maxWidth;
-
-              Widget chartWidget = SizedBox(
-                width: chartWidth,
-                height: widget.height,
-                child: widget.isAreaChart 
-                  ? ChartFactory.area(
-                      data: activeData,
-                      lines: widget.lines,
-                      config: widget.config ?? CommonChartConfig(
-                        showGrid: widget.showGrid,
-                        showTitles: true,
-                        showLegend: false,
-                        showTooltips: true,
-                      ),
-                      color: widget.chartColor ?? AppColors.primary,
-                    )
-                  : ChartFactory.line(
-                      data: activeData,
-                      lines: widget.lines,
-                      config: widget.config ?? CommonChartConfig(
-                        showGrid: widget.showGrid,
-                        showTitles: true,
-                        showLegend: false,
-                        showTooltips: true,
-                      ),
-                      color: widget.chartColor ?? AppColors.primary,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (widget.title.isNotEmpty)
+                    Text(
+                      widget.title,
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-              );
-
-              if (needsScroll) {
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: chartWidget,
-                );
-              }
-
-              return chartWidget;
-            },
+                ],
+              ),
+              if (showToggle && !hasMultiLines)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: AppSegmentedControl<ChartFormat>(
+                    selectedValue: activeFormat,
+                    children: {
+                      ChartFormat.primary: widget.primaryToggleLabel,
+                      ChartFormat.secondary: widget.secondaryToggleLabel,
+                    },
+                    onValueChanged: (val) {
+                      if (widget.onFormatChanged != null) {
+                        widget.onFormatChanged!(val);
+                      } else {
+                        setState(() => _internalFormat = val);
+                      }
+                    },
+                  ),
+                ),
+            ],
           ),
           if (hasMultiLines) ...[
             const SizedBox(height: 12),
