@@ -64,3 +64,4 @@ flutter:
     - assets/application.properties
     - assets/mock_data/trade/trade_portfolios.json
     - assets/mock_data/trade/holdings/trade_holdings.json
+    - assets/mock_data/trade/calendar/
