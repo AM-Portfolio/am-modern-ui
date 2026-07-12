@@ -1,6 +1,8 @@
 import 'package:am_market_ui/core/providers/view_mode_provider.dart' as view_mode;
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/pages/analysis_page.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 
@@ -43,6 +45,10 @@ class MarketPage extends StatelessWidget {
   Widget build(BuildContext context) {
     CommonLogger.methodEntry('build', tag: 'MarketPage');
 
+    final authState = context.watch<AuthCubit>().state;
+    final isAdmin = authState is Authenticated && authState.user.isAdmin;
+    final tab = _effectiveMarketTab(initialTab, isAdmin: isAdmin);
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -62,12 +68,13 @@ class MarketPage extends StatelessWidget {
           },
         ),
         ChangeNotifierProvider(
-          create: (_) => view_mode.ViewModeProvider(),
+          create: (_) => view_mode.ViewModeProvider(lockToUserMode: !isAdmin),
         ),
       ],
       child: MarketContent(
         userId: userId,
-        initialTab: initialTab,
+        initialTab: tab,
+        isAdmin: isAdmin,
         onTabChanged: onTabChanged,
         onBack: onBack,
       ),
@@ -75,17 +82,34 @@ class MarketPage extends StatelessWidget {
   }
 }
 
+String _effectiveMarketTab(String tab, {required bool isAdmin}) {
+  if (isAdmin) return tab;
+  const developerOnly = {
+    'streamer',
+    'price-test',
+    'admin',
+    'developer-dashboard',
+    'instrument-explorer',
+    'security-explorer',
+    'etf-explorer',
+  };
+  if (developerOnly.contains(tab)) return 'dashboard';
+  return tab;
+}
+
 class MarketContent extends ConsumerStatefulWidget {
   const MarketContent({
     required this.userId,
     super.key,
     this.initialTab = 'all-indices',
+    this.isAdmin = false,
     this.onTabChanged,
     this.onBack,
   });
 
   final String userId;
   final String initialTab;
+  final bool isAdmin;
   final ValueChanged<String>? onTabChanged;
   final VoidCallback? onBack;
 
@@ -377,20 +401,21 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       },
     );
 
-    // Add mode toggle as first section (using section's customWidget)
-    final modeToggleSection = SecondarySidebarSection(
-      title: '',
-      items: [], // Empty items since we're using customWidget
-      customWidget: const ModeToggleWidget(),
-    );
-
-    return [
-      modeToggleSection,
+    // Add mode toggle as first section (admin only)
+    final sections = <SecondarySidebarSection>[
+      if (widget.isAdmin)
+        const SecondarySidebarSection(
+          title: '',
+          items: [],
+          customWidget: ModeToggleWidget(),
+        ),
       SecondarySidebarSection(title: 'Data', items: mainItems),
       if (indexItems.isNotEmpty)
         SecondarySidebarSection(title: 'Major Ind ices', items: indexItems),
       SecondarySidebarSection(title: 'System Tools', items: [adminItem, developerItem]),
     ];
+
+    return sections;
   }
 
   // User Mode - Simplified Navigation (Dashboard, Overview, Heatmap)
@@ -403,15 +428,13 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       _createSidebarItem(1, 'Market Analysis', Icons.analytics_rounded, 'Detailed charts'),
     ];
 
-    // Mode toggle at the top
-    final modeToggleSection = SecondarySidebarSection(
-      title: '',
-      items: [],
-      customWidget: const ModeToggleWidget(),
-    );
-
     return [
-      modeToggleSection,
+      if (widget.isAdmin)
+        const SecondarySidebarSection(
+          title: '',
+          items: [],
+          customWidget: ModeToggleWidget(),
+        ),
       SecondarySidebarSection(title: 'Navigation', items: userItems),
     ];
   }

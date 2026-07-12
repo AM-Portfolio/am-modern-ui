@@ -58,9 +58,11 @@ GoRouter createAppRouter({
         return AppRoutes.dashboard;
       }
 
-      // Global Analysis module is admin-only.
+      // Global Analysis + AI Chat are admin-only.
       if (location == AppRoutes.analysis ||
-          location.startsWith('${AppRoutes.analysis}/')) {
+          location.startsWith('${AppRoutes.analysis}/') ||
+          location == AppRoutes.aiChat ||
+          location.startsWith('${AppRoutes.aiChat}/')) {
         final isAdmin =
             authState is Authenticated && authState.user.isAdmin;
         if (!isAdmin) return AppRoutes.dashboard;
@@ -128,7 +130,15 @@ GoRouter createAppRouter({
       ),
       GoRoute(
         path: AppRoutes.resetPassword,
-        builder: (context, state) => const ResetPasswordPage(),
+        builder: (context, state) => ResetPasswordPage(
+          resetToken: state.uri.queryParameters['token'],
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.verifyEmail,
+        builder: (context, state) => VerifyEmailPage(
+          token: state.uri.queryParameters['token'],
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),

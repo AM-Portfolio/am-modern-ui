@@ -36,4 +36,19 @@ abstract class AuthRepository {
 
   /// Get current user
   Future<Either<Failure, AuthResultEntity?>> getCurrentUser();
+
+  /// Request password reset email (always succeeds from caller POV).
+  Future<Either<Failure, void>> requestPasswordReset(String email);
+
+  /// Confirm password reset with mail token.
+  Future<Either<Failure, void>> confirmPasswordReset({
+    required String token,
+    required String newPassword,
+  });
+
+  /// Confirm email verification with mail token.
+  Future<Either<Failure, void>> confirmVerifyEmail(String token);
+
+  /// Resend verification email (always succeeds from caller POV).
+  Future<Either<Failure, void>> resendVerifyEmail(String email);
 }

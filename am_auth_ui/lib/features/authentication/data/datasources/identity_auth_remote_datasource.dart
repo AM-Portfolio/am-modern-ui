@@ -262,9 +262,11 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // am-identity registration returns user status, not tokens.
-        // We log in immediately to return AuthResultModel with tokens.
-        return emailLogin(email, password);
+        // Email verification is required — do not auto-login (Keycloak required action).
+        throw ServerException(
+          'Check your email to verify your Asrax account before signing in.',
+          statusCode: 201,
+        );
       } else {
         throw ServerException(
           'Registration failed',
@@ -306,5 +308,81 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
   @override
   Future<bool> isAuthenticated() async {
     return true;
+  }
+
+  Future<void> requestPasswordReset(String email) async {
+    await _postAccepted(
+      AuthEndpoints.identityPasswordReset,
+      {'email': email},
+      action: 'Password reset request',
+    );
+  }
+
+  Future<void> confirmPasswordReset({
+    required String token,
+    required String newPassword,
+  }) async {
+    await _postAccepted(
+      AuthEndpoints.identityPasswordResetConfirm,
+      {'token': token, 'new_password': newPassword},
+      action: 'Password reset confirm',
+      acceptCodes: const {200},
+    );
+  }
+
+  Future<void> confirmVerifyEmail(String token) async {
+    await _postAccepted(
+      AuthEndpoints.identityVerifyEmailConfirm,
+      {'token': token},
+      action: 'Verify email confirm',
+      acceptCodes: const {200},
+    );
+  }
+
+  Future<void> resendVerifyEmail(String email) async {
+    await _postAccepted(
+      AuthEndpoints.identityVerifyEmailResend,
+      {'email': email},
+      action: 'Verify email resend',
+    );
+  }
+
+  Future<void> _postAccepted(
+    String url,
+    Map<String, dynamic> data, {
+    required String action,
+    Set<int> acceptCodes = const {202, 200},
+  }) async {
+    try {
+      final response = await _dio.post(
+        url,
+        data: data,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      if (!acceptCodes.contains(response.statusCode)) {
+        throw ServerException(
+          '$action failed',
+          statusCode: response.statusCode ?? 500,
+        );
+      }
+    } on DioException catch (e) {
+      AppLogger.error('Identity $action API Error: ${e.response?.data}');
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout) {
+        throw NetworkException(AuthConstants.networkError);
+      }
+      var errorMessage = '$action failed';
+      final body = e.response?.data;
+      if (body is Map) {
+        final detail = body['detail'];
+        if (detail != null) {
+          errorMessage = detail.toString();
+        }
+      }
+      throw ServerException(
+        errorMessage,
+        statusCode: e.response?.statusCode ?? 500,
+      );
+    }
   }
 }

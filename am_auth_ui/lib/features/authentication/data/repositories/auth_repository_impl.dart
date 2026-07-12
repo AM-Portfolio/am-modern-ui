@@ -417,7 +417,10 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   UserEntity _userWithRolesFromToken(UserEntity user, String accessToken) {
-    final roles = TokenExtractor.extractRoles(accessToken);
+    final roles = <String>[
+      ...TokenExtractor.extractRoles(accessToken),
+      ...TokenExtractor.extractScopes(accessToken),
+    ];
     return user.copyWith(roles: roles);
   }
 
@@ -429,6 +432,84 @@ class AuthRepositoryImpl implements AuthRepository {
   static bool _isInvalidSessionStatus(String? code) {
     final status = int.tryParse(code ?? '');
     return status == 401 || status == 403;
+  }
+
+  @override
+  Future<Either<Failure, void>> requestPasswordReset(String email) async {
+    try {
+      if (!_featureFlags.useRealBackendAPI) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        return const Right(null);
+      }
+      await _identityDataSource.requestPasswordReset(email);
+      return const Right(null);
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message, code: e.statusCode.toString()));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> confirmPasswordReset({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      if (!_featureFlags.useRealBackendAPI) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        return const Right(null);
+      }
+      await _identityDataSource.confirmPasswordReset(
+        token: token,
+        newPassword: newPassword,
+      );
+      return const Right(null);
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message, code: e.statusCode.toString()));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> confirmVerifyEmail(String token) async {
+    try {
+      if (!_featureFlags.useRealBackendAPI) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        return const Right(null);
+      }
+      await _identityDataSource.confirmVerifyEmail(token);
+      return const Right(null);
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message, code: e.statusCode.toString()));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> resendVerifyEmail(String email) async {
+    try {
+      if (!_featureFlags.useRealBackendAPI) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        return const Right(null);
+      }
+      await _identityDataSource.resendVerifyEmail(email);
+      return const Right(null);
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message, code: e.statusCode.toString()));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
   }
 }
 

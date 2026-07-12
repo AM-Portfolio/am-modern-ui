@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:am_design_system/core/constants/app_config.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
@@ -32,7 +33,7 @@ class ResetPasswordPage extends StatelessWidget {
                   backgroundColor: AppColors.success,
                 ),
               );
-              Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+              context.go('/login');
             } else if (state is AuthError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
@@ -194,23 +195,23 @@ class _ResetPasswordPageFormState extends State<ResetPasswordPageForm> {
         ),
         const SizedBox(height: 32),
 
-        // Reset Token
-        TextFormField(
-          controller: _tokenController,
-          decoration: const InputDecoration(
-            labelText: 'Reset Token',
-            prefixIcon: Icon(Icons.vpn_key),
-            border: OutlineInputBorder(),
-            hintText: 'Enter token from email',
+        if (widget.resetToken == null || widget.resetToken!.isEmpty) ...[
+          TextFormField(
+            controller: _tokenController,
+            decoration: const InputDecoration(
+              labelText: 'Reset Token',
+              prefixIcon: Icon(Icons.vpn_key_outlined),
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Reset token is required';
+              }
+              return null;
+            },
           ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter the reset token';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
+        ],
 
         // New Password
         TextFormField(

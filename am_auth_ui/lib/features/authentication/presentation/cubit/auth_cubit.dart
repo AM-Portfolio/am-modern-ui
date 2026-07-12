@@ -4,6 +4,7 @@ import 'package:am_common/am_common.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/check_auth_status_usecase.dart';
 import '../../domain/usecases/demo_login_usecase.dart';
 import '../../domain/usecases/email_login_usecase.dart';
@@ -23,6 +24,7 @@ class AuthCubit extends Cubit<AuthState> {
     required CheckAuthStatusUseCase checkAuthStatusUseCase,
     required GetCurrentUserUseCase getCurrentUserUseCase,
     required RegisterUseCase registerUseCase,
+    required AuthRepository authRepository,
   }) : _emailLoginUseCase = emailLoginUseCase,
        _googleLoginUseCase = googleLoginUseCase,
        _demoLoginUseCase = demoLoginUseCase,
@@ -30,6 +32,7 @@ class AuthCubit extends Cubit<AuthState> {
        _checkAuthStatusUseCase = checkAuthStatusUseCase,
        _getCurrentUserUseCase = getCurrentUserUseCase,
        _registerUseCase = registerUseCase,
+       _authRepository = authRepository,
        super(const AuthInitial());
   final EmailLoginUseCase _emailLoginUseCase;
   final GoogleLoginUseCase _googleLoginUseCase;
@@ -38,6 +41,7 @@ class AuthCubit extends Cubit<AuthState> {
   final CheckAuthStatusUseCase _checkAuthStatusUseCase;
   final GetCurrentUserUseCase _getCurrentUserUseCase;
   final RegisterUseCase _registerUseCase;
+  final AuthRepository _authRepository;
 
   /// Login with email and password
   Future<void> loginWithEmail(
@@ -231,7 +235,13 @@ class AuthCubit extends Cubit<AuthState> {
       );
 
       result.fold(
-        (failure) => emit(AuthError(failure.message)),
+        (failure) {
+          if (failure is ServerFailure && failure.code == '201') {
+            emit(RegisterPendingVerification(email));
+            return;
+          }
+          emit(AuthError(failure.message));
+        },
         (authResult) => emit(Authenticated(authResult.user)),
       );
     } catch (e) {
@@ -241,18 +251,25 @@ class AuthCubit extends Cubit<AuthState> {
 
   /// Request password reset
   Future<void> forgotPassword(String email) async {
+    final previous = state;
     emit(const AuthLoading());
 
     try {
-      // TODO: Implement forgot password with proper use case integration
-      // Critical: Do not emit false success without backend verification
-      emit(
-        const AuthError(
-          'Password reset feature is not yet fully implemented. Please contact support to reset your password.',
-        ),
+      final result = await _authRepository.requestPasswordReset(email);
+      result.fold(
+        (failure) {
+          emit(AuthError(failure.message));
+          if (previous is Authenticated) {
+            emit(previous);
+          }
+        },
+        (_) => emit(const PasswordResetEmailSent()),
       );
     } catch (e) {
       emit(AuthError(e.toString()));
+      if (previous is Authenticated) {
+        emit(previous);
+      }
     }
   }
 
@@ -262,18 +279,56 @@ class AuthCubit extends Cubit<AuthState> {
     required String newPassword,
     required String confirmPassword,
   }) async {
+    if (newPassword != confirmPassword) {
+      emit(const AuthError('Passwords do not match'));
+      return;
+    }
+
+    final previous = state;
     emit(const AuthLoading());
 
     try {
-      // TODO: Implement reset password with proper use case integration
-      // Critical: Do not emit false success without backend verification
-      emit(
-        const AuthError(
-          'Password reset feature is not yet fully implemented. Please contact support to reset your password.',
-        ),
+      final result = await _authRepository.confirmPasswordReset(
+        token: resetToken,
+        newPassword: newPassword,
+      );
+      result.fold(
+        (failure) {
+          emit(AuthError(failure.message));
+          if (previous is Authenticated) {
+            emit(previous);
+          }
+        },
+        (_) => emit(const PasswordResetSuccess()),
       );
     } catch (e) {
       emit(AuthError(e.toString()));
+      if (previous is Authenticated) {
+        emit(previous);
+      }
+    }
+  }
+
+  /// Confirm email verification from deep link token.
+  Future<void> confirmVerifyEmail(String token) async {
+    final previous = state;
+    emit(const AuthLoading());
+    try {
+      final result = await _authRepository.confirmVerifyEmail(token);
+      result.fold(
+        (failure) {
+          emit(AuthError(failure.message));
+          if (previous is Authenticated) {
+            emit(previous);
+          }
+        },
+        (_) => emit(const EmailVerificationSuccess()),
+      );
+    } catch (e) {
+      emit(AuthError(e.toString()));
+      if (previous is Authenticated) {
+        emit(previous);
+      }
     }
   }
 }
