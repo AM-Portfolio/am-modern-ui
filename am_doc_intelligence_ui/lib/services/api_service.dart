@@ -136,12 +136,21 @@ class ApiService {
 
   Future<bool> checkDocProcessorHealth() async {
     // /documents/types is a public endpoint — no auth header needed.
-    // Using a plain http.get avoids false-offline status caused by expired JWT tokens.
+    // Must use withCredentials=true to match the server's CORS policy:
+    // The server responds with Access-Control-Allow-Credentials: true and
+    // a specific origin (not wildcard *). If withCredentials=false, the
+    // browser blocks the response even on 200 OK, causing false-offline status.
     final url = '$_docBase/documents/types';
     debugPrint('[ApiService] Health -> GET $url');
     try {
-      final client = _makeClient();
-      final response = await client.get(Uri.parse(url))
+      http.Client client;
+      if (kIsWeb) {
+        client = BrowserClient()..withCredentials = true;
+      } else {
+        client = http.Client();
+      }
+      final response = await client
+          .get(Uri.parse(url))
           .timeout(const Duration(seconds: 5));
       client.close();
       debugPrint('[ApiService] Health status: ${response.statusCode}');
