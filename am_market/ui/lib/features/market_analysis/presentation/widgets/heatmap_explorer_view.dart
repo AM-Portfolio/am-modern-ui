@@ -249,7 +249,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                         _buildQuickActionChip(provider, "MIDCAP", "NIFTY MIDCAP 50"),
                         _buildQuickActionChip(provider, "INDIA VIX", "INDIA VIX"),
                         _buildQuickActionChip(provider, "NIFTY 50", "NIFTY 50"),
-                        _buildQuickActionChip(provider, "SMALL CAP", "NIFTY SMALLCAP 50"),
+                        _buildQuickActionChip(provider, "SMALL CAP", "NIFTY SMLCAP 50"),
                       ],
                     ),
                   )
