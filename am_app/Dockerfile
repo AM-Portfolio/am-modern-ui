@@ -32,8 +32,19 @@ RUN for d in am_common am_design_system am_market/common am_analysis/common am_m
 
 # ── BUILD SCRIPTS + ENV ───────────────────────────────────────────────────
 COPY scripts/inject_build_id.sh scripts/docker_build_web.sh /app/scripts/
-# .env.preprod is gitignored locally; CI uses the committed example file.
-COPY .env.preprod.example /app/.env.preprod
+# Copy all env example files so the correct one can be selected per TARGET_ENV
+COPY .env.preprod.example /app/.env.preprod.example
+COPY .env.dev.example /app/.env.dev.example
+
+# TARGET_ENV controls which environment to build for (dev | preprod | prod)
+ARG TARGET_ENV=preprod
+RUN if [ -f "/app/.env.${TARGET_ENV}.example" ]; then \
+      cp "/app/.env.${TARGET_ENV}.example" /app/.env.preprod && \
+      echo "[Dockerfile] Using .env.${TARGET_ENV}.example for build"; \
+    else \
+      cp "/app/.env.preprod.example" /app/.env.preprod && \
+      echo "[Dockerfile] WARN: .env.${TARGET_ENV}.example not found, falling back to preprod"; \
+    fi
 
 # ── MAIN APPLICATION ─────────────────────────────────────────────────────
 COPY am_app/pubspec.* ./am_app/
