@@ -14,11 +14,12 @@ import '../widgets/app_header_widget.dart';
 import '../widgets/glass_card_widget.dart';
 import '../widgets/theme_toggle_widget.dart';
 
-/// Confirms email verification from `?token=` deep link.
+/// Confirms email verification from `?c=` (preferred) or `?token=` deep link.
 class VerifyEmailPage extends StatefulWidget {
-  const VerifyEmailPage({super.key, this.token});
+  const VerifyEmailPage({super.key, this.token, this.code});
 
   final String? token;
+  final String? code;
 
   @override
   State<VerifyEmailPage> createState() => _VerifyEmailPageState();
@@ -27,24 +28,37 @@ class VerifyEmailPage extends StatefulWidget {
 class _VerifyEmailPageState extends State<VerifyEmailPage> {
   var _started = false;
 
+  String? get _code {
+    final c = widget.code?.trim();
+    return (c != null && c.isNotEmpty) ? c : null;
+  }
+
+  String? get _token {
+    final t = widget.token?.trim();
+    return (t != null && t.isNotEmpty) ? t : null;
+  }
+
+  bool get _hasCredential => _code != null || _token != null;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    final token = widget.token?.trim() ?? '';
-    if (token.isEmpty) {
+    if (!_hasCredential) {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<AuthCubit>().confirmVerifyEmail(token);
+      context.read<AuthCubit>().confirmVerifyEmail(
+            token: _code == null ? _token : null,
+            code: _code,
+          );
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final token = widget.token?.trim() ?? '';
     return Scaffold(
       body: SafeArea(
         child: BlocConsumer<AuthCubit, AuthState>(
@@ -72,8 +86,8 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                   builder: (context, constraints) {
                     final isCompact = constraints.maxWidth < 600;
                     String message;
-                    if (token.isEmpty) {
-                      message = 'This verification link is missing a token.';
+                    if (!_hasCredential) {
+                      message = 'This verification link is incomplete.';
                     } else if (state is EmailVerificationSuccess) {
                       message = 'Your Asrax email is verified.';
                     } else if (state is AuthError) {
@@ -150,7 +164,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                                       ),
                                       const SizedBox(height: 16),
                                       if (state is AuthLoading ||
-                                          (token.isNotEmpty &&
+                                          (_hasCredential &&
                                               state is! EmailVerificationSuccess &&
                                               state is! AuthError))
                                         const Center(

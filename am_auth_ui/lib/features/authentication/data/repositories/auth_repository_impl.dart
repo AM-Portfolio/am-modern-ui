@@ -454,7 +454,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, void>> confirmPasswordReset({
-    required String token,
+    String? token,
+    String? code,
     required String newPassword,
   }) async {
     try {
@@ -464,6 +465,7 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       await _identityDataSource.confirmPasswordReset(
         token: token,
+        code: code,
         newPassword: newPassword,
       );
       return const Right(null);
@@ -477,13 +479,16 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, void>> confirmVerifyEmail(String token) async {
+  Future<Either<Failure, void>> confirmVerifyEmail({
+    String? token,
+    String? code,
+  }) async {
     try {
       if (!_featureFlags.useRealBackendAPI) {
         await Future<void>.delayed(const Duration(milliseconds: 400));
         return const Right(null);
       }
-      await _identityDataSource.confirmVerifyEmail(token);
+      await _identityDataSource.confirmVerifyEmail(token: token, code: code);
       return const Right(null);
     } on NetworkException catch (e) {
       return Left(NetworkFailure(e.message));

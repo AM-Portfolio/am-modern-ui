@@ -404,14 +404,14 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     // Add mode toggle as first section (admin only)
     final sections = <SecondarySidebarSection>[
       if (widget.isAdmin)
-        const SecondarySidebarSection(
+        SecondarySidebarSection(
           title: '',
-          items: [],
-          customWidget: ModeToggleWidget(),
+          items: const [],
+          customWidget: const ModeToggleWidget(),
         ),
       SecondarySidebarSection(title: 'Data', items: mainItems),
       if (indexItems.isNotEmpty)
-        SecondarySidebarSection(title: 'Major Ind ices', items: indexItems),
+        SecondarySidebarSection(title: 'Major Indices', items: indexItems),
       SecondarySidebarSection(title: 'System Tools', items: [adminItem, developerItem]),
     ];
 
@@ -430,10 +430,10 @@ class _MarketContentState extends ConsumerState<MarketContent> {
 
     return [
       if (widget.isAdmin)
-        const SecondarySidebarSection(
+        SecondarySidebarSection(
           title: '',
-          items: [],
-          customWidget: ModeToggleWidget(),
+          items: const [],
+          customWidget: const ModeToggleWidget(),
         ),
       SecondarySidebarSection(title: 'Navigation', items: userItems),
     ];

@@ -319,21 +319,38 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
   }
 
   Future<void> confirmPasswordReset({
-    required String token,
+    String? token,
+    String? code,
     required String newPassword,
   }) async {
+    final body = <String, dynamic>{'new_password': newPassword};
+    final trimmedCode = code?.trim();
+    final trimmedToken = token?.trim();
+    if (trimmedCode != null && trimmedCode.isNotEmpty) {
+      body['code'] = trimmedCode;
+    } else if (trimmedToken != null && trimmedToken.isNotEmpty) {
+      body['token'] = trimmedToken;
+    }
     await _postAccepted(
       AuthEndpoints.identityPasswordResetConfirm,
-      {'token': token, 'new_password': newPassword},
+      body,
       action: 'Password reset confirm',
       acceptCodes: const {200},
     );
   }
 
-  Future<void> confirmVerifyEmail(String token) async {
+  Future<void> confirmVerifyEmail({String? token, String? code}) async {
+    final body = <String, dynamic>{};
+    final trimmedCode = code?.trim();
+    final trimmedToken = token?.trim();
+    if (trimmedCode != null && trimmedCode.isNotEmpty) {
+      body['code'] = trimmedCode;
+    } else if (trimmedToken != null && trimmedToken.isNotEmpty) {
+      body['token'] = trimmedToken;
+    }
     await _postAccepted(
       AuthEndpoints.identityVerifyEmailConfirm,
-      {'token': token},
+      body,
       action: 'Verify email confirm',
       acceptCodes: const {200},
     );

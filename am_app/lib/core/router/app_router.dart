@@ -132,12 +132,14 @@ GoRouter createAppRouter({
         path: AppRoutes.resetPassword,
         builder: (context, state) => ResetPasswordPage(
           resetToken: state.uri.queryParameters['token'],
+          resetCode: state.uri.queryParameters['c'],
         ),
       ),
       GoRoute(
         path: AppRoutes.verifyEmail,
         builder: (context, state) => VerifyEmailPage(
           token: state.uri.queryParameters['token'],
+          code: state.uri.queryParameters['c'],
         ),
       ),
       ShellRoute(

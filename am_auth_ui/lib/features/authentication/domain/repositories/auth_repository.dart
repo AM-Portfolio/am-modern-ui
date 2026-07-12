@@ -40,14 +40,18 @@ abstract class AuthRepository {
   /// Request password reset email (always succeeds from caller POV).
   Future<Either<Failure, void>> requestPasswordReset(String email);
 
-  /// Confirm password reset with mail token.
+  /// Confirm password reset with mail token or short code.
   Future<Either<Failure, void>> confirmPasswordReset({
-    required String token,
+    String? token,
+    String? code,
     required String newPassword,
   });
 
-  /// Confirm email verification with mail token.
-  Future<Either<Failure, void>> confirmVerifyEmail(String token);
+  /// Confirm email verification with mail token or short code.
+  Future<Either<Failure, void>> confirmVerifyEmail({
+    String? token,
+    String? code,
+  });
 
   /// Resend verification email (always succeeds from caller POV).
   Future<Either<Failure, void>> resendVerifyEmail(String email);

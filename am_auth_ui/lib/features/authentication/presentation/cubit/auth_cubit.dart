@@ -273,9 +273,10 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  /// Reset password with token
+  /// Reset password with short mail code or legacy HMAC token.
   Future<void> resetPassword({
-    required String resetToken,
+    String? resetToken,
+    String? resetCode,
     required String newPassword,
     required String confirmPassword,
   }) async {
@@ -290,6 +291,7 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final result = await _authRepository.confirmPasswordReset(
         token: resetToken,
+        code: resetCode,
         newPassword: newPassword,
       );
       result.fold(
@@ -309,12 +311,15 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  /// Confirm email verification from deep link token.
-  Future<void> confirmVerifyEmail(String token) async {
+  /// Confirm email verification from deep link code or token.
+  Future<void> confirmVerifyEmail({String? token, String? code}) async {
     final previous = state;
     emit(const AuthLoading());
     try {
-      final result = await _authRepository.confirmVerifyEmail(token);
+      final result = await _authRepository.confirmVerifyEmail(
+        token: token,
+        code: code,
+      );
       result.fold(
         (failure) {
           emit(AuthError(failure.message));
