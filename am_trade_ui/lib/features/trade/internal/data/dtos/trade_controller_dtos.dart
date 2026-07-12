@@ -362,6 +362,7 @@ class TradeDetailsDto {
     this.symbol,
     this.strategy,
     this.exitInfo,
+    this.currentPrice,
     this.metrics,
     this.tradeExecutions,
     this.notes,
@@ -388,6 +389,7 @@ class TradeDetailsDto {
   final TradeDirections tradePositionType;
   final EntryExitInfoDto entryInfo;
   final EntryExitInfoDto? exitInfo;
+  final double? currentPrice;
   final TradeMetricsDto? metrics;
   final List<TradeModelDto>? tradeExecutions;
   final String? notes;

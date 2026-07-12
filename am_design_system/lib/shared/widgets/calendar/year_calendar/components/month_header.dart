@@ -12,6 +12,8 @@ class MonthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // Universal robust layout to prevent cramping in grid view
     if (stats['totalTrades'] == 0) {
       return Text(
@@ -49,11 +51,13 @@ class MonthHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '\$${stats['totalPnL'] >= 0 ? '+' : ''}${stats['totalPnL'].toStringAsFixed(0)}',
+                    '₹${stats['totalPnL'] >= 0 ? '+' : ''}${stats['totalPnL'].toStringAsFixed(0)}',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: stats['totalPnL'] >= 0 ? Colors.greenAccent : Colors.redAccent,
+                      color: stats['totalPnL'] >= 0 
+                          ? (isDark ? Colors.greenAccent : Colors.green.shade800) 
+                          : (isDark ? Colors.redAccent : Colors.red.shade800),
                     ),
                   ),
                 ],
@@ -66,13 +70,13 @@ class MonthHeader extends StatelessWidget {
           spacing: 12,
           runSpacing: 6,
           children: [
-            _buildIconStat(context, Icons.calendar_today, '${stats['tradeDays']} days', Colors.purpleAccent),
-            _buildIconStat(context, Icons.swap_horiz, '${stats['totalTrades']} trades', Colors.lightBlueAccent),
+            _buildIconStat(context, Icons.calendar_today, '${stats['tradeDays']} days', isDark ? Colors.purpleAccent : Colors.purple.shade700),
+            _buildIconStat(context, Icons.swap_horiz, '${stats['totalTrades']} trades', isDark ? Colors.lightBlueAccent : Colors.blue.shade700),
             _buildIconStat(
               context,
               Icons.percent,
               '${stats['winRate'].toStringAsFixed(1)}%',
-              stats['winRate'] >= 50 ? Colors.greenAccent : Colors.orangeAccent,
+              stats['winRate'] >= 50 ? (isDark ? Colors.greenAccent : Colors.green.shade700) : (isDark ? Colors.orangeAccent : Colors.orange.shade800),
             ),
           ],
         ),
@@ -105,7 +109,7 @@ class MonthHeader extends StatelessWidget {
       const SizedBox(width: 4),
       Text(
         label,
-        style: TextStyle(fontSize: 11, color: color.withOpacity(0.9), fontWeight: FontWeight.w600),
+        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
       ),
     ],
   );

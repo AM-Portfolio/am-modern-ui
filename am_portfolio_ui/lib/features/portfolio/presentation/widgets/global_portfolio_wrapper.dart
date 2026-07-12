@@ -70,13 +70,13 @@ class _GlobalPortfolioWrapperState
     }
   }
 
-  bool _initialized = false;
+  bool _isInit = true;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_initialized) {
-      _initialized = true;
+    if (_isInit) {
+      _isInit = false;
       final inheritedId = context.selectedPortfolioId;
       final inheritedName = context.selectedPortfolioName;
       if (inheritedId != null) {
