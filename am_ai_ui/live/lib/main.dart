@@ -42,7 +42,7 @@ class AIChatExampleApp extends StatelessWidget {
               userId = state.user.id;
             }
             // Using AIChatScreen as the home
-            return AIChatScreen(
+            return AiChatScreen(
               userId: userId,
             );
           },

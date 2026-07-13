@@ -60,7 +60,7 @@ const List<TimeFrame> webTimeFrames = [
 List<TimeFrame> get dashboardTimeFrames => TimeFrame.appTimeFrames;
 
 /// Widget for selecting time frames with customizable options
-class TimeFrameSelector extends StatelessWidget {
+class TimeFrameSelector extends StatefulWidget {
   /// Constructor
   const TimeFrameSelector({
     required this.selectedTimeFrame,
@@ -149,11 +149,69 @@ class TimeFrameSelector extends StatelessWidget {
   final String? title;
 
   @override
+  State<TimeFrameSelector> createState() => _TimeFrameSelectorState();
+}
+
+class _TimeFrameSelectorState extends State<TimeFrameSelector> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelected(animated: false);
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant TimeFrameSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedTimeFrame != oldWidget.selectedTimeFrame) {
+      _scrollToSelected(animated: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToSelected({required bool animated}) {
+    if (!_scrollController.hasClients) return;
+
+    final timeFrames = widget.availableTimeFrames ?? TimeFrame.portfolioTimeFrames;
+    final index = timeFrames.indexOf(widget.selectedTimeFrame);
+    if (index == -1) return;
+
+    // Approximate width of compact timeframe items:
+    // Minimum width is 40, plus 24 horizontal padding inside the container = ~40-42 width.
+    // Plus 2px spacing on the right of each item = ~44.0.
+    const double itemWidth = 44.0;
+    const double viewportWidth = 132.0; // Fits exactly 3 items at a time
+
+    final double targetOffset = (index * itemWidth) - (viewportWidth / 2) + (itemWidth / 2);
+    final double maxScroll = _scrollController.position.maxScrollExtent;
+    final double clampedOffset = targetOffset.clamp(0.0, maxScroll);
+
+    if (animated) {
+      _scrollController.animateTo(
+        clampedOffset,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      _scrollController.jumpTo(clampedOffset);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final timeFrames = availableTimeFrames ?? TimeFrame.portfolioTimeFrames;
+    final timeFrames = widget.availableTimeFrames ?? TimeFrame.portfolioTimeFrames;
 
     CommonLogger.debug(
-      'TimeFrameSelector: building with ${timeFrames.length} options, selected=${selectedTimeFrame.code}',
+      'TimeFrameSelector: building with ${timeFrames.length} options, selected=${widget.selectedTimeFrame.code}',
       tag: 'Heatmap.TimeFrame',
     );
 
@@ -162,37 +220,37 @@ class TimeFrameSelector extends StatelessWidget {
       timeFrames.map(
         (timeFrame) => MapEntry(
           timeFrame,
-          showDisplayNames ? timeFrame.displayName : timeFrame.code,
+          widget.showDisplayNames ? timeFrame.displayName : timeFrame.code,
         ),
       ),
     );
 
     Widget selector;
 
-    if (compact) {
+    if (widget.compact) {
       selector = _buildCompactSelector(context, timeFrames);
     } else {
       selector = AppSegmentedControl<TimeFrame>(
-        selectedValue: selectedTimeFrame,
+        selectedValue: widget.selectedTimeFrame,
         children: children,
         onValueChanged: (timeFrame) {
           CommonLogger.debug(
-            'TimeFrame changed: ${selectedTimeFrame.code} → ${timeFrame.code}',
+            'TimeFrame changed: ${widget.selectedTimeFrame.code} → ${timeFrame.code}',
             tag: 'Heatmap.Filter',
           );
-          onTimeFrameChanged(timeFrame);
+          widget.onTimeFrameChanged(timeFrame);
         },
-        primaryColor: primaryColor,
+        primaryColor: widget.primaryColor,
       );
     }
 
-    if (title != null) {
+    if (widget.title != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            title!,
+            widget.title!,
             style: Theme.of(
               context,
             ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -212,7 +270,7 @@ class TimeFrameSelector extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accent = primaryColor ?? AppColors.primary;
+    final accent = widget.primaryColor ?? AppColors.primary;
     final barBg = isDark
         ? Colors.white.withOpacity(0.06)
         : theme.colorScheme.surfaceContainerHighest;
@@ -231,11 +289,12 @@ class TimeFrameSelector extends StatelessWidget {
         border: Border.all(color: borderColor),
       ),
       child: SingleChildScrollView(
+        controller: _scrollController,
         scrollDirection: Axis.horizontal,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: timeFrames.map((timeFrame) {
-            final isSelected = timeFrame == selectedTimeFrame;
+            final isSelected = timeFrame == widget.selectedTimeFrame;
 
             return Padding(
               padding: const EdgeInsets.only(right: 2),
@@ -244,10 +303,10 @@ class TimeFrameSelector extends StatelessWidget {
                 child: InkWell(
                   onTap: () {
                     CommonLogger.debug(
-                      'TimeFrame changed: ${selectedTimeFrame.code} → ${timeFrame.code}',
+                      'TimeFrame changed: ${widget.selectedTimeFrame.code} → ${timeFrame.code}',
                       tag: 'Heatmap.Filter',
                     );
-                    onTimeFrameChanged(timeFrame);
+                    widget.onTimeFrameChanged(timeFrame);
                   },
                   borderRadius: BorderRadius.circular(7),
                   child: AnimatedContainer(
@@ -260,7 +319,7 @@ class TimeFrameSelector extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        showDisplayNames ? timeFrame.displayName : timeFrame.code,
+                        widget.showDisplayNames ? timeFrame.displayName : timeFrame.code,
                         style: TextStyle(
                           color: isSelected ? Colors.white : idleText,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,

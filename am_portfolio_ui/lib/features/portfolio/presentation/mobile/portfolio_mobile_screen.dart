@@ -373,8 +373,17 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         module: ModuleType.portfolio,
         title: currentName,
         showModuleBottomNavigation: false,
+        autoHideMobileTabsOnScroll: true,
         onBackToGlobal: widget.onBack,
         onMobileMenuTap: () => _showMenuBottomSheet(context),
+        headerActions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: GlobalTimeFrameBar(
+              variant: GlobalTimeFrameVariant.dropdown,
+            ),
+          ),
+        ],
         items: [
           SecondarySidebarItem(
             title: 'Overview',

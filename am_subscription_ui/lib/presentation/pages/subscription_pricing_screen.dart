@@ -362,7 +362,7 @@ class _SubscriptionPricingScreenState extends State<SubscriptionPricingScreen> {
                   if (isMobile) ...[
                     // Mobile View: Swipeable PageView with dot indicators
                     SizedBox(
-                      height: 560,
+                      height: 600,
                       child: PageView(
                         controller: _pageController,
                         onPageChanged: (index) {

@@ -8,9 +8,16 @@ import '../cubit/journal/journal_state.dart';
 import '../web/widgets/journal/journal_entry_form.dart';
 
 class JournalMobilePage extends ConsumerStatefulWidget {
-  const JournalMobilePage({super.key, this.portfolioId});
+  const JournalMobilePage({
+    super.key,
+    this.portfolioId,
+    this.embedded = false,
+  });
 
   final String? portfolioId;
+
+  /// When true, omits the page AppBar so it can sit inside a parent scaffold.
+  final bool embedded;
 
   @override
   ConsumerState<JournalMobilePage> createState() => _JournalMobilePageState();
@@ -37,7 +44,9 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
       data: (cubit) => BlocProvider.value(
         value: cubit,
         child: Scaffold(
-          appBar: AppBar(title: const Text('Trade Journal')),
+          appBar: widget.embedded
+              ? null
+              : AppBar(title: const Text('Trade Journal')),
           floatingActionButton: FloatingActionButton(
             onPressed: () {
               Navigator.of(context).push(

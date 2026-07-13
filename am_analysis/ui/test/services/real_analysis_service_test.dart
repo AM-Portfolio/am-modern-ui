@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:am_analysis_ui/services/real_analysis_service.dart';
-import 'package:am_analysis_ui/models/analysis_enums.dart';
+import 'package:am_analysis_core/am_analysis_core.dart';
 
 void main() {
   group('RealAnalysisService', () {
@@ -10,7 +10,6 @@ void main() {
       // Create service pointing to localhost:8090
       service = RealAnalysisService(
         baseUrl: 'http://localhost:8090',
-        authToken: 'Bearer test-token', // Use mock token for testing
       );
     });
 

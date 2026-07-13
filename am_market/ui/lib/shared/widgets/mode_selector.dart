@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/mode_provider.dart';
-import '../core/app_mode.dart';
+import '../../core/providers/mode_provider.dart';
+import '../../core/app_mode.dart';
 
 /// Widget to display and toggle application mode
 class ModeSelector extends StatelessWidget {

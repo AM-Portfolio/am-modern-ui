@@ -159,9 +159,22 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
             selectedPortfolioId: effectivePortfolioId,
             selectedPortfolioName: _currentPortfolioName ?? context.selectedPortfolioName,
             onTabChanged: (index) {
-              // Mobile index 3 is Add Trade, which is Web index 9.
-              if (index == 3) {
+              // Map mobile view indices to web/controller indices.
+              if (index == MobileTradeViewType.addTrade.index) {
                 _onTabChanged(TradeResponsiveLayout._webAddTradeIndex);
+              } else if (index == MobileTradeViewType.journal.index) {
+                _onTabChanged(
+                  TradeResponsiveLayout.tabIndexFromSlug('journal'),
+                );
+              } else if (index == MobileTradeViewType.metrics.index) {
+                _onTabChanged(
+                  TradeResponsiveLayout.tabIndexFromSlug('analysis'),
+                );
+              } else if (index == MobileTradeViewType.templates.index) {
+                // Templates is mobile-only; keep local index without a web slug.
+                if (_currentTabIndex != index) {
+                  setState(() => _currentTabIndex = index);
+                }
               } else {
                 _onTabChanged(index);
               }
