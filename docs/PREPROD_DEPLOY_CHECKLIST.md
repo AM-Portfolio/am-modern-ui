@@ -1,6 +1,6 @@
 # Preprod Deploy Checklist — Load Time Fixes
 
-Use this before committing and deploying `am-modern-ui` to preprod (`am.asrax.in`).
+Use this before committing and deploying `am-modern-ui` to preprod (`am-preprod.asrax.in`).
 
 **Related docs:**
 - [CACHE_STRATEGY.md](../docs/CACHE_STRATEGY.md) — env-wise static cache policy (dev/preprod no-store, prod revalidate)
@@ -76,10 +76,10 @@ Use `?bootTrace=1` in browser after deploy to verify timings.
 See [CACHE_STRATEGY.md](CACHE_STRATEGY.md). Preprod must return `Cache-Control: no-store` on `main.dart.js`:
 
 ```bash
-curl -I https://am.asrax.in/main.dart.js
+curl -I https://am-preprod.asrax.in/main.dart.js
 ```
 
-Confirm Cloudflare **bypasses cache** for `am.asrax.in` if stale UI appears after deploy.
+Confirm Cloudflare **bypasses cache** for `am-preprod.asrax.in` if stale UI appears after deploy.
 
 ---
 
@@ -123,8 +123,8 @@ Deploy UI fixes even if backend is slow — users get progressive dashboard + ti
 
 ## Post-deploy verification on preprod cluster
 
-1. Open `https://am.asrax.in` (or preprod UI URL) with `?bootTrace=1`
-2. DevTools → Network → filter `am.asrax.in`
+1. Open `https://am-preprod.asrax.in` (or preprod UI URL) with `?bootTrace=1`
+2. DevTools → Network → filter `am-preprod.asrax.in`
 3. Confirm Dashboard landing does not call portfolio holdings/summary
 4. Confirm chart timeout ~15s if `/analysis/dashboard/performance` is slow
 5. Check browser console for `[BootTrace]` summary

@@ -1,8 +1,9 @@
 # Prod Environment — am-modern-ui
+# Prod app host (prep). Do not remove munish from infra Traefik.
 environment: prod
 
 appConfig:
-  domain: "am.munish.org"
+  domain: "am.asrax.in"
 
 replicaCount: 1
 
@@ -10,7 +11,7 @@ ingress:
   enabled: true
   className: "nginx"
   hosts:
-    - host: am.munish.org
+    - host: am.asrax.in
       paths:
         - path: /
           pathType: Prefix
