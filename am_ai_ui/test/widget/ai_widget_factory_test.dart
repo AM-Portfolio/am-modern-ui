@@ -15,7 +15,7 @@ Widget _wrap(Widget child) => ProviderScope(
 void main() {
   group('AiWidgetFactory.build', () {
     group('PORTFOLIO_SUMMARY widget id', () {
-      test('with data key renders currency symbol and no fallback text',
+      testWidgets('with data key renders currency symbol and no fallback text',
           (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
@@ -49,7 +49,7 @@ void main() {
         expect(find.text('Tap to view portfolio'), findsNothing);
       });
 
-      test('without data key shows fallback text', (WidgetTester tester) async {
+      testWidgets('without data key shows fallback text', (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'PORTFOLIO_SUMMARY',
@@ -67,7 +67,7 @@ void main() {
     });
 
     group('ERROR widget id', () {
-      test('renders the error message text', (WidgetTester tester) async {
+      testWidgets('renders the error message text', (WidgetTester tester) async {
         final response = AiIntentResponse.error('Something went wrong, please retry.');
 
         await tester.pumpWidget(_wrap(AiWidgetFactory.build(response)));
@@ -78,7 +78,7 @@ void main() {
     });
 
     group('Unknown widget id', () {
-      test('returns a SizedBox.shrink (zero-size widget)', (WidgetTester tester) async {
+      testWidgets('returns a SizedBox.shrink (zero-size widget)', (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'TOTALLY_UNKNOWN_WIDGET',
@@ -96,7 +96,7 @@ void main() {
     });
 
     group('HOLDINGS_TABLE widget id', () {
-      test('renders Holdings Table title text', (WidgetTester tester) async {
+      testWidgets('renders Holdings Table title text', (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'HOLDINGS_TABLE',

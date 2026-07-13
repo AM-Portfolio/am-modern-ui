@@ -262,6 +262,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         module: ModuleType.market,
         onBackToGlobal: widget.onBack,
         showModuleBottomNavigation: false,
+        autoHideMobileTabsOnScroll: true,
         headerActions: const [ShareLinkButton()],
         body: SwipeablePageView(
           key: const PageStorageKey('market_page_info'), // Maintain state across layout rebuilds

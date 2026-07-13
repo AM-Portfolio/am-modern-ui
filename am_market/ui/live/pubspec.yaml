@@ -11,9 +11,9 @@ dependencies:
   am_market_ui:
     path: ../
   am_design_system:
-    path: ../../am_design_system
+    path: ../../../am_design_system
   am_common:
-    path: ../../am_common
+    path: ../../../am_common
   flutter_riverpod: ^3.0.3
   flutter_bloc: ^9.1.1
 

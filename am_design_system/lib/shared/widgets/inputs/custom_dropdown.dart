@@ -27,6 +27,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.textColor,
     this.enabled = true,
     this.enableGlass = false,
+    this.menuMaxHeight = 300,
   });
 
   /// Current selected value
@@ -82,6 +83,9 @@ class CustomDropdown<T> extends StatefulWidget {
 
   /// Whether to use glassmorphic styling
   final bool enableGlass;
+
+  /// Max height of the open menu; remaining options scroll.
+  final double menuMaxHeight;
 
   @override
   State<CustomDropdown<T>> createState() => _CustomDropdownState<T>();
@@ -141,7 +145,7 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                 borderRadius: BorderRadius.circular(widget.borderRadius),
                 child: Container(
                   constraints: BoxConstraints(
-                    maxHeight: 300,
+                    maxHeight: widget.menuMaxHeight,
                     minWidth: widget.isExpanded ? size.width : math.max(size.width, 160.0),
                   ),
                   decoration: widget.enableGlass

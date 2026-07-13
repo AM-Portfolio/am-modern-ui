@@ -182,6 +182,7 @@ class _SidebarNavItemState<T> extends State<SidebarNavItem<T>> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: ConditionalMouseRegion(
+        cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),
         child: GestureDetector(

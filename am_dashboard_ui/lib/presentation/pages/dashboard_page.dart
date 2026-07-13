@@ -26,23 +26,24 @@ class DashboardPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.primary,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Dashboard'),
         backgroundColor: AppColors.primary,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              ref.invalidate(dashboardStreamingSessionProvider(userId));
-              ref.invalidate(dashboardStreamProvider(userId));
-              ref.invalidate(allocationStreamProvider(userId));
-              ref.invalidate(moversStreamProvider(userId));
-              ref.invalidate(activityStreamProvider(userId));
-              ref.invalidate(historyStreamProvider(userId));
-              ref.invalidate(portfolioOverviewsProvider(userId));
-            },
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: const Icon(Icons.refresh, color: Colors.white),
+        //     onPressed: () {
+        //       ref.invalidate(dashboardStreamingSessionProvider(userId));
+        //       ref.invalidate(dashboardStreamProvider(userId));
+        //       ref.invalidate(allocationStreamProvider(userId));
+        //       ref.invalidate(moversStreamProvider(userId));
+        //       ref.invalidate(activityStreamProvider(userId));
+        //       ref.invalidate(historyStreamProvider(userId));
+        //       ref.invalidate(portfolioOverviewsProvider(userId));
+        //     },
+        //   ),
+        // ],
       ),
       body: CustomScrollView(
         slivers: [

@@ -288,28 +288,23 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── GLOBAL TIME FRAME SELECTOR ──
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 20.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth: isMobile ? constraints.maxWidth - 32 : 550,
+                        // Timeframe lives in the mobile AppBar for compact layouts.
+                        if (!isMobile)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 20.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(maxWidth: 550),
+                                  child: ds.GlobalTimeFrameBar(
+                                    availableTimeFrames:
+                                        ds.TimeFrame.chartTimeFrames,
+                                  ),
                                 ),
-                                child: ds.TimeFrameSelector(
-                                  selectedTimeFrame: selectedTimeFrame,
-                                  onTimeFrameChanged: (tf) {
-                                    ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf);
-                                  },
-                                  availableTimeFrames: ds.TimeFrame.chartTimeFrames,
-                                  compact: true,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
                         // ── ROW 1: 4 Metric Cards ──────────────────────────
                         if (isSmallMobile)
                           GridView.count(

@@ -23,10 +23,111 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin {
   bool _sessionRestored = false;
   bool _shellMarked = false;
   bool _portfolioSeeded = false;
+  String _lastRecordedLocation = '';
+  final List<String> _history = [];
+
+  late final AnimationController _bottomNavController;
+  late final Animation<double> _bottomNavFactor;
+  late final Animation<Offset> _bottomNavSlide;
+  bool _wantBottomNav = true;
+  double _bottomNavScrollAccum = 0;
+  static const double _bottomNavScrollThreshold = 12;
+
+  @override
+  void initState() {
+    super.initState();
+    _bottomNavController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+      reverseDuration: const Duration(milliseconds: 260),
+      value: 1.0,
+    );
+    final bottomNavCurve = CurvedAnimation(
+      parent: _bottomNavController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    _bottomNavFactor = bottomNavCurve;
+    _bottomNavSlide = Tween<Offset>(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+    ).animate(bottomNavCurve);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkInitialAuthAndConnect();
+      _restoreSessionNav();
+      _seedPortfolioSelectionFromSession();
+    });
+  }
+
+  @override
+  void dispose() {
+    _bottomNavController.dispose();
+    super.dispose();
+  }
+
+  void _setBottomNavVisible(bool visible) {
+    if (_wantBottomNav == visible) return;
+    _wantBottomNav = visible;
+    _bottomNavScrollAccum = 0;
+    if (visible) {
+      _bottomNavController.forward();
+    } else {
+      _bottomNavController.reverse();
+    }
+  }
+
+  bool _handleBottomNavScroll(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
+
+    // Always reveal when content is back at (or above) the top.
+    if (notification.metrics.pixels <= 0) {
+      _setBottomNavVisible(true);
+      _bottomNavScrollAccum = 0;
+      return false;
+    }
+
+    if (notification is! ScrollUpdateNotification) return false;
+    final delta = notification.scrollDelta ?? 0;
+    if (delta == 0) return false;
+
+    if ((_bottomNavScrollAccum > 0 && delta < 0) ||
+        (_bottomNavScrollAccum < 0 && delta > 0)) {
+      _bottomNavScrollAccum = 0;
+    }
+    _bottomNavScrollAccum += delta;
+
+    if (_bottomNavScrollAccum > _bottomNavScrollThreshold && _wantBottomNav) {
+      _setBottomNavVisible(false);
+    } else if (_bottomNavScrollAccum < -_bottomNavScrollThreshold &&
+        !_wantBottomNav) {
+      _setBottomNavVisible(true);
+    }
+
+    return false;
+  }
+
+  void _updateHistory(String currentLocation) {
+    if (currentLocation != _lastRecordedLocation) {
+      _lastRecordedLocation = currentLocation;
+      // Reveal bottom nav whenever the route changes.
+      if (!_wantBottomNav) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _setBottomNavVisible(true);
+        });
+      }
+      if (_history.contains(currentLocation)) {
+        final index = _history.indexOf(currentLocation);
+        _history.removeRange(index + 1, _history.length);
+      } else {
+        _history.add(currentLocation);
+      }
+    }
+  }
 
   List<_MoreMenuItem> _moreMenuItemsFor({required bool isAdmin}) => [
         if (isAdmin)
@@ -72,16 +173,6 @@ class _AppShellState extends State<AppShell> {
         const SidebarItem(
             title: 'Subscription', icon: Icons.subscriptions_rounded),
       ];
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkInitialAuthAndConnect();
-      _restoreSessionNav();
-      _seedPortfolioSelectionFromSession();
-    });
-  }
 
   Future<void> _seedPortfolioSelectionFromSession() async {
     if (_portfolioSeeded) return;
@@ -190,6 +281,7 @@ class _AppShellState extends State<AppShell> {
     final path = AppRoutes.pathForNavTitle(title);
     if (path == null) return;
 
+    _setBottomNavVisible(true);
     _applyStreamingTabCoordinator(title);
     context.go(path);
     common.SessionPersistenceService.instance.patch(
@@ -299,77 +391,126 @@ class _AppShellState extends State<AppShell> {
             _shellMarked = true;
             common.BootTrace.instance.mark('shell_visible');
           }
-
-          final userId =
+final userId =
               authState is Authenticated ? authState.user.id : '';
           final isAdmin =
               authState is Authenticated && authState.user.isAdmin;
           final isDark = Theme.of(context).brightness == Brightness.dark;
 
+          final currentLocation = GoRouterState.of(context).matchedLocation;
+          _updateHistory(currentLocation);
+
           final shell = LayoutBuilder(
             builder: (context, constraints) {
               final isDesktop = constraints.maxWidth > 1100;
 
-              return Scaffold(
-                body: Row(
-                  children: [
-                    if (isDesktop && authState is Authenticated)
-                      GlobalSidebar(
-                        activeNavItem: _activeNavItem,
-                        isDarkMode: isDark,
-                        userName: authState.user.displayName,
-                        userEmail: authState.user.email,
-                        userAvatarUrl: authState.user.photoUrl,
-                        moduleShareUrls: AppRoutes.navTitleToDefaultPath,
-                        onThemeToggle: () {
-                          try {
-                            context.read<ThemeCubit>().toggleTheme();
-                          } catch (e) {
-                            debugPrint('Theme toggle error: $e');
-                          }
-                        },
-                        onLogout: () => context.read<AuthCubit>().logout(),
-                        onProfileTap: () => context.go(AppRoutes.profile),
-                        onNavigate: (title) => _onGlobalNavigate(title, userId),
-                        items: _sidebarItemsFor(isAdmin: isAdmin),
+              return PopScope(
+                canPop: _history.length <= 1,
+                onPopInvokedWithResult: (didPop, result) {
+                  if (didPop) return;
+                  if (_history.length > 1) {
+                    _history.removeLast(); // Remove current location
+                    final previousLocation = _history.last;
+                    
+                    final previousTitle = AppRoutes.activeNavTitleForLocation(previousLocation);
+                    _applyStreamingTabCoordinator(previousTitle);
+                    
+                    context.go(previousLocation);
+                    
+                    common.SessionPersistenceService.instance.patch(
+                      userId,
+                      (s) => s.copyWith(
+                        globalNav: previousTitle.isEmpty ? 'Dashboard' : previousTitle,
                       ),
-                    Expanded(
-                      child: authState is Authenticated
-                          ? common.PortfolioSelectionScope(
-                              child: widget.child,
-                            )
-                          : widget.child,
-                    ),
-                  ],
+                    );
+                  }
+                },
+                child: Scaffold(
+                  extendBody: !isDesktop,
+                  body: Row(
+                    children: [
+                      if (isDesktop && authState is Authenticated)
+                        GlobalSidebar(
+                          activeNavItem: _activeNavItem,
+                          isDarkMode: isDark,
+                          userName: authState.user.displayName,
+                          userEmail: authState.user.email,
+                          userAvatarUrl: authState.user.photoUrl,
+                          moduleShareUrls: AppRoutes.navTitleToDefaultPath,
+                          onThemeToggle: () {
+                            try {
+                              context.read<ThemeCubit>().toggleTheme();
+                            } catch (e) {
+                              debugPrint('Theme toggle error: $e');
+                            }
+                          },
+                          onLogout: () => context.read<AuthCubit>().logout(),
+                          onProfileTap: () => context.go(AppRoutes.profile),
+                          onNavigate: (title) => _onGlobalNavigate(title, userId),
+                          items: _sidebarItemsFor(isAdmin: isAdmin),
+                        ),
+                      Expanded(
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: isDesktop
+                              ? (_) => false
+                              : _handleBottomNavScroll,
+                          child: authState is Authenticated
+                              ? common.PortfolioSelectionScope(
+                                  child: widget.child,
+                                )
+                              : widget.child,
+                        ),
+                      ),
+                    ],
+                  ),
+                  bottomNavigationBar: !isDesktop && authState is Authenticated
+                      ? SizeTransition(
+                          sizeFactor: _bottomNavFactor,
+                          axisAlignment: 1,
+                          child: SlideTransition(
+                            position: _bottomNavSlide,
+                            child: FadeTransition(
+                              opacity: _bottomNavFactor,
+                              child: GlobalBottomNavigation(
+                                activeNavItem: _activeNavItem,
+                                isDarkMode: isDark,
+                                userName: authState.user.displayName,
+                                onMenuTap: () => _showMoreMenu(
+                                  context,
+                                  userId,
+                                  isDark,
+                                  isAdmin,
+                                ),
+                                onNavigate: (title) =>
+                                    _onGlobalNavigate(title, userId),
+                                items: const [
+                                  SidebarItem(
+                                    title: 'Dashboard',
+                                    icon: Icons.dashboard_rounded,
+                                  ),
+                                  SidebarItem(
+                                    title: 'Portfolio',
+                                    icon: Icons.account_balance_wallet_rounded,
+                                  ),
+                                  SidebarItem(
+                                    title: 'Trade',
+                                    icon: Icons.swap_horiz_rounded,
+                                  ),
+                                  SidebarItem(
+                                    title: 'Market',
+                                    icon: Icons.show_chart_rounded,
+                                  ),
+                                  SidebarItem(
+                                    title: 'Menu',
+                                    icon: Icons.menu_rounded,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        )
+                      : null,
                 ),
-                bottomNavigationBar: !isDesktop && authState is Authenticated
-                    ? GlobalBottomNavigation(
-                        activeNavItem: _activeNavItem,
-                        isDarkMode: isDark,
-                        userName: authState.user.displayName,
-                        onMenuTap: () =>
-                            _showMoreMenu(context, userId, isDark, isAdmin),
-                        onNavigate: (title) =>
-                            _onGlobalNavigate(title, userId),
-                        items: const [
-                          SidebarItem(
-                              title: 'Dashboard',
-                              icon: Icons.dashboard_rounded),
-                          SidebarItem(
-                              title: 'Portfolio',
-                              icon: Icons.account_balance_wallet_rounded),
-                          SidebarItem(
-                              title: 'Trade',
-                              icon: Icons.swap_horiz_rounded),
-                          SidebarItem(
-                              title: 'Market',
-                              icon: Icons.show_chart_rounded),
-                          SidebarItem(
-                              title: 'Menu',
-                              icon: Icons.menu_rounded),
-                        ],
-                      )
-                    : null,
               );
             },
           );

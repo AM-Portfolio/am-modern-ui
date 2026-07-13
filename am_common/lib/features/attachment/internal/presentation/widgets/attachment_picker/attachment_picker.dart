@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import '../../models/pending_attachment.dart';
 import 'attachment_picker_widget.dart' show AttachmentType;
 import 'mobile/attachment_picker_mobile.dart' show AttachmentPickerMobile;
-import 'web/attachment_picker_web.dart'
-    if (dart.library.io) 'web/attachment_picker_web_stub.dart'
+import 'web/attachment_picker_web_stub.dart'
+    if (dart.library.html) 'web/attachment_picker_web.dart'
     show AttachmentPickerWeb;
 
 export 'attachment_picker_widget.dart' show AttachmentType;

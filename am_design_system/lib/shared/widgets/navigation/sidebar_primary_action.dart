@@ -53,6 +53,7 @@ class _SidebarPrimaryActionState extends State<SidebarPrimaryAction> with Single
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: ConditionalMouseRegion(
+        cursor: SystemMouseCursors.click,
         onEnter: (_) {
           setState(() => _isHovered = true);
           _controller.forward();
