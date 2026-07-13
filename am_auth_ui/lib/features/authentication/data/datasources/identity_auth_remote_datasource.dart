@@ -340,7 +340,7 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
     );
   }
 
-  Future<void> confirmVerifyEmail({String? token, String? code}) async {
+  Future<AuthResultModel> confirmVerifyEmail({String? token, String? code}) async {
     final body = <String, dynamic>{};
     final trimmedCode = code?.trim();
     final trimmedToken = token?.trim();
@@ -349,12 +349,68 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
     } else if (trimmedToken != null && trimmedToken.isNotEmpty) {
       body['token'] = trimmedToken;
     }
-    await _postAccepted(
-      AuthEndpoints.identityVerifyEmailConfirm,
-      body,
-      action: 'Verify email confirm',
-      acceptCodes: const {200},
-    );
+    try {
+      final response = await _dio.post(
+        AuthEndpoints.identityVerifyEmailConfirm,
+        data: body,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      if (response.statusCode != 200) {
+        throw ServerException(
+          'Verify email confirm failed',
+          statusCode: response.statusCode ?? 500,
+        );
+      }
+      final data = response.data as Map<String, dynamic>;
+      final accessToken = data['access_token'] as String?;
+      if (accessToken == null || accessToken.isEmpty) {
+        throw ServerException(
+          'Verify email confirm did not return a session',
+          statusCode: 500,
+        );
+      }
+      final refreshToken = data['refresh_token'] as String?;
+      final user = _parseUserFromToken(accessToken, '');
+      return AuthResultModel(
+        user: user,
+        tokens: AuthTokensModel(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          expiresAt: DateTime.now().add(
+            Duration(seconds: data['expires_in'] as int? ?? 3600),
+          ),
+        ),
+      );
+    } on DioException catch (e) {
+      AppLogger.error('Identity Verify Email Confirm Error: ${e.response?.data}');
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout) {
+        throw NetworkException(AuthConstants.networkError);
+      }
+
+      var errorMessage = AuthConstants.serverError;
+      if (e.response?.data != null && e.response!.data is Map) {
+        final data = e.response!.data;
+        final detail = data['detail'];
+        if (detail is Map) {
+          errorMessage = detail['error_description']?.toString() ??
+              detail['message']?.toString() ??
+              detail['error']?.toString() ??
+              errorMessage;
+        } else if (detail != null) {
+          errorMessage = detail.toString();
+        } else {
+          errorMessage = data['message']?.toString() ??
+              data['error']?.toString() ??
+              errorMessage;
+        }
+      }
+
+      throw ServerException(
+        errorMessage,
+        statusCode: e.response?.statusCode ?? 500,
+      );
+    }
   }
 
   Future<void> resendVerifyEmail(String email) async {

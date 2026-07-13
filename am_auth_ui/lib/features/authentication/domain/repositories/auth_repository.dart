@@ -48,7 +48,8 @@ abstract class AuthRepository {
   });
 
   /// Confirm email verification with mail token or short code.
-  Future<Either<Failure, void>> confirmVerifyEmail({
+  /// On success returns an authenticated session (tokens) for auto-login.
+  Future<Either<Failure, AuthResultEntity>> confirmVerifyEmail({
     String? token,
     String? code,
   });

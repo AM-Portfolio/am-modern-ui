@@ -15,6 +15,8 @@ import '../widgets/glass_card_widget.dart';
 import '../widgets/theme_toggle_widget.dart';
 
 /// Confirms email verification from `?c=` (preferred) or `?token=` deep link.
+/// On success the cubit stores tokens and emits [Authenticated]; this page
+/// navigates into the app (auto-login).
 class VerifyEmailPage extends StatefulWidget {
   const VerifyEmailPage({super.key, this.token, this.code});
 
@@ -63,13 +65,17 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
       body: SafeArea(
         child: BlocConsumer<AuthCubit, AuthState>(
           listener: (context, state) {
-            if (state is EmailVerificationSuccess) {
+            if (state is Authenticated) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Email verified. You can sign in now.'),
+                  content: Text('Email verified. Signing you in…'),
                   backgroundColor: AppColors.success,
                 ),
               );
+              final router = GoRouter.maybeOf(context);
+              if (router != null) {
+                context.go('/app/dashboard');
+              }
             } else if (state is AuthError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -88,8 +94,9 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                     String message;
                     if (!_hasCredential) {
                       message = 'This verification link is incomplete.';
-                    } else if (state is EmailVerificationSuccess) {
-                      message = 'Your Asrax email is verified.';
+                    } else if (state is Authenticated) {
+                      message =
+                          'Your Asrax email is verified. Opening your portfolio…';
                     } else if (state is AuthError) {
                       message = state.message;
                     } else {
@@ -165,7 +172,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                                       const SizedBox(height: 16),
                                       if (state is AuthLoading ||
                                           (_hasCredential &&
-                                              state is! EmailVerificationSuccess &&
+                                              state is! Authenticated &&
                                               state is! AuthError))
                                         const Center(
                                           child: Padding(
@@ -181,11 +188,17 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                                             color: context.textSecondary,
                                           ),
                                         ),
-                                      const SizedBox(height: 24),
-                                      FilledButton(
-                                        onPressed: () => context.go('/login'),
-                                        child: const Text('Continue to sign in'),
-                                      ),
+                                      if (state is AuthError ||
+                                          !_hasCredential) ...[
+                                        const SizedBox(height: 24),
+                                        FilledButton(
+                                          onPressed: () =>
+                                              context.go('/login'),
+                                          child: const Text(
+                                            'Continue to sign in',
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),

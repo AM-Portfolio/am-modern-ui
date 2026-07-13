@@ -321,6 +321,7 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   /// Confirm email verification from deep link code or token.
+  /// On success stores session tokens and emits [Authenticated] (auto-login).
   Future<void> confirmVerifyEmail({String? token, String? code}) async {
     final previous = state;
     emit(const AuthLoading());
@@ -336,7 +337,7 @@ class AuthCubit extends Cubit<AuthState> {
             emit(previous);
           }
         },
-        (_) => emit(const EmailVerificationSuccess()),
+        (authResult) => emit(Authenticated(authResult.user)),
       );
     } catch (e) {
       emit(AuthError(e.toString()));

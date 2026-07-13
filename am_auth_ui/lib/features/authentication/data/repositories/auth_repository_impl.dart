@@ -18,6 +18,7 @@ import '../datasources/identity_auth_remote_datasource.dart';
 import '../datasources/mock_auth_datasource.dart';
 import '../models/auth_result_model.dart';
 import '../models/auth_tokens_model.dart';
+import '../models/user_model.dart';
 import '../services/google_signin_service.dart';
 
 /// Implementation of authentication repository
@@ -96,27 +97,7 @@ class AuthRepositoryImpl implements AuthRepository {
   ) async {
     try {
       final result = await loginCall();
-      final entity = result.toEntity();
-      
-      // Save tokens to persistent storage
-      await _storageService.saveAccessToken(entity.tokens.accessToken);
-      if (entity.tokens.refreshToken != null) {
-        await _storageService.saveRefreshToken(entity.tokens.refreshToken!);
-      }
-      await _storageService.saveUserId(entity.user.id);
-      await _storageService.saveUserEmail(entity.user.email);
-      await _storageService.saveTokenExpiry(entity.tokens.expiresAt);
-
-      final enriched = _enrichedEntity(entity);
-
-      // Populate in-memory UserContext so all modules are immediately cache-hot
-      UserContext.instance.populate(
-        accessToken: enriched.tokens.accessToken,
-        userId: enriched.user.id,
-        email: enriched.user.email,
-      );
-      
-      return Right(enriched);
+      return await _persistAuthResult(result);
     } on AuthException catch (e) {
       return Left(AuthFailure(e.message, code: e.code));
     } on NetworkException catch (e) {
@@ -126,6 +107,32 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
     }
+  }
+
+  Future<Either<Failure, AuthResultEntity>> _persistAuthResult(
+    AuthResultModel result,
+  ) async {
+    final entity = result.toEntity();
+
+    // Save tokens to persistent storage
+    await _storageService.saveAccessToken(entity.tokens.accessToken);
+    if (entity.tokens.refreshToken != null) {
+      await _storageService.saveRefreshToken(entity.tokens.refreshToken!);
+    }
+    await _storageService.saveUserId(entity.user.id);
+    await _storageService.saveUserEmail(entity.user.email);
+    await _storageService.saveTokenExpiry(entity.tokens.expiresAt);
+
+    final enriched = _enrichedEntity(entity);
+
+    // Populate in-memory UserContext so all modules are immediately cache-hot
+    UserContext.instance.populate(
+      accessToken: enriched.tokens.accessToken,
+      userId: enriched.user.id,
+      email: enriched.user.email,
+    );
+
+    return Right(enriched);
   }
 
   @override
@@ -479,17 +486,32 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, void>> confirmVerifyEmail({
+  Future<Either<Failure, AuthResultEntity>> confirmVerifyEmail({
     String? token,
     String? code,
   }) async {
     try {
       if (!_featureFlags.useRealBackendAPI) {
         await Future<void>.delayed(const Duration(milliseconds: 400));
-        return const Right(null);
+        final mock = AuthResultModel(
+          user: UserModel(
+            id: 'verified-user',
+            email: 'verified@example.com',
+            authMethod: 'identity',
+          ),
+          tokens: AuthTokensModel(
+            accessToken: 'mock-access-token',
+            refreshToken: 'mock-refresh-token',
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          ),
+        );
+        return _persistAuthResult(mock);
       }
-      await _identityDataSource.confirmVerifyEmail(token: token, code: code);
-      return const Right(null);
+      final result = await _identityDataSource.confirmVerifyEmail(
+        token: token,
+        code: code,
+      );
+      return _persistAuthResult(result);
     } on NetworkException catch (e) {
       return Left(NetworkFailure(e.message));
     } on ServerException catch (e) {

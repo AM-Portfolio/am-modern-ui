@@ -53,6 +53,11 @@ GoRouter createAppRouter({
         return target ?? AppRoutes.dashboard;
       }
 
+      // After verify-email auto-login, leave the public verify route for the app.
+      if (isAuthenticated && location == AppRoutes.verifyEmail) {
+        return AppRoutes.dashboard;
+      }
+
       // Lab is disabled in navigation — block direct URL access.
       if (location == AppRoutes.lab || location.startsWith('${AppRoutes.lab}/')) {
         return AppRoutes.dashboard;
