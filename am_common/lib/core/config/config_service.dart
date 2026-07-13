@@ -52,8 +52,9 @@ class ConfigService {
         };
 
     final bootstrap = parallel[1];
-    final env = (bootstrap?['env'] as String?)?.isNotEmpty == true
-        ? bootstrap?['env'] as String
+    final bootstrapEnv = bootstrap?['env'] as String?;
+    final env = (bootstrapEnv != null && bootstrapEnv.isNotEmpty)
+        ? bootstrapEnv
         : _envFromDefine;
     _resolvedEnv = env ?? _resolvedEnv;
     if (env != null && env.isNotEmpty) {
