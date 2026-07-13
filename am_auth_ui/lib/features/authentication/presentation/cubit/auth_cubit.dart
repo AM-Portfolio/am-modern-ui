@@ -43,6 +43,10 @@ class AuthCubit extends Cubit<AuthState> {
   final RegisterUseCase _registerUseCase;
   final AuthRepository _authRepository;
 
+  /// Invalidates in-flight [checkAuthStatus] when a newer auth mutation starts
+  /// (e.g. verify-email confirm must not be overwritten by a stale restore).
+  int _authGeneration = 0;
+
   /// Login with email and password
   Future<void> loginWithEmail(
     String email, 
@@ -114,12 +118,23 @@ class AuthCubit extends Cubit<AuthState> {
       '🔍 Starting authentication status check...',
       tag: 'AuthCubit',
     );
+    final generation = ++_authGeneration;
     emit(const AuthLoading());
 
     final statusResult = await _checkAuthStatusUseCase();
+    if (generation != _authGeneration) {
+      CommonLogger.debug(
+        '⏭️ Auth restore superseded by a newer auth flow',
+        tag: 'AuthCubit',
+      );
+      BootTrace.instance.mark('auth_check_done');
+      CommonLogger.methodExit('checkAuthStatus', tag: 'AuthCubit');
+      return;
+    }
 
     await statusResult.fold(
       (failure) async {
+        if (generation != _authGeneration) return;
         CommonLogger.error(
           '❌ Auth status check failed',
           tag: 'AuthCubit',
@@ -140,6 +155,7 @@ class AuthCubit extends Cubit<AuthState> {
         emit(const Unauthenticated());
       },
       (isAuthenticated) async {
+        if (generation != _authGeneration) return;
         CommonLogger.info(
           '✅ Auth status result: $isAuthenticated',
           tag: 'AuthCubit',
@@ -148,6 +164,7 @@ class AuthCubit extends Cubit<AuthState> {
           CommonLogger.debug('📦 Fetching user from storage...', tag: 'AuthCubit');
           // Fetch and restore user from storage
           final userResult = await _getCurrentUserUseCase();
+          if (generation != _authGeneration) return;
           userResult.fold(
             (failure) {
               CommonLogger.error(
@@ -324,12 +341,15 @@ class AuthCubit extends Cubit<AuthState> {
   /// On success stores session tokens and emits [Authenticated] (auto-login).
   Future<void> confirmVerifyEmail({String? token, String? code}) async {
     final previous = state;
+    // Bump so an in-flight session restore cannot overwrite this confirm.
+    final generation = ++_authGeneration;
     emit(const AuthLoading());
     try {
       final result = await _authRepository.confirmVerifyEmail(
         token: token,
         code: code,
       );
+      if (generation != _authGeneration) return;
       result.fold(
         (failure) {
           emit(AuthError(failure.message));
@@ -340,6 +360,7 @@ class AuthCubit extends Cubit<AuthState> {
         (authResult) => emit(Authenticated(authResult.user)),
       );
     } catch (e) {
+      if (generation != _authGeneration) return;
       emit(AuthError(e.toString()));
       if (previous is Authenticated) {
         emit(previous);
