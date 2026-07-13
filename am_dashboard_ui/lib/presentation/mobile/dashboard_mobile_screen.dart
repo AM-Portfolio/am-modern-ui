@@ -149,7 +149,9 @@ class DashboardMobileScreen extends ConsumerWidget {
                 fontSize: 20,
               ),
             ),
-            const _MobileDashboardTimeFrameDropdown(),
+            const GlobalTimeFrameBar(
+              variant: GlobalTimeFrameVariant.dropdown,
+            ),
           ],
         ),
         backgroundColor: Colors.transparent, // transparent for glow
@@ -349,44 +351,6 @@ class DashboardMobileScreen extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MobileDashboardTimeFrameDropdown extends ConsumerWidget {
-  const _MobileDashboardTimeFrameDropdown();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final timeFrame = ref.watch(appTimeFrameProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return SizedBox(
-      width: 84,
-      child: CustomDropdown<TimeFrame>(
-        value: timeFrame,
-        height: 36,
-        isExpanded: true,
-        fontSize: 13,
-        iconSize: 18,
-        borderRadius: 10,
-        primaryColor: AppColors.primary,
-        backgroundColor: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : null,
-        borderColor: isDark
-            ? Colors.white.withValues(alpha: 0.1)
-            : null,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-        items: TimeFrame.appTimeFrames
-            .map((tf) => tf.toSimpleDropdownItem(text: tf.code, fontSize: 13))
-            .toList(),
-        onChanged: (tf) {
-          if (tf != null) {
-            ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf);
-          }
-        },
       ),
     );
   }

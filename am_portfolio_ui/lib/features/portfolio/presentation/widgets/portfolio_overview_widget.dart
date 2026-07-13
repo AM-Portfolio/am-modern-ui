@@ -296,15 +296,11 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                             children: [
                               ConstrainedBox(
                                 constraints: BoxConstraints(
-                                  maxWidth: isMobile ? constraints.maxWidth - 32 : 550,
+                                  maxWidth: isMobile ? 84 : 550,
                                 ),
-                                child: ds.TimeFrameSelector(
-                                  selectedTimeFrame: selectedTimeFrame,
-                                  onTimeFrameChanged: (tf) {
-                                    ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf);
-                                  },
-                                  availableTimeFrames: ds.TimeFrame.chartTimeFrames,
-                                  compact: true,
+                                child: ds.GlobalTimeFrameBar(
+                                  availableTimeFrames:
+                                      ds.TimeFrame.chartTimeFrames,
                                 ),
                               ),
                             ],

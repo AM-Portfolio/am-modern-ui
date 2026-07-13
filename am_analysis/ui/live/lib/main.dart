@@ -42,7 +42,11 @@ class AnalysisExampleApp extends StatelessWidget {
               userId = state.user.id;
             }
             // Using AnalysisDashboard as the home
-            return const AnalysisDashboard();
+            return AnalysisDashboard(
+              entityId: userId,
+              entityType: AnalysisEntityType.PORTFOLIO,
+              analysisService: RealAnalysisService(),
+            );
           },
         ),
       ),
