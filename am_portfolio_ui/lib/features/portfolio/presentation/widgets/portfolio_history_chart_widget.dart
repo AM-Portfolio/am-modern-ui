@@ -165,7 +165,14 @@ class _PortfolioHistoryChartWidgetState
               portfolioId: 'all',
               portfolioName: 'All Portfolios',
             );
-            final items = <PortfolioItem>[allItem, ...portfolios];
+            
+            // Deduplicate portfolios by name to prevent multiple tabs with same label
+            final Map<String, PortfolioItem> uniqueItems = {};
+            for (final p in portfolios) {
+              uniqueItems.putIfAbsent(p.portfolioName, () => p);
+            }
+            
+            final items = <PortfolioItem>[allItem, ...uniqueItems.values];
 
             // Read from local state first, fallback to context
             final currentId =
@@ -182,43 +189,50 @@ class _PortfolioHistoryChartWidgetState
                   final item = items[i];
                   final isSelected = currentId == item.portfolioId;
 
-                  return GestureDetector(
-                    onTap: () {
-                      if (!isSelected) {
-                        setState(() {
-                          _localSelectedId = item.portfolioId;
-                          _localSelectedName = item.portfolioName;
-                        });
-                        _load(); // Only reload the chart's data
-                      }
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primary
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.primary
-                              : Colors.grey.withOpacity(0.35),
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      return GestureDetector(
+                        onTap: () {
+                          if (!isSelected) {
+                            setState(() {
+                              _localSelectedId = item.portfolioId;
+                              _localSelectedName = item.portfolioName;
+                            });
+                            _load(); // Only reload the chart's data
+                          }
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primary
+                                : (isDark
+                                    ? Colors.white.withValues(alpha: 0.04)
+                                    : Colors.black.withValues(alpha: 0.06)),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : (isDark
+                                      ? Colors.white.withValues(alpha: 0.1)
+                                      : Colors.black.withValues(alpha: 0.07)),
+                            ),
+                          ),
+                          child: Text(
+                            item.portfolioName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                              color: isSelected 
+                                  ? Colors.white 
+                                  : (isDark ? Colors.grey[400] : Colors.grey[800]),
+                            ),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        item.portfolioName,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: isSelected ? Colors.white : Colors.grey,
-                        ),
-                      ),
-                    ),
-                  );
+                      );
                 },
               ),
             );
@@ -252,6 +266,40 @@ class _PortfolioHistoryChartWidgetState
   Widget _buildChart(PortfolioHistoryLoaded state) {
     final bool isAllPortfolios =
         (_localSelectedId ?? context.selectedPortfolioId ?? widget.portfolioId ?? 'all') == 'all';
+
+    // ── Calculate Period Stats from raw data ──────────────────────────────
+    if (state.snapshots.isNotEmpty) {
+      double? startGain;
+      double? endGain;
+      double? startInvest;
+
+      for (final snap in state.snapshots) {
+        if (snap.totalUserGainLoss != null && !snap.totalUserGainLoss!.isNaN) {
+          final gain = isAllPortfolios
+              ? (snap.totalUserGainLoss ?? 0.0)
+              : (snap.portfolios.isNotEmpty ? snap.portfolios.first.totalGainLoss ?? 0.0 : 0.0);
+          
+          final invest = isAllPortfolios
+              ? (snap.totalUserInvestment ?? 0.0)
+              : (snap.portfolios.isNotEmpty ? snap.portfolios.first.totalInvestment ?? 0.0 : 0.0);
+
+          startGain ??= gain;
+          startInvest ??= invest;
+          endGain = gain;
+        }
+      }
+
+      if (startGain != null && endGain != null) {
+        final periodReturn = endGain - startGain;
+        final periodReturnPct = (startInvest != null && startInvest > 0)
+            ? (periodReturn / startInvest) * 100.0
+            : 0.0;
+        
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) widget.onPeriodStats?.call(periodReturnPct, periodReturn);
+        });
+      }
+    }
 
     // ── Multi-line mode — "All Portfolios" selected ─────────────────────────
     if (isAllPortfolios && _hasMultipleBrokers(state)) {
@@ -372,15 +420,6 @@ class _PortfolioHistoryChartWidgetState
 
     final activeLines = _activeFormat == ChartFormat.secondary ? secondaryLines : primaryLines;
 
-    final firstLine = primaryLines.first;
-    if (firstLine.points.isNotEmpty) {
-      final start = firstLine.points.first.y;
-      final end = firstLine.points.last.y;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) widget.onPeriodStats?.call(start, end);
-      });
-    }
-
     return _buildChartContainer(
       activeLines: activeLines,
       isMultiLine: true,
@@ -487,11 +526,7 @@ class _PortfolioHistoryChartWidgetState
     final activeData = _activeFormat == ChartFormat.secondary ? secondaryPoints : primaryPoints;
 
     if (primaryPoints.isNotEmpty) {
-      final start = primaryPoints.first.y;
-      final end = primaryPoints.last.y;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) widget.onPeriodStats?.call(start, end);
-      });
+      // Stats already calculated and dispatched in _buildChart
     }
 
     return _buildChartContainer(
@@ -524,12 +559,15 @@ class _PortfolioHistoryChartWidgetState
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                cardBase.withValues(alpha: isDark ? 0.55 : 0.9),
-                cardBase.withValues(alpha: isDark ? 0.3 : 0.7),
+                cardBase.withValues(alpha: isDark ? 0.55 : 0.45),
+                cardBase.withValues(alpha: isDark ? 0.3 : 0.25),
               ],
             ),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: isDark ? 0.07 : 0.4)),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.07)
+                    : Colors.black.withValues(alpha: 0.07)),
             boxShadow: [
               BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, 8)),
             ],
@@ -609,10 +647,8 @@ class _PortfolioHistoryChartWidgetState
               // ── Chart Area ─────────────────────────────────────────────
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final int dataLen = isMultiLine
-                      ? (activeLines?.first.points.length ?? 0)
-                      : (singleData?.length ?? 0);
-                  final double baseWidth = dataLen * 40.0;
+                  // The chart should naturally compress to fit the max width without scrolling
+                  final double baseWidth = constraints.maxWidth;
                   final double calculatedWidth = (baseWidth * _zoomScale).clamp(constraints.maxWidth, double.infinity);
                   final bool needsScroll = calculatedWidth > constraints.maxWidth;
                   final double chartWidth = needsScroll ? calculatedWidth : constraints.maxWidth;
@@ -769,11 +805,10 @@ class _PortfolioHistoryChartWidgetState
         final padding = <PortfolioSnapshotDto>[];
         for (int i = 0; i < daysToPad; i++) {
           final d = startDate.add(Duration(days: i));
-          final isShortTimeframe = tf == TimeFrame.oneDay || tf == TimeFrame.oneWeek;
           padding.add(PortfolioSnapshotDto(
             snapshotDate: d.toIso8601String(),
-            totalUserWealth: isShortTimeframe ? raw.first.totalUserWealth : double.nan,
-            portfolios: isShortTimeframe ? raw.first.portfolios : [], // empty for padding on long timeframes
+            totalUserWealth: raw.first.totalUserWealth,
+            portfolios: raw.first.portfolios, // carry forward portfolios to prevent multi-line crash
           ));
         }
         return [...padding, ...raw];
@@ -796,6 +831,7 @@ class _PortfolioHistoryChartWidgetState
           final week = _isoWeekNumber(dt);
           return '${dt.year}-$week';
         });
+      case '3M':
       case '6M':
       case 'YTD':
         return _keepLastPerGroup(raw, (s) {

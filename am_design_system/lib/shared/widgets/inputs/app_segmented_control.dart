@@ -22,6 +22,7 @@ class AppSegmentedControl<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = primaryColor ?? AppColors.primary;
+    final isDark = theme.brightness == Brightness.dark;
 
     return SegmentedButton<T>(
       segments: children.entries.map((e) => 
@@ -42,16 +43,19 @@ class AppSegmentedControl<T> extends StatelessWidget {
           if (states.contains(WidgetState.selected)) {
             return color;
           }
-          return Colors.white.withOpacity(0.05);
+          return isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05);
         }),
         foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
           if (states.contains(WidgetState.selected)) {
             return Colors.white;
           }
-          return Colors.white70;
+          return isDark ? Colors.white70 : Colors.black87;
         }),
         side: WidgetStateProperty.all(
-          BorderSide(color: Colors.white.withOpacity(0.15), width: 1),
+          BorderSide(
+            color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
         shape: WidgetStateProperty.all(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

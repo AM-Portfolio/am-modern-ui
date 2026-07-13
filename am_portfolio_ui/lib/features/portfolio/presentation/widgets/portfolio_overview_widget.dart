@@ -248,11 +248,13 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                       child: Container(
                         width: 350,
                         height: 350,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              Color(0x1700B894), // #00B894 at ~9% opacity
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? const Color(0x1700B894)
+                                  : const Color(0x3500B894),
                               Colors.transparent,
                             ],
                           ),
@@ -268,11 +270,13 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                       child: Container(
                         width: 300,
                         height: 300,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              Color(0x1A6C5DD3), // #6C5DD3 at ~10% opacity
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? const Color(0x1A6C5DD3)
+                                  : const Color(0x356C5DD3),
                               Colors.transparent,
                             ],
                           ),
@@ -442,12 +446,12 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     final summaryToUse = state.summary;
     final selectedTimeFrame = ref.read(appTimeFrameProvider);
 
-    final bool hasPeriodData = _periodStartValue != null && _periodEndValue != null && _periodStartValue! > 0;
+    final bool hasPeriodData = _periodStartValue != null && _periodEndValue != null;
     final double periodReturn = hasPeriodData
-        ? (_periodEndValue! - _periodStartValue!)
+        ? _periodEndValue!
         : summaryToUse.totalGainLoss;
     final double periodReturnPct = hasPeriodData
-        ? (periodReturn / _periodStartValue!) * 100.0
+        ? _periodStartValue!
         : summaryToUse.totalGainLossPercentage;
     final String periodLabel = hasPeriodData ? selectedTimeFrame.displayName : 'total';
 
@@ -494,10 +498,10 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         title: 'Total Balance',
         value: _formatCurrency(summaryToUse.totalValue),
         subtitle: '${summaryToUse.totalAssets} Active Holdings',
-        accentColor: ds.AppColors.primary,
+        accentColor: const Color(0xFF4A6FE3), // Royal blue accent
         icon: null,
         isPositive: null,
-        glowBorder: false,
+        glowBorder: true,
         tooltip:
             'Total value of all holdings based on current market price',
       ),
@@ -505,11 +509,11 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         title: 'Invested Amount',
         value: _formatCurrency(summaryToUse.investmentValue),
         subtitle: 'Total Principal',
-        accentColor: ds.AppColors.info,
+        accentColor: const Color(0xFF00BCD4), // Cyan accent
         icon: null,
         isPositive: null,
         isHighlight: false,
-        glowBorder: false,
+        glowBorder: true,
         tooltip: 'Total principal amount invested',
       ),
     ];
