@@ -1,5 +1,5 @@
 # Preprod Environment — am-modern-ui
-# Dual-host: am-preprod (target) + am.asrax.in (current preprod until Phase 4)
+# Preprod app host only — am.asrax.in reserved for prod
 environment: preprod
 
 appConfig:
@@ -12,10 +12,6 @@ ingress:
   className: "nginx"
   hosts:
     - host: am-preprod.asrax.in
-      paths:
-        - path: /
-          pathType: Prefix
-    - host: am.asrax.in
       paths:
         - path: /
           pathType: Prefix
