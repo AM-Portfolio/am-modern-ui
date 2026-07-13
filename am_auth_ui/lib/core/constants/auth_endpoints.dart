@@ -16,6 +16,15 @@ class AuthEndpoints {
   static String get identityLogout => '$identityBaseUrl/auth/logout';
   static String get identityRefreshToken => '$identityBaseUrl/auth/refresh';
   static String get identityGoogleLogin => '$identityBaseUrl/auth/google/token';
+  static String get identityPasswordReset => '$identityBaseUrl/auth/password-reset';
+  static String get identityPasswordResetConfirm =>
+      '$identityBaseUrl/auth/password-reset/confirm';
+  static String get identityVerifyEmailResend =>
+      '$identityBaseUrl/auth/verify-email/resend';
+  static String get identityVerifyEmailConfirm =>
+      '$identityBaseUrl/auth/verify-email/confirm';
+  static String get identityChangePassword =>
+      '$identityBaseUrl/auth/change-password';
 
   // Authentication endpoints
   static String get login =>
@@ -26,8 +35,10 @@ class AuthEndpoints {
 
   // User Management endpoints
   static String get register => '$userBaseUrl/v1/auth/register';
-  static String get forgotPassword => '$userBaseUrl/v1/auth/request-reset';
-  static String get resetPassword => '$userBaseUrl/v1/auth/confirm-reset';
+  static String get forgotPassword => identityPasswordReset;
+  static String get resetPassword => identityPasswordResetConfirm;
+  static String get verifyEmailConfirm => identityVerifyEmailConfirm;
+  static String get verifyEmailResend => identityVerifyEmailResend;
   static String get userProfile => '$userBaseUrl/v1/auth/status';
   static String get updateProfile => '$userBaseUrl/v1/auth/status';
 

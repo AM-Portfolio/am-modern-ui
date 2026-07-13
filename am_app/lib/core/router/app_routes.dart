@@ -6,6 +6,7 @@ class AppRoutes {
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
   static const resetPassword = '/reset-password';
+  static const verifyEmail = '/verify-email';
 
   static const dashboard = '/app/dashboard';
   static const portfolio = '/app/portfolio';

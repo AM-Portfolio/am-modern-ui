@@ -60,3 +60,17 @@ final class PasswordResetEmailSent extends AuthState {
 final class PasswordResetSuccess extends AuthState {
   const PasswordResetSuccess();
 }
+
+/// Email verification succeeded
+final class EmailVerificationSuccess extends AuthState {
+  const EmailVerificationSuccess();
+}
+
+/// Registration created; user must verify email before login
+final class RegisterPendingVerification extends AuthState {
+  const RegisterPendingVerification(this.email);
+  final String email;
+
+  @override
+  List<Object?> get props => [email];
+}

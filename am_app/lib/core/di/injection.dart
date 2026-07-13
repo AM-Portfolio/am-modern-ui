@@ -35,6 +35,7 @@ Future<void> configureCoreDependencies() async {
       checkAuthStatusUseCase: getIt<auth_ui.CheckAuthStatusUseCase>(),
       getCurrentUserUseCase: getIt<auth_ui.GetCurrentUserUseCase>(),
       registerUseCase: getIt<auth_ui.RegisterUseCase>(),
+      authRepository: getIt<auth_ui.AuthRepository>(),
     );
   });
 

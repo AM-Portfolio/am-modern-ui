@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:am_design_system/core/constants/app_config.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
@@ -15,9 +16,10 @@ import 'package:am_design_system/shared/widgets/display/interactive_background.d
 
 /// Reset password page with redesigned UI
 class ResetPasswordPage extends StatelessWidget {
-  const ResetPasswordPage({super.key, this.resetToken});
+  const ResetPasswordPage({super.key, this.resetToken, this.resetCode});
   
   final String? resetToken;
+  final String? resetCode;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +34,7 @@ class ResetPasswordPage extends StatelessWidget {
                   backgroundColor: AppColors.success,
                 ),
               );
-              Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+              context.go('/login');
             } else if (state is AuthError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
@@ -67,7 +69,10 @@ class ResetPasswordPage extends StatelessWidget {
                                 
                                 GlassCardWidget(
                                   isCompact: isCompact,
-                                  child: ResetPasswordPageForm(resetToken: resetToken),
+                                  child: ResetPasswordPageForm(
+                                    resetToken: resetToken,
+                                    resetCode: resetCode,
+                                  ),
                                 ),
                               ],
                             ),
@@ -135,9 +140,10 @@ class ResetPasswordPage extends StatelessWidget {
 
 /// Reset password form widget
 class ResetPasswordPageForm extends StatefulWidget {
-  const ResetPasswordPageForm({super.key, this.resetToken});
+  const ResetPasswordPageForm({super.key, this.resetToken, this.resetCode});
   
   final String? resetToken;
+  final String? resetCode;
 
   @override
   State<ResetPasswordPageForm> createState() => _ResetPasswordPageFormState();
@@ -151,11 +157,23 @@ class _ResetPasswordPageFormState extends State<ResetPasswordPageForm> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
+  String? get _linkCode {
+    final c = widget.resetCode?.trim();
+    return (c != null && c.isNotEmpty) ? c : null;
+  }
+
+  String? get _linkToken {
+    final t = widget.resetToken?.trim();
+    return (t != null && t.isNotEmpty) ? t : null;
+  }
+
+  bool get _hasDeepLink => _linkCode != null || _linkToken != null;
+
   @override
   void initState() {
     super.initState();
-    if (widget.resetToken != null) {
-      _tokenController.text = widget.resetToken!;
+    if (_linkToken != null && _linkCode == null) {
+      _tokenController.text = _linkToken!;
     }
   }
 
@@ -170,7 +188,8 @@ class _ResetPasswordPageFormState extends State<ResetPasswordPageForm> {
   void _handleSubmit() {
     if (_formKey.currentState!.validate()) {
       context.read<AuthCubit>().resetPassword(
-        resetToken: _tokenController.text,
+        resetToken: _linkCode == null ? _tokenController.text : null,
+        resetCode: _linkCode,
         newPassword: _passwordController.text,
         confirmPassword: _confirmPasswordController.text,
       );
@@ -194,23 +213,23 @@ class _ResetPasswordPageFormState extends State<ResetPasswordPageForm> {
         ),
         const SizedBox(height: 32),
 
-        // Reset Token
-        TextFormField(
-          controller: _tokenController,
-          decoration: const InputDecoration(
-            labelText: 'Reset Token',
-            prefixIcon: Icon(Icons.vpn_key),
-            border: OutlineInputBorder(),
-            hintText: 'Enter token from email',
+        if (!_hasDeepLink) ...[
+          TextFormField(
+            controller: _tokenController,
+            decoration: const InputDecoration(
+              labelText: 'Reset Token',
+              prefixIcon: Icon(Icons.vpn_key_outlined),
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Reset token is required';
+              }
+              return null;
+            },
           ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter the reset token';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
+        ],
 
         // New Password
         TextFormField(

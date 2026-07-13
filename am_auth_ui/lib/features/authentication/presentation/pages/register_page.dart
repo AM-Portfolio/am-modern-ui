@@ -123,7 +123,25 @@ class RegisterPageForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocConsumer<AuthCubit, AuthState>(
     listener: (context, state) {
-      if (state is Authenticated) {
+      if (state is RegisterPendingVerification) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Account created for ${state.email}. Check your email to verify your Asrax account, then sign in.',
+            ),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Resend',
+              textColor: Colors.white,
+              onPressed: () {
+                context.read<AuthCubit>().resendVerifyEmail(state.email);
+              },
+            ),
+          ),
+        );
+        onLogin();
+      } else if (state is Authenticated) {
         // Navigate to home page after successful registration
         Navigator.of(context).pushReplacementNamed('/home');
       } else if (state is AuthError) {
