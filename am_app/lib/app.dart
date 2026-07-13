@@ -10,11 +10,15 @@ import 'package:go_router/go_router.dart';
 
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
+import 'core/router/app_routes.dart';
 import 'core/router/auth_refresh_listenable.dart';
 
 /// Main Application Widget
 class AMApp extends ConsumerStatefulWidget {
-  const AMApp({super.key});
+  const AMApp({super.key, this.launchUri});
+
+  /// Browser URL captured at process start (before bootstrap UI mounts).
+  final Uri? launchUri;
 
   @override
   ConsumerState<AMApp> createState() => _AMAppState();
@@ -28,11 +32,24 @@ class _AMAppState extends ConsumerState<AMApp> {
   @override
   void initState() {
     super.initState();
-    _authCubit = getIt<AuthCubit>()..checkAuthStatus();
+    _authCubit = getIt<AuthCubit>();
+    // Verify/reset deep links own session setup. Running restore in parallel
+    // can emit Unauthenticated after confirm and bounce the user to login.
+    final launchPath = AppRoutes.normalizePath(
+      widget.launchUri?.path.isEmpty == false
+          ? widget.launchUri!.path
+          : '/',
+    );
+    final skipSessionRestore = launchPath == AppRoutes.verifyEmail ||
+        launchPath == AppRoutes.resetPassword;
+    if (!skipSessionRestore) {
+      _authCubit.checkAuthStatus();
+    }
     _authRefresh = AuthRefreshListenable(_authCubit);
     _router = createAppRouter(
       authCubit: _authCubit,
       refreshListenable: _authRefresh,
+      launchUri: widget.launchUri,
     );
   }
 

@@ -81,6 +81,42 @@ class SectorHeatmapConverter {
       }
     }
 
+    final otherTiles = tiles.where((t) {
+      final n = t.name.trim().toLowerCase();
+      return n.isEmpty || n == '-' || n == 'unknown';
+    }).toList();
+
+    if (otherTiles.isNotEmpty) {
+      tiles.removeWhere((t) {
+        final n = t.name.trim().toLowerCase();
+        return n.isEmpty || n == '-' || n == 'unknown';
+      });
+      final combinedWeight = otherTiles.fold(0.0, (sum, t) => sum + t.weightage);
+      final combinedValue = otherTiles.fold(0.0, (sum, t) => sum + (t.value ?? 0));
+      final avgPerformance = otherTiles.fold(0.0, (sum, t) => sum + t.performance) / otherTiles.length;
+      
+      // Merge children
+      final List<HeatmapTileData> combinedChildren = [];
+      for (final t in otherTiles) {
+        if (t.children != null) {
+          for (final child in t.children!) {
+            combinedChildren.add(child is HeatmapTileData ? child : HeatmapTileData.fromEntity(child));
+          }
+        }
+      }
+
+      tiles.add(HeatmapTileData(
+        id: 'other',
+        name: 'Other',
+        displayName: 'Other',
+        weightage: combinedWeight,
+        performance: avgPerformance,
+        value: combinedValue,
+        children: combinedChildren.isNotEmpty ? combinedChildren : null,
+        metadata: {'type': 'sector', 'sectorName': 'Other'},
+      ));
+    }
+
     // Sort sectors by weightage descending (largest sectors first)
     tiles.sort((a, b) => b.weightage.compareTo(a.weightage));
     return tiles;
@@ -447,6 +483,7 @@ class SectorHeatmapConverter {
       'Commercial Services': 'Commercial',
       'Energy Minerals': 'Energy',
       'Non-Energy Minerals': 'Minerals',
+      'Fast Moving Consumer Goods': 'FMCG',
     };
 
     return sectorAbbreviations[sectorName] ??

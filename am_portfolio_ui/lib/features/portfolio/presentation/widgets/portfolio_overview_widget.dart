@@ -160,7 +160,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         return previous.runtimeType != current.runtimeType;
       },
       builder: (context, state) {
-        ds.CommonLogger.info(
+        ds.CommonLogger.debug(
             '[PortfolioOverview] State change: ${state.runtimeType}',
             tag: 'PortfolioUI');
 
@@ -679,7 +679,9 @@ class _MoversAllocationRowState extends State<_MoversAllocationRow> {
     final box = _leftKey.currentContext?.findRenderObject() as RenderBox?;
     if (box != null && box.hasSize) {
       final h = box.size.height;
-      if (h != _leftHeight) setState(() => _leftHeight = h);
+      if ((h - (_leftHeight ?? 0.0)).abs() > 1.0) {
+        setState(() => _leftHeight = h);
+      }
     }
   }
 

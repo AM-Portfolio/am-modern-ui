@@ -15,6 +15,10 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   BootTrace.configure();
 
+  // Capture before any MaterialApp mounts — a bootstrap `home:` route can
+  // rewrite the browser path to `/` and drop auth deep links.
+  final Uri? launchUri = kIsWeb ? Uri.base : null;
+
   ErrorWidget.builder = (details) => Material(
         color: const Color(0xFF1E1E2E),
         child: SafeArea(
@@ -32,11 +36,13 @@ void main() {
     usePathUrlStrategy();
   }
 
-  runApp(const ProviderScope(child: _BootstrapApp()));
+  runApp(ProviderScope(child: _BootstrapApp(launchUri: launchUri)));
 }
 
 class _BootstrapApp extends StatefulWidget {
-  const _BootstrapApp();
+  const _BootstrapApp({this.launchUri});
+
+  final Uri? launchUri;
 
   @override
   State<_BootstrapApp> createState() => _BootstrapAppState();
@@ -67,8 +73,10 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       await configureCoreDependencies();
       await configureFeatureDependencies();
       if (!mounted) return;
-      _app = const AMApp();
-      setState(() => _initializationComplete = true);
+      setState(() {
+        _app = AMApp(launchUri: widget.launchUri);
+        _initializationComplete = true;
+      });
 
       SchedulerBinding.instance.addPostFrameCallback((_) {
         BootTrace.instance.mark('first_flutter_frame');
@@ -95,10 +103,11 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
-      return MaterialApp(
-        home: Scaffold(
-          backgroundColor: const Color(0xFF1E1E2E),
-          body: SafeArea(
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: Material(
+          color: const Color(0xFF1E1E2E),
+          child: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: SelectableText(
@@ -115,39 +124,43 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     final canEnterApp = _minimumSplashComplete && _initializationComplete;
 
     if (!canEnterApp || _app == null) {
+      if (kIsWeb) {
+        final path = widget.launchUri?.path ?? '';
+        final restoring = path.startsWith('/app/');
+        // Avoid MaterialApp(home:) — it can clobber the browser URL to `/`.
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: Material(
+            color: const Color(0xFF0B1120),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: Color(0xFF6366F1)),
+                  const SizedBox(height: 20),
+                  Text(
+                    restoring
+                        ? 'Restoring your session…'
+                        : 'Starting AM Investment Platform…',
+                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
           backgroundColor: const Color(0xFF0B1120),
-          body: kIsWeb
-              ? const _WebStartupLoader()
-              : AnimatedSplashScreen(showLoading: showLoading),
+          body: AnimatedSplashScreen(showLoading: showLoading),
         ),
       );
     }
 
     return _app!;
-  }
-}
-
-class _WebStartupLoader extends StatelessWidget {
-  const _WebStartupLoader();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(color: Color(0xFF6366F1)),
-          SizedBox(height: 20),
-          Text(
-            'Starting AM Investment Platform…',
-            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
-          ),
-        ],
-      ),
-    );
   }
 }
 
