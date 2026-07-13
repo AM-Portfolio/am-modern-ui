@@ -1005,27 +1005,12 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
                     ),
                     const SizedBox(height: 16),
                     
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: TopMoversWidgetV2(
-                            movers: topGainers,
-                            title: 'Top Gainers',
-                            isGainers: true,
-                            isLoading: isLoadingMovers,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TopMoversWidgetV2(
-                            movers: topLosers,
-                            title: 'Top Losers',
-                            isGainers: false,
-                            isLoading: isLoadingMovers,
-                          ),
-                        ),
-                      ],
+                    // Unified Top Movers panel: handles Gainers + Losers,
+                    // responsive toggle on mobile, glassmorphic card, MarketColors tokens.
+                    TopMoversWidgetV2(
+                      gainers: topGainers,
+                      losers: topLosers,
+                      isLoading: isLoadingMovers,
                     ),
                   ],
                 ),
