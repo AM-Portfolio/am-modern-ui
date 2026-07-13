@@ -1,5 +1,6 @@
 
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -42,7 +43,7 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
           return const SizedBox.shrink();
         }
 
-        const gap = 3.0; // px gap between tiles
+        const gap = 6.0; // px gap between tiles
 
         return SizedBox(
           width: availableWidth,
@@ -109,7 +110,7 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     final widgets = <Widget>[];
     for (var i = 0; i < rects.length && i < normalised.length; i++) {
       final r = rects[i].withGap(gap).clamped(width, height);
-      if (r.width < 60 || r.height < 36) continue; // too small to be readable
+      if (r.width <= 0 || r.height <= 0) continue; // Skip only if physically 0
 
       widgets.add(
         Positioned(
@@ -310,8 +311,28 @@ class _HoverTileState extends State<_HoverTile>
 
   @override
   Widget build(BuildContext context) {
-    final tileColor = widget.builder.getTileColor(widget.tile, widget.data);
-    final textColor = widget.builder.getTextColor(tileColor);
+    Color tileColor = widget.builder.getTileColor(widget.tile, widget.data);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // The default colors are deep/dark (perfect for dark mode).
+    // For Light Mode glassmorphism, we need hyper-vibrant base colors 
+    // so they don't look dull when rendered at 25% opacity.
+    if (!isDark) {
+      final p = widget.tile.performance;
+      final intensity = (p.abs() / 5.0).clamp(0.0, 1.0);
+      if (p > 0.05) {
+        // Bright Emerald to Neon Green
+        tileColor = Color.lerp(const Color(0xFF0BA95B), const Color(0xFF00E676), intensity)!;
+      } else if (p < -0.05) {
+        // Vibrant Red to Neon Crimson
+        tileColor = Color.lerp(const Color(0xFFE53935), const Color(0xFFFF1744), intensity)!;
+      } else {
+        tileColor = const Color(0xFF6B7280); // Premium cool gray
+      }
+    }
+    
+    // Dark text for light mode glass, White text for dark mode glass
+    final textColor = isDark ? Colors.white : const Color(0xFF1C192C);
 
     Widget content;
     if (widget.customTileBuilder != null) {
@@ -320,7 +341,7 @@ class _HoverTileState extends State<_HoverTile>
         child: widget.customTileBuilder!(widget.tile),
       );
     } else {
-      content = _buildTileCard(tileColor, textColor);
+      content = _buildTileCard(context, tileColor, textColor);
     }
 
     if (!kIsWeb) {
@@ -344,47 +365,65 @@ class _HoverTileState extends State<_HoverTile>
       child: GestureDetector(
         onTap: widget.onTilePressed,
         child: AnimatedScale(
-          scale: _hovered ? 1.04 : 1.0,
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: _hovered
-                  ? [
-                      BoxShadow(
-                        color: tileColor.withValues(alpha: 0.55),
-                        blurRadius: 18,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 4),
-                      ),
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.10),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-            ),
-            child: content,
-          ),
+          scale: 1.0, // Prevent scaling up so tiles never cover neighbors
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutQuart,
+          child: content,
         ),
       ),
     );
   }
 
-  Widget _buildTileCard(Color tileColor, Color textColor) {
+  Widget _buildTileCard(BuildContext context, Color tileColor, Color textColor) {
     final w = widget.width;
     final h = widget.height;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Perfect Glassmorphism: 25% opacity in light mode, 45% in dark mode
+    final bgOpacity = isDark ? 0.45 : 0.25;
+    final borderOpacity = isDark ? 0.35 : 0.60; // Slightly stronger border for vibrant light mode
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutQuart,
+      width: w,
+      height: h,
+      decoration: BoxDecoration(
+        color: tileColor.withValues(alpha: bgOpacity),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: tileColor.withValues(alpha: borderOpacity),
+          width: _hovered ? 2.0 : 1.0,
+        ),
+        boxShadow: [
+          if (_hovered)
+            BoxShadow(
+              color: tileColor.withValues(alpha: isDark ? 0.55 : 0.25),
+              blurRadius: isDark ? 22 : 12,
+              spreadRadius: isDark ? 3 : 0,
+            )
+          else if (!isDark && _hovered)
+            BoxShadow(
+              color: tileColor.withValues(alpha: 0.20),
+              blurRadius: 12,
+              spreadRadius: 2,
+            )
+          else if (!isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            )
+        ],
+      ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: _buildInnerContent(w, h, textColor, isDark),
+        ),
+      );
+  }
+
+  Widget _buildInnerContent(double w, double h, Color textColor, bool isDark) {
     // Determine what labels fit based on tile dimensions.
     final showSecondary = h > 52;
     final showTertiary = h > 80;
@@ -394,91 +433,84 @@ class _HoverTileState extends State<_HoverTile>
     final primaryFontSize = _adaptiveFontSize(w, h, _FontRole.primary);
     final secondaryFontSize = _adaptiveFontSize(w, h, _FontRole.secondary);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: w,
-        height: h,
-        decoration: BoxDecoration(
-          color: tileColor,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: _hovered
-                ? Colors.white.withValues(alpha: 0.35)
-                : Colors.white.withValues(alpha: 0.12),
-            width: _hovered ? 1.5 : 0.5,
-          ),
-        ),
-        padding: EdgeInsets.symmetric(
-          horizontal: w > 120 ? 10 : 6,
-          vertical: h > 80 ? 10 : 6,
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Sector / tile name
-              Text(
-                widget.tile.name,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: nameFontSize,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: nameMaxLines,
-              ),
-
-              // Primary metric: performance %
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  '${widget.tile.performance >= 0 ? '+' : ''}${widget.tile.performance.toStringAsFixed(2)}%',
-                  style: TextStyle(
-                    color: textColor.withValues(alpha: 0.95),
-                    fontSize: primaryFontSize,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-              // Secondary: weight
-              if (showSecondary)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    '${widget.tile.weightage.toStringAsFixed(1)}% Weight',
-                    style: TextStyle(
-                      color: textColor.withValues(alpha: 0.75),
-                      fontSize: secondaryFontSize,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
-              // Tertiary: market value if available
-              if (showTertiary && widget.tile.value != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 1),
-                  child: Text(
-                    '₹${_formatValue(widget.tile.value!)}',
-                    style: TextStyle(
-                      color: textColor.withValues(alpha: 0.6),
-                      fontSize: secondaryFontSize,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-            ],
-          ),
-        ),
+    Widget content = Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: w > 120 ? 10 : 6,
+        vertical: h > 80 ? 10 : 6,
       ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: (w < 40 || h < 30) 
+          ? const SizedBox() // Hide text if tile is extremely small
+          : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Sector / tile name
+                Text(
+                          widget.tile.name,
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: nameFontSize,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: nameMaxLines,
+                        ),
+
+                        // Primary metric: performance %
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            '${widget.tile.performance >= 0 ? '+' : ''}${widget.tile.performance.toStringAsFixed(2)}%',
+                            style: TextStyle(
+                              color: textColor.withValues(alpha: 0.95),
+                              fontSize: primaryFontSize,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+
+                        // Secondary: weight
+                        if (showSecondary)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              '${widget.tile.weightage.toStringAsFixed(1)}% Weight',
+                              style: TextStyle(
+                                color: textColor.withValues(alpha: isDark ? 0.80 : 0.90),
+                                fontSize: secondaryFontSize,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+
+                        // Tertiary: market value if available
+                        if (showTertiary && widget.tile.value != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 1),
+                            child: Text(
+                              '₹${_formatValue(widget.tile.value!)}',
+                              style: TextStyle(
+                                color: textColor.withValues(alpha: isDark ? 0.65 : 0.80),
+                                fontSize: secondaryFontSize,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                      ],
+                    ),
+              ),
+    );
+
+    // Glassmorphism requires BackdropFilter for both themes
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+      child: content,
     );
   }
 

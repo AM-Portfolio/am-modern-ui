@@ -306,17 +306,5 @@ class UniversalHeatmapTemplateFactory {
   }
 
   /// Get header actions for full template
-  static List<Widget> _getHeaderActions(BuildContext context) => [
-    IconButton(
-      icon: const Icon(Icons.refresh),
-      onPressed: () {
-        CommonLogger.userAction(
-          'Refresh button pressed in heatmap header',
-          tag: 'UniversalHeatmapTemplateFactory.Interaction',
-          metadata: {'action': 'refresh_pressed', 'component': 'header'},
-        );
-      },
-      tooltip: 'Refresh Data',
-    ),
-  ];
+  static List<Widget> _getHeaderActions(BuildContext context) => [];
 }

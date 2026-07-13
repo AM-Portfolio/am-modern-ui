@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:ui';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -175,6 +177,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   late TabController _tabController;
   String? _currentPortfolioId;
   bool _isAddingTrade = false;
+  bool _showScrollFab = false;
+  Timer? _scrollHideTimer;
 
   int _tabIndexFromSlug(String? slug) {
     switch (slug?.toLowerCase()) {
@@ -266,6 +270,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollHideTimer?.cancel();
     super.dispose();
   }
 
@@ -280,6 +285,52 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
 
     // Notify parent if callback is provided
     widget.onPortfolioChanged?.call(portfolioId, portfolioName);
+  }
+
+  void _onScrollDetected() {
+    _scrollHideTimer?.cancel();
+    if (!_showScrollFab) setState(() => _showScrollFab = true);
+    _scrollHideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _showScrollFab = false);
+    });
+  }
+
+  Widget _buildGlassFab() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: GestureDetector(
+          onTap: () => setState(() => _isAddingTrade = true),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            decoration: BoxDecoration(
+              color: ModuleColors.portfolio.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(
+                color: ModuleColors.portfolio.withOpacity(0.6),
+                width: 1.2,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.add, color: Colors.white, size: 18),
+                const SizedBox(width: 6),
+                const Text(
+                  'Add Trade',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -328,26 +379,46 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           SecondarySidebarItem(
             title: 'Overview',
             icon: Icons.dashboard_outlined,
-            isSelected: _tabController.index == 0,
-            onTap: () => setState(() => _tabController.index = 0),
+            isSelected: _tabController.index == 0 && !_isAddingTrade,
+            onTap: () => setState(() {
+              _tabController.index = 0;
+              _isAddingTrade = false;
+            }),
           ),
           SecondarySidebarItem(
             title: 'Holdings',
             icon: Icons.wallet,
-            isSelected: _tabController.index == 1,
-            onTap: () => setState(() => _tabController.index = 1),
+            isSelected: _tabController.index == 1 && !_isAddingTrade,
+            onTap: () => setState(() {
+              _tabController.index = 1;
+              _isAddingTrade = false;
+            }),
           ),
           SecondarySidebarItem(
             title: 'Heatmap',
             icon: Icons.grid_view,
-            isSelected: _tabController.index == 2,
-            onTap: () => setState(() => _tabController.index = 2),
+            isSelected: _tabController.index == 2 && !_isAddingTrade,
+            onTap: () => setState(() {
+              _tabController.index = 2;
+              _isAddingTrade = false;
+            }),
           ),
           SecondarySidebarItem(
             title: 'Baskets',
             icon: Icons.shopping_basket_outlined,
-            isSelected: _tabController.index == 3,
-            onTap: () => setState(() => _tabController.index = 3),
+            isSelected: _tabController.index == 3 && !_isAddingTrade,
+            onTap: () => setState(() {
+              _tabController.index = 3;
+              _isAddingTrade = false;
+            }),
+          ),
+          SecondarySidebarItem(
+            title: 'Add Trade',
+            icon: Icons.add,
+            isSelected: _isAddingTrade,
+            onTap: () => setState(() {
+              _isAddingTrade = true;
+            }),
           ),
         ],
         body: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
@@ -361,22 +432,38 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                   });
                 },
               )
-            : PortfolioTabContentWidget(
-                tabController: _tabController,
-                currentPortfolioId: _currentPortfolioId!,
-              ),
-        floatingActionButton: (!_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
-            ? FloatingActionButton.extended(
-                onPressed: () {
-                  setState(() {
-                    _isAddingTrade = true;
-                  });
+            : NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (_tabController.index == 0 &&
+                      notification is ScrollUpdateNotification &&
+                      (notification.scrollDelta ?? 0).abs() > 0) {
+                    _onScrollDetected();
+                  }
+                  return false;
                 },
-                label: const Text('Add Trade'),
-                icon: const Icon(Icons.add),
-                backgroundColor: ModuleColors.portfolio,
-              )
-            : null,
+                child: Stack(
+                  children: [
+                    PortfolioTabContentWidget(
+                      tabController: _tabController,
+                      currentPortfolioId: _currentPortfolioId!,
+                    ),
+                    if (widget.addTradeBuilder != null && _tabController.index == 0)
+                      Positioned(
+                        bottom: 24,
+                        right: 16,
+                        child: AnimatedOpacity(
+                          opacity: _showScrollFab ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 300),
+                          child: IgnorePointer(
+                            ignoring: !_showScrollFab,
+                            child: _buildGlassFab(),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+        floatingActionButton: null,
       ),
     );
   }

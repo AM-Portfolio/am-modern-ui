@@ -12,19 +12,23 @@ import '../../features/shell/app_shell.dart';
 import 'app_routes.dart';
 import 'auth_refresh_listenable.dart';
 import 'deferred_routes.dart';
+import 'launch_location.dart';
 import 'share_url_builder.dart';
+
+export 'launch_location.dart' show resolveLaunchLocation;
 
 GoRouter createAppRouter({
   required AuthCubit authCubit,
   required AuthRefreshListenable refreshListenable,
+  Uri? launchUri,
 }) {
   return GoRouter(
-    initialLocation: resolveLaunchLocation(),
+    initialLocation: resolveLaunchLocation(launchUri: launchUri),
     overridePlatformDefaultLocation: kIsWeb,
     refreshListenable: refreshListenable,
     redirect: (context, state) {
       final authState = authCubit.state;
-      final location = state.matchedLocation;
+      final location = AppRoutes.normalizePath(state.matchedLocation);
       final isAuthenticated = authState is Authenticated;
       final authPending = authState is AuthInitial ||
           authState is AuthLoading ||
@@ -34,6 +38,20 @@ GoRouter createAppRouter({
       if (location == '/' || location.isEmpty) {
         if (authPending) return AppRoutes.dashboard;
         return isAuthenticated ? AppRoutes.dashboard : AppRoutes.login;
+      }
+
+      // Auth deep links must not bounce to login/dashboard while session restores.
+      if (AppRoutes.isPublicAuthRoute(location)) {
+        if (isAuthenticated && location == AppRoutes.verifyEmail) {
+          return AppRoutes.dashboard;
+        }
+        if (isAuthenticated && location == AppRoutes.login) {
+          final target = ShareUrlBuilder.sanitizeRedirect(
+            state.uri.queryParameters['redirect'],
+          );
+          return target ?? AppRoutes.dashboard;
+        }
+        return null;
       }
 
       // Restoring session — stay on current /app/* URL (avoids login flash on reload).
@@ -46,21 +64,16 @@ GoRouter createAppRouter({
         return '${AppRoutes.login}?redirect=$redirect';
       }
 
-      if (isAuthenticated && location == AppRoutes.login) {
-        final target = ShareUrlBuilder.sanitizeRedirect(
-          state.uri.queryParameters['redirect'],
-        );
-        return target ?? AppRoutes.dashboard;
-      }
-
       // Lab is disabled in navigation — block direct URL access.
       if (location == AppRoutes.lab || location.startsWith('${AppRoutes.lab}/')) {
         return AppRoutes.dashboard;
       }
 
-      // Global Analysis module is admin-only.
+      // Global Analysis + AI Chat are admin-only.
       if (location == AppRoutes.analysis ||
-          location.startsWith('${AppRoutes.analysis}/')) {
+          location.startsWith('${AppRoutes.analysis}/') ||
+          location == AppRoutes.aiChat ||
+          location.startsWith('${AppRoutes.aiChat}/')) {
         final isAdmin =
             authState is Authenticated && authState.user.isAdmin;
         if (!isAdmin) return AppRoutes.dashboard;
@@ -128,7 +141,17 @@ GoRouter createAppRouter({
       ),
       GoRoute(
         path: AppRoutes.resetPassword,
-        builder: (context, state) => const ResetPasswordPage(),
+        builder: (context, state) => ResetPasswordPage(
+          resetToken: state.uri.queryParameters['token'],
+          resetCode: state.uri.queryParameters['c'],
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.verifyEmail,
+        builder: (context, state) => VerifyEmailPage(
+          token: state.uri.queryParameters['token'],
+          code: state.uri.queryParameters['c'],
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
@@ -322,24 +345,6 @@ String? _portfolioIdOnlyRedirect(String location) {
 String _userId(BuildContext context) {
   final authState = context.read<AuthCubit>().state;
   return authState is Authenticated ? authState.user.id : '';
-}
-
-/// Browser URL on web reload; dashboard fallback when path is empty or `/`.
-String resolveLaunchLocation() {
-  if (kIsWeb) {
-    final uri = Uri.base;
-    final path = uri.path.isEmpty ? '/' : uri.path;
-    if (path != '/' && AppRoutes.isAuthenticatedAppRoute(path)) {
-      return uri.hasQuery ? '$path?${uri.query}' : path;
-    }
-    if (path == AppRoutes.login ||
-        path == AppRoutes.register ||
-        path == AppRoutes.forgotPassword ||
-        path == AppRoutes.resetPassword) {
-      return uri.hasQuery ? '$path?${uri.query}' : path;
-    }
-  }
-  return AppRoutes.dashboard;
 }
 
 String _redirectTarget(Uri uri) {

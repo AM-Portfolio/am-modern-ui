@@ -6,6 +6,7 @@ class AppRoutes {
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
   static const resetPassword = '/reset-password';
+  static const verifyEmail = '/verify-email';
 
   static const dashboard = '/app/dashboard';
   static const portfolio = '/app/portfolio';
@@ -143,4 +144,25 @@ class AppRoutes {
 
   static bool isAuthenticatedAppRoute(String location) =>
       location.startsWith('/app');
+
+  /// Public auth pages that must survive cold start / refresh without a session.
+  static const publicAuthRoutes = {
+    login,
+    register,
+    forgotPassword,
+    resetPassword,
+    verifyEmail,
+  };
+
+  /// Strip a trailing slash (except root) so `/reset-password/` matches allowlists.
+  static String normalizePath(String path) {
+    if (path.isEmpty) return '/';
+    if (path.length > 1 && path.endsWith('/')) {
+      return path.substring(0, path.length - 1);
+    }
+    return path;
+  }
+
+  static bool isPublicAuthRoute(String location) =>
+      publicAuthRoutes.contains(normalizePath(location));
 }
