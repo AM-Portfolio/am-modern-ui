@@ -1,0 +1,14 @@
+environment: dev
+replicaCount: 1
+
+env:
+  ENVIRONMENT: "dev"
+
+ingress:
+  enabled: true
+  className: "traefik"
+  hosts:
+    - host: am-dev.asrax.in
+      paths:
+        - path: /
+          pathType: Prefix
