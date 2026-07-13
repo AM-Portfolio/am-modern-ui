@@ -1,166 +1,72 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/models/top_mover_stock.dart';
-import 'package:intl/intl.dart';
 import 'package:am_market_ui/features/market/widgets/market_colors.dart';
 
-/// Widget showing top gainers or losers (API-driven)
+/// Market-module adapter for [AmTopMoversPanel].
+///
+/// Converts the market-specific [TopMoverStock] model to the design-system's
+/// [AmMoverItem] and passes it to the shared [AmTopMoversPanel] widget.
+///
+/// ## Why a wrapper?
+/// [AmTopMoversPanel] lives in `am_design_system` and knows nothing about
+/// [TopMoverStock]. This wrapper is the single mapping point — if [TopMoverStock]
+/// fields ever change, only this file needs updating.
+///
+/// ## Usage in user_dashboard_page.dart
+/// ```dart
+/// TopMoversWidgetV2(
+///   gainers: topGainers,
+///   losers: topLosers,
+///   isLoading: isLoadingMovers,
+/// )
+/// ```
+///
+/// ## Want to use the panel directly in another page?
+/// Import `am_design_system` and use [AmTopMoversPanel] + [AmMoverItem] directly.
+/// See `am_top_movers_panel.dart` for the full customisation API.
 class TopMoversWidgetV2 extends StatelessWidget {
-  final List<TopMoverStock> movers;
-  final String title;
-  final bool isGainers;
+  final List<TopMoverStock> gainers;
+  final List<TopMoverStock> losers;
   final bool isLoading;
+  final String? error;
 
   const TopMoversWidgetV2({
-    required this.movers,
-    required this.title,
-    this.isGainers = true,
+    required this.gainers,
+    required this.losers,
     this.isLoading = false,
+    this.error,
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    final displayMovers = movers.take(5).toList();
-    final numberFormat = NumberFormat('#,##,###.##', 'en_IN');
+    // Resolve MarketColors tokens here — they need BuildContext.
+    // Passed as overrides into AmTopMoversPanel so the shared widget
+    // renders with the market UI's exact green/red palette.
+    final positiveColor = MarketColors.positive(context);
+    final negativeColor = MarketColors.negative(context);
+    final headerAccent  = MarketColors.borderSelected(context);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: MarketColors.cardSurface(context),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: MarketColors.borderDefault(context),
-          width: MarketColors.borderWidth(context),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Icon(
-                isGainers ? Icons.trending_up : Icons.trending_down,
-                color: isGainers ? const Color(0xFF00FF88) : const Color(0xFFFF6B6B),
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  color: MarketColors.textPrimary(context),
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          // List of movers
-          if (isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: CircularProgressIndicator(
-                  color: Color(0xFF00D1FF),
-                  strokeWidth: 2,
-                ),
-              ),
-            )
-          else if (displayMovers.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'No data available',
-                  style: TextStyle(
-                    color: MarketColors.textMuted(context),
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            )
-          else
-            ...displayMovers.asMap().entries.map((entry) {
-              final index = entry.key;
-              final stock = entry.value;
-              final accentColor = isGainers 
-                  ? const Color(0xFF00FF88) 
-                  : const Color(0xFFFF6B6B);
-
-              return Padding(
-                padding: EdgeInsets.only(bottom: index < displayMovers.length - 1 ? 12 : 0),
-                child: Row(
-                  children: [
-                    // Rank
-                    Container(
-                      width: 24,
-                      height: 24,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${index + 1}',
-                        style: TextStyle(
-                          color: accentColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    
-                    // Symbol and Company
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            stock.symbol,
-                            style: TextStyle(
-                              color: MarketColors.textPrimary(context),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '₹${numberFormat.format(stock.lastPrice)}',
-                            style: TextStyle(
-                              color: MarketColors.textMuted(context),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    // Change percentage
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '${isGainers ? '+' : ''}${stock.changePercent.toStringAsFixed(2)}%',
-                        style: TextStyle(
-                          color: accentColor,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-        ],
-      ),
+    return AmTopMoversPanel(
+      gainers: gainers.map(_toAmItem).toList(),
+      losers: losers.map(_toAmItem).toList(),
+      isLoading: isLoading,
+      error: error,
+      positiveColor: positiveColor,
+      negativeColor: negativeColor,
+      headerAccent: headerAccent,
     );
   }
+
+  /// Maps [TopMoverStock] → [AmMoverItem].
+  /// Centralised here so any field-name change in [TopMoverStock] is caught
+  /// in one place and not scattered across multiple widget files.
+  static AmMoverItem _toAmItem(TopMoverStock s) => AmMoverItem(
+        symbol: s.symbol,
+        subtitle: s.companyName.isNotEmpty ? s.companyName : null,
+        price: s.lastPrice,
+        priceLabel: '₹${s.lastPrice.toStringAsFixed(2)}',
+        changePercent: s.changePercent,
+      );
 }

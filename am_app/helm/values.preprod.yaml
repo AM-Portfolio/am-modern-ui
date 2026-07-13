@@ -1,8 +1,9 @@
 # Preprod Environment — am-modern-ui
+# Preprod app host only — am.asrax.in reserved for prod
 environment: preprod
 
 appConfig:
-  domain: "am.asrax.in"
+  domain: "am-preprod.asrax.in"
 
 replicaCount: 1
 
@@ -10,7 +11,7 @@ ingress:
   enabled: true
   className: "nginx"
   hosts:
-    - host: am.asrax.in
+    - host: am-preprod.asrax.in
       paths:
         - path: /
           pathType: Prefix

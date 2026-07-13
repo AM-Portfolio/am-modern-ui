@@ -45,9 +45,9 @@ class EnvironmentConfig {
       case Environment.development:
         return 'https://am-dev.asrax.in'; // Development API
       case Environment.preprod:
-        return 'https://am.asrax.in'; // Pre-Production API
+        return 'https://am-preprod.asrax.in'; // Pre-Production API
       case Environment.production:
-        return 'https://am.munish.org'; // Production API
+        return 'https://am.asrax.in'; // Production API
     }
   }
 
