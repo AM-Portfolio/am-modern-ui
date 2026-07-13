@@ -288,24 +288,23 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── GLOBAL TIME FRAME SELECTOR ──
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 20.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth: isMobile ? 84 : 550,
+                        // Timeframe lives in the mobile AppBar for compact layouts.
+                        if (!isMobile)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 20.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(maxWidth: 550),
+                                  child: ds.GlobalTimeFrameBar(
+                                    availableTimeFrames:
+                                        ds.TimeFrame.chartTimeFrames,
+                                  ),
                                 ),
-                                child: ds.GlobalTimeFrameBar(
-                                  availableTimeFrames:
-                                      ds.TimeFrame.chartTimeFrames,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
                         // ── ROW 1: 4 Metric Cards ──────────────────────────
                         if (isSmallMobile)
                           GridView.count(

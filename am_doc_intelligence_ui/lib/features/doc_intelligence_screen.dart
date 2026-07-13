@@ -21,6 +21,7 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
       title: 'Doc Intelligence',
       icon: Icons.psychology_outlined,
       accentColor: Theme.of(context).colorScheme.primary,
+      autoHideMobileTabsOnScroll: true,
       items: [
         SecondarySidebarItem(
           title: 'Doc Processor',
