@@ -52,9 +52,9 @@ class ConfigService {
         };
 
     final bootstrap = parallel[1];
-    final env = _envFromDefine.isNotEmpty
-        ? _envFromDefine
-        : bootstrap?['env'] as String?;
+    final env = (bootstrap?['env'] as String?)?.isNotEmpty == true
+        ? bootstrap?['env'] as String
+        : _envFromDefine;
     _resolvedEnv = env ?? _resolvedEnv;
     if (env != null && env.isNotEmpty) {
       final envConfig = await _fetchJson('/config.$env.json');
@@ -76,9 +76,8 @@ class ConfigService {
 
   static void _applyMergedConfig(Map<String, dynamic> json) {
     _domain = json['domain'] as String? ?? _domain;
-    if (_domainFromDefine.isNotEmpty) {
-      _domain = _domainFromDefine;
-    }
+    // Removed _domainFromDefine hard-override to allow config.json to take precedence in Docker
+
 
     final raw = json['services'] as Map<String, dynamic>? ??
         json['overrides'] as Map<String, dynamic>? ??

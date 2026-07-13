@@ -32,8 +32,7 @@ RUN for d in am_common am_design_system am_market/common am_analysis/common am_m
 
 # ── BUILD SCRIPTS + ENV ───────────────────────────────────────────────────
 COPY scripts/inject_build_id.sh scripts/docker_build_web.sh /app/scripts/
-# .env.preprod is gitignored locally; CI uses the committed example file.
-COPY .env.preprod.example /app/.env.preprod
+# We no longer copy .env.preprod.example into the build. We rely on runtime config.json instead!
 
 # ── MAIN APPLICATION ─────────────────────────────────────────────────────
 COPY am_app/pubspec.* ./am_app/

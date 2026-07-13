@@ -26,7 +26,7 @@ if [ -f "$ENV_FILE" ]; then
   done < "$ENV_FILE"
 else
   echo "[docker_build_web] WARN: $ENV_FILE not found, using minimal defines"
-  DEFINES="$DEFINES --dart-define=AM_ENV=preprod"
+  DEFINES="$DEFINES --dart-define=AM_ENV=docker"
 fi
 
 echo "[docker_build_web] flutter build web --release --no-wasm-dry-run --no-web-resources-cdn $DEFINES"
