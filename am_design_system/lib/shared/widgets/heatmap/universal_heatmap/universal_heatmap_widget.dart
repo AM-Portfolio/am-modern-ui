@@ -113,13 +113,16 @@ class UniversalHeatmapWidget extends StatelessWidget {
       tag: 'UniversalHeatmapWidget.HeatmapData',
     );
 
-    // Get effective config (use provided config or basic fallback)
-    final effectiveConfig =
+    var effectiveConfig =
         config ??
         UniversalHeatmapConfigManager.getBasicConfig(
           title: title,
           compactMode: compactMode ?? false,
         );
+
+    if (selectedLayout != null) {
+      effectiveConfig = effectiveConfig.withLayout(type: selectedLayout);
+    }
 
     // Build the universal template by composing the 3 separate components
     final widget = _buildUniversalTemplate(
