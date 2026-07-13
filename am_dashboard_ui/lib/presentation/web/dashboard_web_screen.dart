@@ -190,9 +190,6 @@ class DashboardWebScreen extends ConsumerWidget {
     final bool isCompactWeb = screenWidth < 1280;
 
     final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final borderColor = isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE2E8F0);
-    final btnBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
 
     final marketOpenBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
     final marketOpenText = isDark ? const Color(0xFF60A5FA) : const Color(0xFF0F172A);
@@ -260,56 +257,19 @@ class DashboardWebScreen extends ConsumerWidget {
                         spacing: 16,
                         runSpacing: 12,
                         children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Icon(Icons.arrow_back, color: onSurfaceVariant, size: 20),
-                              // const SizedBox(width: 16),
-                              Text(
-                                'Dashboard',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                  color: onSurface,
-                                  fontFamily: 'Inter',
-                                ),
-                              ),
-                            ],
+                          Text(
+                            'Dashboard',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: onSurface,
+                              fontFamily: 'Inter',
+                            ),
                           ),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const GlobalTimeFrameBar(),
-                              // const SizedBox(width: 12),
-                              // Container(
-                              //   decoration: BoxDecoration(
-                              //     color: btnBgColor,
-                              //     shape: BoxShape.circle,
-                              //     border: Border.all(color: borderColor),
-                              //   ),
-                              //   child: IconButton(
-                              //     icon: Icon(Icons.refresh, color: onSurfaceVariant, size: 20),
-                              //     onPressed: () {
-                              //       ref.invalidate(dashboardStreamProvider(userId));
-                              //       ref.invalidate(portfolioOverviewsProvider(userId));
-                              //       onDashboardTimeFrameChanged(ref, userId, timeFrame);
-                              //     },
-                              //   ),
-                              // ),
-                              // const SizedBox(width: 12),
-                              // const ShareLinkButton(),
-                              // const SizedBox(width: 12),
-                              // Container(
-                              //   decoration: BoxDecoration(
-                              //     color: btnBgColor,
-                              //     shape: BoxShape.circle,
-                              //     border: Border.all(color: borderColor),
-                              //   ),
-                              //   child: IconButton(
-                              //     icon: Icon(Icons.notifications_outlined, color: onSurfaceVariant, size: 20),
-                              //     onPressed: () {},
-                              //   ),
-                              // ),
                               const SizedBox(width: 16),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

@@ -48,7 +48,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   Future<void> _checkHealthAndLoad() async {
     setState(() => _checkingHealth = true);
     final isConnected = await apiProvider.checkEmailExtractorHealth();
-    
+    if (!mounted) return;
+
     setState(() {
       _isServiceConnected = isConnected;
       _checkingHealth = false;
@@ -69,12 +70,25 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     try {
       final brokersData = await apiProvider.getBrokers();
       await _checkGmail(); // Check connection status
-      
+      if (!mounted) return;
+
+      final rawBrokers = brokersData['brokers'];
+      final parsedBrokers = rawBrokers is List
+          ? rawBrokers
+              .whereType<Map>()
+              .map((b) => Map<String, dynamic>.from(b))
+              .toList()
+          : <Map<String, dynamic>>[];
+
       setState(() {
-        _brokers = List<Map<String, dynamic>>.from(brokersData['brokers']);
+        _brokers = parsedBrokers;
         _loading = false;
+        if (rawBrokers is! List) {
+          _status = 'Error: invalid broker data received from server.';
+        }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _status = 'Error loading data: $e';
         _loading = false;
@@ -85,6 +99,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   Future<void> _checkGmail() async {
     try {
       final status = await apiProvider.checkGmailStatus();
+      if (!mounted) return;
       setState(() {
         _gmailStatus = status;
       });
@@ -101,12 +116,14 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     try {
       if (isConnected) {
         final result = await apiProvider.disconnectGmail();
+        if (!mounted) return;
         setState(() {
           _status = result['message'] ?? 'Gmail disconnected successfully!';
         });
         await _checkGmail();
       } else {
         final result = await apiProvider.connectGmail();
+        if (!mounted) return;
         if (result['connected'] == true) {
           setState(() {
             _status = 'Gmail already connected!';
@@ -122,6 +139,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _status = 'Error: $e';
       });
@@ -136,11 +154,13 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     
     try {
       final result = await apiProvider.extractFromGmail(brokerId);
+      if (!mounted) return;
       setState(() {
         _status = 'Extraction successful!\n- Parsed ${result['count']} holdings\n- Saved Portfolio ID: ${result['db_id']}';
         _activeExtractingBrokerId = null;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _status = 'Extraction failed: $e';
         _activeExtractingBrokerId = null;
@@ -447,9 +467,9 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     final bool isMobile = ResponsiveHelper.isMobile(context);
 
     Widget buildBrokerCard(Map<String, dynamic> broker) {
-      final String brokerId = broker['id'];
-      final String brokerName = broker['name'];
-      final String format = broker['format'];
+      final String brokerId = broker['id']?.toString() ?? '';
+      final String brokerName = broker['name']?.toString() ?? 'Unknown Broker';
+      final String format = broker['format']?.toString() ?? 'N/A';
       final bool isCurrentlyExtracting = _activeExtractingBrokerId == brokerId;
 
       // Custom colors/icons per broker

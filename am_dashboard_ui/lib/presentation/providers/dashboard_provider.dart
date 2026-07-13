@@ -35,6 +35,17 @@ Future<ApiClient> portfolioApiClient(Ref ref) async {
   return ApiClient(baseUrl: config.api.portfolio.baseUrl);
 }
 
+/// Single shared fetch of portfolio summary used by all dashboard fallbacks.
+@Riverpod(keepAlive: true)
+Future<Map<String, dynamic>> portfolioSummaryFallback(Ref ref) async {
+  final config = await ref.watch(appConfigProvider.future);
+  final client = await ref.watch(portfolioApiClientProvider.future);
+  return client.get(
+    config.api.portfolio.summaryResource,
+    parser: (data) => data as Map<String, dynamic>,
+  );
+}
+
 /// Starts dashboard STOMP session (subscribe + queue bindings). Watch from DashboardPage.
 @riverpod
 Future<void> dashboardStreamingSession(Ref ref, String userId) async {
@@ -66,6 +77,49 @@ double _parseDouble(dynamic val) {
   if (val is num) return val.toDouble();
   if (val is String) return double.tryParse(val) ?? 0.0;
   return 0.0;
+}
+
+DashboardSummary _dashboardSummaryFromPortfolioRaw(Map<String, dynamic> rawData) {
+  final brokerPortfolios = rawData['brokerPortfolios'] as Map?;
+  final totalPortfolios = brokerPortfolios?.keys.length ?? 0;
+
+  return DashboardSummary(
+    totalValue: _parseDouble(rawData['currentValue']),
+    totalInvested: _parseDouble(rawData['investmentValue']),
+    totalGainLoss: _parseDouble(rawData['totalGainLoss']),
+    totalGainLossPercentage: _parseDouble(rawData['totalGainLossPercentage']),
+    dayChange: _parseDouble(rawData['todayGainLoss']),
+    dayChangePercentage: _parseDouble(rawData['todayGainLossPercentage']),
+    totalPortfolios: totalPortfolios == 0 ? 1 : totalPortfolios,
+  );
+}
+
+List<PortfolioOverview> _portfolioOverviewsFromPortfolioRaw(
+  Map<String, dynamic> rawData,
+) {
+  return [
+    PortfolioOverview(
+      type: 'CONSOLIDATED',
+      totalValue: _parseDouble(rawData['currentValue']),
+      totalReturn: _parseDouble(rawData['totalGainLoss']),
+      returnPercentage: _parseDouble(rawData['totalGainLossPercentage']),
+      dayChange: _parseDouble(rawData['todayGainLoss']),
+      dayChangePercentage: _parseDouble(rawData['todayGainLossPercentage']),
+      portfolioCount: 1,
+    ),
+  ];
+}
+
+PerformanceResponse _performanceFromPortfolioRaw(
+  Map<String, dynamic> rawData,
+  String timeFrame,
+) {
+  return _generatePerformanceFromSummary(
+    _parseDouble(rawData['currentValue']),
+    _parseDouble(rawData['totalGainLoss']),
+    _parseDouble(rawData['todayGainLoss']),
+    timeFrame,
+  );
 }
 
 PerformanceResponse _generatePerformanceFromSummary(double totalValue, double totalGainLoss, double todayGainLoss, String timeFrame) {
@@ -141,39 +195,16 @@ PerformanceResponse _generatePerformanceFromSummary(double totalValue, double to
 
 @riverpod
 Future<DashboardSummary> dashboardSummary(Ref ref, String userId) async {
-  final repositoryFuture = ref.watch(dashboardRepositoryProvider.future);
-  final portfolioApiClientFuture = ref.watch(portfolioApiClientProvider.future);
-
-  final repository = await repositoryFuture;
+  final repository = await ref.watch(dashboardRepositoryProvider.future);
   try {
     return await repository.getSummary(userId);
   } catch (e) {
-    AppLogger.warning('Failed to get dashboard summary from analysis service. Using portfolio service fallback.', error: e);
-    final portfolioApiClient = await portfolioApiClientFuture;
-    final rawData = await portfolioApiClient.get(
-      '/v1/portfolios/summary',
-      parser: (data) => data as Map<String, dynamic>,
+    AppLogger.warning(
+      'Failed to get dashboard summary from analysis service. Using portfolio service fallback.',
+      error: e,
     );
-    
-    final totalValue = _parseDouble(rawData['currentValue']);
-    final totalInvested = _parseDouble(rawData['investmentValue']);
-    final totalGainLoss = _parseDouble(rawData['totalGainLoss']);
-    final totalGainLossPercentage = _parseDouble(rawData['totalGainLossPercentage']);
-    final dayChange = _parseDouble(rawData['todayGainLoss']);
-    final dayChangePercentage = _parseDouble(rawData['todayGainLossPercentage']);
-    
-    final brokerPortfolios = rawData['brokerPortfolios'] as Map?;
-    final totalPortfolios = brokerPortfolios?.keys.length ?? 0;
-    
-    return DashboardSummary(
-      totalValue: totalValue,
-      totalInvested: totalInvested,
-      totalGainLoss: totalGainLoss,
-      totalGainLossPercentage: totalGainLossPercentage,
-      dayChange: dayChange,
-      dayChangePercentage: dayChangePercentage,
-      totalPortfolios: totalPortfolios == 0 ? 1 : totalPortfolios,
-    );
+    final rawData = await ref.read(portfolioSummaryFallbackProvider.future);
+    return _dashboardSummaryFromPortfolioRaw(rawData);
   }
 }
 
@@ -181,48 +212,25 @@ Future<DashboardSummary> dashboardSummary(Ref ref, String userId) async {
 Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
   if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
 
-  final repositoryFuture = ref.watch(dashboardRepositoryProvider.future);
-  final portfolioApiClientFuture = ref.watch(portfolioApiClientProvider.future);
+  final repository = await ref.watch(dashboardRepositoryProvider.future);
 
-  final repository = await repositoryFuture;
-  
   DashboardSummary summary;
   try {
     summary = await repository.getSummary(userId);
   } catch (e) {
-    AppLogger.warning('Failed to get summary from analysis service. Trying fallback to portfolio service...', error: e);
+    AppLogger.warning(
+      'Failed to get summary from analysis service. Trying fallback to portfolio service...',
+      error: e,
+    );
     try {
-      final portfolioApiClient = await portfolioApiClientFuture;
-      final rawData = await portfolioApiClient.get(
-        '/v1/portfolios/summary',
-        parser: (data) => data as Map<String, dynamic>,
-      );
-      
-      final totalValue = _parseDouble(rawData['currentValue']);
-      final totalInvested = _parseDouble(rawData['investmentValue']);
-      final totalGainLoss = _parseDouble(rawData['totalGainLoss']);
-      final totalGainLossPercentage = _parseDouble(rawData['totalGainLossPercentage']);
-      final dayChange = _parseDouble(rawData['todayGainLoss']);
-      final dayChangePercentage = _parseDouble(rawData['todayGainLossPercentage']);
-      
-      final brokerPortfolios = rawData['brokerPortfolios'] as Map?;
-      final totalPortfolios = brokerPortfolios?.keys.length ?? 0;
-      
-      summary = DashboardSummary(
-        totalValue: totalValue,
-        totalInvested: totalInvested,
-        totalGainLoss: totalGainLoss,
-        totalGainLossPercentage: totalGainLossPercentage,
-        dayChange: dayChange,
-        dayChangePercentage: dayChangePercentage,
-        totalPortfolios: totalPortfolios == 0 ? 1 : totalPortfolios,
-      );
+      final rawData = await ref.read(portfolioSummaryFallbackProvider.future);
+      summary = _dashboardSummaryFromPortfolioRaw(rawData);
     } catch (fallbackError) {
       AppLogger.error('Dashboard summary fallback also failed', error: fallbackError);
       rethrow;
     }
   }
-  
+
   yield summary;
 
   _attachDashboardStreaming(ref, userId);
@@ -307,33 +315,25 @@ Stream<TopMoversResponse> moversStream(Ref ref, String userId, {String timeFrame
 Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFrame = '1D'}) async* {
   if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
 
-  final repositoryFuture = ref.watch(dashboardRepositoryProvider.future);
-  final portfolioApiClientFuture = ref.watch(portfolioApiClientProvider.future);
+  final repository = await ref.watch(dashboardRepositoryProvider.future);
 
-  final repository = await repositoryFuture;
-  
   PerformanceResponse performance;
   try {
     performance = await repository.getPerformance(userId, timeFrame: timeFrame);
   } catch (e) {
-    AppLogger.warning('Failed to get performance from analysis service. Trying fallback to portfolio service...', error: e);
+    AppLogger.warning(
+      'Failed to get performance from analysis service. Trying fallback to portfolio service...',
+      error: e,
+    );
     try {
-      final portfolioApiClient = await portfolioApiClientFuture;
-      final rawData = await portfolioApiClient.get(
-        '/v1/portfolios/summary',
-        parser: (data) => data as Map<String, dynamic>,
-      );
-      
-      final totalValue = _parseDouble(rawData['currentValue']);
-      final totalGainLoss = _parseDouble(rawData['totalGainLoss']);
-      final todayGainLoss = _parseDouble(rawData['todayGainLoss']);
-      performance = _generatePerformanceFromSummary(totalValue, totalGainLoss, todayGainLoss, timeFrame);
+      final rawData = await ref.read(portfolioSummaryFallbackProvider.future);
+      performance = _performanceFromPortfolioRaw(rawData, timeFrame);
     } catch (fallbackError) {
       AppLogger.error('Dashboard history fallback also failed', error: fallbackError);
       rethrow;
     }
   }
-  
+
   yield performance;
 
   _attachDashboardStreaming(ref, userId);
@@ -346,40 +346,22 @@ Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFr
 
 @riverpod
 Future<List<PortfolioOverview>> portfolioOverviews(Ref ref, String userId) async {
-  final repositoryFuture = ref.watch(dashboardRepositoryProvider.future);
-  final portfolioApiClientFuture = ref.watch(portfolioApiClientProvider.future);
-
-  final repository = await repositoryFuture;
+  final repository = await ref.watch(dashboardRepositoryProvider.future);
   try {
     return await repository.getPortfolioOverviews(userId);
   } catch (e) {
-    AppLogger.warning('Failed to get portfolio overviews from analysis service. Trying fallback to portfolio service...', error: e);
+    AppLogger.warning(
+      'Failed to get portfolio overviews from analysis service. Trying fallback to portfolio service...',
+      error: e,
+    );
     try {
-      final portfolioApiClient = await portfolioApiClientFuture;
-      final rawData = await portfolioApiClient.get(
-        '/v1/portfolios/summary',
-        parser: (data) => data as Map<String, dynamic>,
-      );
-      
-      final totalValue = _parseDouble(rawData['currentValue']);
-      final totalGainLoss = _parseDouble(rawData['totalGainLoss']);
-      final totalGainLossPercentage = _parseDouble(rawData['totalGainLossPercentage']);
-      final dayChange = _parseDouble(rawData['todayGainLoss']);
-      final dayChangePercentage = _parseDouble(rawData['todayGainLossPercentage']);
-      
-      return [
-        PortfolioOverview(
-          type: 'CONSOLIDATED',
-          totalValue: totalValue,
-          totalReturn: totalGainLoss,
-          returnPercentage: totalGainLossPercentage,
-          dayChange: dayChange,
-          dayChangePercentage: dayChangePercentage,
-          portfolioCount: 1,
-        ),
-      ];
+      final rawData = await ref.read(portfolioSummaryFallbackProvider.future);
+      return _portfolioOverviewsFromPortfolioRaw(rawData);
     } catch (fallbackError) {
-      AppLogger.error('Dashboard portfolio overviews fallback also failed', error: fallbackError);
+      AppLogger.error(
+        'Dashboard portfolio overviews fallback also failed',
+        error: fallbackError,
+      );
       rethrow;
     }
   }
@@ -410,23 +392,16 @@ Future<TopMoversResponse> topMovers(Ref ref, String userId, {String timeFrame = 
 
 @riverpod
 Future<PerformanceResponse> dashboardPerformance(Ref ref, String userId, {String timeFrame = '1D'}) async {
-  final repositoryFuture = ref.watch(dashboardRepositoryProvider.future);
-  final portfolioApiClientFuture = ref.watch(portfolioApiClientProvider.future);
-
-  final repository = await repositoryFuture;
+  final repository = await ref.watch(dashboardRepositoryProvider.future);
   try {
     return await repository.getPerformance(userId, timeFrame: timeFrame);
   } catch (e) {
-    AppLogger.warning('Failed to get performance from analysis service. Using fallback.', error: e);
-    final portfolioApiClient = await portfolioApiClientFuture;
-    final rawData = await portfolioApiClient.get(
-      '/v1/portfolios/summary',
-      parser: (data) => data as Map<String, dynamic>,
+    AppLogger.warning(
+      'Failed to get performance from analysis service. Using fallback.',
+      error: e,
     );
-    final totalValue = _parseDouble(rawData['currentValue']);
-    final totalGainLoss = _parseDouble(rawData['totalGainLoss']);
-    final todayGainLoss = _parseDouble(rawData['todayGainLoss']);
-    return _generatePerformanceFromSummary(totalValue, totalGainLoss, todayGainLoss, timeFrame);
+    final rawData = await ref.read(portfolioSummaryFallbackProvider.future);
+    return _performanceFromPortfolioRaw(rawData, timeFrame);
   }
 }
 
