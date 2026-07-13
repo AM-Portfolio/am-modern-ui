@@ -44,6 +44,7 @@ export 'features/authentication/presentation/pages/login_page.dart';
 export 'features/authentication/presentation/pages/register_page.dart';
 export 'features/authentication/presentation/pages/forgot_password_page.dart';
 export 'features/authentication/presentation/pages/reset_password_page.dart';
+export 'features/authentication/presentation/pages/verify_email_page.dart';
 
 // Widgets
 export 'features/authentication/presentation/widgets/demo_login_button_widget.dart';

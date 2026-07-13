@@ -43,10 +43,11 @@ class _AppShellState extends State<AppShell> {
   }
 
   List<_MoreMenuItem> _moreMenuItemsFor({required bool isAdmin}) => [
-        const _MoreMenuItem(
-            title: 'AI Chat',
-            icon: Icons.auto_awesome_rounded,
-            path: AppRoutes.aiChat),
+        if (isAdmin)
+          const _MoreMenuItem(
+              title: 'AI Chat',
+              icon: Icons.auto_awesome_rounded,
+              path: AppRoutes.aiChat),
         if (isAdmin)
           const _MoreMenuItem(
               title: 'Analysis',
@@ -74,8 +75,9 @@ class _AppShellState extends State<AppShell> {
             icon: Icons.account_balance_wallet_rounded),
         const SidebarItem(title: 'Trade', icon: Icons.swap_horiz_rounded),
         const SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
-        const SidebarItem(
-            title: 'AI Chat', icon: Icons.auto_awesome_rounded),
+        if (isAdmin)
+          const SidebarItem(
+              title: 'AI Chat', icon: Icons.auto_awesome_rounded),
         if (isAdmin)
           const SidebarItem(
               title: 'Analysis', icon: Icons.analytics_outlined),

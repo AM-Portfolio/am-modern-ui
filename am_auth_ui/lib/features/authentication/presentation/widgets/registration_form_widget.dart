@@ -72,15 +72,7 @@ class _RegistrationFormWidgetState extends State<RegistrationFormWidget> {
           hintText: 'Email',
           prefixIcon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Please enter your email';
-            }
-            if (!Validators.isValidEmail(value.trim())) {
-              return 'Please enter a valid email';
-            }
-            return null;
-          },
+          validator: Validators.validateEmail,
         ),
         const SizedBox(height: 16),
 
@@ -90,14 +82,7 @@ class _RegistrationFormWidgetState extends State<RegistrationFormWidget> {
           hintText: 'Phone Number (Optional)',
           prefixIcon: Icons.phone_outlined,
           keyboardType: TextInputType.phone,
-          validator: (value) {
-            if (value != null && value.trim().isNotEmpty) {
-              if (!Validators.isValidPhone(value.trim())) {
-                return 'Please enter a valid phone number with country code';
-              }
-            }
-            return null;
-          },
+          validator: Validators.validatePhone,
         ),
         const SizedBox(height: 16),
 
@@ -118,24 +103,7 @@ class _RegistrationFormWidgetState extends State<RegistrationFormWidget> {
               });
             },
           ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter a password';
-            }
-            if (value.length < 8) {
-              return 'Password must be at least 8 characters';
-            }
-            if (!Validators.hasUpperCase(value)) {
-              return 'Password must contain at least one uppercase letter';
-            }
-            if (!Validators.hasLowerCase(value)) {
-              return 'Password must contain at least one lowercase letter';
-            }
-            if (!Validators.hasDigit(value)) {
-              return 'Password must contain at least one number';
-            }
-            return null;
-          },
+          validator: Validators.validatePassword,
         ),
         const SizedBox(height: 16),
 
@@ -156,15 +124,8 @@ class _RegistrationFormWidgetState extends State<RegistrationFormWidget> {
               });
             },
           ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please confirm your password';
-            }
-            if (value != _passwordController.text) {
-              return 'Passwords do not match';
-            }
-            return null;
-          },
+          validator: (value) =>
+              Validators.validatePasswordMatch(value, _passwordController.text),
         ),
         const SizedBox(height: 24),
 

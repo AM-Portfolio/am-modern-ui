@@ -19,11 +19,13 @@ class UserEntity extends Equatable {
   final bool isDemo;
   final List<String> roles;
 
-  /// Admin if JWT roles include Keycloak `admin` or Spring `ROLE_ADMIN`.
+  /// Admin if JWT roles/scopes include `admin`, `super_admin`, or `role_admin`.
   bool get isAdmin {
     for (final role in roles) {
       final normalized = role.toLowerCase().replaceAll('-', '_');
-      if (normalized == 'admin' || normalized == 'role_admin') {
+      if (normalized == 'admin' ||
+          normalized == 'super_admin' ||
+          normalized == 'role_admin') {
         return true;
       }
     }

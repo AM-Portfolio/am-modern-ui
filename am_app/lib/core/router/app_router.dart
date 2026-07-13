@@ -53,14 +53,21 @@ GoRouter createAppRouter({
         return target ?? AppRoutes.dashboard;
       }
 
+      // After verify-email auto-login, leave the public verify route for the app.
+      if (isAuthenticated && location == AppRoutes.verifyEmail) {
+        return AppRoutes.dashboard;
+      }
+
       // Lab is disabled in navigation — block direct URL access.
       if (location == AppRoutes.lab || location.startsWith('${AppRoutes.lab}/')) {
         return AppRoutes.dashboard;
       }
 
-      // Global Analysis module is admin-only.
+      // Global Analysis + AI Chat are admin-only.
       if (location == AppRoutes.analysis ||
-          location.startsWith('${AppRoutes.analysis}/')) {
+          location.startsWith('${AppRoutes.analysis}/') ||
+          location == AppRoutes.aiChat ||
+          location.startsWith('${AppRoutes.aiChat}/')) {
         final isAdmin =
             authState is Authenticated && authState.user.isAdmin;
         if (!isAdmin) return AppRoutes.dashboard;
@@ -128,7 +135,17 @@ GoRouter createAppRouter({
       ),
       GoRoute(
         path: AppRoutes.resetPassword,
-        builder: (context, state) => const ResetPasswordPage(),
+        builder: (context, state) => ResetPasswordPage(
+          resetToken: state.uri.queryParameters['token'],
+          resetCode: state.uri.queryParameters['c'],
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.verifyEmail,
+        builder: (context, state) => VerifyEmailPage(
+          token: state.uri.queryParameters['token'],
+          code: state.uri.queryParameters['c'],
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
@@ -337,14 +354,21 @@ String _userId(BuildContext context) {
 String resolveLaunchLocation() {
   if (kIsWeb) {
     final uri = Uri.base;
-    final path = uri.path.isEmpty ? '/' : uri.path;
+    var path = uri.path.isEmpty ? '/' : uri.path;
+    if (path.length > 1 && path.endsWith('/')) {
+      path = path.substring(0, path.length - 1);
+    }
     if (path != '/' && AppRoutes.isAuthenticatedAppRoute(path)) {
       return uri.hasQuery ? '$path?${uri.query}' : path;
     }
-    if (path == AppRoutes.login ||
-        path == AppRoutes.register ||
-        path == AppRoutes.forgotPassword ||
-        path == AppRoutes.resetPassword) {
+    const publicAuth = {
+      AppRoutes.login,
+      AppRoutes.register,
+      AppRoutes.forgotPassword,
+      AppRoutes.resetPassword,
+      AppRoutes.verifyEmail,
+    };
+    if (publicAuth.contains(path)) {
       return uri.hasQuery ? '$path?${uri.query}' : path;
     }
   }
