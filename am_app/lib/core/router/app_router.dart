@@ -340,14 +340,21 @@ String _userId(BuildContext context) {
 String resolveLaunchLocation() {
   if (kIsWeb) {
     final uri = Uri.base;
-    final path = uri.path.isEmpty ? '/' : uri.path;
+    var path = uri.path.isEmpty ? '/' : uri.path;
+    if (path.length > 1 && path.endsWith('/')) {
+      path = path.substring(0, path.length - 1);
+    }
     if (path != '/' && AppRoutes.isAuthenticatedAppRoute(path)) {
       return uri.hasQuery ? '$path?${uri.query}' : path;
     }
-    if (path == AppRoutes.login ||
-        path == AppRoutes.register ||
-        path == AppRoutes.forgotPassword ||
-        path == AppRoutes.resetPassword) {
+    const publicAuth = {
+      AppRoutes.login,
+      AppRoutes.register,
+      AppRoutes.forgotPassword,
+      AppRoutes.resetPassword,
+      AppRoutes.verifyEmail,
+    };
+    if (publicAuth.contains(path)) {
       return uri.hasQuery ? '$path?${uri.query}' : path;
     }
   }

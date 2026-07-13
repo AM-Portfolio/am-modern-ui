@@ -516,5 +516,31 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(UnknownFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> changePassword({
+    required String email,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      if (!_featureFlags.useRealBackendAPI) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        return const Right(null);
+      }
+      await _identityDataSource.changePassword(
+        email: email,
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      return const Right(null);
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message, code: e.statusCode.toString()));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
 }
 

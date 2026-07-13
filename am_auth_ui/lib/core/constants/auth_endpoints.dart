@@ -23,6 +23,8 @@ class AuthEndpoints {
       '$identityBaseUrl/auth/verify-email/resend';
   static String get identityVerifyEmailConfirm =>
       '$identityBaseUrl/auth/verify-email/confirm';
+  static String get identityChangePassword =>
+      '$identityBaseUrl/auth/change-password';
 
   // Authentication endpoints
   static String get login =>

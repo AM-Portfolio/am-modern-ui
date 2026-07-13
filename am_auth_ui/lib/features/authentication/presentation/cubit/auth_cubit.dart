@@ -56,7 +56,16 @@ class AuthCubit extends Cubit<AuthState> {
     );
 
     result.fold(
-      (failure) => emit(AuthError(failure.message)),
+      (failure) {
+        final msg = failure.message.toLowerCase();
+        if (msg.contains('verify your email') ||
+            msg.contains('not fully set up') ||
+            msg.contains('resend verification')) {
+          emit(RegisterPendingVerification(email));
+          return;
+        }
+        emit(AuthError(failure.message));
+      },
       (authResult) => emit(Authenticated(authResult.user)),
     );
   }
@@ -334,6 +343,53 @@ class AuthCubit extends Cubit<AuthState> {
       if (previous is Authenticated) {
         emit(previous);
       }
+    }
+  }
+
+  Future<void> resendVerifyEmail(String email) async {
+    final previous = state;
+    try {
+      final result = await _authRepository.resendVerifyEmail(email);
+      result.fold(
+        (failure) => emit(AuthError(failure.message)),
+        (_) {
+          emit(RegisterPendingVerification(email));
+          if (previous is Authenticated) {
+            emit(previous);
+          }
+        },
+      );
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  Future<void> changePassword({
+    required String email,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final previous = state;
+    emit(const AuthLoading());
+    try {
+      final result = await _authRepository.changePassword(
+        email: email,
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      result.fold(
+        (failure) {
+          emit(AuthError(failure.message));
+          if (previous is Authenticated) emit(previous);
+        },
+        (_) {
+          emit(const PasswordResetSuccess());
+          if (previous is Authenticated) emit(previous);
+        },
+      );
+    } catch (e) {
+      emit(AuthError(e.toString()));
+      if (previous is Authenticated) emit(previous);
     }
   }
 }

@@ -47,6 +47,23 @@ class LoginPage extends StatelessWidget {
               } else {
                 Navigator.of(context).pushReplacementNamed('/home');
               }
+            } else if (state is RegisterPendingVerification) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Please verify ${state.email} before signing in. Check your Asrax welcome email.',
+                  ),
+                  backgroundColor: AppColors.warning,
+                  duration: const Duration(seconds: 8),
+                  action: SnackBarAction(
+                    label: 'Resend',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      context.read<AuthCubit>().resendVerifyEmail(state.email);
+                    },
+                  ),
+                ),
+              );
             } else if (state is AuthError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

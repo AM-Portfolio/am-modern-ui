@@ -55,4 +55,11 @@ abstract class AuthRepository {
 
   /// Resend verification email (always succeeds from caller POV).
   Future<Either<Failure, void>> resendVerifyEmail(String email);
+
+  /// Change password for email/password users (requires current password).
+  Future<Either<Failure, void>> changePassword({
+    required String email,
+    required String currentPassword,
+    required String newPassword,
+  });
 }

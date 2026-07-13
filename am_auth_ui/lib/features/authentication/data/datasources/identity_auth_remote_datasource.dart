@@ -257,6 +257,7 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
           'password': password,
           'first_name': firstName,
           'last_name': lastName,
+          if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
         },
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
@@ -361,6 +362,23 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
       AuthEndpoints.identityVerifyEmailResend,
       {'email': email},
       action: 'Verify email resend',
+    );
+  }
+
+  Future<void> changePassword({
+    required String email,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _postAccepted(
+      AuthEndpoints.identityChangePassword,
+      {
+        'email': email,
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      },
+      action: 'Change password',
+      acceptCodes: const {200},
     );
   }
 

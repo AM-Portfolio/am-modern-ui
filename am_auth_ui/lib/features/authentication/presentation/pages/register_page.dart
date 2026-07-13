@@ -130,9 +130,17 @@ class RegisterPageForm extends StatelessWidget {
               'Account created for ${state.email}. Check your email to verify your Asrax account, then sign in.',
             ),
             backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Resend',
+              textColor: Colors.white,
+              onPressed: () {
+                context.read<AuthCubit>().resendVerifyEmail(state.email);
+              },
+            ),
           ),
         );
-        Navigator.of(context).pushReplacementNamed('/login');
+        onLogin();
       } else if (state is Authenticated) {
         // Navigate to home page after successful registration
         Navigator.of(context).pushReplacementNamed('/home');
