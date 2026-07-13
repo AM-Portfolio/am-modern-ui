@@ -11,11 +11,11 @@ cp "/etc/nginx/profiles/${PROFILE}.conf" /tmp/nginx/active.conf
 
 echo "[nginx] ENVIRONMENT=${ENVIRONMENT:-preprod} profile=${PROFILE}"
 
-cat <<EOF > /usr/share/nginx/html/config.json
+cat <<EOF > /usr/share/nginx/html/runtime_env.json
 {
   "env": "${ENVIRONMENT:-preprod}"
 }
 EOF
-echo "[nginx] Generated config.json with env: ${ENVIRONMENT:-preprod}"
+echo "[nginx] Generated runtime_env.json with env: ${ENVIRONMENT:-preprod}"
 
 exec nginx -g 'daemon off;' -c /etc/nginx/nginx-docker.conf

@@ -43,6 +43,7 @@ class ConfigService {
     final parallel = await Future.wait([
       _fetchJson('/config.template.json'),
       _fetchJson('/config.json'),
+      _fetchJson('/runtime_env.json'),
     ]);
 
     var merged = parallel[0] ??
@@ -52,7 +53,8 @@ class ConfigService {
         };
 
     final bootstrap = parallel[1];
-    final bootstrapEnv = bootstrap?['env'] as String?;
+    final runtimeEnv = parallel[2];
+    final bootstrapEnv = runtimeEnv?['env'] as String? ?? bootstrap?['env'] as String?;
     final env = (bootstrapEnv != null && bootstrapEnv.isNotEmpty)
         ? bootstrapEnv
         : _envFromDefine;
