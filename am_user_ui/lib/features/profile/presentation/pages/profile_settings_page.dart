@@ -33,10 +33,11 @@ class ProfileSettingsPage extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
+        // leading: IconButton(
+        //   icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+        //   onPressed: () => Navigator.pop(context),
+        // ),
       ),
       body: Container(
         decoration: AppGlassmorphismV2.techBackground(isDark: isDark),
