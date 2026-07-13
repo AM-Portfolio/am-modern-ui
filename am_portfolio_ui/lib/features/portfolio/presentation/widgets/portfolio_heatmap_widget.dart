@@ -353,7 +353,7 @@ class _PortfolioHeatmapWidgetState
         const SizedBox(height: 16),
 
         // ── EQUITY DISTRIBUTION HEADER ──
-        _buildEquityDistributionHeader(),
+        _buildEquityDistributionHeader(context),
         const SizedBox(height: 12),
 
         // ── DRILLDOWN BREADCRUMB ──
@@ -415,17 +415,13 @@ class _PortfolioHeatmapWidgetState
             ),
           )
         else
-          // Web: fill all remaining vertical space dynamically.
+          // Web: fill all remaining vertical space dynamically to keep it single-page.
           Expanded(
             child: LayoutBuilder(
               builder: (context, heatmapConstraints) {
-                final heatmapH = heatmapConstraints.maxHeight.isFinite &&
-                        heatmapConstraints.maxHeight > 60
-                    ? heatmapConstraints.maxHeight
-                    : 700.0; // Increased fallback height to show more stocks
-                return SizedBox(
+                final heatmapContent = SizedBox(
                   width: double.infinity,
-                  height: heatmapH,
+                  height: heatmapConstraints.maxHeight,
                   child: UniversalHeatmapWidget(
                     investmentType: InvestmentType.portfolio,
                     heatmapData: displayData,
@@ -457,13 +453,12 @@ class _PortfolioHeatmapWidgetState
                     templateType: widget.config.templateType,
                   ),
                 );
+                
+                return heatmapContent;
               },
             ),
           ),
 
-        // ── FOOTER STATUS BAR ──
-        const SizedBox(height: 12),
-        _buildFooterStatusBar(),
       ],
     );
   }
@@ -499,7 +494,12 @@ class _PortfolioHeatmapWidgetState
                 analyticsState.heatmap!.sectors.isNotEmpty) {
               final sectors = List<analytics_entities.Sector>.from(
                 analyticsState.heatmap!.sectors,
-              )..sort((a, b) => b.changePercent.compareTo(a.changePercent));
+              )
+                ..removeWhere((s) {
+                  final name = s.sectorName.trim();
+                  return name.isEmpty || name == '-' || name.toLowerCase() == 'unknown';
+                })
+                ..sort((a, b) => b.changePercent.compareTo(a.changePercent));
               topSector = sectors.first.sectorName;
               topSectorChange = sectors.first.formattedChangePercent;
               worstSector = sectors.last.sectorName;
@@ -515,38 +515,38 @@ class _PortfolioHeatmapWidgetState
                     title: 'TOTAL VALUE',
                     value: totalValue,
                     subtitle: '',
-                    icon: Icons.account_balance_wallet_outlined,
                     accentColor: const Color(0xFF0BA95B),
                     compact: isSmallMobile,
+                    glowBorder: true,
                   ),
                   PortfolioMetricCard(
                     title: '24H CHANGE',
                     value: todayChange,
                     subtitle: '${isTodayPositive ? '+' : ''}${todayChangePct.toStringAsFixed(2)}%',
-                    icon: isTodayPositive
-                        ? Icons.trending_up
-                        : Icons.trending_down,
                     accentColor: isTodayPositive
                         ? const Color(0xFF0BA95B)
                         : const Color(0xFFB22222),
                     isPositive: isTodayPositive,
                     compact: isSmallMobile,
+                    glowBorder: true,
                   ),
                   PortfolioMetricCard(
                     title: 'TOP SECTOR',
                     value: topSector,
                     subtitle: topSectorChange,
-                    icon: Icons.emoji_events_outlined,
                     accentColor: const Color(0xFF0BA95B),
+                    isPositive: !topSectorChange.startsWith('-'),
                     compact: isSmallMobile,
+                    glowBorder: true,
                   ),
                   PortfolioMetricCard(
                     title: 'WEAKEST SECTOR',
                     value: worstSector,
                     subtitle: worstSectorChange,
-                    icon: Icons.warning_amber_outlined,
                     accentColor: const Color(0xFFB22222),
+                    isPositive: !worstSectorChange.startsWith('-'),
                     compact: isSmallMobile,
+                    glowBorder: true,
                   ),
                 ];
 
@@ -581,18 +581,18 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Builds the "Equity Distribution" header with pill tag and legend
-  Widget _buildEquityDistributionHeader() {
+  /// Builds the "Equity Distribution" header with pill tag, status, and legend
+  Widget _buildEquityDistributionHeader(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 500;
+        final isNarrow = constraints.maxWidth < 800;
 
         final titleRow = Row(
           children: [
-            const Text(
+            Text(
               'Equity Distribution',
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -601,13 +601,13 @@ class _PortfolioHeatmapWidgetState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 'MARKET CAP WEIGHTED',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.8,
@@ -620,11 +620,11 @@ class _PortfolioHeatmapWidgetState
         final legendRow = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildLegendDot(const Color(0xFF0BA95B), 'Outperform'),
+            _buildLegendDot(context, const Color(0xFF0BA95B), 'Outperform'),
             const SizedBox(width: 12),
-            _buildLegendDot(const Color(0xFF2B273B), 'Neutral'),
+            _buildLegendDot(context, const Color(0xFF6B7280), 'Neutral'),
             const SizedBox(width: 12),
-            _buildLegendDot(const Color(0xFFB22222), 'Underperform'),
+            _buildLegendDot(context, const Color(0xFFB22222), 'Underperform'),
           ],
         );
 
@@ -632,14 +632,21 @@ class _PortfolioHeatmapWidgetState
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              titleRow,
-              const SizedBox(height: 8),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: GlobalTimeFrameBar(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  titleRow,
+                  legendRow,
+                ],
               ),
               const SizedBox(height: 8),
-              legendRow,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const GlobalTimeFrameBar(),
+                  _buildInlineStatusBar(context),
+                ],
+              ),
             ],
           );
         } else {
@@ -650,6 +657,8 @@ class _PortfolioHeatmapWidgetState
               const Spacer(),
               const GlobalTimeFrameBar(),
               const SizedBox(width: 16),
+              _buildInlineStatusBar(context),
+              const SizedBox(width: 16),
               legendRow,
             ],
           );
@@ -658,7 +667,7 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  Widget _buildLegendDot(Color color, String label) => Row(
+  Widget _buildLegendDot(BuildContext context, Color color, String label) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
       Container(
@@ -673,127 +682,97 @@ class _PortfolioHeatmapWidgetState
       Text(
         label,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
           fontSize: 11,
         ),
       ),
     ],
   );
 
-  /// Builds the bottom status bar
-  Widget _buildFooterStatusBar() {
+  Widget _buildInlineStatusBar(BuildContext context) {
     return BlocBuilder<PortfolioCubit, PortfolioState>(
       builder: (context, state) {
         bool isConnected = false;
         double todayChangePct = 0.0;
-
         if (state is PortfolioLoaded) {
           isConnected = state.isLiveDataActive;
           todayChangePct = state.summary.todayChangePercentage;
         }
 
-        final statusColor =
-            isConnected ? const Color(0xFF0BA95B) : const Color(0xFFB22222);
-        final statusText =
-            isConnected ? 'LIVE FEED ACTIVE' : 'CONNECTING...';
+        Color statusColor = state is! PortfolioLoaded
+            ? const Color(0xFFF39C12)
+            : isConnected
+                ? const Color(0xFF0BA95B)
+                : const Color(0xFFF39C12);
+        String statusText = state is! PortfolioLoaded
+            ? 'LOADING...'
+            : isConnected
+                ? 'LIVE FEED ACTIVE'
+                : 'SYNCING...';
 
         final isPositive = todayChangePct >= 0;
         final sentimentColor =
             isPositive ? const Color(0xFF0BA95B) : const Color(0xFFB22222);
         final sentimentText =
-            isPositive ? 'BULLISH SENTIMENT' : 'BEARISH SENTIMENT';
+            isPositive ? 'BULLISH' : 'BEARISH';
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1C192C),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          ),
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 6,
-            children: [
-              // Live status + timestamp group
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    statusText,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(
-                    Icons.access_time,
-                    color: Colors.white.withValues(alpha: 0.4),
-                    size: 12,
-                  ),
-                  const SizedBox(width: 4),
-                  BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
-                    builder: (context, heatmapState) {
-                      String timeText = 'Just now';
-                      if (heatmapState is PortfolioHeatmapLoaded) {
-                        final diff = DateTime.now()
-                            .difference(heatmapState.lastUpdated);
-                        if (diff.inMinutes > 0) {
-                          timeText = '${diff.inMinutes}m ago';
-                        } else if (diff.inSeconds > 0) {
-                          timeText = '${diff.inSeconds}s ago';
-                        }
-                      }
-                      return Text(
-                        'Updated: $timeText',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.4),
-                          fontSize: 10,
-                        ),
-                      );
-                    },
-                  ),
-                ],
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 7, height: 7,
+              decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              statusText,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.5,
               ),
-              // Sentiment pill
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: sentimentColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border:
-                      Border.all(color: sentimentColor.withValues(alpha: 0.5)),
-                ),
-                child: Text(
-                  sentimentText,
-                  style: TextStyle(
-                    color: sentimentColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
+            ),
+            const SizedBox(width: 12),
+            Icon(Icons.access_time, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7), size: 12),
+            const SizedBox(width: 4),
+            BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
+              builder: (context, heatmapState) {
+                String timeText = 'Just now';
+                if (heatmapState is PortfolioHeatmapLoaded) {
+                  final diff = DateTime.now().difference(heatmapState.lastUpdated);
+                  if (diff.inMinutes > 0) {
+                    timeText = '${diff.inMinutes}m ago';
+                  } else if (diff.inSeconds > 0) {
+                    timeText = '${diff.inSeconds}s ago';
+                  }
+                }
+                return Text(
+                  'Updated: $timeText',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10),
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: sentimentColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: sentimentColor.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                sentimentText,
+                style: TextStyle(
+                  color: sentimentColor, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
   }
+
+
 
   /// Builds empty state UI
   Widget _buildEmptyWidget(PortfolioHeatmapEmpty state) {

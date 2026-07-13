@@ -176,7 +176,7 @@ class PortfolioMetricCard extends StatelessWidget {
                                               ? Colors.white
                                               : const Color(0xFF1A1A2E))),
                                   height: 1.1,
-                                  shadows: glowBorder
+                                  shadows: (glowBorder && isDark)
                                       ? [
                                           Shadow(
                                             color: accentColor
