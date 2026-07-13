@@ -102,11 +102,13 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                         item.name.isNotEmpty && item.name != item.symbol;
                     return Row(
                       children: [
-                        Text(
-                          item.symbol,
-                          style: rowStyle.copyWith(fontWeight: FontWeight.w700),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Flexible(
+                          child: Text(
+                            item.symbol,
+                            style: rowStyle.copyWith(fontWeight: FontWeight.w700),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         if (showName) ...[
                           const SizedBox(width: 6),

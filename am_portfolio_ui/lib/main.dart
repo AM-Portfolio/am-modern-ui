@@ -13,6 +13,7 @@ import 'package:get_it/get_it.dart';
 import 'package:am_portfolio_ui/features/basket/domain/models/basket_opportunity.dart';
 import 'package:am_analysis_ui/am_analysis_ui.dart';
 
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/global_portfolio_wrapper.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/web/app_shell.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfolio_overview_web_page.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfolio_holdings_web_page.dart';

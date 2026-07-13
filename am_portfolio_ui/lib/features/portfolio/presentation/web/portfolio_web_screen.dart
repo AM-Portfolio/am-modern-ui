@@ -276,8 +276,14 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           MaterialPageRoute(
             builder: (_) {
               final authState = context.read<AuthCubit>().state;
-              final userId = authState is Authenticated ? authState.user.id : '';
-              return ProfileSettingsPage(userId: userId);
+              if (authState is Authenticated) {
+                return ProfileSettingsPage(
+                  userId: authState.user.id,
+                  email: authState.user.email,
+                  displayName: authState.user.displayName,
+                );
+              }
+              return const ProfileSettingsPage(userId: '');
             },
           ),
         );

@@ -43,6 +43,7 @@ class _PricingCardState extends State<PricingCard> {
     final isDark = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
     final currentPrice = widget.isAnnual ? (widget.annualPrice / 12).round() : widget.monthlyPrice;
+    final isMobile = MediaQuery.of(context).size.width < 768;
     
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -53,7 +54,10 @@ class _PricingCardState extends State<PricingCard> {
         curve: Curves.easeOutCubic,
         transform: Matrix4.identity()..translate(0.0, _isHovered ? -8.0 : 0.0),
         width: 280,
-        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+        margin: EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: isMobile ? 10 : 20,
+        ),
         decoration: BoxDecoration(
           color: theme.cardTheme.color ?? (isDark ? const Color(0xFF2C2C3E) : Colors.white),
           borderRadius: BorderRadius.circular(16),
@@ -90,7 +94,7 @@ class _PricingCardState extends State<PricingCard> {
           clipBehavior: Clip.none,
           children: [
             Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(isMobile ? 18.0 : 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -112,7 +116,7 @@ class _PricingCardState extends State<PricingCard> {
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: isMobile ? 16 : 24),
                   if (!widget.isCustom) ...[
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -175,7 +179,7 @@ class _PricingCardState extends State<PricingCard> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  SizedBox(height: isMobile ? 16 : 24),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -205,9 +209,9 @@ class _PricingCardState extends State<PricingCard> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: isMobile ? 24 : 32),
                   ...widget.features.map((feature) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
+                    padding: EdgeInsets.only(bottom: isMobile ? 8.0 : 12.0),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

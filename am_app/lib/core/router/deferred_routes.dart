@@ -261,11 +261,19 @@ Widget buildDocIntelRoute({required String userId}) {
   );
 }
 
-Widget buildProfileRoute({required String userId}) {
+Widget buildProfileRoute({
+  required String userId,
+  String? email,
+  String? displayName,
+}) {
   return DeferredModuleLoader(
     load: _loadUser,
     skeleton: const GenericModuleSkeleton(),
     loadingMessage: 'Loading Profile…',
-    builder: () => user_ui.ProfileSettingsPage(userId: userId),
+    builder: () => user_ui.ProfileSettingsPage(
+      userId: userId,
+      email: email,
+      displayName: displayName,
+    ),
   );
 }

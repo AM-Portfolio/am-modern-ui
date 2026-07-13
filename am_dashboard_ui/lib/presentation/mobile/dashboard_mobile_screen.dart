@@ -80,6 +80,34 @@ class DashboardMobileScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildSummaryLoading() {
+    return Column(
+      children: [
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _buildLoadingCard(120)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildLoadingCard(120)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _buildLoadingCard(120)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildLoadingCard(120)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(dashboardStreamingSessionProvider(userId));
@@ -107,32 +135,28 @@ class DashboardMobileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        title: Text(
-          'Dashboard',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: onSurface,
-            fontFamily: 'Inter',
-          ),
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Dashboard',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: onSurface,
+                fontFamily: 'Inter',
+                fontSize: 20,
+              ),
+            ),
+            const GlobalTimeFrameBar(
+              variant: GlobalTimeFrameVariant.dropdown,
+            ),
+          ],
         ),
         backgroundColor: Colors.transparent, // transparent for glow
         elevation: 0,
         iconTheme: IconThemeData(color: onSurface),
-        actions: [
-          const GlobalTimeFrameBar(),
-          IconButton(
-            icon: Icon(Icons.refresh, color: onSurfaceVariant),
-            onPressed: () {
-              ref.invalidate(dashboardStreamProvider(userId));
-              ref.invalidate(portfolioOverviewsProvider(userId));
-              onDashboardTimeFrameChanged(ref, userId, timeFrame);
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.notifications_outlined, color: onSurfaceVariant),
-            onPressed: () {},
-          ),
-        ],
       ),
       extendBodyBehindAppBar: true, // Needed to show background glow under app bar
       body: Stack(
@@ -199,7 +223,7 @@ class DashboardMobileScreen extends ConsumerWidget {
                     sliver: SliverToBoxAdapter(
                       child: dashboardAsync.when(
                         data: (summary) => DashboardSummaryWidget(summary: summary),
-                        loading: () => _buildLoadingCard(180),
+                        loading: () => _buildSummaryLoading(),
                         error: (err, stack) => AmErrorWidget(
                           message: 'Failed to load summary',
                           onRetry: () => ref.invalidate(dashboardStreamProvider(userId)),

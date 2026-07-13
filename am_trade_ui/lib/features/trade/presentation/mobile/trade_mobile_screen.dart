@@ -17,8 +17,19 @@ import 'journal_mobile_page.dart';
 import '../metrics/trade_metrics_page.dart';
 import '../journal_template/pages/template_browser_page.dart';
 
-/// Trade view types for mobile navigation
-enum MobileTradeViewType { portfolios, holdings, calendar, addTrade }
+/// Trade view types for mobile navigation.
+///
+/// Indices 0–3 stay aligned with [TradeResponsiveLayout] / web mapping
+/// (`addTrade` remains index 3). Journal / metrics / templates follow after.
+enum MobileTradeViewType {
+  portfolios,
+  holdings,
+  calendar,
+  addTrade,
+  journal,
+  metrics,
+  templates,
+}
 
 /// Mobile-specific trade screen with bottom tab navigation
 class TradeMobileScreen extends ConsumerStatefulWidget {
@@ -63,16 +74,23 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
 
     // Safely map from Web index to Mobile index
     if (widget.initialTabIndex != null) {
-      if (widget.initialTabIndex == 9) {
+      final index = widget.initialTabIndex!;
+      if (index == 9) {
         _selectedView = MobileTradeViewType.addTrade;
-      } else if (widget.initialTabIndex == 0) {
+      } else if (index == 0) {
         _selectedView = MobileTradeViewType.portfolios;
-      } else if (widget.initialTabIndex == 1) {
+      } else if (index == 1) {
         _selectedView = MobileTradeViewType.holdings;
-      } else if (widget.initialTabIndex == 2) {
+      } else if (index == 2) {
         _selectedView = MobileTradeViewType.calendar;
+      } else if (index == 4) {
+        _selectedView = MobileTradeViewType.journal;
+      } else if (index == 5) {
+        _selectedView = MobileTradeViewType.metrics;
+      } else if (index == MobileTradeViewType.templates.index) {
+        _selectedView = MobileTradeViewType.templates;
       } else {
-        // If coming from another desktop tab (Trades, Journal, etc.), fallback to holdings/portfolios
+        // If coming from another desktop tab (Trades, etc.), fallback
         _selectedView = widget.selectedPortfolioId != null
             ? MobileTradeViewType.holdings
             : MobileTradeViewType.portfolios;
@@ -84,15 +102,24 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
     _currentPortfolioId = widget.selectedPortfolioId;
     _currentPortfolioName = widget.selectedPortfolioName;
 
-    AppLogger.info('TradeMobileScreen initialized with view: $_selectedView', tag: 'TradeMobileScreen');
+    AppLogger.info(
+      'TradeMobileScreen initialized with view: $_selectedView',
+      tag: 'TradeMobileScreen',
+    );
   }
 
   void _onViewChanged(MobileTradeViewType viewType) {
-    // Don't allow switching to holdings/calendar if no portfolio is selected
-    if ((viewType == MobileTradeViewType.holdings || viewType == MobileTradeViewType.calendar) && _currentPortfolioId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please select a portfolio first'), duration: Duration(seconds: 2)));
+    // Don't allow switching to holdings/calendar/addTrade if no portfolio is selected
+    if ((viewType == MobileTradeViewType.holdings ||
+            viewType == MobileTradeViewType.calendar ||
+            viewType == MobileTradeViewType.addTrade) &&
+        _currentPortfolioId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a portfolio first'),
+          duration: Duration(seconds: 2),
+        ),
+      );
       return;
     }
 
@@ -103,7 +130,10 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
     // Notify parent for cross-layout sync
     widget.onTabChanged?.call(viewType.index);
 
-    AppLogger.info('Trade view changed to: $viewType', tag: 'TradeMobileScreen');
+    AppLogger.info(
+      'Trade view changed to: $viewType',
+      tag: 'TradeMobileScreen',
+    );
   }
 
   void _onPortfolioSelected(String portfolioId, String portfolioName) {
@@ -118,15 +148,10 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
     widget.onPortfolioChanged?.call(portfolioId, portfolioName);
     widget.onTabChanged?.call(MobileTradeViewType.holdings.index);
 
-    AppLogger.info('Portfolio selected: $portfolioName ($portfolioId)', tag: 'TradeMobileScreen');
-  }
-
-  void _clearPortfolioSelection() {
-    setState(() {
-      _currentPortfolioId = null;
-      _currentPortfolioName = null;
-      _selectedView = MobileTradeViewType.portfolios;
-    });
+    AppLogger.info(
+      'Portfolio selected: $portfolioName ($portfolioId)',
+      tag: 'TradeMobileScreen',
+    );
   }
 
   @override
@@ -137,13 +162,28 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         title = 'Trade Portfolios';
         break;
       case MobileTradeViewType.holdings:
-        title = _currentPortfolioName != null ? 'Holdings - $_currentPortfolioName' : 'Holdings';
+        title = _currentPortfolioName != null
+            ? 'Holdings - $_currentPortfolioName'
+            : 'Holdings';
         break;
       case MobileTradeViewType.calendar:
-        title = _currentPortfolioName != null ? 'Calendar - $_currentPortfolioName' : 'Calendar';
+        title = _currentPortfolioName != null
+            ? 'Calendar - $_currentPortfolioName'
+            : 'Calendar';
         break;
       case MobileTradeViewType.addTrade:
-        title = _currentPortfolioName != null ? 'Add Trade - $_currentPortfolioName' : 'Add Trade';
+        title = _currentPortfolioName != null
+            ? 'Add Trade - $_currentPortfolioName'
+            : 'Add Trade';
+        break;
+      case MobileTradeViewType.journal:
+        title = 'Journal';
+        break;
+      case MobileTradeViewType.metrics:
+        title = 'Metrics';
+        break;
+      case MobileTradeViewType.templates:
+        title = 'Templates';
         break;
     }
 
@@ -154,9 +194,10 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
       module: ModuleType.trade,
       title: title,
       showAppBarOnMobile: showAppBar,
+      showMobileMenuButton: false,
       showModuleBottomNavigation: false,
+      autoHideMobileTabsOnScroll: true,
       onBackToGlobal: widget.onBack,
-      onMobileMenuTap: () => _showMoreMenu(context),
       floatingActionButton: _buildFloatingActionButton(context),
       items: [
         SecondarySidebarItem(
@@ -177,114 +218,28 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
           isSelected: _selectedView == MobileTradeViewType.calendar,
           onTap: () => _onViewChanged(MobileTradeViewType.calendar),
         ),
+        SecondarySidebarItem(
+          title: 'Journal',
+          icon: Icons.book_outlined,
+          isSelected: _selectedView == MobileTradeViewType.journal,
+          onTap: () => _onViewChanged(MobileTradeViewType.journal),
+        ),
+        SecondarySidebarItem(
+          title: 'Metrics',
+          icon: Icons.analytics_outlined,
+          isSelected: _selectedView == MobileTradeViewType.metrics,
+          onTap: () => _onViewChanged(MobileTradeViewType.metrics),
+        ),
+        SecondarySidebarItem(
+          title: 'Templates',
+          icon: Icons.style_outlined,
+          isSelected: _selectedView == MobileTradeViewType.templates,
+          onTap: () => _onViewChanged(MobileTradeViewType.templates),
+        ),
       ],
       body: _buildMainContent(context),
     );
   }
-
-  void _showMoreMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).dividerColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Text(
-                  'More Options',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.book, color: Theme.of(context).colorScheme.primary),
-                  ),
-                  title: const Text('Journal', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('View and manage your trade journal'),
-                  onTap: () {
-                    Navigator.pop(context); // Close bottom sheet
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => JournalMobilePage(portfolioId: _currentPortfolioId),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.analytics, color: Colors.purple),
-                  ),
-                  title: const Text('Metrics & Analysis', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Deep dive into your performance'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => Scaffold(
-                          appBar: AppBar(title: const Text('Metrics & Analysis')),
-                          body: TradeMetricsPage(portfolioId: _currentPortfolioId),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.style, color: Colors.orange),
-                  ),
-                  title: const Text('Templates', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Manage trade journal templates'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const TemplateBrowserPage(),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-
 
   /// Build main content based on selected view
   Widget _buildMainContent(BuildContext context) {
@@ -296,141 +251,176 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         if (_currentPortfolioId == null) {
           return _buildSelectPortfolioPrompt(MobileTradeViewType.holdings);
         }
-        return TradeHoldingsDashboardMobilePage(portfolioId: _currentPortfolioId!);
+        return TradeHoldingsDashboardMobilePage(
+          portfolioId: _currentPortfolioId!,
+        );
 
       case MobileTradeViewType.calendar:
         if (_currentPortfolioId == null) {
           return _buildSelectPortfolioPrompt(MobileTradeViewType.calendar);
         }
-        return TradeCalendarAnalyticsMobilePage(portfolioId: _currentPortfolioId!);
+        return TradeCalendarAnalyticsMobilePage(
+          portfolioId: _currentPortfolioId!,
+        );
+
+      case MobileTradeViewType.journal:
+        return JournalMobilePage(
+          portfolioId: _currentPortfolioId,
+          embedded: true,
+        );
+
+      case MobileTradeViewType.metrics:
+        return TradeMetricsPage(portfolioId: _currentPortfolioId);
+
+      case MobileTradeViewType.templates:
+        return const TemplateBrowserPage();
 
       case MobileTradeViewType.addTrade:
         if (_currentPortfolioId == null) {
           return _buildSelectPortfolioPrompt(MobileTradeViewType.addTrade);
         }
-        // Get TradeControllerCubit from Riverpod provider
         final tradeControllerCubitAsync = ref.watch(tradeControllerCubitProvider);
-        
+
         return tradeControllerCubitAsync.when(
-          data: (tradeControllerCubit) => BlocProvider<TradeControllerCubit>.value(
+          data: (tradeControllerCubit) =>
+              BlocProvider<TradeControllerCubit>.value(
             value: tradeControllerCubit,
             child: AddTradeMobilePage(
               portfolioId: _currentPortfolioId!,
               portfolioName: _currentPortfolioName,
               onTradeAdded: () {
-                // Refresh holdings when trade is added
                 if (_currentPortfolioId != null) {
-                  ref.invalidate(tradeHoldingsStreamProvider(_currentPortfolioId!));
-                  
-                  // Refresh calendar data so it reflects the new trade
-                  ref.read(tradeCalendarCubitProvider(_currentPortfolioId!).future)
-                      .then((cubit) => cubit.loadTradeCalendar(
-                         portfolioId: _currentPortfolioId!, 
-                         forceReload: true,
-                      ));
+                  ref.invalidate(
+                    tradeHoldingsStreamProvider(_currentPortfolioId!),
+                  );
+
+                  ref
+                      .read(
+                        tradeCalendarCubitProvider(_currentPortfolioId!).future,
+                      )
+                      .then(
+                        (cubit) => cubit.loadTradeCalendar(
+                          portfolioId: _currentPortfolioId!,
+                          forceReload: true,
+                        ),
+                      );
                 }
-                // Switch back to holdings view after adding trade
                 setState(() => _selectedView = MobileTradeViewType.holdings);
                 widget.onTabChanged?.call(MobileTradeViewType.holdings.index);
               },
               onCancel: () {
-                // Switch back to holdings view when cancelled
                 setState(() => _selectedView = MobileTradeViewType.holdings);
                 widget.onTabChanged?.call(MobileTradeViewType.holdings.index);
               },
             ),
           ),
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => Center(child: Text('Error initializing trade controller: $error')),
+          error: (error, stack) => Center(
+            child: Text('Error initializing trade controller: $error'),
+          ),
         );
     }
   }
 
   /// Build portfolios view
   Widget _buildPortfoliosView() => Consumer(
-    builder: (context, ref, child) {
-      final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider);
+        builder: (context, ref, child) {
+          final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider);
 
-      return portfoliosAsync.when(
-        data: (portfolios) => TradePortfolioDiscoveryTemplate(
-          portfolios: portfolios,
-          isLoading: false,
-          onPortfolioSelected: (portfolio) {
-            _onPortfolioSelected(portfolio.id, portfolio.name);
-          },
-          onRefresh: () {
-            ref.invalidate(tradePortfoliosStreamProvider);
-          },
-          isWebView: false,
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => TradePortfolioDiscoveryTemplate(
-          portfolios: const <TradePortfolioViewModel>[],
-          isLoading: false,
-          errorMessage: error.toString(),
-          onPortfolioSelected: (_) {},
-          onRefresh: () {
-            ref.invalidate(tradePortfoliosStreamProvider);
-          },
-          isWebView: false,
-        ),
+          return portfoliosAsync.when(
+            data: (portfolios) => TradePortfolioDiscoveryTemplate(
+              portfolios: portfolios,
+              isLoading: false,
+              onPortfolioSelected: (portfolio) {
+                _onPortfolioSelected(portfolio.id, portfolio.name);
+              },
+              onRefresh: () {
+                ref.invalidate(tradePortfoliosStreamProvider);
+              },
+              isWebView: false,
+            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => TradePortfolioDiscoveryTemplate(
+              portfolios: const <TradePortfolioViewModel>[],
+              isLoading: false,
+              errorMessage: error.toString(),
+              onPortfolioSelected: (_) {},
+              onRefresh: () {
+                ref.invalidate(tradePortfoliosStreamProvider);
+              },
+              isWebView: false,
+            ),
+          );
+        },
       );
-    },
-  );
 
   /// Build prompt to select a portfolio
   Widget _buildSelectPortfolioPrompt(MobileTradeViewType viewType) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            viewType == MobileTradeViewType.holdings ? Icons.dashboard_outlined : Icons.calendar_today_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                viewType == MobileTradeViewType.holdings
+                    ? Icons.dashboard_outlined
+                    : Icons.calendar_today_outlined,
+                size: 80,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'No Portfolio Selected',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.7),
+                      fontWeight: FontWeight.w600,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                viewType == MobileTradeViewType.holdings
+                    ? 'Select a portfolio from the Portfolios tab to view detailed holdings and analytics'
+                    : 'Select a portfolio from the Portfolios tab to explore calendar analytics and trade events',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.6),
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.account_balance_wallet),
+                label: const Text('Browse Portfolios'),
+                style: ElevatedButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                onPressed: () {
+                  setState(() {
+                    _selectedView = MobileTradeViewType.portfolios;
+                  });
+                },
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-          Text(
-            'No Portfolio Selected',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            viewType == MobileTradeViewType.holdings
-                ? 'Select a portfolio from the Portfolios tab to view detailed holdings and analytics'
-                : 'Select a portfolio from the Portfolios tab to explore calendar analytics and trade events',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.account_balance_wallet),
-            label: const Text('Browse Portfolios'),
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
-            onPressed: () {
-              setState(() {
-                _selectedView = MobileTradeViewType.portfolios;
-              });
-            },
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 
   Widget? _buildFloatingActionButton(BuildContext context) {
-    // Hide FAB if we're already on the Add Trade view
-    if (_selectedView == MobileTradeViewType.addTrade) {
+    // Hide FAB on Add Trade / Journal (has its own) / Metrics / Templates
+    if (_selectedView == MobileTradeViewType.addTrade ||
+        _selectedView == MobileTradeViewType.journal ||
+        _selectedView == MobileTradeViewType.metrics ||
+        _selectedView == MobileTradeViewType.templates) {
       return null;
     }
-    
+
     return FloatingActionButton(
       onPressed: () => _onViewChanged(MobileTradeViewType.addTrade),
       backgroundColor: Theme.of(context).colorScheme.primary,
@@ -440,4 +430,3 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
     );
   }
 }
-

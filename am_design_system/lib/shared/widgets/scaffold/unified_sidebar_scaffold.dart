@@ -67,6 +67,8 @@ class UnifiedSidebarScaffold extends StatefulWidget {
     this.showModuleBottomNavigation = true,
     this.headerActions,
     this.showAppBarOnMobile = true,
+    this.showMobileMenuButton = true,
+    this.autoHideMobileTabsOnScroll = false,
   }) : assert((items != null) != (sections != null), 'Provide either items or sections, not both.');
 
   /// The main content of the page
@@ -134,15 +136,30 @@ class UnifiedSidebarScaffold extends StatefulWidget {
 
   final bool showAppBarOnMobile;
 
+  /// When false, hides the mobile AppBar leading menu button.
+  final bool showMobileMenuButton;
+
+  /// When true on mobile, the secondary pill tabs hide while scrolling down
+  /// and reappear when scrolling up (or when content is back at the top).
+  final bool autoHideMobileTabsOnScroll;
+
   @override
   State<UnifiedSidebarScaffold> createState() => _UnifiedSidebarScaffoldState();
 }
 
-class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold> with SingleTickerProviderStateMixin {
+class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
+  late AnimationController _mobileTabsController;
+  late Animation<double> _mobileTabsFactor;
+  late Animation<Offset> _mobileTabsSlide;
   bool _isManuallyCollapsed = false;
   int _mobileSelectedIndex = 0; // Track selected index for Bottom Nav
+  bool _wantMobileTabs = true;
+  double _mobileTabScrollAccum = 0;
+  static const double _mobileTabScrollThreshold = 12;
+  int? _lastEnsuredMobileTabIndex;
 
   // Resolved properties from ModuleType or direct overrides
   String? get _resolvedTitle => widget.title ?? widget.module?.title;
@@ -162,12 +179,28 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold> with Si
     
     // Default to open
     _animationController.value = 1.0;
-  }
 
-  // ... (Keep dispose and toggleSidebar)
+    _mobileTabsController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+      reverseDuration: const Duration(milliseconds: 260),
+      value: 1.0,
+    );
+    final mobileTabsCurve = CurvedAnimation(
+      parent: _mobileTabsController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    _mobileTabsFactor = mobileTabsCurve;
+    _mobileTabsSlide = Tween<Offset>(
+      begin: const Offset(0, -0.4),
+      end: Offset.zero,
+    ).animate(mobileTabsCurve);
+  }
 
   @override
   void dispose() {
+    _mobileTabsController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -183,79 +216,206 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold> with Si
     });
   }
 
+  void _setMobileTabsVisible(bool visible) {
+    if (_wantMobileTabs == visible) return;
+    _wantMobileTabs = visible;
+    _mobileTabScrollAccum = 0;
+    if (visible) {
+      _mobileTabsController.forward();
+    } else {
+      _mobileTabsController.reverse();
+    }
+  }
+
+  bool _handleMobileTabScroll(ScrollNotification notification) {
+    if (!widget.autoHideMobileTabsOnScroll) return false;
+    if (notification.metrics.axis != Axis.vertical) return false;
+
+    // Always reveal when content is back at (or above) the top.
+    if (notification.metrics.pixels <= 0) {
+      _setMobileTabsVisible(true);
+      _mobileTabScrollAccum = 0;
+      return false;
+    }
+
+    if (notification is! ScrollUpdateNotification) return false;
+    final delta = notification.scrollDelta ?? 0;
+    if (delta == 0) return false;
+
+    // Accumulate in the current direction; reset when direction flips.
+    if ((_mobileTabScrollAccum > 0 && delta < 0) ||
+        (_mobileTabScrollAccum < 0 && delta > 0)) {
+      _mobileTabScrollAccum = 0;
+    }
+    _mobileTabScrollAccum += delta;
+
+    if (_mobileTabScrollAccum > _mobileTabScrollThreshold && _wantMobileTabs) {
+      _setMobileTabsVisible(false);
+    } else if (_mobileTabScrollAccum < -_mobileTabScrollThreshold &&
+        !_wantMobileTabs) {
+      _setMobileTabsVisible(true);
+    }
+
+    return false;
+  }
+
+  Widget _buildAnimatedMobilePillTabs(
+    BuildContext context,
+    List<SecondarySidebarItem> items,
+  ) {
+    return ClipRect(
+      child: SizeTransition(
+        sizeFactor: _mobileTabsFactor,
+        axisAlignment: -1,
+        child: FadeTransition(
+          opacity: _mobileTabsFactor,
+          child: SlideTransition(
+            position: _mobileTabsSlide,
+            child: _buildMobilePillTabs(context, items),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildMobilePillTabs(BuildContext context, List<SecondarySidebarItem> items) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final fillTrack = items.length <= 3;
+    final selectedIndex = items.indexWhere((item) => item.isSelected);
+    final selectedKey = GlobalKey();
 
-    return Container(
-      height: 40,
-      margin: const EdgeInsets.only(bottom: 12, top: 4),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          final item = items[index];
-          final isSelected = item.isSelected;
-          final itemColor = item.accentColor ?? _resolvedColor;
+    if (selectedIndex >= 0 && selectedIndex != _lastEnsuredMobileTabIndex) {
+      _lastEnsuredMobileTabIndex = selectedIndex;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final selectedContext = selectedKey.currentContext;
+        if (selectedContext != null && mounted) {
+          Scrollable.ensureVisible(
+            selectedContext,
+            alignment: 0.5,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+          );
+        }
+      });
+    }
 
-          return GestureDetector(
-            onTap: item.onTap,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
+    Widget buildSegment(SecondarySidebarItem item, {Key? key}) {
+      final isSelected = item.isSelected;
+      final itemColor = item.accentColor ?? _resolvedColor;
+
+      return GestureDetector(
+        key: key,
+        behavior: HitTestBehavior.opaque,
+        onTap: item.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          height: 38,
+          margin: const EdgeInsets.symmetric(horizontal: 1),
+          padding: EdgeInsets.symmetric(horizontal: fillTrack ? 8 : 14),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? itemColor.withOpacity(isDark ? 0.35 : 0.9)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: isSelected && isDark
+                ? [
+                    BoxShadow(
+                      color: itemColor.withOpacity(0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: fillTrack ? MainAxisSize.max : MainAxisSize.min,
+            children: [
+              Icon(
+                item.icon,
+                size: 16,
                 color: isSelected
-                    ? itemColor.withOpacity(isDark ? 0.3 : 0.8)
-                    : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03)),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected
-                      ? itemColor
-                      : (isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05)),
-                  width: 1.5,
-                ),
-                boxShadow: isSelected && isDark
-                    ? [
-                        BoxShadow(
-                          color: itemColor.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        )
-                      ]
-                    : [],
+                    ? Colors.white
+                    : (isDark ? Colors.white70 : Colors.black54),
               ),
-              child: Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      item.icon,
-                      size: 16,
+              const SizedBox(width: 6),
+              if (fillTrack)
+                Flexible(
+                  child: Text(
+                    item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w600,
                       color: isSelected
                           ? Colors.white
-                          : (isDark ? Colors.white70 : Colors.black54),
+                          : (isDark ? Colors.white70 : Colors.black87),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      item.title,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark ? Colors.white70 : Colors.black87),
-                        fontFamily: 'Inter',
+                  ),
+                )
+              else
+                Text(
+                  item.title,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight:
+                        isSelected ? FontWeight.w700 : FontWeight.w600,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? Colors.white70 : Colors.black87),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.all(3),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.black.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withOpacity(0.08)
+                : Colors.black.withOpacity(0.06),
+          ),
+        ),
+        child: fillTrack
+            ? Row(
+                children: [
+                  for (var i = 0; i < items.length; i++)
+                    Expanded(
+                      child: buildSegment(
+                        items[i],
+                        key: i == selectedIndex ? selectedKey : null,
                       ),
                     ),
-                  ],
+                ],
+              )
+            : ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 2),
+                itemBuilder: (context, index) => buildSegment(
+                  items[index],
+                  key: index == selectedIndex ? selectedKey : null,
                 ),
               ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -290,27 +450,30 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold> with Si
                     backgroundColor: Colors.transparent,
                     elevation: 0,
                     centerTitle: true,
-                    leading: widget.onBackToGlobal != null
+                    automaticallyImplyLeading: false,
+                    leading: widget.showMobileMenuButton
                         ? IconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            onPressed: widget.onBackToGlobal,
+                            icon: const Icon(Icons.menu_rounded),
+                            tooltip: 'Module menu',
+                            onPressed: widget.onMobileMenuTap ??
+                                () => _showMobileMenu(context),
                           )
                         : null,
                     actions: [
                       ...?widget.headerActions,
-                      IconButton(
-                        icon: const Icon(Icons.menu_rounded),
-                        tooltip: 'Module menu',
-                        onPressed: widget.onMobileMenuTap ?? () => _showMobileMenu(context),
-                      ),
                     ],
                   )
                 : null,
             body: Column(
               children: [
                 if (flatItems.isNotEmpty)
-                  _buildMobilePillTabs(context, flatItems),
-                Expanded(child: widget.body),
+                  _buildAnimatedMobilePillTabs(context, flatItems),
+                Expanded(
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: _handleMobileTabScroll,
+                    child: widget.body,
+                  ),
+                ),
               ],
             ),
             floatingActionButton: widget.floatingActionButton,

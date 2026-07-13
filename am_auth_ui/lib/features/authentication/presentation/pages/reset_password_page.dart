@@ -92,7 +92,7 @@ class ResetPasswordPage extends StatelessWidget {
                           left: 16,
                           child: IconButton(
                             icon: const Icon(Icons.arrow_back),
-                            onPressed: () => Navigator.of(context).pop(),
+                            onPressed: () => context.go('/login'),
                           ),
                         ),
                       ],
@@ -308,9 +308,7 @@ class _ResetPasswordPageFormState extends State<ResetPasswordPageForm> {
         
         // Back to login link
         TextButton(
-          onPressed: () {
-            Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-          },
+          onPressed: () => context.go('/login'),
           child: const Text('Back to Sign In'),
         ),
       ],
