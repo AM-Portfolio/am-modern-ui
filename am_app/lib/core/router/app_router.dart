@@ -12,19 +12,23 @@ import '../../features/shell/app_shell.dart';
 import 'app_routes.dart';
 import 'auth_refresh_listenable.dart';
 import 'deferred_routes.dart';
+import 'launch_location.dart';
 import 'share_url_builder.dart';
+
+export 'launch_location.dart' show resolveLaunchLocation;
 
 GoRouter createAppRouter({
   required AuthCubit authCubit,
   required AuthRefreshListenable refreshListenable,
+  Uri? launchUri,
 }) {
   return GoRouter(
-    initialLocation: resolveLaunchLocation(),
+    initialLocation: resolveLaunchLocation(launchUri: launchUri),
     overridePlatformDefaultLocation: kIsWeb,
     refreshListenable: refreshListenable,
     redirect: (context, state) {
       final authState = authCubit.state;
-      final location = state.matchedLocation;
+      final location = AppRoutes.normalizePath(state.matchedLocation);
       final isAuthenticated = authState is Authenticated;
       final authPending = authState is AuthInitial ||
           authState is AuthLoading ||
@@ -36,6 +40,20 @@ GoRouter createAppRouter({
         return isAuthenticated ? AppRoutes.dashboard : AppRoutes.login;
       }
 
+      // Auth deep links must not bounce to login/dashboard while session restores.
+      if (AppRoutes.isPublicAuthRoute(location)) {
+        if (isAuthenticated && location == AppRoutes.verifyEmail) {
+          return AppRoutes.dashboard;
+        }
+        if (isAuthenticated && location == AppRoutes.login) {
+          final target = ShareUrlBuilder.sanitizeRedirect(
+            state.uri.queryParameters['redirect'],
+          );
+          return target ?? AppRoutes.dashboard;
+        }
+        return null;
+      }
+
       // Restoring session — stay on current /app/* URL (avoids login flash on reload).
       if (authPending && AppRoutes.isAuthenticatedAppRoute(location)) {
         return null;
@@ -44,18 +62,6 @@ GoRouter createAppRouter({
       if (!isAuthenticated && AppRoutes.isAuthenticatedAppRoute(location)) {
         final redirect = Uri.encodeComponent(_redirectTarget(state.uri));
         return '${AppRoutes.login}?redirect=$redirect';
-      }
-
-      if (isAuthenticated && location == AppRoutes.login) {
-        final target = ShareUrlBuilder.sanitizeRedirect(
-          state.uri.queryParameters['redirect'],
-        );
-        return target ?? AppRoutes.dashboard;
-      }
-
-      // After verify-email auto-login, leave the public verify route for the app.
-      if (isAuthenticated && location == AppRoutes.verifyEmail) {
-        return AppRoutes.dashboard;
       }
 
       // Lab is disabled in navigation — block direct URL access.
@@ -339,31 +345,6 @@ String? _portfolioIdOnlyRedirect(String location) {
 String _userId(BuildContext context) {
   final authState = context.read<AuthCubit>().state;
   return authState is Authenticated ? authState.user.id : '';
-}
-
-/// Browser URL on web reload; dashboard fallback when path is empty or `/`.
-String resolveLaunchLocation() {
-  if (kIsWeb) {
-    final uri = Uri.base;
-    var path = uri.path.isEmpty ? '/' : uri.path;
-    if (path.length > 1 && path.endsWith('/')) {
-      path = path.substring(0, path.length - 1);
-    }
-    if (path != '/' && AppRoutes.isAuthenticatedAppRoute(path)) {
-      return uri.hasQuery ? '$path?${uri.query}' : path;
-    }
-    const publicAuth = {
-      AppRoutes.login,
-      AppRoutes.register,
-      AppRoutes.forgotPassword,
-      AppRoutes.resetPassword,
-      AppRoutes.verifyEmail,
-    };
-    if (publicAuth.contains(path)) {
-      return uri.hasQuery ? '$path?${uri.query}' : path;
-    }
-  }
-  return AppRoutes.dashboard;
 }
 
 String _redirectTarget(Uri uri) {
