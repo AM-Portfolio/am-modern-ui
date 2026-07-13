@@ -200,13 +200,6 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              TextButton.icon(
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Back to Portfolio'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.refresh),

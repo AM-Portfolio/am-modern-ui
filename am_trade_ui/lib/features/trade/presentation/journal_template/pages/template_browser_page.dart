@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,9 +35,13 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
   String _searchQuery = '';
   bool _isGridView = true;
 
+  bool _showFab = true;
+  Timer? _fabHideTimer;
+
   @override
   void initState() {
     super.initState();
+    _resetFabHideTimer();
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -55,8 +60,21 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     });
   }
 
+  void _resetFabHideTimer() {
+    if (!_showFab) {
+      setState(() => _showFab = true);
+    }
+    _fabHideTimer?.cancel();
+    _fabHideTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted && _showFab) {
+        setState(() => _showFab = false);
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _fabHideTimer?.cancel();
     _animationController.dispose();
     super.dispose();
   }
@@ -68,9 +86,20 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     return cubitAsync.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, stack) => Scaffold(body: Center(child: Text('Error: $error'))),
-      data: (cubit) => Scaffold(
-        body: Container(
-        decoration: BoxDecoration(
+      data: (cubit) => Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) => _resetFabHideTimer(),
+        onPointerMove: (_) => _resetFabHideTimer(),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification is ScrollUpdateNotification) {
+              _resetFabHideTimer();
+            }
+            return false;
+          },
+          child: Scaffold(
+            body: Container(
+              decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -82,70 +111,83 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(context),
-              Expanded(
-                child: Row(
-                  children: [
-                    // Category Filter Sidebar
-                    TemplateCategoryFilter(
-                      selectedCategory: _selectedCategory,
-                      onCategorySelected: (category) {
-                        setState(() => _selectedCategory = category);
-                        cubit.loadTemplates(
-                          category: category,
-                          search: _searchQuery.isEmpty ? null : _searchQuery,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 768;
+              
+              Widget mainContent = Expanded(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: BlocConsumer<JournalTemplateCubit,
+                      JournalTemplateState>(
+                    bloc: cubit,
+                    listener: (context, state) {
+                      if (state is JournalTemplateError) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(state.message),
+                            backgroundColor: Theme.of(context).colorScheme.error,
+                          ),
                         );
-                      },
-                    ),
-                    
-                    // Main Content Area
-                    Expanded(
-                      child: FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: BlocConsumer<JournalTemplateCubit,
-                            JournalTemplateState>(
-                          bloc: cubit,
-                          listener: (context, state) {
-                            if (state is JournalTemplateError) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(state.message),
-                                  backgroundColor: Theme.of(context).colorScheme.error,
-                                ),
-                              );
-                            } else if (state is JournalTemplateCreated) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Template "${state.template.name}" created!'),
-                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                ),
-                              );
-                              cubit.loadTemplates();
-                            }
-                          },
-                          builder: (context, state) {
-                            if (state is JournalTemplateLoading) {
-                              return _buildLoadingState();
-                            } else if (state is JournalTemplateLoaded) {
-                              return _buildTemplateGrid(context, state.templates);
-                            } else if (state is JournalTemplateError) {
-                              return _buildErrorState(context, state.message);
-                            }
-                            return _buildEmptyState(context);
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
+                      } else if (state is JournalTemplateCreated) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Template "${state.template.name}" created!'),
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                          ),
+                        );
+                        cubit.loadTemplates();
+                      }
+                    },
+                    builder: (context, state) {
+                      if (state is JournalTemplateLoading) {
+                        return _buildLoadingState();
+                      } else if (state is JournalTemplateLoaded) {
+                        return _buildTemplateGrid(context, state.templates);
+                      } else if (state is JournalTemplateError) {
+                        return _buildErrorState(context, state.message);
+                      }
+                      return _buildEmptyState(context);
+                    },
+                  ),
                 ),
-              ),
-            ],
+              );
+
+              Widget filterContent = TemplateCategoryFilter(
+                selectedCategory: _selectedCategory,
+                isHorizontal: isMobile,
+                onCategorySelected: (category) {
+                  setState(() => _selectedCategory = category);
+                  cubit.loadTemplates(
+                    category: category,
+                    search: _searchQuery.isEmpty ? null : _searchQuery,
+                  );
+                },
+              );
+
+              return Column(
+                children: [
+                  _buildHeader(context),
+                  if (isMobile) filterContent,
+                  Expanded(
+                    child: isMobile
+                        ? mainContent
+                        : Row(
+                            children: [
+                              filterContent,
+                              mainContent,
+                            ],
+                          ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
       floatingActionButton: _buildFloatingActionButton(context),
+    ),
+    ),
     ),
     );
   }
@@ -384,10 +426,26 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
   }
 
   Widget _buildFloatingActionButton(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: () => _showCreateTemplateDialog(context),
-      icon: const Icon(Icons.add),
-      label: const Text('Create Template'),
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 400),
+      scale: _showFab ? 1.0 : 0.0,
+      curve: _showFab ? Curves.elasticOut : Curves.easeInBack,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: _showFab ? 1.0 : 0.0,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 96.0),
+          child: FloatingActionButton.extended(
+            onPressed: () => _showCreateTemplateDialog(context),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            elevation: 4,
+            shape: const StadiumBorder(),
+            icon: const Icon(Icons.add),
+            label: const Text('Create Template'),
+          ),
+        ),
+      ),
     );
   }
 

@@ -60,11 +60,13 @@ class CalendarDayCell extends StatelessWidget {
           ),
           child: Center(
             child: Text(
-              '$dayNumber',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: compactMode ? 9 : 10,
-                fontWeight: hasData ? FontWeight.bold : FontWeight.w500,
-                color: textColor,
+              dayNumber.toString(),
+              style: TextStyle(
+                fontSize: compactMode ? 9 : 12,
+                fontWeight: hasData ? FontWeight.w700 : FontWeight.w400,
+                color: hasData
+                    ? Colors.white // Colored backgrounds need white text for contrast in both themes
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
             ),
           ),

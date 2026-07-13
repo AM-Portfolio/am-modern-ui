@@ -41,19 +41,19 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
     });
 
     // Listen to scroll events
-    _scrollController.addListener(_onScroll);
+    _scrollController.addListener(_onUserInteraction);
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
+    _scrollController.removeListener(_onUserInteraction);
     _scrollController.dispose();
     _hideTimer?.cancel();
     super.dispose();
   }
 
-  void _onScroll() {
-    // Show FAB when scrolling
+  void _onUserInteraction() {
+    // Show FAB when user interacts with the screen
     if (!_showFilterFAB) {
       setState(() => _showFilterFAB = true);
     }
@@ -111,54 +111,27 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
                 // Optional small delay for better UX
                 await Future.delayed(const Duration(milliseconds: 500));
               },
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  if (notification is ScrollUpdateNotification) {
-                    _onScroll();
-                  }
-                  return false;
-                },
-                child: TradeHoldingsTemplate(
-                  holdings: filteredHoldings,
-                  isLoading: false,
-                  isWebView: false,
-                  onHoldingSelected: (holding) => _navigateToHoldingDetails(context, holding),
-                ),
-              ),
-            ),
-            // Floating Filter Button (shows on scroll, auto-hides)
-            if (_showFilterFAB)
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: FloatingActionButton(
-                  onPressed: _showFilterBottomSheet,
-                  tooltip: 'Filters',
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(Icons.filter_list_rounded),
-                      // Badge for active filter count
-                      if (_getActiveFilterCount() > 0)
-                        Positioned(
-                          right: -4,
-                          top: -4,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                            child: Center(
-                              child: Text(
-                                _getActiveFilterCount().toString(),
-                                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+              child: Listener(
+                onPointerDown: (_) => _onUserInteraction(),
+                onPointerMove: (_) => _onUserInteraction(),
+                onPointerUp: (_) => _onUserInteraction(),
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollUpdateNotification) {
+                      _onUserInteraction();
+                    }
+                    return false;
+                  },
+                  child: TradeHoldingsTemplate(
+                    holdings: filteredHoldings,
+                    isLoading: false,
+                    isWebView: false,
+                    onHoldingSelected: (holding) => _navigateToHoldingDetails(context, holding),
                   ),
                 ),
               ),
+            ),
+            // Filter FAB removed as per request
           ],
         );
       },

@@ -35,10 +35,10 @@ class CalendarColorService {
     } else {
       // For profit intensity mode, use P&L
       final totalPnL = stats['totalPnL'] as double;
-      if (totalPnL == 0) return Colors.transparent;
+      if (totalPnL == 0) return Colors.grey.withOpacity(opacity);
 
       final baseColor = totalPnL > 0 ? Colors.green : Colors.red;
-      return baseColor.withOpacity(opacity);
+      return baseColor.withOpacity(0.15);
     }
   }
 
