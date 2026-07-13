@@ -69,6 +69,9 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       await _storageService.saveUserId(result.user.id);
       await _storageService.saveUserEmail(result.user.email);
+      if (result.user.displayName != null) {
+        await _storageService.saveUserDisplayName(result.user.displayName!);
+      }
       await _storageService.saveTokenExpiry(result.tokens.expiresAt);
 
       return Right(_enrichedEntity(result.toEntity()));
@@ -105,6 +108,9 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       await _storageService.saveUserId(entity.user.id);
       await _storageService.saveUserEmail(entity.user.email);
+      if (entity.user.displayName != null) {
+        await _storageService.saveUserDisplayName(entity.user.displayName!);
+      }
       await _storageService.saveTokenExpiry(entity.tokens.expiresAt);
 
       final enriched = _enrichedEntity(entity);
@@ -334,6 +340,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       final userId = await _storageService.getUserId();
       final email = await _storageService.getUserEmail();
+      final displayName = await _storageService.getUserDisplayName();
       final accessToken = await _storageService.getAccessToken();
       final refreshToken = await _storageService.getRefreshToken();
       final expiry = await _storageService.getTokenExpiry();
@@ -384,6 +391,7 @@ class AuthRepositoryImpl implements AuthRepository {
         UserEntity(
           id: userId,
           email: email,
+          displayName: displayName,
           authMethod: 'stored', // Could be tracked separately if needed
         ),
         accessToken,

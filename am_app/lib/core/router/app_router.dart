@@ -276,8 +276,17 @@ GoRouter createAppRouter({
           ),
           GoRoute(
             path: AppRoutes.profile,
-            builder: (context, state) =>
-                buildProfileRoute(userId: _userId(context)),
+            builder: (context, state) {
+              final authState = context.read<AuthCubit>().state;
+              if (authState is Authenticated) {
+                return buildProfileRoute(
+                  userId: authState.user.id,
+                  email: authState.user.email,
+                  displayName: authState.user.displayName,
+                );
+              }
+              return buildProfileRoute(userId: _userId(context));
+            },
           ),
           GoRoute(
             path: AppRoutes.subscription,

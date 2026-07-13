@@ -156,31 +156,36 @@ class GlobalSidebar extends StatelessWidget {
   }) {
     return Tooltip(
       message: tooltip ?? '',
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.transparent,
-              border: Border.all(
-                color: isDarkMode ? Colors.white.withOpacity(0.1) : const Color(0xFF6C5DD3).withOpacity(0.2)
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.transparent,
+                border: Border.all(
+                  color: isDarkMode ? Colors.white.withOpacity(0.1) : const Color(0xFF6C5DD3).withOpacity(0.2)
+                ),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 20,
               ),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 20,
-            ),
-          ),
+        ),
       ),
     );
   }
 
   Widget _buildUserProfile() {
-    return PopupMenuButton<String>(
-      offset: const Offset(60, -120), // Open to the right/above roughly
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: PopupMenuButton<String>(
+        offset: const Offset(60, -120), // Open to the right/above roughly
       tooltip: 'Profile Options',
       color: isDarkMode ? const Color(0xFF1E1E2C) : Colors.white,
       shape: RoundedRectangleBorder(
@@ -268,8 +273,9 @@ class GlobalSidebar extends StatelessWidget {
               : _buildUserInitials(),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildUserInitials() {
     return Container(
@@ -337,12 +343,13 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
     final isSelected = widget.isActive;
     
     return Tooltip(
-      message: widget.longPressTooltip ?? widget.item.title,
+      message: widget.item.title,
       preferBelow: false,
       child: GestureDetector(
         onTap: widget.onTap,
         onLongPress: widget.onLongPress,
         child: ConditionalMouseRegion(
+          cursor: SystemMouseCursors.click,
           onEnter: (_) => setState(() => _isHovered = true),
           onExit: (_) => setState(() => _isHovered = false),
           child: AnimatedContainer(

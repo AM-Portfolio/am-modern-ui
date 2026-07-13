@@ -80,6 +80,34 @@ class DashboardMobileScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildSummaryLoading() {
+    return Column(
+      children: [
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _buildLoadingCard(120)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildLoadingCard(120)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _buildLoadingCard(120)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildLoadingCard(120)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(dashboardStreamingSessionProvider(userId));
@@ -193,7 +221,7 @@ class DashboardMobileScreen extends ConsumerWidget {
                     sliver: SliverToBoxAdapter(
                       child: dashboardAsync.when(
                         data: (summary) => DashboardSummaryWidget(summary: summary),
-                        loading: () => _buildLoadingCard(180),
+                        loading: () => _buildSummaryLoading(),
                         error: (err, stack) => AmErrorWidget(
                           message: 'Failed to load summary',
                           onRetry: () => ref.invalidate(dashboardStreamProvider(userId)),
