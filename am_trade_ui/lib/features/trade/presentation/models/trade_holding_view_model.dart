@@ -99,10 +99,10 @@ class TradeHoldingViewModel {
       quantity: entity.entryInfo.quantity ?? exitInfo?.quantity,
       entryPrice: entity.entryInfo.price,
       exitPrice: exitInfo?.price,
-      currentPrice: exitInfo?.price ?? entity.entryInfo.price,
+      currentPrice: entity.currentPrice ?? exitInfo?.price ?? entity.entryInfo.price,
       avgPrice: entity.entryInfo.price,
       currentValue:
-          (exitInfo?.quantity ?? entity.entryInfo.quantity ?? 0) * (exitInfo?.price ?? entity.entryInfo.price ?? 0),
+          (exitInfo?.quantity ?? entity.entryInfo.quantity ?? 0) * (entity.currentPrice ?? exitInfo?.price ?? entity.entryInfo.price ?? 0),
       profitLoss: metrics?.profitLoss,
       profitLossPercentage: metrics?.profitLossPercentage,
       riskAmount: metrics?.riskAmount,

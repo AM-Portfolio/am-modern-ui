@@ -12,6 +12,10 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   BootTrace.configure();
 
+  // Capture before any MaterialApp mounts — a bootstrap `home:` route can
+  // rewrite the browser path to `/` and drop auth deep links.
+  final Uri? launchUri = kIsWeb ? Uri.base : null;
+
   ErrorWidget.builder = (details) => Material(
         color: const Color(0xFF1E1E2E),
         child: SafeArea(
@@ -29,11 +33,13 @@ void main() {
     usePathUrlStrategy();
   }
 
-  runApp(const ProviderScope(child: _BootstrapApp()));
+  runApp(ProviderScope(child: _BootstrapApp(launchUri: launchUri)));
 }
 
 class _BootstrapApp extends StatefulWidget {
-  const _BootstrapApp();
+  const _BootstrapApp({this.launchUri});
+
+  final Uri? launchUri;
 
   @override
   State<_BootstrapApp> createState() => _BootstrapAppState();
@@ -55,7 +61,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       await configureCoreDependencies();
       await configureFeatureDependencies();
       if (!mounted) return;
-      setState(() => _app = const AMApp());
+      setState(() => _app = AMApp(launchUri: widget.launchUri));
 
       SchedulerBinding.instance.addPostFrameCallback((_) {
         BootTrace.instance.mark('first_flutter_frame');
@@ -76,10 +82,11 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
-      return MaterialApp(
-        home: Scaffold(
-          backgroundColor: const Color(0xFF1E1E2E),
-          body: SafeArea(
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: Material(
+          color: const Color(0xFF1E1E2E),
+          child: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: SelectableText(
@@ -93,11 +100,14 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     }
 
     if (_app == null) {
-      final restoring = Uri.base.path.startsWith('/app/');
-      return MaterialApp(
-        home: Scaffold(
-          backgroundColor: const Color(0xFF0B1120),
-          body: Center(
+      final path = widget.launchUri?.path ?? '';
+      final restoring = path.startsWith('/app/');
+      // Avoid MaterialApp(home:) — it can clobber the browser URL to `/`.
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: Material(
+          color: const Color(0xFF0B1120),
+          child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

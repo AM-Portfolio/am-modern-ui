@@ -7,7 +7,7 @@ class PortfolioMetricCard extends StatelessWidget {
   final String value;
   final String subtitle;
   final Color accentColor;
-  final IconData icon;
+  final IconData? icon;
   final bool? isPositive;
   final bool isHighlight;
   final bool compact;
@@ -21,7 +21,7 @@ class PortfolioMetricCard extends StatelessWidget {
     required this.value,
     required this.subtitle,
     required this.accentColor,
-    required this.icon,
+    this.icon,
     this.isPositive,
     this.isHighlight = false,
     this.compact = false,
@@ -75,16 +75,16 @@ class PortfolioMetricCard extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            accentColor.withValues(alpha: 0.85),
-                            accentColor.withValues(alpha: 0.6),
+                            accentColor.withValues(alpha: 0.25),
+                            accentColor.withValues(alpha: 0.1),
                           ],
                         )
                       : LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            cardBase.withValues(alpha: isDark ? 0.55 : 0.9),
-                            cardBase.withValues(alpha: isDark ? 0.3 : 0.7),
+                            cardBase.withValues(alpha: isDark ? 0.3 : 0.8),
+                            cardBase.withValues(alpha: isDark ? 0.1 : 0.5),
                           ],
                         ),
                   border: Border.all(
@@ -117,20 +117,21 @@ class PortfolioMetricCard extends StatelessWidget {
                   child: Stack(
                     children: [
                       // ── Watermark Icon (clipped by card) ──
-                      Positioned(
-                        right: 0,
-                        bottom: -4,
-                        child: Transform.rotate(
-                          angle: -math.pi / 12,
-                          child: Icon(
-                            icon,
-                            size: compact ? 56 : 76,
-                            color: isHighlight
-                                ? Colors.white.withValues(alpha: 0.14)
-                                : accentColor.withValues(alpha: 0.07),
+                      if (icon != null)
+                        Positioned(
+                          right: 0,
+                          bottom: -4,
+                          child: Transform.rotate(
+                            angle: -math.pi / 12,
+                            child: Icon(
+                              icon,
+                              size: compact ? 56 : 76,
+                              color: isHighlight
+                                  ? Colors.white.withValues(alpha: 0.14)
+                                  : accentColor.withValues(alpha: 0.07),
+                            ),
                           ),
                         ),
-                      ),
 
                       // ── Main Content ──
                       Padding(
@@ -175,7 +176,7 @@ class PortfolioMetricCard extends StatelessWidget {
                                               ? Colors.white
                                               : const Color(0xFF1A1A2E))),
                                   height: 1.1,
-                                  shadows: glowBorder
+                                  shadows: (glowBorder && isDark)
                                       ? [
                                           Shadow(
                                             color: accentColor

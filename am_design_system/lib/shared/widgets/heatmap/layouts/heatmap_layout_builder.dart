@@ -55,21 +55,31 @@ abstract class HeatmapLayoutBuilder {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
-        margin: config.tileMargin ?? const EdgeInsets.all(1),
+        margin: config.tileMargin ?? const EdgeInsets.all(0.5),
         decoration: BoxDecoration(
-          color: tileColor,
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: Colors.white.withOpacity(0.15), width: 0.5),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              tileColor.withValues(alpha: 0.95),
+              tileColor.withValues(alpha: 0.65),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: tileColor.withValues(alpha: 0.4),
+            width: 0.5,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 2,
-              offset: const Offset(0, 1),
-            )
+              color: tileColor.withValues(alpha: 0.25),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Padding(
-          padding: config.tilePadding ?? const EdgeInsets.all(4.0),
+          padding: config.tilePadding ?? const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           child: buildTileContent(
             context,
             tile,
@@ -397,7 +407,7 @@ abstract class HeatmapLayoutBuilder {
         intensity,
       )!;
     } else {
-      return const Color(0xFF2B273B); // Neutral dark purple/slate
+      return const Color(0xFF6B7280); // Visible neutral slate/cool gray
     }
   }
 

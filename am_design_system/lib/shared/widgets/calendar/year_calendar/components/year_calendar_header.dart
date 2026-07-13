@@ -80,7 +80,7 @@ class YearCalendarHeader extends StatelessWidget {
             _buildSummaryCard(
               context,
               'P&L',
-              '\$${yearStats['totalPnL'] >= 0 ? '+' : ''}${yearStats['totalPnL'].toStringAsFixed(0)}',
+              '₹${yearStats['totalPnL'] >= 0 ? '+' : ''}${yearStats['totalPnL'].toStringAsFixed(0)}',
               yearStats['totalPnL'] >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
               yearStats['totalPnL'] >= 0 ? Colors.green : Colors.red,
             ),

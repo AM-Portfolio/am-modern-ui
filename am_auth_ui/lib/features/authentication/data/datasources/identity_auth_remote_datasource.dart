@@ -257,14 +257,17 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
           'password': password,
           'first_name': firstName,
           'last_name': lastName,
+          if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
         },
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // am-identity registration returns user status, not tokens.
-        // We log in immediately to return AuthResultModel with tokens.
-        return emailLogin(email, password);
+        // Email verification is required — do not auto-login (Keycloak required action).
+        throw ServerException(
+          'Check your email to verify your Asrax account before signing in.',
+          statusCode: 201,
+        );
       } else {
         throw ServerException(
           'Registration failed',
@@ -306,5 +309,171 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
   @override
   Future<bool> isAuthenticated() async {
     return true;
+  }
+
+  Future<void> requestPasswordReset(String email) async {
+    await _postAccepted(
+      AuthEndpoints.identityPasswordReset,
+      {'email': email},
+      action: 'Password reset request',
+    );
+  }
+
+  Future<void> confirmPasswordReset({
+    String? token,
+    String? code,
+    required String newPassword,
+  }) async {
+    final body = <String, dynamic>{'new_password': newPassword};
+    final trimmedCode = code?.trim();
+    final trimmedToken = token?.trim();
+    if (trimmedCode != null && trimmedCode.isNotEmpty) {
+      body['code'] = trimmedCode;
+    } else if (trimmedToken != null && trimmedToken.isNotEmpty) {
+      body['token'] = trimmedToken;
+    }
+    await _postAccepted(
+      AuthEndpoints.identityPasswordResetConfirm,
+      body,
+      action: 'Password reset confirm',
+      acceptCodes: const {200},
+    );
+  }
+
+  Future<AuthResultModel> confirmVerifyEmail({String? token, String? code}) async {
+    final body = <String, dynamic>{};
+    final trimmedCode = code?.trim();
+    final trimmedToken = token?.trim();
+    if (trimmedCode != null && trimmedCode.isNotEmpty) {
+      body['code'] = trimmedCode;
+    } else if (trimmedToken != null && trimmedToken.isNotEmpty) {
+      body['token'] = trimmedToken;
+    }
+    try {
+      final response = await _dio.post(
+        AuthEndpoints.identityVerifyEmailConfirm,
+        data: body,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      if (response.statusCode != 200) {
+        throw ServerException(
+          'Verify email confirm failed',
+          statusCode: response.statusCode ?? 500,
+        );
+      }
+      final data = response.data as Map<String, dynamic>;
+      final accessToken = data['access_token'] as String?;
+      if (accessToken == null || accessToken.isEmpty) {
+        throw ServerException(
+          'Verify email confirm did not return a session',
+          statusCode: 500,
+        );
+      }
+      final refreshToken = data['refresh_token'] as String?;
+      final user = _parseUserFromToken(accessToken, '');
+      return AuthResultModel(
+        user: user,
+        tokens: AuthTokensModel(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          expiresAt: DateTime.now().add(
+            Duration(seconds: data['expires_in'] as int? ?? 3600),
+          ),
+        ),
+      );
+    } on DioException catch (e) {
+      AppLogger.error('Identity Verify Email Confirm Error: ${e.response?.data}');
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout) {
+        throw NetworkException(AuthConstants.networkError);
+      }
+
+      var errorMessage = AuthConstants.serverError;
+      if (e.response?.data != null && e.response!.data is Map) {
+        final data = e.response!.data;
+        final detail = data['detail'];
+        if (detail is Map) {
+          errorMessage = detail['error_description']?.toString() ??
+              detail['message']?.toString() ??
+              detail['error']?.toString() ??
+              errorMessage;
+        } else if (detail != null) {
+          errorMessage = detail.toString();
+        } else {
+          errorMessage = data['message']?.toString() ??
+              data['error']?.toString() ??
+              errorMessage;
+        }
+      }
+
+      throw ServerException(
+        errorMessage,
+        statusCode: e.response?.statusCode ?? 500,
+      );
+    }
+  }
+
+  Future<void> resendVerifyEmail(String email) async {
+    await _postAccepted(
+      AuthEndpoints.identityVerifyEmailResend,
+      {'email': email},
+      action: 'Verify email resend',
+    );
+  }
+
+  Future<void> changePassword({
+    required String email,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _postAccepted(
+      AuthEndpoints.identityChangePassword,
+      {
+        'email': email,
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      },
+      action: 'Change password',
+      acceptCodes: const {200},
+    );
+  }
+
+  Future<void> _postAccepted(
+    String url,
+    Map<String, dynamic> data, {
+    required String action,
+    Set<int> acceptCodes = const {202, 200},
+  }) async {
+    try {
+      final response = await _dio.post(
+        url,
+        data: data,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      if (!acceptCodes.contains(response.statusCode)) {
+        throw ServerException(
+          '$action failed',
+          statusCode: response.statusCode ?? 500,
+        );
+      }
+    } on DioException catch (e) {
+      AppLogger.error('Identity $action API Error: ${e.response?.data}');
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout) {
+        throw NetworkException(AuthConstants.networkError);
+      }
+      var errorMessage = '$action failed';
+      final body = e.response?.data;
+      if (body is Map) {
+        final detail = body['detail'];
+        if (detail != null) {
+          errorMessage = detail.toString();
+        }
+      }
+      throw ServerException(
+        errorMessage,
+        statusCode: e.response?.statusCode ?? 500,
+      );
+    }
   }
 }

@@ -79,7 +79,12 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                 onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
               ),
             ),
-            validator: (value) => Validators.validatePassword(value),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Password is required';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 32),
 

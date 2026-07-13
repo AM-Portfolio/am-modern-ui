@@ -102,6 +102,7 @@ class AuthProviders {
     checkAuthStatusUseCase: checkAuthStatusUseCase,
     getCurrentUserUseCase: getCurrentUserUseCase,
     registerUseCase: registerUseCase,
+    authRepository: authRepository,
   );
 
   static List<BlocProvider> get providers => [

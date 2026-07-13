@@ -40,6 +40,7 @@ class CommonChartConfig {
   final Color? gridColor;
   final Color? axisColor;
   final double axisWidth;
+  final double? xInterval;
   
   final double pieCenterRadius;
   final MainAxisAlignment? barAlignment;
@@ -59,6 +60,12 @@ class CommonChartConfig {
   /// (Google Finance style) instead of floating next to the cursor.
   final bool lockTooltipToTop;
 
+  /// Callback when zoom scale changes, used to build external zoom controls.
+  final void Function(double zoomScale, void Function(double delta) adjustZoom)? onZoomChanged;
+
+  /// Optional custom formatter for Y-axis labels.
+  final String Function(double)? formatYLabel;
+
   const CommonChartConfig({
     this.showGrid = true,
     this.showTitles = true,
@@ -69,6 +76,7 @@ class CommonChartConfig {
     this.gridColor,
     this.axisColor,
     this.axisWidth = 1.0,
+    this.xInterval,
     this.pieCenterRadius = 0,
     this.barAlignment,
     // Interactive feature defaults — all opt-in, zero breaking change
@@ -76,6 +84,8 @@ class CommonChartConfig {
     this.initialZoomScale = 1.0,
     this.enableInteractiveLegend = false,
     this.lockTooltipToTop = false,
+    this.onZoomChanged,
+    this.formatYLabel,
   });
 }
 
