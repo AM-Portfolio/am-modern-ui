@@ -134,12 +134,9 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
               
               heatmapData = heatmapData.copyWith(tiles: filteredTiles);
             } else {
-              // No stocks match this market cap segment — show empty state
-              if (isClosed) return;
-              emit(const PortfolioHeatmapEmpty(
-                message: 'No holdings found for the selected market cap segment.',
-              ));
-              return;
+              // No stocks match this segment — emit Loaded with empty tiles
+              // This preserves the filter dropdowns so the user can change their selection back.
+              heatmapData = heatmapData.copyWith(tiles: []);
             }
           }
         } else if (analyticsState is PortfolioAnalyticsError) {

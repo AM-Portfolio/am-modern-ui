@@ -68,21 +68,18 @@ class ListLayoutBuilder extends HeatmapLayoutBuilder {
               .map(
                 (listItem) => Container(
                   constraints: BoxConstraints(
-                    maxHeight: listItem.height,
-                    minHeight: listItem.height * 0.8, // Allow some flexibility
+                    minHeight: listItem.height, // Allow it to expand if needed
                   ),
                   margin: EdgeInsets.only(bottom: itemSpacing),
-                  child: Flexible(
-                    child: buildUnifiedHeatmapTileCard(
-                      context,
-                      listItem.tile,
-                      data,
-                      HeatmapTileCardType.list,
-                      width: width,
-                      height: listItem.height,
-                      onTilePressed: onTilePressed,
-                      customTileBuilder: customTileBuilder,
-                    ),
+                  child: buildUnifiedHeatmapTileCard(
+                    context,
+                    listItem.tile,
+                    data,
+                    HeatmapTileCardType.list,
+                    width: width,
+                    height: listItem.height,
+                    onTilePressed: onTilePressed,
+                    customTileBuilder: customTileBuilder,
                   ),
                 ),
               )
@@ -132,17 +129,17 @@ class ListLayoutBuilder extends HeatmapLayoutBuilder {
     // Clamp to reasonable bounds to prevent overflow and ensure readability
     if (availableHeight > 800) {
       return baseHeight.clamp(
-        60.0,
-        80.0,
+        70.0,
+        90.0,
       ); // Large screens - generous but controlled
     } else if (availableHeight > 600) {
-      return baseHeight.clamp(50.0, 70.0); // Medium screens - balanced
+      return baseHeight.clamp(60.0, 80.0); // Medium screens - balanced
     } else if (availableHeight > 400) {
-      return baseHeight.clamp(40.0, 60.0); // Small screens - compact
+      return baseHeight.clamp(55.0, 70.0); // Small screens - compact
     } else {
       return baseHeight.clamp(
-        30.0,
-        45.0,
+        55.0,
+        60.0,
       ); // Very small screens - minimal but readable
     }
   }
