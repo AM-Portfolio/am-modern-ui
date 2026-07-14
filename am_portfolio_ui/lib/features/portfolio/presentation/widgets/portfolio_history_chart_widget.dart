@@ -558,8 +558,22 @@ class _PortfolioHistoryChartWidgetState
   Widget _buildIntradayChart(List<PortfolioIntradayDto> data) {
     if (data.isEmpty) return _buildEmpty();
 
+    // Smart adjustment: The backend might send an artificial anchor point at 09:15 followed by the actual 09:15 data.
+    // We deduplicate by timestamp, keeping the latest point for each timestamp to avoid artificial vertical drops.
+    final List<PortfolioIntradayDto> uniqueData = [];
+    String? lastTs;
+    for (var d in data) {
+      if (d.timestamp != lastTs) {
+        uniqueData.add(d);
+        lastTs = d.timestamp;
+      } else {
+        // Overwrite the previous anchor point with the actual market data for the same timestamp
+        uniqueData[uniqueData.length - 1] = d;
+      }
+    }
+
     int idx = 0;
-    final primaryPoints = data.map((d) => CommonChartDataPoint(
+    final primaryPoints = uniqueData.map((d) => CommonChartDataPoint(
       x: (idx++).toDouble(),
       y: d.totalWealth,
       // Show label every 40 minutes (every 8th 5-min candle)
@@ -568,7 +582,7 @@ class _PortfolioHistoryChartWidgetState
     )).toList();
 
     idx = 0;
-    final secondaryPoints = data.map((d) => CommonChartDataPoint(
+    final secondaryPoints = uniqueData.map((d) => CommonChartDataPoint(
       x: (idx++).toDouble(),
       y: d.changeFromOpenPct,
       xLabel: (idx % 8 == 1) ? d.timestamp : '',
