@@ -4,16 +4,26 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'dart:ui';
 
+import 'privacy_policy_page.dart';
+import 'terms_of_service_page.dart';
+
 /// Profile and Settings page for user account management
 class ProfileSettingsPage extends StatelessWidget {
   final String userId;
   final String? email;
   final String? displayName;
 
+  /// Prefer these for in-shell navigation (GoRouter). When null, falls back to
+  /// [Navigator.push] of the in-app legal pages.
+  final VoidCallback? onOpenPrivacyPolicy;
+  final VoidCallback? onOpenTermsOfService;
+
   const ProfileSettingsPage({
     required this.userId,
     this.email,
     this.displayName,
+    this.onOpenPrivacyPolicy,
+    this.onOpenTermsOfService,
     super.key,
   });
 
@@ -24,16 +34,23 @@ class ProfileSettingsPage extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Profile & Settings'),
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+        foregroundColor: isDark ? Colors.white : Colors.black87,
+        title: Text(
+          'Profile & Settings',
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black87,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
+        iconTheme: IconThemeData(
+          color: isDark ? Colors.white : Colors.black87,
+        ),
         // leading: IconButton(
         //   icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
         //   onPressed: () => Navigator.pop(context),
@@ -251,6 +268,7 @@ class ProfileSettingsPage extends StatelessWidget {
               icon: Icons.description_outlined,
               title: 'Terms & Conditions',
               isDark: isDark,
+              onTap: () => _openTerms(context),
             ),
              _buildDivider(isDark),
             _buildSettingTile(
@@ -258,6 +276,7 @@ class ProfileSettingsPage extends StatelessWidget {
               icon: Icons.privacy_tip_outlined,
               title: 'Privacy Policy',
               isDark: isDark,
+              onTap: () => _openPrivacy(context),
             ),
           ],
         ),
@@ -542,6 +561,62 @@ class ProfileSettingsPage extends StatelessWidget {
   void _copyUserId(BuildContext context, String userId) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('User ID copied to clipboard')),
+    );
+  }
+
+  void _openPrivacy(BuildContext context) {
+    if (onOpenPrivacyPolicy != null) {
+      onOpenPrivacyPolicy!();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PrivacyPolicyPage(
+          onOpenTerms: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute<void>(
+                builder: (_) => TermsOfServicePage(
+                  onOpenPrivacy: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PrivacyPolicyPage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openTerms(BuildContext context) {
+    if (onOpenTermsOfService != null) {
+      onOpenTermsOfService!();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TermsOfServicePage(
+          onOpenPrivacy: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute<void>(
+                builder: (_) => PrivacyPolicyPage(
+                  onOpenTerms: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const TermsOfServicePage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

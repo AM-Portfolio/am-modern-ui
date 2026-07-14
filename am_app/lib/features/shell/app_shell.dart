@@ -310,7 +310,11 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
 
   String get _activeNavItem {
     final location = GoRouterState.of(context).matchedLocation;
-    if (location.startsWith(AppRoutes.profile)) return '';
+    if (location.startsWith(AppRoutes.profile) ||
+        location.startsWith(AppRoutes.privacyPolicy) ||
+        location.startsWith(AppRoutes.termsOfService)) {
+      return '';
+    }
     return AppRoutes.activeNavTitleForLocation(location);
   }
 
