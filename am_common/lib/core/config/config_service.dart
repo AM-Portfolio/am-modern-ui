@@ -10,12 +10,23 @@ class ConfigService {
   static AppConfig? _config;
   static const _envFromDefine = String.fromEnvironment('AM_ENV');
   static const _domainFromDefine = String.fromEnvironment('AM_DOMAIN');
-  static String _domain = _domainFromDefine.isNotEmpty
-      ? _domainFromDefine
-      : 'am-dev.asrax.in';
+  /// No baked env host. Prefer same-tab host on web until Helm/config loads.
+  static String _domain = _bootstrapDomain();
   static String _resolvedEnv = _envFromDefine;
   static Map<String, String> _services = {};
   static String _googleClientId = '';
+
+  /// Cluster: browser host (am-dev / am-preprod / am.asrax.in). Localhost → empty.
+  static String _bootstrapDomain() {
+    final host = Uri.base.host;
+    if (host.isNotEmpty &&
+        host != 'localhost' &&
+        host != '127.0.0.1' &&
+        !host.endsWith('.local')) {
+      return host;
+    }
+    return '';
+  }
 
   static String get domain => _domain;
 
@@ -54,10 +65,12 @@ class ConfigService {
 
     final bootstrap = parallel[1];
     final runtimeEnv = parallel[2];
+    // Runtime Helm/bootstrap `env` wins over compile-time AM_ENV so one image
+    // can load config.dev.json / config.preprod.json per namespace.
     final bootstrapEnv = runtimeEnv?['env'] as String? ?? bootstrap?['env'] as String?;
     final env = (bootstrapEnv != null && bootstrapEnv.isNotEmpty)
         ? bootstrapEnv
-        : _envFromDefine;
+        : (_envFromDefine.isNotEmpty ? _envFromDefine : null);
     _resolvedEnv = env ?? _resolvedEnv;
     if (env != null && env.isNotEmpty) {
       final envConfig = await _fetchJson('/config.$env.json');
@@ -78,9 +91,16 @@ class ConfigService {
   }
 
   static void _applyMergedConfig(Map<String, dynamic> json) {
-    _domain = json['domain'] as String? ?? _domain;
-    // Removed _domainFromDefine hard-override to allow config.json to take precedence in Docker
-
+    // Priority: Helm/config.json domain → local AM_DOMAIN (.env) → browser host.
+    // Never keep a compile-time host over runtime Helm config.
+    final jsonDomain = json['domain'] as String?;
+    if (jsonDomain != null && jsonDomain.isNotEmpty) {
+      _domain = jsonDomain;
+    } else if (_domainFromDefine.isNotEmpty) {
+      _domain = _domainFromDefine;
+    } else if (_domain.isEmpty) {
+      _domain = _bootstrapDomain();
+    }
 
     final raw = json['services'] as Map<String, dynamic>? ??
         json['overrides'] as Map<String, dynamic>? ??
@@ -170,10 +190,15 @@ class ConfigService {
   }
 
   static AppConfig _buildConfig() {
-    final api = 'https://$_domain';
-    final ws = 'wss://$_domain';
+    final host = _domain.isNotEmpty ? _domain : _bootstrapDomain();
+    final api = host.isNotEmpty ? 'https://$host' : Uri.base.origin;
+    final wsScheme = api.startsWith('https') ? 'wss' : 'ws';
+    final wsHost = host.isNotEmpty ? host : Uri.base.host;
+    final ws = wsHost.isNotEmpty ? '$wsScheme://$wsHost' : api.replaceFirst(RegExp(r'^http'), 'ws');
 
-    final authUrl = _services['auth'] ?? '$api/auth';
+    final authUrl = _services['auth'] ??
+        _services['identity'] ??
+        '$api/identity';
     final usersUrl = _services['users'] ?? '$api/users';
     final portfolioUrl = _services['portfolio'] ?? '$api/portfolio';
     final marketUrl = _services['market'] ?? '$api/market';

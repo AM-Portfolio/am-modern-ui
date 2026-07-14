@@ -4,11 +4,15 @@ import 'package:am_common/am_common.dart';
 class AuthEndpoints {
   // Base URLs (Standardized via Traefik rewriters)
   static String get authBaseUrl =>
-      ConfigService.config.api.auth?.baseUrl ?? 'https://am.asrax.in/auth';
+      ConfigService.config.api.auth?.baseUrl ??
+      'https://${ConfigService.domain}/identity';
   static String get userBaseUrl =>
-      ConfigService.config.api.user?.baseUrl ?? 'https://am.asrax.in/users';
+      ConfigService.config.api.user?.baseUrl ??
+      'https://${ConfigService.domain}/users';
   static String get identityBaseUrl =>
-      ConfigService.override('identity') ?? 'https://${ConfigService.domain}/identity';
+      ConfigService.override('identity') ??
+      ConfigService.override('auth') ??
+      'https://${ConfigService.domain}/identity';
 
   // Identity authentication endpoints
   static String get identityLogin => '$identityBaseUrl/auth/login';

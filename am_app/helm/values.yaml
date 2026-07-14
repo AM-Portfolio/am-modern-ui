@@ -10,6 +10,8 @@ language: flutter
 
 appConfig:
   domain: "am.asrax.in"
+  # Runtime Google Sign-In client id (not baked into the Docker image)
+  googleWebClientId: "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
 
 configMap:
   enabled: true
@@ -23,7 +25,7 @@ image:
 
 ingress:
   enabled: true
-  className: "nginx"
+  className: "traefik"
 
 resources:
   limits:
