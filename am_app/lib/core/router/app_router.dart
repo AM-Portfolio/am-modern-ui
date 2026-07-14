@@ -306,10 +306,34 @@ GoRouter createAppRouter({
                   userId: authState.user.id,
                   email: authState.user.email,
                   displayName: authState.user.displayName,
+                  onOpenPrivacyPolicy: () =>
+                      context.go(AppRoutes.privacyPolicy),
+                  onOpenTermsOfService: () =>
+                      context.go(AppRoutes.termsOfService),
                 );
               }
-              return buildProfileRoute(userId: _userId(context));
+              return buildProfileRoute(
+                userId: _userId(context),
+                onOpenPrivacyPolicy: () =>
+                    context.go(AppRoutes.privacyPolicy),
+                onOpenTermsOfService: () =>
+                    context.go(AppRoutes.termsOfService),
+              );
             },
+          ),
+          GoRoute(
+            path: AppRoutes.privacyPolicy,
+            builder: (context, state) => buildPrivacyPolicyRoute(
+              onBack: () => context.go(AppRoutes.profile),
+              onOpenTerms: () => context.go(AppRoutes.termsOfService),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.termsOfService,
+            builder: (context, state) => buildTermsOfServiceRoute(
+              onBack: () => context.go(AppRoutes.profile),
+              onOpenPrivacy: () => context.go(AppRoutes.privacyPolicy),
+            ),
           ),
           GoRoute(
             path: AppRoutes.subscription,
