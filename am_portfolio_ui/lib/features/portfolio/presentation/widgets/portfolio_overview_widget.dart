@@ -13,8 +13,11 @@ import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
+import '../cubit/portfolio_intraday_cubit.dart';
 import 'package:am_common/am_common.dart';
 import 'portfolio_metric_card.dart';
+import '../../internal/data/datasources/portfolio_remote_data_source.dart';
+import '../../providers/portfolio_providers.dart';
 
 /// Portfolio overview widget showing summary and key metrics
 class PortfolioOverviewWidget extends ConsumerStatefulWidget {
@@ -356,19 +359,24 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
 
                         // ── ROW 2: Chart + Allocation (or stacked on mobile) ──
                         if (isMobile) ...[
-                          PortfolioHistoryChartWidget(
-                            key: ValueKey('hist_${portfolioId}_${selectedTimeFrame.code}'),
-                            portfolioId: portfolioId,
-                            timeFrame: selectedTimeFrame,
-                            height: 320,
-                            onPeriodStats: (start, end) {
-                              if (mounted) {
-                                setState(() {
-                                  _periodStartValue = start;
-                                  _periodEndValue = end;
-                                });
-                              }
-                            },
+                          BlocProvider<PortfolioIntradayCubit>(
+                            create: (_) => PortfolioIntradayCubit(
+                              ref.read(portfolioRemoteDataSourceProvider).requireValue,
+                            ),
+                            child: PortfolioHistoryChartWidget(
+                              key: ValueKey('hist_${portfolioId}_${selectedTimeFrame.code}'),
+                              portfolioId: portfolioId,
+                              timeFrame: selectedTimeFrame,
+                              height: 320,
+                              onPeriodStats: (start, end) {
+                                if (mounted) {
+                                  setState(() {
+                                    _periodStartValue = start;
+                                    _periodEndValue = end;
+                                  });
+                                }
+                              },
+                            ),
                           ),
                           const SizedBox(height: 16),
                           PortfolioTopMoversPanel(
@@ -407,19 +415,25 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                               },
                             ),
                           ),
-                        ] else
-                          _MoversAllocationRow(
-                            portfolioId: portfolioId,
-                            selectedTimeFrame: selectedTimeFrame,
-                            onPeriodStats: (start, end) {
-                              if (mounted) {
-                                setState(() {
-                                  _periodStartValue = start;
-                                  _periodEndValue = end;
-                                });
-                              }
-                            },
+                        ] else ...[
+                          BlocProvider<PortfolioIntradayCubit>(
+                            create: (_) => PortfolioIntradayCubit(
+                              ref.read(portfolioRemoteDataSourceProvider).requireValue,
+                            ),
+                            child: _MoversAllocationRow(
+                              portfolioId: portfolioId,
+                              selectedTimeFrame: selectedTimeFrame,
+                              onPeriodStats: (start, end) {
+                                if (mounted) {
+                                  setState(() {
+                                    _periodStartValue = start;
+                                    _periodEndValue = end;
+                                  });
+                                }
+                              },
+                            ),
                           ),
+                        ],
                         const SizedBox(height: 20),
                       ],
                     ),

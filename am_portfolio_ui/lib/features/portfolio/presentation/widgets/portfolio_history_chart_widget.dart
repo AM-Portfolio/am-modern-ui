@@ -11,7 +11,10 @@ import '../../internal/domain/entities/portfolio_list.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_history_cubit.dart';
 import '../cubit/portfolio_history_state.dart';
+import '../cubit/portfolio_intraday_cubit.dart';
+import '../cubit/portfolio_intraday_state.dart';
 import '../cubit/portfolio_state.dart';
+import '../../internal/data/dtos/portfolio_intraday_dto.dart';
 
 // ignore_for_file: unused_import
 export '../../internal/data/dtos/portfolio_snapshot_dto.dart';
@@ -76,9 +79,11 @@ class _PortfolioHistoryChartWidgetState
   @override
   void didUpdateWidget(PortfolioHistoryChartWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Reload whenever portfolioId OR timeFrame changes
     if (oldWidget.portfolioId != widget.portfolioId ||
         oldWidget.timeFrame != widget.timeFrame) {
+      if (oldWidget.timeFrame == TimeFrame.oneDay && widget.timeFrame != TimeFrame.oneDay) {
+        context.read<PortfolioIntradayCubit>().stop();
+      }
       if (oldWidget.portfolioId != widget.portfolioId) {
         _localSelectedId = null;
         _localSelectedName = null;
@@ -103,10 +108,15 @@ class _PortfolioHistoryChartWidgetState
     final id = (selectedId == null || selectedId == 'all')
         ? widget.portfolioId
         : selectedId;
-    context.read<PortfolioHistoryCubit>().loadHistory(
-      id,
-      widget.timeFrame,
-    );
+    
+    if (widget.timeFrame == TimeFrame.oneDay) {
+      context.read<PortfolioIntradayCubit>().startLiveUpdates(id);
+    } else {
+      context.read<PortfolioHistoryCubit>().loadHistory(
+        id,
+        widget.timeFrame,
+      );
+    }
   }
 
   // ── Build ────────────────────────────────────────────────────────────────
@@ -134,14 +144,32 @@ class _PortfolioHistoryChartWidgetState
         context.read<PortfolioHistoryCubit>().invalidate();
         _load();
       },
-      child: BlocBuilder<PortfolioHistoryCubit, PortfolioHistoryState>(
-        builder: (context, state) {
-          if (state is PortfolioHistoryLoading) return _buildShimmer();
-          if (state is PortfolioHistoryError) return _buildError(state.message);
-          if (state is PortfolioHistoryLoaded) return _buildContent(state);
-          return _buildShimmer();
-        },
-      ),
+      child: widget.timeFrame == TimeFrame.oneDay
+          ? _buildIntradayView()
+          : _buildEodView(),
+    );
+  }
+
+  Widget _buildIntradayView() {
+    return BlocBuilder<PortfolioIntradayCubit, PortfolioIntradayState>(
+      builder: (context, state) {
+        if (state is PortfolioIntradayLoading) return _buildShimmer();
+        if (state is PortfolioIntradayError) return _buildError(state.message);
+        if (state is PortfolioIntradayEmpty) return _buildMarketClosedView();
+        if (state is PortfolioIntradayLoaded) return _buildIntradayChart(state.data);
+        return _buildShimmer();
+      },
+    );
+  }
+
+  Widget _buildEodView() {
+    return BlocBuilder<PortfolioHistoryCubit, PortfolioHistoryState>(
+      builder: (context, state) {
+        if (state is PortfolioHistoryLoading) return _buildShimmer();
+        if (state is PortfolioHistoryError) return _buildError(state.message);
+        if (state is PortfolioHistoryLoaded) return _buildContent(state);
+        return _buildShimmer();
+      },
     );
   }
 
@@ -269,31 +297,23 @@ class _PortfolioHistoryChartWidgetState
 
     // ── Calculate Period Stats from raw data ──────────────────────────────
     if (state.snapshots.isNotEmpty) {
-      double? startGain;
-      double? endGain;
-      double? startInvest;
+      double? startWealth;
+      double? endWealth;
 
       for (final snap in state.snapshots) {
-        if (snap.totalUserGainLoss != null && !snap.totalUserGainLoss!.isNaN) {
-          final gain = isAllPortfolios
-              ? (snap.totalUserGainLoss ?? 0.0)
-              : (snap.portfolios.isNotEmpty ? snap.portfolios.first.totalGainLoss ?? 0.0 : 0.0);
-          
-          final invest = isAllPortfolios
-              ? (snap.totalUserInvestment ?? 0.0)
-              : (snap.portfolios.isNotEmpty ? snap.portfolios.first.totalInvestment ?? 0.0 : 0.0);
+        final rawWealth = isAllPortfolios
+            ? snap.totalUserWealth
+            : (snap.portfolios.isNotEmpty ? snap.portfolios.first.close : snap.totalUserWealth);
 
-          startGain ??= gain;
-          startInvest ??= invest;
-          endGain = gain;
+        if (rawWealth != null && !rawWealth.isNaN && rawWealth > 0) {
+          startWealth ??= rawWealth;
+          endWealth = rawWealth;
         }
       }
 
-      if (startGain != null && endGain != null) {
-        final periodReturn = endGain - startGain;
-        final periodReturnPct = (startInvest != null && startInvest > 0)
-            ? (periodReturn / startInvest) * 100.0
-            : 0.0;
+      if (startWealth != null && endWealth != null && startWealth > 0) {
+        final periodReturn = endWealth - startWealth;
+        final periodReturnPct = (periodReturn / startWealth) * 100.0;
         
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) widget.onPeriodStats?.call(periodReturnPct, periodReturn);
@@ -528,6 +548,46 @@ class _PortfolioHistoryChartWidgetState
     if (primaryPoints.isNotEmpty) {
       // Stats already calculated and dispatched in _buildChart
     }
+
+    return _buildChartContainer(
+      singleData: activeData,
+      isMultiLine: false,
+    );
+  }
+
+  Widget _buildIntradayChart(List<PortfolioIntradayDto> data) {
+    if (data.isEmpty) return _buildEmpty();
+
+    int idx = 0;
+    final primaryPoints = data.map((d) => CommonChartDataPoint(
+      x: (idx++).toDouble(),
+      y: d.totalWealth,
+      // Show label every 40 minutes (every 8th 5-min candle)
+      xLabel: (idx % 8 == 1) ? d.timestamp : '',
+      yLabel: '₹${_formatNum(d.totalWealth)}',
+    )).toList();
+
+    idx = 0;
+    final secondaryPoints = data.map((d) => CommonChartDataPoint(
+      x: (idx++).toDouble(),
+      y: d.changeFromOpenPct,
+      xLabel: (idx % 8 == 1) ? d.timestamp : '',
+      yLabel: '${d.changeFromOpenPct >= 0 ? "+" : ""}${d.changeFromOpenPct.toStringAsFixed(2)}%',
+    )).toList();
+
+    final startWealth = data.first.totalWealth;
+    final endWealth = data.last.totalWealth;
+    if (startWealth > 0) {
+      final change = endWealth - startWealth;
+      final changePct = (change / startWealth) * 100.0;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onPeriodStats?.call(changePct, change);
+      });
+    }
+
+    final activeData = _activeFormat == ChartFormat.secondary
+        ? secondaryPoints
+        : primaryPoints;
 
     return _buildChartContainer(
       singleData: activeData,
@@ -792,7 +852,7 @@ class _PortfolioHistoryChartWidgetState
   /// Pads the start of the snapshots list with dummy points so the X-axis
   /// perfectly reflects the selected timeframe, even if the portfolio is brand new.
   List<PortfolioSnapshotDto> _padSnapshots(List<PortfolioSnapshotDto> raw, TimeFrame tf) {
-    if (raw.isEmpty || tf == TimeFrame.all) return raw;
+    if (raw.isEmpty || tf == TimeFrame.all || tf == TimeFrame.oneDay) return raw;
     final startDate = tf.dateRange.start;
     final firstRealDate = DateTime.tryParse(raw.first.snapshotDate ?? '');
     
@@ -969,6 +1029,33 @@ class _PortfolioHistoryChartWidgetState
           ),
         ),
       );
+
+  Widget _buildMarketClosedView() => SizedBox(
+    height: widget.height,
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.access_time_rounded, size: 40, color: Colors.grey[400]),
+          const SizedBox(height: 12),
+          Text(
+            'Market Closed',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Intraday chart updates from 9:15 AM – 3:30 PM IST',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _EndOfLineBadge extends StatelessWidget {
