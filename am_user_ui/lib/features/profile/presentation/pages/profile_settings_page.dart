@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:ui';
 
 /// Profile and Settings page for user account management
@@ -251,6 +252,7 @@ class ProfileSettingsPage extends StatelessWidget {
               icon: Icons.description_outlined,
               title: 'Terms & Conditions',
               isDark: isDark,
+              onTap: () => _openLegalUrl(context, AppConstants.termsOfServiceUrl),
             ),
              _buildDivider(isDark),
             _buildSettingTile(
@@ -258,6 +260,7 @@ class ProfileSettingsPage extends StatelessWidget {
               icon: Icons.privacy_tip_outlined,
               title: 'Privacy Policy',
               isDark: isDark,
+              onTap: () => _openLegalUrl(context, AppConstants.privacyPolicyUrl),
             ),
           ],
         ),
@@ -543,5 +546,15 @@ class ProfileSettingsPage extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('User ID copied to clipboard')),
     );
+  }
+
+  Future<void> _openLegalUrl(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open $url')),
+      );
+    }
   }
 }

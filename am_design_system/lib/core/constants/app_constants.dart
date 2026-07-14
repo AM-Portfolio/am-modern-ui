@@ -1,5 +1,9 @@
 /// Application configuration constants
 /// All configuration values should be defined here instead of passing as parameters
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+import 'package:am_common/core/config/config_service.dart';
+
 class AppConstants {
   /// Application Information
   static const String appName = 'AM Investment';
@@ -91,6 +95,17 @@ class AppConstants {
 
   /// Google Sign-In Configuration
   static const String defaultGoogleWebClientId = '';
+
+  /// Legal pages (hosted with the web app on the active domain).
+  static String get privacyPolicyUrl => _legalPageUrl('/privacy-policy.html');
+  static String get termsOfServiceUrl => _legalPageUrl('/terms-of-service.html');
+
+  static String _legalPageUrl(String path) {
+    if (kIsWeb) {
+      return '${Uri.base.origin}$path';
+    }
+    return 'https://${ConfigService.domain}$path';
+  }
 }
 
 /// Property keys used in configuration files
