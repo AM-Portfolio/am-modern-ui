@@ -101,7 +101,7 @@ class MonthCalendarCard extends StatelessWidget {
     CalendarMonthData? monthData,
   ) {
     final totalCells = daysInMonth + (firstWeekday - 1);
-    final rows = (totalCells / 7).ceil();
+    const rows = 6; // Always 6 rows to maintain consistent card height
 
     return Column(
       children: List.generate(
@@ -113,9 +113,8 @@ class MonthCalendarCard extends StatelessWidget {
               final cellIndex = rowIndex * 7 + colIndex;
               final dayNumber = cellIndex - (firstWeekday - 1) + 1;
 
-              // Empty cell
               if (dayNumber < 1 || dayNumber > daysInMonth) {
-                return const Expanded(child: SizedBox(height: 20));
+                return Expanded(child: SizedBox(height: compactMode ? 20 : 24));
               }
 
               final dayData = monthData?.getDayData(dayNumber);

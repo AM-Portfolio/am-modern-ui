@@ -1,9 +1,16 @@
 # Dev Environment — am-modern-ui
+# Host URLs come from appConfig at runtime (Docker image is host-free).
 environment: dev
 replicaCount: 1
 
 appConfig:
   domain: "am-dev.asrax.in"
+  googleWebClientId: "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
+
+configMap:
+  enabled: true
+  mountPath: /usr/share/nginx/html/config.json
+  subPath: config.json
 
 port: 8080
 

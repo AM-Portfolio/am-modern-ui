@@ -46,8 +46,7 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
 
     return cubitAsyncValue.when(
       data: (cubit) => Scaffold(
-        body: SafeArea(
-          child: RefreshIndicator(
+        body: RefreshIndicator(
             onRefresh: () async {
               cubit.navigateToYearly(portfolioId: widget.portfolioId, year: _selectedYear);
               await Future.delayed(const Duration(milliseconds: 500));
@@ -83,7 +82,6 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
               },
             ),
           ),
-        ),
       ),
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, stack) => Scaffold(body: Center(child: Text('Error initializing calendar: $error'))),
@@ -123,9 +121,6 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
             },
           ),
         ),
-
-        // Bottom Year Selector
-        _buildBottomYearSelector(context),
       ],
     );
   }
@@ -182,109 +177,4 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
     ],
   );
 
-  Widget _buildBottomYearSelector(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: Theme.of(context).cardColor,
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, -2))],
-    ),
-    child: SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: InkWell(
-          onTap: () => _showYearPicker(context),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1.5),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.calendar_today, size: 20, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  _selectedYear.toString(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(Icons.arrow_drop_down, size: 20, color: Theme.of(context).colorScheme.primary),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-
-  void _showYearPicker(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Text(
-                'Select Year',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-            const Divider(height: 1),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: 15, // Last 15 years
-                itemBuilder: (context, index) {
-                  final year = DateTime.now().year - index;
-                  final isSelected = year == _selectedYear;
-
-                  return ListTile(
-                    leading: Icon(
-                      Icons.calendar_today,
-                      color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey,
-                    ),
-                    title: Text(
-                      year.toString(),
-                      style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 16,
-                        color: isSelected ? Theme.of(context).colorScheme.primary : null,
-                      ),
-                    ),
-                    trailing: isSelected
-                        ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
-                        : null,
-                    selected: isSelected,
-                    onTap: () {
-                      setState(() {
-                        _selectedYear = year;
-                      });
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

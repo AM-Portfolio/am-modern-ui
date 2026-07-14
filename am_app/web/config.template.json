@@ -1,6 +1,6 @@
 {
-  "_comment": "Defaults for all environments. config.{env}.json and config.json override matching keys.",
-  "domain": "am-dev.asrax.in",
+  "_comment": "Shared template only — no env host. Override via Helm config.json (cluster) or config.{env}.json / .env (local).",
+  "domain": "",
   "services": {},
   "google": {
     "webClientId": ""

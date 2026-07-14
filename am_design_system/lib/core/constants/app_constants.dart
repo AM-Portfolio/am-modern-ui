@@ -1,5 +1,9 @@
 /// Application configuration constants
 /// All configuration values should be defined here instead of passing as parameters
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+import 'package:am_common/core/config/config_service.dart';
+
 class AppConstants {
   /// Application Information
   static const String appName = 'AM Investment';
@@ -25,20 +29,20 @@ class AppConstants {
   /// Default Environment
   static const String defaultEnvironment = 'dev';
 
-  /// API Configuration
-  static const String defaultBaseUrl = 'https://am.asrax.in/portfolio';
+  /// API Configuration — prefer ConfigService / EnvDomains; these are unused placeholders.
+  static const String defaultBaseUrl = '';
   static const int defaultTimeout = 30000;
   static const bool defaultUseMockData = true;
 
-  /// Portfolio API Defaults
-  static const String defaultPortfolioBaseUrl = 'https://am.asrax.in/portfolio';
+  /// Portfolio API Defaults (paths only — host from ConfigService)
+  static const String defaultPortfolioBaseUrl = '';
   static const String defaultHoldingsResource = '/v1/portfolios/holdings';
   static const String defaultSummaryResource = '/v1/portfolios/summary';
   static const String defaultTransactionsResource =
       '/v1/portfolios/transactions';
 
   /// Trade API Defaults
-  static const String defaultTradeBaseUrl = 'https://am.asrax.in/trades';
+  static const String defaultTradeBaseUrl = '';
   static const String defaultTradePortfolioListResource =
       '/v1/portfolio-summary/by-owner';
   static const String defaultTradePortfolioSummaryResource =
@@ -62,14 +66,14 @@ class AppConstants {
   static const bool defaultTradeEnabled = true;
 
   /// Document API Defaults
-  static const String defaultDocumentBaseUrl = 'https://am.asrax.in/documents';
+  static const String defaultDocumentBaseUrl = '';
   static const int defaultConnectTimeout = 30;
   static const int defaultReceiveTimeout = 60;
   static const int defaultSendTimeout = 60;
   static const bool defaultDocumentEnabled = true;
 
   /// Auth API Defaults
-  static const String defaultAuthBaseUrl = 'https://am.asrax.in/auth/token/v1';
+  static const String defaultAuthBaseUrl = '';
   // Endpoints are relative to Auth Base URL
   static const String defaultAuthLoginEndpoint = '/tokens';
   static const String defaultAuthRefreshTokenEndpoint = '/refresh';
@@ -78,7 +82,7 @@ class AppConstants {
   static const bool defaultAuthEnabled = true;
 
   /// User API Defaults
-  static const String defaultUserBaseUrl = 'https://am.asrax.in/users/account/v1';
+  static const String defaultUserBaseUrl = '';
   static const String defaultUserRegisterEndpoint = '/register';
   static const String defaultUserForgotPasswordEndpoint = '/forgot-password';
   static const String defaultUserResetPasswordEndpoint = '/reset-password';
@@ -91,6 +95,36 @@ class AppConstants {
 
   /// Google Sign-In Configuration
   static const String defaultGoogleWebClientId = '';
+
+  /// Legal pages (hosted with the web app on the active domain).
+  static String get privacyPolicyUrl => _legalPageUrl('/privacy-policy.html');
+  static String get termsOfServiceUrl => _legalPageUrl('/terms-of-service.html');
+
+  /// Legal page URL with theme query param so static pages match the app theme.
+  static String legalPageUrl(String path, {required bool isDark}) {
+    final uri = Uri.parse(_legalPageUrl(path));
+    return uri
+        .replace(
+          queryParameters: {
+            ...uri.queryParameters,
+            'theme': isDark ? 'dark' : 'light',
+          },
+        )
+        .toString();
+  }
+
+  static String privacyPolicyUrlForTheme(bool isDark) =>
+      legalPageUrl('/privacy-policy.html', isDark: isDark);
+
+  static String termsOfServiceUrlForTheme(bool isDark) =>
+      legalPageUrl('/terms-of-service.html', isDark: isDark);
+
+  static String _legalPageUrl(String path) {
+    if (kIsWeb) {
+      return '${Uri.base.origin}$path';
+    }
+    return 'https://${ConfigService.domain}$path';
+  }
 }
 
 /// Property keys used in configuration files

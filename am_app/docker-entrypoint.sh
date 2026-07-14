@@ -11,4 +11,6 @@ cp "/etc/nginx/profiles/${PROFILE}.conf" /tmp/nginx/active.conf
 
 echo "[nginx] ENVIRONMENT=${ENVIRONMENT:-preprod} profile=${PROFILE}"
 
+
+
 exec nginx -g 'daemon off;' -c /etc/nginx/nginx-docker.conf

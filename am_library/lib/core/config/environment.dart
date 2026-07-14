@@ -39,16 +39,17 @@ class EnvironmentConfig {
     }
   }
 
-  // API URLs
+  // API base — current page origin / host (Helm config.json / .env set ConfigService).
+  // Do not hardcode den/preprod/prod hosts here.
   static String get apiBaseUrl {
-    switch (environment) {
-      case Environment.development:
-        return 'https://am-dev.asrax.in';
-      case Environment.preprod:
-        return 'https://am-preprod.asrax.in';
-      case Environment.production:
-        return 'https://am.asrax.in';
+    final host = Uri.base.host;
+    if (host.isNotEmpty &&
+        host != 'localhost' &&
+        host != '127.0.0.1') {
+      return 'https://$host';
     }
+    final origin = Uri.base.origin;
+    return origin.isNotEmpty ? origin : '';
   }
 
   // Feature flags

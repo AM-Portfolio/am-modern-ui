@@ -46,20 +46,18 @@ class GlossyCard extends StatelessWidget {
               child: Container(
                 padding: padding ?? const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: cardColor.withOpacity(isDark ? 0.7 : 0.9), // Higher opacity for contrast
-                  borderRadius: borderRadius ?? BorderRadius.circular(16), // Slightly smaller radius
+                  borderRadius: borderRadius ?? BorderRadius.circular(20),
                   border: border ?? Border.all(
-                    color: Colors.white.withOpacity(isDark ? 0.15 : 0.5),
+                    color: Colors.white.withOpacity(isDark ? 0.15 : 0.3),
                     width: 1,
                   ),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.white.withOpacity(isDark ? 0.15 : 0.7),
-                      Colors.white.withOpacity(isDark ? 0.05 : 0.4),
+                      cardColor.withOpacity(isDark ? 0.7 : 0.9),
+                      cardColor.withOpacity(isDark ? 0.4 : 0.7),
                     ],
-                    stops: const [0.0, 1.0],
                   ),
                   boxShadow: [
                     BoxShadow(

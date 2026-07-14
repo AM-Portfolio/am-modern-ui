@@ -18,6 +18,8 @@ class AppRoutes {
   static const analysis = '/app/analysis';
   static const docIntel = '/app/doc-intel';
   static const profile = '/app/profile';
+  static const privacyPolicy = '/app/privacy-policy';
+  static const termsOfService = '/app/terms-of-service';
   static const subscription = '/app/subscription';
 
   static const portfolioTabs = [
@@ -137,7 +139,11 @@ class AppRoutes {
     if (location.startsWith(lab)) return 'Lab';
     if (location.startsWith(analysis)) return 'Analysis';
     if (location.startsWith(docIntel)) return 'Doc Intel';
-    if (location.startsWith(profile)) return 'Profile';
+    if (location.startsWith(profile) ||
+        location.startsWith(privacyPolicy) ||
+        location.startsWith(termsOfService)) {
+      return 'Profile';
+    }
     if (location.startsWith(subscription)) return 'Subscription';
     return 'Dashboard';
   }
