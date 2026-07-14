@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,10 +68,13 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
   late MobileTradeViewType _selectedView;
   String? _currentPortfolioId;
   String? _currentPortfolioName;
+  Timer? _fabHideTimer;
+  bool _showFab = true;
 
   @override
   void initState() {
     super.initState();
+    _resetFabHideTimer();
 
     // Safely map from Web index to Mobile index
     if (widget.initialTabIndex != null) {
@@ -106,6 +110,24 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
       'TradeMobileScreen initialized with view: $_selectedView',
       tag: 'TradeMobileScreen',
     );
+  }
+
+  @override
+  void dispose() {
+    _fabHideTimer?.cancel();
+    super.dispose();
+  }
+
+  void _resetFabHideTimer() {
+    _fabHideTimer?.cancel();
+    if (!_showFab) {
+      setState(() => _showFab = true);
+    }
+    _fabHideTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() => _showFab = false);
+      }
+    });
   }
 
   void _onViewChanged(MobileTradeViewType viewType) {
@@ -190,16 +212,27 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
     final showAppBar = _selectedView != MobileTradeViewType.addTrade &&
         _selectedView != MobileTradeViewType.calendar;
 
-    return UnifiedSidebarScaffold(
-      module: ModuleType.trade,
-      title: title,
-      showAppBarOnMobile: showAppBar,
-      showMobileMenuButton: false,
-      showModuleBottomNavigation: false,
-      autoHideMobileTabsOnScroll: true,
-      onBackToGlobal: widget.onBack,
-      floatingActionButton: _buildFloatingActionButton(context),
-      items: [
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _resetFabHideTimer(),
+      onPointerMove: (_) => _resetFabHideTimer(),
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollUpdateNotification) {
+            _resetFabHideTimer();
+          }
+          return false;
+        },
+        child: UnifiedSidebarScaffold(
+          module: ModuleType.trade,
+          title: title,
+          showAppBarOnMobile: showAppBar,
+          showMobileMenuButton: false,
+          showModuleBottomNavigation: false,
+          autoHideMobileTabsOnScroll: true,
+          onBackToGlobal: widget.onBack,
+          floatingActionButton: _buildFloatingActionButton(context),
+          items: [
         SecondarySidebarItem(
           title: 'Portfolios',
           icon: Icons.account_balance_wallet,
@@ -238,6 +271,8 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         ),
       ],
       body: _buildMainContent(context),
+    ),
+    ),
     );
   }
 
@@ -413,7 +448,6 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
       );
 
   Widget? _buildFloatingActionButton(BuildContext context) {
-    // Hide FAB on Add Trade / Journal (has its own) / Metrics / Templates
     if (_selectedView == MobileTradeViewType.addTrade ||
         _selectedView == MobileTradeViewType.journal ||
         _selectedView == MobileTradeViewType.metrics ||
@@ -421,12 +455,25 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
       return null;
     }
 
-    return FloatingActionButton(
-      onPressed: () => _onViewChanged(MobileTradeViewType.addTrade),
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      elevation: 4,
-      child: const Icon(Icons.add),
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 400),
+      scale: _showFab ? 1.0 : 0.0,
+      curve: _showFab ? Curves.elasticOut : Curves.easeInBack,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: _showFab ? 1.0 : 0.0,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 96.0),
+          child: FloatingActionButton(
+            onPressed: () => _onViewChanged(MobileTradeViewType.addTrade),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            elevation: 4,
+            shape: const CircleBorder(),
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ),
     );
   }
 }

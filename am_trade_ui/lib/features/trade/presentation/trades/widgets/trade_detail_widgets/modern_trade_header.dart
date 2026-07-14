@@ -364,10 +364,10 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
                     onTap: () => widget.onSymbolTap!(widget.trade.displaySymbol),
                     child: Text(
                       widget.trade.displaySymbol,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 32, // Larger font like screenshot
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -375,10 +375,10 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
                 ) : 
                 Text(
                   widget.trade.displaySymbol,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -417,7 +417,7 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w400,
-                color: Colors.grey.shade400,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 24),
@@ -450,7 +450,7 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
             // Entry Date
             Row(
               children: [
-                Icon(Icons.calendar_month_outlined, size: 14, color: Colors.grey.shade400),
+                Icon(Icons.calendar_month_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 6),
                 Text(
                   widget.trade.entryTimestamp != null
@@ -458,7 +458,7 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
                       : 'Entry date unavailable',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade400,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -32,40 +34,39 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
 
   late final AnimationController _bottomNavController;
   late final Animation<double> _bottomNavFactor;
-  late final Animation<Offset> _bottomNavSlide;
   bool _wantBottomNav = true;
   double _bottomNavScrollAccum = 0;
   static const double _bottomNavScrollThreshold = 12;
+  Timer? _bottomNavHideTimer;
 
   @override
   void initState() {
     super.initState();
     _bottomNavController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
-      reverseDuration: const Duration(milliseconds: 260),
+      duration: const Duration(milliseconds: 400),
+      reverseDuration: const Duration(milliseconds: 250),
       value: 1.0,
     );
     final bottomNavCurve = CurvedAnimation(
       parent: _bottomNavController,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
+      curve: Curves.elasticOut,
+      reverseCurve: Curves.easeInBack,
     );
-    _bottomNavFactor = bottomNavCurve;
-    _bottomNavSlide = Tween<Offset>(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(bottomNavCurve);
+    _bottomNavFactor = Tween<double>(begin: 0.0, end: 1.0).animate(bottomNavCurve);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialAuthAndConnect();
       _restoreSessionNav();
       _seedPortfolioSelectionFromSession();
     });
+    
+    _resetBottomNavHideTimer();
   }
 
   @override
   void dispose() {
+    _bottomNavHideTimer?.cancel();
     _bottomNavController.dispose();
     super.dispose();
   }
@@ -81,33 +82,19 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     }
   }
 
+  void _resetBottomNavHideTimer() {
+    _bottomNavHideTimer?.cancel();
+    _setBottomNavVisible(true);
+    _bottomNavHideTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) _setBottomNavVisible(false);
+    });
+  }
+
   bool _handleBottomNavScroll(ScrollNotification notification) {
     if (notification.metrics.axis != Axis.vertical) return false;
-
-    // Always reveal when content is back at (or above) the top.
-    if (notification.metrics.pixels <= 0) {
-      _setBottomNavVisible(true);
-      _bottomNavScrollAccum = 0;
-      return false;
-    }
-
     if (notification is! ScrollUpdateNotification) return false;
-    final delta = notification.scrollDelta ?? 0;
-    if (delta == 0) return false;
-
-    if ((_bottomNavScrollAccum > 0 && delta < 0) ||
-        (_bottomNavScrollAccum < 0 && delta > 0)) {
-      _bottomNavScrollAccum = 0;
-    }
-    _bottomNavScrollAccum += delta;
-
-    if (_bottomNavScrollAccum > _bottomNavScrollThreshold && _wantBottomNav) {
-      _setBottomNavVisible(false);
-    } else if (_bottomNavScrollAccum < -_bottomNavScrollThreshold &&
-        !_wantBottomNav) {
-      _setBottomNavVisible(true);
-    }
-
+    // Any scroll activity resets the hide timer and shows the nav
+    _resetBottomNavHideTimer();
     return false;
   }
 
@@ -117,7 +104,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       // Reveal bottom nav whenever the route changes.
       if (!_wantBottomNav) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _setBottomNavVisible(true);
+          if (mounted) _resetBottomNavHideTimer();
         });
       }
       if (_history.contains(currentLocation)) {
@@ -454,28 +441,31 @@ final userId =
                           items: _sidebarItemsFor(isAdmin: isAdmin),
                         ),
                       Expanded(
-                        child: NotificationListener<ScrollNotification>(
-                          onNotification: isDesktop
-                              ? (_) => false
-                              : _handleBottomNavScroll,
-                          child: authState is Authenticated
-                              ? common.PortfolioSelectionScope(
-                                  child: widget.child,
-                                )
-                              : widget.child,
+                        child: Listener(
+                          behavior: HitTestBehavior.translucent,
+                          onPointerDown: (_) => _resetBottomNavHideTimer(),
+                          onPointerMove: (_) => _resetBottomNavHideTimer(),
+                          child: NotificationListener<ScrollNotification>(
+                            onNotification: isDesktop
+                                ? (_) => false
+                                : _handleBottomNavScroll,
+                            child: authState is Authenticated
+                                ? common.PortfolioSelectionScope(
+                                    child: widget.child,
+                                  )
+                                : widget.child,
+                          ),
                         ),
                       ),
                     ],
                   ),
                   bottomNavigationBar: !isDesktop && authState is Authenticated
-                      ? SizeTransition(
-                          sizeFactor: _bottomNavFactor,
-                          axisAlignment: 1,
-                          child: SlideTransition(
-                            position: _bottomNavSlide,
-                            child: FadeTransition(
-                              opacity: _bottomNavFactor,
-                              child: GlobalBottomNavigation(
+                      ? ScaleTransition(
+                          scale: _bottomNavFactor,
+                          alignment: Alignment.bottomCenter,
+                          child: FadeTransition(
+                            opacity: _bottomNavFactor,
+                            child: GlobalBottomNavigation(
                                 activeNavItem: _activeNavItem,
                                 isDarkMode: isDark,
                                 userName: authState.user.displayName,
@@ -511,8 +501,7 @@ final userId =
                                 ],
                               ),
                             ),
-                          ),
-                        )
+                          )
                       : null,
                 ),
               );

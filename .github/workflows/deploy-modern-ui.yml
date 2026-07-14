@@ -18,9 +18,10 @@ on:
       environment:
         description: "Target Environment"
         required: true
-        default: "preprod"
+        default: "dev"
         type: choice
         options:
+          - dev
           - preprod
           - prod
 
