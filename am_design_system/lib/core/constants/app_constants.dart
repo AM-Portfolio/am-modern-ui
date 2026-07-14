@@ -100,6 +100,25 @@ class AppConstants {
   static String get privacyPolicyUrl => _legalPageUrl('/privacy-policy.html');
   static String get termsOfServiceUrl => _legalPageUrl('/terms-of-service.html');
 
+  /// Legal page URL with theme query param so static pages match the app theme.
+  static String legalPageUrl(String path, {required bool isDark}) {
+    final uri = Uri.parse(_legalPageUrl(path));
+    return uri
+        .replace(
+          queryParameters: {
+            ...uri.queryParameters,
+            'theme': isDark ? 'dark' : 'light',
+          },
+        )
+        .toString();
+  }
+
+  static String privacyPolicyUrlForTheme(bool isDark) =>
+      legalPageUrl('/privacy-policy.html', isDark: isDark);
+
+  static String termsOfServiceUrlForTheme(bool isDark) =>
+      legalPageUrl('/terms-of-service.html', isDark: isDark);
+
   static String _legalPageUrl(String path) {
     if (kIsWeb) {
       return '${Uri.base.origin}$path';

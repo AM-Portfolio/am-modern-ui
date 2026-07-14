@@ -22,8 +22,7 @@ import 'package:am_trade_ui/features/trade/presentation/trade_responsive_layout.
     deferred as trade_ui;
 import 'package:am_trade_ui/features/trade/providers/trade_controller_providers.dart'
     deferred as trade_providers;
-import 'package:am_user_ui/features/profile/presentation/pages/profile_settings_page.dart'
-    deferred as user_ui;
+import 'package:am_user_ui/am_user_ui.dart' deferred as user_ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -265,6 +264,8 @@ Widget buildProfileRoute({
   required String userId,
   String? email,
   String? displayName,
+  VoidCallback? onOpenPrivacyPolicy,
+  VoidCallback? onOpenTermsOfService,
 }) {
   return DeferredModuleLoader(
     load: _loadUser,
@@ -274,6 +275,38 @@ Widget buildProfileRoute({
       userId: userId,
       email: email,
       displayName: displayName,
+      onOpenPrivacyPolicy: onOpenPrivacyPolicy,
+      onOpenTermsOfService: onOpenTermsOfService,
+    ),
+  );
+}
+
+Widget buildPrivacyPolicyRoute({
+  VoidCallback? onBack,
+  VoidCallback? onOpenTerms,
+}) {
+  return DeferredModuleLoader(
+    load: _loadUser,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Privacy Policy…',
+    builder: () => user_ui.PrivacyPolicyPage(
+      onBack: onBack,
+      onOpenTerms: onOpenTerms,
+    ),
+  );
+}
+
+Widget buildTermsOfServiceRoute({
+  VoidCallback? onBack,
+  VoidCallback? onOpenPrivacy,
+}) {
+  return DeferredModuleLoader(
+    load: _loadUser,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Terms of Service…',
+    builder: () => user_ui.TermsOfServicePage(
+      onBack: onBack,
+      onOpenPrivacy: onOpenPrivacy,
     ),
   );
 }
