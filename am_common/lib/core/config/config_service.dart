@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:am_library/am_library.dart';
 import '../telemetry/boot_trace.dart';
@@ -42,22 +42,9 @@ class ConfigService {
     }
   }
 
-  /// Mobile/desktop have no browser origin. Prefer AM_DOMAIN / AM_ENV.
-  static String _nativeFallbackDomain() {
-    if (_domainFromDefine.isNotEmpty) return _domainFromDefine;
-    switch (_resolvedEnv.toLowerCase()) {
-      case 'prod':
-      case 'production':
-        return 'am.asrax.in';
-      case 'preprod':
-        return 'am-preprod.asrax.in';
-      case 'dev':
-      case 'development':
-        return 'am-dev.asrax.in';
-      default:
-        return kReleaseMode ? 'am.asrax.in' : 'am-dev.asrax.in';
-    }
-  }
+  /// Mobile/desktop have no browser origin. Domain must come from AM_DOMAIN
+  /// (dart-define / .env) — no hardcoded env hosts in the binary.
+  static String _nativeFallbackDomain() => _domainFromDefine;
 
   static String _resolveApiHost() {
     if (_domain.isNotEmpty) return _domain;
@@ -97,9 +84,7 @@ class ConfigService {
     // Native apps cannot fetch /config*.json from file:/// — skip that path.
     if (!kIsWeb && _httpOrigin() == null) {
       return <String, dynamic>{
-        'domain': _domainFromDefine.isNotEmpty
-            ? _domainFromDefine
-            : _nativeFallbackDomain(),
+        'domain': _nativeFallbackDomain(),
         'services': <String, dynamic>{},
       };
     }
@@ -249,9 +234,8 @@ class ConfigService {
         ? 'https://$host'
         : (_httpOrigin() ?? '');
     final wsScheme = api.startsWith('https') ? 'wss' : 'ws';
-    final wsHost = host.isNotEmpty ? host : Uri.base.host;
-    final ws = wsHost.isNotEmpty
-        ? '$wsScheme://$wsHost'
+    final ws = host.isNotEmpty
+        ? '$wsScheme://$host'
         : (api.isNotEmpty
             ? api.replaceFirst(RegExp(r'^http'), 'ws')
             : '');
