@@ -39,6 +39,7 @@ class PortfolioMetricCard extends StatelessWidget {
 
     final Color cardBase =
         isDark ? const Color(0xFF0D1B2A) : const Color(0xFFFFFFFF);
+    final bool useAccentValue = glowBorder || isPositive != null;
 
     return Tooltip(
       message: tooltip ?? title,
@@ -95,23 +96,26 @@ class PortfolioMetricCard extends StatelessWidget {
                             : Colors.black.withValues(alpha: 0.06)),
                     width: 1,
                   ),
-                  boxShadow: glowBorder
-                      ? [
-                          BoxShadow(
-                            color: accentColor.withValues(alpha: 0.22),
-                            blurRadius: 24,
-                            spreadRadius: -2,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withValues(
-                                alpha: isDark ? 0.3 : 0.06),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                  // No drop shadows on compact (mobile) — keeps the grid tight.
+                  boxShadow: compact
+                      ? null
+                      : glowBorder
+                          ? [
+                              BoxShadow(
+                                color: accentColor.withValues(alpha: 0.22),
+                                blurRadius: 24,
+                                spreadRadius: -2,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(
+                                    alpha: isDark ? 0.3 : 0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
@@ -171,7 +175,7 @@ class PortfolioMetricCard extends StatelessWidget {
                                   fontWeight: FontWeight.bold,
                                   color: isHighlight
                                       ? Colors.white
-                                      : (glowBorder
+                                      : (useAccentValue
                                           ? accentColor
                                           : (isDark
                                               ? Colors.white

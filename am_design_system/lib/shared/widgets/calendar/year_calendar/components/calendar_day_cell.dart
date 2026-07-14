@@ -34,10 +34,10 @@ class CalendarDayCell extends StatelessWidget {
     final backgroundColor = hasData ? service.getDayColor(dayData!, opacity: bgOpacity, isDark: isDark) : Colors.transparent;
     final borderColor = hasData
         ? service.getBorderColor(dayData!, isDark: isDark)
-        : Theme.of(context).colorScheme.outline.withOpacity(0.1);
+        : Theme.of(context).colorScheme.outline.withValues(alpha: isDark ? 0.22 : 0.18);
     final textColor = hasData
         ? service.getTextColor(dayData!, isDark: isDark)
-        : Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
+        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.68);
 
     final dayCell = Material(
       color: Colors.transparent,
@@ -52,21 +52,24 @@ class CalendarDayCell extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         hoverColor: hasData ? service.getDayColor(dayData!, opacity: bgOpacity + 0.1, isDark: isDark) : Colors.grey.withOpacity(0.05),
         child: Container(
-          height: compactMode ? 20 : 24,
+          height: compactMode ? 24 : 28,
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: borderColor, width: hasData ? 1.5 : 0.5),
+            borderRadius: BorderRadius.circular(5),
+            border: Border.all(color: borderColor, width: hasData ? 1.5 : 0.8),
           ),
           child: Center(
             child: Text(
               dayNumber.toString(),
               style: TextStyle(
-                fontSize: compactMode ? 9 : 12,
-                fontWeight: hasData ? FontWeight.w700 : FontWeight.w400,
+                fontSize: compactMode ? 11 : 13,
+                fontWeight: hasData ? FontWeight.w700 : FontWeight.w500,
                 color: hasData
                     ? textColor
-                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: isDark ? 0.72 : 0.68),
               ),
             ),
           ),

@@ -18,8 +18,13 @@ bool _dashboardDataMarked = false;
 /// Pixel-perfect Lumina web dashboard screen with Glassmorphism and Dark Theme.
 class DashboardWebScreen extends ConsumerWidget {
   final String userId;
+  final VoidCallback? onOpenDocIntel;
 
-  const DashboardWebScreen({super.key, required this.userId});
+  const DashboardWebScreen({
+    super.key,
+    required this.userId,
+    this.onOpenDocIntel,
+  });
 
   Widget _buildLoadingCard(double height, {String? label}) {
     return AmGlassCard(
@@ -269,6 +274,21 @@ class DashboardWebScreen extends ConsumerWidget {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              if (onOpenDocIntel != null) ...[
+                                TextButton.icon(
+                                  onPressed: onOpenDocIntel,
+                                  icon: const Icon(
+                                    Icons.psychology_outlined,
+                                    size: 18,
+                                    color: Color(0xFF00D2D3),
+                                  ),
+                                  label: const Text('Add Portfolio'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: onSurface,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
                               const GlobalTimeFrameBar(),
                               const SizedBox(width: 16),
                               Container(

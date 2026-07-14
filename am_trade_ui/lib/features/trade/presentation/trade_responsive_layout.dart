@@ -59,6 +59,8 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
     'market-analysis',
     'report',
     'unified',
+    'metrics',
+    'templates',
   ];
 
   static int tabIndexFromSlug(String slug) {
@@ -68,6 +70,25 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
 
   static String slugFromIndex(int index) =>
       _tabSlugs[index.clamp(0, _tabSlugs.length - 1)];
+
+  static MobileTradeViewType _mobileViewFromSlug(String slug) {
+    switch (slug) {
+      case 'holdings':
+        return MobileTradeViewType.holdings;
+      case 'calendar':
+        return MobileTradeViewType.calendar;
+      case 'journal':
+        return MobileTradeViewType.journal;
+      case 'metrics':
+      case 'analysis':
+        return MobileTradeViewType.metrics;
+      case 'templates':
+        return MobileTradeViewType.templates;
+      case 'portfolios':
+      default:
+        return MobileTradeViewType.portfolios;
+    }
+  }
 
   @override
   ConsumerState<TradeResponsiveLayout> createState() =>
@@ -98,7 +119,13 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
     super.didUpdateWidget(oldWidget);
     if (widget.initialTab != oldWidget.initialTab) {
       final next = TradeResponsiveLayout.tabIndexFromSlug(widget.initialTab);
-      if (_currentTabIndex != next) {
+      // Prefer mobile-only slug indices when present in URL.
+      if (widget.initialTab == 'metrics' || widget.initialTab == 'templates') {
+        final mobile = TradeResponsiveLayout._mobileViewFromSlug(widget.initialTab);
+        if (_currentTabIndex != mobile.index) {
+          setState(() => _currentTabIndex = mobile.index);
+        }
+      } else if (_currentTabIndex != next) {
         setState(() => _currentTabIndex = next);
       }
     }
@@ -156,10 +183,11 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
         if (isMobile) {
           return TradeMobileScreen(
             initialTabIndex: _currentTabIndex,
+            initialView: TradeResponsiveLayout._mobileViewFromSlug(widget.initialTab),
             selectedPortfolioId: effectivePortfolioId,
             selectedPortfolioName: _currentPortfolioName ?? context.selectedPortfolioName,
             onTabChanged: (index) {
-              // Map mobile view indices to web/controller indices.
+              // Map mobile view indices to web/controller indices / URL slugs.
               if (index == MobileTradeViewType.addTrade.index) {
                 _onTabChanged(TradeResponsiveLayout._webAddTradeIndex);
               } else if (index == MobileTradeViewType.journal.index) {
@@ -167,11 +195,12 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
                   TradeResponsiveLayout.tabIndexFromSlug('journal'),
                 );
               } else if (index == MobileTradeViewType.metrics.index) {
-                _onTabChanged(
-                  TradeResponsiveLayout.tabIndexFromSlug('analysis'),
-                );
+                widget.onTabChanged?.call('metrics');
+                if (_currentTabIndex != index) {
+                  setState(() => _currentTabIndex = index);
+                }
               } else if (index == MobileTradeViewType.templates.index) {
-                // Templates is mobile-only; keep local index without a web slug.
+                widget.onTabChanged?.call('templates');
                 if (_currentTabIndex != index) {
                   setState(() => _currentTabIndex = index);
                 }

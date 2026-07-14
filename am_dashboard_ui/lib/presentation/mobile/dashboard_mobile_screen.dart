@@ -16,10 +16,36 @@ import 'dart:ui';
 bool _dashboardDataMarkedMobile = false;
 
 /// Pixel-perfect Lumina mobile dashboard screen with Glassmorphism and Dark Theme.
-class DashboardMobileScreen extends ConsumerWidget {
+class DashboardMobileScreen extends ConsumerStatefulWidget {
   final String userId;
+  final VoidCallback? onOpenDocIntel;
 
-  const DashboardMobileScreen({super.key, required this.userId});
+  const DashboardMobileScreen({
+    super.key,
+    required this.userId,
+    this.onOpenDocIntel,
+  });
+
+  @override
+  ConsumerState<DashboardMobileScreen> createState() =>
+      _DashboardMobileScreenState();
+}
+
+class _DashboardMobileScreenState
+    extends ConsumerState<DashboardMobileScreen> {
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   Widget _buildLoadingCard(double height, {String? label}) {
     return AmGlassCard(
@@ -64,18 +90,18 @@ class DashboardMobileScreen extends ConsumerWidget {
       }
     }
 
-    ref.listen(dashboardStreamProvider(userId), (_, next) => markIfReady(next));
+    ref.listen(dashboardStreamProvider(widget.userId), (_, next) => markIfReady(next));
     ref.listen(
-      moversStreamProvider(userId, timeFrame: tfCode),
+      moversStreamProvider(widget.userId, timeFrame: tfCode),
       (_, next) => markIfReady(next),
     );
     ref.listen(
-      recentActivityProvider(userId, page: 0, size: 10),
+      recentActivityProvider(widget.userId, page: 0, size: 10),
       (_, next) => markIfReady(next),
     );
-    ref.listen(portfolioOverviewsProvider(userId), (_, next) => markIfReady(next));
+    ref.listen(portfolioOverviewsProvider(widget.userId), (_, next) => markIfReady(next));
     ref.listen(
-      historyStreamProvider(userId, timeFrame: tfCode),
+      historyStreamProvider(widget.userId, timeFrame: tfCode),
       (_, next) => markIfReady(next),
     );
   }
@@ -108,8 +134,82 @@ class DashboardMobileScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildStickyHeader({
+    required Color onSurface,
+    required Color chipBg,
+    required Color chipBorder,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Dashboard',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: onSurface,
+                  fontFamily: 'Inter',
+                  fontSize: 22,
+                  height: 1.1,
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Controls hug the trailing edge — equal height, tight gap.
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.onOpenDocIntel != null) ...[
+                  _DocIntelAddPortfolioButton(
+                    onTap: widget.onOpenDocIntel!,
+                    backgroundColor: chipBg,
+                    borderColor: chipBorder,
+                    foregroundColor: onSurface,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                const GlobalTimeFrameBar(
+                  variant: GlobalTimeFrameVariant.dropdown,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionScroll({
+    required Widget child,
+    required Future<void> Function() onRefresh,
+    bool enablePullToRefresh = false,
+  }) {
+    final scrollable = SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+      child: child,
+    );
+
+    if (!enablePullToRefresh) return scrollable;
+
+    return RefreshIndicator(
+      color: const Color(0xFF0062FF),
+      onRefresh: onRefresh,
+      child: scrollable,
+    );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final userId = widget.userId;
     ref.watch(dashboardStreamingSessionProvider(userId));
     ref.listen(appTimeFrameProvider, (previous, next) {
       if (previous != next) {
@@ -127,41 +227,24 @@ class DashboardMobileScreen extends ConsumerWidget {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Dynamic Colors based on theme
     final bgColor = isDark ? const Color(0xFF0B1120) : const Color(0xFFF8FAFC);
     final onSurface = isDark ? Colors.white : const Color(0xFF0B1C30);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF424656);
+    final chipBg = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFEDE9FE);
+    final chipBorder = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : const Color(0xFFDDD6FE);
+
+    Future<void> refresh() async {
+      ref.invalidate(dashboardStreamProvider(userId));
+      ref.invalidate(portfolioOverviewsProvider(userId));
+    }
 
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        titleSpacing: 16,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Dashboard',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: onSurface,
-                fontFamily: 'Inter',
-                fontSize: 20,
-              ),
-            ),
-            const GlobalTimeFrameBar(
-              variant: GlobalTimeFrameVariant.dropdown,
-            ),
-          ],
-        ),
-        backgroundColor: Colors.transparent, // transparent for glow
-        elevation: 0,
-        iconTheme: IconThemeData(color: onSurface),
-      ),
-      extendBodyBehindAppBar: true, // Needed to show background glow under app bar
       body: Stack(
         children: [
-          // Background Glow Orbs - Only in Dark Theme
           if (isDark) ...[
             Positioned(
               top: -100,
@@ -197,7 +280,6 @@ class DashboardMobileScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            // Backdrop filter for extra glass effect on orbs
             Positioned.fill(
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
@@ -205,152 +287,202 @@ class DashboardMobileScreen extends ConsumerWidget {
               ),
             ),
           ],
-
-          // ── Main Content ──
           SafeArea(
-            child: RefreshIndicator(
-              color: const Color(0xFF0062FF),
-              onRefresh: () async {
-                ref.invalidate(dashboardStreamProvider(userId));
-                ref.invalidate(portfolioOverviewsProvider(userId));
-              },
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                slivers: [
-                  // ── Hero Summary ──
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
-                    sliver: SliverToBoxAdapter(
-                      child: dashboardAsync.when(
-                        data: (summary) => DashboardSummaryWidget(summary: summary),
-                        loading: () => _buildSummaryLoading(),
-                        error: (err, stack) => AmErrorWidget(
-                          message: 'Failed to load summary',
-                          onRetry: () => ref.invalidate(dashboardStreamProvider(userId)),
+            child: Column(
+              children: [
+                // Sticky top: Dashboard title · Doc Intel CTA · timeframe
+                _buildStickyHeader(
+                  onSurface: onSurface,
+                  chipBg: chipBg,
+                  chipBorder: chipBorder,
+                ),
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    scrollDirection: Axis.vertical,
+                    children: [
+                      // 1 — Summary metrics
+                      _sectionScroll(
+                        enablePullToRefresh: true,
+                        onRefresh: refresh,
+                        child: dashboardAsync.when(
+                          data: (summary) =>
+                              DashboardSummaryWidget(summary: summary),
+                          loading: _buildSummaryLoading,
+                          error: (err, stack) => AmErrorWidget(
+                            message: 'Failed to load summary',
+                            onRetry: () =>
+                                ref.invalidate(dashboardStreamProvider(userId)),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
 
-                  // ── Market Movers (fast widget — before chart) ──
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    sliver: SliverToBoxAdapter(
-                      child: Consumer(
-                        builder: (context, ref, child) {
-                          final topMoversAsync =
-                              ref.watch(moversStreamProvider(userId, timeFrame: tfCode));
-                          return topMoversAsync.when(
-                            data: (topMovers) => SizedBox(
-                              height: 350,
-                              child: DashboardRankingWidget(
-                                gainers: topMovers.gainers,
-                                losers: topMovers.losers,
+                      // 2 — Market Movers
+                      _sectionScroll(
+                        onRefresh: refresh,
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final topMoversAsync = ref.watch(
+                              moversStreamProvider(userId, timeFrame: tfCode),
+                            );
+                            return topMoversAsync.when(
+                              data: (topMovers) => SizedBox(
+                                height: 350,
+                                child: DashboardRankingWidget(
+                                  gainers: topMovers.gainers,
+                                  losers: topMovers.losers,
+                                ),
                               ),
-                            ),
-                            loading: () => _buildLoadingCard(350),
-                            error: (err, stack) => DashboardRankingWidget.errorState(),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-                  // ── Recent Activity ──
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    sliver: SliverToBoxAdapter(
-                      child: DashboardRecentActivitySection(userId: userId),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-                  // ── Portfolio Overviews ──
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    sliver: SliverToBoxAdapter(
-                      child: Text(
-                        'Your Portfolios',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 20,
-                          color: onSurface,
-                          fontFamily: 'Inter',
+                              loading: () => _buildLoadingCard(350),
+                              error: (err, stack) => SizedBox(
+                                height: 350,
+                                child: DashboardRankingWidget.errorState(),
+                              ),
+                            );
+                          },
                         ),
                       ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
-                  overviewsAsync.when(
-                    data: (overviews) => SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final overview = overviews[index];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0, vertical: 6.0),
-                            child: DashboardPortfolioOverviewCard(
-                              overview: overview,
-                              onTap: () {},
-                            ),
-                          );
-                        },
-                        childCount: overviews.length,
+                      // 3 — Recent Activity
+                      _sectionScroll(
+                        onRefresh: refresh,
+                        child: DashboardRecentActivitySection(userId: userId),
                       ),
-                    ),
-                    loading: () => SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: _buildLoadingCard(100),
-                      ),
-                    ),
-                    error: (err, stack) => SliverToBoxAdapter(
-                      child: AmErrorWidget(
-                        message: 'Failed to load portfolios',
-                        onRetry: () =>
-                            ref.invalidate(portfolioOverviewsProvider(userId)),
-                      ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-                  // ── Performance Chart (slow widget — last) ──
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    sliver: SliverToBoxAdapter(
-                      child: Consumer(
-                        builder: (context, ref, child) {
-                          final performanceAsync =
-                              ref.watch(historyStreamProvider(userId, timeFrame: tfCode));
-                          return performanceAsync.when(
-                            data: (performance) => SizedBox(
-                              height: 350,
-                              child: DashboardChartWidget(
-                                performance: performance,
+                      // 4 — Your Portfolios
+                      _sectionScroll(
+                        onRefresh: refresh,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Your Portfolios',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 20,
+                                color: onSurface,
+                                fontFamily: 'Inter',
                               ),
                             ),
-                            loading: () => _buildLoadingCard(350, label: 'Loading chart…'),
-                            error: (err, stack) => AmErrorWidget(
-                              message: 'Failed to load chart',
-                              onRetry: () => ref.invalidate(
-                                historyStreamProvider(userId, timeFrame: tfCode),
+                            const SizedBox(height: 12),
+                            overviewsAsync.when(
+                              data: (overviews) => Column(
+                                children: [
+                                  for (final overview in overviews)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 12),
+                                      child: DashboardPortfolioOverviewCard(
+                                        overview: overview,
+                                        onTap: () {},
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              loading: () => _buildLoadingCard(100),
+                              error: (err, stack) => AmErrorWidget(
+                                message: 'Failed to load portfolios',
+                                onRetry: () => ref.invalidate(
+                                  portfolioOverviewsProvider(userId),
+                                ),
                               ),
                             ),
-                          );
-                        },
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
 
-                  // Bottom padding for bottom nav
-                  const SliverToBoxAdapter(child: SizedBox(height: 120)),
-                ],
-              ),
+                      // 5 — Performance Chart
+                      _sectionScroll(
+                        onRefresh: refresh,
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final performanceAsync = ref.watch(
+                              historyStreamProvider(userId, timeFrame: tfCode),
+                            );
+                            return performanceAsync.when(
+                              data: (performance) => SizedBox(
+                                height: 350,
+                                child: DashboardChartWidget(
+                                  performance: performance,
+                                ),
+                              ),
+                              loading: () =>
+                                  _buildLoadingCard(350, label: 'Loading chart…'),
+                              error: (err, stack) => AmErrorWidget(
+                                message: 'Failed to load chart',
+                                onRetry: () => ref.invalidate(
+                                  historyStreamProvider(
+                                    userId,
+                                    timeFrame: tfCode,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Compact chip: Doc Intel icon + "Add Portfolio" — opens Doc Intelligence.
+class _DocIntelAddPortfolioButton extends StatelessWidget {
+  const _DocIntelAddPortfolioButton({
+    required this.onTap,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.foregroundColor,
+  });
+
+  final VoidCallback onTap;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.psychology_outlined,
+                size: 17,
+                color: Color(0xFF00D2D3),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                'Add Portfolio',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: foregroundColor,
+                  fontFamily: 'Inter',
+                  height: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

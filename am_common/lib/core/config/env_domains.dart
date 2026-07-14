@@ -4,21 +4,33 @@ import 'config_service.dart';
 ///
 /// Cluster: host from Helm-mounted config.json (via [ConfigService]).
 /// Local: `.env` dart-defines and/or config.{env}.json `domain` / `services`.
-/// No environment host is hardcoded here.
+/// No environment host is hardcoded here (native falls back via [ConfigService]).
 class EnvDomains {
   static String get _domain => ConfigService.domain;
 
+  /// [Uri.origin] throws for `file:///` (Android/iOS).
+  static String? _httpOrigin() {
+    final uri = Uri.base;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return null;
+    try {
+      final origin = uri.origin;
+      return origin.isNotEmpty ? origin : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static String get apiBase {
     if (_domain.isNotEmpty) return 'https://$_domain';
-    final origin = Uri.base.origin;
-    if (origin.isNotEmpty && !origin.contains('://localhost')) return origin;
-    // Local without domain yet — prefer ConfigService.override / .env callers
-    return origin.isNotEmpty ? origin : '';
+    final origin = _httpOrigin();
+    if (origin != null && !origin.contains('://localhost')) return origin;
+    return origin ?? '';
   }
 
   static String get wsBase {
     if (_domain.isNotEmpty) return 'wss://$_domain';
-    final origin = Uri.base.origin;
+    final origin = _httpOrigin();
+    if (origin == null) return '';
     if (origin.startsWith('https://')) {
       return 'wss://${Uri.base.host}${Uri.base.hasPort ? ':${Uri.base.port}' : ''}';
     }

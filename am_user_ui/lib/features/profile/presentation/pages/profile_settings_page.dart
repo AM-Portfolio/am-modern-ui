@@ -8,7 +8,7 @@ import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';
 
 /// Profile and Settings page for user account management
-class ProfileSettingsPage extends StatelessWidget {
+class ProfileSettingsPage extends StatefulWidget {
   final String userId;
   final String? email;
   final String? displayName;
@@ -18,14 +18,93 @@ class ProfileSettingsPage extends StatelessWidget {
   final VoidCallback? onOpenPrivacyPolicy;
   final VoidCallback? onOpenTermsOfService;
 
+  /// Opens the existing subscription / pricing screen via GoRouter when set.
+  final VoidCallback? onOpenSubscription;
+
+  /// When true (e.g. returning from Subscription), pulse Account + Subscription.
+  final bool highlightSubscription;
+
   const ProfileSettingsPage({
     required this.userId,
     this.email,
     this.displayName,
     this.onOpenPrivacyPolicy,
     this.onOpenTermsOfService,
+    this.onOpenSubscription,
+    this.highlightSubscription = false,
     super.key,
   });
+
+  @override
+  State<ProfileSettingsPage> createState() => _ProfileSettingsPageState();
+}
+
+class _ProfileSettingsPageState extends State<ProfileSettingsPage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _highlightController;
+  late final Animation<double> _highlightPulse;
+  final GlobalKey _subscriptionTileKey = GlobalKey();
+  bool _highlightActive = false;
+
+  String get userId => widget.userId;
+  String? get email => widget.email;
+  String? get displayName => widget.displayName;
+  VoidCallback? get onOpenPrivacyPolicy => widget.onOpenPrivacyPolicy;
+  VoidCallback? get onOpenTermsOfService => widget.onOpenTermsOfService;
+  VoidCallback? get onOpenSubscription => widget.onOpenSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _highlightController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _highlightPulse = CurvedAnimation(
+      parent: _highlightController,
+      curve: Curves.easeInOut,
+    );
+    if (widget.highlightSubscription) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _startHighlight());
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ProfileSettingsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.highlightSubscription && !oldWidget.highlightSubscription) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _startHighlight());
+    }
+  }
+
+  @override
+  void dispose() {
+    _highlightController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _startHighlight() async {
+    if (!mounted) return;
+    setState(() => _highlightActive = true);
+
+    final ctx = _subscriptionTileKey.currentContext;
+    if (ctx != null) {
+      await Scrollable.ensureVisible(
+        ctx,
+        alignment: 0.35,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+      );
+    }
+
+    if (!mounted) return;
+    _highlightController.repeat(reverse: true);
+    await Future<void>.delayed(const Duration(milliseconds: 2600));
+    if (!mounted) return;
+    _highlightController.stop();
+    _highlightController.value = 0;
+    setState(() => _highlightActive = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,9 +152,14 @@ class ProfileSettingsPage extends StatelessWidget {
                       children: [
                         // Profile Header
                         _buildProfileHeader(context, isDark),
-                        
+
+                        if (onOpenSubscription != null && !isDesktop) ...[
+                          const SizedBox(height: 24),
+                          _buildPremiumUpgradeCard(context, isDark),
+                        ],
+
                         const SizedBox(height: 32),
-                        
+
                         // Settings Content
                         _buildSettingsContent(context, isDark, isDesktop),
                       ],
@@ -84,6 +168,115 @@ class ProfileSettingsPage extends StatelessWidget {
                 ),
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumUpgradeCard(BuildContext context, bool isDark) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onOpenSubscription,
+        borderRadius: BorderRadius.circular(22),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? const [
+                      Color(0xFF3D1F3A),
+                      Color(0xFF1F1630),
+                      Color(0xFF2A1848),
+                    ]
+                  : const [
+                      Color(0xFFFFE8F0),
+                      Color(0xFFFFF0F5),
+                      Color(0xFFEDE7FF),
+                    ],
+            ),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : ModuleColors.portfolio.withValues(alpha: 0.22),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: ModuleColors.portfolio.withValues(alpha: 0.18),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 16, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.white.withValues(alpha: 0.85),
+                      ),
+                      child: Icon(
+                        Icons.workspace_premium_rounded,
+                        color: ModuleColors.portfolio,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Unlock more with Premium',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Live data, deeper analytics, and AI tools — upgrade to level up your portfolio experience.',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                    fontSize: 13.5,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: onOpenSubscription,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: ModuleColors.portfolio,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    child: const Text('Explore plans'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -189,27 +382,73 @@ class ProfileSettingsPage extends StatelessWidget {
         // Account Section
         _buildSectionHeader(context, 'Account', isDark),
         const SizedBox(height: 16),
-        _buildGlassSection(
-          context,
-          isDark,
-          children: [
-             _buildSettingTile(
-              context,
-              icon: Icons.email_outlined,
-              title: 'Email Address',
-              subtitle: (email != null && email!.isNotEmpty) ? email! : 'Not set',
-              isDark: isDark,
-              onTap: () => _showEditEmailDialog(context),
-            ),
-            _buildDivider(isDark),
-             _buildSettingTile(
-              context,
-              icon: Icons.lock_outline,
-              title: 'Change Password',
-              isDark: isDark,
-              onTap: () => _showChangePasswordDialog(context),
-            ),
-          ],
+        AnimatedBuilder(
+          animation: _highlightPulse,
+          builder: (context, child) {
+            final glow = _highlightActive ? _highlightPulse.value : 0.0;
+            return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: glow > 0
+                    ? [
+                        BoxShadow(
+                          color: ModuleColors.portfolio
+                              .withValues(alpha: 0.18 + glow * 0.28),
+                          blurRadius: 18 + glow * 12,
+                          spreadRadius: glow * 2,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: child,
+            );
+          },
+          child: _buildGlassSection(
+            context,
+            isDark,
+            highlighted: _highlightActive,
+            children: [
+              _buildSettingTile(
+                context,
+                icon: Icons.email_outlined,
+                title: 'Email Address',
+                subtitle:
+                    (email != null && email!.isNotEmpty) ? email! : 'Not set',
+                isDark: isDark,
+                onTap: () => _showEditEmailDialog(context),
+              ),
+              _buildDivider(isDark),
+              _buildSettingTile(
+                context,
+                icon: Icons.lock_outline,
+                title: 'Change Password',
+                isDark: isDark,
+                onTap: () => _showChangePasswordDialog(context),
+              ),
+              if (onOpenSubscription != null) ...[
+                _buildDivider(isDark),
+                KeyedSubtree(
+                  key: _subscriptionTileKey,
+                  child: AnimatedBuilder(
+                    animation: _highlightPulse,
+                    builder: (context, _) {
+                      return _buildSettingTile(
+                        context,
+                        icon: Icons.subscriptions_outlined,
+                        title: 'Subscription',
+                        subtitle: 'Plans, billing, and access',
+                        isDark: isDark,
+                        highlighted: _highlightActive,
+                        highlightStrength:
+                            _highlightActive ? _highlightPulse.value : 0,
+                        onTap: onOpenSubscription!,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
 
         const SizedBox(height: 32),
@@ -308,17 +547,30 @@ class ProfileSettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildGlassSection(BuildContext context, bool isDark, {required List<Widget> children}) {
-    return Container(
+  Widget _buildGlassSection(
+    BuildContext context,
+    bool isDark, {
+    required List<Widget> children,
+    bool highlighted = false,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
       decoration: BoxDecoration(
-        color: isDark ? Color(0xFF1a1a2e).withOpacity(0.6) : Colors.white.withOpacity(0.8),
+        color: isDark
+            ? const Color(0xFF1a1a2e).withValues(alpha: 0.6)
+            : Colors.white.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+          color: highlighted
+              ? ModuleColors.portfolio.withValues(alpha: isDark ? 0.55 : 0.45)
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.05)),
+          width: highlighted ? 1.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -346,57 +598,83 @@ class ProfileSettingsPage extends StatelessWidget {
     VoidCallback? onTap,
     Color? iconColor,
     Color? textColor,
+    bool highlighted = false,
+    double highlightStrength = 0,
   }) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withOpacity(0.05) : ModuleColors.portfolio.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+    final accent = ModuleColors.portfolio;
+    final bgTint = highlighted
+        ? accent.withValues(
+            alpha: (isDark ? 0.12 : 0.08) + highlightStrength * 0.12,
+          )
+        : null;
+
+    return Material(
+      color: bgTint ?? Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: highlighted
+                      ? accent.withValues(alpha: isDark ? 0.22 : 0.18)
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : accent.withValues(alpha: 0.1)),
+                  borderRadius: BorderRadius.circular(12),
+                  border: highlighted
+                      ? Border.all(
+                          color: accent.withValues(alpha: 0.45),
+                        )
+                      : null,
+                ),
+                child: Icon(
+                  icon,
+                  color: iconColor ??
+                      (isDark ? Colors.white : ModuleColors.portfolio),
+                  size: 20,
+                ),
               ),
-              child: Icon(
-                icon,
-                color: iconColor ?? (isDark ? Colors.white : ModuleColors.portfolio),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: textColor ?? (isDark ? Colors.white : Colors.black87),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 4),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      subtitle,
+                      title,
                       style: TextStyle(
-                        color: isDark ? Colors.white54 : Colors.black54,
-                        fontSize: 13,
+                        color: textColor ??
+                            (isDark ? Colors.white : Colors.black87),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: isDark ? Colors.white54 : Colors.black54,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            trailing ?? Icon(
-              Icons.chevron_right_rounded,
-              color: isDark ? Colors.white24 : Colors.black26,
-              size: 20,
-            ),
-          ],
+              trailing ??
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: highlighted
+                        ? accent
+                        : (isDark ? Colors.white24 : Colors.black26),
+                    size: 20,
+                  ),
+            ],
+          ),
         ),
       ),
     );
