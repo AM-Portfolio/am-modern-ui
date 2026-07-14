@@ -251,12 +251,20 @@ Widget buildAnalysisRoute({required String userId}) {
   );
 }
 
-Widget buildDocIntelRoute({required String userId}) {
+Widget buildDocIntelRoute({
+  required String userId,
+  String tab = 'doc-processor',
+  ValueChanged<String>? onTabChanged,
+}) {
   return DeferredModuleLoader(
     load: _loadDocIntel,
     skeleton: const GenericModuleSkeleton(),
     loadingMessage: 'Loading Doc Intel…',
-    builder: () => doc_intel_ui.DocIntelligenceScreen(userId: userId),
+    builder: () => doc_intel_ui.DocIntelligenceScreen(
+      userId: userId,
+      initialTab: tab,
+      onTabChanged: onTabChanged,
+    ),
   );
 }
 

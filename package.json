@@ -23,7 +23,7 @@
     "run:subscription:local": "python scripts/manage.py run subscription local --boot-trace",
     "run:app:local:notrace": "python scripts/manage.py run app local --no-boot-trace",
     "─── RUN DEV ───": "echo",
-    "run:app:dev": "python scripts/manage.py run app dev --boot-trace",
+    ,
     "run:auth:dev": "python scripts/manage.py run auth dev --boot-trace",
     "run:trade:dev": "python scripts/manage.py run trade dev --boot-trace",
     "run:portfolio:dev": "python scripts/manage.py run portfolio dev --boot-trace",

@@ -22,6 +22,11 @@ class AppRoutes {
   static const termsOfService = '/app/terms-of-service';
   static const subscription = '/app/subscription';
 
+  static const docIntelTabs = [
+    'doc-processor',
+    'email-extractor',
+  ];
+
   static const portfolioTabs = [
     'overview',
     'holdings',
@@ -40,6 +45,8 @@ class AppRoutes {
     'market-analysis',
     'report',
     'unified',
+    'metrics',
+    'templates',
   ];
 
   static const marketStaticSlugs = {
@@ -111,6 +118,11 @@ class AppRoutes {
 
   static String marketPath([String tab = 'all-indices']) => '/app/market/$tab';
 
+  static String docIntelPath([String tab = 'doc-processor']) =>
+      '$docIntel/$tab';
+
+  static bool isDocIntelTab(String slug) => docIntelTabs.contains(slug);
+
   /// Legacy 2-segment tab-only paths (redirected to 3-segment after portfolio load).
   static String portfolioLegacyTabPath(String tab) => '/app/portfolio/$tab';
 
@@ -124,7 +136,7 @@ class AppRoutes {
     'AI Chat': aiChat,
     'Lab': lab,
     'Analysis': analysis,
-    'Doc Intel': docIntel,
+    'Doc Intel': '${AppRoutes.docIntel}/doc-processor',
     'Profile': profile,
     'Subscription': subscription,
   };

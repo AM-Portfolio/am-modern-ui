@@ -76,8 +76,11 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
     super.initState();
     _resetFabHideTimer();
 
-    // Safely map from Web index to Mobile index
-    if (widget.initialTabIndex != null) {
+    // Prefer explicit mobile view; fall back to web-index mapping.
+    if (widget.initialView != MobileTradeViewType.portfolios ||
+        widget.initialTabIndex == null) {
+      _selectedView = widget.initialView;
+    } else {
       final index = widget.initialTabIndex!;
       if (index == 9) {
         _selectedView = MobileTradeViewType.addTrade;
@@ -89,18 +92,15 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         _selectedView = MobileTradeViewType.calendar;
       } else if (index == 4) {
         _selectedView = MobileTradeViewType.journal;
-      } else if (index == 5) {
+      } else if (index == 5 || index == MobileTradeViewType.metrics.index) {
         _selectedView = MobileTradeViewType.metrics;
       } else if (index == MobileTradeViewType.templates.index) {
         _selectedView = MobileTradeViewType.templates;
       } else {
-        // If coming from another desktop tab (Trades, etc.), fallback
         _selectedView = widget.selectedPortfolioId != null
             ? MobileTradeViewType.holdings
             : MobileTradeViewType.portfolios;
       }
-    } else {
-      _selectedView = widget.initialView;
     }
 
     _currentPortfolioId = widget.selectedPortfolioId;
@@ -110,6 +110,20 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
       'TradeMobileScreen initialized with view: $_selectedView',
       tag: 'TradeMobileScreen',
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant TradeMobileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialView != oldWidget.initialView &&
+        widget.initialView != _selectedView) {
+      setState(() => _selectedView = widget.initialView);
+    }
+    if (widget.selectedPortfolioId != oldWidget.selectedPortfolioId &&
+        widget.selectedPortfolioId != null) {
+      _currentPortfolioId = widget.selectedPortfolioId;
+      _currentPortfolioName = widget.selectedPortfolioName;
+    }
   }
 
   @override

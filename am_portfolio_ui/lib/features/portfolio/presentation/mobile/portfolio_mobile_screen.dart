@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -186,6 +187,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         return 2;
       case 'baskets':
         return 3;
+      case 'add-trade':
+        return 3; // keep last real tab underneath add-trade overlay
       default:
         return 0;
     }
@@ -206,15 +209,21 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
   }
 
+  bool _isAddTradeSlug(String? slug) =>
+      slug?.toLowerCase() == 'add-trade';
+
   @override
   void initState() {
     super.initState();
     final initialIndex = _tabIndexFromSlug(widget.initialTab);
+    _isAddingTrade = _isAddTradeSlug(widget.initialTab);
     _tabController = TabController(length: 4, vsync: this, initialIndex: initialIndex);
     _tabController.addListener(() {
       if (mounted && !_tabController.indexIsChanging) {
         setState(() {});
-        widget.onTabChanged?.call(_tabSlugFromIndex(_tabController.index));
+        if (!_isAddingTrade) {
+          widget.onTabChanged?.call(_tabSlugFromIndex(_tabController.index));
+        }
       }
     });
     _currentPortfolioId = widget.selectedPortfolioId;
@@ -256,11 +265,30 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
 
     if (widget.initialTab != oldWidget.initialTab) {
-      final newIndex = _tabIndexFromSlug(widget.initialTab);
-      if (newIndex != _tabController.index) {
-        _tabController.animateTo(newIndex);
+      final addTrade = _isAddTradeSlug(widget.initialTab);
+      if (addTrade != _isAddingTrade) {
+        setState(() => _isAddingTrade = addTrade);
+      }
+      if (!addTrade) {
+        final newIndex = _tabIndexFromSlug(widget.initialTab);
+        if (newIndex != _tabController.index) {
+          _tabController.animateTo(newIndex);
+        }
       }
     }
+  }
+
+  void _openAddTrade() {
+    setState(() => _isAddingTrade = true);
+    widget.onTabChanged?.call('add-trade');
+  }
+
+  void _selectTab(int index) {
+    setState(() {
+      _tabController.index = index;
+      _isAddingTrade = false;
+    });
+    widget.onTabChanged?.call(_tabSlugFromIndex(index));
   }
 
   @override
@@ -297,7 +325,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: GestureDetector(
-          onTap: () => setState(() => _isAddingTrade = true),
+          onTap: _openAddTrade,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
@@ -381,56 +409,42 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             title: 'Overview',
             icon: Icons.dashboard_outlined,
             isSelected: _tabController.index == 0 && !_isAddingTrade,
-            onTap: () => setState(() {
-              _tabController.index = 0;
-              _isAddingTrade = false;
-            }),
+            onTap: () => _selectTab(0),
           ),
           SecondarySidebarItem(
             title: 'Holdings',
             icon: Icons.wallet,
             isSelected: _tabController.index == 1 && !_isAddingTrade,
-            onTap: () => setState(() {
-              _tabController.index = 1;
-              _isAddingTrade = false;
-            }),
+            onTap: () => _selectTab(1),
           ),
           SecondarySidebarItem(
             title: 'Heatmap',
             icon: Icons.grid_view,
             isSelected: _tabController.index == 2 && !_isAddingTrade,
-            onTap: () => setState(() {
-              _tabController.index = 2;
-              _isAddingTrade = false;
-            }),
+            onTap: () => _selectTab(2),
           ),
           SecondarySidebarItem(
             title: 'Baskets',
             icon: Icons.shopping_basket_outlined,
             isSelected: _tabController.index == 3 && !_isAddingTrade,
-            onTap: () => setState(() {
-              _tabController.index = 3;
-              _isAddingTrade = false;
-            }),
+            onTap: () => _selectTab(3),
           ),
           SecondarySidebarItem(
             title: 'Add Trade',
             icon: Icons.add,
             isSelected: _isAddingTrade,
-            onTap: () => setState(() {
-              _isAddingTrade = true;
-            }),
+            onTap: _openAddTrade,
           ),
         ],
-        body: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
+        body: (_isAddingTrade &&
+                widget.addTradeBuilder != null &&
+                _currentPortfolioId != null)
             ? widget.addTradeBuilder!(
                 context,
                 _currentPortfolioId!,
                 currentName,
                 () {
-                  setState(() {
-                    _isAddingTrade = false;
-                  });
+                  _selectTab(_tabController.index);
                 },
               )
             : NotificationListener<ScrollNotification>(
@@ -448,7 +462,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                       tabController: _tabController,
                       currentPortfolioId: _currentPortfolioId!,
                     ),
-                    if (widget.addTradeBuilder != null && _tabController.index == 0)
+                    if (widget.addTradeBuilder != null &&
+                        _tabController.index == 0)
                       Positioned(
                         bottom: 24,
                         right: 16,
@@ -470,9 +485,11 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   }
 
   /// Portfolio + timeframe sticky strip (below collapsible pill tabs).
+  /// Horizontal padding matches overview content (`EdgeInsets.all(16)`) so
+  /// left/right edges align with Total Return and Today's P&L cards.
   Widget _buildStickyControlsRow(BuildContext context, String currentName) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 2, 8, 6),
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
       child: Row(
         children: [
           ConstrainedBox(

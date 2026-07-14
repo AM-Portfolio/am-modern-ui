@@ -8,6 +8,8 @@ import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart' as common;
 
+import '../../core/navigation/cross_module_section_sequence.dart';
+import '../../core/navigation/cross_section_swipe_host.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/router/share_url_builder.dart';
 
@@ -130,7 +132,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
         const _MoreMenuItem(
             title: 'Doc Intel',
             icon: Icons.psychology_outlined,
-            path: AppRoutes.docIntel),
+            path: '/app/doc-intel/doc-processor'),
         const _MoreMenuItem(
             title: 'Subscription',
             icon: Icons.subscriptions_rounded,
@@ -275,6 +277,51 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       userId,
       (s) => s.copyWith(globalNav: title, clearBasket: title != 'Portfolio'),
     );
+  }
+
+  String? _resolveSwipePortfolioId() {
+    final fromUrl =
+        ShareUrlBuilder.portfolioIdFromLocation(_currentLocation);
+    if (fromUrl != null && fromUrl.isNotEmpty) return fromUrl;
+    final cached = common.SessionPersistenceService.instance.cached?.portfolioId;
+    if (cached != null &&
+        cached.isNotEmpty &&
+        !_isDevMockPortfolioId(cached)) {
+      return cached;
+    }
+    return null;
+  }
+
+  void _goSwipePath(String path, String userId) {
+    _setBottomNavVisible(true);
+    final navTitle = AppRoutes.activeNavTitleForLocation(path);
+    _applyStreamingTabCoordinator(navTitle);
+    context.go(path);
+    common.SessionPersistenceService.instance.patch(
+      userId,
+      (s) => s.copyWith(
+        globalNav: navTitle,
+        clearBasket: navTitle != 'Portfolio',
+      ),
+    );
+  }
+
+  void _onCrossSectionNext(String userId) {
+    final next = CrossModuleSectionSequence.nextPath(
+      _currentLocation,
+      portfolioId: _resolveSwipePortfolioId(),
+    );
+    if (next == null) return;
+    _goSwipePath(next, userId);
+  }
+
+  void _onCrossSectionPrevious(String userId) {
+    final prev = CrossModuleSectionSequence.previousPath(
+      _currentLocation,
+      portfolioId: _resolveSwipePortfolioId(),
+    );
+    if (prev == null) return;
+    _goSwipePath(prev, userId);
   }
 
   Future<void> _checkInitialAuthAndConnect() async {
@@ -450,8 +497,27 @@ final userId =
                                 ? (_) => false
                                 : _handleBottomNavScroll,
                             child: authState is Authenticated
-                                ? common.PortfolioSelectionScope(
-                                    child: widget.child,
+                                ? common.CrossSectionNavScope(
+                                    controller: common.CrossSectionNavController(
+                                      goNextModule: () =>
+                                          _onCrossSectionNext(userId),
+                                      goPreviousModule: () =>
+                                          _onCrossSectionPrevious(userId),
+                                    ),
+                                    child: common.PortfolioSelectionScope(
+                                      // Central swipe host: every shell child
+                                      // (Dashboard → … → Profile) inherits it.
+                                      child: isDesktop
+                                          ? widget.child
+                                          : CrossSectionSwipeHost(
+                                              onNext: () =>
+                                                  _onCrossSectionNext(userId),
+                                              onPrevious: () =>
+                                                  _onCrossSectionPrevious(
+                                                      userId),
+                                              child: widget.child,
+                                            ),
+                                    ),
                                   )
                                 : widget.child,
                           ),

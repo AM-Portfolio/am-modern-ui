@@ -249,7 +249,10 @@ class DashboardMobileScreen extends ConsumerWidget {
                               ),
                             ),
                             loading: () => _buildLoadingCard(350),
-                            error: (err, stack) => DashboardRankingWidget.errorState(),
+                            error: (err, stack) => SizedBox(
+                              height: 350,
+                              child: DashboardRankingWidget.errorState(),
+                            ),
                           );
                         },
                       ),

@@ -19,7 +19,7 @@ export '../../internal/data/dtos/portfolio_snapshot_dto.dart';
 /// A self-contained widget that renders the portfolio history chart.
 ///
 /// Features:
-/// - Always shows portfolio switcher tabs ([All Portfolios], [Dhan], [Zerodha]…)
+/// - Compact transparent portfolio dropdown (All Portfolios + brokers)
 /// - Reacts to global portfolio selection changes
 /// - Carries forward last known wealth on days with missing data (no zero-dips)
 /// - Reloads on both portfolioId and timeFrame changes
@@ -145,80 +145,73 @@ class _PortfolioHistoryChartWidgetState
     );
   }
 
-  // ── Portfolio Tab Switcher ───────────────────────────────────────────────
+  // ── Portfolio Dropdown Switcher ──────────────────────────────────────────
 
-  /// Builds tabs from the global portfolio list.
-  /// Uses a [Builder] so that [ctx.selectedPortfolioId] is resolved against
-  /// the [_SelectedPortfolioProvider] InheritedWidget and updates whenever
-  /// a tab is tapped—without relying on a BlocBuilder to refresh the highlight.
+  /// Compact transparent dropdown (matches mobile timeframe styling).
   Widget _buildPortfolioTabs() {
     return Builder(
       builder: (ctx) {
         return BlocBuilder<PortfolioCubit, PortfolioState>(
-          buildWhen: (prev, curr) => prev.portfolioList != curr.portfolioList || curr is PortfolioLoaded,
+          buildWhen: (prev, curr) =>
+              prev.portfolioList != curr.portfolioList || curr is PortfolioLoaded,
           builder: (bCtx, state) {
             final portfolios = state.portfolioList?.portfolios ?? [];
             if (portfolios.isEmpty) return const SizedBox.shrink();
 
-            // Always prepend an "All Portfolios" aggregate tab
-            final allItem = PortfolioItem(
-              portfolioId: 'all',
-              portfolioName: 'All Portfolios',
-            );
-            final items = <PortfolioItem>[allItem, ...portfolios];
+            final items = <PortfolioItem>[
+              const PortfolioItem(
+                portfolioId: 'all',
+                portfolioName: 'All Portfolios',
+              ),
+              ...portfolios,
+            ];
 
-            // Read from local state first, fallback to context
-            final currentId =
-                _localSelectedId ?? ctx.selectedPortfolioId ?? widget.portfolioId ?? 'all';
+            final currentId = _localSelectedId ??
+                ctx.selectedPortfolioId ??
+                widget.portfolioId ??
+                'all';
+            final hasSelection = items.any((p) => p.portfolioId == currentId);
+            final selectedId = hasSelection ? currentId : 'all';
+            final isDark = Theme.of(context).brightness == Brightness.dark;
 
-            return SizedBox(
-              height: 36,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.zero,
-                itemCount: items.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (_, i) {
-                  final item = items[i];
-                  final isSelected = currentId == item.portfolioId;
-
-                  return GestureDetector(
-                    onTap: () {
-                      if (!isSelected) {
-                        setState(() {
-                          _localSelectedId = item.portfolioId;
-                          _localSelectedName = item.portfolioName;
-                        });
-                        _load(); // Only reload the chart's data
-                      }
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primary
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.primary
-                              : Colors.grey.withOpacity(0.35),
-                        ),
+            return ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 148),
+              child: CustomDropdown<String>(
+                value: selectedId,
+                height: 32,
+                isExpanded: true,
+                fontSize: 12,
+                iconSize: 16,
+                borderRadius: 10,
+                menuMaxHeight: 148,
+                primaryColor: AppColors.primary,
+                backgroundColor:
+                    isDark ? Colors.white.withValues(alpha: 0.06) : null,
+                borderColor:
+                    isDark ? Colors.white.withValues(alpha: 0.1) : null,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                items: items
+                    .map(
+                      (p) => p.portfolioId.toSimpleDropdownItem(
+                        text: p.portfolioName,
+                        fontSize: 12,
                       ),
-                      child: Text(
-                        item.portfolioName,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: isSelected ? Colors.white : Colors.grey,
-                        ),
-                      ),
-                    ),
-                  );
+                    )
+                    .toList(),
+                onChanged: (id) {
+                  if (id == null || id == selectedId) return;
+                  String name = 'All Portfolios';
+                  for (final p in items) {
+                    if (p.portfolioId == id) {
+                      name = p.portfolioName;
+                      break;
+                    }
+                  }
+                  setState(() {
+                    _localSelectedId = id;
+                    _localSelectedName = name;
+                  });
+                  _load();
                 },
               ),
             );
@@ -542,13 +535,8 @@ class _PortfolioHistoryChartWidgetState
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Portfolio Tabs taking available space
-                  Expanded(
-                    child: _buildPortfolioTabs(),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Toggle + Zoom controls
+                  _buildPortfolioTabs(),
+                  const Spacer(),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -561,7 +549,6 @@ class _PortfolioHistoryChartWidgetState
                         onValueChanged: (val) {
                           setState(() {
                             _activeFormat = val;
-                            // Update multi-line active set when toggle changes
                           });
                         },
                       ),
