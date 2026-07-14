@@ -46,7 +46,7 @@ class GlossyCard extends StatelessWidget {
               child: Container(
                 padding: padding ?? const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  borderRadius: borderRadius ?? BorderRadius.circular(16),
+                  borderRadius: borderRadius ?? BorderRadius.circular(20),
                   border: border ?? Border.all(
                     color: Colors.white.withOpacity(isDark ? 0.15 : 0.3),
                     width: 1,
