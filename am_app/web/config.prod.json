@@ -1,6 +1,6 @@
 {
-  "_comment": "Cluster production gateway.",
-  "domain": "am.munish.org",
+  "_comment": "Cluster production gateway (am.asrax.in). Munish removed as app host.",
+  "domain": "am.asrax.in",
   "services": {},
   "google": {
     "webClientId": ""

@@ -1,6 +1,6 @@
 # Boot RUM — Real User Metrics
 
-Automatic boot timing for every visit to `https://am.asrax.in` — **no `?bootTrace=1` required**.
+Automatic boot timing for every visit to `https://am-preprod.asrax.in` — **no `?bootTrace=1` required**.
 
 ---
 

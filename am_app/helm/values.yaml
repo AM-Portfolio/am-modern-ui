@@ -9,7 +9,7 @@ service:
 language: flutter
 
 appConfig:
-  domain: "am.munish.org"
+  domain: "am.asrax.in"
 
 configMap:
   enabled: true

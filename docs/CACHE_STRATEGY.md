@@ -19,8 +19,8 @@ API responses are never cached by this nginx config — only static files (`*.js
 |-------------|-----|----------------------|---------------|-----------|----------------------|------------------|-----------|
 | **Local** | `localhost` | — | Flutter dev server | N/A | Hot reload | Hot reload | N/A |
 | **Dev cluster** | `am-dev.asrax.in` | `dev` | `nocache` | **no-store** | Always 200 (fresh) | Always fresh | Always fresh |
-| **Preprod** | `am.asrax.in` | `preprod` | `nocache` (tiered) | **no-store** app JS; **cache** CanvasKit | Fresh app JS every reload; CanvasKit from disk on 2nd reload | Fresh app JS after deploy | Fresh app JS |
-| **Prod** | prod host | `prod` | `revalidate` | **must-revalidate** | **304** (~0.5–1.5s) | **200** (new file) | Fresh (no disk cache) |
+| **Preprod** | `am-preprod.asrax.in` | `preprod` | `nocache` (tiered) | **no-store** app JS; **cache** CanvasKit | Fresh app JS every reload; CanvasKit from disk on 2nd reload | Fresh app JS after deploy | Fresh app JS |
+| **Prod** | `am.asrax.in` | `prod` | `revalidate` | **must-revalidate** | **304** (~0.5–1.5s) | **200** (new file) | Fresh (no disk cache) |
 
 ---
 
@@ -55,7 +55,7 @@ Files:
 1. Merge to `main` → GitHub Actions builds Docker image
 2. Dev deploys automatically
 3. **Approve** preprod deploy in GitHub Actions
-4. Open `https://am.asrax.in` (normal tab or incognito) → **latest UI**
+4. Open `https://am-preprod.asrax.in` (normal tab or incognito) → **latest UI**
 5. No manual `AM_BUILD_ID` bump — CI injects git SHA on each build
 6. No hard refresh needed on preprod/dev
 
@@ -89,8 +89,9 @@ Browser `no-store` is not enough if Cloudflare caches at the edge.
 | Host | Required rule |
 |------|----------------|
 | `am-dev.asrax.in` | **Bypass cache** (all paths) |
-| `am.asrax.in` | **Bypass cache** (all paths) |
-| Prod host | Respect origin `Cache-Control`; enable Brotli + HTTP/3 |
+| `am-preprod.asrax.in` | **Bypass cache** (all paths) |
+| `am.asrax.in` (preprod alias until Phase 4) | **Bypass cache** (all paths) |
+| Prod host (`am.asrax.in` after Phase 4) | Respect origin `Cache-Control`; enable Brotli + HTTP/3 |
 
 If preprod still shows stale UI after deploy, check Cloudflare first.
 
@@ -128,7 +129,7 @@ esac
 
 ```bash
 curl -I https://am-dev.asrax.in/main.dart.js
-curl -I https://am.asrax.in/main.dart.js
+curl -I https://am-preprod.asrax.in/main.dart.js
 # Expect: Cache-Control: no-store ...
 ```
 
@@ -137,11 +138,11 @@ DevTools → Network → reload → `main.dart.js` status **200** (not disk cach
 ### Prod
 
 ```bash
-curl -I https://<prod-host>/main.dart.js
+curl -I https://am.asrax.in/main.dart.js
 # Expect: Cache-Control: public, max-age=0, must-revalidate
 
 # Second request with ETag:
-curl -I -H "If-None-Match: <etag-from-first-response>" https://<prod-host>/main.dart.js
+curl -I -H "If-None-Match: <etag-from-first-response>" https://am.asrax.in/main.dart.js
 # Expect: 304 Not Modified
 ```
 
@@ -155,7 +156,7 @@ View page source → `AM_BUILD_ID` should match the workflow run id (same as `gl
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| Preprod shows old UI after deploy | Cloudflare edge cache | Bypass cache for `am.asrax.in` |
+| Preprod shows old UI after deploy | Cloudflare edge cache | Bypass cache for `am-preprod.asrax.in` |
 | Prod always re-downloads full JS | `ENVIRONMENT` not `prod` | Add/check [`helm/values.prod.yaml`](../am_app/helm/values.prod.yaml) |
 | `AM_BUILD_ID` stays `local` on cluster | CI missing `BUILD_ID` build-arg | Check am-pipelines `central-build-publish.yml` |
 | Reload slow on preprod | Expected | no-store policy; boot optimizations still apply |
