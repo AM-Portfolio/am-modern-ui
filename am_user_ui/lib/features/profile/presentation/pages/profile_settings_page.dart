@@ -34,16 +34,23 @@ class ProfileSettingsPage extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Profile & Settings'),
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+        foregroundColor: isDark ? Colors.white : Colors.black87,
+        title: Text(
+          'Profile & Settings',
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black87,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
+        iconTheme: IconThemeData(
+          color: isDark ? Colors.white : Colors.black87,
+        ),
         // leading: IconButton(
         //   icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
         //   onPressed: () => Navigator.pop(context),
