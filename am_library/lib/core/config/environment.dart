@@ -41,6 +41,7 @@ class EnvironmentConfig {
 
   // API base — current page origin / host (Helm config.json / .env set ConfigService).
   // Do not hardcode den/preprod/prod hosts here.
+  // Native apps use file:/// where [Uri.origin] throws — avoid that path.
   static String get apiBaseUrl {
     final host = Uri.base.host;
     if (host.isNotEmpty &&
@@ -48,8 +49,16 @@ class EnvironmentConfig {
         host != '127.0.0.1') {
       return 'https://$host';
     }
-    final origin = Uri.base.origin;
-    return origin.isNotEmpty ? origin : '';
+    final scheme = Uri.base.scheme;
+    if (scheme == 'http' || scheme == 'https') {
+      try {
+        final origin = Uri.base.origin;
+        return origin.isNotEmpty ? origin : '';
+      } catch (_) {
+        return '';
+      }
+    }
+    return '';
   }
 
   // Feature flags
