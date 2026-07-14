@@ -13,14 +13,21 @@ import '../di/service_registry.dart';
 
 /// Base API client for handling HTTP requests
 class ApiClient {
-  /// Constructor
+  /// Constructor — [baseUrl] must come from ConfigService / EnvDomains / DI.
+  /// Falls back to same-origin (web) so cluster never needs a baked host.
   ApiClient({String? baseUrl, http.Client? client, String? category})
-    : baseUrl = baseUrl ?? _defaultBaseUrl,
+    : baseUrl = _resolveBaseUrl(baseUrl),
       category = category ?? 'API',
       _client = client ?? http.Client();
 
-  /// Default base URL for API requests
-  static const String _defaultBaseUrl = 'https://am.asrax.in';
+  static String _resolveBaseUrl(String? baseUrl) {
+    if (baseUrl != null && baseUrl.isNotEmpty) return baseUrl;
+    if (kIsWeb) {
+      final origin = Uri.base.origin;
+      if (origin.isNotEmpty) return origin;
+    }
+    return '';
+  }
 
   /// Base URL for API requests
   final String baseUrl;

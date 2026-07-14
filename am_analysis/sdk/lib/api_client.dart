@@ -11,7 +11,9 @@
 part of openapi.api;
 
 class ApiClient {
-  ApiClient({this.basePath = 'https://am.asrax.in/analysis', this.authentication,});
+  /// [basePath] must be supplied by the app (ConfigService / EnvDomains).
+  /// Empty default — do not bake an environment host into the SDK.
+  ApiClient({this.basePath = '', this.authentication,});
 
   final String basePath;
   final Authentication? authentication;
