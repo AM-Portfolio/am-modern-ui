@@ -30,10 +30,9 @@ RUN for d in am_common am_design_system am_market/common am_analysis/common am_m
     cd /app/$d && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs; \
     done
 
-# ── BUILD SCRIPTS + ENV ───────────────────────────────────────────────────
+# ── BUILD SCRIPTS ─────────────────────────────────────────────────────────
+# Host URLs are NOT baked into the image — Helm mounts config.json at runtime.
 COPY scripts/inject_build_id.sh scripts/docker_build_web.sh /app/scripts/
-# .env.preprod is gitignored locally; CI uses the committed example file.
-COPY .env.preprod.example /app/.env.preprod
 
 # ── MAIN APPLICATION ─────────────────────────────────────────────────────
 COPY am_app/pubspec.* ./am_app/

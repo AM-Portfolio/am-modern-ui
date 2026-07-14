@@ -171,7 +171,9 @@ class ConfigService {
     final api = 'https://$_domain';
     final ws = 'wss://$_domain';
 
-    final authUrl = _services['auth'] ?? '$api/auth';
+    final authUrl = _services['auth'] ??
+        _services['identity'] ??
+        '$api/identity';
     final usersUrl = _services['users'] ?? '$api/users';
     final portfolioUrl = _services['portfolio'] ?? '$api/portfolio';
     final marketUrl = _services['market'] ?? '$api/market';
