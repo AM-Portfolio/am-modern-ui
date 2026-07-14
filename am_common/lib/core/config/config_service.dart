@@ -54,7 +54,6 @@ class ConfigService {
     final parallel = await Future.wait([
       _fetchJson('/config.template.json'),
       _fetchJson('/config.json'),
-      _fetchJson('/runtime_env.json'),
     ]);
 
     var merged = parallel[0] ??
@@ -64,10 +63,9 @@ class ConfigService {
         };
 
     final bootstrap = parallel[1];
-    final runtimeEnv = parallel[2];
     // Runtime Helm/bootstrap `env` wins over compile-time AM_ENV so one image
     // can load config.dev.json / config.preprod.json per namespace.
-    final bootstrapEnv = runtimeEnv?['env'] as String? ?? bootstrap?['env'] as String?;
+    final bootstrapEnv = bootstrap?['env'] as String?;
     final env = (bootstrapEnv != null && bootstrapEnv.isNotEmpty)
         ? bootstrapEnv
         : (_envFromDefine.isNotEmpty ? _envFromDefine : null);
