@@ -4,4 +4,9 @@ metadata:
   name: {{ include "universal-chart.fullname" . }}-config
 data:
   config.json: |
-    { "domain": {{ .Values.appConfig.domain | quote }} }
+    {
+      "domain": {{ .Values.appConfig.domain | quote }},
+      "google": {
+        "webClientId": {{ .Values.appConfig.googleWebClientId | default "" | quote }}
+      }
+    }

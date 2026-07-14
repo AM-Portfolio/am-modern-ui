@@ -4,6 +4,7 @@ replicaCount: 1
 
 appConfig:
   domain: "am-dev.asrax.in"
+  googleWebClientId: "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
 
 port: 8080
 

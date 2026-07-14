@@ -2,9 +2,9 @@ import 'config_service.dart';
 
 /// Central domain registry.
 ///
-/// Cluster URLs use the gateway path prefix (e.g. /market, /auth).
+/// Cluster URLs use the gateway path prefix (e.g. /market, /identity).
 /// Local [config.*.json] `services` entries are full base URLs (no prefix).
-/// 
+///
 /// All module paths should start with '/v1' or the relative resource path.
 class EnvDomains {
   static String get _domain => ConfigService.domain;
@@ -13,7 +13,10 @@ class EnvDomains {
   static String get wsBase  => 'wss://$_domain';
 
   // Service Base URLs (respecting overrides for Local Dev)
-  static String get auth      => ConfigService.override('auth')      ?? '$apiBase/auth';
+  static String get auth =>
+      ConfigService.override('auth') ??
+      ConfigService.override('identity') ??
+      '$apiBase/identity';
   static String get users     => ConfigService.override('users')     ?? '$apiBase/users';
   static String get portfolio => ConfigService.override('portfolio') ?? '$apiBase/portfolio';
   static String get market    => ConfigService.override('market')    ?? '$apiBase/market';

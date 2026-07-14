@@ -1,33 +1,14 @@
 #!/bin/sh
-# Release web build for Docker — mirrors manage.py build flags + .env dart-defines.
+# Release web build for Docker — host-free so one image works across envs.
+# Domain / Google client id come from Helm-mounted /config.json at runtime.
+# Local runs still use manage.py + .env.{env} dart-defines.
 
 set -e
 
 cd /app/am_app
 
-ENV_FILE="${ENV_FILE:-/app/.env.preprod}"
+# Non-host release flags only — do not set AM_DOMAIN / AM_*_BASE_URL / AM_ENV.
 DEFINES="--dart-define=AM_BOOT_TRACE=false --dart-define=AM_BOOT_RUM=true"
-
-if [ -f "$ENV_FILE" ]; then
-  echo "[docker_build_web] Loading $ENV_FILE"
-  while IFS= read -r line || [ -n "$line" ]; do
-    case "$line" in
-      ''|\#*) continue ;;
-    esac
-    key="${line%%=*}"
-    val="${line#*=}"
-    case "$key" in
-      AM_*)
-        if [ "$key" != "AM_BOOT_TRACE" ]; then
-          DEFINES="$DEFINES --dart-define=${key}=${val}"
-        fi
-        ;;
-    esac
-  done < "$ENV_FILE"
-else
-  echo "[docker_build_web] WARN: $ENV_FILE not found, using minimal defines"
-  DEFINES="$DEFINES --dart-define=AM_ENV=preprod"
-fi
 
 echo "[docker_build_web] flutter build web --release --no-wasm-dry-run --no-web-resources-cdn $DEFINES"
 
