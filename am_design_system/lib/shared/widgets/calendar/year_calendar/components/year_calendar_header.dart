@@ -39,52 +39,54 @@ class YearCalendarHeader extends StatelessWidget {
   Widget _buildMobileHeader(BuildContext context, Map<String, dynamic> yearStats) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      // Year navigation
+      // Year navigation & Color Mode Selector
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _buildYearNavigation(context),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (onColorModeChanged != null && currentColorMode != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ColorModeSelector(
-                    currentMode: currentColorMode!,
-                    onModeChanged: onColorModeChanged!,
-                    compact: true,
-                  ),
-                ),
-              _buildCompactLegend(context),
-            ],
-          ),
+          if (onColorModeChanged != null && currentColorMode != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: ColorModeSelector(
+                currentMode: currentColorMode!,
+                onModeChanged: onColorModeChanged!,
+                compact: true,
+              ),
+            ),
         ],
       ),
+      const SizedBox(height: 8),
+      // Full Legend on its own row
+      Center(
+        child: _buildLegend(context),
+      ),
       const SizedBox(height: 12),
-      // Year summary stats - scrollable
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _buildSummaryCard(context, 'Trades', '${yearStats['totalTrades']}', Icons.swap_horiz, Colors.blue),
-            const SizedBox(width: 8),
-            _buildSummaryCard(
-              context,
-              'Win Rate',
-              '${yearStats['winRate'].toStringAsFixed(1)}%',
-              Icons.trending_up,
-              yearStats['winRate'] >= 50 ? Colors.green : Colors.orange,
-            ),
-            const SizedBox(width: 8),
-            _buildSummaryCard(
-              context,
-              'P&L',
-              '₹${yearStats['totalPnL'] >= 0 ? '+' : ''}${yearStats['totalPnL'].toStringAsFixed(0)}',
-              yearStats['totalPnL'] >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-              yearStats['totalPnL'] >= 0 ? Colors.green : Colors.red,
-            ),
-          ],
+      // Year summary stats - scrollable and centered
+      Center(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildSummaryCard(context, 'Trades', '${yearStats['totalTrades']}', Icons.swap_horiz, Colors.blue),
+              const SizedBox(width: 8),
+              _buildSummaryCard(
+                context,
+                'Win Rate',
+                '${yearStats['winRate'].toStringAsFixed(1)}%',
+                Icons.trending_up,
+                yearStats['winRate'] >= 50 ? Colors.green : Colors.orange,
+              ),
+              const SizedBox(width: 8),
+              _buildSummaryCard(
+                context,
+                'P&L',
+                '₹${yearStats['totalPnL'] >= 0 ? '+' : ''}${yearStats['totalPnL'].toStringAsFixed(0)}',
+                yearStats['totalPnL'] >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                yearStats['totalPnL'] >= 0 ? Colors.green : Colors.red,
+              ),
+            ],
+          ),
         ),
       ),
     ],
@@ -172,49 +174,59 @@ class YearCalendarHeader extends StatelessWidget {
     ],
   );
 
-  /// Build year navigation controls
-  Widget _buildYearNavigation(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      IconButton(
-        icon: const Icon(Icons.chevron_left),
-        onPressed: onYearChanged != null ? () => onYearChanged!(year - 1) : null,
-        tooltip: 'Previous Year',
-        iconSize: 20,
+  Widget _buildYearNavigation(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(left: 32.0, top: 16.0, bottom: 8.0),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.4), width: 1.5),
+        borderRadius: BorderRadius.circular(8),
       ),
-      const SizedBox(width: 8),
-      Text('$year', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
-      const SizedBox(width: 8),
-      IconButton(
-        icon: const Icon(Icons.chevron_right),
-        onPressed: onYearChanged != null ? () => onYearChanged!(year + 1) : null,
-        tooltip: 'Next Year',
-        iconSize: 20,
+      child: PopupMenuButton<int>(
+        initialValue: year,
+        offset: const Offset(0, 40),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 8,
+        constraints: const BoxConstraints(maxHeight: 300),
+        onSelected: (int newValue) {
+          if (onYearChanged != null) {
+            onYearChanged!(newValue);
+          }
+        },
+        itemBuilder: (BuildContext context) {
+          return List.generate(15, (index) => DateTime.now().year - index)
+              .map((int value) {
+            return PopupMenuItem<int>(
+              value: value,
+              child: Text(
+                '$value',
+                style: TextStyle(
+                  fontWeight: value == year ? FontWeight.bold : FontWeight.normal,
+                  color: value == year ? Theme.of(context).colorScheme.primary : null,
+                ),
+              ),
+            );
+          }).toList();
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$year',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.keyboard_arrow_down, color: Theme.of(context).colorScheme.primary),
+          ],
+        ),
       ),
-    ],
-  );
-
-  /// Build compact legend for mobile
-  Widget _buildCompactLegend(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      _buildLegendDot(Colors.green),
-      const SizedBox(width: 4),
-      _buildLegendDot(Colors.red),
-      const SizedBox(width: 4),
-      _buildLegendDot(Colors.grey),
-    ],
-  );
-
-  Widget _buildLegendDot(Color color) => Container(
-    width: 8,
-    height: 8,
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.3),
-      border: Border.all(color: color),
-      shape: BoxShape.circle,
     ),
   );
+
 
   /// Build summary card
   Widget _buildSummaryCard(BuildContext context, String label, String value, IconData icon, Color color) => Container(

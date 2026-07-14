@@ -195,32 +195,6 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
 
     return Column(
       children: [
-        // Header with back and refresh buttons
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              TextButton.icon(
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Back to Portfolio'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Refresh Data',
-                onPressed: () {
-                  cubit.refresh( portfolioId: widget.portfolioId);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Refreshing calendar data...'), duration: Duration(seconds: 2)),
-                  );
-                },
-              ),
-            ],
-          ),
-        ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.2, end: 0),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(12),

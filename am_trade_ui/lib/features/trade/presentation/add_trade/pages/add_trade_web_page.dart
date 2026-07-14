@@ -72,7 +72,10 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
     }
 
     // CRITICAL: Set portfolioId and userId from widget/auth since they're not included in the form
-    final tradeToSave = tradeDetails.copyWith(portfolioId: widget.portfolioId, );
+    final tradeToSave = tradeDetails.copyWith(
+      portfolioId: widget.portfolioId,
+      userId: userId,
+    );
 
     AppLogger.debug('📋 Trade Details (with portfolioId & userId): ${tradeToSave.toString()}', tag: 'AddTradeWebPage');
     AppLogger.info('🚀 Calling TradeControllerCubit.addNewTrade() with userId: $userId', tag: 'AddTradeWebPage');

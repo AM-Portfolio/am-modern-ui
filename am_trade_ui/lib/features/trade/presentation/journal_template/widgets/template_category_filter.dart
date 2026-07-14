@@ -6,11 +6,13 @@ class TemplateCategoryFilter extends StatefulWidget {
   const TemplateCategoryFilter({
     required this.selectedCategory,
     required this.onCategorySelected,
+    this.isHorizontal = false,
     super.key,
   });
 
   final JournalTemplateCategory? selectedCategory;
   final Function(JournalTemplateCategory?) onCategorySelected;
+  final bool isHorizontal;
 
   @override
   State<TemplateCategoryFilter> createState() => _TemplateCategoryFilterState();
@@ -30,6 +32,46 @@ class _TemplateCategoryFilterState extends State<TemplateCategoryFilter> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isHorizontal) {
+      return Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+          border: Border(
+            bottom: BorderSide(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+            ),
+          ),
+        ),
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          children: [
+            _buildHorizontalCategoryItem(
+              context,
+              label: 'All',
+              icon: Icons.apps,
+              isSelected: widget.selectedCategory == null,
+              onTap: () => widget.onCategorySelected(null),
+            ),
+            const SizedBox(width: 8),
+            ...JournalTemplateCategory.values.map((category) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: _buildHorizontalCategoryItem(
+                  context,
+                  label: category.displayName,
+                  icon: _categoryIcons[category] ?? Icons.folder_outlined,
+                  isSelected: widget.selectedCategory == category,
+                  onTap: () => widget.onCategorySelected(category),
+                ),
+              );
+            }),
+          ],
+        ),
+      );
+    }
+
     return Container(
       width: 280,
       decoration: BoxDecoration(
@@ -79,6 +121,34 @@ class _TemplateCategoryFilterState extends State<TemplateCategoryFilter> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildHorizontalCategoryItem(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return ActionChip(
+      avatar: Icon(
+        icon,
+        size: 16,
+        color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.primary,
+      ),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
+      side: BorderSide(
+        color: isSelected ? Colors.transparent : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+      ),
+      onPressed: onTap,
     );
   }
 

@@ -26,9 +26,6 @@ class TradeHoldingsDashboardMobilePage extends ConsumerStatefulWidget {
 
 class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldingsDashboardMobilePage> {
   MetricsFilterConfig _currentFilter = MetricsFilterConfig.empty();
-  final ScrollController _scrollController = ScrollController();
-  bool _showFilterFAB = false;
-  Timer? _hideTimer;
 
   @override
   void initState() {
@@ -39,54 +36,11 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
       if (!mounted) return;
       cubit.loadFilters();
     });
-
-    // Listen to scroll events
-    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    _hideTimer?.cancel();
     super.dispose();
-  }
-
-  void _onScroll() {
-    // Show FAB when scrolling
-    if (!_showFilterFAB) {
-      setState(() => _showFilterFAB = true);
-    }
-
-    // Cancel existing timer
-    _hideTimer?.cancel();
-
-    // Auto-hide after 5 seconds
-    _hideTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted) {
-        setState(() => _showFilterFAB = false);
-      }
-    });
-  }
-
-  void _showFilterBottomSheet() {
-    MobileFilterPanel.show(
-      context: context,
-      ref: ref,
-      initialConfig: _currentFilter,
-      onApplyFilter: (filter) {
-        setState(() => _currentFilter = filter);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Filters applied'), duration: Duration(seconds: 1)));
-      },
-      onReset: () {
-        setState(() => _currentFilter = MetricsFilterConfig.empty());
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Filters reset'), duration: Duration(seconds: 1)));
-      },
-    );
   }
 
   @override
@@ -102,64 +56,18 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
         // Apply filters to holdings
         final filteredHoldings = _applyFilters(holdingsViewModel.holdings, _currentFilter);
 
-        return Stack(
-          children: [
-            // Holdings List (full screen now) - wrapped in RefreshIndicator and NotificationListener
-            RefreshIndicator(
-              onRefresh: () async {
-                ref.invalidate(tradeHoldingsStreamProvider(widget.portfolioId));
-                // Optional small delay for better UX
-                await Future.delayed(const Duration(milliseconds: 500));
-              },
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  if (notification is ScrollUpdateNotification) {
-                    _onScroll();
-                  }
-                  return false;
-                },
-                child: TradeHoldingsTemplate(
-                  holdings: filteredHoldings,
-                  isLoading: false,
-                  isWebView: false,
-                  onHoldingSelected: (holding) => _navigateToHoldingDetails(context, holding),
-                ),
-              ),
-            ),
-            // Floating Filter Button (shows on scroll, auto-hides)
-            if (_showFilterFAB)
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: FloatingActionButton(
-                  onPressed: _showFilterBottomSheet,
-                  tooltip: 'Filters',
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(Icons.filter_list_rounded),
-                      // Badge for active filter count
-                      if (_getActiveFilterCount() > 0)
-                        Positioned(
-                          right: -4,
-                          top: -4,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                            child: Center(
-                              child: Text(
-                                _getActiveFilterCount().toString(),
-                                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(tradeHoldingsStreamProvider(widget.portfolioId));
+            // Optional small delay for better UX
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: TradeHoldingsTemplate(
+            holdings: filteredHoldings,
+            isLoading: false,
+            isWebView: false,
+            onHoldingSelected: (holding) => _navigateToHoldingDetails(context, holding),
+          ),
         );
       },
       loading: () => const TradeHoldingsTemplate(holdings: [], isLoading: true, isWebView: false),

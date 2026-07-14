@@ -499,7 +499,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         ),
         body: SwipeablePageView(
           controller: _swipeController,
-          showIndicator: !portfoliosAsyncValue.isLoading,
+          showIndicator: false,
           indicatorPosition: IndicatorPosition.bottom,
         ),
         sections: [

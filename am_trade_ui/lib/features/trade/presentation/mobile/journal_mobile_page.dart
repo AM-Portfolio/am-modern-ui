@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,14 +25,36 @@ class JournalMobilePage extends ConsumerStatefulWidget {
 }
 
 class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
+  bool _showFab = true;
+  Timer? _fabHideTimer;
+
   @override
   void initState() {
     super.initState();
+    _resetFabHideTimer();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cubit = await ref.read(journalCubitProvider.future);
       if (!mounted) return;
       cubit.loadJournalEntries();
     });
+  }
+
+  void _resetFabHideTimer() {
+    if (!_showFab) {
+      setState(() => _showFab = true);
+    }
+    _fabHideTimer?.cancel();
+    _fabHideTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted && _showFab) {
+        setState(() => _showFab = false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _fabHideTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -43,29 +66,56 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
       error: (error, stack) => Scaffold(body: Center(child: Text('Error: $error'))),
       data: (cubit) => BlocProvider.value(
         value: cubit,
-        child: Scaffold(
-          appBar: widget.embedded
-              ? null
-              : AppBar(title: const Text('Trade Journal')),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => Scaffold(
-                    appBar: AppBar(
-                      title: const Text('New Journal Entry'),
-                    ),
-                    body: JournalEntryForm(
-                      cubit: cubit,
-                      portfolioId: widget.portfolioId ?? '8a57024c-05c2-475b-a2c4-0545865efa4a',
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) => _resetFabHideTimer(),
+          onPointerMove: (_) => _resetFabHideTimer(),
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification is ScrollUpdateNotification) {
+                _resetFabHideTimer();
+              }
+              return false;
+            },
+            child: Scaffold(
+              appBar: widget.embedded
+                  ? null
+                  : AppBar(title: const Text('Trade Journal')),
+              floatingActionButton: AnimatedScale(
+                duration: const Duration(milliseconds: 400),
+                scale: _showFab ? 1.0 : 0.0,
+                curve: _showFab ? Curves.elasticOut : Curves.easeInBack,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: _showFab ? 1.0 : 0.0,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 96.0),
+                    child: FloatingActionButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => Scaffold(
+                              appBar: AppBar(
+                                title: const Text('New Journal Entry'),
+                              ),
+                              body: JournalEntryForm(
+                                cubit: cubit,
+                                portfolioId: widget.portfolioId ?? '',
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      elevation: 4,
+                      shape: const CircleBorder(),
+                      child: const Icon(Icons.add),
                     ),
                   ),
                 ),
-              );
-            },
-            child: const Icon(Icons.add),
-          ),
-          body: BlocBuilder<JournalCubit, JournalState>(
+              ),
+              body: BlocBuilder<JournalCubit, JournalState>(
             builder: (context, state) => state.when(
               initial: () => const SizedBox.shrink(),
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -116,7 +166,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
                                 ),
                                 body: JournalEntryForm(
                                   cubit: cubit,
-                                  portfolioId: widget.portfolioId ?? '8a57024c-05c2-475b-a2c4-0545865efa4a',
+                                  portfolioId: widget.portfolioId ?? '',
                                   entry: entry,
                                 ),
                               ),
@@ -173,6 +223,8 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
               },
             ),
           ),
+        ),
+      ),
         ),
       ),
     );
