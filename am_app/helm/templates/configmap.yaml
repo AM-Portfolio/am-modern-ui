@@ -6,6 +6,7 @@ data:
   config.json: |
     {
       "domain": {{ .Values.appConfig.domain | quote }},
+      "env": {{ .Values.environment | default "dev" | quote }},
       "google": {
         "webClientId": {{ .Values.appConfig.googleWebClientId | default "" | quote }}
       }
