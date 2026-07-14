@@ -19,6 +19,7 @@ class PortfolioScreen extends StatelessWidget {
     this.onToggleSidebar,
     this.onBack,
     this.addTradeBuilder,
+    this.onOpenDocIntel,
   });
 
   final String? initialPortfolioId;
@@ -30,6 +31,7 @@ class PortfolioScreen extends StatelessWidget {
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final VoidCallback? onOpenDocIntel;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +61,7 @@ class PortfolioScreen extends StatelessWidget {
           onToggleSidebar: onToggleSidebar,
           onBack: onBack,
           addTradeBuilder: addTradeBuilder,
+          onOpenDocIntel: onOpenDocIntel,
         );
       },
     );

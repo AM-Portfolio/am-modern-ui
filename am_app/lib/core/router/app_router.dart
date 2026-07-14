@@ -14,7 +14,6 @@ import 'auth_refresh_listenable.dart';
 import 'deferred_routes.dart';
 import 'launch_location.dart';
 import 'share_url_builder.dart';
-
 export 'launch_location.dart' show resolveLaunchLocation;
 
 GoRouter createAppRouter({
@@ -160,7 +159,11 @@ GoRouter createAppRouter({
             path: AppRoutes.dashboard,
             builder: (context, state) {
               final userId = _userId(context);
-              return dashboard.DashboardScreen(userId: userId);
+              return dashboard.DashboardScreen(
+                userId: userId,
+                onOpenDocIntel: () =>
+                    context.go(AppRoutes.docIntelPath('doc-processor')),
+              );
             },
           ),
           GoRoute(
@@ -183,6 +186,8 @@ GoRouter createAppRouter({
                           tab;
                   context.go(AppRoutes.portfolioPath(id, currentTab));
                 },
+                onOpenDocIntel: () =>
+                    context.go(AppRoutes.docIntelPath('doc-processor')),
               );
             },
           ),
@@ -199,6 +204,8 @@ GoRouter createAppRouter({
                   _patchPortfolioSession(context, id, name);
                   context.go(AppRoutes.portfolioPath(id, tab));
                 },
+                onOpenDocIntel: () =>
+                    context.go(AppRoutes.docIntelPath('doc-processor')),
               );
             },
           ),
@@ -294,30 +301,52 @@ GoRouter createAppRouter({
           ),
           GoRoute(
             path: AppRoutes.docIntel,
-            builder: (context, state) =>
-                buildDocIntelRoute(userId: _userId(context)),
+            redirect: (context, state) =>
+                AppRoutes.docIntelPath('doc-processor'),
+          ),
+          GoRoute(
+            path: '${AppRoutes.docIntel}/:tab',
+            builder: (context, state) {
+              final tab = state.pathParameters['tab'] ?? 'doc-processor';
+              final resolved =
+                  AppRoutes.isDocIntelTab(tab) ? tab : 'doc-processor';
+              return buildDocIntelRoute(
+                userId: _userId(context),
+                tab: resolved,
+                onTabChanged: (slug) =>
+                    context.go(AppRoutes.docIntelPath(slug)),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.profile,
             builder: (context, state) {
+              final highlightSubscription =
+                  state.uri.queryParameters['highlight'] == 'subscription';
               final authState = context.read<AuthCubit>().state;
               if (authState is Authenticated) {
                 return buildProfileRoute(
                   userId: authState.user.id,
                   email: authState.user.email,
                   displayName: authState.user.displayName,
+                  highlightSubscription: highlightSubscription,
                   onOpenPrivacyPolicy: () =>
                       context.go(AppRoutes.privacyPolicy),
                   onOpenTermsOfService: () =>
                       context.go(AppRoutes.termsOfService),
+                  onOpenSubscription: () =>
+                      context.go(AppRoutes.subscription),
                 );
               }
               return buildProfileRoute(
                 userId: _userId(context),
+                highlightSubscription: highlightSubscription,
                 onOpenPrivacyPolicy: () =>
                     context.go(AppRoutes.privacyPolicy),
                 onOpenTermsOfService: () =>
                     context.go(AppRoutes.termsOfService),
+                onOpenSubscription: () =>
+                    context.go(AppRoutes.subscription),
               );
             },
           ),
@@ -337,9 +366,13 @@ GoRouter createAppRouter({
           ),
           GoRoute(
             path: AppRoutes.subscription,
-            builder: (context, state) => BlocProvider<am_sub.SubscriptionCubit>.value(
+            builder: (context, state) =>
+                BlocProvider<am_sub.SubscriptionCubit>.value(
               value: GetIt.instance<am_sub.SubscriptionCubit>(),
-              child: const am_sub.SubscriptionPricingScreen(),
+              child: am_sub.SubscriptionPricingScreen(
+                onClose: () =>
+                    context.go(AppRoutes.profileHighlightSubscription()),
+              ),
             ),
           ),
         ],

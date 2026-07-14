@@ -37,34 +37,56 @@ class MonthCalendarCard extends StatelessWidget {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
 
     final service = colorService ?? CalendarColorService();
-    final backgroundColor = service.getMonthBackgroundColor(stats);
-    final borderColor = service.getMonthBorderColor(stats);
+    final tint = service.getMonthBackgroundColor(stats);
+    final hasActivity = (stats['totalTrades'] as int) > 0;
 
-    return Card(
-      elevation: 2,
-      shadowColor: Colors.black12,
-      color: backgroundColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(isMobile ? 8 : 12),
-        side: BorderSide(color: borderColor),
+    // Flat surface + light tint — avoid Card elevation (looks muddy/faded).
+    final surface = theme.colorScheme.surface;
+    final backgroundColor = hasActivity
+        ? Color.alphaBlend(tint, surface)
+        : surface;
+    final borderColor = hasActivity
+        ? service.getMonthBorderColor(stats)
+        : theme.colorScheme.outline.withValues(alpha: isDark ? 0.22 : 0.14);
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 0,
+        vertical: isMobile ? 2 : 0,
+      ),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(isMobile ? 12 : 12),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Padding(
-        padding: EdgeInsets.all(isMobile ? 8 : 12),
+        padding: EdgeInsets.fromLTRB(
+          isMobile ? 14 : 14,
+          isMobile ? 12 : 14,
+          isMobile ? 14 : 14,
+          isMobile ? 12 : 14,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Month header with stats
             MonthHeader(month: month, monthData: monthData, stats: stats),
-            SizedBox(height: isMobile ? 6 : 10),
-
-            // Weekday headers
-            if (showWeekdays) ...[_buildWeekdayHeaders(context), const SizedBox(height: 4)],
-
-            // Calendar grid
-            _buildMonthGrid(context, month, daysInMonth, firstWeekday, monthData),
+            SizedBox(height: isMobile ? 10 : 12),
+            if (showWeekdays) ...[
+              _buildWeekdayHeaders(context),
+              SizedBox(height: isMobile ? 6 : 6),
+            ],
+            _buildMonthGrid(
+              context,
+              month,
+              daysInMonth,
+              firstWeekday,
+              monthData,
+            ),
           ],
         ),
       ),
@@ -80,10 +102,13 @@ class MonthCalendarCard extends StatelessWidget {
               child: Text(
                 day,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: compactMode ? 9 : 10,
+                  fontSize: compactMode ? 10 : 11,
                   fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
-                  letterSpacing: 0.5,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.75),
+                  letterSpacing: 0.4,
                 ),
               ),
             ),
@@ -114,18 +139,21 @@ class MonthCalendarCard extends StatelessWidget {
               final dayNumber = cellIndex - (firstWeekday - 1) + 1;
 
               if (dayNumber < 1 || dayNumber > daysInMonth) {
-                return Expanded(child: SizedBox(height: compactMode ? 20 : 24));
+                return Expanded(child: SizedBox(height: compactMode ? 24 : 28));
               }
 
               final dayData = monthData?.getDayData(dayNumber);
               return Expanded(
-                child: CalendarDayCell(
-                  dayNumber: dayNumber,
-                  dayData: dayData,
-                  month: month,
-                  compactMode: compactMode,
-                  onTap: onDayTap,
-                  colorService: colorService,
+                child: Padding(
+                  padding: const EdgeInsets.all(1.5),
+                  child: CalendarDayCell(
+                    dayNumber: dayNumber,
+                    dayData: dayData,
+                    month: month,
+                    compactMode: compactMode,
+                    onTap: onDayTap,
+                    colorService: colorService,
+                  ),
                 ),
               );
             }),

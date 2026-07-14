@@ -12,6 +12,25 @@ class ShareUrlBuilder {
 
   static String market([String tab = 'all-indices']) => AppRoutes.marketPath(tab);
 
+  /// Tab slug from market URL (`/app/market/:tab`).
+  static String? marketTabFromLocation(String location) {
+    final segments = _pathSegments(location);
+    if (segments.length < 3 || segments[0] != 'app' || segments[1] != 'market') {
+      return null;
+    }
+    return segments[2];
+  }
+
+  /// Tab slug from doc-intel URL (`/app/doc-intel` or `/app/doc-intel/:tab`).
+  static String? docIntelTabFromLocation(String location) {
+    final segments = _pathSegments(location);
+    if (segments.length < 2 || segments[0] != 'app' || segments[1] != 'doc-intel') {
+      return null;
+    }
+    if (segments.length >= 3) return segments[2];
+    return 'doc-processor';
+  }
+
   /// Returns portfolio ID from a 3-segment portfolio or trade path, else null.
   static String? portfolioIdFromLocation(String location) {
     final segments = _pathSegments(location);

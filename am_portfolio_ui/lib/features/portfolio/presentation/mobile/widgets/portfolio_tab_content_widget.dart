@@ -30,6 +30,8 @@ class PortfolioTabContentWidget extends ConsumerWidget {
     WidgetRef ref,
   ) => TabBarView(
       controller: tabController,
+      // Local page swipe disabled — cross-section swipe is owned by AppShell.
+      physics: const NeverScrollableScrollPhysics(),
       children: [
         _OverviewTab(currentPortfolioId: currentPortfolioId, ),
         _HoldingsTab(currentPortfolioId: currentPortfolioId, ),

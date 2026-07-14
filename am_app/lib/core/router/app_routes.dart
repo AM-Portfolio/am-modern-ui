@@ -22,6 +22,15 @@ class AppRoutes {
   static const termsOfService = '/app/terms-of-service';
   static const subscription = '/app/subscription';
 
+  /// Profile deep-link that pulses the Subscription row in Account.
+  static String profileHighlightSubscription() =>
+      '$profile?highlight=subscription';
+
+  static const docIntelTabs = [
+    'doc-processor',
+    'email-extractor',
+  ];
+
   static const portfolioTabs = [
     'overview',
     'holdings',
@@ -40,6 +49,8 @@ class AppRoutes {
     'market-analysis',
     'report',
     'unified',
+    'metrics',
+    'templates',
   ];
 
   static const marketStaticSlugs = {
@@ -111,6 +122,11 @@ class AppRoutes {
 
   static String marketPath([String tab = 'all-indices']) => '/app/market/$tab';
 
+  static String docIntelPath([String tab = 'doc-processor']) =>
+      '$docIntel/$tab';
+
+  static bool isDocIntelTab(String slug) => docIntelTabs.contains(slug);
+
   /// Legacy 2-segment tab-only paths (redirected to 3-segment after portfolio load).
   static String portfolioLegacyTabPath(String tab) => '/app/portfolio/$tab';
 
@@ -120,11 +136,11 @@ class AppRoutes {
     'Dashboard': dashboard,
     'Portfolio': '/app/portfolio/overview',
     'Trade': tradeDiscovery,
-    'Market': '/app/market/all-indices',
+    'Market': '/app/market/dashboard',
     'AI Chat': aiChat,
     'Lab': lab,
     'Analysis': analysis,
-    'Doc Intel': docIntel,
+    'Doc Intel': '${AppRoutes.docIntel}/doc-processor',
     'Profile': profile,
     'Subscription': subscription,
   };
@@ -138,13 +154,14 @@ class AppRoutes {
     if (location.startsWith(aiChat)) return 'AI Chat';
     if (location.startsWith(lab)) return 'Lab';
     if (location.startsWith(analysis)) return 'Analysis';
-    if (location.startsWith(docIntel)) return 'Doc Intel';
+    // Doc Intel is opened from Dashboard / Portfolio — keep Dashboard highlighted.
+    if (location.startsWith(docIntel)) return 'Dashboard';
     if (location.startsWith(profile) ||
         location.startsWith(privacyPolicy) ||
-        location.startsWith(termsOfService)) {
+        location.startsWith(termsOfService) ||
+        location.startsWith(subscription)) {
       return 'Profile';
     }
-    if (location.startsWith(subscription)) return 'Subscription';
     return 'Dashboard';
   }
 

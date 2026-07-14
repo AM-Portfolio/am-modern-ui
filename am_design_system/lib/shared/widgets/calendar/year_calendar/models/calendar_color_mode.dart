@@ -18,6 +18,16 @@ extension CalendarColorModeExtension on CalendarColorMode {
     }
   }
 
+  /// Compact label for tight mobile headers.
+  String get shortDisplayName {
+    switch (this) {
+      case CalendarColorMode.winLoss:
+        return 'W/L';
+      case CalendarColorMode.profitIntensity:
+        return 'Intensity';
+    }
+  }
+
   String get description {
     switch (this) {
       case CalendarColorMode.winLoss:

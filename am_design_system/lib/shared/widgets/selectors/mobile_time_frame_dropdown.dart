@@ -10,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class MobileTimeFrameDropdown extends ConsumerWidget {
   const MobileTimeFrameDropdown({
     super.key,
-    this.width = 84,
+    this.width = 72,
     this.availableTimeFrames,
   });
 
@@ -34,17 +34,17 @@ class MobileTimeFrameDropdown extends ConsumerWidget {
         value: selected,
         height: 36,
         isExpanded: true,
-        fontSize: 13,
-        iconSize: 18,
+        fontSize: 12,
+        iconSize: 16,
         borderRadius: 10,
         menuMaxHeight: menuMaxHeightForThreeItems,
         primaryColor: AppColors.primary,
         backgroundColor:
             isDark ? Colors.white.withValues(alpha: 0.06) : null,
         borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
         items: options
-            .map((tf) => tf.toSimpleDropdownItem(text: tf.code, fontSize: 13))
+            .map((tf) => tf.toSimpleDropdownItem(text: tf.code, fontSize: 12))
             .toList(),
         onChanged: (tf) {
           if (tf != null) {

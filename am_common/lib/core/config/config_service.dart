@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:am_library/am_library.dart';
 import '../telemetry/boot_trace.dart';
@@ -17,6 +18,7 @@ class ConfigService {
   static String _googleClientId = '';
 
   /// Cluster: browser host (am-dev / am-preprod / am.asrax.in). Localhost → empty.
+  /// Native (Android/iOS): [Uri.base] is `file:///` — no host.
   static String _bootstrapDomain() {
     final host = Uri.base.host;
     if (host.isNotEmpty &&
@@ -28,7 +30,35 @@ class ConfigService {
     return '';
   }
 
-  static String get domain => _domain;
+  /// [Uri.origin] only exists for http/https (throws on `file:///`).
+  static String? _httpOrigin() {
+    final uri = Uri.base;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return null;
+    try {
+      final origin = uri.origin;
+      return origin.isNotEmpty ? origin : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Mobile/desktop have no browser origin. Domain must come from AM_DOMAIN
+  /// (dart-define / .env) — no hardcoded env hosts in the binary.
+  static String _nativeFallbackDomain() => _domainFromDefine;
+
+  static String _resolveApiHost() {
+    if (_domain.isNotEmpty) return _domain;
+    final boot = _bootstrapDomain();
+    if (boot.isNotEmpty) return boot;
+    if (_domainFromDefine.isNotEmpty) return _domainFromDefine;
+    if (!kIsWeb) return _nativeFallbackDomain();
+    return '';
+  }
+
+  static String get domain {
+    final host = _resolveApiHost();
+    return host.isNotEmpty ? host : _domain;
+  }
 
   /// Per-service URL override (localhost or full gateway path).
   static String? override(String key) => _services[key];
@@ -51,6 +81,14 @@ class ConfigService {
   }
 
   static Future<Map<String, dynamic>> _loadMergedConfig() async {
+    // Native apps cannot fetch /config*.json from file:/// — skip that path.
+    if (!kIsWeb && _httpOrigin() == null) {
+      return <String, dynamic>{
+        'domain': _nativeFallbackDomain(),
+        'services': <String, dynamic>{},
+      };
+    }
+
     final parallel = await Future.wait([
       _fetchJson('/config.template.json'),
       _fetchJson('/config.json'),
@@ -98,6 +136,9 @@ class ConfigService {
       _domain = _domainFromDefine;
     } else if (_domain.isEmpty) {
       _domain = _bootstrapDomain();
+    }
+    if (_domain.isEmpty && !kIsWeb) {
+      _domain = _nativeFallbackDomain();
     }
 
     final raw = json['services'] as Map<String, dynamic>? ??
@@ -188,11 +229,16 @@ class ConfigService {
   }
 
   static AppConfig _buildConfig() {
-    final host = _domain.isNotEmpty ? _domain : _bootstrapDomain();
-    final api = host.isNotEmpty ? 'https://$host' : Uri.base.origin;
+    final host = _resolveApiHost();
+    final api = host.isNotEmpty
+        ? 'https://$host'
+        : (_httpOrigin() ?? '');
     final wsScheme = api.startsWith('https') ? 'wss' : 'ws';
-    final wsHost = host.isNotEmpty ? host : Uri.base.host;
-    final ws = wsHost.isNotEmpty ? '$wsScheme://$wsHost' : api.replaceFirst(RegExp(r'^http'), 'ws');
+    final ws = host.isNotEmpty
+        ? '$wsScheme://$host'
+        : (api.isNotEmpty
+            ? api.replaceFirst(RegExp(r'^http'), 'ws')
+            : '');
 
     final authUrl = _services['auth'] ??
         _services['identity'] ??

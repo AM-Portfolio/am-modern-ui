@@ -5,6 +5,7 @@
   "scripts": {
     "manage": "python scripts/manage.py",
     "run:app": "npm run run:app:local",
+    "run:app:9000": "cd am_app && flutter run -d chrome --web-port=9000 --no-web-resources-cdn --web-launch-url=http://localhost:9000/login --dart-define=AM_ENV=local",
     "run:auth": "npm run run:auth:local",
     "run:trade": "npm run run:trade:local",
     "run:portfolio": "npm run run:portfolio:local",

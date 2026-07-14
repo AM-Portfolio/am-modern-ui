@@ -60,8 +60,10 @@ export 'package:am_design_system/shared/widgets/charts/chart_types.dart';
 
 // Navigation Widgets
 export 'features/navigation/widgets/vertical_scroll_navigator.dart';
+export 'features/navigation/widgets/horizontal_section_navigator.dart';
 export 'features/navigation/widgets/add_trade_fab.dart';
 export 'features/navigation/notifications.dart';
+export 'features/navigation/cross_section_nav_scope.dart';
 
 // ============================================================================
 // CORE TECHNICAL INFRASTRUCTURE (From am_library)

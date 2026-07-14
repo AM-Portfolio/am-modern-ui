@@ -1,20 +1,17 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../../providers/portfolio_providers.dart';
 import '../../internal/domain/entities/portfolio_list.dart';
-import 'widgets/portfolio_header_widget.dart';
 import 'widgets/portfolio_tab_content_widget.dart';
-import 'widgets/portfolio_logout_handler.dart';
-import 'package:am_common/am_common.dart';
 
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
 class PortfolioMobileScreen extends ConsumerStatefulWidget {
@@ -28,6 +25,7 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
     this.initialTab,
     this.onTabChanged,
     this.addTradeBuilder,
+    this.onOpenDocIntel,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -37,6 +35,7 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final VoidCallback? onOpenDocIntel;
 
   @override
   ConsumerState<PortfolioMobileScreen> createState() => _PortfolioMobileScreenState();
@@ -80,6 +79,7 @@ class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
               initialTab: widget.initialTab,
               onTabChanged: widget.onTabChanged,
               addTradeBuilder: widget.addTradeBuilder,
+              onOpenDocIntel: widget.onOpenDocIntel,
             ),
           ),
           loading: () =>
@@ -158,6 +158,7 @@ class PortfolioMobileView extends StatefulWidget {
     this.initialTab,
     this.onTabChanged,
     this.addTradeBuilder,
+    this.onOpenDocIntel,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -167,6 +168,7 @@ class PortfolioMobileView extends StatefulWidget {
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final VoidCallback? onOpenDocIntel;
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
@@ -190,6 +192,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         return 2;
       case 'baskets':
         return 3;
+      case 'add-trade':
+        return 3; // keep last real tab underneath add-trade overlay
       default:
         return 0;
     }
@@ -210,15 +214,21 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
   }
 
+  bool _isAddTradeSlug(String? slug) =>
+      slug?.toLowerCase() == 'add-trade';
+
   @override
   void initState() {
     super.initState();
     final initialIndex = _tabIndexFromSlug(widget.initialTab);
+    _isAddingTrade = _isAddTradeSlug(widget.initialTab);
     _tabController = TabController(length: 4, vsync: this, initialIndex: initialIndex);
     _tabController.addListener(() {
       if (mounted && !_tabController.indexIsChanging) {
         setState(() {});
-        widget.onTabChanged?.call(_tabSlugFromIndex(_tabController.index));
+        if (!_isAddingTrade) {
+          widget.onTabChanged?.call(_tabSlugFromIndex(_tabController.index));
+        }
       }
     });
     _currentPortfolioId = widget.selectedPortfolioId;
@@ -260,11 +270,30 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
 
     if (widget.initialTab != oldWidget.initialTab) {
-      final newIndex = _tabIndexFromSlug(widget.initialTab);
-      if (newIndex != _tabController.index) {
-        _tabController.animateTo(newIndex);
+      final addTrade = _isAddTradeSlug(widget.initialTab);
+      if (addTrade != _isAddingTrade) {
+        setState(() => _isAddingTrade = addTrade);
+      }
+      if (!addTrade) {
+        final newIndex = _tabIndexFromSlug(widget.initialTab);
+        if (newIndex != _tabController.index) {
+          _tabController.animateTo(newIndex);
+        }
       }
     }
+  }
+
+  void _openAddTrade() {
+    setState(() => _isAddingTrade = true);
+    widget.onTabChanged?.call('add-trade');
+  }
+
+  void _selectTab(int index) {
+    setState(() {
+      _tabController.index = index;
+      _isAddingTrade = false;
+    });
+    widget.onTabChanged?.call(_tabSlugFromIndex(index));
   }
 
   @override
@@ -301,7 +330,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: GestureDetector(
-          onTap: () => setState(() => _isAddingTrade = true),
+          onTap: _openAddTrade,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
@@ -373,72 +402,54 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         module: ModuleType.portfolio,
         title: currentName,
         showModuleBottomNavigation: false,
+        showAppBarOnMobile: false,
+        showMobileMenuButton: false,
         autoHideMobileTabsOnScroll: true,
         onBackToGlobal: widget.onBack,
-        onMobileMenuTap: () => _showMenuBottomSheet(context),
-        headerActions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: GlobalTimeFrameBar(
-              variant: GlobalTimeFrameVariant.dropdown,
-            ),
-          ),
-        ],
+        // Pills sit above this sticky row; on scroll they collapse and this
+        // row slides up to the top, then back down when pills reappear.
+        mobileStickyHeader: _buildStickyControlsRow(context, currentName),
         items: [
           SecondarySidebarItem(
             title: 'Overview',
             icon: Icons.dashboard_outlined,
             isSelected: _tabController.index == 0 && !_isAddingTrade,
-            onTap: () => setState(() {
-              _tabController.index = 0;
-              _isAddingTrade = false;
-            }),
+            onTap: () => _selectTab(0),
           ),
           SecondarySidebarItem(
             title: 'Holdings',
             icon: Icons.wallet,
             isSelected: _tabController.index == 1 && !_isAddingTrade,
-            onTap: () => setState(() {
-              _tabController.index = 1;
-              _isAddingTrade = false;
-            }),
+            onTap: () => _selectTab(1),
           ),
           SecondarySidebarItem(
             title: 'Heatmap',
             icon: Icons.grid_view,
             isSelected: _tabController.index == 2 && !_isAddingTrade,
-            onTap: () => setState(() {
-              _tabController.index = 2;
-              _isAddingTrade = false;
-            }),
+            onTap: () => _selectTab(2),
           ),
           SecondarySidebarItem(
             title: 'Baskets',
             icon: Icons.shopping_basket_outlined,
             isSelected: _tabController.index == 3 && !_isAddingTrade,
-            onTap: () => setState(() {
-              _tabController.index = 3;
-              _isAddingTrade = false;
-            }),
+            onTap: () => _selectTab(3),
           ),
           SecondarySidebarItem(
             title: 'Add Trade',
             icon: Icons.add,
             isSelected: _isAddingTrade,
-            onTap: () => setState(() {
-              _isAddingTrade = true;
-            }),
+            onTap: _openAddTrade,
           ),
         ],
-        body: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
+        body: (_isAddingTrade &&
+                widget.addTradeBuilder != null &&
+                _currentPortfolioId != null)
             ? widget.addTradeBuilder!(
                 context,
                 _currentPortfolioId!,
                 currentName,
                 () {
-                  setState(() {
-                    _isAddingTrade = false;
-                  });
+                  _selectTab(_tabController.index);
                 },
               )
             : NotificationListener<ScrollNotification>(
@@ -456,7 +467,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                       tabController: _tabController,
                       currentPortfolioId: _currentPortfolioId!,
                     ),
-                    if (widget.addTradeBuilder != null && _tabController.index == 0)
+                    if (widget.addTradeBuilder != null &&
+                        _tabController.index == 0)
                       Positioned(
                         bottom: 24,
                         right: 16,
@@ -477,112 +489,127 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     );
   }
 
-  void _showMenuBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'Portfolio Menu',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 24),
+  /// Portfolio switcher + Doc Intel CTA + timeframe (sticky strip).
+  /// Horizontal padding matches overview content (`EdgeInsets.all(16)`).
+  Widget _buildStickyControlsRow(BuildContext context, String currentName) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = isDark ? Colors.white : const Color(0xFF0B1C30);
+    final chipBg = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFEDE9FE);
+    final chipBorder = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : const Color(0xFFDDD6FE);
 
-            // Portfolio List Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'SWITCH PORTFOLIO',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-              ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+      child: Row(
+        children: [
+          Flexible(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 128),
+              child: _buildPortfolioSwitcher(context, currentName),
             ),
-            const SizedBox(height: 8),
-            if (widget.portfolios != null)
-              ...[
-                const PortfolioItem(
-                  portfolioId: 'all',
-                  portfolioName: 'All Portfolios',
-                ),
-                ...widget.portfolios!
-              ].map(
-                (p) => ListTile(
-                  leading: Icon(
-                    Icons.account_balance_wallet,
-                    color: p.portfolioId == _currentPortfolioId
-                        ? Theme.of(context).primaryColor
-                        : Colors.grey,
-                  ),
-                  title: Text(
-                    p.portfolioName,
-                    style: TextStyle(
-                      fontWeight: p.portfolioId == _currentPortfolioId
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: p.portfolioId == _currentPortfolioId
-                          ? Theme.of(context).primaryColor
-                          : null,
+          ),
+          const Spacer(),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.onOpenDocIntel != null) ...[
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: widget.onOpenDocIntel,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      height: 36,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: chipBg,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: chipBorder),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.psychology_outlined,
+                            size: 17,
+                            color: Color(0xFF00D2D3),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Add Portfolio',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: onSurface,
+                              height: 1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  trailing: p.portfolioId == _currentPortfolioId
-                      ? Icon(Icons.check, color: Theme.of(context).primaryColor)
-                      : null,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _onPortfolioChanged(p.portfolioId, p.portfolioName);
-                  },
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                  dense: true,
                 ),
+                const SizedBox(width: 8),
+              ],
+              const GlobalTimeFrameBar(
+                variant: GlobalTimeFrameVariant.dropdown,
               ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-            const Divider(height: 32),
+  /// Transparent pill dropdown matching [MobileTimeFrameDropdown].
+  Widget _buildPortfolioSwitcher(BuildContext context, String currentName) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final portfolios = widget.portfolios ?? const <PortfolioItem>[];
+    final selectedId = _currentPortfolioId ?? 'all';
 
-            // Navigation Actions
-            ListTile(
-              leading: const Icon(Icons.arrow_back),
-              title: const Text('Back to Dashboard'),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-              onTap: () {
-                Navigator.pop(context);
-                if (widget.onBack != null) {
-                  widget.onBack!();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Use system back to return')),
-                  );
-                }
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Logout', style: TextStyle(color: Colors.red)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-              onTap: () {
-                Navigator.pop(context);
-                PortfolioLogoutHandler.showLogoutDialog(context);
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
+    final items = <DropdownMenuItem<String>>[
+      'all'.toSimpleDropdownItem(text: 'All Portfolios', fontSize: 12),
+      ...portfolios.map(
+        (p) => p.portfolioId.toSimpleDropdownItem(
+          text: p.portfolioName,
+          fontSize: 12,
         ),
       ),
+    ];
+
+    final hasSelection = items.any((item) => item.value == selectedId);
+
+    return CustomDropdown<String>(
+      value: hasSelection ? selectedId : 'all',
+      height: 36,
+      isExpanded: true,
+      fontSize: 12,
+      iconSize: 16,
+      borderRadius: 10,
+      menuMaxHeight: 148,
+      primaryColor: AppColors.primary,
+      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.06) : null,
+      borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      items: items,
+      onChanged: (id) {
+        if (id == null) return;
+        String name = currentName;
+        if (id == 'all') {
+          name = 'All Portfolios';
+        } else {
+          for (final p in portfolios) {
+            if (p.portfolioId == id) {
+              name = p.portfolioName;
+              break;
+            }
+          }
+        }
+        _onPortfolioChanged(id, name);
+      },
     );
   }
 }
