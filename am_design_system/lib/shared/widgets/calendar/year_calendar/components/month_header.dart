@@ -19,46 +19,53 @@ class MonthHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Stack(
+          alignment: Alignment.center,
           children: [
-            Text(
-              monthData?.monthName ?? _getMonthName(month),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 16),
-              overflow: TextOverflow.ellipsis,
+            // Centered Month Name
+            Center(
+              child: Text(
+                monthData?.monthName ?? _getMonthName(month),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 16),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            Visibility(
-              visible: hasStats,
-              maintainSize: true,
-              maintainAnimation: true,
-              maintainState: true,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red).withOpacity(0.4)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      stats['totalPnL'] >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                      size: 12,
-                      color: stats['totalPnL'] >= 0 ? Colors.green : Colors.red,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '₹${stats['totalPnL'] >= 0 ? '+' : ''}${stats['totalPnL'].toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: stats['totalPnL'] >= 0 
-                            ? (isDark ? Colors.greenAccent : Colors.green.shade800) 
-                            : (isDark ? Colors.redAccent : Colors.red.shade800),
+            // Right-aligned stats badge
+            Align(
+              alignment: Alignment.centerRight,
+              child: Visibility(
+                visible: hasStats,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red).withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        stats['totalPnL'] >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                        size: 12,
+                        color: stats['totalPnL'] >= 0 ? Colors.green : Colors.red,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        '₹${stats['totalPnL'] >= 0 ? '+' : ''}${stats['totalPnL'].toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: stats['totalPnL'] >= 0 
+                              ? (isDark ? Colors.greenAccent : Colors.green.shade800) 
+                              : (isDark ? Colors.redAccent : Colors.red.shade800),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

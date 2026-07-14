@@ -39,27 +39,26 @@ class YearCalendarHeader extends StatelessWidget {
   Widget _buildMobileHeader(BuildContext context, Map<String, dynamic> yearStats) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      // Year navigation
+      // Year navigation & Color Mode Selector
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _buildYearNavigation(context),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (onColorModeChanged != null && currentColorMode != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ColorModeSelector(
-                    currentMode: currentColorMode!,
-                    onModeChanged: onColorModeChanged!,
-                    compact: true,
-                  ),
-                ),
-              _buildCompactLegend(context),
-            ],
-          ),
+          if (onColorModeChanged != null && currentColorMode != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: ColorModeSelector(
+                currentMode: currentColorMode!,
+                onModeChanged: onColorModeChanged!,
+                compact: true,
+              ),
+            ),
         ],
+      ),
+      const SizedBox(height: 8),
+      // Full Legend on its own row
+      Center(
+        child: _buildLegend(context),
       ),
       const SizedBox(height: 12),
       // Year summary stats - scrollable and centered
@@ -228,27 +227,6 @@ class YearCalendarHeader extends StatelessWidget {
     ),
   );
 
-  /// Build compact legend for mobile
-  Widget _buildCompactLegend(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      _buildLegendDot(Colors.green),
-      const SizedBox(width: 4),
-      _buildLegendDot(Colors.red),
-      const SizedBox(width: 4),
-      _buildLegendDot(Colors.grey),
-    ],
-  );
-
-  Widget _buildLegendDot(Color color) => Container(
-    width: 8,
-    height: 8,
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.3),
-      border: Border.all(color: color),
-      shape: BoxShape.circle,
-    ),
-  );
 
   /// Build summary card
   Widget _buildSummaryCard(BuildContext context, String label, String value, IconData icon, Color color) => Container(
