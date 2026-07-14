@@ -313,24 +313,32 @@ GoRouter createAppRouter({
           GoRoute(
             path: AppRoutes.profile,
             builder: (context, state) {
+              final highlightSubscription =
+                  state.uri.queryParameters['highlight'] == 'subscription';
               final authState = context.read<AuthCubit>().state;
               if (authState is Authenticated) {
                 return buildProfileRoute(
                   userId: authState.user.id,
                   email: authState.user.email,
                   displayName: authState.user.displayName,
+                  highlightSubscription: highlightSubscription,
                   onOpenPrivacyPolicy: () =>
                       context.go(AppRoutes.privacyPolicy),
                   onOpenTermsOfService: () =>
                       context.go(AppRoutes.termsOfService),
+                  onOpenSubscription: () =>
+                      context.go(AppRoutes.subscription),
                 );
               }
               return buildProfileRoute(
                 userId: _userId(context),
+                highlightSubscription: highlightSubscription,
                 onOpenPrivacyPolicy: () =>
                     context.go(AppRoutes.privacyPolicy),
                 onOpenTermsOfService: () =>
                     context.go(AppRoutes.termsOfService),
+                onOpenSubscription: () =>
+                    context.go(AppRoutes.subscription),
               );
             },
           ),
@@ -353,7 +361,10 @@ GoRouter createAppRouter({
             builder: (context, state) =>
                 BlocProvider<am_sub.SubscriptionCubit>.value(
               value: GetIt.instance<am_sub.SubscriptionCubit>(),
-              child: const am_sub.SubscriptionPricingScreen(),
+              child: am_sub.SubscriptionPricingScreen(
+                onClose: () =>
+                    context.go(AppRoutes.profileHighlightSubscription()),
+              ),
             ),
           ),
         ],

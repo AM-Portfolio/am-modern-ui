@@ -274,6 +274,8 @@ Widget buildProfileRoute({
   String? displayName,
   VoidCallback? onOpenPrivacyPolicy,
   VoidCallback? onOpenTermsOfService,
+  VoidCallback? onOpenSubscription,
+  bool highlightSubscription = false,
 }) {
   return DeferredModuleLoader(
     load: _loadUser,
@@ -285,6 +287,8 @@ Widget buildProfileRoute({
       displayName: displayName,
       onOpenPrivacyPolicy: onOpenPrivacyPolicy,
       onOpenTermsOfService: onOpenTermsOfService,
+      onOpenSubscription: onOpenSubscription,
+      highlightSubscription: highlightSubscription,
     ),
   );
 }

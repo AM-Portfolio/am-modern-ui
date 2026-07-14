@@ -63,7 +63,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       _seedPortfolioSelectionFromSession();
     });
     
-    _resetBottomNavHideTimer();
+    _showBottomNavWithIdleHide();
   }
 
   @override
@@ -84,7 +84,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     }
   }
 
-  void _resetBottomNavHideTimer() {
+  void _showBottomNavWithIdleHide() {
     _bottomNavHideTimer?.cancel();
     _setBottomNavVisible(true);
     _bottomNavHideTimer = Timer(const Duration(seconds: 5), () {
@@ -92,11 +92,30 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     });
   }
 
+  /// Scroll down past threshold → hide; scroll up → show (+ idle auto-hide).
   bool _handleBottomNavScroll(ScrollNotification notification) {
     if (notification.metrics.axis != Axis.vertical) return false;
     if (notification is! ScrollUpdateNotification) return false;
-    // Any scroll activity resets the hide timer and shows the nav
-    _resetBottomNavHideTimer();
+
+    final delta = notification.scrollDelta ?? 0.0;
+    if (delta == 0) return false;
+
+    if (delta > 0) {
+      // Content moving up = finger scrolling down → hide bar.
+      _bottomNavScrollAccum += delta;
+      if (_bottomNavScrollAccum >= _bottomNavScrollThreshold) {
+        _bottomNavHideTimer?.cancel();
+        _setBottomNavVisible(false);
+        _bottomNavScrollAccum = 0;
+      }
+    } else {
+      // Scrolling up → reveal bar.
+      _bottomNavScrollAccum += delta;
+      if (_bottomNavScrollAccum.abs() >= _bottomNavScrollThreshold) {
+        _showBottomNavWithIdleHide();
+        _bottomNavScrollAccum = 0;
+      }
+    }
     return false;
   }
 
@@ -106,7 +125,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       // Reveal bottom nav whenever the route changes.
       if (!_wantBottomNav) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _resetBottomNavHideTimer();
+          if (mounted) _showBottomNavWithIdleHide();
         });
       }
       if (_history.contains(currentLocation)) {
@@ -117,31 +136,6 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       }
     }
   }
-
-  List<_MoreMenuItem> _moreMenuItemsFor({required bool isAdmin}) => [
-        if (isAdmin)
-          const _MoreMenuItem(
-              title: 'AI Chat',
-              icon: Icons.auto_awesome_rounded,
-              path: AppRoutes.aiChat),
-        if (isAdmin)
-          const _MoreMenuItem(
-              title: 'Analysis',
-              icon: Icons.analytics_outlined,
-              path: AppRoutes.analysis),
-        const _MoreMenuItem(
-            title: 'Doc Intel',
-            icon: Icons.psychology_outlined,
-            path: '/app/doc-intel/doc-processor'),
-        const _MoreMenuItem(
-            title: 'Subscription',
-            icon: Icons.subscriptions_rounded,
-            path: AppRoutes.subscription),
-        const _MoreMenuItem(
-            title: 'Profile',
-            icon: Icons.person_rounded,
-            path: AppRoutes.profile),
-      ];
 
   List<SidebarItem> _sidebarItemsFor({required bool isAdmin}) => [
         const SidebarItem(
@@ -159,8 +153,6 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
               title: 'Analysis', icon: Icons.analytics_outlined),
         const SidebarItem(
             title: 'Doc Intel', icon: Icons.psychology_outlined),
-        const SidebarItem(
-            title: 'Subscription', icon: Icons.subscriptions_rounded),
       ];
 
   Future<void> _seedPortfolioSelectionFromSession() async {
@@ -270,7 +262,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     final path = AppRoutes.pathForNavTitle(title);
     if (path == null) return;
 
-    _setBottomNavVisible(true);
+    _showBottomNavWithIdleHide();
     _applyStreamingTabCoordinator(title);
     context.go(path);
     common.SessionPersistenceService.instance.patch(
@@ -293,7 +285,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   }
 
   void _goSwipePath(String path, String userId) {
-    _setBottomNavVisible(true);
+    _showBottomNavWithIdleHide();
     final navTitle = AppRoutes.activeNavTitleForLocation(path);
     _applyStreamingTabCoordinator(navTitle);
     context.go(path);
@@ -357,11 +349,6 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
 
   String get _activeNavItem {
     final location = GoRouterState.of(context).matchedLocation;
-    if (location.startsWith(AppRoutes.profile) ||
-        location.startsWith(AppRoutes.privacyPolicy) ||
-        location.startsWith(AppRoutes.termsOfService)) {
-      return '';
-    }
     return AppRoutes.activeNavTitleForLocation(location);
   }
 
@@ -464,111 +451,141 @@ final userId =
                   }
                 },
                 child: Scaffold(
+                  // Body draws under the floating overlay nav — no reserved slot.
                   extendBody: !isDesktop,
-                  body: Row(
+                  body: Stack(
                     children: [
-                      if (isDesktop && authState is Authenticated)
-                        GlobalSidebar(
-                          activeNavItem: _activeNavItem,
-                          isDarkMode: isDark,
-                          userName: authState.user.displayName,
-                          userEmail: authState.user.email,
-                          userAvatarUrl: authState.user.photoUrl,
-                          moduleShareUrls: AppRoutes.navTitleToDefaultPath,
-                          onThemeToggle: () {
-                            try {
-                              context.read<ThemeCubit>().toggleTheme();
-                            } catch (e) {
-                              debugPrint('Theme toggle error: $e');
-                            }
-                          },
-                          onLogout: () => context.read<AuthCubit>().logout(),
-                          onProfileTap: () => context.go(AppRoutes.profile),
-                          onNavigate: (title) => _onGlobalNavigate(title, userId),
-                          items: _sidebarItemsFor(isAdmin: isAdmin),
-                        ),
-                      Expanded(
-                        child: Listener(
-                          behavior: HitTestBehavior.translucent,
-                          onPointerDown: (_) => _resetBottomNavHideTimer(),
-                          onPointerMove: (_) => _resetBottomNavHideTimer(),
-                          child: NotificationListener<ScrollNotification>(
-                            onNotification: isDesktop
-                                ? (_) => false
-                                : _handleBottomNavScroll,
-                            child: authState is Authenticated
-                                ? common.CrossSectionNavScope(
-                                    controller: common.CrossSectionNavController(
-                                      goNextModule: () =>
-                                          _onCrossSectionNext(userId),
-                                      goPreviousModule: () =>
-                                          _onCrossSectionPrevious(userId),
-                                    ),
-                                    child: common.PortfolioSelectionScope(
-                                      // Central swipe host: every shell child
-                                      // (Dashboard → … → Profile) inherits it.
-                                      child: isDesktop
-                                          ? widget.child
-                                          : CrossSectionSwipeHost(
-                                              onNext: () =>
-                                                  _onCrossSectionNext(userId),
-                                              onPrevious: () =>
-                                                  _onCrossSectionPrevious(
-                                                      userId),
-                                              child: widget.child,
-                                            ),
-                                    ),
-                                  )
-                                : widget.child,
+                      Row(
+                        children: [
+                          if (isDesktop && authState is Authenticated)
+                            GlobalSidebar(
+                              activeNavItem: _activeNavItem,
+                              isDarkMode: isDark,
+                              userName: authState.user.displayName,
+                              userEmail: authState.user.email,
+                              userAvatarUrl: authState.user.photoUrl,
+                              moduleShareUrls: AppRoutes.navTitleToDefaultPath,
+                              onThemeToggle: () {
+                                try {
+                                  context.read<ThemeCubit>().toggleTheme();
+                                } catch (e) {
+                                  debugPrint('Theme toggle error: $e');
+                                }
+                              },
+                              onLogout: () =>
+                                  context.read<AuthCubit>().logout(),
+                              onProfileTap: () =>
+                                  context.go(AppRoutes.profile),
+                              onNavigate: (title) =>
+                                  _onGlobalNavigate(title, userId),
+                              items: _sidebarItemsFor(isAdmin: isAdmin),
+                            ),
+                          Expanded(
+                            child: NotificationListener<ScrollNotification>(
+                              onNotification: isDesktop
+                                  ? (_) => false
+                                  : _handleBottomNavScroll,
+                              child: authState is Authenticated
+                                  ? common.CrossSectionNavScope(
+                                      controller:
+                                          common.CrossSectionNavController(
+                                        goNextModule: () =>
+                                            _onCrossSectionNext(userId),
+                                        goPreviousModule: () =>
+                                            _onCrossSectionPrevious(userId),
+                                      ),
+                                      child: common.PortfolioSelectionScope(
+                                        child: isDesktop
+                                            ? widget.child
+                                            : CrossSectionSwipeHost(
+                                                onNext: () =>
+                                                    _onCrossSectionNext(
+                                                        userId),
+                                                onPrevious: () =>
+                                                    _onCrossSectionPrevious(
+                                                        userId),
+                                                child: widget.child,
+                                              ),
+                                      ),
+                                    )
+                                  : widget.child,
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                  bottomNavigationBar: !isDesktop && authState is Authenticated
-                      ? ScaleTransition(
-                          scale: _bottomNavFactor,
-                          alignment: Alignment.bottomCenter,
-                          child: FadeTransition(
-                            opacity: _bottomNavFactor,
-                            child: GlobalBottomNavigation(
-                                activeNavItem: _activeNavItem,
-                                isDarkMode: isDark,
-                                userName: authState.user.displayName,
-                                onMenuTap: () => _showMoreMenu(
-                                  context,
-                                  userId,
-                                  isDark,
-                                  isAdmin,
+                      if (!isDesktop && authState is Authenticated)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: AnimatedBuilder(
+                            animation: _bottomNavController,
+                            builder: (context, child) {
+                              final visible =
+                                  _bottomNavController.value > 0.01;
+                              return IgnorePointer(
+                                ignoring: !visible,
+                                child: child,
+                              );
+                            },
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 1.15),
+                                end: Offset.zero,
+                              ).animate(_bottomNavFactor),
+                              child: FadeTransition(
+                                opacity: _bottomNavFactor,
+                                child: GlobalBottomNavigation(
+                                  activeNavItem: _activeNavItem,
+                                  isDarkMode: isDark,
+                                  userName: authState.user.displayName,
+                                  visibleCount: 4,
+                                  onNavigate: (title) =>
+                                      _onGlobalNavigate(title, userId),
+                                  items: [
+                                    const SidebarItem(
+                                      title: 'Dashboard',
+                                      icon: Icons.dashboard_rounded,
+                                    ),
+                                    const SidebarItem(
+                                      title: 'Portfolio',
+                                      icon: Icons
+                                          .account_balance_wallet_rounded,
+                                    ),
+                                    const SidebarItem(
+                                      title: 'Trade',
+                                      icon: Icons.swap_horiz_rounded,
+                                    ),
+                                    const SidebarItem(
+                                      title: 'Market',
+                                      icon: Icons.show_chart_rounded,
+                                    ),
+                                    const SidebarItem(
+                                      title: 'Doc Intel',
+                                      icon: Icons.psychology_outlined,
+                                    ),
+                                    const SidebarItem(
+                                      title: 'Profile',
+                                      icon: Icons.person_rounded,
+                                    ),
+                                    if (isAdmin) ...[
+                                      const SidebarItem(
+                                        title: 'AI Chat',
+                                        icon: Icons.auto_awesome_rounded,
+                                      ),
+                                      const SidebarItem(
+                                        title: 'Analysis',
+                                        icon: Icons.analytics_outlined,
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                                onNavigate: (title) =>
-                                    _onGlobalNavigate(title, userId),
-                                items: const [
-                                  SidebarItem(
-                                    title: 'Dashboard',
-                                    icon: Icons.dashboard_rounded,
-                                  ),
-                                  SidebarItem(
-                                    title: 'Portfolio',
-                                    icon: Icons.account_balance_wallet_rounded,
-                                  ),
-                                  SidebarItem(
-                                    title: 'Trade',
-                                    icon: Icons.swap_horiz_rounded,
-                                  ),
-                                  SidebarItem(
-                                    title: 'Market',
-                                    icon: Icons.show_chart_rounded,
-                                  ),
-                                  SidebarItem(
-                                    title: 'Menu',
-                                    icon: Icons.menu_rounded,
-                                  ),
-                                ],
                               ),
                             ),
-                          )
-                      : null,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               );
             },
@@ -614,201 +631,4 @@ final userId =
       ),
     );
   }
-
-  void _showMoreMenu(
-    BuildContext context,
-    String userId,
-    bool isDark,
-    bool isAdmin,
-  ) {
-    final moreMenuItems = _moreMenuItemsFor(isAdmin: isAdmin);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: false,
-      builder: (sheetContext) {
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1a1a2e) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(
-              top: BorderSide(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.black.withValues(alpha: 0.05),
-              ),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 20,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white24 : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  child: Row(
-                    children: [
-                      Text(
-                        'More',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : Colors.black87,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () => Navigator.pop(sheetContext),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.08)
-                                : Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            Icons.close_rounded,
-                            size: 18,
-                            color: isDark ? Colors.white54 : Colors.grey.shade600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      childAspectRatio: 1.15,
-                    ),
-                    itemCount: moreMenuItems.length,
-                    itemBuilder: (ctx, i) {
-                      final item = moreMenuItems[i];
-                      final isActive = _currentLocation.startsWith(item.path);
-                      final accentColor = _getMoreItemColor(item.title);
-
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.pop(sheetContext);
-                          context.go(item.path);
-                          common.SessionPersistenceService.instance.patch(
-                            userId,
-                            (s) => s.copyWith(globalNav: item.title),
-                          );
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? accentColor.withValues(alpha: isDark ? 0.15 : 0.08)
-                                : (isDark
-                                    ? Colors.white.withValues(alpha: 0.04)
-                                    : Colors.grey.shade50),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isActive
-                                  ? accentColor.withValues(alpha: 0.3)
-                                  : (isDark
-                                      ? Colors.white.withValues(alpha: 0.06)
-                                      : Colors.grey.shade200),
-                              width: isActive ? 1.5 : 1,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: accentColor.withValues(alpha: isDark ? 0.15 : 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  item.icon,
-                                  color: accentColor,
-                                  size: 22,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                item.title,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                                  color: isActive
-                                      ? accentColor
-                                      : (isDark ? Colors.white70 : Colors.grey.shade700),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Color _getMoreItemColor(String title) {
-    switch (title) {
-      case 'AI Chat':
-        return const Color(0xFF6C5DD3);
-      case 'Analysis':
-        return const Color(0xFF0984E3);
-      case 'Doc Intel':
-        return const Color(0xFF00D2D3);
-      case 'Subscription':
-        return const Color(0xFFFF9F43);
-      case 'Profile':
-        return const Color(0xFF8B7EE0);
-      default:
-        return const Color(0xFF6C5DD3);
-    }
-  }
-}
-
-class _MoreMenuItem {
-  const _MoreMenuItem({
-    required this.title,
-    required this.icon,
-    required this.path,
-  });
-
-  final String title;
-  final IconData icon;
-  final String path;
 }

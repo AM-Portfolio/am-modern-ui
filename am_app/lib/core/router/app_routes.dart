@@ -22,6 +22,10 @@ class AppRoutes {
   static const termsOfService = '/app/terms-of-service';
   static const subscription = '/app/subscription';
 
+  /// Profile deep-link that pulses the Subscription row in Account.
+  static String profileHighlightSubscription() =>
+      '$profile?highlight=subscription';
+
   static const docIntelTabs = [
     'doc-processor',
     'email-extractor',
@@ -132,7 +136,7 @@ class AppRoutes {
     'Dashboard': dashboard,
     'Portfolio': '/app/portfolio/overview',
     'Trade': tradeDiscovery,
-    'Market': '/app/market/all-indices',
+    'Market': '/app/market/dashboard',
     'AI Chat': aiChat,
     'Lab': lab,
     'Analysis': analysis,
@@ -153,10 +157,10 @@ class AppRoutes {
     if (location.startsWith(docIntel)) return 'Doc Intel';
     if (location.startsWith(profile) ||
         location.startsWith(privacyPolicy) ||
-        location.startsWith(termsOfService)) {
+        location.startsWith(termsOfService) ||
+        location.startsWith(subscription)) {
       return 'Profile';
     }
-    if (location.startsWith(subscription)) return 'Subscription';
     return 'Dashboard';
   }
 

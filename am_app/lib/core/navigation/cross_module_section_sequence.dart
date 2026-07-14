@@ -140,10 +140,8 @@ class CrossModuleSectionSequence {
       if (i >= 0) return i;
       return steps.indexWhere((s) => s.startsWith(AppRoutes.docIntel));
     }
-    if (normalized.startsWith(AppRoutes.subscription)) {
-      return steps.indexWhere((s) => s == AppRoutes.subscription);
-    }
-    if (normalized.startsWith(AppRoutes.profile) ||
+    if (normalized.startsWith(AppRoutes.subscription) ||
+        normalized.startsWith(AppRoutes.profile) ||
         normalized.startsWith(AppRoutes.privacyPolicy) ||
         normalized.startsWith(AppRoutes.termsOfService)) {
       return steps.indexWhere((s) => s == AppRoutes.profile);
@@ -158,7 +156,6 @@ class CrossModuleSectionSequence {
         for (final tab in tradeSwipeTabs) tradeStepPath(portfolioId, tab),
         for (final tab in marketSwipeTabs) marketStepPath(tab),
         for (final tab in docIntelSwipeTabs) docIntelStepPath(tab),
-        AppRoutes.subscription,
         AppRoutes.profile,
       ];
 
