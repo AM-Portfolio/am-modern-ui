@@ -32,12 +32,6 @@ class CrossModuleSectionSequence {
     'market-analysis',
   ];
 
-  /// Doc Intel pages in swipe order.
-  static const docIntelSwipeTabs = [
-    'doc-processor',
-    'email-extractor',
-  ];
-
   /// Build a full deep link for a portfolio tab, falling back to legacy 2-segment.
   static String portfolioStepPath(String? portfolioId, String tab) {
     if (portfolioId != null && portfolioId.isNotEmpty) {
@@ -57,8 +51,6 @@ class CrossModuleSectionSequence {
   }
 
   static String marketStepPath(String tab) => AppRoutes.marketPath(tab);
-
-  static String docIntelStepPath(String tab) => AppRoutes.docIntelPath(tab);
 
   /// Next path from [location]. Wraps Profile → Dashboard.
   static String? nextPath(
@@ -130,15 +122,9 @@ class CrossModuleSectionSequence {
       if (i >= 0) return i;
       return steps.indexWhere((s) => s.startsWith(AppRoutes.market));
     }
+    // Doc Intel is reached from Dashboard/Portfolio shortcuts — treat as Dashboard.
     if (normalized.startsWith(AppRoutes.docIntel)) {
-      final tab =
-          ShareUrlBuilder.docIntelTabFromLocation(location) ?? 'doc-processor';
-      final target = docIntelStepPath(
-        docIntelSwipeTabs.contains(tab) ? tab : 'doc-processor',
-      );
-      final i = steps.indexWhere((s) => _normalize(s) == _normalize(target));
-      if (i >= 0) return i;
-      return steps.indexWhere((s) => s.startsWith(AppRoutes.docIntel));
+      return steps.indexWhere((s) => s == AppRoutes.dashboard);
     }
     if (normalized.startsWith(AppRoutes.subscription) ||
         normalized.startsWith(AppRoutes.profile) ||
@@ -155,7 +141,6 @@ class CrossModuleSectionSequence {
           portfolioStepPath(portfolioId, tab),
         for (final tab in tradeSwipeTabs) tradeStepPath(portfolioId, tab),
         for (final tab in marketSwipeTabs) marketStepPath(tab),
-        for (final tab in docIntelSwipeTabs) docIntelStepPath(tab),
         AppRoutes.profile,
       ];
 

@@ -119,6 +119,7 @@ Widget buildPortfolioRoute({
   required void Function(String slug) onTabChanged,
   required void Function(String id, String name) onPortfolioChanged,
   PortfolioAddTradeBuilder? addTradeBuilder,
+  VoidCallback? onOpenDocIntel,
 }) {
   final tradeBuilder = addTradeBuilder ?? _defaultPortfolioAddTradeBuilder;
   return DeferredModuleLoader(
@@ -134,6 +135,7 @@ Widget buildPortfolioRoute({
         onTabChanged: onTabChanged,
         onPortfolioChanged: onPortfolioChanged,
         addTradeBuilder: tradeBuilder,
+        onOpenDocIntel: onOpenDocIntel,
       ),
     ),
   );

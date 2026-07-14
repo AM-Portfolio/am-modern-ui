@@ -154,7 +154,8 @@ class AppRoutes {
     if (location.startsWith(aiChat)) return 'AI Chat';
     if (location.startsWith(lab)) return 'Lab';
     if (location.startsWith(analysis)) return 'Analysis';
-    if (location.startsWith(docIntel)) return 'Doc Intel';
+    // Doc Intel is opened from Dashboard / Portfolio — keep Dashboard highlighted.
+    if (location.startsWith(docIntel)) return 'Dashboard';
     if (location.startsWith(profile) ||
         location.startsWith(privacyPolicy) ||
         location.startsWith(termsOfService) ||

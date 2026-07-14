@@ -25,10 +25,14 @@ class GlobalTimeFrameBar extends ConsumerWidget {
     super.key,
     this.variant = GlobalTimeFrameVariant.auto,
     this.availableTimeFrames,
+    this.dropdownWidth = 72,
   });
 
   final GlobalTimeFrameVariant variant;
   final List<TimeFrame>? availableTimeFrames;
+
+  /// Width of the compact mobile dropdown (default tighter than before).
+  final double dropdownWidth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,6 +44,7 @@ class GlobalTimeFrameBar extends ConsumerWidget {
 
     if (useDropdown) {
       return MobileTimeFrameDropdown(
+        width: dropdownWidth,
         availableTimeFrames: availableTimeFrames,
       );
     }

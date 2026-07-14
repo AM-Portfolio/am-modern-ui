@@ -25,6 +25,7 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
     this.initialTab,
     this.onTabChanged,
     this.addTradeBuilder,
+    this.onOpenDocIntel,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -34,6 +35,7 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final VoidCallback? onOpenDocIntel;
 
   @override
   ConsumerState<PortfolioMobileScreen> createState() => _PortfolioMobileScreenState();
@@ -77,6 +79,7 @@ class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
               initialTab: widget.initialTab,
               onTabChanged: widget.onTabChanged,
               addTradeBuilder: widget.addTradeBuilder,
+              onOpenDocIntel: widget.onOpenDocIntel,
             ),
           ),
           loading: () =>
@@ -155,6 +158,7 @@ class PortfolioMobileView extends StatefulWidget {
     this.initialTab,
     this.onTabChanged,
     this.addTradeBuilder,
+    this.onOpenDocIntel,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -164,6 +168,7 @@ class PortfolioMobileView extends StatefulWidget {
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final VoidCallback? onOpenDocIntel;
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
@@ -484,21 +489,75 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     );
   }
 
-  /// Portfolio + timeframe sticky strip (below collapsible pill tabs).
-  /// Horizontal padding matches overview content (`EdgeInsets.all(16)`) so
-  /// left/right edges align with Total Return and Today's P&L cards.
+  /// Portfolio switcher + Doc Intel CTA + timeframe (sticky strip).
+  /// Horizontal padding matches overview content (`EdgeInsets.all(16)`).
   Widget _buildStickyControlsRow(BuildContext context, String currentName) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = isDark ? Colors.white : const Color(0xFF0B1C30);
+    final chipBg = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFEDE9FE);
+    final chipBorder = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : const Color(0xFFDDD6FE);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
       child: Row(
         children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 128),
-            child: _buildPortfolioSwitcher(context, currentName),
+          Flexible(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 128),
+              child: _buildPortfolioSwitcher(context, currentName),
+            ),
           ),
           const Spacer(),
-          const GlobalTimeFrameBar(
-            variant: GlobalTimeFrameVariant.dropdown,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.onOpenDocIntel != null) ...[
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: widget.onOpenDocIntel,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      height: 36,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: chipBg,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: chipBorder),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.psychology_outlined,
+                            size: 17,
+                            color: Color(0xFF00D2D3),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Add Portfolio',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: onSurface,
+                              height: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              const GlobalTimeFrameBar(
+                variant: GlobalTimeFrameVariant.dropdown,
+              ),
+            ],
           ),
         ],
       ),
@@ -525,7 +584,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
 
     return CustomDropdown<String>(
       value: hasSelection ? selectedId : 'all',
-      height: 32,
+      height: 36,
       isExpanded: true,
       fontSize: 12,
       iconSize: 16,

@@ -151,8 +151,6 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
         if (isAdmin)
           const SidebarItem(
               title: 'Analysis', icon: Icons.analytics_outlined),
-        const SidebarItem(
-            title: 'Doc Intel', icon: Icons.psychology_outlined),
       ];
 
   Future<void> _seedPortfolioSelectionFromSession() async {
@@ -199,6 +197,11 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
 
     var savedPath = AppRoutes.pathForNavTitle(session.globalNav);
     if (savedPath == null) return;
+
+    // Doc Intel is no longer a primary nav destination.
+    if (session.globalNav == 'Doc Intel') {
+      savedPath = AppRoutes.dashboard;
+    }
 
     final portfolioId = session.portfolioId;
     final restoredPortfolioId =
@@ -299,6 +302,8 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   }
 
   void _onCrossSectionNext(String userId) {
+    // Doc Intel is a shortcut destination (not in the swipe sequence).
+    if (_currentLocation.startsWith(AppRoutes.docIntel)) return;
     final next = CrossModuleSectionSequence.nextPath(
       _currentLocation,
       portfolioId: _resolveSwipePortfolioId(),
@@ -308,6 +313,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   }
 
   void _onCrossSectionPrevious(String userId) {
+    if (_currentLocation.startsWith(AppRoutes.docIntel)) return;
     final prev = CrossModuleSectionSequence.previousPath(
       _currentLocation,
       portfolioId: _resolveSwipePortfolioId(),
@@ -539,7 +545,7 @@ final userId =
                                   activeNavItem: _activeNavItem,
                                   isDarkMode: isDark,
                                   userName: authState.user.displayName,
-                                  visibleCount: 4,
+                                  visibleCount: 5,
                                   onNavigate: (title) =>
                                       _onGlobalNavigate(title, userId),
                                   items: [
@@ -559,10 +565,6 @@ final userId =
                                     const SidebarItem(
                                       title: 'Market',
                                       icon: Icons.show_chart_rounded,
-                                    ),
-                                    const SidebarItem(
-                                      title: 'Doc Intel',
-                                      icon: Icons.psychology_outlined,
                                     ),
                                     const SidebarItem(
                                       title: 'Profile',

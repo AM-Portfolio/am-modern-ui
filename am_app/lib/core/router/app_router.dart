@@ -159,7 +159,11 @@ GoRouter createAppRouter({
             path: AppRoutes.dashboard,
             builder: (context, state) {
               final userId = _userId(context);
-              return dashboard.DashboardScreen(userId: userId);
+              return dashboard.DashboardScreen(
+                userId: userId,
+                onOpenDocIntel: () =>
+                    context.go(AppRoutes.docIntelPath('doc-processor')),
+              );
             },
           ),
           GoRoute(
@@ -182,6 +186,8 @@ GoRouter createAppRouter({
                           tab;
                   context.go(AppRoutes.portfolioPath(id, currentTab));
                 },
+                onOpenDocIntel: () =>
+                    context.go(AppRoutes.docIntelPath('doc-processor')),
               );
             },
           ),
@@ -198,6 +204,8 @@ GoRouter createAppRouter({
                   _patchPortfolioSession(context, id, name);
                   context.go(AppRoutes.portfolioPath(id, tab));
                 },
+                onOpenDocIntel: () =>
+                    context.go(AppRoutes.docIntelPath('doc-processor')),
               );
             },
           ),
