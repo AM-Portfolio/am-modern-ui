@@ -24,6 +24,12 @@ class ProfileSettingsPage extends StatefulWidget {
   /// When true (e.g. returning from Subscription), pulse Account + Subscription.
   final bool highlightSubscription;
 
+  /// Live plan label from `/subscriptions/me` (e.g. `"Free · Active"`).
+  final String? subscriptionStatusLabel;
+
+  /// True when plan is Pro/Premium (not free). Hides upgrade upsell copy.
+  final bool? isPaidSubscription;
+
   const ProfileSettingsPage({
     required this.userId,
     this.email,
@@ -32,6 +38,8 @@ class ProfileSettingsPage extends StatefulWidget {
     this.onOpenTermsOfService,
     this.onOpenSubscription,
     this.highlightSubscription = false,
+    this.subscriptionStatusLabel,
+    this.isPaidSubscription,
     super.key,
   });
 
@@ -52,6 +60,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   VoidCallback? get onOpenPrivacyPolicy => widget.onOpenPrivacyPolicy;
   VoidCallback? get onOpenTermsOfService => widget.onOpenTermsOfService;
   VoidCallback? get onOpenSubscription => widget.onOpenSubscription;
+  String? get subscriptionStatusLabel => widget.subscriptionStatusLabel;
+  bool get isPaidSubscription => widget.isPaidSubscription ?? false;
 
   @override
   void initState() {
@@ -226,7 +236,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                             ? Colors.white.withValues(alpha: 0.08)
                             : Colors.white.withValues(alpha: 0.85),
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.workspace_premium_rounded,
                         color: ModuleColors.portfolio,
                         size: 22,
@@ -235,7 +245,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Unlock more with Premium',
+                        isPaidSubscription
+                            ? (subscriptionStatusLabel ?? 'Premium plan')
+                            : 'Unlock more with Premium',
                         style: TextStyle(
                           color: isDark ? Colors.white : Colors.black87,
                           fontSize: 17,
@@ -248,7 +260,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Live data, deeper analytics, and AI tools — upgrade to level up your portfolio experience.',
+                  isPaidSubscription
+                      ? 'You’re on a paid plan. Manage billing, change plans, or review access anytime.'
+                      : 'Live data, deeper analytics, and AI tools — upgrade to level up your portfolio experience.',
                   style: TextStyle(
                     color: isDark ? Colors.white70 : Colors.black54,
                     fontSize: 13.5,
@@ -272,7 +286,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                         fontSize: 15,
                       ),
                     ),
-                    child: const Text('Explore plans'),
+                    child: Text(
+                      isPaidSubscription ? 'Manage plan' : 'Explore plans',
+                    ),
                   ),
                 ),
               ],
@@ -436,7 +452,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                         context,
                         icon: Icons.subscriptions_outlined,
                         title: 'Subscription',
-                        subtitle: 'Plans, billing, and access',
+                        subtitle: subscriptionStatusLabel ??
+                            'Plans, billing, and access',
                         isDark: isDark,
                         highlighted: _highlightActive,
                         highlightStrength:
