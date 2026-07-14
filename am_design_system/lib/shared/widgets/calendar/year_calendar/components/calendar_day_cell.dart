@@ -29,9 +29,9 @@ class CalendarDayCell extends StatelessWidget {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Restore a slightly more intense background fill so the active dates stand out clearly,
-    // using the base color with 0.15 opacity.
-    final backgroundColor = hasData ? service.getDayColor(dayData!, opacity: 0.15, isDark: isDark) : Colors.transparent;
+    // Increase background fill opacity (especially for light mode) so active dates stand out clearly.
+    final bgOpacity = isDark ? 0.2 : 0.35;
+    final backgroundColor = hasData ? service.getDayColor(dayData!, opacity: bgOpacity, isDark: isDark) : Colors.transparent;
     final borderColor = hasData
         ? service.getBorderColor(dayData!, isDark: isDark)
         : Theme.of(context).colorScheme.outline.withOpacity(0.1);
@@ -50,7 +50,7 @@ class CalendarDayCell extends StatelessWidget {
               }
             : null,
         borderRadius: BorderRadius.circular(4),
-        hoverColor: hasData ? service.getDayColor(dayData!, opacity: 0.25, isDark: isDark) : Colors.grey.withOpacity(0.05),
+        hoverColor: hasData ? service.getDayColor(dayData!, opacity: bgOpacity + 0.1, isDark: isDark) : Colors.grey.withOpacity(0.05),
         child: Container(
           height: compactMode ? 20 : 24,
           decoration: BoxDecoration(
@@ -65,7 +65,7 @@ class CalendarDayCell extends StatelessWidget {
                 fontSize: compactMode ? 9 : 12,
                 fontWeight: hasData ? FontWeight.w700 : FontWeight.w400,
                 color: hasData
-                    ? Colors.white // Colored backgrounds need white text for contrast in both themes
+                    ? textColor
                     : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
             ),
