@@ -26,9 +26,6 @@ class TradeHoldingsDashboardMobilePage extends ConsumerStatefulWidget {
 
 class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldingsDashboardMobilePage> {
   MetricsFilterConfig _currentFilter = MetricsFilterConfig.empty();
-  final ScrollController _scrollController = ScrollController();
-  bool _showFilterFAB = false;
-  Timer? _hideTimer;
 
   @override
   void initState() {
@@ -39,54 +36,11 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
       if (!mounted) return;
       cubit.loadFilters();
     });
-
-    // Listen to scroll events
-    _scrollController.addListener(_onUserInteraction);
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onUserInteraction);
-    _scrollController.dispose();
-    _hideTimer?.cancel();
     super.dispose();
-  }
-
-  void _onUserInteraction() {
-    // Show FAB when user interacts with the screen
-    if (!_showFilterFAB) {
-      setState(() => _showFilterFAB = true);
-    }
-
-    // Cancel existing timer
-    _hideTimer?.cancel();
-
-    // Auto-hide after 5 seconds
-    _hideTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted) {
-        setState(() => _showFilterFAB = false);
-      }
-    });
-  }
-
-  void _showFilterBottomSheet() {
-    MobileFilterPanel.show(
-      context: context,
-      ref: ref,
-      initialConfig: _currentFilter,
-      onApplyFilter: (filter) {
-        setState(() => _currentFilter = filter);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Filters applied'), duration: Duration(seconds: 1)));
-      },
-      onReset: () {
-        setState(() => _currentFilter = MetricsFilterConfig.empty());
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Filters reset'), duration: Duration(seconds: 1)));
-      },
-    );
   }
 
   @override
@@ -102,37 +56,18 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
         // Apply filters to holdings
         final filteredHoldings = _applyFilters(holdingsViewModel.holdings, _currentFilter);
 
-        return Stack(
-          children: [
-            // Holdings List (full screen now) - wrapped in RefreshIndicator and NotificationListener
-            RefreshIndicator(
-              onRefresh: () async {
-                ref.invalidate(tradeHoldingsStreamProvider(widget.portfolioId));
-                // Optional small delay for better UX
-                await Future.delayed(const Duration(milliseconds: 500));
-              },
-              child: Listener(
-                onPointerDown: (_) => _onUserInteraction(),
-                onPointerMove: (_) => _onUserInteraction(),
-                onPointerUp: (_) => _onUserInteraction(),
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification is ScrollUpdateNotification) {
-                      _onUserInteraction();
-                    }
-                    return false;
-                  },
-                  child: TradeHoldingsTemplate(
-                    holdings: filteredHoldings,
-                    isLoading: false,
-                    isWebView: false,
-                    onHoldingSelected: (holding) => _navigateToHoldingDetails(context, holding),
-                  ),
-                ),
-              ),
-            ),
-            // Filter FAB removed as per request
-          ],
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(tradeHoldingsStreamProvider(widget.portfolioId));
+            // Optional small delay for better UX
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: TradeHoldingsTemplate(
+            holdings: filteredHoldings,
+            isLoading: false,
+            isWebView: false,
+            onHoldingSelected: (holding) => _navigateToHoldingDetails(context, holding),
+          ),
         );
       },
       loading: () => const TradeHoldingsTemplate(holdings: [], isLoading: true, isWebView: false),
