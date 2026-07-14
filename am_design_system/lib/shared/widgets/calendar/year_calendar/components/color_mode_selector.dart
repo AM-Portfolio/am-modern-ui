@@ -4,11 +4,19 @@ import '../models/calendar_color_mode.dart';
 
 /// Widget for selecting calendar color mode
 class ColorModeSelector extends StatelessWidget {
-  const ColorModeSelector({required this.currentMode, required this.onModeChanged, super.key, this.compact = false});
+  const ColorModeSelector({
+    required this.currentMode,
+    required this.onModeChanged,
+    super.key,
+    this.compact = false,
+    this.dense = false,
+  });
 
   final CalendarColorMode currentMode;
   final Function(CalendarColorMode) onModeChanged;
   final bool compact;
+  /// Even tighter chips for the mobile calendar header row.
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -19,31 +27,46 @@ class ColorModeSelector extends StatelessWidget {
   }
 
   Widget _buildCompactSelector(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    padding: EdgeInsets.symmetric(
+      horizontal: dense ? 6 : 8,
+      vertical: dense ? 2 : 4,
+    ),
     decoration: BoxDecoration(
-      border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
+      border: Border.all(
+        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+      ),
       borderRadius: BorderRadius.circular(8),
     ),
-    child: DropdownButton<CalendarColorMode>(
-      value: currentMode,
-      underline: const SizedBox(),
-      isDense: true,
-      icon: const Icon(Icons.arrow_drop_down, size: 18),
-      style: Theme.of(context).textTheme.bodySmall,
-      items: CalendarColorMode.values
-          .map(
-            (mode) => DropdownMenuItem(
-              value: mode,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [Icon(_getIconForMode(mode), size: 14), const SizedBox(width: 6), Text(mode.displayName)],
-              ),
+    child: DropdownButtonHideUnderline(
+      child: DropdownButton<CalendarColorMode>(
+        value: currentMode,
+        isDense: true,
+        icon: Icon(Icons.arrow_drop_down, size: dense ? 16 : 18),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontSize: dense ? 11 : null,
             ),
-          )
-          .toList(),
-      onChanged: (mode) {
-        if (mode != null) onModeChanged(mode);
-      },
+        items: CalendarColorMode.values
+            .map(
+              (mode) => DropdownMenuItem(
+                value: mode,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_getIconForMode(mode), size: dense ? 12 : 14),
+                    SizedBox(width: dense ? 4 : 6),
+                    Text(
+                      dense ? mode.shortDisplayName : mode.displayName,
+                      style: TextStyle(fontSize: dense ? 11 : null),
+                    ),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+        onChanged: (mode) {
+          if (mode != null) onModeChanged(mode);
+        },
+      ),
     ),
   );
 

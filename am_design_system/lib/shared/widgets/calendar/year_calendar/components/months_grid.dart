@@ -39,13 +39,16 @@ class MonthsGrid extends StatelessWidget {
         monthsPerRow = 4; // Large desktop: 4 columns
       }
 
+      final isMobile = screenWidth < 600;
       final rows = (12 / monthsPerRow).ceil();
-      return Column(
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 4 : 8),
+        child: Column(
         children: List.generate(rows, (rowIndex) {
           final startMonth = rowIndex * monthsPerRow + 1;
 
           return Padding(
-            padding: EdgeInsets.only(bottom: rowIndex < rows - 1 ? 12 : 0),
+            padding: EdgeInsets.only(bottom: rowIndex < rows - 1 ? (isMobile ? 10 : 12) : 0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: List.generate(monthsPerRow, (colIndex) {
@@ -70,6 +73,7 @@ class MonthsGrid extends StatelessWidget {
             ),
           );
         }),
+      ),
       );
     },
   );
