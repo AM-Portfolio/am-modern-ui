@@ -4,6 +4,7 @@ import 'package:am_market_ui/core/styles/am_text_styles.dart';
 import 'package:am_market_common/models/indices_performance_model.dart';
 import 'package:am_market_ui/features/market_analysis/services/market_analysis_service.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/monthly_performance_card.dart';
+import 'package:am_market_ui/features/market_analysis/presentation/widgets/cylinder_month_scroller.dart';
 import 'package:get_it/get_it.dart';
 
 class HistoricalPerformanceSection extends StatefulWidget {
@@ -46,7 +47,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isMobile = constraints.maxWidth < 800;
+        final isMobile = constraints.maxWidth < 600;
         
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,18 +109,132 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                   // Dimensions
                   final double yearColWidth = isMobile ? 40.0 : 60.0;
                   final double cellWidth = isMobile ? 140.0 : 180.0; // Slightly smaller on mobile
-                  final double totalWidth = yearColWidth + (cellWidth * 12);
 
+                  // ── MOBILE: Cylinder drum-roll layout ─────────────────
+                  if (isMobile) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Pinned YEAR column
+                        SizedBox(
+                          width: yearColWidth,
+                          child: Column(
+                            children: [
+                              Container(
+                                height: 36.0,
+                                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF1E1E32).withOpacity(0.8) : Colors.black.withOpacity(0.04),
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'YEAR',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white54 : Colors.black54,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 10,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ...sortedYears.map((year) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: SizedBox(
+                                    height: 34,
+                                    child: Center(
+                                      child: Text(
+                                        '$year',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        ),
+                        // Cylinder drum-roll month scroll
+                        Expanded(
+                          child: CylinderMonthScroller(
+                            months: months,
+                            shortMonths: shortMonths,
+                            sortedYears: sortedYears,
+                            groupedData: groupedData,
+                            rowHeight: 34.0,
+                            isDark: isDark,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  // ── DESKTOP: Standard horizontal scroll with arrow buttons ─
                   return Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Left Scroll Button (Hide on Mobile)
-                        if (!isMobile)
                         Padding(
                           padding: const EdgeInsets.only(top: 40.0), 
                           child: IconButton(
                               icon: Icon(Icons.arrow_back_ios, color: isDark ? Colors.white54 : Colors.black54),
                               onPressed: () => _scroll(-300),
+                          ),
+                        ),
+                        SizedBox(
+                          width: yearColWidth,
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF1E1E32).withOpacity(0.8) : Colors.black.withOpacity(0.04),
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'YEAR',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white54 : Colors.black54,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ...sortedYears.map((year) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: SizedBox(
+                                    height: 34,
+                                    child: Center(
+                                      child: Text(
+                                        '$year',
+                                        style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 16),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ],
                           ),
                         ),
                         Expanded(
@@ -131,10 +246,9 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                               controller: _scrollController,
                               scrollDirection: Axis.horizontal,
                               child: SizedBox(
-                                width: totalWidth,
+                                width: cellWidth * 12,
                                 child: Column(
                                   children: [
-                                    // Header Row Container
                                     Container(
                                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                                       decoration: BoxDecoration(
@@ -147,71 +261,40 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                         ),
                                       ),
                                       child: Row(
-                                        children: [
-                                          SizedBox(
-                                            width: yearColWidth,
-                                            child: Center(
-                                              child: Text(
-                                                'YEAR',
-                                                style: TextStyle(
-                                                  color: isDark ? Colors.white54 : Colors.black54,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: isMobile ? 10 : 11,
-                                                  letterSpacing: 0.8,
-                                                ),
+                                        children: shortMonths.map((m) => SizedBox(
+                                          width: cellWidth,
+                                          child: Center(
+                                            child: Text(
+                                              m,
+                                              style: TextStyle(
+                                                color: isDark ? Colors.white54 : Colors.black54,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
                                               ),
                                             ),
                                           ),
-                                          ...shortMonths.map((m) => SizedBox(
-                                            width: cellWidth,
-                                            child: Center(
-                                              child: Text(
-                                                m,
-                                                style: TextStyle(
-                                                  color: isDark ? Colors.white54 : Colors.black54,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: isMobile ? 10 : 12,
-                                                ),
-                                              ),
-                                            ),
-                                          )),
-                                        ],
+                                        )).toList(),
                                       ),
                                     ),
                                     const SizedBox(height: 12),
-                                    
-                                    // Year Rows
                                     ...sortedYears.map((year) {
                                       return Padding(
                                         padding: const EdgeInsets.only(bottom: 8.0),
-                                        child: IntrinsicHeight(
+                                        child: SizedBox(
+                                          height: 34,
                                           child: Row(
-                                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                                            children: [
-                                              // Year Label
-                                              SizedBox(
-                                                width: yearColWidth,
-                                                child: Center(
-                                                  child: Text(
-                                                    '$year',
-                                                    style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: isMobile ? 12 : 16),
-                                                  ),
+                                            children: months.map((month) {
+                                              final item = groupedData[year]?[month];
+                                              return SizedBox(
+                                                width: cellWidth,
+                                                child: Padding(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                                  child: item != null 
+                                                    ? MonthlyPerformanceCard(data: item, isCompactTable: true)
+                                                    : Container(decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02), borderRadius: BorderRadius.circular(8))),
                                                 ),
-                                              ),
-                                              // Month Cells
-                                              ...months.map((month) {
-                                                final item = groupedData[year]?[month];
-                                                return SizedBox(
-                                                  width: cellWidth,
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                                                    child: item != null 
-                                                      ? MonthlyPerformanceCard(data: item, isCompactTable: true)
-                                                      : Container(decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02), borderRadius: BorderRadius.circular(8))),
-                                                  ),
-                                                );
-                                              }),
-                                            ],
+                                              );
+                                            }).toList(),
                                           ),
                                         ),
                                       );
@@ -222,8 +305,6 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                             ),
                           ),
                         ),
-                        // Right Scroll Button (Hide on Mobile)
-                        if (!isMobile)
                         Padding(
                           padding: const EdgeInsets.only(top: 40.0),
                           child: IconButton(
