@@ -91,22 +91,6 @@ def load_env(env_name):
 
 def get_available_device():
     """Prefer Chrome/Edge so Flutter launches the browser; fall back to web-server."""
-    try:
-        is_windows = os.name == "nt"
-        result = subprocess.run(
-            ["flutter", "devices"],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            shell=is_windows,
-        )
-        output = result.stdout.lower()
-        if "chrome" in output:
-            return "chrome"
-        if "edge" in output:
-            return "edge"
-    except Exception:
-        pass
     return "web-server"
 
 def run_cmd(package, cmd_parts, env_vars=None):
