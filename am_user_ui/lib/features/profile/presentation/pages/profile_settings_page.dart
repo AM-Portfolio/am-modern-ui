@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -550,7 +551,10 @@ class ProfileSettingsPage extends StatelessWidget {
 
   Future<void> _openLegalUrl(BuildContext context, String url) async {
     final uri = Uri.parse(url);
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    // externalApplication is unsupported on Flutter web; navigate in-tab instead.
+    final opened = kIsWeb
+        ? await launchUrl(uri, webOnlyWindowName: '_self')
+        : await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not open $url')),
