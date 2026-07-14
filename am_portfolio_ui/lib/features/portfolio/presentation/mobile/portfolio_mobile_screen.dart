@@ -4,17 +4,13 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../../providers/portfolio_providers.dart';
 import '../../internal/domain/entities/portfolio_list.dart';
-import 'widgets/portfolio_header_widget.dart';
 import 'widgets/portfolio_tab_content_widget.dart';
-import 'widgets/portfolio_logout_handler.dart';
-import 'package:am_common/am_common.dart';
 
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
 class PortfolioMobileScreen extends ConsumerStatefulWidget {
@@ -373,17 +369,13 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         module: ModuleType.portfolio,
         title: currentName,
         showModuleBottomNavigation: false,
+        showAppBarOnMobile: false,
+        showMobileMenuButton: false,
         autoHideMobileTabsOnScroll: true,
         onBackToGlobal: widget.onBack,
-        onMobileMenuTap: () => _showMenuBottomSheet(context),
-        headerActions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: GlobalTimeFrameBar(
-              variant: GlobalTimeFrameVariant.dropdown,
-            ),
-          ),
-        ],
+        // Pills sit above this sticky row; on scroll they collapse and this
+        // row slides up to the top, then back down when pills reappear.
+        mobileStickyHeader: _buildStickyControlsRow(context, currentName),
         items: [
           SecondarySidebarItem(
             title: 'Overview',
@@ -477,112 +469,71 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     );
   }
 
-  void _showMenuBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  /// Portfolio + timeframe sticky strip (below collapsible pill tabs).
+  Widget _buildStickyControlsRow(BuildContext context, String currentName) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 2, 8, 6),
+      child: Row(
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 128),
+            child: _buildPortfolioSwitcher(context, currentName),
+          ),
+          const Spacer(),
+          const GlobalTimeFrameBar(
+            variant: GlobalTimeFrameVariant.dropdown,
+          ),
+        ],
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'Portfolio Menu',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 24),
+    );
+  }
 
-            // Portfolio List Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'SWITCH PORTFOLIO',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (widget.portfolios != null)
-              ...[
-                const PortfolioItem(
-                  portfolioId: 'all',
-                  portfolioName: 'All Portfolios',
-                ),
-                ...widget.portfolios!
-              ].map(
-                (p) => ListTile(
-                  leading: Icon(
-                    Icons.account_balance_wallet,
-                    color: p.portfolioId == _currentPortfolioId
-                        ? Theme.of(context).primaryColor
-                        : Colors.grey,
-                  ),
-                  title: Text(
-                    p.portfolioName,
-                    style: TextStyle(
-                      fontWeight: p.portfolioId == _currentPortfolioId
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: p.portfolioId == _currentPortfolioId
-                          ? Theme.of(context).primaryColor
-                          : null,
-                    ),
-                  ),
-                  trailing: p.portfolioId == _currentPortfolioId
-                      ? Icon(Icons.check, color: Theme.of(context).primaryColor)
-                      : null,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _onPortfolioChanged(p.portfolioId, p.portfolioName);
-                  },
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                  dense: true,
-                ),
-              ),
+  /// Transparent pill dropdown matching [MobileTimeFrameDropdown].
+  Widget _buildPortfolioSwitcher(BuildContext context, String currentName) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final portfolios = widget.portfolios ?? const <PortfolioItem>[];
+    final selectedId = _currentPortfolioId ?? 'all';
 
-            const Divider(height: 32),
-
-            // Navigation Actions
-            ListTile(
-              leading: const Icon(Icons.arrow_back),
-              title: const Text('Back to Dashboard'),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-              onTap: () {
-                Navigator.pop(context);
-                if (widget.onBack != null) {
-                  widget.onBack!();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Use system back to return')),
-                  );
-                }
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Logout', style: TextStyle(color: Colors.red)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-              onTap: () {
-                Navigator.pop(context);
-                PortfolioLogoutHandler.showLogoutDialog(context);
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
+    final items = <DropdownMenuItem<String>>[
+      'all'.toSimpleDropdownItem(text: 'All Portfolios', fontSize: 12),
+      ...portfolios.map(
+        (p) => p.portfolioId.toSimpleDropdownItem(
+          text: p.portfolioName,
+          fontSize: 12,
         ),
       ),
+    ];
+
+    final hasSelection = items.any((item) => item.value == selectedId);
+
+    return CustomDropdown<String>(
+      value: hasSelection ? selectedId : 'all',
+      height: 32,
+      isExpanded: true,
+      fontSize: 12,
+      iconSize: 16,
+      borderRadius: 10,
+      menuMaxHeight: 148,
+      primaryColor: AppColors.primary,
+      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.06) : null,
+      borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      items: items,
+      onChanged: (id) {
+        if (id == null) return;
+        String name = currentName;
+        if (id == 'all') {
+          name = 'All Portfolios';
+        } else {
+          for (final p in portfolios) {
+            if (p.portfolioId == id) {
+              name = p.portfolioName;
+              break;
+            }
+          }
+        }
+        _onPortfolioChanged(id, name);
+      },
     );
   }
 }

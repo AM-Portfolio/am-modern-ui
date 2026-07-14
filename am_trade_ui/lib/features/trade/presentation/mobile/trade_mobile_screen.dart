@@ -178,39 +178,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String title = 'Trade';
-    switch (_selectedView) {
-      case MobileTradeViewType.portfolios:
-        title = 'Trade Portfolios';
-        break;
-      case MobileTradeViewType.holdings:
-        title = _currentPortfolioName != null
-            ? 'Holdings - $_currentPortfolioName'
-            : 'Holdings';
-        break;
-      case MobileTradeViewType.calendar:
-        title = _currentPortfolioName != null
-            ? 'Calendar - $_currentPortfolioName'
-            : 'Calendar';
-        break;
-      case MobileTradeViewType.addTrade:
-        title = _currentPortfolioName != null
-            ? 'Add Trade - $_currentPortfolioName'
-            : 'Add Trade';
-        break;
-      case MobileTradeViewType.journal:
-        title = 'Journal';
-        break;
-      case MobileTradeViewType.metrics:
-        title = 'Metrics';
-        break;
-      case MobileTradeViewType.templates:
-        title = 'Templates';
-        break;
-    }
-
-    final showAppBar = _selectedView != MobileTradeViewType.addTrade &&
-        _selectedView != MobileTradeViewType.calendar;
+    final showAppBar = _selectedView == MobileTradeViewType.addTrade;
 
     return Listener(
       behavior: HitTestBehavior.translucent,
@@ -225,7 +193,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         },
         child: UnifiedSidebarScaffold(
           module: ModuleType.trade,
-          title: title,
+          title: 'Trade',
           showAppBarOnMobile: showAppBar,
           showMobileMenuButton: false,
           showModuleBottomNavigation: false,
@@ -308,7 +276,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         return TradeMetricsPage(portfolioId: _currentPortfolioId);
 
       case MobileTradeViewType.templates:
-        return const TemplateBrowserPage();
+        return const TemplateBrowserPage(embedded: true);
 
       case MobileTradeViewType.addTrade:
         if (_currentPortfolioId == null) {

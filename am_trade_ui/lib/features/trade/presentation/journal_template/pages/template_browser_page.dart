@@ -15,11 +15,15 @@ import '../widgets/create_template_dialog.dart';
 /// Modern template browser page with glassmorphism design
 class TemplateBrowserPage extends ConsumerStatefulWidget {
   const TemplateBrowserPage({
-        this.onTemplateSelected,
+    this.onTemplateSelected,
+    this.embedded = false,
     super.key,
   });
 
-    final Function(JournalTemplate)? onTemplateSelected;
+  final Function(JournalTemplate)? onTemplateSelected;
+
+  /// When true (Trade mobile tab), skip back button / heavy title chrome.
+  final bool embedded;
 
   @override
   ConsumerState<TemplateBrowserPage> createState() =>
@@ -111,6 +115,7 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
           ),
         ),
         child: SafeArea(
+          top: !widget.embedded,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isMobile = constraints.maxWidth < 768;
@@ -193,6 +198,25 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
   }
 
   Widget _buildHeader(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
+
+    if (widget.embedded) {
+      return Padding(
+        padding: EdgeInsets.fromLTRB(12, isMobile ? 4 : 12, 12, 8),
+        child: Row(
+          children: [
+            Expanded(child: _buildSearchBar(context)),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
+              onPressed: () => setState(() => _isGridView = !_isGridView),
+              tooltip: _isGridView ? 'List View' : 'Grid View',
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -229,7 +253,10 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
                     Text(
                       'Choose a template to get started',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.6),
                           ),
                     ),
                   ],

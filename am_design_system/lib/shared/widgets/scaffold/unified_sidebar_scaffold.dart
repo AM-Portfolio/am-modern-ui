@@ -68,6 +68,8 @@ class UnifiedSidebarScaffold extends StatefulWidget {
     this.headerActions,
     this.showAppBarOnMobile = true,
     this.showMobileMenuButton = true,
+    this.titleWidget,
+    this.mobileStickyHeader,
     this.autoHideMobileTabsOnScroll = false,
   }) : assert((items != null) != (sections != null), 'Provide either items or sections, not both.');
 
@@ -79,6 +81,15 @@ class UnifiedSidebarScaffold extends StatefulWidget {
 
   /// Sidebar Title (e.g. "Market Data")
   final String? title;
+
+  /// Optional mobile AppBar title widget (e.g. portfolio switcher dropdown).
+  /// When set, replaces the plain [title] text and left-aligns the title.
+  final Widget? titleWidget;
+
+  /// Controls pinned below the collapsible mobile pill tabs (e.g. portfolio +
+  /// timeframe). Stays visible while [autoHideMobileTabsOnScroll] collapses the
+  /// tabs, so the row naturally slides up/down with the SizeTransition.
+  final Widget? mobileStickyHeader;
 
   /// Sidebar Subtitle (e.g. "Real-time Analytics")
   final String? subtitle;
@@ -284,6 +295,10 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     final fillTrack = items.length <= 3;
     final selectedIndex = items.indexWhere((item) => item.isSelected);
     final selectedKey = GlobalKey();
+    // Compact track — between the old thin bar and bottom nav (68).
+    const trackHeight = 48.0;
+    const segmentHeight = 40.0;
+    final manyTabs = items.length >= 5;
 
     if (selectedIndex >= 0 && selectedIndex != _lastEnsuredMobileTabIndex) {
       _lastEnsuredMobileTabIndex = selectedIndex;
@@ -292,7 +307,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
         if (selectedContext != null && mounted) {
           Scrollable.ensureVisible(
             selectedContext,
-            alignment: 0.5,
+            alignment: 0.4,
             duration: const Duration(milliseconds: 280),
             curve: Curves.easeOutCubic,
           );
@@ -311,9 +326,11 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          height: 38,
+          height: segmentHeight,
           margin: const EdgeInsets.symmetric(horizontal: 1),
-          padding: EdgeInsets.symmetric(horizontal: fillTrack ? 8 : 14),
+          padding: EdgeInsets.symmetric(
+            horizontal: fillTrack ? 8 : (manyTabs ? 11 : 14),
+          ),
           decoration: BoxDecoration(
             color: isSelected
                 ? itemColor.withOpacity(isDark ? 0.35 : 0.9)
@@ -335,12 +352,12 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
             children: [
               Icon(
                 item.icon,
-                size: 16,
+                size: 17,
                 color: isSelected
                     ? Colors.white
                     : (isDark ? Colors.white70 : Colors.black54),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               if (fillTrack)
                 Flexible(
                   child: Text(
@@ -348,7 +365,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 12.5,
                       fontWeight:
                           isSelected ? FontWeight.w700 : FontWeight.w600,
                       color: isSelected
@@ -362,7 +379,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
                   item.title,
                   maxLines: 1,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.5,
                     fontWeight:
                         isSelected ? FontWeight.w700 : FontWeight.w600,
                     color: isSelected
@@ -377,16 +394,16 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
       child: Container(
-        height: 44,
-        padding: const EdgeInsets.all(3),
+        height: trackHeight,
+        padding: const EdgeInsets.all(4),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: isDark
               ? Colors.white.withOpacity(0.06)
               : Colors.black.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isDark
                 ? Colors.white.withOpacity(0.08)
@@ -443,13 +460,18 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
             }
           }
 
+          final topInset = widget.showAppBarOnMobile
+              ? 0.0
+              : MediaQuery.paddingOf(context).top;
+
           return Scaffold(
             appBar: widget.showAppBarOnMobile
                 ? AppBar(
-                    title: Text(_resolvedTitle ?? ''),
+                    title: widget.titleWidget ?? Text(_resolvedTitle ?? ''),
                     backgroundColor: Colors.transparent,
                     elevation: 0,
-                    centerTitle: true,
+                    centerTitle: widget.titleWidget == null,
+                    titleSpacing: widget.titleWidget != null ? 12 : null,
                     automaticallyImplyLeading: false,
                     leading: widget.showMobileMenuButton
                         ? IconButton(
@@ -466,8 +488,13 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
                 : null,
             body: Column(
               children: [
+                // Status-bar inset when AppBar is off so sticky controls clear the notch.
+                if (topInset > 0) SizedBox(height: topInset),
+                // Collapsible secondary tabs — SizeTransition slides row below up/down.
                 if (flatItems.isNotEmpty)
                   _buildAnimatedMobilePillTabs(context, flatItems),
+                // Sticky module controls (portfolio / timeframe) — never collapse.
+                if (widget.mobileStickyHeader != null) widget.mobileStickyHeader!,
                 Expanded(
                   child: NotificationListener<ScrollNotification>(
                     onNotification: _handleMobileTabScroll,

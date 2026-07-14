@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+/// Compact portfolio discovery summary — full-width equal columns.
+/// Layout per metric: icon + label on top, value centered below.
 class TradePortfolioMobileHeader extends StatelessWidget {
   const TradePortfolioMobileHeader({
     required this.portfolioCount,
@@ -11,6 +13,7 @@ class TradePortfolioMobileHeader extends StatelessWidget {
     super.key,
     this.onRefresh,
   });
+
   final int portfolioCount;
   final double totalValue;
   final int profitableCount;
@@ -22,73 +25,61 @@ class TradePortfolioMobileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark ? Theme.of(context).colorScheme.primary.withOpacity(0.02) : Theme.of(context).colorScheme.surface,
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(isDark ? 0.1 : 0.2))),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
+    final muted = isDark ? Colors.white54 : Colors.black45;
+    final primary = Theme.of(context).colorScheme.primary;
+    final pnlColor =
+        totalNetProfitLoss >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+
+    // Keep unused discovery stats available for API compatibility.
+    assert(profitableCount >= 0 && totalTrades >= 0 && avgWinRate >= 0);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.black.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.08),
+          ),
+        ),
         child: Row(
           children: [
-            _buildModernStatBadge(
-              context,
-              label: 'Portfolios',
-              value: '$portfolioCount',
-              icon: Icons.folder_special_rounded,
-              iconColor: Colors.white,
-              iconBgColor: Theme.of(context).colorScheme.primary,
+            Expanded(
+              child: _buildMetricColumn(
+                icon: Icons.folder_special_rounded,
+                label: 'Portfolios',
+                value: '$portfolioCount',
+                color: primary,
+                muted: muted,
+              ),
             ),
-            const SizedBox(width: 8),
-            _buildModernStatBadge(
-              context,
-              label: 'Total Value',
-              value: '₹${_formatNum(totalValue)}',
-              icon: Icons.account_balance_wallet_rounded,
-              iconColor: Colors.white,
-              iconBgColor: Colors.blue,
+            Expanded(
+              child: _buildMetricColumn(
+                icon: Icons.account_balance_wallet_rounded,
+                label: 'Value',
+                value: '₹${_formatNum(totalValue)}',
+                color: Colors.lightBlueAccent,
+                muted: muted,
+              ),
             ),
-            const SizedBox(width: 8),
-            _buildModernStatBadge(
-              context,
-              label: 'Profitable',
-              value: '$profitableCount/$portfolioCount',
-              icon: Icons.trending_up_rounded,
-              iconColor: Colors.white,
-              iconBgColor: const Color(0xFF10B981),
-              valueColor: const Color(0xFF10B981),
-            ),
-            const SizedBox(width: 8),
-            _buildModernStatBadge(
-              context,
-              label: 'Total Trades',
-              value: '$totalTrades',
-              icon: Icons.swap_horiz_rounded,
-              iconColor: Colors.white,
-              iconBgColor: Colors.purple,
-            ),
-            const SizedBox(width: 8),
-            _buildModernStatBadge(
-              context,
-              label: 'Trade P&L',
-              value: '${totalNetProfitLoss >= 0 ? '+' : ''}₹${_formatNum(totalNetProfitLoss)}',
-              icon: totalNetProfitLoss >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-              iconColor: Colors.white,
-              iconBgColor: totalNetProfitLoss >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-              valueColor: totalNetProfitLoss >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-            ),
-            const SizedBox(width: 8),
-            _buildModernStatBadge(
-              context,
-              label: 'Avg Win Rate',
-              value: '${avgWinRate.toStringAsFixed(1)}%',
-              icon: Icons.percent_rounded,
-              iconColor: Colors.white,
-              iconBgColor: avgWinRate >= 50 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-              valueColor: avgWinRate >= 50 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+            Expanded(
+              child: _buildMetricColumn(
+                icon: totalNetProfitLoss >= 0
+                    ? Icons.trending_up_rounded
+                    : Icons.trending_down_rounded,
+                label: 'P&L',
+                value:
+                    '${totalNetProfitLoss >= 0 ? '+' : ''}₹${_formatNum(totalNetProfitLoss)}',
+                color: pnlColor,
+                muted: muted,
+              ),
             ),
           ],
         ),
@@ -99,75 +90,53 @@ class TradePortfolioMobileHeader extends StatelessWidget {
   String _formatNum(double v) {
     if (v.abs() >= 1000000) return '${(v / 1000000).toStringAsFixed(2)}M';
     if (v.abs() >= 1000) return '${(v / 1000).toStringAsFixed(1)}k';
-    return v.toStringAsFixed(2);
+    return v.toStringAsFixed(0);
   }
 
-  Widget _buildModernStatBadge(
-    BuildContext context, {
+  Widget _buildMetricColumn({
+    required IconData icon,
     required String label,
     required String value,
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBgColor,
-    Color? valueColor,
+    required Color color,
+    required Color muted,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E30) : Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: isDark ? const Color(0xFF2D2D45) : Theme.of(context).colorScheme.outline.withOpacity(0.2)),
-        boxShadow: isDark ? null : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: iconColor, size: 16),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: color),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 10,
-                  color: isDark 
-                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.5)
-                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 0.2,
+                  color: muted,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: valueColor ?? Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: color,
+            height: 1.1,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
