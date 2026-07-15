@@ -86,10 +86,11 @@ class ApiService {
   Future<Map<String, dynamic>> processDocument(
       Uint8List fileBytes, String filename, String docType,
       {String brokerType = 'ZERODHA'}) async {
-    // Always route through the API Gateway – even when running locally the
-    // document-processor on the dev cluster requires a service-JWT (generated
-    // by the gateway). Sending a user-JWT directly causes 401.
-    final url = '${EnvDomains.apiBase}/am/document/v1/documents/process';
+    // Same ingress pattern as types (/doc/processor) and other modules
+    // (/portfolio, /market): Traefik → service with Keycloak Bearer.
+    // Do NOT use /am/... here — asrax-proxy is a separate auth path and
+    // is what returned 401 while Keycloak worked everywhere else.
+    final url = '$_docBase/documents/process';
     debugPrint('[ApiService] POST $url (type=$docType, broker=$brokerType)');
     var request = http.MultipartRequest('POST', Uri.parse(url));
     final headers = await _getHeaders();
