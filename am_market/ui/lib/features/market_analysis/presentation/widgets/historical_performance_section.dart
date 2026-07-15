@@ -107,15 +107,15 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                   final shortMonths = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
                   // Dimensions
-                  final double yearColWidth = isMobile ? 40.0 : 60.0;
-                  final double cellWidth = isMobile ? 140.0 : 180.0; // Slightly smaller on mobile
+                  final double yearColWidth = isMobile ? 44.0 : 60.0;
+                  final double cellWidth = isMobile ? 140.0 : 180.0;
 
                   // ── MOBILE: Cylinder drum-roll layout ─────────────────
                   if (isMobile) {
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Pinned YEAR column
+                        // Pinned YEAR column — tight against month scroller
                         SizedBox(
                           width: yearColWidth,
                           child: Column(
@@ -168,7 +168,8 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                             ],
                           ),
                         ),
-                        // Cylinder drum-roll month scroll
+                        const SizedBox(width: 4),
+                        // Months start flush beside YEAR (left-aligned scroller)
                         Expanded(
                           child: CylinderMonthScroller(
                             months: months,
