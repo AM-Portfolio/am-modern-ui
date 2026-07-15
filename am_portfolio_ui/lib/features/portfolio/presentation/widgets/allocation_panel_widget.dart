@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
@@ -146,26 +147,30 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
-      child: Container(
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: _isDark
-                ? [
-                    const Color(0xFF0D1B2A).withValues(alpha: 0.9),
-                    const Color(0xFF0A1628).withValues(alpha: 0.75),
-                  ]
-                : [
-                    Colors.white.withValues(alpha: 0.9),
-                    const Color(0xFFF5F7FF).withValues(alpha: 0.8),
-                  ],
-          ),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: _isDark ? 0.07 : 0.4),
-            width: 1,
-          ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          height: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: _isDark
+                  ? [
+                      const Color(0xFF0D1B2A).withValues(alpha: 0.9),
+                      const Color(0xFF0A1628).withValues(alpha: 0.75),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.45),
+                      const Color(0xFFF5F7FF).withValues(alpha: 0.25),
+                    ],
+            ),
+            border: Border.all(
+              color: _isDark
+                  ? Colors.white.withValues(alpha: 0.07)
+                  : Colors.black.withValues(alpha: 0.07),
+              width: 1,
+            ),
           borderRadius: BorderRadius.circular(18),
         ),
         padding: const EdgeInsets.all(24),
@@ -204,6 +209,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
             Expanded(child: _buildContent()),
           ],
         ),
+      ),
       ),
     );
   }

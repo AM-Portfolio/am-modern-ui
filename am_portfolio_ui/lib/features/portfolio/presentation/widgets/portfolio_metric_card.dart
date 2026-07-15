@@ -84,15 +84,16 @@ class PortfolioMetricCard extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            cardBase.withValues(alpha: isDark ? 0.3 : 0.8),
-                            cardBase.withValues(alpha: isDark ? 0.1 : 0.5),
+                            cardBase.withValues(alpha: isDark ? 0.3 : 0.5),
+                            cardBase.withValues(alpha: isDark ? 0.1 : 0.15),
                           ],
                         ),
                   border: Border.all(
                     color: glowBorder
                         ? accentColor.withValues(alpha: 0.35)
-                        : Colors.white.withValues(
-                            alpha: isDark ? 0.07 : 0.4),
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.07)
+                            : Colors.black.withValues(alpha: 0.06)),
                     width: 1,
                   ),
                   // No drop shadows on compact (mobile) — keeps the grid tight.

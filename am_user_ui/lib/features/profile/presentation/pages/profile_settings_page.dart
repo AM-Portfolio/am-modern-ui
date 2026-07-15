@@ -63,6 +63,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   String? get subscriptionStatusLabel => widget.subscriptionStatusLabel;
   bool get isPaidSubscription => widget.isPaidSubscription ?? false;
 
+
   @override
   void initState() {
     super.initState();

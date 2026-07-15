@@ -44,12 +44,14 @@ class _MoversWidgetState extends State<MoversWidget> {
                       const Color(0xFF0A1628).withValues(alpha: 0.75),
                     ]
                   : [
-                      Colors.white.withValues(alpha: 0.92),
-                      const Color(0xFFF5F7FF).withValues(alpha: 0.8),
+                      Colors.white.withValues(alpha: 0.50),
+                      const Color(0xFFF5F7FF).withValues(alpha: 0.30),
                     ],
             ),
             border: Border.all(
-              color: Colors.white.withValues(alpha: isDark ? 0.07 : 0.4),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.07)
+                  : Colors.black.withValues(alpha: 0.07),
               width: 1,
             ),
             borderRadius: BorderRadius.circular(18),
@@ -183,7 +185,7 @@ class _MoversWidgetState extends State<MoversWidget> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.1),
+              color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -357,7 +359,7 @@ class _MoverTileState extends State<MoverTile> {
               ? color.withValues(alpha: isDark ? 0.08 : 0.05)
               : (isDark
                   ? Colors.white.withValues(alpha: 0.04)
-                  : Colors.black.withValues(alpha: 0.025)),
+                  : Colors.black.withValues(alpha: 0.04)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _hovered
