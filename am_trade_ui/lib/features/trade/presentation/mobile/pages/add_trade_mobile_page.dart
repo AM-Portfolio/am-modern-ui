@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_common/am_common.dart';
-import 'package:am_design_system/am_design_system.dart';
 import '../../../internal/domain/entities/trade_controller_entities.dart';
 import '../../add_trade/components/add_trade_form.dart';
 import '../../cubit/trade_controller_cubit.dart';
@@ -74,40 +73,10 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surfaceContainerLowest,
-      appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface,
-        surfaceTintColor: theme.colorScheme.surfaceTint,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.add_circle_outline, color: theme.colorScheme.primary, size: 20),
-            ),
-            const SizedBox(width: 12),
-            const Flexible(
-              child: Text(
-                'Add New Trade',
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-        leading: IconButton(icon: const Icon(Icons.close_rounded), tooltip: 'Cancel', onPressed: _handleCancel),
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: theme.colorScheme.outlineVariant.withOpacity(0.5), height: 1),
-        ),
-      ),
-      body: BlocListener<TradeControllerCubit, TradeControllerState>(
+    // Title lives in UnifiedSidebarScaffold app bar — no nested AppBar / logo.
+    return ColoredBox(
+      color: theme.colorScheme.surfaceContainerLowest,
+      child: BlocListener<TradeControllerCubit, TradeControllerState>(
         listener: (context, state) {
           state.maybeWhen(
             error: (message, error) {
@@ -169,42 +138,38 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
             orElse: () {},
           );
         },
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // Main form with portfolioId passed via initialData
-              AddTradeForm(
-                onSave: _handleSave,
-                onCancel: _handleCancel,
-                isLoading: _isLoading,
-                initialData: widget.existingTrade ?? TradeDetails.empty().copyWith(portfolioId: widget.portfolioId),
-              ),
-
-              // Loading overlay
-              if (_isLoading)
-                Container(
-                  color: Colors.black.withOpacity(0.3),
-                  child: Center(
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircularProgressIndicator(color: theme.colorScheme.primary),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Saving trade...',
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
+        child: Stack(
+          children: [
+            AddTradeForm(
+              onSave: _handleSave,
+              onCancel: _handleCancel,
+              isLoading: _isLoading,
+              initialData: widget.existingTrade ??
+                  TradeDetails.empty().copyWith(portfolioId: widget.portfolioId),
+            ),
+            if (_isLoading)
+              Container(
+                color: Colors.black.withOpacity(0.3),
+                child: Center(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(color: theme.colorScheme.primary),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Saving trade...',
+                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );

@@ -254,7 +254,7 @@ class RegisterPageForm extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
-          'Create Account ✨',
+          'Create Account',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,

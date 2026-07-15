@@ -105,7 +105,7 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text(
-                      '🚀 Sign In',
+                      'Sign In',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
             ),
