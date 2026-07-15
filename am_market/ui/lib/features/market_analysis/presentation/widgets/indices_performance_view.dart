@@ -165,22 +165,13 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
       if (_selectedForChart.contains(symbol)) {
         _selectedForChart.remove(symbol);
       } else {
-        if (_selectedForChart.length < 3) {
-          _selectedForChart.add(symbol);
-          
-          // Fetch historical data if not already cached
-          if (!_historicalDataCache.containsKey(symbol)) {
-            CommonLogger.info("IndicesPerformanceView.toggleIndexForChart", 
-                "Fetching historical data for newly selected index: $symbol");
-            _fetchHistoricalDataForIndices([symbol]);
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Maximum 3 indices can be compared'),
-              duration: Duration(seconds: 2),
-            ),
-          );
+        _selectedForChart.add(symbol);
+        
+        // Fetch historical data if not already cached
+        if (!_historicalDataCache.containsKey(symbol)) {
+          CommonLogger.info("IndicesPerformanceView.toggleIndexForChart", 
+              "Fetching historical data for newly selected index: $symbol");
+          _fetchHistoricalDataForIndices([symbol]);
         }
       }
     });
@@ -296,7 +287,7 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
                 ),
               ),
               Text(
-                'Compare up to 3 indices',
+                'Compare selected indices',
                 style: theme.textTheme.bodySmall,
               ),
             ],
