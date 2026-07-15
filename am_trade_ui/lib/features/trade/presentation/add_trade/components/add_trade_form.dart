@@ -375,9 +375,8 @@ class _AddTradeFormState extends State<AddTradeForm> {
                 ),
               ),
 
-              // Step 3: Review (modular component)
+              // Step 3: Review (modular component — padding owned by ReviewStep)
               SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
                 child: ReviewStep(
                   symbol: _symbolController.text,
                   selectedExchange: _selectedExchange,
@@ -523,8 +522,46 @@ class _AddTradeFormState extends State<AddTradeForm> {
   Widget _buildNavigationButtons(ThemeData theme, bool isDesktop) {
     final isCompact = !isDesktop && MediaQuery.sizeOf(context).width < 700;
     final horizontalPad = isCompact ? 12.0 : (isDesktop ? 24.0 : 16.0);
-    final verticalPad = isCompact ? 10.0 : (isDesktop ? 24.0 : 16.0);
+    final verticalPad = isCompact ? 8.0 : (isDesktop ? 24.0 : 16.0);
     final bottomNavReserve = PlatformConstants.globalBottomNavReserve(context);
+    final isLastStep = _currentStep == _totalSteps - 1;
+    final gap = isCompact ? 8.0 : 12.0;
+
+    final primaryLabel = isLastStep ? 'Save Trade' : 'Next';
+    final primaryIcon = isLastStep ? Icons.save_outlined : Icons.arrow_forward;
+
+    // Intrinsic-sized primary action — same pattern as web (never stretch full width).
+    final primaryButton = ElevatedButton(
+      onPressed: widget.isLoading
+          ? null
+          : isLastStep
+              ? _saveTrade
+              : _nextStep,
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size(0, 40),
+        visualDensity: isCompact ? VisualDensity.compact : VisualDensity.standard,
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 16 : 20,
+          vertical: isCompact ? 10 : 12,
+        ),
+      ),
+      child: widget.isLoading
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!isCompact) ...[
+                  Icon(primaryIcon, size: 20),
+                  const SizedBox(width: 8),
+                ],
+                Text(primaryLabel, maxLines: 1),
+              ],
+            ),
+    );
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -544,47 +581,37 @@ class _AddTradeFormState extends State<AddTradeForm> {
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           if (_currentStep > 0)
-            OutlinedButton.icon(
-              onPressed: widget.isLoading ? null : _previousStep,
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('Previous'),
-            )
+            isCompact
+                ? OutlinedButton(
+                    onPressed: widget.isLoading ? null : _previousStep,
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 40),
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: const Text('Previous'),
+                  )
+                : OutlinedButton.icon(
+                    onPressed: widget.isLoading ? null : _previousStep,
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('Previous'),
+                  )
           else
-            const SizedBox(),
-          Row(
-            children: [
-              if (widget.onCancel != null)
-                TextButton(
-                  onPressed: widget.isLoading ? null : widget.onCancel,
-                  child: const Text('Cancel'),
-                ),
-              const SizedBox(width: 16),
-              ElevatedButton.icon(
-                onPressed: widget.isLoading
-                    ? null
-                    : _currentStep == _totalSteps - 1
-                        ? _saveTrade
-                        : _nextStep,
-                icon: widget.isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        _currentStep == _totalSteps - 1
-                            ? Icons.save
-                            : Icons.arrow_forward,
-                      ),
-                label: Text(
-                  _currentStep == _totalSteps - 1 ? 'Save Trade' : 'Next',
-                ),
+            const Spacer(),
+          if (_currentStep > 0) const Spacer(),
+          if (widget.onCancel != null)
+            TextButton(
+              onPressed: widget.isLoading ? null : widget.onCancel,
+              style: TextButton.styleFrom(
+                visualDensity: isCompact ? VisualDensity.compact : null,
+                padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 12),
               ),
-            ],
-          ),
+              child: const Text('Cancel'),
+            ),
+          SizedBox(width: gap),
+          primaryButton,
         ],
       ),
     );

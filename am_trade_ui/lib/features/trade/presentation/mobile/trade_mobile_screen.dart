@@ -190,9 +190,14 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
     );
   }
 
+  void _leaveAddTrade() {
+    setState(() => _selectedView = MobileTradeViewType.holdings);
+    widget.onTabChanged?.call(MobileTradeViewType.holdings.index);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final showAppBar = _selectedView == MobileTradeViewType.addTrade;
+    final isAddTrade = _selectedView == MobileTradeViewType.addTrade;
 
     return Listener(
       behavior: HitTestBehavior.translucent,
@@ -207,54 +212,58 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         },
         child: UnifiedSidebarScaffold(
           module: ModuleType.trade,
-          title: 'Trade',
-          showAppBarOnMobile: showAppBar,
+          title: isAddTrade ? 'Add New Trade' : 'Trade',
+          showAppBarOnMobile: isAddTrade,
           showMobileMenuButton: false,
           showModuleBottomNavigation: false,
           autoHideMobileTabsOnScroll: true,
           onBackToGlobal: widget.onBack,
           floatingActionButton: _buildFloatingActionButton(context),
-          items: [
-        SecondarySidebarItem(
-          title: 'Portfolios',
-          icon: Icons.account_balance_wallet,
-          isSelected: _selectedView == MobileTradeViewType.portfolios,
-          onTap: () => _onViewChanged(MobileTradeViewType.portfolios),
+          // Hide Portfolios/Holdings/Calendar pills on add-trade — one clean top bar.
+          items: isAddTrade
+              ? const <SecondarySidebarItem>[]
+              : [
+                  SecondarySidebarItem(
+                    title: 'Portfolios',
+                    icon: Icons.account_balance_wallet,
+                    isSelected: _selectedView == MobileTradeViewType.portfolios,
+                    onTap: () =>
+                        _onViewChanged(MobileTradeViewType.portfolios),
+                  ),
+                  SecondarySidebarItem(
+                    title: 'Holdings',
+                    icon: Icons.dashboard_outlined,
+                    isSelected: _selectedView == MobileTradeViewType.holdings,
+                    onTap: () => _onViewChanged(MobileTradeViewType.holdings),
+                  ),
+                  SecondarySidebarItem(
+                    title: 'Calendar',
+                    icon: Icons.calendar_today_outlined,
+                    isSelected: _selectedView == MobileTradeViewType.calendar,
+                    onTap: () => _onViewChanged(MobileTradeViewType.calendar),
+                  ),
+                  SecondarySidebarItem(
+                    title: 'Journal',
+                    icon: Icons.book_outlined,
+                    isSelected: _selectedView == MobileTradeViewType.journal,
+                    onTap: () => _onViewChanged(MobileTradeViewType.journal),
+                  ),
+                  SecondarySidebarItem(
+                    title: 'Metrics',
+                    icon: Icons.analytics_outlined,
+                    isSelected: _selectedView == MobileTradeViewType.metrics,
+                    onTap: () => _onViewChanged(MobileTradeViewType.metrics),
+                  ),
+                  SecondarySidebarItem(
+                    title: 'Templates',
+                    icon: Icons.style_outlined,
+                    isSelected: _selectedView == MobileTradeViewType.templates,
+                    onTap: () => _onViewChanged(MobileTradeViewType.templates),
+                  ),
+                ],
+          body: _buildMainContent(context),
         ),
-        SecondarySidebarItem(
-          title: 'Holdings',
-          icon: Icons.dashboard_outlined,
-          isSelected: _selectedView == MobileTradeViewType.holdings,
-          onTap: () => _onViewChanged(MobileTradeViewType.holdings),
-        ),
-        SecondarySidebarItem(
-          title: 'Calendar',
-          icon: Icons.calendar_today_outlined,
-          isSelected: _selectedView == MobileTradeViewType.calendar,
-          onTap: () => _onViewChanged(MobileTradeViewType.calendar),
-        ),
-        SecondarySidebarItem(
-          title: 'Journal',
-          icon: Icons.book_outlined,
-          isSelected: _selectedView == MobileTradeViewType.journal,
-          onTap: () => _onViewChanged(MobileTradeViewType.journal),
-        ),
-        SecondarySidebarItem(
-          title: 'Metrics',
-          icon: Icons.analytics_outlined,
-          isSelected: _selectedView == MobileTradeViewType.metrics,
-          onTap: () => _onViewChanged(MobileTradeViewType.metrics),
-        ),
-        SecondarySidebarItem(
-          title: 'Templates',
-          icon: Icons.style_outlined,
-          isSelected: _selectedView == MobileTradeViewType.templates,
-          onTap: () => _onViewChanged(MobileTradeViewType.templates),
-        ),
-      ],
-      body: _buildMainContent(context),
-    ),
-    ),
+      ),
     );
   }
 
@@ -325,10 +334,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                 setState(() => _selectedView = MobileTradeViewType.holdings);
                 widget.onTabChanged?.call(MobileTradeViewType.holdings.index);
               },
-              onCancel: () {
-                setState(() => _selectedView = MobileTradeViewType.holdings);
-                widget.onTabChanged?.call(MobileTradeViewType.holdings.index);
-              },
+              onCancel: _leaveAddTrade,
             ),
           ),
           loading: () => const Center(child: CircularProgressIndicator()),

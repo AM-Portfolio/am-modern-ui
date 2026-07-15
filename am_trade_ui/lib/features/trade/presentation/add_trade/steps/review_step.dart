@@ -74,42 +74,63 @@ class ReviewStep extends StatelessWidget {
     final isDesktop = MediaQuery.of(context).size.width > 1200;
 
     return Padding(
-      padding: EdgeInsets.all(isDesktop ? 24 : 16),
+      padding: EdgeInsets.all(isDesktop ? 24 : 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Compact header — avoids wasting vertical space on mobile
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.symmetric(
+              horizontal: isDesktop ? 16 : 12,
+              vertical: isDesktop ? 14 : 10,
+            ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [theme.colorScheme.primaryContainer, theme.colorScheme.primaryContainer.withOpacity(0.5)],
+                colors: [
+                  theme.colorScheme.primaryContainer,
+                  theme.colorScheme.primaryContainer.withOpacity(0.5),
+                ],
               ),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               children: [
-                Icon(Icons.check_circle_outline, color: theme.colorScheme.primary, size: 28),
-                const SizedBox(width: 12),
+                Icon(
+                  Icons.check_circle_outline,
+                  color: theme.colorScheme.primary,
+                  size: isDesktop ? 28 : 20,
+                ),
+                SizedBox(width: isDesktop ? 12 : 8),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Review Your Trade',
-                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        'Verify details before submitting',
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                      ),
-                    ],
-                  ),
+                  child: isDesktop
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Review Your Trade',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Verify details before submitting',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          'Review Your Trade',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isDesktop ? 16 : 12),
 
           // Combined Instrument & Trade Details
           _buildCompactReviewCard(theme, 'Trade Summary', Icons.summarize, [
