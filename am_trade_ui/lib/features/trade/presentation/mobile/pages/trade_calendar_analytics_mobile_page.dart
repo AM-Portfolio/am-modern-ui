@@ -19,7 +19,7 @@ class TradeCalendarAnalyticsMobilePage extends ConsumerStatefulWidget {
 }
 
 class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendarAnalyticsMobilePage> {
-  int _selectedYear = 2020; // Default to 2020
+  int _selectedYear = DateTime.now().year;
 
   @override
   void initState() {
@@ -95,26 +95,36 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
       return const Center(child: Text('No data available'));
     }
 
-    final yearCalendarData = YearCalendarConverter.convertToMonthsData(
-      entity: entityData,
-      portfolioId: widget.portfolioId,
-      year: _selectedYear,
-    );
+    // Build contiguous years so scroll can cross Dec → Jan and update sticky year.
+    final nowYear = DateTime.now().year;
+    final startYear = nowYear - 14;
+    final yearsData = <int, Map<int, CalendarMonthData>>{};
+    for (var y = startYear; y <= nowYear; y++) {
+      yearsData[y] = YearCalendarConverter.convertToMonthsData(
+        entity: entityData,
+        portfolioId: widget.portfolioId,
+        year: y,
+      );
+    }
+
+    final yearCalendarData =
+        yearsData[_selectedYear] ?? yearsData[nowYear] ?? {};
 
     return Column(
       children: [
-        // Year Calendar Widget
         Expanded(
           child: YearCalendarWidget(
             year: _selectedYear,
             monthsData: yearCalendarData,
+            yearsData: yearsData,
             config: YearCalendarConfig(
-              compactMode: true, // Compact for mobile
+              compactMode: true,
               onDayTap: (date, dayData) {
                 _showDayDetails(context, date, dayData);
               },
             ),
             onYearChanged: (newYear) {
+              if (newYear == _selectedYear) return;
               setState(() {
                 _selectedYear = newYear;
               });

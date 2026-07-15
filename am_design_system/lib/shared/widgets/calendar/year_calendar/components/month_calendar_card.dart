@@ -74,7 +74,12 @@ class MonthCalendarCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            MonthHeader(month: month, monthData: monthData, stats: stats),
+            MonthHeader(
+              month: month,
+              year: year,
+              monthData: monthData,
+              stats: stats,
+            ),
             SizedBox(height: isMobile ? 10 : 12),
             if (showWeekdays) ...[
               _buildWeekdayHeaders(context),

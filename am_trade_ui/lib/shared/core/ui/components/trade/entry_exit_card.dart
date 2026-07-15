@@ -14,6 +14,7 @@ class EntryExitCard extends StatefulWidget {
     required this.onEntryDateChanged,
     required this.onExitDateChanged,
     required this.showExit,
+    this.entryFooter,
     super.key,
   });
 
@@ -26,6 +27,7 @@ class EntryExitCard extends StatefulWidget {
   final ValueChanged<DateTime> onEntryDateChanged;
   final ValueChanged<DateTime> onExitDateChanged;
   final bool showExit;
+  final Widget? entryFooter;
 
   @override
   State<EntryExitCard> createState() => _EntryExitCardState();
@@ -49,6 +51,8 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
+    final tabHeight = _tabContentHeight(isMobile);
 
     return Container(
       decoration: BoxDecoration(
@@ -124,7 +128,7 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
 
           // Tab Content
           SizedBox(
-            height: 280,
+            height: tabHeight,
             child: TabBarView(
               controller: _tabController,
               children: [
@@ -144,13 +148,19 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
     );
   }
 
+  double _tabContentHeight(bool isMobile) {
+    if (!isMobile) return 280;
+    // Date/time + price/qty + slim attach button (~40px)
+    return widget.entryFooter != null ? 168 : 148;
+  }
+
   Widget _buildEntryContent(ThemeData theme) => SingleChildScrollView(
-    padding: const EdgeInsets.all(12),
+    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ModernDateTimePicker(initialDateTime: widget.entryDate, onDateTimeChanged: widget.onEntryDateChanged),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
@@ -200,6 +210,10 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
             ),
           ],
         ),
+        if (widget.entryFooter != null) ...[
+          const SizedBox(height: 10),
+          widget.entryFooter!,
+        ],
       ],
     ),
   );

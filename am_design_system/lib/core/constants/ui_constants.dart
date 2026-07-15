@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 /// UI and styling constants
 class UIConstants {
   /// Colors
@@ -68,8 +70,10 @@ class PlatformConstants {
   static const double desktopAppBarHeight = 64.0;
   static const double mobileBottomNavHeight = 56.0;
   
-  /// Platform specific paddings
-  static const double mobilePadding = 16.0;
-  static const double tabletPadding = 24.0;
-  static const double desktopPadding = 32.0;
+  /// Reserve space for the floating global bottom nav (bar + outer padding).
+  static double globalBottomNavReserve(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width >= UIConstants.mobileBreakpoint) return 0;
+    return 80.0 + MediaQuery.paddingOf(context).bottom;
+  }
 }

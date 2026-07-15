@@ -318,7 +318,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
             children: [
               // Step 1: Trade Details (modular component)
               SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(isDesktop ? 16 : 10),
                 child: TradeDetailsStep(
                   symbolController: _symbolController,
                   selectedExchange: _selectedExchange,
@@ -415,72 +415,97 @@ class _AddTradeFormState extends State<AddTradeForm> {
     );
   }
 
-  Widget _buildProgressStepper(ThemeData theme) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    decoration: BoxDecoration(
-      color: theme.colorScheme.surface,
-      border: Border(bottom: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1))),
-    ),
-    child: Row(
-      children: List.generate(_totalSteps, (index) {
-        final isActive = index == _currentStep;
-        final isCompleted = index < _currentStep;
-        return Expanded(
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: isActive || isCompleted
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.surfaceContainerHighest,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: isCompleted
-                            ? Icon(Icons.check, color: theme.colorScheme.onPrimary, size: 16)
-                            : Text(
-                                '${index + 1}',
-                                style: TextStyle(
-                                  color: isActive
-                                      ? theme.colorScheme.onPrimary
-                                      : theme.colorScheme.onSurface.withOpacity(0.5),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _getStepTitle(index),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                        color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.6),
-                        fontSize: 12,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              if (index < _totalSteps - 1)
+  Widget _buildProgressStepper(ThemeData theme) {
+    final isCompact = MediaQuery.sizeOf(context).width < 700;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 10 : 16,
+        vertical: isCompact ? 6 : 12,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1)),
+        ),
+      ),
+      child: Row(
+        children: List.generate(_totalSteps, (index) {
+          final isActive = index == _currentStep;
+          final isCompleted = index < _currentStep;
+          return Expanded(
+            child: Row(
+              children: [
                 Expanded(
-                  child: Container(
-                    height: 2,
-                    color: isCompleted ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: isCompact ? 22 : 28,
+                        height: isCompact ? 22 : 28,
+                        decoration: BoxDecoration(
+                          color: isActive || isCompleted
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.surfaceContainerHighest,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: isCompleted
+                              ? Icon(
+                                  Icons.check,
+                                  color: theme.colorScheme.onPrimary,
+                                  size: isCompact ? 12 : 16,
+                                )
+                              : Text(
+                                  '${index + 1}',
+                                  style: TextStyle(
+                                    color: isActive
+                                        ? theme.colorScheme.onPrimary
+                                        : theme.colorScheme.onSurface
+                                            .withOpacity(0.5),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: isCompact ? 11 : 13,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      SizedBox(width: isCompact ? 4 : 6),
+                      Flexible(
+                        child: Text(
+                          _getStepTitle(index),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight:
+                                isActive ? FontWeight.bold : FontWeight.normal,
+                            color: isActive
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurface.withOpacity(0.6),
+                            fontSize: isCompact ? 11 : 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-            ],
-          ),
-        );
-      }),
-    ),
-  );
+                if (index < _totalSteps - 1)
+                  SizedBox(
+                    width: isCompact ? 8 : 16,
+                    child: Container(
+                      height: 2,
+                      color: isCompleted
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.surfaceContainerHighest,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
 
   String _getStepTitle(int index) {
     switch (index) {
@@ -495,43 +520,74 @@ class _AddTradeFormState extends State<AddTradeForm> {
     }
   }
 
-  Widget _buildNavigationButtons(ThemeData theme, bool isDesktop) => Container(
-    padding: EdgeInsets.all(isDesktop ? 24 : 16),
-    decoration: BoxDecoration(
-      color: theme.colorScheme.surface,
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, -2))],
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        if (_currentStep > 0)
-          OutlinedButton.icon(
-            onPressed: widget.isLoading ? null : _previousStep,
-            icon: const Icon(Icons.arrow_back),
-            label: const Text('Previous'),
-          )
-        else
-          const SizedBox(),
-        Row(
-          children: [
-            if (widget.onCancel != null)
-              TextButton(onPressed: widget.isLoading ? null : widget.onCancel, child: const Text('Cancel')),
-            const SizedBox(width: 16),
-            ElevatedButton.icon(
-              onPressed: widget.isLoading
-                  ? null
-                  : _currentStep == _totalSteps - 1
-                  ? _saveTrade
-                  : _nextStep,
-              icon: widget.isLoading
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Icon(_currentStep == _totalSteps - 1 ? Icons.save : Icons.arrow_forward),
-              label: Text(_currentStep == _totalSteps - 1 ? 'Save Trade' : 'Next'),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
+  Widget _buildNavigationButtons(ThemeData theme, bool isDesktop) {
+    final isCompact = !isDesktop && MediaQuery.sizeOf(context).width < 700;
+    final horizontalPad = isCompact ? 12.0 : (isDesktop ? 24.0 : 16.0);
+    final verticalPad = isCompact ? 10.0 : (isDesktop ? 24.0 : 16.0);
+    final bottomNavReserve = PlatformConstants.globalBottomNavReserve(context);
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        horizontalPad,
+        verticalPad,
+        horizontalPad,
+        verticalPad + bottomNavReserve,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          if (_currentStep > 0)
+            OutlinedButton.icon(
+              onPressed: widget.isLoading ? null : _previousStep,
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('Previous'),
+            )
+          else
+            const SizedBox(),
+          Row(
+            children: [
+              if (widget.onCancel != null)
+                TextButton(
+                  onPressed: widget.isLoading ? null : widget.onCancel,
+                  child: const Text('Cancel'),
+                ),
+              const SizedBox(width: 16),
+              ElevatedButton.icon(
+                onPressed: widget.isLoading
+                    ? null
+                    : _currentStep == _totalSteps - 1
+                        ? _saveTrade
+                        : _nextStep,
+                icon: widget.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        _currentStep == _totalSteps - 1
+                            ? Icons.save
+                            : Icons.arrow_forward,
+                      ),
+                label: Text(
+                  _currentStep == _totalSteps - 1 ? 'Save Trade' : 'Next',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 

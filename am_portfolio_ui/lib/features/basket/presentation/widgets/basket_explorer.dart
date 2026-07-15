@@ -47,34 +47,9 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Basket Opportunities',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  // Reset query to default
-                  setState(() {
-                    _query = 'Nifty 50,Nifty Bank,Nifty IT';
-                    _selectedCategory = null;
-                  });
-                },
-                child: const Text('Reset'),
-              ),
-            ],
-          ),
-        ),
-        
         // ETF Search Bar
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: EtfSearchBar(
             onEtfSelected: (selection) {
               if (selection.isin != null) {
@@ -82,6 +57,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                    // If multiple ISINs, update the list
                    setState(() {
                      _query = selection.isin!;
+                     _selectedCategory = null;
                    });
                 } else {
                   BasketNavigation.openPreview(
@@ -96,6 +72,12 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                   const SnackBar(content: Text('Error: Selected ETF has no ISIN')),
                 );
               }
+            },
+            onCleared: () {
+              setState(() {
+                _query = 'Nifty 50,Nifty Bank,Nifty IT';
+                _selectedCategory = null;
+              });
             },
           ),
         ),
@@ -145,9 +127,8 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
             ),
           ),
         ),
-        
-        const SizedBox(height: 12),
-        const SizedBox(height: 12),
+
+        const SizedBox(height: 8),
         Expanded(
           child: opportunitiesAsync.when(
             data: (opportunities) {

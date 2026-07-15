@@ -33,7 +33,7 @@ class TradeSettingsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: theme.colorScheme.outline.withOpacity(0.15)),
       ),
-      padding: EdgeInsets.all(isMobile ? 8 : 10),
+      padding: EdgeInsets.all(isMobile ? 6 : 10),
       child: Row(
         children: [
           if (!isMobile) ...[

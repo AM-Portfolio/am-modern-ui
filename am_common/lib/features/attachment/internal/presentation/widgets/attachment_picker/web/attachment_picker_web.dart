@@ -80,6 +80,11 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final canAddMore = _attachments.length < widget.maxAttachments;
+    final isCompact = MediaQuery.sizeOf(context).width < 700;
+
+    if (isCompact) {
+      return _buildCompactSection(theme, canAddMore);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,7 +133,7 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
             ],
           ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
         // Preview Grid
         if (widget.showPreview && _attachments.isNotEmpty) ...[
@@ -137,7 +142,7 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
             onRemove: widget.readOnly ? null : _removeAttachment,
             readOnly: widget.readOnly,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
         ],
 
         // Drag and Drop Zone
@@ -149,7 +154,7 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
 
           // Upload pending button
           if (!widget.autoUpload && _pendingUploads.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             FilledButton.icon(
               onPressed: _isUploading ? null : uploadPendingFiles,
               icon: const Icon(Icons.cloud_upload),
@@ -159,7 +164,7 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
 
           // Progress Indicator
           if (_isUploading) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             LinearProgressIndicator(value: _uploadProgress),
             const SizedBox(height: 4),
             Text(
@@ -174,72 +179,165 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
     );
   }
 
-  Widget _buildDropZone(ThemeData theme) => GestureDetector(
-    onTap: _isUploading ? null : _pickFile,
-    child: MouseRegion(
-      onEnter: (_) => setState(() => _isDragging = true),
-      onExit: (_) => setState(() => _isDragging = false),
-      child: DragTarget<List<html.File>>(
-        onWillAcceptWithDetails: (_) =>
-            !_isUploading && _attachments.length < widget.maxAttachments,
-        onAcceptWithDetails: (details) => _handleDroppedFiles(details.data),
-        builder: (context, candidateData, rejectedData) {
-          final isHovering = candidateData.isNotEmpty || _isDragging;
-
-          return Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: isHovering
-                  ? theme.colorScheme.primaryContainer.withOpacity(0.3)
-                  : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              border: Border.all(
-                color: isHovering
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.outline.withOpacity(0.5),
-                width: 2,
+  /// Slim mobile attach row — no bulky title or multi-line drop zone.
+  Widget _buildCompactSection(ThemeData theme, bool canAddMore) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (widget.showPreview && _attachments.isNotEmpty) ...[
+          AttachmentPreviewGrid(
+            attachments: _attachments,
+            onRemove: widget.readOnly ? null : _removeAttachment,
+            readOnly: widget.readOnly,
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (!widget.readOnly) ...[
+          if (canAddMore)
+            _buildCompactAttachButton(theme)
+          else
+            _buildMaxReachedMessage(theme),
+          if (_isUploading) ...[
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: _uploadProgress,
+                minHeight: 3,
               ),
-              borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCompactAttachButton(ThemeData theme) {
+    final countLabel = '${_attachments.length}/${widget.maxAttachments}';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _isUploading ? null : _pickFile,
+        borderRadius: BorderRadius.circular(10),
+        child: Ink(
+          height: 40,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.28),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
               children: [
                 Icon(
-                  isHovering ? Icons.upload : Icons.cloud_upload_outlined,
-                  size: 40,
-                  color: isHovering
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
+                  Icons.attach_file_rounded,
+                  size: 18,
+                  color: theme.colorScheme.primary,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Drag & drop files here',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: isHovering
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _attachments.isEmpty ? 'Add attachment' : 'Add more',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
                 Text(
-                  'or click to browse',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                  countLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  _getAllowedTypesText(),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
-                  ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.add_rounded,
+                  size: 18,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.8),
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ),
       ),
-    ),
-  );
+    );
+  }
+
+  Widget _buildDropZone(ThemeData theme) {
+    return GestureDetector(
+      onTap: _isUploading ? null : _pickFile,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isDragging = true),
+        onExit: (_) => setState(() => _isDragging = false),
+        child: DragTarget<List<html.File>>(
+          onWillAcceptWithDetails: (_) =>
+              !_isUploading && _attachments.length < widget.maxAttachments,
+          onAcceptWithDetails: (details) => _handleDroppedFiles(details.data),
+          builder: (context, candidateData, rejectedData) {
+            final isHovering = candidateData.isNotEmpty || _isDragging;
+            final accent = isHovering
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant;
+
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              decoration: BoxDecoration(
+                color: isHovering
+                    ? theme.colorScheme.primaryContainer.withOpacity(0.3)
+                    : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                border: Border.all(
+                  color: isHovering
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outline.withOpacity(0.5),
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    isHovering ? Icons.upload : Icons.cloud_upload_outlined,
+                    size: 40,
+                    color: accent,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Drag & drop files here',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: accent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'or click to browse',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _getAllowedTypesText(),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
 
   Widget _buildMaxReachedMessage(ThemeData theme) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

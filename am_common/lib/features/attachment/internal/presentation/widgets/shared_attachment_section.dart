@@ -66,5 +66,8 @@ class SharedAttachmentSection extends StatelessWidget {
     featureName: featureName,
     userId: userId,
     readOnly: readOnly || !isEditMode,
+    label: label,
+    maxAttachments: maxAttachments ?? 5,
+    showPreview: showPreview,
   );
 }
