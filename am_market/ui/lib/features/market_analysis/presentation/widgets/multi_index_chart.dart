@@ -68,48 +68,25 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   late ScrollController _scrollController;
   double _zoomScale = 0.5;
 
-  // Viewport-based calculated min/max for the first index
-  double _viewportMinY = -5.0;
-  double _viewportMaxY = 5.0;
-  double _currentInterval =
-      2.0; // [SIP/Absolute Value Optimization] Stores the active interval step for Index 1
-
-  // Viewport-based calculated min/max for the second index in Dual Y-Axis mode
-  double _viewportMinY2 = -5.0;
-  double _viewportMaxY2 = 5.0;
-  double _currentInterval2 =
-      2.0; // [SIP/Absolute Value Optimization] Stores the active interval step for Index 2
-
-  // Tracked targets to avoid duplicate state sets
-  double _targetMinY = -5.0;
-  double _targetMaxY = 5.0;
-
-  // Tracked targets for the second index in Dual Y-Axis mode
-  double _targetMinY2 = -5.0;
-  double _targetMaxY2 = 5.0;
-
-  Timer? _throttleTimer;
-
-  /// [SIP/Absolute Value Optimization] Tracks whether the chart should render absolute price numbers
-  /// (Google Finance style) instead of percentage changes.
   bool _showAbsoluteValues = false;
   List<Map<String, dynamic>> _chartData = [];
   List<String> _activeIndices = [];
   Set<String> _hiddenIndices = {}; // Track indices hidden by the user
 
   /// [SIP/Absolute Value Optimization] Helper getter to verify if the chart meets all safety conditions
-  /// required to enable Dual-Label Y-Axis scaling. This requires Absolute Mode to be active, exactly 2
+  /// required to enable Multi-Label Y-Axis scaling. This requires Absolute Mode to be active, at least 2
   /// compared indices, the line chart view active, and non-infinite Y-bounds.
-  bool get _useDualYAxis =>
+  bool get _useMultiYAxis =>
       _showAbsoluteValues &&
-      _activeIndices.length == 2 &&
-      !widget.isBarChart &&
-      _viewportMinY2 != double.infinity &&
-      _viewportMaxY2 != double.negativeInfinity;
+      _activeIndices.length >= 2 &&
+      !widget.isBarChart;
 
   /// [SIP/Absolute Value Optimization] Locked left title reserved size (prevents layout feedback loop).
-  /// Allocates 85px to fit dual-labels '24.0K | 55.0K' without clipping, or 65px for single labels.
-  double get _leftTitleReservedSize => _useDualYAxis ? 85.0 : 65.0;
+  /// Allocates space dynamically based on the number of compared indices to fit color-coded labels without clipping.
+  double get _leftTitleReservedSize {
+    if (!_useMultiYAxis) return 65.0;
+    return 30.0 + 32.0 * _activeIndices.length;
+  }
 
   /// Returns true when the chart is scrolled to (or near) the right edge,
   /// meaning the user is viewing the most recent data points.
@@ -192,7 +169,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    _throttleTimer?.cancel();
     super.dispose();
   }
 
@@ -200,10 +176,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   void didUpdateWidget(covariant MultiIndexChart oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // [SIP/Absolute Value Optimization] Automatically fallback to Percentage Mode
-    // if the user selects more than 2 indices, or toggles to Bar Chart view,
-    // as absolute price comparisons are visually invalid under these conditions.
-    if (widget.selectedIndices.length > 2 || widget.isBarChart) {
+    // Automatically fallback to Percentage Mode on Bar Chart view
+    if (widget.isBarChart) {
       _showAbsoluteValues = false;
     }
 
@@ -217,12 +191,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   }
 
   void _onScroll() {
-    if (_throttleTimer?.isActive ?? false) return;
-    _throttleTimer = Timer(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        _recalculateViewport();
-      }
-    });
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   /// 🛡️ Active Indices Safety Filter & Union Alignment
@@ -236,14 +207,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
     if (_activeIndices.isEmpty) {
       _chartData = [];
-      _targetMinY = -5.0;
-      _targetMaxY = 5.0;
-      if (!isInitial && mounted) {
-        setState(() {
-          _viewportMinY = -5.0;
-          _viewportMaxY = 5.0;
-        });
-      }
       return;
     }
 
@@ -414,12 +377,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     _chartData = combined;
 
     if (resetViewport || isInitial) {
-      _calculateTargetMinMax();
-      _viewportMinY = _targetMinY;
-      _viewportMaxY = _targetMaxY;
-      _viewportMinY2 = _targetMinY2;
-      _viewportMaxY2 = _targetMaxY2;
-
       if (resetViewport && !isInitial) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
@@ -428,8 +385,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           }
         });
       }
-    } else {
-      _recalculateViewport();
     }
   }
 
@@ -507,194 +462,84 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     return {'minY': minY, 'maxY': maxY, 'interval': interval};
   }
 
-  /// 📐 Dynamic Viewport Y-Axis Recalculation (Throttled)
-  /// Calculates the visible min/max bounds and intervals for the first index,
-  /// and if in Dual-Label Mode, does the same separately for the second index.
-  void _recalculateViewport() {
-    if (_chartData.isEmpty || _activeIndices.isEmpty) return;
-    if (!_scrollController.hasClients) {
-      _calculateTargetMinMax();
-      if (mounted) {
-        setState(() {
-          _viewportMinY = _targetMinY;
-          _viewportMaxY = _targetMaxY;
-          _viewportMinY2 = _targetMinY2;
-          _viewportMaxY2 = _targetMaxY2;
-        });
-      }
-      return;
+  // Viewport calculations are now performed inline during build for absolute consistency.
+  Map<String, dynamic> _calculateVisibleViewport(
+      List<Map<String, dynamic>> chartData, double spacing, double viewportWidth) {
+    double scrollOffset = 0.0;
+    if (_scrollController.hasClients) {
+      scrollOffset = _scrollController.offset;
     }
 
-    final scrollOffset = _scrollController.offset;
-    final viewportWidth = _scrollController.position.viewportDimension;
-
-    final double spacing = widget.isBarChart
-        ? (_activeIndices.length * 10.0 + 20.0)
-        : (30.0 * _zoomScale);
-
-    // Scan a few extra data points beyond the visible boundaries (2 to the left, 3 to the right)
-    // to account for Y-axis left title reserved size (85px) and right padding, preventing edge-clipping.
-    int startIndex = (scrollOffset / spacing).floor() - 2;
-    int endIndex = ((scrollOffset + viewportWidth) / spacing).ceil() + 3;
+    int startIndex = (scrollOffset / spacing).floor();
+    int endIndex = ((scrollOffset + viewportWidth) / spacing).ceil();
 
     if (startIndex < 0) startIndex = 0;
-    if (endIndex >= _chartData.length) endIndex = _chartData.length - 1;
+    if (endIndex >= chartData.length) endIndex = chartData.length - 1;
     if (startIndex > endIndex) startIndex = endIndex;
 
-    final visibleSubset = _chartData.sublist(startIndex, endIndex + 1);
+    final visibleData = chartData.sublist(startIndex, endIndex + 1);
 
-    if (visibleSubset.isEmpty) return;
+    final Map<String, double> cleanMin = {};
+    final Map<String, double> cleanMax = {};
+    final Map<String, double> cleanInterval = {};
 
-    double minVal = double.infinity;
-    double maxVal = double.negativeInfinity;
-    double minVal2 = double.infinity;
-    double maxVal2 = double.negativeInfinity;
+    final bool isMulti = _showAbsoluteValues && !widget.isBarChart;
 
-    // Check if we are running in Dual Y-Axis mode
-    final bool isDual =
-        _showAbsoluteValues && _activeIndices.length == 2 && !widget.isBarChart;
+    for (final symbol in _activeIndices) {
+      double minVal = double.infinity;
+      double maxVal = double.negativeInfinity;
 
-    for (final point in visibleSubset) {
-      if (isDual) {
-        // Index 1
-        final val1 = point[_activeIndices[0]];
-        if (val1 != null) {
-          final double dVal1 = val1 as double;
-          if (dVal1 < minVal) minVal = dVal1;
-          if (dVal1 > maxVal) maxVal = dVal1;
+      for (final point in visibleData) {
+        final val = point[symbol];
+        if (val != null) {
+          final double dVal = val as double;
+          if (dVal < minVal) minVal = dVal;
+          if (dVal > maxVal) maxVal = dVal;
         }
-        // Index 2
-        final val2 = point[_activeIndices[1]];
-        if (val2 != null) {
-          final double dVal2 = val2 as double;
-          if (dVal2 < minVal2) minVal2 = dVal2;
-          if (dVal2 > maxVal2) maxVal2 = dVal2;
-        }
-      } else {
-        for (final symbol in _activeIndices) {
-          final val = point[symbol];
-          if (val != null) {
-            final double dVal = val as double;
-            if (dVal < minVal) minVal = dVal;
-            if (dVal > maxVal) maxVal = dVal;
+      }
+
+      if (!isMulti) {
+        double globalMin = double.infinity;
+        double globalMax = double.negativeInfinity;
+        for (final sym in _activeIndices) {
+          for (final point in visibleData) {
+            final val = point[sym];
+            if (val != null) {
+              final double dVal = val as double;
+              if (dVal < globalMin) globalMin = dVal;
+              if (dVal > globalMax) globalMax = dVal;
+            }
           }
         }
-      }
-    }
-
-    double computedMinY = _targetMinY;
-    double computedMaxY = _targetMaxY;
-    double computedInterval = _currentInterval;
-
-    if (minVal != double.infinity && maxVal != double.negativeInfinity) {
-      final bounds = _calculateCleanBounds(minVal, maxVal);
-      computedMinY = bounds['minY']!;
-      computedMaxY = bounds['maxY']!;
-      computedInterval = bounds['interval']!;
-    }
-
-    double computedMinY2 = _targetMinY2;
-    double computedMaxY2 = _targetMaxY2;
-    double computedInterval2 = _currentInterval2;
-
-    // Compute separate bounds for Index 2 if Dual Mode is active and has valid data
-    if (isDual &&
-        minVal2 != double.infinity &&
-        maxVal2 != double.negativeInfinity) {
-      final bounds2 = _calculateCleanBounds(minVal2, maxVal2);
-      computedMinY2 = bounds2['minY']!;
-      computedMaxY2 = bounds2['maxY']!;
-      computedInterval2 = bounds2['interval']!;
-    }
-
-    final double targetDiff =
-        (computedMinY - _targetMinY).abs() + (computedMaxY - _targetMaxY).abs();
-    final double targetDiff2 = isDual
-        ? ((computedMinY2 - _targetMinY2).abs() +
-            (computedMaxY2 - _targetMaxY2).abs())
-        : 0.0;
-
-    if (targetDiff > 0.05 || targetDiff2 > 0.05) {
-      _targetMinY = computedMinY;
-      _targetMaxY = computedMaxY;
-      _targetMinY2 = computedMinY2;
-      _targetMaxY2 = computedMaxY2;
-      if (mounted) {
-        setState(() {
-          _viewportMinY = _targetMinY;
-          _viewportMaxY = _targetMaxY;
-          _currentInterval = computedInterval;
-          _viewportMinY2 = _targetMinY2;
-          _viewportMaxY2 = _targetMaxY2;
-          _currentInterval2 = computedInterval2;
-        });
-      }
-    }
-  }
-
-  /// Calculates the static target boundaries and intervals across the entire visible dataset.
-  void _calculateTargetMinMax() {
-    if (_chartData.isEmpty || _activeIndices.isEmpty) {
-      _targetMinY = -5.0;
-      _targetMaxY = 5.0;
-      _targetMinY2 = -5.0;
-      _targetMaxY2 = 5.0;
-      return;
-    }
-    double minVal = double.infinity;
-    double maxVal = double.negativeInfinity;
-    double minVal2 = double.infinity;
-    double maxVal2 = double.negativeInfinity;
-
-    // Check if we are running in Dual Y-Axis mode
-    final bool isDual =
-        _showAbsoluteValues && _activeIndices.length == 2 && !widget.isBarChart;
-
-    for (final point in _chartData) {
-      if (isDual) {
-        // Index 1
-        final val1 = point[_activeIndices[0]];
-        if (val1 != null) {
-          final double dVal1 = val1 as double;
-          if (dVal1 < minVal) minVal = dVal1;
-          if (dVal1 > maxVal) maxVal = dVal1;
+        final bounds = _calculateCleanBounds(globalMin, globalMax);
+        for (final sym in _activeIndices) {
+          cleanMin[sym] = bounds['minY']!;
+          cleanMax[sym] = bounds['maxY']!;
+          cleanInterval[sym] = bounds['interval']!;
         }
-        // Index 2
-        final val2 = point[_activeIndices[1]];
-        if (val2 != null) {
-          final double dVal2 = val2 as double;
-          if (dVal2 < minVal2) minVal2 = dVal2;
-          if (dVal2 > maxVal2) maxVal2 = dVal2;
-        }
+        break;
       } else {
-        for (final symbol in _activeIndices) {
-          final val = point[symbol];
-          if (val != null) {
-            final double dVal = val as double;
-            if (dVal < minVal) minVal = dVal;
-            if (dVal > maxVal) maxVal = dVal;
-          }
+        if (minVal != double.infinity && maxVal != double.negativeInfinity) {
+          final bounds = _calculateCleanBounds(minVal, maxVal);
+          cleanMin[symbol] = bounds['minY']!;
+          cleanMax[symbol] = bounds['maxY']!;
+          cleanInterval[symbol] = bounds['interval']!;
+        } else {
+          cleanMin[symbol] = -5.0;
+          cleanMax[symbol] = 5.0;
+          cleanInterval[symbol] = 2.0;
         }
       }
     }
 
-    final bounds = _calculateCleanBounds(minVal, maxVal);
-    _targetMinY = bounds['minY']!;
-    _targetMaxY = bounds['maxY']!;
-    _currentInterval = bounds['interval']!;
-
-    if (isDual &&
-        minVal2 != double.infinity &&
-        maxVal2 != double.negativeInfinity) {
-      final bounds2 = _calculateCleanBounds(minVal2, maxVal2);
-      _targetMinY2 = bounds2['minY']!;
-      _targetMaxY2 = bounds2['maxY']!;
-      _currentInterval2 = bounds2['interval']!;
-    } else {
-      _targetMinY2 = -5.0;
-      _targetMaxY2 = 5.0;
-      _currentInterval2 = 2.0;
-    }
+    return {
+      'visibleData': visibleData,
+      'startIndex': startIndex,
+      'endIndex': endIndex,
+      'cleanMin': cleanMin,
+      'cleanMax': cleanMax,
+      'cleanInterval': cleanInterval,
+    };
   }
 
   /// 🔍 Center-Anchored Zooming
@@ -745,8 +590,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         _zoom(_zoomScale + zoomChange, viewportWidth);
       } else {
         if (_scrollController.hasClients) {
+          // Inverted DY so that scrolling down moves the timeline left, 
+          // and added DX for trackpad horizontal support.
           final double newOffset =
-              _scrollController.offset + event.scrollDelta.dy;
+              _scrollController.offset - event.scrollDelta.dy + event.scrollDelta.dx;
           final maxScroll = _scrollController.position.maxScrollExtent;
           _scrollController.jumpTo(newOffset.clamp(0.0, maxScroll));
         }
@@ -787,7 +634,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
               Icon(Icons.show_chart, size: 64, color: Colors.grey[400]),
               const SizedBox(height: 16),
               Text(
-                'Select up to 3 indices with valid data to compare',
+                'Select up to 5 indices with valid data to compare',
                 style: TextStyle(color: Colors.grey[600], fontSize: 16),
               ),
             ],
@@ -852,9 +699,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                         _buildToggleSegment(
                           label: '123',
                           isSelected: _showAbsoluteValues,
-                          // Absolute Mode is strictly enabled only for Line Charts and when 1 or 2 indices are compared
-                          isEnabled:
-                              _activeIndices.length <= 2 && !widget.isBarChart,
+                          // Absolute Mode is enabled for Line Charts
+                          isEnabled: !widget.isBarChart,
                           onTap: () {
                             setState(() {
                               _showAbsoluteValues = true;
@@ -940,9 +786,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         opacity: isEnabled ? 1.0 : 0.4,
         child: Tooltip(
           message: !isEnabled && label == '123'
-              ? (widget.isBarChart
-                  ? 'Absolute mode is not supported on Bar Charts'
-                  : 'Absolute mode supports up to 2 compared indices')
+              ? 'Absolute mode is not supported on Bar Charts'
               : '',
           child: GestureDetector(
             onTap: onTap,
@@ -1045,56 +889,50 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double spacing = (_activeIndices.length * 10.0 + 20.0);
-        final minWidth = chartData.length * spacing;
+        final double chartWidth = chartData.length * spacing;
+        final double viewportWidth = constraints.maxWidth - 65.0;
 
-        // 🎨 Rubber-band Animated Y-Axis Ticks
-        return TweenAnimationBuilder<ChartViewportRange>(
-          tween: ChartViewportRangeTween(
-            begin: ChartViewportRange(_viewportMinY, _viewportMaxY),
-            end: ChartViewportRange(_viewportMinY, _viewportMaxY),
-          ),
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOut,
-          builder: (context, range, child) {
-            final double chartMinY = range.minY;
-            final double chartMaxY = range.maxY;
+        final viewportInfo = _calculateVisibleViewport(chartData, spacing, viewportWidth);
+        final List<Map<String, dynamic>> visibleData = viewportInfo['visibleData'];
+        final int startIndex = viewportInfo['startIndex'];
+        final Map<String, double> cleanMin = viewportInfo['cleanMin'];
+        final Map<String, double> cleanMax = viewportInfo['cleanMax'];
 
-            // [SIP/Absolute Value Optimization] CRITICAL BUG FIX: Dynamically calculate the chart interval
-            // using the currently animated range bounds rather than using the static snapped target interval.
-            // This prevents the "grid-line explosion" during mode transitions (e.g. going from 24,000 range
-            // down to 10 range, which previously caused the chart to attempt to draw 24,000 grid lines and labels,
-            // freezing the browser completely).
-            final double chartInterval =
-                _calculateCleanBounds(chartMinY, chartMaxY)['interval']!;
+        final String firstSymbol = _activeIndices.isNotEmpty ? _activeIndices.first : '';
+        final double targetMin = cleanMin[firstSymbol] ?? -5.0;
+        final double targetMax = cleanMax[firstSymbol] ?? 5.0;
 
-            return Scrollbar(
-              controller: _scrollController,
-              thumbVisibility: true,
-              child: Listener(
-                onPointerSignal: (event) =>
-                    _handlePointerSignal(event, constraints.maxWidth),
-                child: GestureDetector(
-                  onHorizontalDragUpdate: (details) {
-                    if (_scrollController.hasClients) {
-                      _scrollController.position
-                          .moveTo(_scrollController.offset - details.delta.dx);
-                    }
-                  },
-                  // [Gesture Lock Optimization] Intercept vertical drag components within the chart
-                  // boundaries, keeping horizontal swipes perfectly focused inside the chart.
-                  onVerticalDragUpdate: (_) {},
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    scrollDirection: Axis.horizontal,
-                    physics: const ClampingScrollPhysics(),
-                    child: SizedBox(
-                      width: minWidth > constraints.maxWidth
-                          ? minWidth
-                          : constraints.maxWidth,
-                      height: constraints.maxHeight,
+        return Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: TweenAnimationBuilder<ChartViewportRange>(
+                tween: ChartViewportRangeTween(
+                  begin: ChartViewportRange(targetMin, targetMax),
+                  end: ChartViewportRange(targetMin, targetMax),
+                ),
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOut,
+                builder: (context, range, child) {
+                  final double chartMinY = range.minY;
+                  final double chartMaxY = range.maxY;
+                  final double chartInterval = _calculateCleanBounds(chartMinY, chartMaxY)['interval']!;
+
+                  return GestureDetector(
+                    onHorizontalDragUpdate: (details) {
+                      if (_scrollController.hasClients) {
+                        final maxScroll = _scrollController.position.maxScrollExtent;
+                        final double newOffset = (_scrollController.offset - details.delta.dx)
+                            .clamp(0.0, maxScroll);
+                        _scrollController.jumpTo(newOffset);
+                      }
+                    },
+                    child: Listener(
+                      onPointerSignal: (event) =>
+                          _handlePointerSignal(event, constraints.maxWidth),
                       child: BarChart(
                         key: ValueKey(
-                            '${_activeIndices.join('-')}_bar_${chartData.length}'),
+                            '${_activeIndices.join('-')}_bar_${visibleData.length}'),
                         BarChartData(
                           gridData: FlGridData(
                             show: true,
@@ -1121,14 +959,15 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                 reservedSize: 30,
                                 getTitlesWidget: (value, meta) {
                                   final index = value.toInt();
-                                  if (index >= 0 && index < chartData.length) {
+                                  final originalIndex = startIndex + index;
+                                  if (originalIndex >= 0 && originalIndex < chartData.length) {
                                     if (chartData.length > 20 &&
-                                        index % (chartData.length ~/ 10) != 0) {
+                                        originalIndex % (chartData.length ~/ 10) != 0) {
                                       return const SizedBox.shrink();
                                     }
 
                                     final dateStr =
-                                        chartData[index]['time'] as String;
+                                        chartData[originalIndex]['time'] as String;
                                     try {
                                       final date = DateTime.parse(dateStr);
                                       final fmt = _getDateFormat(chartData);
@@ -1137,7 +976,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                           ? (chartData.length ~/ 10)
                                           : 1;
                                       final prevIndex =
-                                          ((index - 1) ~/ interval) * interval;
+                                          ((originalIndex - 1) ~/ interval) * interval;
                                       if (prevIndex >= 0) {
                                         try {
                                           final prevDate = DateTime.parse(
@@ -1174,8 +1013,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                             leftTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                reservedSize:
-                                    65, // [SIP/Absolute Value Optimization] Fixed size prevents layout reflows and infinite loops
+                                reservedSize: 65,
                                 interval: chartInterval,
                                 getTitlesWidget: (value, meta) {
                                   if ((value - meta.min).abs() < 0.01 ||
@@ -1215,7 +1053,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                           ),
                           minY: chartMinY,
                           maxY: chartMaxY,
-                          barGroups: chartData.asMap().entries.map((entry) {
+                          barGroups: visibleData.asMap().entries.map((entry) {
                             final index = entry.key;
                             final point = entry.value;
 
@@ -1262,8 +1100,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                               fitInsideVertically: true,
                               getTooltipItem:
                                   (group, groupIndex, rod, rodIndex) {
+                                final originalIndex = startIndex + group.x;
                                 final dateStr =
-                                    chartData[group.x]['time'] as String;
+                                    chartData[originalIndex]['time'] as String;
                                 final date = DateTime.parse(dateStr);
                                 final visibleIndices = _activeIndices.where((s) => !_hiddenIndices.contains(s)).toList();
                                 final symbol = visibleIndices[rodIndex];
@@ -1281,11 +1120,12 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                         ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+            _buildDummyScrollView(chartWidth),
+          ],
         );
       },
     );
@@ -1298,56 +1138,50 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       builder: (context, constraints) {
         final double spacing = 30.0 * _zoomScale;
         final double chartWidth = chartData.length * spacing;
+        final double viewportWidth = constraints.maxWidth - _leftTitleReservedSize;
+
+        final viewportInfo = _calculateVisibleViewport(chartData, spacing, viewportWidth);
+        final List<Map<String, dynamic>> visibleData = viewportInfo['visibleData'];
+        final int startIndex = viewportInfo['startIndex'];
+        final int endIndex = viewportInfo['endIndex'];
+        final Map<String, double> cleanMin = viewportInfo['cleanMin'];
+        final Map<String, double> cleanMax = viewportInfo['cleanMax'];
+
+        final String firstSymbol = _activeIndices.isNotEmpty ? _activeIndices.first : '';
+        final double targetMin = cleanMin[firstSymbol] ?? -5.0;
+        final double targetMax = cleanMax[firstSymbol] ?? 5.0;
 
         return Stack(
           children: [
-            TweenAnimationBuilder<ChartViewportRange>(
-              tween: ChartViewportRangeTween(
-                begin: ChartViewportRange(_viewportMinY, _viewportMaxY),
-                end: ChartViewportRange(_viewportMinY, _viewportMaxY),
-              ),
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeOut,
-              builder: (context, range, child) {
-                final double chartMinY = range.minY;
-                final double chartMaxY = range.maxY;
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: TweenAnimationBuilder<ChartViewportRange>(
+                tween: ChartViewportRangeTween(
+                  begin: ChartViewportRange(targetMin, targetMax),
+                  end: ChartViewportRange(targetMin, targetMax),
+                ),
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOut,
+                builder: (context, range, child) {
+                  final double chartMinY = range.minY;
+                  final double chartMaxY = range.maxY;
+                  final double chartInterval = _calculateCleanBounds(chartMinY, chartMaxY)['interval']!;
 
-            // [SIP/Absolute Value Optimization] CRITICAL BUG FIX: Dynamically calculate the chart interval
-            // using the currently animated range bounds rather than using the static snapped target interval.
-            // This prevents the "grid-line explosion" during mode transitions (e.g. going from 24,000 range
-            // down to 10 range, which previously caused the chart to attempt to draw 24,000 grid lines and labels,
-            // freezing the browser completely).
-            final double chartInterval =
-                _calculateCleanBounds(chartMinY, chartMaxY)['interval']!;
-
-            return Scrollbar(
-              controller: _scrollController,
-              thumbVisibility: true,
-              child: Listener(
-                onPointerSignal: (event) =>
-                    _handlePointerSignal(event, constraints.maxWidth),
-                child: GestureDetector(
-                  onHorizontalDragUpdate: (details) {
-                    if (_scrollController.hasClients) {
-                      _scrollController.position
-                          .moveTo(_scrollController.offset - details.delta.dx);
-                    }
-                  },
-                  // [Gesture Lock Optimization] Intercept vertical drag components within the chart
-                  // boundaries, keeping horizontal swipes perfectly focused inside the chart.
-                  onVerticalDragUpdate: (_) {},
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    scrollDirection: Axis.horizontal,
-                    physics: const ClampingScrollPhysics(),
-                    child: SizedBox(
-                      width: chartWidth > constraints.maxWidth
-                          ? chartWidth
-                          : constraints.maxWidth,
-                      height: constraints.maxHeight,
+                  return GestureDetector(
+                    onHorizontalDragUpdate: (details) {
+                      if (_scrollController.hasClients) {
+                        final maxScroll = _scrollController.position.maxScrollExtent;
+                        final double newOffset = (_scrollController.offset - details.delta.dx)
+                            .clamp(0.0, maxScroll);
+                        _scrollController.jumpTo(newOffset);
+                      }
+                    },
+                    child: Listener(
+                      onPointerSignal: (event) =>
+                          _handlePointerSignal(event, constraints.maxWidth),
                       child: LineChart(
                         key: ValueKey(
-                            '${_activeIndices.join('-')}_line_${chartData.length}'),
+                            '${_activeIndices.join('-')}_line_${visibleData.length}'),
                         LineChartData(
                           gridData: FlGridData(
                             show: true,
@@ -1372,20 +1206,20 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                               sideTitles: SideTitles(
                                 showTitles: true,
                                 reservedSize: 30,
-                                interval: (chartData.length / 8).ceilToDouble(),
+                                interval: (visibleData.length / 8).ceilToDouble(),
                                 getTitlesWidget: (value, meta) {
                                   final index = value.toInt();
-                                  if (index >= 0 && index < chartData.length) {
-                                    final interval =
-                                        (chartData.length / 8).ceil();
-                                    if (index == chartData.length - 1 &&
+                                  final originalIndex = startIndex + index;
+                                  if (originalIndex >= 0 && originalIndex < chartData.length) {
+                                    final interval = (visibleData.length / 8).ceil();
+                                    if (index == visibleData.length - 1 &&
                                         interval > 1) {
                                       final lastIntervalTick =
-                                          ((chartData.length - 1) ~/ interval) *
+                                          ((visibleData.length - 1) ~/ interval) *
                                               interval;
-                                      if (chartData.length - 1 !=
+                                      if (visibleData.length - 1 !=
                                               lastIntervalTick &&
-                                          chartData.length -
+                                          visibleData.length -
                                                   1 -
                                                   lastIntervalTick <
                                               interval / 2) {
@@ -1394,13 +1228,13 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                     }
 
                                     final dateStr =
-                                        chartData[index]['time'] as String;
+                                        chartData[originalIndex]['time'] as String;
                                     try {
                                       final date = DateTime.parse(dateStr);
                                       final fmt = _getDateFormat(chartData);
 
                                       final prevIndex =
-                                          ((index - 1) ~/ interval) * interval;
+                                          ((originalIndex - 1) ~/ interval) * interval;
                                       if (prevIndex >= 0) {
                                         try {
                                           final prevDate = DateTime.parse(
@@ -1437,8 +1271,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                             leftTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                reservedSize:
-                                    _leftTitleReservedSize, // [SIP/Absolute Value Optimization] Dynamic static size prevents layout loops and fits dual labels
+                                reservedSize: _leftTitleReservedSize,
                                 interval: chartInterval,
                                 getTitlesWidget: (value, meta) {
                                   if ((value - meta.min).abs() < 0.01 ||
@@ -1446,59 +1279,54 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                     return const SizedBox.shrink();
                                   }
 
-                                  if (_useDualYAxis) {
-                                    // [SIP/Absolute Value Optimization] Dynamic left Y-axis labels with dual color-coded values
-                                    final double val1 = value;
-                                    final double denominator =
-                                        _viewportMaxY - _viewportMinY;
-                                    final double val2 = denominator.abs() < 0.01
-                                        ? _viewportMinY2
-                                        : _viewportMinY2 +
-                                            (value - _viewportMinY) /
-                                                denominator *
-                                                (_viewportMaxY2 -
-                                                    _viewportMinY2);
+                                  if (_useMultiYAxis && _activeIndices.isNotEmpty) {
+                                    final String firstSymbol = _activeIndices.first;
+                                    final double denominator0 = cleanMax[firstSymbol]! - cleanMin[firstSymbol]!;
+                                    final List<double> vals = [];
+                                    
+                                    for (int i = 0; i < _activeIndices.length; i++) {
+                                      final String symbol = _activeIndices[i];
+                                      if (i == 0) {
+                                        vals.add(value);
+                                      } else {
+                                        final double denI = cleanMax[symbol]! - cleanMin[symbol]!;
+                                        final double valI = denominator0.abs() < 0.01
+                                            ? cleanMin[symbol]!
+                                            : cleanMin[symbol]! +
+                                                (value - cleanMin[firstSymbol]!) /
+                                                    denominator0 *
+                                                    denI;
+                                        vals.add(valI);
+                                      }
+                                    }
 
-                                    final Color color1 = MultiIndexChart
-                                            .indexColors[
-                                        0 % MultiIndexChart.indexColors.length];
-                                    final Color color2 = MultiIndexChart
-                                            .indexColors[
-                                        1 % MultiIndexChart.indexColors.length];
-
-                                    // Round to K notations (e.g. 24.2K | 55.4K)
-                                    final String text1 =
-                                        (val1 / 1000).toStringAsFixed(1);
-                                    final String text2 =
-                                        (val2 / 1000).toStringAsFixed(1);
+                                    final List<InlineSpan> spans = [];
+                                    for (int i = 0; i < vals.length; i++) {
+                                      final color = MultiIndexChart.indexColors[
+                                          i % MultiIndexChart.indexColors.length];
+                                      final text = (vals[i] / 1000).toStringAsFixed(1);
+                                      
+                                      if (i > 0) {
+                                        spans.add(const TextSpan(
+                                          text: ' | ',
+                                          style: TextStyle(color: Colors.white24, fontSize: 10),
+                                        ));
+                                      }
+                                      spans.add(TextSpan(
+                                        text: '${text}K',
+                                        style: TextStyle(
+                                          color: color,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ));
+                                    }
 
                                     return SideTitleWidget(
                                       meta: meta,
                                       space: 8.0,
                                       child: RichText(
-                                        text: TextSpan(
-                                          children: [
-                                            TextSpan(
-                                                text: '${text1}K',
-                                                style: TextStyle(
-                                                    color: color1,
-                                                    fontSize: 10,
-                                                    fontWeight:
-                                                        FontWeight.w600)),
-                                            const TextSpan(
-                                                text: ' | ',
-                                                style: TextStyle(
-                                                    color: Colors.grey,
-                                                    fontSize: 10)),
-                                            TextSpan(
-                                                text: '${text2}K',
-                                                style: TextStyle(
-                                                    color: color2,
-                                                    fontSize: 10,
-                                                    fontWeight:
-                                                        FontWeight.w600)),
-                                          ],
-                                        ),
+                                        text: TextSpan(children: spans),
                                       ),
                                     );
                                   }
@@ -1535,12 +1363,11 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                             ),
                           ),
                           minX: 0,
-                          maxX: chartData.length.toDouble() - 1,
+                          maxX: visibleData.length.toDouble() - 1,
                           minY: chartMinY,
                           maxY: chartMaxY,
                           extraLinesData: ExtraLinesData(
                             horizontalLines: [
-                              // [SIP/Absolute Value Optimization] Render 0.0 percentage baseline only in percentage mode
                               if (!_showAbsoluteValues)
                                 HorizontalLine(
                                   y: 0.0,
@@ -1559,126 +1386,84 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                     ),
                                   ),
                                 ),
-                              // [SIP/Absolute Value Optimization] Dynamic right-side current price badges (TradingView style indicator pills)
-                              if (chartData.isNotEmpty &&
-                                  _activeIndices.isNotEmpty)
-                                ..._activeIndices
-                                    .asMap()
-                                    .entries
-                                    .map((entry) {
-                                      final index = entry.key;
-                                      final symbol = entry.value;
-                                      final val = chartData.last[symbol];
-                                      if (val == null)
-                                        return HorizontalLine(
-                                            y: 0, strokeWidth: 0);
+                              ..._activeIndices.asMap().entries.where((e) => !_hiddenIndices.contains(e.value)).map((entry) {
+                                final index = entry.key;
+                                final symbol = entry.value;
+                                final val = visibleData.last[symbol];
+                                if (val == null) {
+                                  return HorizontalLine(y: 0, strokeWidth: 0);
+                                }
 
-                                      final double originalY = val as double;
-                                      final Color color =
-                                          MultiIndexChart.indexColors[index %
-                                              MultiIndexChart
-                                                  .indexColors.length];
+                                final double originalY = val as double;
+                                final Color color =
+                                    MultiIndexChart.indexColors[index %
+                                        MultiIndexChart.indexColors.length];
 
-                                      double drawY = originalY;
-                                      if (_useDualYAxis && index == 1) {
-                                        final double denominator =
-                                            _viewportMaxY2 - _viewportMinY2;
-                                        final double range1 =
-                                            _viewportMaxY - _viewportMinY;
-                                        drawY = denominator.abs() < 0.01
-                                            ? _viewportMinY
-                                            : _viewportMinY +
-                                                (originalY - _viewportMinY2) /
-                                                    denominator *
-                                                    range1;
-                                      }
+                                double drawY = originalY;
+                                if (_useMultiYAxis && index > 0 && index < _activeIndices.length) {
+                                  final String firstSymbol = _activeIndices.first;
+                                  final double denom = cleanMax[symbol]! - cleanMin[symbol]!;
+                                  final double range0 = cleanMax[firstSymbol]! - cleanMin[firstSymbol]!;
+                                  drawY = denom.abs() < 0.01
+                                      ? cleanMin[firstSymbol]!
+                                      : cleanMin[firstSymbol]! +
+                                          (originalY - cleanMin[symbol]!) /
+                                              denom *
+                                              range0;
+                                }
 
-                                      return HorizontalLine(
-                                        y: drawY,
-                                        // Keep a subtle dashed connector from the line endpoint;
-                                        // the styled pill is rendered separately as a Stack overlay.
-                                        color: color.withOpacity(0.35),
-                                        strokeWidth: 1,
-                                        dashArray: [4, 4],
-                                      );
-                                    })
-                                    .where((line) => line.strokeWidth > 0)
-                                    .toList(),
+                                return HorizontalLine(
+                                  y: drawY,
+                                  color: color.withOpacity(0.35),
+                                  strokeWidth: 1,
+                                  dashArray: [3, 3],
+                                );
+                              }).toList(),
                             ],
                           ),
-                          lineBarsData: _buildLineBars(chartData),
+                          lineBarsData: _buildLineBars(visibleData, cleanMin, cleanMax),
                           lineTouchData: LineTouchData(
+                            enabled: true,
+                            handleBuiltInTouches: true,
                             touchTooltipData: LineTouchTooltipData(
-                              showOnTopOfTheChartBoxArea: true,
-                              tooltipMargin: 8.0,
-                              getTooltipColor: (spot) => Colors.transparent,
-                              tooltipBorder: BorderSide.none,
                               fitInsideHorizontally: true,
                               fitInsideVertically: true,
+                              getTooltipColor: (touchedSpot) => theme.cardColor.withOpacity(0.95),
                               getTooltipItems: (touchedSpots) {
                                 return touchedSpots.map((spot) {
-                                  final index = spot.x.toInt();
-                                  if (index >= 0 && index < chartData.length) {
-                                    final dateStr =
-                                        chartData[index]['time'] as String;
-                                    final date = DateTime.parse(dateStr);
-                                    final visibleIndices = _activeIndices.where((s) => !_hiddenIndices.contains(s)).toList();
-                                    final symbol = visibleIndices[spot.barIndex];
+                                  final originalIndex = startIndex + spot.x.toInt();
+                                  final dateStr =
+                                      chartData[originalIndex]['time'] as String;
+                                  final date = DateTime.parse(dateStr);
+                                  final visibleIndices = _activeIndices.where((s) => !_hiddenIndices.contains(s)).toList();
+                                  final symbol = visibleIndices[spot.barIndex];
 
-                                    // [SIP/Absolute Value Optimization] If in Dual-Label Mode and hovering the second line,
-                                    // reverse-map the scaled canvas Y coordinate back to its original raw price level.
-                                    double displayVal = spot.y;
-                                    if (_useDualYAxis && spot.barIndex == 1) {
-                                      final double denominator =
-                                          _viewportMaxY - _viewportMinY;
-                                      displayVal = denominator.abs() < 0.01
-                                          ? _viewportMinY2
-                                          : _viewportMinY2 +
-                                              (spot.y - _viewportMinY) /
-                                                  denominator *
-                                                  (_viewportMaxY2 -
-                                                      _viewportMinY2);
-                                    }
-
-                                    final isFirst = spot == touchedSpots.first;
-                                    final activeIndex = _activeIndices.indexOf(symbol);
-                                    final symbolColor = activeIndex >= 0 
-                                        ? MultiIndexChart.indexColors[activeIndex % MultiIndexChart.indexColors.length]
-                                        : Colors.white;
-                                    final isDark = Theme.of(context).brightness == Brightness.dark;
-                                    final dateColor = isDark ? Colors.white60 : Colors.black54;
-
-                                    if (isFirst) {
-                                      return LineTooltipItem(
-                                        '${_getTooltipDateFormat(chartData).format(date)}\n',
-                                        TextStyle(
-                                          color: dateColor,
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 10,
-                                        ),
-                                        children: [
-                                          TextSpan(
-                                            text: '$symbol: ${_showAbsoluteValues ? displayVal.toStringAsFixed(2) : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%'}',
-                                            style: TextStyle(
-                                              color: symbolColor,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    } else {
-                                      return LineTooltipItem(
-                                        '$symbol: ${_showAbsoluteValues ? displayVal.toStringAsFixed(2) : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%'}',
-                                        TextStyle(
-                                          color: symbolColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
-                                      );
-                                    }
+                                  double displayVal = spot.y;
+                                  final int barIdx = spot.barIndex;
+                                  if (_useMultiYAxis && barIdx > 0 && barIdx < _activeIndices.length) {
+                                    final String firstSymbol = _activeIndices.first;
+                                    final String currentSymbol = _activeIndices[barIdx];
+                                    final double denominator0 = cleanMax[firstSymbol]! - cleanMin[firstSymbol]!;
+                                    final double denIdx = cleanMax[currentSymbol]! - cleanMin[currentSymbol]!;
+                                    displayVal = denominator0.abs() < 0.01
+                                        ? cleanMin[currentSymbol]!
+                                        : cleanMin[currentSymbol]! +
+                                            (spot.y - cleanMin[firstSymbol]!) /
+                                                denominator0 *
+                                                denIdx;
                                   }
-                                  return null;
+
+                                  return LineTooltipItem(
+                                    '${_getTooltipDateFormat(chartData).format(date)}\n$symbol\n${_showAbsoluteValues ? displayVal.toStringAsFixed(2) : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%'}',
+                                    TextStyle(
+                                      color: MultiIndexChart.indexColors[
+                                          spot.barIndex %
+                                              MultiIndexChart
+                                                  .indexColors.length],
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  );
                                 }).toList();
                               },
                             ),
@@ -1686,27 +1471,19 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                         ),
                       ),
                     ),
-                  ),
-                ),
-              )
-            );          // closes Scrollbar — ends 'return Scrollbar(...);'
-            },          // closes TweenAnimationBuilder builder callback
-
-
-          ),         // closes TweenAnimationBuilder
-
-
-            // 💎 Premium price indicator pills — rendered outside the scroll canvas
-            // so they can use full BoxDecoration (rounded corners + neon glow).
-            // Only shown when the user is viewing the most recent data (right edge).
-            _buildPricePills(context, chartData, constraints),
+                  );
+                },
+              ),
+            ),
+            _buildDummyScrollView(chartWidth),
+            _buildPricePills(context, chartData, constraints, cleanMin, cleanMax, endIndex == chartData.length - 1),
           ],
-        );           // closes Stack
-      },             // closes LayoutBuilder builder
-    );               // closes LayoutBuilder
-  }                  // closes _buildChart
+        );
+      },
+    );
+  }
 
-  List<LineChartBarData> _buildLineBars(List<Map<String, dynamic>> chartData) {
+  List<LineChartBarData> _buildLineBars(List<Map<String, dynamic>> visibleData, Map<String, double> cleanMin, Map<String, double> cleanMax) {
     return _activeIndices.asMap().entries.where((entry) => !_hiddenIndices.contains(entry.value)).map((entry) {
       final index = entry.key;
       final symbol = entry.value;
@@ -1714,25 +1491,22 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           .indexColors[index % MultiIndexChart.indexColors.length];
 
       final spots = <FlSpot>[];
-      for (int i = 0; i < chartData.length; i++) {
-        final value = chartData[i][symbol];
+      for (int i = 0; i < visibleData.length; i++) {
+        final value = visibleData[i][symbol];
         if (value != null) {
           final double originalY = value as double;
 
-          if (_useDualYAxis && index == 1) {
-            // [SIP/Absolute Value Optimization] Project Index 2's spots into the Y-range of Index 1.
-            // Safety Check: If bounds are close to equal (denominator close to zero), we draw a flat line
-            // at the bottom of the viewport to prevent divisions by zero which crash the rendering canvas.
-            final double denominator = _viewportMaxY2 - _viewportMinY2;
-            final double range1 = _viewportMaxY - _viewportMinY;
+          if (_useMultiYAxis && index > 0 && index < _activeIndices.length) {
+            final String firstSymbol = _activeIndices.first;
+            final double denominator = cleanMax[symbol]! - cleanMin[symbol]!;
+            final double range0 = cleanMax[firstSymbol]! - cleanMin[firstSymbol]!;
             final double scaledY = denominator.abs() < 0.01
-                ? _viewportMinY
-                : _viewportMinY +
-                    (originalY - _viewportMinY2) / denominator * range1;
+                ? cleanMin[firstSymbol]!
+                : cleanMin[firstSymbol]! +
+                    (originalY - cleanMin[symbol]!) / denominator * range0;
 
             spots.add(FlSpot(i.toDouble(), scaledY));
           } else {
-            // Plot normally for Index 1, or for all indices when not in Dual Y-Axis mode
             spots.add(FlSpot(i.toDouble(), originalY));
           }
         }
@@ -1744,7 +1518,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         color: color,
         barWidth: 2.5,
         isStrokeCapRound: true,
-        // [SIP/Absolute Value Optimization] Add premium Neon Glow Shadow beneath the line stroke
         shadow: Shadow(
           color: color.withOpacity(0.35),
           blurRadius: 8,
@@ -1753,7 +1526,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         dotData: FlDotData(show: false),
         belowBarData: BarAreaData(
           show: true,
-          // [SIP/Absolute Value Optimization] Soft fade gradient below the lines (0.25 to 0.0)
           gradient: LinearGradient(
             colors: [
               color.withOpacity(0.25),
@@ -1767,25 +1539,19 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     }).toList();
   }
 
-  /// Builds premium TradingView-style price indicator pills as a Stack overlay
-  /// outside the chart's SingleChildScrollView. Pills use full BoxDecoration
-  /// (rounded corners + neon glow) and are only visible when the user is viewing
-  /// the most recent data (right edge of the chart). Handles 1-3 active indices.
   Widget _buildPricePills(
     BuildContext context,
     List<Map<String, dynamic>> chartData,
     BoxConstraints constraints,
+    Map<String, double> cleanMin,
+    Map<String, double> cleanMax,
+    bool showPills,
   ) {
-    // Only show pills when recent data (rightmost) is visible in the viewport
-    if (!_isViewingRecentData) return const SizedBox.shrink();
+    if (!showPills) return const SizedBox.shrink();
     if (chartData.isEmpty || _activeIndices.isEmpty) return const SizedBox.shrink();
 
-    // Bottom axis labels reserve 30px; pills must stay within the plot area.
     const double bottomReserved = 30.0;
-    // Left axis labels reserve space; pills are on the right so no left offset needed.
     final double plotHeight = constraints.maxHeight - bottomReserved;
-
-    // Collect pill info for every active index
     final List<Map<String, dynamic>> pillData = [];
 
     for (int i = 0; i < _activeIndices.length; i++) {
@@ -1797,27 +1563,24 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       final Color color = MultiIndexChart.indexColors[
           i % MultiIndexChart.indexColors.length];
 
-      // For dual-axis mode, project the second index value into the first axis scale
-      // (same formula as the HorizontalLine dashed connector above the pill).
       double drawY = originalY;
-      if (_useDualYAxis && i == 1) {
-        final double denom = _viewportMaxY2 - _viewportMinY2;
-        final double range1 = _viewportMaxY - _viewportMinY;
+      if (_useMultiYAxis && i > 0 && i < _activeIndices.length) {
+        final String firstSymbol = _activeIndices.first;
+        final double denom = cleanMax[symbol]! - cleanMin[symbol]!;
+        final double range0 = cleanMax[firstSymbol]! - cleanMin[firstSymbol]!;
         drawY = denom.abs() < 0.01
-            ? _viewportMinY
-            : _viewportMinY + (originalY - _viewportMinY2) / denom * range1;
+            ? cleanMin[firstSymbol]!
+            : cleanMin[firstSymbol]! + (originalY - cleanMin[symbol]!) / denom * range0;
       }
 
-      // Map chart-Y to screen-Y pixel offset (chart Y increases upward, screen Y increases downward)
-      final double minY = _viewportMinY;
-      final double maxY = _viewportMaxY;
+      final String firstSymbol = _activeIndices.isNotEmpty ? _activeIndices.first : '';
+      final double minY = cleanMin[firstSymbol] ?? -5.0;
+      final double maxY = cleanMax[firstSymbol] ?? 5.0;
       final double yRange = maxY - minY;
       final double topFraction =
           yRange.abs() < 0.01 ? 0.5 : (maxY - drawY) / yRange;
-      // Clamp so pill never goes below the plot area or above the top edge
       final double topOffset = (topFraction * plotHeight).clamp(2.0, plotHeight - 22.0);
 
-      // Build the label text matching the current display mode
       final String labelText = _showAbsoluteValues
           ? originalY.toStringAsFixed(2)
           : '${originalY >= 0 ? '+' : ''}${originalY.toStringAsFixed(2)}%';
@@ -1831,7 +1594,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
     if (pillData.isEmpty) return const SizedBox.shrink();
 
-    // Sort pills top-to-bottom and nudge any overlapping pills apart (min 24px gap)
     pillData.sort(
         (a, b) => (a['topOffset'] as double).compareTo(b['topOffset'] as double));
     const double minPillGap = 24.0;
@@ -1843,7 +1605,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       }
     }
 
-    // Render each pill as a Positioned widget within the Stack overlay
     return Stack(
       children: pillData.map((pill) {
         final Color color = pill['color'] as Color;
@@ -1859,7 +1620,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
               color: color,
               borderRadius: BorderRadius.circular(4),
               boxShadow: [
-                // Neon glow matching the index line color
                 BoxShadow(
                   color: color.withOpacity(0.55),
                   blurRadius: 10,
@@ -1879,6 +1639,28 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildDummyScrollView(double chartWidth) {
+    return Positioned(
+      bottom: 0,
+      left: _leftTitleReservedSize,
+      right: 0,
+      height: 12,
+      child: Scrollbar(
+        controller: _scrollController,
+        thumbVisibility: true,
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          scrollDirection: Axis.horizontal,
+          physics: const ClampingScrollPhysics(),
+          child: SizedBox(
+            width: chartWidth,
+            height: 1,
+          ),
+        ),
+      ),
     );
   }
 
