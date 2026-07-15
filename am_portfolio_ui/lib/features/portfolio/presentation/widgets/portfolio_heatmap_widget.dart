@@ -199,7 +199,13 @@ class _PortfolioHeatmapWidgetState
           child: _buildHeatmapContent(),
         );
         return widget.config.compactMode
-            ? SingleChildScrollView(child: content)
+            ? SizedBox(
+                width: constraints.maxWidth,
+                height: constraints.maxHeight.isFinite
+                    ? constraints.maxHeight
+                    : MediaQuery.sizeOf(context).height,
+                child: content,
+              )
             : SizedBox(
                 width: constraints.maxWidth,
                 height: constraints.maxHeight.isFinite
@@ -328,12 +334,25 @@ class _PortfolioHeatmapWidgetState
     final convertedHeatmapData = state.heatmapData;
 
     // Create configuration with selected layout
+    final baseSelectors = convertedHeatmapData.configuration.selectors ??
+        const SelectorConfig();
+    final baseLayout = convertedHeatmapData.configuration.layout ??
+        const LayoutConfig();
     final customConfig = convertedHeatmapData.configuration.copyWith(
       display: convertedHeatmapData.configuration.display?.copyWith(
         showPerformance: false, // Hides old default legend
       ),
-      layout: convertedHeatmapData.configuration.layout?.copyWith(
+      layout: baseLayout.copyWith(
         layoutType: _selectedLayout,
+        showLayoutSelector: widget.config.compactMode ? true : null,
+      ),
+      selectors: baseSelectors.copyWith(
+        selectorLayout:
+            widget.config.compactMode ? SelectorLayoutType.compact : null,
+        showSectorSelector: widget.config.compactMode ? true : null,
+        showMarketCapSelector: widget.config.compactMode ? true : null,
+        showTimeFrameSelector: widget.config.compactMode ? false : null,
+        showMetricSelector: widget.config.compactMode ? false : null,
       ),
     );
 
@@ -352,9 +371,11 @@ class _PortfolioHeatmapWidgetState
         _buildSummaryCardsRow(),
         const SizedBox(height: 16),
 
-        // ── EQUITY DISTRIBUTION HEADER ──
-        _buildEquityDistributionHeader(context),
-        const SizedBox(height: 12),
+        // ── EQUITY DISTRIBUTION HEADER (web/desktop only) ──
+        if (!widget.config.compactMode) ...[
+          _buildEquityDistributionHeader(context),
+          const SizedBox(height: 12),
+        ],
 
         // ── DRILLDOWN BREADCRUMB ──
         if (_drillDownTile != null)
@@ -376,20 +397,16 @@ class _PortfolioHeatmapWidgetState
             ),
           ),
 
-        // ── MAIN HEATMAP ──
+        // ── MAIN HEATMAP (fills remaining tab height on mobile) ──
         if (widget.config.compactMode)
-          SizedBox(
-            width: double.infinity,
-            // Adaptive height: 45% of screen height, clamped between 320–600px.
-            height: (MediaQuery.of(context).size.height * 0.45)
-                .clamp(320.0, 600.0),
+          Expanded(
             child: UniversalHeatmapWidget(
               investmentType: InvestmentType.portfolio,
               heatmapData: displayData,
-              title: widget.config.title,
-              subtitle: widget.config.subtitle,
+              title: 'Heatmap',
+              subtitle: null,
               config: _mapToWidgetConfig(customConfig),
-              showSelectors: false,
+              showSelectors: true,
               compactMode: widget.config.compactMode,
               selectedTimeFrame: selectedTimeFrame,
               selectedMetric: _selectedMetric,
@@ -581,13 +598,16 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Builds the "Equity Distribution" header with pill tag, status, and legend
+  /// Builds the "Equity Distribution" header with pill tag, status, and legend.
+  /// Uses [Wrap] so title / timeframe / status never force a horizontal overflow.
   Widget _buildEquityDistributionHeader(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 800;
+        // Pills need ~420px; below that switch to compact dropdown.
+        final useDropdown = constraints.maxWidth < 1100;
 
-        final titleRow = Row(
+        final titleChip = Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'Equity Distribution',
@@ -601,13 +621,19 @@ class _PortfolioHeatmapWidgetState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 'MARKET CAP WEIGHTED',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.55),
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.8,
@@ -628,41 +654,21 @@ class _PortfolioHeatmapWidgetState
           ],
         );
 
-        if (isNarrow) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  titleRow,
-                  legendRow,
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const GlobalTimeFrameBar(),
-                  _buildInlineStatusBar(context),
-                ],
-              ),
-            ],
-          );
-        } else {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              titleRow,
-              const Spacer(),
-              const GlobalTimeFrameBar(),
-              const SizedBox(width: 16),
-              _buildInlineStatusBar(context),
-              const SizedBox(width: 16),
-              legendRow,
-            ],
-          );
-        }
+        return Wrap(
+          spacing: 16,
+          runSpacing: 10,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            titleChip,
+            GlobalTimeFrameBar(
+              variant: useDropdown
+                  ? GlobalTimeFrameVariant.dropdown
+                  : GlobalTimeFrameVariant.pills,
+            ),
+            _buildInlineStatusBar(context),
+            legendRow,
+          ],
+        );
       },
     );
   }

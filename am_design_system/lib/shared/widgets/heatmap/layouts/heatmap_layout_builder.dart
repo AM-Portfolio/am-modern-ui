@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_design_system/core/utils/string_utils.dart';
 
 import '../../../models/heatmap.dart';
 import '../../selectors/sector_selector.dart';
@@ -192,12 +193,12 @@ abstract class HeatmapLayoutBuilder {
   String _getPrimaryMetricText(HeatmapTileData tile, MetricType? metric) {
     switch (metric) {
       case MetricType.marketValue:
-        return '\$${tile.value?.toStringAsFixed(0) ?? 0}';
+        return StringUtils.formatCurrency(tile.value ?? 0, decimals: 0);
       case MetricType.allocationPercent:
         return '${tile.weightage.toStringAsFixed(1)}%';
       case MetricType.profitLoss:
         final pnl = (tile.value ?? 0) * (tile.performance / 100);
-        return '${pnl >= 0 ? '+\$' : '-\$'}${pnl.abs().toStringAsFixed(0)}';
+        return StringUtils.formatCurrency(pnl, decimals: 0);
       case MetricType.returns:
       case MetricType.changePercent:
       default:
@@ -227,7 +228,7 @@ abstract class HeatmapLayoutBuilder {
       case MetricType.profitLoss:
       case MetricType.returns:
       default:
-        return '\$${tile.value?.toStringAsFixed(0) ?? 0}';
+        return StringUtils.formatCurrency(tile.value ?? 0, decimals: 0);
     }
   }
 
@@ -810,7 +811,7 @@ abstract class HeatmapLayoutBuilder {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '\$${_formatValueForDisplay(tile.value!)}',
+                      StringUtils.formatCurrency(tile.value!, decimals: 1),
                       style: TextStyle(
                         color: textColor,
                         fontSize: isTightHeight ? 11.0 : 13.0,
@@ -892,19 +893,6 @@ abstract class HeatmapLayoutBuilder {
     }
 
     return -1; // Not found in this branch
-  }
-
-  /// Formats large values for display (e.g., 1234567 -> 1.23M)
-  String _formatValueForDisplay(double value) {
-    if (value >= 1000000000) {
-      return '${(value / 1000000000).toStringAsFixed(1)}B';
-    } else if (value >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(1)}M';
-    } else if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(1)}K';
-    } else {
-      return value.toStringAsFixed(0);
-    }
   }
 }
 
