@@ -26,7 +26,9 @@ class PinnedIndicesGrid extends StatelessWidget {
         crossAxisCount: isMobile ? 2 : 6,
         crossAxisSpacing: isMobile ? 8.0 : 10.0,
         mainAxisSpacing: isMobile ? 8.0 : 10.0,
-        childAspectRatio: isMobile ? 1.35 : 1.45,
+        // Denser cards — content-tight height, less empty whitespace.
+        mainAxisExtent: isMobile ? 92 : null,
+        childAspectRatio: isMobile ? 1 : 1.45,
       ),
       itemCount: itemsToShow.length,
       itemBuilder: (context, index) {

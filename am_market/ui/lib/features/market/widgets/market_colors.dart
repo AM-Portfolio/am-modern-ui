@@ -37,7 +37,7 @@ class MarketColors {
       _isDark(context) ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A);
 
   static Color textMuted(BuildContext context) =>
-      _isDark(context) ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+      _isDark(context) ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
   static Color textSecondary(BuildContext context) =>
       _isDark(context) ? const Color(0xFF94A3B8) : const Color(0xFF1E293B);

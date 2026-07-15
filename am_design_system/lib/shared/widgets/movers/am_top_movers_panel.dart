@@ -79,6 +79,7 @@ class AmTopMoversPanel extends StatefulWidget {
 
     /// Optional "See All" callback — renders a button in the header when set.
     this.onViewAll,
+    this.headerTrailing,
   });
 
   final List<AmMoverItem> gainers;
@@ -95,6 +96,9 @@ class AmTopMoversPanel extends StatefulWidget {
   final int maxItemsPerColumn;
   final double mobileBreakpoint;
   final VoidCallback? onViewAll;
+
+  /// Optional widget shown on the right of the header (e.g. selected index chip).
+  final Widget? headerTrailing;
 
   @override
   State<AmTopMoversPanel> createState() => _AmTopMoversPanelState();
@@ -197,6 +201,10 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
             ),
           ),
         ),
+        if (widget.headerTrailing != null) ...[
+          const SizedBox(width: 8),
+          widget.headerTrailing!,
+        ],
         // Optional "See All" button
         if (widget.onViewAll != null)
           TextButton(

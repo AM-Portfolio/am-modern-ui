@@ -30,12 +30,14 @@ class TopMoversWidgetV2 extends StatelessWidget {
   final List<TopMoverStock> losers;
   final bool isLoading;
   final String? error;
+  final Widget? headerTrailing;
 
   const TopMoversWidgetV2({
     required this.gainers,
     required this.losers,
     this.isLoading = false,
     this.error,
+    this.headerTrailing,
     super.key,
   });
 
@@ -56,6 +58,7 @@ class TopMoversWidgetV2 extends StatelessWidget {
       positiveColor: positiveColor,
       negativeColor: negativeColor,
       headerAccent: headerAccent,
+      headerTrailing: headerTrailing,
     );
   }
 

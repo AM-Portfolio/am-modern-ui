@@ -66,10 +66,10 @@ class DrawerIndexCard extends StatelessWidget {
                     child: Text(
                       data.indexSymbol.toUpperCase(),
                       style: TextStyle(
-                        fontSize: isMobile ? 9 : 10,
-                        color: MarketColors.textMuted(context),
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.04 * (isMobile ? 9 : 10),
+                        fontSize: isMobile ? 10 : 10,
+                        color: MarketColors.textSecondary(context),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

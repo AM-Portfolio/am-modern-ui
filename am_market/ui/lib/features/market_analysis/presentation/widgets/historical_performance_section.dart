@@ -53,7 +53,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -62,7 +62,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                       'Historical Monthly Performance (10 Years)',
                       style: AmTextStyles.h6.copyWith(
                         color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                        fontSize: isMobile ? 16 : 18,
+                        fontSize: isMobile ? 14 : 18,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -153,8 +153,10 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                     child: Center(
                                       child: Text(
                                         '$year',
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black87,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,
                                         ),

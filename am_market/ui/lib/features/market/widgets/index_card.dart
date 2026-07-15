@@ -57,32 +57,34 @@ class IndexCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Index Name (All Caps, 0.04em letter-spacing)
+            // Index Name — secondary text for readable contrast on white cards
             Text(
               data.indexSymbol.toUpperCase(),
               style: TextStyle(
-                fontSize: isMobile ? 9 : 10,
-                color: MarketColors.textMuted(context),
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.04 * (isMobile ? 9 : 10),
+                fontSize: isMobile ? 10 : 10,
+                color: MarketColors.textSecondary(context),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+                height: 1.1,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            
-            const SizedBox(height: 4),
+
+            SizedBox(height: isMobile ? 3 : 4),
 
             // Index Value
             Text(
               isLoading ? '...' : numberFormat.format(data.lastPrice),
               style: TextStyle(
-                fontSize: isMobile ? 14 : 15,
+                fontSize: isMobile ? 15 : 15,
                 color: MarketColors.textPrimary(context),
                 fontWeight: FontWeight.bold,
+                height: 1.15,
               ),
             ),
-            
-            const SizedBox(height: 3),
+
+            SizedBox(height: isMobile ? 2 : 3),
 
             // Change Amount & Percentage (stacked vertically)
             if (isLoading)
@@ -99,7 +101,6 @@ class IndexCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Row 1: Native Arrow Icon + Absolute Point Change
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -107,7 +108,9 @@ class IndexCard extends StatelessWidget {
                       Icon(
                         isPositive ? Icons.arrow_upward : Icons.arrow_downward,
                         size: isMobile ? 11.0 : 12.0,
-                        color: isPositive ? MarketColors.positive(context) : MarketColors.negative(context),
+                        color: isPositive
+                            ? MarketColors.positive(context)
+                            : MarketColors.negative(context),
                       ),
                       const SizedBox(width: 3),
                       Text(
@@ -116,25 +119,26 @@ class IndexCard extends StatelessWidget {
                             : '-$displayChangeFormatted',
                         style: TextStyle(
                           fontSize: isMobile ? 10.0 : 11.0,
-                          color: isPositive ? MarketColors.positive(context) : MarketColors.negative(context),
+                          color: isPositive
+                              ? MarketColors.positive(context)
+                              : MarketColors.negative(context),
                           fontWeight: FontWeight.w600,
                           height: 1.0,
                         ),
                       ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 3),
-
-                  // Row 2: Percentage Change + Timeframe Label
+                  SizedBox(height: isMobile ? 2 : 3),
                   Text(
                     isPositive
                         ? '+$displayPChangeFormatted%$timeframeLabel'
                         : '$displayPChangeFormatted%$timeframeLabel',
                     style: TextStyle(
-                      fontSize: isMobile ? 9.5 : 10.5,
-                      color: isPositive ? MarketColors.positive(context) : MarketColors.negative(context),
-                      fontWeight: FontWeight.w400,
+                      fontSize: isMobile ? 10 : 10.5,
+                      color: isPositive
+                          ? MarketColors.positive(context)
+                          : MarketColors.negative(context),
+                      fontWeight: FontWeight.w500,
                       height: 1.0,
                     ),
                   ),
@@ -155,20 +159,22 @@ class IndexCard extends StatelessWidget {
                   curve: Curves.easeInOut,
                   width: double.infinity,
                   height: double.infinity,
-                  padding: EdgeInsets.only(
-                    top: isMobile ? 10 : 12,
-                    bottom: isMobile ? 10 : 12,
-                    left: isMobile ? 12 : 14,
-                    right: isMobile ? 12 : 14,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 10 : 14,
+                    vertical: isMobile ? 8 : 12,
                   ),
+                  alignment: Alignment.topLeft,
                   decoration: BoxDecoration(
                     color: MarketColors.cardSurface(context),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isSelected ? MarketColors.borderSelected(context) : MarketColors.borderDefault(context),
+                      color: isSelected
+                          ? MarketColors.borderSelected(context)
+                          : MarketColors.borderDefault(context),
                       width: MarketColors.borderWidth(context),
                     ),
-                    boxShadow: isSelected ? MarketColors.selectedGlow(context) : [],
+                    boxShadow:
+                        isSelected ? MarketColors.selectedGlow(context) : [],
                   ),
                   child: cardContent,
                 ),
