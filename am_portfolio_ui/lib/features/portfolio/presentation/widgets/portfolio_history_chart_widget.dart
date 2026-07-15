@@ -11,7 +11,10 @@ import '../../internal/domain/entities/portfolio_list.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_history_cubit.dart';
 import '../cubit/portfolio_history_state.dart';
+import '../cubit/portfolio_intraday_cubit.dart';
+import '../cubit/portfolio_intraday_state.dart';
 import '../cubit/portfolio_state.dart';
+import '../../internal/data/dtos/portfolio_intraday_dto.dart';
 
 // ignore_for_file: unused_import
 export '../../internal/data/dtos/portfolio_snapshot_dto.dart';
@@ -19,7 +22,7 @@ export '../../internal/data/dtos/portfolio_snapshot_dto.dart';
 /// A self-contained widget that renders the portfolio history chart.
 ///
 /// Features:
-/// - Compact transparent portfolio dropdown (All Portfolios + brokers)
+/// - Always shows portfolio switcher tabs ([All Portfolios], [Dhan], [Zerodha]…)
 /// - Reacts to global portfolio selection changes
 /// - Carries forward last known wealth on days with missing data (no zero-dips)
 /// - Reloads on both portfolioId and timeFrame changes
@@ -76,9 +79,11 @@ class _PortfolioHistoryChartWidgetState
   @override
   void didUpdateWidget(PortfolioHistoryChartWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Reload whenever portfolioId OR timeFrame changes
     if (oldWidget.portfolioId != widget.portfolioId ||
         oldWidget.timeFrame != widget.timeFrame) {
+      if (oldWidget.timeFrame == TimeFrame.oneDay && widget.timeFrame != TimeFrame.oneDay) {
+        context.read<PortfolioIntradayCubit>().stop();
+      }
       if (oldWidget.portfolioId != widget.portfolioId) {
         _localSelectedId = null;
         _localSelectedName = null;
@@ -103,10 +108,15 @@ class _PortfolioHistoryChartWidgetState
     final id = (selectedId == null || selectedId == 'all')
         ? widget.portfolioId
         : selectedId;
-    context.read<PortfolioHistoryCubit>().loadHistory(
-      id,
-      widget.timeFrame,
-    );
+    
+    if (widget.timeFrame == TimeFrame.oneDay) {
+      context.read<PortfolioIntradayCubit>().startLiveUpdates(id);
+    } else {
+      context.read<PortfolioHistoryCubit>().loadHistory(
+        id,
+        widget.timeFrame,
+      );
+    }
   }
 
   // ── Build ────────────────────────────────────────────────────────────────
@@ -134,84 +144,123 @@ class _PortfolioHistoryChartWidgetState
         context.read<PortfolioHistoryCubit>().invalidate();
         _load();
       },
-      child: BlocBuilder<PortfolioHistoryCubit, PortfolioHistoryState>(
-        builder: (context, state) {
-          if (state is PortfolioHistoryLoading) return _buildShimmer();
-          if (state is PortfolioHistoryError) return _buildError(state.message);
-          if (state is PortfolioHistoryLoaded) return _buildContent(state);
-          return _buildShimmer();
-        },
-      ),
+      child: widget.timeFrame == TimeFrame.oneDay
+          ? _buildIntradayView()
+          : _buildEodView(),
     );
   }
 
-  // ── Portfolio Dropdown Switcher ──────────────────────────────────────────
+  Widget _buildIntradayView() {
+    return BlocBuilder<PortfolioIntradayCubit, PortfolioIntradayState>(
+      builder: (context, state) {
+        if (state is PortfolioIntradayLoading) return _buildShimmer();
+        if (state is PortfolioIntradayError) return _buildError(state.message);
+        if (state is PortfolioIntradayEmpty) return _buildMarketClosedView();
+        if (state is PortfolioIntradayLoaded) return _buildIntradayChart(state.data);
+        return _buildShimmer();
+      },
+    );
+  }
 
-  /// Compact transparent dropdown (matches mobile timeframe styling).
+  Widget _buildEodView() {
+    return BlocBuilder<PortfolioHistoryCubit, PortfolioHistoryState>(
+      builder: (context, state) {
+        if (state is PortfolioHistoryLoading) return _buildShimmer();
+        if (state is PortfolioHistoryError) return _buildError(state.message);
+        if (state is PortfolioHistoryLoaded) return _buildContent(state);
+        return _buildShimmer();
+      },
+    );
+  }
+
+  // ── Portfolio Tab Switcher ───────────────────────────────────────────────
+
+  /// Builds tabs from the global portfolio list.
+  /// Uses a [Builder] so that [ctx.selectedPortfolioId] is resolved against
+  /// the [_SelectedPortfolioProvider] InheritedWidget and updates whenever
+  /// a tab is tapped—without relying on a BlocBuilder to refresh the highlight.
   Widget _buildPortfolioTabs() {
     return Builder(
       builder: (ctx) {
         return BlocBuilder<PortfolioCubit, PortfolioState>(
-          buildWhen: (prev, curr) =>
-              prev.portfolioList != curr.portfolioList || curr is PortfolioLoaded,
+          buildWhen: (prev, curr) => prev.portfolioList != curr.portfolioList || curr is PortfolioLoaded,
           builder: (bCtx, state) {
             final portfolios = state.portfolioList?.portfolios ?? [];
             if (portfolios.isEmpty) return const SizedBox.shrink();
 
-            final items = <PortfolioItem>[
-              const PortfolioItem(
-                portfolioId: 'all',
-                portfolioName: 'All Portfolios',
-              ),
-              ...portfolios,
-            ];
+            // Always prepend an "All Portfolios" aggregate tab
+            final allItem = PortfolioItem(
+              portfolioId: 'all',
+              portfolioName: 'All Portfolios',
+            );
+            
+            // Deduplicate portfolios by name to prevent multiple tabs with same label
+            final Map<String, PortfolioItem> uniqueItems = {};
+            for (final p in portfolios) {
+              uniqueItems.putIfAbsent(p.portfolioName, () => p);
+            }
+            
+            final items = <PortfolioItem>[allItem, ...uniqueItems.values];
 
-            final currentId = _localSelectedId ??
-                ctx.selectedPortfolioId ??
-                widget.portfolioId ??
-                'all';
-            final hasSelection = items.any((p) => p.portfolioId == currentId);
-            final selectedId = hasSelection ? currentId : 'all';
-            final isDark = Theme.of(context).brightness == Brightness.dark;
+            // Read from local state first, fallback to context
+            final currentId =
+                _localSelectedId ?? ctx.selectedPortfolioId ?? widget.portfolioId ?? 'all';
 
-            return ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 148),
-              child: CustomDropdown<String>(
-                value: selectedId,
-                height: 32,
-                isExpanded: true,
-                fontSize: 12,
-                iconSize: 16,
-                borderRadius: 10,
-                menuMaxHeight: 148,
-                primaryColor: AppColors.primary,
-                backgroundColor:
-                    isDark ? Colors.white.withValues(alpha: 0.06) : null,
-                borderColor:
-                    isDark ? Colors.white.withValues(alpha: 0.1) : null,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                items: items
-                    .map(
-                      (p) => p.portfolioId.toSimpleDropdownItem(
-                        text: p.portfolioName,
-                        fontSize: 12,
-                      ),
-                    )
-                    .toList(),
-                onChanged: (id) {
-                  if (id == null || id == selectedId) return;
-                  String name = 'All Portfolios';
-                  for (final p in items) {
-                    if (p.portfolioId == id) {
-                      name = p.portfolioName;
-                      break;
-                    }
-                  }
-                  setState(() {
-                    _localSelectedId = id;
-                    _localSelectedName = name;
-                  });
-                  _load();
+            return SizedBox(
+              height: 36,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.zero,
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final item = items[i];
+                  final isSelected = currentId == item.portfolioId;
+
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      return GestureDetector(
+                        onTap: () {
+                          if (!isSelected) {
+                            setState(() {
+                              _localSelectedId = item.portfolioId;
+                              _localSelectedName = item.portfolioName;
+                            });
+                            _load(); // Only reload the chart's data
+                          }
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primary
+                                : (isDark
+                                    ? Colors.white.withValues(alpha: 0.04)
+                                    : Colors.black.withValues(alpha: 0.06)),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : (isDark
+                                      ? Colors.white.withValues(alpha: 0.1)
+                                      : Colors.black.withValues(alpha: 0.07)),
+                            ),
+                          ),
+                          child: Text(
+                            item.portfolioName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                              color: isSelected 
+                                  ? Colors.white 
+                                  : (isDark ? Colors.grey[400] : Colors.grey[800]),
+                            ),
+                          ),
+                        ),
+                      );
                 },
               ),
             );
@@ -245,6 +294,32 @@ class _PortfolioHistoryChartWidgetState
   Widget _buildChart(PortfolioHistoryLoaded state) {
     final bool isAllPortfolios =
         (_localSelectedId ?? context.selectedPortfolioId ?? widget.portfolioId ?? 'all') == 'all';
+
+    // ── Calculate Period Stats from raw data ──────────────────────────────
+    if (state.snapshots.isNotEmpty) {
+      double? startWealth;
+      double? endWealth;
+
+      for (final snap in state.snapshots) {
+        final rawWealth = isAllPortfolios
+            ? snap.totalUserWealth
+            : (snap.portfolios.isNotEmpty ? snap.portfolios.first.close : snap.totalUserWealth);
+
+        if (rawWealth != null && !rawWealth.isNaN && rawWealth > 0) {
+          startWealth ??= rawWealth;
+          endWealth = rawWealth;
+        }
+      }
+
+      if (startWealth != null && endWealth != null && startWealth > 0) {
+        final periodReturn = endWealth - startWealth;
+        final periodReturnPct = (periodReturn / startWealth) * 100.0;
+        
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) widget.onPeriodStats?.call(periodReturnPct, periodReturn);
+        });
+      }
+    }
 
     // ── Multi-line mode — "All Portfolios" selected ─────────────────────────
     if (isAllPortfolios && _hasMultipleBrokers(state)) {
@@ -365,15 +440,6 @@ class _PortfolioHistoryChartWidgetState
 
     final activeLines = _activeFormat == ChartFormat.secondary ? secondaryLines : primaryLines;
 
-    final firstLine = primaryLines.first;
-    if (firstLine.points.isNotEmpty) {
-      final start = firstLine.points.first.y;
-      final end = firstLine.points.last.y;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) widget.onPeriodStats?.call(start, end);
-      });
-    }
-
     return _buildChartContainer(
       activeLines: activeLines,
       isMultiLine: true,
@@ -480,12 +546,62 @@ class _PortfolioHistoryChartWidgetState
     final activeData = _activeFormat == ChartFormat.secondary ? secondaryPoints : primaryPoints;
 
     if (primaryPoints.isNotEmpty) {
-      final start = primaryPoints.first.y;
-      final end = primaryPoints.last.y;
+      // Stats already calculated and dispatched in _buildChart
+    }
+
+    return _buildChartContainer(
+      singleData: activeData,
+      isMultiLine: false,
+    );
+  }
+
+  Widget _buildIntradayChart(List<PortfolioIntradayDto> data) {
+    if (data.isEmpty) return _buildEmpty();
+
+    // Smart adjustment: The backend might send an artificial anchor point at 09:15 followed by the actual 09:15 data.
+    // We deduplicate by timestamp, keeping the latest point for each timestamp to avoid artificial vertical drops.
+    final List<PortfolioIntradayDto> uniqueData = [];
+    String? lastTs;
+    for (var d in data) {
+      if (d.timestamp != lastTs) {
+        uniqueData.add(d);
+        lastTs = d.timestamp;
+      } else {
+        // Overwrite the previous anchor point with the actual market data for the same timestamp
+        uniqueData[uniqueData.length - 1] = d;
+      }
+    }
+
+    int idx = 0;
+    final primaryPoints = uniqueData.map((d) => CommonChartDataPoint(
+      x: (idx++).toDouble(),
+      y: d.totalWealth,
+      // Show label every 40 minutes (every 8th 5-min candle)
+      xLabel: (idx % 8 == 1) ? d.timestamp : '',
+      yLabel: '₹${_formatNum(d.totalWealth)}',
+    )).toList();
+
+    idx = 0;
+    final secondaryPoints = uniqueData.map((d) => CommonChartDataPoint(
+      x: (idx++).toDouble(),
+      y: d.changeFromOpenPct,
+      xLabel: (idx % 8 == 1) ? d.timestamp : '',
+      yLabel: '${d.changeFromOpenPct >= 0 ? "+" : ""}${d.changeFromOpenPct.toStringAsFixed(2)}%',
+    )).toList();
+
+    final startWealth = data.first.totalWealth;
+    final endWealth = data.last.totalWealth;
+    if (startWealth > 0) {
+      final change = endWealth - startWealth;
+      final changePct = (change / startWealth) * 100.0;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) widget.onPeriodStats?.call(start, end);
+        if (mounted) widget.onPeriodStats?.call(changePct, change);
       });
     }
+
+    final activeData = _activeFormat == ChartFormat.secondary
+        ? secondaryPoints
+        : primaryPoints;
 
     return _buildChartContainer(
       singleData: activeData,
@@ -517,12 +633,15 @@ class _PortfolioHistoryChartWidgetState
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                cardBase.withValues(alpha: isDark ? 0.55 : 0.9),
-                cardBase.withValues(alpha: isDark ? 0.3 : 0.7),
+                cardBase.withValues(alpha: isDark ? 0.55 : 0.45),
+                cardBase.withValues(alpha: isDark ? 0.3 : 0.25),
               ],
             ),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: isDark ? 0.07 : 0.4)),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.07)
+                    : Colors.black.withValues(alpha: 0.07)),
             boxShadow: [
               BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, 8)),
             ],
@@ -535,8 +654,13 @@ class _PortfolioHistoryChartWidgetState
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildPortfolioTabs(),
-                  const Spacer(),
+                  // Portfolio Tabs taking available space
+                  Expanded(
+                    child: _buildPortfolioTabs(),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Toggle + Zoom controls
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -549,6 +673,7 @@ class _PortfolioHistoryChartWidgetState
                         onValueChanged: (val) {
                           setState(() {
                             _activeFormat = val;
+                            // Update multi-line active set when toggle changes
                           });
                         },
                       ),
@@ -596,10 +721,8 @@ class _PortfolioHistoryChartWidgetState
               // ── Chart Area ─────────────────────────────────────────────
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final int dataLen = isMultiLine
-                      ? (activeLines?.first.points.length ?? 0)
-                      : (singleData?.length ?? 0);
-                  final double baseWidth = dataLen * 40.0;
+                  // The chart should naturally compress to fit the max width without scrolling
+                  final double baseWidth = constraints.maxWidth;
                   final double calculatedWidth = (baseWidth * _zoomScale).clamp(constraints.maxWidth, double.infinity);
                   final bool needsScroll = calculatedWidth > constraints.maxWidth;
                   final double chartWidth = needsScroll ? calculatedWidth : constraints.maxWidth;
@@ -743,7 +866,7 @@ class _PortfolioHistoryChartWidgetState
   /// Pads the start of the snapshots list with dummy points so the X-axis
   /// perfectly reflects the selected timeframe, even if the portfolio is brand new.
   List<PortfolioSnapshotDto> _padSnapshots(List<PortfolioSnapshotDto> raw, TimeFrame tf) {
-    if (raw.isEmpty || tf == TimeFrame.all) return raw;
+    if (raw.isEmpty || tf == TimeFrame.all || tf == TimeFrame.oneDay) return raw;
     final startDate = tf.dateRange.start;
     final firstRealDate = DateTime.tryParse(raw.first.snapshotDate ?? '');
     
@@ -756,11 +879,10 @@ class _PortfolioHistoryChartWidgetState
         final padding = <PortfolioSnapshotDto>[];
         for (int i = 0; i < daysToPad; i++) {
           final d = startDate.add(Duration(days: i));
-          final isShortTimeframe = tf == TimeFrame.oneDay || tf == TimeFrame.oneWeek;
           padding.add(PortfolioSnapshotDto(
             snapshotDate: d.toIso8601String(),
-            totalUserWealth: isShortTimeframe ? raw.first.totalUserWealth : double.nan,
-            portfolios: isShortTimeframe ? raw.first.portfolios : [], // empty for padding on long timeframes
+            totalUserWealth: raw.first.totalUserWealth,
+            portfolios: raw.first.portfolios, // carry forward portfolios to prevent multi-line crash
           ));
         }
         return [...padding, ...raw];
@@ -783,6 +905,7 @@ class _PortfolioHistoryChartWidgetState
           final week = _isoWeekNumber(dt);
           return '${dt.year}-$week';
         });
+      case '3M':
       case '6M':
       case 'YTD':
         return _keepLastPerGroup(raw, (s) {
@@ -920,6 +1043,33 @@ class _PortfolioHistoryChartWidgetState
           ),
         ),
       );
+
+  Widget _buildMarketClosedView() => SizedBox(
+    height: widget.height,
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.access_time_rounded, size: 40, color: Colors.grey[400]),
+          const SizedBox(height: 12),
+          Text(
+            'Market Closed',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Intraday chart updates from 9:15 AM – 3:30 PM IST',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _EndOfLineBadge extends StatelessWidget {

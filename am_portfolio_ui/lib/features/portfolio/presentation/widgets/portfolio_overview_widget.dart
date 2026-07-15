@@ -13,8 +13,11 @@ import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
+import '../cubit/portfolio_intraday_cubit.dart';
 import 'package:am_common/am_common.dart';
 import 'portfolio_metric_card.dart';
+import '../../internal/data/datasources/portfolio_remote_data_source.dart';
+import '../../providers/portfolio_providers.dart';
 
 /// Portfolio overview widget showing summary and key metrics
 class PortfolioOverviewWidget extends ConsumerStatefulWidget {
@@ -248,11 +251,13 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                       child: Container(
                         width: 350,
                         height: 350,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              Color(0x1700B894), // #00B894 at ~9% opacity
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? const Color(0x1700B894)
+                                  : const Color(0x3500B894),
                               Colors.transparent,
                             ],
                           ),
@@ -268,11 +273,13 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                       child: Container(
                         width: 300,
                         height: 300,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              Color(0x1A6C5DD3), // #6C5DD3 at ~10% opacity
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? const Color(0x1A6C5DD3)
+                                  : const Color(0x356C5DD3),
                               Colors.transparent,
                             ],
                           ),
@@ -307,38 +314,14 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                           ),
                         // ── ROW 1: 4 Metric Cards ──────────────────────────
                         if (isSmallMobile)
-                          // Intrinsic rows avoid GridView aspect-ratio blank space.
-                          Builder(
-                            builder: (context) {
-                              final cards = _buildMetricCards(
-                                state,
-                                compact: true,
-                                glowBorder: false,
-                              );
-                              return Column(
-                                children: [
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(child: cards[0]),
-                                      const SizedBox(width: 10),
-                                      Expanded(child: cards[1]),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(child: cards[2]),
-                                      const SizedBox(width: 10),
-                                      Expanded(child: cards[3]),
-                                    ],
-                                  ),
-                                ],
-                              );
-                            },
+                          GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            childAspectRatio: 1.45,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            children: _buildMetricCards(state),
                           )
                         else
                           Row(
@@ -372,23 +355,28 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                               ),
                             ],
                           ),
-                        SizedBox(height: isSmallMobile ? 12 : 20),
+                        const SizedBox(height: 20),
 
                         // ── ROW 2: Chart + Allocation (or stacked on mobile) ──
                         if (isMobile) ...[
-                          PortfolioHistoryChartWidget(
-                            key: ValueKey('hist_${portfolioId}_${selectedTimeFrame.code}'),
-                            portfolioId: portfolioId,
-                            timeFrame: selectedTimeFrame,
-                            height: 320,
-                            onPeriodStats: (start, end) {
-                              if (mounted) {
-                                setState(() {
-                                  _periodStartValue = start;
-                                  _periodEndValue = end;
-                                });
-                              }
-                            },
+                          BlocProvider<PortfolioIntradayCubit>(
+                            create: (_) => PortfolioIntradayCubit(
+                              ref.read(portfolioRemoteDataSourceProvider).requireValue,
+                            ),
+                            child: PortfolioHistoryChartWidget(
+                              key: ValueKey('hist_${portfolioId}_${selectedTimeFrame.code}'),
+                              portfolioId: portfolioId,
+                              timeFrame: selectedTimeFrame,
+                              height: 320,
+                              onPeriodStats: (start, end) {
+                                if (mounted) {
+                                  setState(() {
+                                    _periodStartValue = start;
+                                    _periodEndValue = end;
+                                  });
+                                }
+                              },
+                            ),
                           ),
                           const SizedBox(height: 16),
                           PortfolioTopMoversPanel(
@@ -427,19 +415,25 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                               },
                             ),
                           ),
-                        ] else
-                          _MoversAllocationRow(
-                            portfolioId: portfolioId,
-                            selectedTimeFrame: selectedTimeFrame,
-                            onPeriodStats: (start, end) {
-                              if (mounted) {
-                                setState(() {
-                                  _periodStartValue = start;
-                                  _periodEndValue = end;
-                                });
-                              }
-                            },
+                        ] else ...[
+                          BlocProvider<PortfolioIntradayCubit>(
+                            create: (_) => PortfolioIntradayCubit(
+                              ref.read(portfolioRemoteDataSourceProvider).requireValue,
+                            ),
+                            child: _MoversAllocationRow(
+                              portfolioId: portfolioId,
+                              selectedTimeFrame: selectedTimeFrame,
+                              onPeriodStats: (start, end) {
+                                if (mounted) {
+                                  setState(() {
+                                    _periodStartValue = start;
+                                    _periodEndValue = end;
+                                  });
+                                }
+                              },
+                            ),
                           ),
+                        ],
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -457,20 +451,16 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
   }
 
   /// Builds the 4 metric cards with real data from [state].
-  List<Widget> _buildMetricCards(
-    PortfolioLoaded state, {
-    bool compact = false,
-    bool glowBorder = true,
-  }) {
+  List<Widget> _buildMetricCards(PortfolioLoaded state) {
     final summaryToUse = state.summary;
     final selectedTimeFrame = ref.read(appTimeFrameProvider);
 
-    final bool hasPeriodData = _periodStartValue != null && _periodEndValue != null && _periodStartValue! > 0;
+    final bool hasPeriodData = _periodStartValue != null && _periodEndValue != null;
     final double periodReturn = hasPeriodData
-        ? (_periodEndValue! - _periodStartValue!)
+        ? _periodEndValue!
         : summaryToUse.totalGainLoss;
     final double periodReturnPct = hasPeriodData
-        ? (periodReturn / _periodStartValue!) * 100.0
+        ? _periodStartValue!
         : summaryToUse.totalGainLossPercentage;
     final String periodLabel = hasPeriodData ? selectedTimeFrame.displayName : 'total';
 
@@ -491,8 +481,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         isPositive: periodReturn == 0
             ? null
             : periodReturn > 0,
-        compact: compact,
-        glowBorder: glowBorder,
+        glowBorder: true,
         tooltip: hasPeriodData ? 'Unrealized profit or loss in $periodLabel' : 'Total unrealized profit or loss across all holdings',
       ),
       PortfolioMetricCard(
@@ -511,19 +500,17 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         isPositive: summaryToUse.todayChange == 0
             ? null
             : summaryToUse.todayChange > 0,
-        compact: compact,
-        glowBorder: glowBorder,
+        glowBorder: true,
         tooltip: "Unrealized profit or loss for today",
       ),
       PortfolioMetricCard(
         title: 'Total Balance',
         value: _formatCurrency(summaryToUse.totalValue),
         subtitle: '${summaryToUse.totalAssets} Active Holdings',
-        accentColor: ds.AppColors.primary,
+        accentColor: const Color(0xFF4A6FE3), // Royal blue accent
         icon: null,
         isPositive: null,
-        compact: compact,
-        glowBorder: false,
+        glowBorder: true,
         tooltip:
             'Total value of all holdings based on current market price',
       ),
@@ -531,12 +518,11 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         title: 'Invested Amount',
         value: _formatCurrency(summaryToUse.investmentValue),
         subtitle: 'Total Principal',
-        accentColor: ds.AppColors.info,
+        accentColor: const Color(0xFF00BCD4), // Cyan accent
         icon: null,
         isPositive: null,
         isHighlight: false,
-        compact: compact,
-        glowBorder: false,
+        glowBorder: true,
         tooltip: 'Total principal amount invested',
       ),
     ];

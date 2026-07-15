@@ -7,6 +7,7 @@ import 'package:am_portfolio_ui/core/constants/portfolio_endpoints.dart';
 import '../dtos/portfolio_analytics_request_dto.dart';
 import '../dtos/portfolio_analytics_response_dto.dart';
 import '../dtos/portfolio_holdings_dto.dart';
+import '../dtos/portfolio_intraday_dto.dart';
 import '../dtos/portfolio_list_dto.dart';
 import '../dtos/portfolio_snapshot_dto.dart';
 import '../dtos/portfolio_summary_dto.dart';
@@ -47,6 +48,11 @@ abstract class PortfolioRemoteDataSource {
   Future<List<PortfolioSnapshotDto>> getPortfolioHistory(
     String? portfolioId,
     String timeFrame,
+  );
+
+  /// Get intraday data for 1D chart
+  Future<List<PortfolioIntradayDto>> getPortfolioIntraday(
+    String? portfolioId,
   );
 }
 
@@ -660,6 +666,39 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       return result;
     } catch (e) {
       CommonLogger.error('Failed to fetch portfolio history',
+          tag: 'PortfolioRemoteDataSource', error: e);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<PortfolioIntradayDto>> getPortfolioIntraday(
+    String? portfolioId,
+  ) async {
+    CommonLogger.methodEntry('getPortfolioIntraday',
+        tag: 'PortfolioRemoteDataSource');
+    try {
+      final String path = (portfolioId == null || portfolioId == 'all')
+          ? '/v1/portfolios/intraday'
+          : '/v1/portfolios/$portfolioId/intraday';
+      final String uri = _buildUri(_baseUrl, path);
+
+      final response = await _apiClient.get<List<dynamic>>(
+        uri,
+        parser: (data) => data! as List<dynamic>,
+      );
+
+      final result = response
+          .map((e) => PortfolioIntradayDto.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      CommonLogger.info(
+        'Portfolio intraday fetched successfully',
+        tag: 'PortfolioRemoteDataSource',
+      );
+      return result;
+    } catch (e) {
+      CommonLogger.error('Failed to fetch portfolio intraday',
           tag: 'PortfolioRemoteDataSource', error: e);
       rethrow;
     }
