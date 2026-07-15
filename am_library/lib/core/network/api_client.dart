@@ -140,7 +140,18 @@ class ApiClient {
       String message = 'Unknown error';
       try {
         final errorData = jsonDecode(response.body);
-        message = errorData['message'] ?? 'Unknown error';
+        if (errorData is Map) {
+          message = (errorData['message'] ??
+                  errorData['error'] ??
+                  errorData['detail'] ??
+                  message)
+              .toString();
+          if (errorData['detail'] is Map) {
+            message = errorData['detail'].toString();
+          }
+        } else if (errorData is String && errorData.isNotEmpty) {
+          message = errorData;
+        }
       } catch (_) {
         message = 'Error ${response.statusCode}: ${response.reasonPhrase}';
       }

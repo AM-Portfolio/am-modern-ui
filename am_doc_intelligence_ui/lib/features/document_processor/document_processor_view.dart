@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
@@ -22,6 +25,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   String _status = '';
   Map<String, dynamic>? _lastResult;
   bool _processing = false;
+  bool _dragHover = false;
+  DropzoneViewController? _dropzoneController;
   
   // Health check
   bool? _isServiceConnected;
@@ -140,30 +145,62 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
     if (result != null) {
       PlatformFile file = result.files.first;
-      setState(() {
-        _status = 'Uploading ${file.name}...';
-        _processing = true;
-        _lastResult = null;
-      });
-
-      try {
-        final response = await apiProvider.processDocument(
-          file.bytes!, 
-          file.name, 
-          _selectedDocType!,
-          brokerType: _selectedBrokerType ?? 'ZERODHA'
-        );
-        setState(() {
-          _lastResult = response;
-          _status = 'Success! Processed ${file.name}';
-          _processing = false;
-        });
-      } catch (e) {
-        setState(() {
-          _status = 'Error uploading: $e';
-          _processing = false;
-        });
+      if (file.bytes == null) {
+        setState(() => _status = 'Could not read file bytes for ${file.name}');
+        return;
       }
+      await _uploadFileBytes(file.bytes!, file.name);
+    }
+  }
+
+  Future<void> _uploadFileBytes(Uint8List bytes, String filename) async {
+    if (_selectedDocType == null) {
+      setState(() => _status = 'Select a document type first');
+      return;
+    }
+    final ext = filename.split('.').last.toLowerCase();
+    if (!['pdf', 'xlsx', 'xls', 'csv'].contains(ext)) {
+      setState(() => _status = 'Unsupported file type: .$ext');
+      return;
+    }
+
+    setState(() {
+      _status = 'Uploading $filename...';
+      _processing = true;
+      _lastResult = null;
+      _dragHover = false;
+    });
+
+    try {
+      final response = await apiProvider.processDocument(
+        bytes,
+        filename,
+        _selectedDocType!,
+        brokerType: _selectedBrokerType ?? 'ZERODHA',
+      );
+      setState(() {
+        _lastResult = response;
+        _status = 'Success! Processed $filename';
+        _processing = false;
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Error uploading: $e';
+        _processing = false;
+      });
+    }
+  }
+
+  Future<void> _onDropFile(DropzoneFileInterface ev) async {
+    if (_processing || _selectedDocType == null || _dropzoneController == null) {
+      return;
+    }
+    try {
+      final name = await _dropzoneController!.getFilename(ev);
+      final bytes = await _dropzoneController!.getFileData(ev);
+      await _uploadFileBytes(bytes, name);
+    } catch (e) {
+      setState(() => _status = 'Drop failed: $e');
     }
   }
 
@@ -492,89 +529,161 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
   Widget _buildUploadSection() {
     final bool isInteractable = !_processing && _selectedDocType != null;
-    return GlassCard(
-      child: InkWell(
-        onTap: isInteractable ? _pickAndUpload : null,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withOpacity(isInteractable ? 0.3 : 0.1),
-              style: BorderStyle.solid,
-              width: 1.5,
-            ),
-            borderRadius: BorderRadius.circular(16),
+    final primary = Theme.of(context).colorScheme.primary;
+    final showBrokerDownload =
+        (_selectedBrokerType == 'ZERODHA' &&
+            (_selectedDocType == 'STOCK_PORTFOLIO' ||
+                _selectedDocType == 'TRADE_FNO' ||
+                _selectedDocType == 'TRADE_EQ')) ||
+        (_selectedBrokerType == 'GROWW' && _selectedDocType != null) ||
+        (_selectedBrokerType == 'ANGEL_ONE' &&
+            (_selectedDocType == 'COMBINE_PORTFOLIO' ||
+                _selectedDocType == 'TRADE_EQ'));
+
+    final uploadVisual = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+      decoration: BoxDecoration(
+        color: _dragHover ? primary.withOpacity(0.08) : Colors.transparent,
+        border: Border.all(
+          color: primary.withOpacity(
+            _dragHover ? 0.7 : (isInteractable ? 0.3 : 0.1),
           ),
-          child: Column(
-            children: [
-              _processing 
-                ? const SizedBox(
-                    height: 52,
-                    width: 52,
-                    child: CircularProgressIndicator(strokeWidth: 3),
-                  )
-                : Icon(
-                    Icons.cloud_upload_outlined, 
-                    size: 52, 
-                    color: isInteractable ? Theme.of(context).colorScheme.primary : Colors.grey
-                  ),
-              const SizedBox(height: 16),
-              Text(
-                _processing ? 'Parsing Statement Data...' : 'Click to Upload Document',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: isInteractable ? Theme.of(context).colorScheme.primary : Colors.grey,
+          style: BorderStyle.solid,
+          width: _dragHover ? 2 : 1.5,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          _processing
+              ? const SizedBox(
+                  height: 52,
+                  width: 52,
+                  child: CircularProgressIndicator(strokeWidth: 3),
+                )
+              : Icon(
+                  Icons.cloud_upload_outlined,
+                  size: 52,
+                  color: isInteractable ? primary : Colors.grey,
+                ),
+          const SizedBox(height: 16),
+          Text(
+            _processing
+                ? 'Parsing Statement Data...'
+                : (_dragHover
+                    ? 'Drop to upload'
+                    : 'Click or drag to upload document'),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: isInteractable ? primary : Colors.grey,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
-              const SizedBox(height: 6),
-              const Text('Supports PDF, Excel (XLSX, XLS), and CSV formats', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TextButton.icon(
-                    onPressed: _downloadSample, 
-                    icon: const Icon(Icons.download, size: 16),
-                    label: const Text('Download Sample Portfolio CSV', style: TextStyle(fontSize: 12)),
-                  ),
-                ],
-              ),
-              if ((_selectedBrokerType == 'ZERODHA' && (_selectedDocType == 'STOCK_PORTFOLIO' || _selectedDocType == 'TRADE_FNO' || _selectedDocType == 'TRADE_EQ')) ||
-                  (_selectedBrokerType == 'GROWW' && _selectedDocType != null) ||
-                  (_selectedBrokerType == 'ANGEL_ONE' && (_selectedDocType == 'COMBINE_PORTFOLIO' || _selectedDocType == 'TRADE_EQ')))
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: TextButton.icon(
-                    onPressed: () {
-                      _showDownloadStepsDialog(context, _selectedBrokerType!, _selectedDocType!);
-                    },
-                    style: TextButton.styleFrom(
-                      backgroundColor: Theme.of(context).brightness == Brightness.dark
-                          ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
-                          : Theme.of(context).colorScheme.primary.withOpacity(0.12),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Supports PDF, Excel (XLSX, XLS), and CSV formats',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+
+    return GlassCard(
+      child: Column(
+        children: [
+          SizedBox(
+            height: 200,
+            width: double.infinity,
+            child: Stack(
+              children: [
+                // Visual behind; DropzoneView must be on top for HTML drag events.
+                uploadVisual,
+                if (kIsWeb && isInteractable)
+                  Positioned.fill(
+                    child: DropzoneView(
+                      operation: DragOperation.copy,
+                      cursor: CursorType.grab,
+                      onCreated: (ctrl) => _dropzoneController = ctrl,
+                      onHover: () {
+                        if (!_dragHover) setState(() => _dragHover = true);
+                      },
+                      onLeave: () {
+                        if (_dragHover) setState(() => _dragHover = false);
+                      },
+                      onDropFile: _onDropFile,
                     ),
-                    icon: Icon(Icons.open_in_new, size: 16, color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white.withOpacity(0.9)
-                        : Theme.of(context).colorScheme.primary),
-                    label: Text(
-                      "Don't have the document? Download from ${_selectedBrokerType == 'ZERODHA' ? 'Zerodha Console' : _selectedBrokerType == 'ANGEL_ONE' ? 'Angel One' : 'Groww'}",
-                      style: TextStyle(
-                        fontSize: 13, 
-                        fontWeight: FontWeight.bold, 
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white.withOpacity(0.9)
-                            : Theme.of(context).colorScheme.primary,
+                  ),
+                if (!kIsWeb)
+                  Positioned.fill(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: isInteractable ? _pickAndUpload : null,
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                   ),
-                )
-            ],
+              ],
+            ),
           ),
-        ),
+          if (kIsWeb) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: isInteractable ? _pickAndUpload : null,
+              icon: const Icon(Icons.folder_open, size: 18),
+              label: const Text('Browse files'),
+            ),
+          ],
+          TextButton.icon(
+            onPressed: _downloadSample,
+            icon: const Icon(Icons.download, size: 16),
+            label: const Text(
+              'Download Sample Portfolio CSV',
+              style: TextStyle(fontSize: 12),
+            ),
+          ),
+          if (showBrokerDownload)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: TextButton.icon(
+                onPressed: () {
+                  _showDownloadStepsDialog(
+                    context,
+                    _selectedBrokerType!,
+                    _selectedDocType!,
+                  );
+                },
+                style: TextButton.styleFrom(
+                  backgroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? primary.withOpacity(0.3)
+                          : primary.withOpacity(0.12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: Icon(
+                  Icons.open_in_new,
+                  size: 16,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withOpacity(0.9)
+                      : primary,
+                ),
+                label: Text(
+                  "Don't have the document? Download from ${_selectedBrokerType == 'ZERODHA' ? 'Zerodha Console' : _selectedBrokerType == 'ANGEL_ONE' ? 'Angel One' : 'Groww'}",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white.withOpacity(0.9)
+                        : primary,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -604,6 +604,15 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
       return listResponse;
     } catch (e) {
+      // Backend used to return 404 for users with zero portfolios — treat as empty list
+      // so the UI shows "No portfolios" / upload CTAs instead of a technical error screen.
+      if (e is ApiException && e.statusCode == 404) {
+        CommonLogger.info(
+          'Portfolios list 404 treated as empty list',
+          tag: 'PortfolioRemoteDataSource',
+        );
+        return PortfolioListDto(portfolios: []);
+      }
       CommonLogger.error(
         'Failed to fetch portfolios list',
         tag: 'PortfolioRemoteDataSource',
