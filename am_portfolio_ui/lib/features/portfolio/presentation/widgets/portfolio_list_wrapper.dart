@@ -453,22 +453,38 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   /// Builds empty portfolios screen
   Widget _buildEmptyPortfoliosScreen() => Scaffold(
     body: Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.account_balance_wallet_outlined,
-            size: 64,
-            color: Colors.grey,
-          ),
-          const SizedBox(height: 16),
-          const Text('No portfolios found'),
-          const SizedBox(height: 8),
-          const Text('Create a portfolio to get started'),
-          const SizedBox(height: 24),
-          // Add Gmail Connect button even when no portfolios exist
-          const GmailConnectButton(),
-        ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.account_balance_wallet_outlined,
+              size: 64,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No portfolios found',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Upload a brokerage statement or sync from Gmail to create your first portfolio.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            if (widget.onOpenDocIntel != null) ...[
+              ElevatedButton.icon(
+                onPressed: widget.onOpenDocIntel,
+                icon: const Icon(Icons.upload_file_outlined),
+                label: const Text('Upload portfolio'),
+              ),
+              const SizedBox(height: 12),
+            ],
+            const GmailConnectButton(),
+          ],
+        ),
       ),
     ),
   );
