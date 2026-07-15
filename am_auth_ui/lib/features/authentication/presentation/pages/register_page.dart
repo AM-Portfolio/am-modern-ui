@@ -124,23 +124,34 @@ class RegisterPageForm extends StatelessWidget {
   Widget build(BuildContext context) => BlocConsumer<AuthCubit, AuthState>(
     listener: (context, state) {
       if (state is RegisterPendingVerification) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+        // Stay on a dismissible dialog — SnackBar + immediate navigate left a
+        // stuck/orphaned banner under the login form on web.
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Check your email'),
             content: Text(
-              'Account created for ${state.email}. Check your email to verify your Asrax account, then sign in.',
+              'Account created for ${state.email}. Verify your Asrax account from the email we sent, then sign in.\n\n'
+              'If you do not see the email, check spam or tap Resend.',
             ),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 6),
-            action: SnackBarAction(
-              label: 'Resend',
-              textColor: Colors.white,
-              onPressed: () {
-                context.read<AuthCubit>().resendVerifyEmail(state.email);
-              },
-            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  context.read<AuthCubit>().resendVerifyEmail(state.email);
+                },
+                child: const Text('Resend'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  onLogin();
+                },
+                child: const Text('Go to sign in'),
+              ),
+            ],
           ),
         );
-        onLogin();
       } else if (state is Authenticated) {
         // Navigate to home page after successful registration
         Navigator.of(context).pushReplacementNamed('/home');
