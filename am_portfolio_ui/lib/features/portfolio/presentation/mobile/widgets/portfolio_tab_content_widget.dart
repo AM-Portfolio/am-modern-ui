@@ -223,20 +223,9 @@ class _BasketsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            Expanded(
-              child: BasketSectionNavigator(
-                userId: 'default_user',
-                portfolioId: currentPortfolioId,
-              ),
-            ),
-          ],
-        ),
+      body: BasketSectionNavigator(
+        userId: 'default_user',
+        portfolioId: currentPortfolioId,
       ),
     );
   }

@@ -314,14 +314,38 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                           ),
                         // ── ROW 1: 4 Metric Cards ──────────────────────────
                         if (isSmallMobile)
-                          GridView.count(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: 2,
-                            childAspectRatio: 1.45,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            children: _buildMetricCards(state),
+                          // Intrinsic rows avoid GridView aspect-ratio blank space.
+                          Builder(
+                            builder: (context) {
+                              final cards = _buildMetricCards(
+                                state,
+                                compact: true,
+                                glowBorder: false,
+                              );
+                              return Column(
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(child: cards[0]),
+                                      const SizedBox(width: 10),
+                                      Expanded(child: cards[1]),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(child: cards[2]),
+                                      const SizedBox(width: 10),
+                                      Expanded(child: cards[3]),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            },
                           )
                         else
                           Row(
@@ -355,7 +379,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                               ),
                             ],
                           ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: isSmallMobile ? 12 : 20),
 
                         // ── ROW 2: Chart + Allocation (or stacked on mobile) ──
                         if (isMobile) ...[
@@ -451,7 +475,11 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
   }
 
   /// Builds the 4 metric cards with real data from [state].
-  List<Widget> _buildMetricCards(PortfolioLoaded state) {
+  List<Widget> _buildMetricCards(
+    PortfolioLoaded state, {
+    bool compact = false,
+    bool glowBorder = true,
+  }) {
     final summaryToUse = state.summary;
     final selectedTimeFrame = ref.read(appTimeFrameProvider);
 
@@ -481,7 +509,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         isPositive: periodReturn == 0
             ? null
             : periodReturn > 0,
-        glowBorder: true,
+        compact: compact,
+        glowBorder: glowBorder,
         tooltip: hasPeriodData ? 'Unrealized profit or loss in $periodLabel' : 'Total unrealized profit or loss across all holdings',
       ),
       PortfolioMetricCard(
@@ -500,7 +529,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         isPositive: summaryToUse.todayChange == 0
             ? null
             : summaryToUse.todayChange > 0,
-        glowBorder: true,
+        compact: compact,
+        glowBorder: glowBorder,
         tooltip: "Unrealized profit or loss for today",
       ),
       PortfolioMetricCard(
@@ -510,7 +540,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         accentColor: const Color(0xFF4A6FE3), // Royal blue accent
         icon: null,
         isPositive: null,
-        glowBorder: true,
+        compact: compact,
+        glowBorder: false,
         tooltip:
             'Total value of all holdings based on current market price',
       ),
@@ -522,7 +553,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         icon: null,
         isPositive: null,
         isHighlight: false,
-        glowBorder: true,
+        compact: compact,
+        glowBorder: false,
         tooltip: 'Total principal amount invested',
       ),
     ];

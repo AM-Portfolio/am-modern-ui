@@ -53,7 +53,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -62,7 +62,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                       'Historical Monthly Performance (10 Years)',
                       style: AmTextStyles.h6.copyWith(
                         color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                        fontSize: isMobile ? 16 : 18,
+                        fontSize: isMobile ? 14 : 18,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -107,15 +107,15 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                   final shortMonths = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
                   // Dimensions
-                  final double yearColWidth = isMobile ? 40.0 : 60.0;
-                  final double cellWidth = isMobile ? 140.0 : 180.0; // Slightly smaller on mobile
+                  final double yearColWidth = isMobile ? 44.0 : 60.0;
+                  final double cellWidth = isMobile ? 140.0 : 180.0;
 
                   // ── MOBILE: Cylinder drum-roll layout ─────────────────
                   if (isMobile) {
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Pinned YEAR column
+                        // Pinned YEAR column — tight against month scroller
                         SizedBox(
                           width: yearColWidth,
                           child: Column(
@@ -153,8 +153,10 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                     child: Center(
                                       child: Text(
                                         '$year',
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black87,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,
                                         ),
@@ -166,7 +168,8 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                             ],
                           ),
                         ),
-                        // Cylinder drum-roll month scroll
+                        const SizedBox(width: 4),
+                        // Months start flush beside YEAR (left-aligned scroller)
                         Expanded(
                           child: CylinderMonthScroller(
                             months: months,

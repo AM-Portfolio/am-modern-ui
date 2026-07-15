@@ -25,13 +25,17 @@ class TradeAttachmentSection extends StatelessWidget {
   final int maxAttachments;
 
   @override
-  Widget build(BuildContext context) => SharedAttachmentSection(
-    userId: '',
-    imageUrls: imageUrls,
-    onAttachmentsChanged: onAttachmentsChanged,
-    featureName: 'trade',
-    isEditMode: isEditMode,
-    label: label ?? 'Trade Screenshots & Documents',
-    maxAttachments: maxAttachments,
-  );
+  Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 700;
+    return SharedAttachmentSection(
+      userId: '',
+      imageUrls: imageUrls,
+      onAttachmentsChanged: onAttachmentsChanged,
+      featureName: 'trade',
+      isEditMode: isEditMode,
+      // Compact UI folds the label into the attach button itself.
+      label: isCompact ? null : (label ?? 'Trade Screenshots & Documents'),
+      maxAttachments: isCompact ? 5 : maxAttachments,
+    );
+  }
 }

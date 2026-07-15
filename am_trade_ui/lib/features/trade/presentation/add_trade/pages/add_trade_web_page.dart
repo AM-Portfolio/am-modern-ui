@@ -213,51 +213,39 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
         backgroundColor: theme.colorScheme.surfaceContainerLowest,
         body: Column(
           children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: _handleCancel,
-                      tooltip: 'Back to Trades',
-                    ),
-                    const SizedBox(width: 16),
-                        Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                         Text(
-                          widget.existingTrade != null ? 'Edit Trade' : 'New Trade',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                         ),
-                        if (widget.portfolioName != null)
-                          Text(
-                            widget.portfolioName!,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.7),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
+            // Compact title only — cancel lives in the form footer.
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                widget.existingTrade != null ? 'Edit Trade' : 'New Trade',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
+            ),
 
-              // Form
-              Expanded(
-                child: AddTradeForm(onSave: _handleSave, onCancel: _handleCancel, isLoading: _isLoading, initialData: widget.existingTrade),
+            // Form
+            Expanded(
+              child: AddTradeForm(
+                onSave: _handleSave,
+                onCancel: _handleCancel,
+                isLoading: _isLoading,
+                initialData: widget.existingTrade,
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
       ),
     );
   }

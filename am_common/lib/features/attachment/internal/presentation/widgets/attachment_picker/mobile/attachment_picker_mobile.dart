@@ -64,6 +64,40 @@ class _AttachmentPickerMobileState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final canAddMore = _attachments.length < widget.maxAttachments;
+    final isCompact = MediaQuery.sizeOf(context).width < 700;
+
+    if (isCompact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.showPreview && _attachments.isNotEmpty) ...[
+            AttachmentPreviewGrid(
+              attachments: _attachments,
+              onRemove: widget.readOnly ? null : _removeAttachment,
+              readOnly: widget.readOnly,
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (!widget.readOnly) ...[
+            if (canAddMore)
+              _buildCompactAttachButton(theme)
+            else
+              _buildMaxReachedMessage(theme),
+            if (_isUploading) ...[
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: _uploadProgress,
+                  minHeight: 3,
+                ),
+              ),
+            ],
+          ],
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,6 +189,71 @@ class _AttachmentPickerMobileState
           ],
         ],
       ],
+    );
+  }
+
+  Widget _buildCompactAttachButton(ThemeData theme) {
+    final countLabel = '${_attachments.length}/${widget.maxAttachments}';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _isUploading
+            ? null
+            : () {
+                if (widget.allowedType == AttachmentType.image) {
+                  _pickFromGallery();
+                } else {
+                  _pickFile();
+                }
+              },
+        borderRadius: BorderRadius.circular(10),
+        child: Ink(
+          height: 40,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.28),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.attach_file_rounded,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _attachments.isEmpty ? 'Add attachment' : 'Add more',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Text(
+                  countLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.add_rounded,
+                  size: 18,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.8),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

@@ -4,9 +4,16 @@ import '../calendar_types.dart';
 
 /// Month header with name and statistics badges
 class MonthHeader extends StatelessWidget {
-  const MonthHeader({required this.month, required this.monthData, required this.stats, super.key});
+  const MonthHeader({
+    required this.month,
+    required this.monthData,
+    required this.stats,
+    super.key,
+    this.year,
+  });
 
   final int month;
+  final int? year;
   final CalendarMonthData? monthData;
   final Map<String, dynamic> stats;
 
@@ -15,6 +22,7 @@ class MonthHeader extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final hasStats = stats['totalTrades'] > 0;
+    final monthLabel = monthData?.monthName ?? _getMonthName(month);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -22,11 +30,14 @@ class MonthHeader extends StatelessWidget {
         Stack(
           alignment: Alignment.center,
           children: [
-            // Centered Month Name
+            // Month name only — year lives in the sticky header.
             Center(
               child: Text(
-                monthData?.monthName ?? _getMonthName(month),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 16),
+                monthLabel,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -41,15 +52,21 @@ class MonthHeader extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red).withOpacity(0.15),
+                    color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red)
+                        .withOpacity(0.15),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red).withOpacity(0.4)),
+                    border: Border.all(
+                      color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red)
+                          .withOpacity(0.4),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        stats['totalPnL'] >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                        stats['totalPnL'] >= 0
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
                         size: 12,
                         color: stats['totalPnL'] >= 0 ? Colors.green : Colors.red,
                       ),
@@ -59,9 +76,13 @@ class MonthHeader extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: stats['totalPnL'] >= 0 
-                              ? (isDark ? Colors.greenAccent : Colors.green.shade800) 
-                              : (isDark ? Colors.redAccent : Colors.red.shade800),
+                          color: stats['totalPnL'] >= 0
+                              ? (isDark
+                                  ? Colors.greenAccent
+                                  : Colors.green.shade800)
+                              : (isDark
+                                  ? Colors.redAccent
+                                  : Colors.red.shade800),
                         ),
                       ),
                     ],
@@ -81,13 +102,25 @@ class MonthHeader extends StatelessWidget {
             spacing: 12,
             runSpacing: 6,
             children: [
-              _buildIconStat(context, Icons.calendar_today, '${stats['tradeDays']} days', isDark ? Colors.purpleAccent : Colors.purple.shade700),
-              _buildIconStat(context, Icons.swap_horiz, '${stats['totalTrades']} trades', isDark ? Colors.lightBlueAccent : Colors.blue.shade700),
+              _buildIconStat(
+                context,
+                Icons.calendar_today,
+                '${stats['tradeDays']} days',
+                isDark ? Colors.purpleAccent : Colors.purple.shade700,
+              ),
+              _buildIconStat(
+                context,
+                Icons.swap_horiz,
+                '${stats['totalTrades']} trades',
+                isDark ? Colors.lightBlueAccent : Colors.blue.shade700,
+              ),
               _buildIconStat(
                 context,
                 Icons.percent,
                 '${stats['winRate'].toStringAsFixed(1)}%',
-                stats['winRate'] >= 50 ? (isDark ? Colors.greenAccent : Colors.green.shade700) : (isDark ? Colors.orangeAccent : Colors.orange.shade800),
+                stats['winRate'] >= 50
+                    ? (isDark ? Colors.greenAccent : Colors.green.shade700)
+                    : (isDark ? Colors.orangeAccent : Colors.orange.shade800),
               ),
             ],
           ),

@@ -182,8 +182,8 @@ class _CylinderMonthScrollerState extends State<CylinderMonthScroller>
     final double totalHeight = headerHeight + spacerHeight + dataHeight;
 
     return LayoutBuilder(builder: (context, constraints) {
-      // Show ~3.2 months at once: container / 3.2
-      _itemWidth = constraints.maxWidth / 3.2;
+      // ~2 compact months beside YEAR — no wasted center gap.
+      _itemWidth = (constraints.maxWidth / 2.15).clamp(108.0, 148.0);
 
       // Cylinder radius: R = 2 × itemWidth
       // Ensures R × sin(30°) = itemWidth → adjacent drum X == flat X
@@ -207,7 +207,9 @@ class _CylinderMonthScrollerState extends State<CylinderMonthScroller>
           width: double.infinity,
           child: ClipRect(
             child: Stack(
-              alignment: Alignment.center,
+              // Left-align so months start flush beside the YEAR column.
+              alignment: Alignment.topLeft,
+              clipBehavior: Clip.hardEdge,
               children: items
                   .map((e) => _buildItem(context, e.key, R))
                   .toList(),
@@ -224,45 +226,37 @@ class _CylinderMonthScrollerState extends State<CylinderMonthScroller>
     final double offset = index - _offset;
     final double angle  = offset * _anglePerStep;  // drum rotation angle
 
-    // ── Flat position (drumFactor=0) ────────────────────────────────────────
-    // Items spaced linearly, like a regular horizontal scroll.
+    // Flat: pack from the left edge (beside YEAR), not the screen center.
     final double flatX = offset * _itemWidth;
 
-    // ── Drum position (drumFactor=1) ─────────────────────────────────────────
-    // Items on outside surface of cylinder. R×sin(30°) = itemWidth → seamless lerp.
+    // Drum: same calibration so adjacent X matches flat X.
     final double drumX     = R * sin(angle);
-    final double drumZ     = R * cos(angle) - R;    // 0 at front, negative = behind
-    final double drumRotY  = -angle;                 // NEGATED → outside-drum face
+    final double drumZ     = R * cos(angle) - R;
+    final double drumRotY  = -angle;
 
-    // ── Lerp flat → drum based on _drumFactor ────────────────────────────────
-    final double tx       = flatX + (drumX - flatX) * _drumFactor;
+    final double leftX    = flatX + (drumX - flatX) * _drumFactor;
     final double tz       = drumZ  * _drumFactor;
     final double rotY     = drumRotY * _drumFactor;
     final double persp    = _maxPerspective * _drumFactor;
 
-    // ── Opacity ──────────────────────────────────────────────────────────────
-    // Flat: all items fully visible (clipped by ClipRect at edges).
-    // Drum: fade based on cos(angle) — items rotating to back become invisible.
     final double drumOpacity = cos(angle).clamp(0.0, 1.0);
     final double opacity = 1.0 - (1.0 - drumOpacity) * _drumFactor;
 
     final Matrix4 m = Matrix4.identity()
       ..setEntry(3, 2, persp)
-      ..translate(tx, 0.0, tz)
+      ..translate(0.0, 0.0, tz)
       ..rotateY(rotY);
 
-    return Positioned.fill(
-      child: Center(
-        child: Opacity(
-          opacity: opacity.clamp(0.0, 1.0),
-          child: Transform(
-            transform: m,
-            alignment: Alignment.center,
-            child: SizedBox(
-              width: _itemWidth,
-              child: _buildMonthColumn(context, index),
-            ),
-          ),
+    return Positioned(
+      left: leftX,
+      top: 0,
+      width: _itemWidth,
+      child: Opacity(
+        opacity: opacity.clamp(0.0, 1.0),
+        child: Transform(
+          transform: m,
+          alignment: Alignment.center,
+          child: _buildMonthColumn(context, index),
         ),
       ),
     );

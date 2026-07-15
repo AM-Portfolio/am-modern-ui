@@ -1,10 +1,18 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
+
+/// Wins the gesture arena against parent [PageView] / scroll navigators so
+/// vertical drags on the chart do not switch Market Data pages.
+class _EagerVerticalDragRecognizer extends VerticalDragGestureRecognizer {
+  @override
+  void rejectGesture(int pointer) {
+    acceptGesture(pointer);
+  }
+}
 
 /// Helper classes to smoothly animate the Y-axis range
 class ChartViewportRange {
@@ -67,6 +75,9 @@ class MultiIndexChart extends StatefulWidget {
 class _MultiIndexChartState extends State<MultiIndexChart> {
   late ScrollController _scrollController;
   double _zoomScale = 0.5;
+  double _pinchBaseScale = 0.5;
+  double _lastChartViewportWidth = 300;
+  bool _isPinching = false;
 
   bool _showAbsoluteValues = false;
   List<Map<String, dynamic>> _chartData = [];
@@ -81,11 +92,104 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       _activeIndices.length >= 2 &&
       !widget.isBarChart;
 
-  /// [SIP/Absolute Value Optimization] Locked left title reserved size (prevents layout feedback loop).
-  /// Allocates space dynamically based on the number of compared indices to fit color-coded labels without clipping.
-  double get _leftTitleReservedSize {
-    if (!_useMultiYAxis) return 65.0;
-    return 30.0 + 32.0 * _activeIndices.length;
+  /// Narrow left gutter so the plot sits flush toward the left.
+  /// Multi-axis uses stacked labels (not "24K | 58K" side-by-side).
+  double _leftAxisReserve(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 700;
+    if (compact) {
+      if (_useMultiYAxis) return 36.0;
+      return _showAbsoluteValues ? 34.0 : 32.0;
+    }
+    if (!_useMultiYAxis) {
+      return _showAbsoluteValues ? 44.0 : 38.0;
+    }
+    return 40.0;
+  }
+
+  Widget _leftAxisTitle(TitleMeta meta, Widget child) {
+    return SideTitleWidget(
+      meta: meta,
+      space: 2,
+      child: child,
+    );
+  }
+
+  String _formatAxisTick(double value) {
+    if (!_showAbsoluteValues) {
+      return '${value.toStringAsFixed(1)}%';
+    }
+    final abs = value.abs();
+    if (abs >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}K';
+    }
+    return value.toStringAsFixed(0);
+  }
+
+  Widget _buildLeftAxisLabel({
+    required BuildContext context,
+    required TitleMeta meta,
+    required double value,
+    required Map<String, double> cleanMin,
+    required Map<String, double> cleanMax,
+  }) {
+    final theme = Theme.of(context);
+    final compact = MediaQuery.sizeOf(context).width < 700;
+
+    if (_useMultiYAxis && _activeIndices.isNotEmpty) {
+      final String firstSymbol = _activeIndices.first;
+      final double denominator0 =
+          cleanMax[firstSymbol]! - cleanMin[firstSymbol]!;
+      final List<Widget> rows = [];
+
+      for (int i = 0; i < _activeIndices.length; i++) {
+        final String symbol = _activeIndices[i];
+        double tickVal = value;
+        if (i > 0) {
+          final double denI = cleanMax[symbol]! - cleanMin[symbol]!;
+          tickVal = denominator0.abs() < 0.01
+              ? cleanMin[symbol]!
+              : cleanMin[symbol]! +
+                  (value - cleanMin[firstSymbol]!) / denominator0 * denI;
+        }
+        final color = MultiIndexChart
+            .indexColors[i % MultiIndexChart.indexColors.length];
+        rows.add(
+          Text(
+            _formatAxisTick(tickVal),
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: color,
+              fontSize: compact ? 8.5 : 9.5,
+              fontWeight: FontWeight.w600,
+              height: 1.15,
+            ),
+          ),
+        );
+      }
+
+      return _leftAxisTitle(
+        meta,
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: rows,
+        ),
+      );
+    }
+
+    return _leftAxisTitle(
+      meta,
+      Text(
+        _formatAxisTick(value),
+        textAlign: TextAlign.right,
+        style: TextStyle(
+          color: theme.textTheme.bodySmall?.color?.withOpacity(0.75),
+          fontSize: compact ? 9 : 10,
+          fontWeight: FontWeight.w500,
+          height: 1.1,
+        ),
+      ),
+    );
   }
 
   /// Returns true when the chart is scrolled to (or near) the right edge,
@@ -452,12 +556,13 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       interval = 0.1;
     }
 
-    // Round the minimum value down and maximum value up to the nearest multiple of the clean interval,
-    // and subtract/add one full interval step to provide a clean visual margin/padding at the top and bottom.
+    // Snap to clean ticks with a light margin (~½ interval) so the series
+    // fills the plot instead of floating in the vertical middle.
+    final double pad = interval * 0.5;
     final double minY =
-        (minVal / interval).floorToDouble() * interval - interval;
+        (minVal / interval).floorToDouble() * interval - pad;
     final double maxY =
-        (maxVal / interval).ceilToDouble() * interval + interval;
+        (maxVal / interval).ceilToDouble() * interval + pad;
 
     return {'minY': minY, 'maxY': maxY, 'interval': interval};
   }
@@ -543,10 +648,11 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   }
 
   /// 🔍 Center-Anchored Zooming
-  void _zoom(double newScale, double viewportWidth) {
-    if (newScale < 0.5) newScale = 0.5;
+  void _zoom(double newScale, [double? viewportWidth]) {
+    final vw = viewportWidth ?? _lastChartViewportWidth;
+    if (newScale < 0.35) newScale = 0.35;
     if (newScale > 3.0) newScale = 3.0;
-    if (newScale == _zoomScale) return;
+    if ((newScale - _zoomScale).abs() < 0.001) return;
 
     final oldScale = _zoomScale;
     final oldSpacing = 30.0 * oldScale;
@@ -555,7 +661,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     double centerIndex = 0.0;
     if (_scrollController.hasClients) {
       final oldScrollOffset = _scrollController.offset;
-      centerIndex = (oldScrollOffset + viewportWidth / 2) / oldSpacing;
+      centerIndex = (oldScrollOffset + vw / 2) / oldSpacing;
     }
 
     setState(() {
@@ -567,13 +673,79 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     if (_scrollController.hasClients) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
-          final newScrollOffset =
-              (centerIndex * newSpacing) - (viewportWidth / 2);
+          final newScrollOffset = (centerIndex * newSpacing) - (vw / 2);
           final maxScroll = _scrollController.position.maxScrollExtent;
           _scrollController.jumpTo(newScrollOffset.clamp(0.0, maxScroll));
         }
       });
     }
+  }
+
+  void _panBy(double dx) {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    // Nothing to pan until zoomed in enough for overflow.
+    if (maxScroll <= 0) return;
+    final newOffset = (_scrollController.offset - dx).clamp(0.0, maxScroll);
+    _scrollController.jumpTo(newOffset);
+  }
+
+  /// Pinch zoom + horizontal pan. Blocks parent vertical PageView from
+  /// stealing drags that start on the chart.
+  Widget _wrapChartGestures({
+    required double viewportWidth,
+    required Widget child,
+  }) {
+    _lastChartViewportWidth = viewportWidth;
+
+    return RawGestureDetector(
+      behavior: HitTestBehavior.opaque,
+      gestures: <Type, GestureRecognizerFactory>{
+        // Absorb vertical drags so Dashboard ↔ Market Analysis does not switch.
+        _EagerVerticalDragRecognizer:
+            GestureRecognizerFactoryWithHandlers<_EagerVerticalDragRecognizer>(
+          () => _EagerVerticalDragRecognizer(),
+          (_EagerVerticalDragRecognizer instance) {
+            instance
+              ..onStart = (_) {}
+              ..onUpdate = (_) {}
+              ..onEnd = (_) {};
+          },
+        ),
+        ScaleGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<ScaleGestureRecognizer>(
+          () => ScaleGestureRecognizer(),
+          (ScaleGestureRecognizer instance) {
+            instance
+              ..onStart = (details) {
+                _pinchBaseScale = _zoomScale;
+                _isPinching = details.pointerCount >= 2;
+              }
+              ..onUpdate = (details) {
+                if (details.pointerCount >= 2) {
+                  _isPinching = true;
+                  _zoom(
+                    _pinchBaseScale * details.scale,
+                    viewportWidth,
+                  );
+                } else if (details.focalPointDelta.dx.abs() > 0.5) {
+                  // One-finger horizontal pan of the timeline
+                  _panBy(details.focalPointDelta.dx);
+                }
+              }
+              ..onEnd = (_) {
+                _isPinching = false;
+              };
+          },
+        ),
+      },
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerSignal: (event) =>
+            _handlePointerSignal(event, viewportWidth),
+        child: child,
+      ),
+    );
   }
 
   /// 🖱️ Mouse Wheel Panning (Normal) & Zoom (Ctrl + Wheel)
@@ -653,8 +825,15 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     }
 
     final theme = Theme.of(context);
+    final isCompact = MediaQuery.sizeOf(context).width < 700;
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.fromLTRB(
+        isCompact ? 4 : 24,
+        isCompact ? 10 : 24,
+        isCompact ? 8 : 24,
+        isCompact ? 10 : 24,
+      ),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(12),
@@ -669,90 +848,34 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildLegend(context),
-              Row(
-                children: [
-                  // [SIP/Absolute Value Optimization] Y-Axis Mode Toggle Control (Percentage vs. Absolute Values)
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: (Theme.of(context).brightness == Brightness.dark)
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.black.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildToggleSegment(
-                          label: '%',
-                          isSelected: !_showAbsoluteValues,
-                          onTap: () {
-                            setState(() {
-                              _showAbsoluteValues = false;
-                              _prepareDataAndRecalculate(resetViewport: true);
-                            });
-                          },
-                        ),
-                        _buildToggleSegment(
-                          label: '123',
-                          isSelected: _showAbsoluteValues,
-                          // Absolute Mode is enabled for Line Charts
-                          isEnabled: !widget.isBarChart,
-                          onTap: () {
-                            setState(() {
-                              _showAbsoluteValues = true;
-                              _prepareDataAndRecalculate(resetViewport: true);
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Floating Zoom Controls overlay
-                  if (!widget.isBarChart)
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.zoom_out,
-                              color: Color(0xFF00D1FF)),
-                          onPressed: () {
-                            if (_scrollController.hasClients) {
-                              _zoom(_zoomScale - 0.2,
-                                  _scrollController.position.viewportDimension);
-                            }
-                          },
-                          tooltip: 'Zoom Out',
-                        ),
-                        Text(
-                          '${(_zoomScale * 100).toInt()}%',
-                          style: TextStyle(
-                              color: theme.textTheme.bodySmall?.color
-                                  ?.withOpacity(0.8),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.zoom_in,
-                              color: Color(0xFF00D1FF)),
-                          onPressed: () {
-                            if (_scrollController.hasClients) {
-                              _zoom(_zoomScale + 0.2,
-                                  _scrollController.position.viewportDimension);
-                            }
-                          },
-                          tooltip: 'Zoom In',
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
+          // Legend + %/123 toggles — wrap on narrow screens to avoid overflow.
+          if (isCompact) ...[
+            _buildLegend(context),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildUnitToggle(context),
+                const Spacer(),
+                if (!widget.isBarChart) _buildZoomControls(theme),
+              ],
+            ),
+          ] else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _buildLegend(context)),
+                const SizedBox(width: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildUnitToggle(context),
+                    const SizedBox(width: 8),
+                    if (!widget.isBarChart) _buildZoomControls(theme),
+                  ],
+                ),
+              ],
+            ),
+          SizedBox(height: isCompact ? 8 : 24),
           Expanded(
             child: widget.isBarChart
                 ? _buildBarChart(context, _chartData)
@@ -760,6 +883,79 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildUnitToggle(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: (Theme.of(context).brightness == Brightness.dark)
+            ? Colors.white.withOpacity(0.05)
+            : Colors.black.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildToggleSegment(
+            label: '%',
+            isSelected: !_showAbsoluteValues,
+            onTap: () {
+              setState(() {
+                _showAbsoluteValues = false;
+                _prepareDataAndRecalculate(resetViewport: true);
+              });
+            },
+          ),
+          _buildToggleSegment(
+            label: '123',
+            isSelected: _showAbsoluteValues,
+            isEnabled: !widget.isBarChart,
+            onTap: () {
+              setState(() {
+                _showAbsoluteValues = true;
+                _prepareDataAndRecalculate(resetViewport: true);
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildZoomControls(ThemeData theme) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          icon: const Icon(Icons.zoom_out, color: Color(0xFF00D1FF), size: 22),
+          onPressed: () => _zoom(_zoomScale - 0.2),
+          tooltip: 'Zoom Out',
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Text(
+            '${(_zoomScale * 100).toInt()}%',
+            style: TextStyle(
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.8),
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          icon: const Icon(Icons.zoom_in, color: Color(0xFF00D1FF), size: 22),
+          onPressed: () => _zoom(_zoomScale + 0.2),
+          tooltip: 'Zoom In',
+        ),
+      ],
     );
   }
 
@@ -813,9 +1009,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
   Widget _buildLegend(BuildContext context) {
     final theme = Theme.of(context);
+    final isCompact = MediaQuery.sizeOf(context).width < 700;
     return Wrap(
-      spacing: 24,
-      runSpacing: 12,
+      spacing: isCompact ? 12 : 24,
+      runSpacing: 8,
       children: _activeIndices.asMap().entries.map((entry) {
         final index = entry.key;
         final symbol = entry.value;
@@ -829,7 +1026,11 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
-                icon: Icon(isHidden ? Icons.visibility_off : Icons.visibility, color: Colors.white, size: 18),
+                icon: Icon(
+                  isHidden ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () {
@@ -859,20 +1060,22 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 16,
+                width: isCompact ? 12 : 16,
                 height: 3,
                 decoration: BoxDecoration(
                   color: isHidden ? Colors.grey : color,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Text(
                 symbol,
                 style: TextStyle(
-                  color: isHidden ? Colors.grey : theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                  color: isHidden
+                      ? Colors.grey
+                      : theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
                   decoration: isHidden ? TextDecoration.lineThrough : null,
-                  fontSize: 13,
+                  fontSize: isCompact ? 11 : 13,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -890,7 +1093,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       builder: (context, constraints) {
         final double spacing = (_activeIndices.length * 10.0 + 20.0);
         final double chartWidth = chartData.length * spacing;
-        final double viewportWidth = constraints.maxWidth - 65.0;
+        final double viewportWidth = constraints.maxWidth - _leftAxisReserve(context);
 
         final viewportInfo = _calculateVisibleViewport(chartData, spacing, viewportWidth);
         final List<Map<String, dynamic>> visibleData = viewportInfo['visibleData'];
@@ -918,19 +1121,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                   final double chartMaxY = range.maxY;
                   final double chartInterval = _calculateCleanBounds(chartMinY, chartMaxY)['interval']!;
 
-                  return GestureDetector(
-                    onHorizontalDragUpdate: (details) {
-                      if (_scrollController.hasClients) {
-                        final maxScroll = _scrollController.position.maxScrollExtent;
-                        final double newOffset = (_scrollController.offset - details.delta.dx)
-                            .clamp(0.0, maxScroll);
-                        _scrollController.jumpTo(newOffset);
-                      }
-                    },
-                    child: Listener(
-                      onPointerSignal: (event) =>
-                          _handlePointerSignal(event, constraints.maxWidth),
-                      child: BarChart(
+                  return _wrapChartGestures(
+                    viewportWidth: constraints.maxWidth - _leftAxisReserve(context),
+                    child: BarChart(
                         key: ValueKey(
                             '${_activeIndices.join('-')}_bar_${visibleData.length}'),
                         BarChartData(
@@ -1013,26 +1206,19 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                             leftTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                reservedSize: 65,
+                                reservedSize: _leftAxisReserve(context),
                                 interval: chartInterval,
                                 getTitlesWidget: (value, meta) {
                                   if ((value - meta.min).abs() < 0.01 ||
                                       (value - meta.max).abs() < 0.01) {
                                     return const SizedBox.shrink();
                                   }
-                                  return SideTitleWidget(
+                                  return _buildLeftAxisLabel(
+                                    context: context,
                                     meta: meta,
-                                    space: 8.0,
-                                    child: Text(
-                                      _showAbsoluteValues
-                                          ? value.toStringAsFixed(0)
-                                          : '${value.toStringAsFixed(0)}%',
-                                      style: TextStyle(
-                                        color: theme.textTheme.bodySmall?.color
-                                            ?.withOpacity(0.6),
-                                        fontSize: 10,
-                                      ),
-                                    ),
+                                    value: value,
+                                    cleanMin: cleanMin,
+                                    cleanMax: cleanMax,
                                   );
                                 },
                               ),
@@ -1098,6 +1284,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                             touchTooltipData: BarTouchTooltipData(
                               fitInsideHorizontally: true,
                               fitInsideVertically: true,
+                              getTooltipColor: (_) =>
+                                  theme.cardColor.withOpacity(0.6),
                               getTooltipItem:
                                   (group, groupIndex, rod, rodIndex) {
                                 final originalIndex = startIndex + group.x;
@@ -1119,7 +1307,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                           ),
                         ),
                       ),
-                    ),
                   );
                 },
               ),
@@ -1138,7 +1325,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       builder: (context, constraints) {
         final double spacing = 30.0 * _zoomScale;
         final double chartWidth = chartData.length * spacing;
-        final double viewportWidth = constraints.maxWidth - _leftTitleReservedSize;
+        final double viewportWidth = constraints.maxWidth - _leftAxisReserve(context);
 
         final viewportInfo = _calculateVisibleViewport(chartData, spacing, viewportWidth);
         final List<Map<String, dynamic>> visibleData = viewportInfo['visibleData'];
@@ -1167,19 +1354,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                   final double chartMaxY = range.maxY;
                   final double chartInterval = _calculateCleanBounds(chartMinY, chartMaxY)['interval']!;
 
-                  return GestureDetector(
-                    onHorizontalDragUpdate: (details) {
-                      if (_scrollController.hasClients) {
-                        final maxScroll = _scrollController.position.maxScrollExtent;
-                        final double newOffset = (_scrollController.offset - details.delta.dx)
-                            .clamp(0.0, maxScroll);
-                        _scrollController.jumpTo(newOffset);
-                      }
-                    },
-                    child: Listener(
-                      onPointerSignal: (event) =>
-                          _handlePointerSignal(event, constraints.maxWidth),
-                      child: LineChart(
+                  return _wrapChartGestures(
+                    viewportWidth:
+                        constraints.maxWidth - _leftAxisReserve(context),
+                    child: LineChart(
                         key: ValueKey(
                             '${_activeIndices.join('-')}_line_${visibleData.length}'),
                         LineChartData(
@@ -1271,79 +1449,19 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                             leftTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                reservedSize: _leftTitleReservedSize,
+                                reservedSize: _leftAxisReserve(context),
                                 interval: chartInterval,
                                 getTitlesWidget: (value, meta) {
                                   if ((value - meta.min).abs() < 0.01 ||
                                       (value - meta.max).abs() < 0.01) {
                                     return const SizedBox.shrink();
                                   }
-
-                                  if (_useMultiYAxis && _activeIndices.isNotEmpty) {
-                                    final String firstSymbol = _activeIndices.first;
-                                    final double denominator0 = cleanMax[firstSymbol]! - cleanMin[firstSymbol]!;
-                                    final List<double> vals = [];
-                                    
-                                    for (int i = 0; i < _activeIndices.length; i++) {
-                                      final String symbol = _activeIndices[i];
-                                      if (i == 0) {
-                                        vals.add(value);
-                                      } else {
-                                        final double denI = cleanMax[symbol]! - cleanMin[symbol]!;
-                                        final double valI = denominator0.abs() < 0.01
-                                            ? cleanMin[symbol]!
-                                            : cleanMin[symbol]! +
-                                                (value - cleanMin[firstSymbol]!) /
-                                                    denominator0 *
-                                                    denI;
-                                        vals.add(valI);
-                                      }
-                                    }
-
-                                    final List<InlineSpan> spans = [];
-                                    for (int i = 0; i < vals.length; i++) {
-                                      final color = MultiIndexChart.indexColors[
-                                          i % MultiIndexChart.indexColors.length];
-                                      final text = (vals[i] / 1000).toStringAsFixed(1);
-                                      
-                                      if (i > 0) {
-                                        spans.add(const TextSpan(
-                                          text: ' | ',
-                                          style: TextStyle(color: Colors.white24, fontSize: 10),
-                                        ));
-                                      }
-                                      spans.add(TextSpan(
-                                        text: '${text}K',
-                                        style: TextStyle(
-                                          color: color,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ));
-                                    }
-
-                                    return SideTitleWidget(
-                                      meta: meta,
-                                      space: 8.0,
-                                      child: RichText(
-                                        text: TextSpan(children: spans),
-                                      ),
-                                    );
-                                  }
-
-                                  return SideTitleWidget(
+                                  return _buildLeftAxisLabel(
+                                    context: context,
                                     meta: meta,
-                                    space: 8.0,
-                                    child: Text(
-                                      _showAbsoluteValues
-                                          ? value.toStringAsFixed(0)
-                                          : '${value.toStringAsFixed(1)}%',
-                                      style: TextStyle(
-                                        color: theme.textTheme.bodySmall?.color
-                                            ?.withOpacity(0.6),
-                                        fontSize: 10,
-                                      ),
-                                    ),
+                                    value: value,
+                                    cleanMin: cleanMin,
+                                    cleanMax: cleanMax,
                                   );
                                 },
                               ),
@@ -1428,38 +1546,110 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                             touchTooltipData: LineTouchTooltipData(
                               fitInsideHorizontally: true,
                               fitInsideVertically: true,
-                              getTooltipColor: (touchedSpot) => theme.cardColor.withOpacity(0.95),
+                              getTooltipColor: (touchedSpot) =>
+                                  theme.cardColor.withOpacity(0.6),
                               getTooltipItems: (touchedSpots) {
-                                return touchedSpots.map((spot) {
-                                  final originalIndex = startIndex + spot.x.toInt();
-                                  final dateStr =
-                                      chartData[originalIndex]['time'] as String;
-                                  final date = DateTime.parse(dateStr);
-                                  final visibleIndices = _activeIndices.where((s) => !_hiddenIndices.contains(s)).toList();
-                                  final symbol = visibleIndices[spot.barIndex];
+                                if (touchedSpots.isEmpty) {
+                                  return [];
+                                }
+
+                                // Stable order by series, shared timestamp once at top.
+                                final spots = List<LineBarSpot>.from(touchedSpots)
+                                  ..sort((a, b) =>
+                                      a.barIndex.compareTo(b.barIndex));
+
+                                final firstSpot = spots.first;
+                                final originalIndex =
+                                    startIndex + firstSpot.x.toInt();
+                                if (originalIndex < 0 ||
+                                    originalIndex >= chartData.length) {
+                                  return [];
+                                }
+
+                                final dateStr =
+                                    chartData[originalIndex]['time'] as String;
+                                final date = DateTime.parse(dateStr);
+                                final dateLabel = _getTooltipDateFormat(
+                                  chartData,
+                                ).format(date);
+                                final visibleIndices = _activeIndices
+                                    .where((s) => !_hiddenIndices.contains(s))
+                                    .toList();
+                                final muted = theme
+                                        .textTheme.bodySmall?.color
+                                        ?.withOpacity(0.75) ??
+                                    Colors.grey;
+
+                                return spots.asMap().entries.map((entry) {
+                                  final i = entry.key;
+                                  final spot = entry.value;
+                                  if (spot.barIndex < 0 ||
+                                      spot.barIndex >=
+                                          visibleIndices.length) {
+                                    return LineTooltipItem(
+                                      '',
+                                      const TextStyle(fontSize: 0),
+                                    );
+                                  }
+                                  final symbol =
+                                      visibleIndices[spot.barIndex];
 
                                   double displayVal = spot.y;
                                   final int barIdx = spot.barIndex;
-                                  if (_useMultiYAxis && barIdx > 0 && barIdx < _activeIndices.length) {
-                                    final String firstSymbol = _activeIndices.first;
-                                    final String currentSymbol = _activeIndices[barIdx];
-                                    final double denominator0 = cleanMax[firstSymbol]! - cleanMin[firstSymbol]!;
-                                    final double denIdx = cleanMax[currentSymbol]! - cleanMin[currentSymbol]!;
+                                  if (_useMultiYAxis &&
+                                      barIdx > 0 &&
+                                      barIdx < _activeIndices.length) {
+                                    final String firstSymbol =
+                                        _activeIndices.first;
+                                    final String currentSymbol =
+                                        _activeIndices[barIdx];
+                                    final double denominator0 =
+                                        cleanMax[firstSymbol]! -
+                                            cleanMin[firstSymbol]!;
+                                    final double denIdx =
+                                        cleanMax[currentSymbol]! -
+                                            cleanMin[currentSymbol]!;
                                     displayVal = denominator0.abs() < 0.01
                                         ? cleanMin[currentSymbol]!
                                         : cleanMin[currentSymbol]! +
-                                            (spot.y - cleanMin[firstSymbol]!) /
+                                            (spot.y -
+                                                    cleanMin[firstSymbol]!) /
                                                 denominator0 *
                                                 denIdx;
                                   }
 
+                                  final valueText = _showAbsoluteValues
+                                      ? displayVal.toStringAsFixed(2)
+                                      : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%';
+                                  final seriesColor = MultiIndexChart
+                                      .indexColors[spot.barIndex %
+                                          MultiIndexChart.indexColors.length];
+
+                                  if (i == 0) {
+                                    return LineTooltipItem(
+                                      '$dateLabel\n',
+                                      TextStyle(
+                                        color: muted,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11,
+                                      ),
+                                      children: [
+                                        TextSpan(
+                                          text: '$symbol  $valueText',
+                                          style: TextStyle(
+                                            color: seriesColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }
+
                                   return LineTooltipItem(
-                                    '${_getTooltipDateFormat(chartData).format(date)}\n$symbol\n${_showAbsoluteValues ? displayVal.toStringAsFixed(2) : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%'}',
+                                    '$symbol  $valueText',
                                     TextStyle(
-                                      color: MultiIndexChart.indexColors[
-                                          spot.barIndex %
-                                              MultiIndexChart
-                                                  .indexColors.length],
+                                      color: seriesColor,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -1470,7 +1660,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                           ),
                         ),
                       ),
-                    ),
                   );
                 },
               ),
@@ -1645,7 +1834,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   Widget _buildDummyScrollView(double chartWidth) {
     return Positioned(
       bottom: 0,
-      left: _leftTitleReservedSize,
+      left: _leftAxisReserve(context),
       right: 0,
       height: 12,
       child: Scrollbar(

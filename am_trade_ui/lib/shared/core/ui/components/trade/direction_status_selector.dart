@@ -36,7 +36,7 @@ class DirectionStatusSelector extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: theme.colorScheme.outline.withOpacity(0.15)),
       ),
-      padding: EdgeInsets.all(isMobile ? 8 : 10),
+      padding: EdgeInsets.all(isMobile ? 6 : 10),
       child: isMobile ? _buildMobileLayout(theme) : _buildWebLayout(theme, isTablet, isDesktop),
     );
   }
@@ -44,9 +44,15 @@ class DirectionStatusSelector extends StatelessWidget {
   // Mobile layout: Direction and Status in same row, compact
   Widget _buildMobileLayout(ThemeData theme) => Row(
     children: [
-      Expanded(child: _buildDirectionButtons(true, isFullWidth: true, showLabel: false)),
-      const SizedBox(width: 8),
-      Expanded(child: _buildStatusDropdown(theme, true)),
+      Expanded(
+        flex: 3,
+        child: _buildDirectionButtons(true, isFullWidth: true, showLabel: false),
+      ),
+      const SizedBox(width: 6),
+      Expanded(
+        flex: 2,
+        child: _buildStatusDropdown(theme, true),
+      ),
     ],
   );
 
@@ -142,7 +148,7 @@ class DirectionStatusSelector extends StatelessWidget {
   Widget _buildStatusDropdown(ThemeData theme, bool isMobile) => CustomDropdown<TradeStatuses>(
     value: selectedStatus,
     isExpanded: isMobile,
-    height: isMobile ? 36 : 44,
+    height: isMobile ? 32 : 44,
     borderRadius: 8,
     backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.6),
     borderColor: theme.colorScheme.outline.withValues(alpha: 0.25),
@@ -222,7 +228,7 @@ class _ModernButton extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           constraints: BoxConstraints(minWidth: isMobile ? 60 : 95, maxWidth: isMobile ? 100 : 150),
-          padding: EdgeInsets.symmetric(vertical: isMobile ? 8 : 12, horizontal: isMobile ? 8 : 14),
+          padding: EdgeInsets.symmetric(vertical: isMobile ? 6 : 12, horizontal: isMobile ? 6 : 14),
           decoration: BoxDecoration(
             gradient: isSelected
                 ? LinearGradient(

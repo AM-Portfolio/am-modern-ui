@@ -175,17 +175,18 @@ class UniversalHeatmapWidget extends StatelessWidget {
     );
 
     // 2. Create Selector Template (handles filter UI)
-    final selectorTemplate =
-        UniversalHeatmapTemplateFactory.createSelectorTemplate(
-          config: effectiveConfig,
-          investmentType: investmentType,
-          onFiltersChanged: onFiltersChanged,
-          selectedTimeFrame: selectedTimeFrame,
-          selectedMetric: selectedMetric,
-          selectedSector: selectedSector,
-          selectedMarketCap: selectedMarketCap,
-          selectedLayout: selectedLayout,
-        );
+    final selectorTemplate = (showSelectors ?? true)
+        ? UniversalHeatmapTemplateFactory.createSelectorTemplate(
+            config: effectiveConfig,
+            investmentType: investmentType,
+            onFiltersChanged: onFiltersChanged,
+            selectedTimeFrame: selectedTimeFrame,
+            selectedMetric: selectedMetric,
+            selectedSector: selectedSector,
+            selectedMarketCap: selectedMarketCap,
+            selectedLayout: selectedLayout,
+          )
+        : null;
 
     // 3. Create Layout Template (handles overall structure)
     return UniversalHeatmapTemplateFactory.createLayoutTemplate(

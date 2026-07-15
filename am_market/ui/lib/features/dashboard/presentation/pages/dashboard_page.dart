@@ -24,6 +24,7 @@ import 'package:am_market_ui/core/providers/view_mode_provider.dart';
 import 'package:am_market_ui/shared/widgets/mode_toggle_widget.dart';
 import 'user_dashboard_page.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/heatmap_explorer_view.dart';
+import 'package:am_market_ui/features/market/widgets/market_header.dart';
 import 'package:am_common/am_common.dart';
 
 /// Market feature page with Swipe Navigation
@@ -119,6 +120,8 @@ class MarketContent extends ConsumerStatefulWidget {
 
 class _MarketContentState extends ConsumerState<MarketContent> {
   late SwipeNavigationController _swipeController;
+  final GlobalKey<UserDashboardPageState> _dashboardKey =
+      GlobalKey<UserDashboardPageState>();
 
   static const _staticTitleToSlug = {
     'All Indices': 'all-indices',
@@ -258,19 +261,60 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         });
       }
 
+      final isMobile = MediaQuery.sizeOf(context).width < 900;
+
+      void openAllIndices() {
+        final dash = _dashboardKey.currentState;
+        if (dash != null) {
+          dash.openAllIndicesPanel();
+          return;
+        }
+        if (_swipeController.currentIndex != 0) {
+          _swipeController.navigateTo(0);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _dashboardKey.currentState?.openAllIndicesPanel();
+          });
+        }
+      }
+
       return UnifiedSidebarScaffold(
         module: ModuleType.market,
         onBackToGlobal: widget.onBack,
         showModuleBottomNavigation: false,
-        autoHideMobileTabsOnScroll: true,
-        headerActions: const [ShareLinkButton()],
+        // Keep Dashboard / Market Analysis pills always visible so users can
+        // switch back from Analysis without relying on hidden scroll chrome.
+        autoHideMobileTabsOnScroll: false,
+        showMobileMenuButton: false,
+        // Compact grid icon left of "Market Data".
+        mobileLeading: isMobile
+            ? Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Center(
+                  child: AllIndicesChip(
+                    iconOnly: true,
+                    onPressed: openAllIndices,
+                  ),
+                ),
+              )
+            : null,
+        mobileLeadingWidth: isMobile ? 44 : null,
+        headerActions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: GlobalTimeFrameBar(
+              variant: GlobalTimeFrameVariant.dropdown,
+              dropdownWidth: 72,
+            ),
+          ),
+        ],
+        // Dashboard / Market Analysis pills for switching sections.
+        sections: _buildSidebarSections(provider, viewModeProvider),
         body: SwipeablePageView(
-          key: const PageStorageKey('market_page_info'), // Maintain state across layout rebuilds
+          key: const PageStorageKey('market_page_info'),
           scrollDirection: Axis.vertical,
           controller: _swipeController,
-          showIndicator: !provider.isLoading,
+          showIndicator: false,
         ),
-        sections: _buildSidebarSections(provider, viewModeProvider),
       );
     },
     );
@@ -572,7 +616,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Dashboard',
         subtitle: 'Overview',
         icon: Icons.home_rounded,
-        page: _wrapPage(const UserDashboardPage()), // User Dashboard with cards + chart
+        page: _wrapPage(UserDashboardPage(key: _dashboardKey)), // User Dashboard with cards + chart
         accentColor: accentColor,
       ),
       NavigationItem(

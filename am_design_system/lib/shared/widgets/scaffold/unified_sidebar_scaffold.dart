@@ -68,6 +68,8 @@ class UnifiedSidebarScaffold extends StatefulWidget {
     this.headerActions,
     this.showAppBarOnMobile = true,
     this.showMobileMenuButton = true,
+    this.mobileLeading,
+    this.mobileLeadingWidth,
     this.titleWidget,
     this.mobileStickyHeader,
     this.autoHideMobileTabsOnScroll = false,
@@ -150,6 +152,13 @@ class UnifiedSidebarScaffold extends StatefulWidget {
   /// When false, hides the mobile AppBar leading menu button.
   final bool showMobileMenuButton;
 
+  /// Optional custom leading widget for the mobile AppBar (e.g. All Indices chip).
+  /// When set, replaces the default menu button.
+  final Widget? mobileLeading;
+
+  /// Width for [mobileLeading]. Defaults to AppBar leading width when null.
+  final double? mobileLeadingWidth;
+
   /// When true on mobile, the secondary pill tabs hide while scrolling down
   /// and reappear when scrolling up (or when content is back at the top).
   final bool autoHideMobileTabsOnScroll;
@@ -214,6 +223,15 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     _mobileTabsController.dispose();
     _animationController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant UnifiedSidebarScaffold oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // When auto-hide is off, always keep the mobile section pills expanded.
+    if (!widget.autoHideMobileTabsOnScroll && !_wantMobileTabs) {
+      _setMobileTabsVisible(true);
+    }
   }
 
   void _toggleSidebar() {
@@ -470,17 +488,22 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
                     title: widget.titleWidget ?? Text(_resolvedTitle ?? ''),
                     backgroundColor: Colors.transparent,
                     elevation: 0,
+                    // Keep title centered even when a custom leading (e.g. All Indices) is present.
                     centerTitle: widget.titleWidget == null,
                     titleSpacing: widget.titleWidget != null ? 12 : null,
                     automaticallyImplyLeading: false,
-                    leading: widget.showMobileMenuButton
-                        ? IconButton(
-                            icon: const Icon(Icons.menu_rounded),
-                            tooltip: 'Module menu',
-                            onPressed: widget.onMobileMenuTap ??
-                                () => _showMobileMenu(context),
-                          )
+                    leadingWidth: widget.mobileLeading != null
+                        ? (widget.mobileLeadingWidth ?? 118)
                         : null,
+                    leading: widget.mobileLeading ??
+                        (widget.showMobileMenuButton
+                            ? IconButton(
+                                icon: const Icon(Icons.menu_rounded),
+                                tooltip: 'Module menu',
+                                onPressed: widget.onMobileMenuTap ??
+                                    () => _showMobileMenu(context),
+                              )
+                            : null),
                     actions: [
                       ...?widget.headerActions,
                     ],

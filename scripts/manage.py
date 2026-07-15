@@ -89,8 +89,23 @@ def load_env(env_name):
         print(f"[Warning] Environment config file not found: {env_file}. Using defaults.")
     return env_vars
 
-def get_available_device():
+def get_available_device(env_vars=None):
     """Prefer Chrome/Edge so Flutter launches the browser; fall back to web-server."""
+    if env_vars and "FLUTTER_DEVICE" in env_vars:
+        return env_vars["FLUTTER_DEVICE"]
+    if os.environ.get("FLUTTER_DEVICE"):
+        return os.environ.get("FLUTTER_DEVICE")
+    try:
+        is_windows = os.name == "nt"
+        res = subprocess.run(["flutter", "devices"], capture_output=True, text=True, shell=is_windows, timeout=5)
+        if res.returncode == 0:
+            output = res.stdout.lower()
+            if "chrome" in output:
+                return "chrome"
+            if "edge" in output:
+                return "edge"
+    except Exception:
+        pass
     return "web-server"
 
 def run_cmd(package, cmd_parts, env_vars=None):
@@ -204,7 +219,7 @@ def handle_run(pkg, env_name, flags):
     boot_trace = resolve_boot_trace(env_vars, flags, action="run")
     defines = construct_dart_defines(env_vars, boot_trace)
 
-    device = get_available_device()
+    device = get_available_device(env_vars)
     port = get_web_port(package, env_vars)
 
     launch_url = f"http://localhost:{port}/login"

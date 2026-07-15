@@ -22,6 +22,7 @@ class HeatmapLayoutTemplate extends StatelessWidget {
     this.customHeader,
     this.padding,
     this.backgroundColor,
+    this.compactHeader = false,
   });
 
   final HeatmapData data;
@@ -38,12 +39,19 @@ class HeatmapLayoutTemplate extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final Color? backgroundColor;
 
+  /// Denser title row for mobile — no squeezed legend beside the title.
+  final bool compactHeader;
+
   @override
   Widget build(BuildContext context) {
     CommonLogger.debug(
       'HeatmapLayoutTemplate: rendering layout with header=$showHeader, legend=$showLegend, selectors=$showSelectors',
       tag: 'Heatmap.Layout',
     );
+
+    final cardPadding = compactHeader
+        ? const EdgeInsets.fromLTRB(12, 10, 12, 12)
+        : const EdgeInsets.all(16);
 
     return Container(
       color: backgroundColor,
@@ -63,17 +71,17 @@ class HeatmapLayoutTemplate extends StatelessWidget {
           // Main heatmap card — takes all remaining vertical space.
           Expanded(
             child: Card(
-              elevation: 4,
+              elevation: compactHeader ? 2 : 4,
               margin: EdgeInsets.zero,
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: cardPadding,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Header section
                     if (showHeader) ...[
                       customHeader ?? _buildHeader(context),
-                      const SizedBox(height: 12),
+                      SizedBox(height: compactHeader ? 8 : 12),
                     ],
 
                     // Main display content — fills remaining card space.
@@ -91,49 +99,67 @@ class HeatmapLayoutTemplate extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     final effectiveTitle = title ?? data.title;
     final effectiveSubtitle = subtitle ?? data.subtitle;
+    final showInlineLegend =
+        showLegend && data.configuration.showPerformance && !compactHeader;
+
+    final titleBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (effectiveTitle.isNotEmpty)
+          Text(
+            effectiveTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            style: (compactHeader
+                    ? Theme.of(context).textTheme.titleMedium
+                    : Theme.of(context).textTheme.titleLarge)
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        if (!compactHeader &&
+            effectiveSubtitle != null &&
+            effectiveSubtitle.isNotEmpty &&
+            effectiveSubtitle != effectiveTitle) ...[
+          if (effectiveTitle.isNotEmpty) const SizedBox(height: 4),
+          Text(
+            effectiveSubtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Icon
         if (icon != null) ...[
-          Icon(icon, color: Theme.of(context).primaryColor, size: 24),
-          const SizedBox(width: 8),
-        ],
-
-        // Title and subtitle
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (effectiveTitle.isNotEmpty)
-                Text(
-                  effectiveTitle,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              if (effectiveSubtitle != null &&
-                  effectiveSubtitle.isNotEmpty &&
-                  effectiveSubtitle != effectiveTitle) ...[
-                if (effectiveTitle.isNotEmpty) const SizedBox(height: 4),
-                Text(
-                  effectiveSubtitle,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ],
+          Icon(
+            icon,
+            color: Theme.of(context).primaryColor,
+            size: compactHeader ? 20 : 24,
           ),
-        ),
-
-        // Legend inline
-        if (showLegend && data.configuration.showPerformance) ...[
-          _buildColorLegend(context),
+          SizedBox(width: compactHeader ? 8 : 8),
         ],
-
-        // Header actions
+        Expanded(child: titleBlock),
+        if (showInlineLegend) ...[
+          const SizedBox(width: 8),
+          Flexible(
+            fit: FlexFit.loose,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: _buildColorLegend(context),
+              ),
+            ),
+          ),
+        ],
         if (headerActions != null && headerActions!.isNotEmpty) ...[
           const SizedBox(width: 8),
           Row(children: headerActions!),

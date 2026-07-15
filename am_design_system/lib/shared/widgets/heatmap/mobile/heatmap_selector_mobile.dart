@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/common_logger.dart';
+import '../../inputs/custom_dropdown.dart';
 import '../../selectors/selectors.dart';
 import '../core/heatmap_selector_core.dart';
 import '../configs/selector_config.dart';
@@ -91,36 +92,181 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
   @override
   Widget build(BuildContext context) {
     if (widget.compactMode) {
-      return _buildCompactMode(context);
+      return _buildCompactDropdownRow(context);
     }
 
     return _buildStandardMode(context);
   }
 
-  Widget _buildCompactMode(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.circular(8),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.03),
-          blurRadius: 4,
-          offset: const Offset(0, 1),
-        ),
-      ],
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildCompactHeader(context),
-        if (_isExpanded)
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: _buildCompactExpandedFilters(context),
+  /// Single-row Sector · Market Cap · Layout chips (timeframe-transparent style).
+  Widget _buildCompactDropdownRow(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final chipBg = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.white.withValues(alpha: 0.72);
+    final chipBorder = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : Colors.black.withValues(alpha: 0.06);
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
+    final children = <Widget>[];
+
+    if (widget.showSector) {
+      children.add(
+        _buildLabeledFilter(
+          context: context,
+          label: 'Sector',
+          onSurface: onSurface,
+          child: _buildTransparentDropdown<SectorType>(
+            context: context,
+            value: widget.core.selectedSector,
+            items: widget.core.sectorOptions
+                .map(
+                  (s) => s.toSimpleDropdownItem(
+                    text: s.shortName,
+                    fontSize: 12,
+                  ),
+                )
+                .toList(),
+            onChanged: (v) {
+              if (v != null) widget.core.updateSector(v);
+            },
+            backgroundColor: chipBg,
+            borderColor: chipBorder,
+            textColor: onSurface,
           ),
-      ],
-    ),
-  );
+        ),
+      );
+    }
+
+    if (widget.showMarketCap) {
+      if (children.isNotEmpty) children.add(const SizedBox(width: 8));
+      children.add(
+        _buildLabeledFilter(
+          context: context,
+          label: 'Market Cap',
+          onSurface: onSurface,
+          child: _buildTransparentDropdown<MarketCapType>(
+            context: context,
+            value: widget.core.selectedMarketCap,
+            items: widget.core.marketCapOptions
+                .map(
+                  (c) => c.toSimpleDropdownItem(
+                    text: c.shortName,
+                    fontSize: 12,
+                  ),
+                )
+                .toList(),
+            onChanged: (v) {
+              if (v != null) widget.core.updateMarketCap(v);
+            },
+            backgroundColor: chipBg,
+            borderColor: chipBorder,
+            textColor: onSurface,
+          ),
+        ),
+      );
+    }
+
+    if (widget.showLayout) {
+      if (children.isNotEmpty) children.add(const SizedBox(width: 8));
+      children.add(
+        _buildLabeledFilter(
+          context: context,
+          label: 'Layout',
+          onSurface: onSurface,
+          child: _buildTransparentDropdown<HeatmapLayoutType>(
+            context: context,
+            value: widget.core.selectedLayout,
+            items: widget.core.layoutOptions
+                .map(
+                  (l) => l.toSimpleDropdownItem(
+                    text: l.displayName,
+                    fontSize: 12,
+                  ),
+                )
+                .toList(),
+            onChanged: (v) {
+              if (v != null) widget.core.updateLayout(v);
+            },
+            backgroundColor: chipBg,
+            borderColor: chipBorder,
+            textColor: onSurface,
+          ),
+        ),
+      );
+    }
+
+    if (children.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: children,
+      ),
+    );
+  }
+
+  Widget _buildLabeledFilter({
+    required BuildContext context,
+    required String label,
+    required Color onSurface,
+    required Widget child,
+  }) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+              color: onSurface.withValues(alpha: 0.55),
+            ),
+          ),
+          const SizedBox(height: 4),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransparentDropdown<T>({
+    required BuildContext context,
+    required T value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+    required Color backgroundColor,
+    required Color borderColor,
+    required Color textColor,
+  }) {
+    final hasValue = items.any((item) => item.value == value);
+    return CustomDropdown<T>(
+      value: hasValue ? value : items.first.value,
+      height: 36,
+      isExpanded: true,
+      fontSize: 12,
+      iconSize: 16,
+      borderRadius: 10,
+      menuMaxHeight: 180,
+      primaryColor: widget.primaryColor ?? Theme.of(context).colorScheme.primary,
+      backgroundColor: backgroundColor,
+      borderColor: borderColor,
+      textColor: textColor,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      items: items,
+      onChanged: onChanged,
+    );
+  }
+
+  Widget _buildCompactMode(BuildContext context) =>
+      _buildCompactDropdownRow(context);
 
   Widget _buildCompactHeader(BuildContext context) => InkWell(
     onTap: _toggleExpanded,

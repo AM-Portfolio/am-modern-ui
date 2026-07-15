@@ -76,6 +76,10 @@ class UniversalHeatmapTemplateFactory {
       tag: 'UniversalHeatmapTemplateFactory.Selector',
     );
 
+    final selectorLayout =
+        config.selectors?.selectorLayout ?? SelectorLayoutType.compact;
+    final isCompact = selectorLayout == SelectorLayoutType.compact;
+
     return HeatmapSelectorTemplate(
       initialTimeFrame: selectedTimeFrame ?? UniversalHeatmapConfigManager.getInitialTimeFrame(
         investmentType,
@@ -91,12 +95,14 @@ class UniversalHeatmapTemplateFactory {
       ),
       initialLayout: selectedLayout ?? HeatmapLayoutType.treemap,
       onFiltersChanged: onFiltersChanged,
-      showTimeFrame: config.showTimeFrameSelector,
-      showMetric: config.showMetricSelector,
-      showSector: config.showSectorSelector,
-      showMarketCap: config.showMarketCapSelector,
-      showLayout: config.effectiveLayout.showLayoutSelector,
-      layout: config.selectors?.selectorLayout ?? SelectorLayoutType.compact,
+      // Compact mobile: sector · market-cap · layout dropdowns only
+      // (timeframe lives in the sticky header elsewhere).
+      showTimeFrame: isCompact ? false : config.showTimeFrameSelector,
+      showMetric: isCompact ? false : config.showMetricSelector,
+      showSector: isCompact ? true : config.showSectorSelector,
+      showMarketCap: isCompact ? true : config.showMarketCapSelector,
+      showLayout: isCompact ? true : config.effectiveLayout.showLayoutSelector,
+      layout: selectorLayout,
       primaryColor: config.accentColor,
       title: 'Filters',
       availableTimeFrames: config.availableTimeFrames,
@@ -173,10 +179,12 @@ class UniversalHeatmapTemplateFactory {
           displayWidget: displayWidget,
           selectorWidget: selectorWidget,
           title: title,
-          subtitle: subtitle,
+          subtitle: null, // Keep mobile header to a single title line
           showSelectors: selectorWidget != null,
+          showLegend: false,
           icon: icon,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+          compactHeader: true,
         );
         break;
 
@@ -242,7 +250,8 @@ class UniversalHeatmapTemplateFactory {
                 showLegend: false,
                 showSelectors: selectorWidget != null,
                 icon: icon,
-                padding: const EdgeInsets.all(8),
+                compactHeader: true,
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
               );
             } else if (constraints.maxWidth < 1024) {
               CommonLogger.debug(
@@ -295,7 +304,8 @@ class UniversalHeatmapTemplateFactory {
       config.showTimeFrameSelector ||
       config.showMetricSelector ||
       config.showSectorSelector ||
-      config.showMarketCapSelector;
+      config.showMarketCapSelector ||
+      config.effectiveLayout.showLayoutSelector;
 
   /// Convert UI config layout to display template layout
   static HeatmapLayoutType _convertToDisplayLayoutType(

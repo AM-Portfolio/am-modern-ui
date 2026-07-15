@@ -24,7 +24,7 @@ class YearCalendarHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final yearStats = _calculateYearStats();
+    final yearStats = calculateYearStats(monthsData);
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
 
@@ -42,41 +42,132 @@ class YearCalendarHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _buildYearNavigation(context, compact: true),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: _buildLegend(context, compact: true),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (onColorModeChanged != null && currentColorMode != null)
-                ColorModeSelector(
-                  currentMode: currentColorMode!,
-                  onModeChanged: onColorModeChanged!,
-                  compact: true,
-                  dense: true,
-                ),
-            ],
+          YearCalendarStickyControls(
+            year: year,
+            onYearChanged: onYearChanged,
+            currentColorMode: currentColorMode,
+            onColorModeChanged: onColorModeChanged,
           ),
           const SizedBox(height: 8),
-          _buildMobileStatsStrip(context, yearStats),
+          YearCalendarStatsStrip(monthsData: monthsData),
         ],
       ),
     );
   }
 
-  /// Single thin bar for display-only year metrics (no tall cards).
-  Widget _buildMobileStatsStrip(
-    BuildContext context,
-    Map<String, dynamic> yearStats,
-  ) {
+  /// Build desktop/tablet header layout
+  Widget _buildDesktopHeader(BuildContext context, Map<String, dynamic> yearStats) =>
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 900;
+
+          if (isNarrow) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    YearCalendarYearPicker(
+                      year: year,
+                      onYearChanged: onYearChanged,
+                    ),
+                    YearCalendarLegend(compact: false),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                YearSummaryStats(yearStats: yearStats, showLegend: false),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              YearCalendarYearPicker(
+                year: year,
+                onYearChanged: onYearChanged,
+              ),
+              const Spacer(),
+              YearSummaryStats(yearStats: yearStats, showLegend: false),
+              const Spacer(),
+              if (onColorModeChanged != null && currentColorMode != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: ColorModeSelector(
+                    currentMode: currentColorMode!,
+                    onModeChanged: onColorModeChanged!,
+                    compact: true,
+                  ),
+                ),
+              YearCalendarLegend(compact: false),
+            ],
+          );
+        },
+      );
+}
+
+/// Sticky mobile controls: year picker + legend + color mode.
+class YearCalendarStickyControls extends StatelessWidget {
+  const YearCalendarStickyControls({
+    required this.year,
+    super.key,
+    this.onYearChanged,
+    this.currentColorMode,
+    this.onColorModeChanged,
+  });
+
+  final int year;
+  final Function(int newYear)? onYearChanged;
+  final CalendarColorMode? currentColorMode;
+  final ValueChanged<CalendarColorMode>? onColorModeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          YearCalendarYearPicker(
+            year: year,
+            onYearChanged: onYearChanged,
+            compact: true,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: YearCalendarLegend(compact: true),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (onColorModeChanged != null && currentColorMode != null)
+            ColorModeSelector(
+              currentMode: currentColorMode!,
+              onModeChanged: onColorModeChanged!,
+              compact: true,
+              dense: true,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Slim year stats strip (Trades / Win / P&L).
+class YearCalendarStatsStrip extends StatelessWidget {
+  const YearCalendarStatsStrip({
+    required this.monthsData,
+    super.key,
+  });
+
+  final Map<int, CalendarMonthData> monthsData;
+
+  @override
+  Widget build(BuildContext context) {
+    final yearStats = calculateYearStats(monthsData);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final pnl = yearStats['totalPnL'] as double;
     final winRate = yearStats['winRate'] as double;
@@ -101,8 +192,7 @@ class YearCalendarHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: _buildStripStat(
-              context,
+            child: _StripStat(
               icon: Icons.swap_horiz_rounded,
               label: 'Trades',
               value: '${yearStats['totalTrades']}',
@@ -112,8 +202,7 @@ class YearCalendarHeader extends StatelessWidget {
           ),
           Container(width: 1, height: 22, color: divider),
           Expanded(
-            child: _buildStripStat(
-              context,
+            child: _StripStat(
               icon: Icons.trending_up_rounded,
               label: 'Win',
               value: '${winRate.toStringAsFixed(1)}%',
@@ -123,8 +212,7 @@ class YearCalendarHeader extends StatelessWidget {
           ),
           Container(width: 1, height: 22, color: divider),
           Expanded(
-            child: _buildStripStat(
-              context,
+            child: _StripStat(
               icon: pnl >= 0
                   ? Icons.arrow_upward_rounded
                   : Icons.arrow_downward_rounded,
@@ -138,15 +226,25 @@ class YearCalendarHeader extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildStripStat(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-    required Color muted,
-  }) {
+class _StripStat extends StatelessWidget {
+  const _StripStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.muted,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final Color muted;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
@@ -182,112 +280,23 @@ class YearCalendarHeader extends StatelessWidget {
       ],
     );
   }
+}
 
-  /// Build desktop/tablet header layout
-  Widget _buildDesktopHeader(BuildContext context, Map<String, dynamic> yearStats) => LayoutBuilder(
-    builder: (context, constraints) {
-      final isNarrow = constraints.maxWidth < 900;
+/// Year dropdown picker (sticky-friendly).
+class YearCalendarYearPicker extends StatelessWidget {
+  const YearCalendarYearPicker({
+    required this.year,
+    super.key,
+    this.onYearChanged,
+    this.compact = false,
+  });
 
-      if (isNarrow) {
-        // Wrap layout for narrow screens
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [_buildYearNavigation(context), _buildLegend(context)],
-            ),
-            const SizedBox(height: 12),
-            YearSummaryStats(yearStats: yearStats, showLegend: false),
-          ],
-        );
-      }
+  final int year;
+  final Function(int newYear)? onYearChanged;
+  final bool compact;
 
-      // Full width layout
-      return Row(
-        children: [
-          // Year navigation on left
-          _buildYearNavigation(context),
-          const Spacer(),
-          // Year summary stats centered in the middle
-          YearSummaryStats(yearStats: yearStats, showLegend: false),
-          const Spacer(),
-          // Color mode selector (compact)
-          if (onColorModeChanged != null && currentColorMode != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: ColorModeSelector(
-                currentMode: currentColorMode!,
-                onModeChanged: onColorModeChanged!,
-                compact: true,
-              ),
-            ),
-          // Legend on the complete right
-          _buildLegend(context),
-        ],
-      );
-    },
-  );
-
-  /// Build legend — [compact] uses tighter padding for mobile single-row headers.
-  Widget _buildLegend(BuildContext context, {bool compact = false}) => Container(
-    padding: EdgeInsets.symmetric(
-      horizontal: compact ? 8 : 12,
-      vertical: compact ? 4 : 6,
-    ),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(compact ? 999 : 8),
-      border: Border.all(
-        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-      ),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildLegendItem(context, 'Win', Colors.green, compact: compact),
-        SizedBox(width: compact ? 8 : 8),
-        _buildLegendItem(context, 'Loss', Colors.red, compact: compact),
-        SizedBox(width: compact ? 8 : 8),
-        _buildLegendItem(
-          context,
-          'Breakeven',
-          Colors.grey,
-          compact: compact,
-        ),
-      ],
-    ),
-  );
-
-  Widget _buildLegendItem(
-    BuildContext context,
-    String label,
-    Color color, {
-    bool compact = false,
-  }) =>
-      Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        width: compact ? 8 : 10,
-        height: compact ? 8 : 10,
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
-          border: Border.all(color: color, width: 1.5),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-      SizedBox(width: compact ? 3 : 4),
-      Text(
-        label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontSize: compact ? 10 : 11,
-              fontWeight: FontWeight.w500,
-            ),
-      ),
-    ],
-  );
-
-  Widget _buildYearNavigation(BuildContext context, {bool compact = false}) {
+  @override
+  Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
     final years = List.generate(15, (index) => DateTime.now().year - index);
 
@@ -310,7 +319,6 @@ class YearCalendarHeader extends StatelessWidget {
             final size = box.size;
             final theme = Theme.of(buttonContext);
             final isDark = theme.brightness == Brightness.dark;
-            // Solid panel so calendar cells never show through the year list.
             final menuBg =
                 isDark ? const Color(0xFF1A1A2E) : const Color(0xFFFFFFFF);
 
@@ -399,57 +407,90 @@ class YearCalendarHeader extends StatelessWidget {
       ),
     );
   }
+}
 
+/// Win / Loss / Breakeven legend.
+class YearCalendarLegend extends StatelessWidget {
+  const YearCalendarLegend({
+    super.key,
+    this.compact = false,
+  });
 
-  /// Build summary card
-  Widget _buildSummaryCard(BuildContext context, String label, String value, IconData icon, Color color) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: color.withOpacity(0.3)),
-    ),
-    child: Row(
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 12,
+        vertical: compact ? 4 : 6,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(compact ? 999 : 8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _legendItem(context, 'Win', Colors.green),
+          SizedBox(width: compact ? 8 : 8),
+          _legendItem(context, 'Loss', Colors.red),
+          SizedBox(width: compact ? 8 : 8),
+          _legendItem(context, 'Breakeven', Colors.grey),
+        ],
+      ),
+    );
+  }
+
+  Widget _legendItem(BuildContext context, String label, Color color) {
+    return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 18, color: color),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10, color: color.withOpacity(0.8)),
-            ),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: color),
-            ),
-          ],
+        Container(
+          width: compact ? 8 : 10,
+          height: compact ? 8 : 10,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            border: Border.all(color: color, width: 1.5),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        SizedBox(width: compact ? 3 : 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: compact ? 10 : 11,
+                fontWeight: FontWeight.w500,
+              ),
         ),
       ],
-    ),
-  );
-
-  /// Calculate year-wide statistics
-  Map<String, dynamic> _calculateYearStats() {
-    var totalTrades = 0;
-    var winningTrades = 0;
-    var totalPnL = 0.0;
-
-    for (final monthData in monthsData.values) {
-      for (final dayData in monthData.days.values) {
-        totalTrades += dayData.tradeCount;
-        if (dayData.status == TradeDayStatus.win) {
-          winningTrades += dayData.tradeCount;
-        }
-        totalPnL += dayData.pnl;
-      }
-    }
-
-    final winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0.0;
-
-    return {'totalTrades': totalTrades, 'winRate': winRate, 'totalPnL': totalPnL};
+    );
   }
+}
+
+/// Shared year stats calculation.
+Map<String, dynamic> calculateYearStats(Map<int, CalendarMonthData> monthsData) {
+  var totalTrades = 0;
+  var winningTrades = 0;
+  var totalPnL = 0.0;
+
+  for (final monthData in monthsData.values) {
+    for (final dayData in monthData.days.values) {
+      totalTrades += dayData.tradeCount;
+      if (dayData.status == TradeDayStatus.win) {
+        winningTrades += dayData.tradeCount;
+      }
+      totalPnL += dayData.pnl;
+    }
+  }
+
+  final winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0.0;
+
+  return {
+    'totalTrades': totalTrades,
+    'winRate': winRate,
+    'totalPnL': totalPnL,
+  };
 }

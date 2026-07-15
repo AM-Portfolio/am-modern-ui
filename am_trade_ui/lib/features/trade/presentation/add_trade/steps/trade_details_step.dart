@@ -98,9 +98,29 @@ class TradeDetailsStep extends StatelessWidget {
     final isDesktop = MediaQuery.of(context).size.width > 1200;
     final isTablet = MediaQuery.of(context).size.width > 600 && MediaQuery.of(context).size.width <= 1200;
     final isWeb = isDesktop || isTablet;
+    final isMobile = !isWeb;
+
+    final attachmentSection = TradeAttachmentSection(
+      imageUrls: attachments,
+      onAttachmentsChanged: onAttachmentsChanged,
+      isEditMode: true,
+    );
+
+    final entryExitCard = EntryExitCard(
+      entryDate: entryDate,
+      entryPriceController: entryPriceController,
+      entryQuantityController: entryQuantityController,
+      exitDate: exitDate,
+      exitPriceController: exitPriceController,
+      exitQuantityController: exitQuantityController,
+      onEntryDateChanged: onEntryDateSelected,
+      onExitDateChanged: onExitDateSelected,
+      showExit: selectedStatus != TradeStatuses.open,
+      entryFooter: isMobile ? attachmentSection : null,
+    );
 
     return Padding(
-      padding: EdgeInsets.all(isDesktop ? 16 : 12),
+      padding: EdgeInsets.all(isDesktop ? 16 : 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -127,14 +147,13 @@ class TradeDetailsStep extends StatelessWidget {
               ],
             )
           else ...[
-            // Mobile: Keep stacked layout
             DirectionStatusSelector(
               selectedDirection: selectedDirection,
               selectedStatus: selectedStatus,
               onDirectionChanged: onDirectionChanged,
               onStatusChanged: onStatusChanged,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             TradeSettingsCard(
               selectedBroker: selectedBroker,
               selectedOrderType: selectedOrderType,
@@ -143,7 +162,7 @@ class TradeDetailsStep extends StatelessWidget {
             ),
           ],
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // Instrument & Entry/Exit in 2 columns (desktop) or stacked (mobile)
           if (isDesktop || isTablet)
@@ -161,19 +180,7 @@ class TradeDetailsStep extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                Expanded(
-                  child: EntryExitCard(
-                    entryDate: entryDate,
-                    entryPriceController: entryPriceController,
-                    entryQuantityController: entryQuantityController,
-                    exitDate: exitDate,
-                    exitPriceController: exitPriceController,
-                    exitQuantityController: exitQuantityController,
-                    onEntryDateChanged: onEntryDateSelected,
-                    onExitDateChanged: onExitDateSelected,
-                    showExit: selectedStatus != TradeStatuses.open,
-                  ),
-                ),
+                Expanded(child: entryExitCard),
               ],
             )
           else ...[
@@ -185,23 +192,13 @@ class TradeDetailsStep extends StatelessWidget {
               onSegmentChanged: onSegmentChanged,
               onInstrumentSelected: onInstrumentSelected,
             ),
-            const SizedBox(height: 12),
-            EntryExitCard(
-              entryDate: entryDate,
-              entryPriceController: entryPriceController,
-              entryQuantityController: entryQuantityController,
-              exitDate: exitDate,
-              exitPriceController: exitPriceController,
-              exitQuantityController: exitQuantityController,
-              onEntryDateChanged: onEntryDateSelected,
-              onExitDateChanged: onExitDateSelected,
-              showExit: selectedStatus != TradeStatuses.open,
-            ),
+            const SizedBox(height: 8),
+            entryExitCard,
           ],
 
           // Derivatives (if any)
           if (_isDerivativeSegment) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             DerivativeCard(
               selectedDerivativeType: selectedDerivativeType,
               selectedOptionType: selectedOptionType,
@@ -213,13 +210,11 @@ class TradeDetailsStep extends StatelessWidget {
             ),
           ],
 
-          // Attachments
-          const SizedBox(height: 16),
-          TradeAttachmentSection(
-            imageUrls: attachments,
-            onAttachmentsChanged: onAttachmentsChanged,
-            isEditMode: true,
-          ),
+          // Attachments below on wider layouts
+          if (!isMobile) ...[
+            const SizedBox(height: 12),
+            attachmentSection,
+          ],
         ],
       ),
     );

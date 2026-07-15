@@ -10,7 +10,6 @@ import 'package:am_market_common/models/seasonality_model.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/historical_performance_section.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/am_common.dart';
-import 'package:am_design_system/shared/widgets/selectors/global_time_frame_bar.dart';
 
 class HeatmapExplorerView extends ConsumerStatefulWidget {
   const HeatmapExplorerView({super.key});
@@ -122,14 +121,17 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
         ),
       ),
       child: SafeArea(
+        top: false,
+        bottom: false,
         child: Column(
           children: [
             // 1. Header & Search
             Container(
-              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
             boxShadow: isDark
                 ? []
@@ -144,22 +146,13 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title REMOVED or Changed to Generic
-              /*
-              const Text(
-                'Historical Performance',
-                style: TextStyle(...),
-              ),
-              const SizedBox(height: 16),
-              */
-              
               // Search & Controls Row
               Row(
                 children: [
                    // Expanded Search Field
                    Expanded(
                      child: Container(
-                       height: 48,
+                       height: 42,
                        decoration: BoxDecoration(
                          color: isDark ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.03),
                          borderRadius: BorderRadius.circular(12),
@@ -167,13 +160,13 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                        ),
                        child: TextField(
                          controller: _searchController,
-                         style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                         style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
                          decoration: InputDecoration(
                            hintText: 'Search Symbol (e.g. RELIANCE, NIFTY 50)',
-                           hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
-                           prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54),
+                           hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 13),
+                           prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54, size: 20),
                            border: InputBorder.none,
-                           contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                           contentPadding: const EdgeInsets.symmetric(vertical: 10),
                          ),
                          onSubmitted: (value) {
                            if (value.isNotEmpty) {
@@ -186,7 +179,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                        ),
                      ),
                    ),
-                   const SizedBox(width: 12),
+                   const SizedBox(width: 10),
                    
                    // Go Button
                    GestureDetector(
@@ -199,35 +192,51 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                         }
                      },
                      child: Container(
-                       height: 48,
-                       padding: const EdgeInsets.symmetric(horizontal: 24),
+                       height: 42,
+                       padding: const EdgeInsets.symmetric(horizontal: 18),
                        decoration: BoxDecoration(
-                         gradient: const LinearGradient(
-                           colors: [Color(0xFF00D1FF), Color(0xFF0055FF)],
-                           begin: Alignment.topLeft,
-                           end: Alignment.bottomRight,
-                         ),
+                         color: isDark
+                             ? const Color(0xFF00D1FF).withOpacity(0.2)
+                             : const Color(0xFF0E7490),
                          borderRadius: BorderRadius.circular(12),
-                         boxShadow: [
-                           BoxShadow(
-                             color: const Color(0xFF0055FF).withOpacity(0.3),
-                             blurRadius: 8,
-                             offset: const Offset(0, 4),
-                           )
-                         ],
+                         border: Border.all(
+                           color: isDark
+                               ? const Color(0xFF00D1FF).withOpacity(0.45)
+                               : const Color(0xFF0E7490),
+                         ),
+                         boxShadow: isDark
+                             ? []
+                             : [
+                                 BoxShadow(
+                                   color: const Color(0xFF0E7490)
+                                       .withOpacity(0.18),
+                                   blurRadius: 6,
+                                   offset: const Offset(0, 2),
+                                 ),
+                               ],
                        ),
                         child: Center(
                           child: provider_pkg.Selector<MarketProvider, bool>(
                             selector: (_, p) => p.isLoading,
                             builder: (context, isLoading, child) {
+                              final labelColor = isDark
+                                  ? const Color(0xFF00D1FF)
+                                  : Colors.white;
                               return isLoading 
-                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                  : const Text(
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: labelColor,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
                                       'GO',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: labelColor,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 16,
+                                        fontSize: 14,
                                       ),
                                     );
                             },
@@ -237,7 +246,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                    ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               
                   // Quick Suggestions
                   SingleChildScrollView(
@@ -258,21 +267,22 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
 
         // Main Content Area
         Expanded(
           child: _showingIndices
             ? SingleChildScrollView(
                 controller: _scrollController,
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                 child: Column(
                   children: [
                     _buildHeatmapSection(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     Container(
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
                         boxShadow: isDark
                             ? []
@@ -286,7 +296,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                       ),
                       child: const HistoricalPerformanceSection(),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                   ],
                 ),
               )
@@ -706,7 +716,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                     )
                   ],
           ),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -714,7 +724,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                       alignment: WrapAlignment.spaceBetween,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       spacing: 8.0,
-                      runSpacing: 8.0,
+                      runSpacing: 4.0,
                       children: [
                           Row(
                               mainAxisSize: MainAxisSize.min,
@@ -732,29 +742,25 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                                       title,
                                       style: TextStyle(
                                           color: isDark ? Colors.white : Colors.black87,
-                                          fontSize: 18,
+                                          fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          letterSpacing: 0.5
+                                          letterSpacing: 0.3,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
                                   IconButton(
                                       icon: Icon(_isHeatmapExpanded ? Icons.expand_less : Icons.expand_more, color: isDark ? Colors.white70 : Colors.black54),
                                       onPressed: () => setState(() => _isHeatmapExpanded = !_isHeatmapExpanded),
                                       tooltip: _isHeatmapExpanded ? "Minimize Section" : "Expand Section",
+                                      visualDensity: VisualDensity.compact,
                                   ),
                               ],
                           ),
-                          // Timeframe Selector
-                          // Align global timeframe bar cleanly on the right (or stacked on mobile)
-                          if (_isHeatmapExpanded)
-                            GlobalTimeFrameBar(),
                       ],
                   ),
                   if (_isHeatmapExpanded) ...[
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
                       _buildHeatmapGrid(),
                   ]
               ],
@@ -770,13 +776,6 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
           _isHeatmapExpanded = true; // Reset expansion when going back
       });
       _fetchData();
-  }
-
-  void _onHeatmapTimeframeChanged(String tf) {
-      setState(() {
-          _heatmapTimeframe = tf;
-      });
-      _fetchHeatmapData();
   }
 
   void _onHeatmapItemTap(String symbol, double value) {

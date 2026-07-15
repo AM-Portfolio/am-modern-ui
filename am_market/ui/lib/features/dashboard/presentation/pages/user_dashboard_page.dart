@@ -21,10 +21,13 @@ class UserDashboardPage extends ConsumerStatefulWidget {
   const UserDashboardPage({super.key});
 
   @override
-  ConsumerState<UserDashboardPage> createState() => _UserDashboardPageState();
+  UserDashboardPageState createState() => UserDashboardPageState();
 }
 
-class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with TickerProviderStateMixin {
+class UserDashboardPageState extends ConsumerState<UserDashboardPage>
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   late final ApiService _apiService;
   
   // Selected index for top movers (default: NIFTY 50)
@@ -281,6 +284,17 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
     _loadTimeframeOnDemand(pinnedSymbols, tf);
   }
 
+  /// Opens the All Indices panel (from the app bar chip on mobile).
+  void openAllIndicesPanel() {
+    if (!mounted) return;
+    final provider = context.read<MarketProvider>();
+    if (MediaQuery.sizeOf(context).width < 768) {
+      _showMobileAllIndicesBottomSheet(context, provider);
+    } else {
+      _openDrawer();
+    }
+  }
+
   /// [SIP Optimization] Opens the desktop drawer and lazy-loads the base prices
   /// for the remaining 24 non-pinned indices for the current timeframe so they display correct percentages.
   void _openDrawer() {
@@ -459,6 +473,7 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final selectedTimeframe = ref.watch(appTimeFrameProvider).code;
 
@@ -483,16 +498,17 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
     _triggerBasePricesLoadingIfNeeded(marketProvider);
 
     // Main content
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
     return Stack(
           children: [
             Container(
               decoration: AppGlassmorphismV2.techBackground(isDark: isDark),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(isMobile ? 12 : 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header Section
+                    // Header Section (desktop: All Indices + timeframe; mobile: in app bar)
                     MarketHeader(
                       onAllIndicesPressed: () {
                         if (MediaQuery.of(context).size.width < 768) {
@@ -503,16 +519,7 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
                       },
                     ),
 
-                    /* // REMOVED:
-                    InfoLayerCard(
-                      title: 'Market Dashboard',
-                      subtitle: 'Real-time market overview',
-                      icon: Icons.dashboard_rounded,
-                      colorScheme: 'primary',
-                    ),
-                    */
-                    
-                    const SizedBox(height: 24),
+                    if (!isMobile) const SizedBox(height: 16),
 
                     // Pinned Index Cards Grid
                     PinnedIndicesGrid(
@@ -571,90 +578,31 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
                       ),
                     ),
                     */
-                    
-                    const SizedBox(height: 32),
 
-                    /* // REMOVED:
-                    // --- GLOBAL FILTER BAR ---
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Timeframe: ',
-                          style: TextStyle(
-                            color: isDark ? Colors.white70 : Colors.black54,
-                            fontSize: 12, 
-                            fontWeight: FontWeight.bold
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.1),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y'].map((tf) {
-                              final isSelected = tf == selectedTimeframe;
-                              return GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    selectedTimeframe = tf;
-                                  });
-                                  provider.setIndicesTimeframe(tf);
-                                  _loadHistoricalData();
-                                  _loadTopMovers();
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(0xFF00D1FF).withOpacity(0.2)
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    tf,
-                                    style: TextStyle(
-                                      color: isSelected ? const Color(0xFF00D1FF) : Colors.white.withOpacity(0.6),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ],
-                    ),
-                    */
-                    
-                    const SizedBox(height: 24),
+                    SizedBox(height: isMobile ? 10 : 20),
 
                 // --- INDICES COMPARISON SECTION (Moved Up) ---
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'INDICES COMPARISON',
-                          style: TextStyle(
-                            color: isDark ? Colors.white38 : Colors.black45,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
+                        Expanded(
+                          child: Text(
+                            'INDICES COMPARISON',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isDark ? Colors.white38 : Colors.black45,
+                              fontSize: isMobile ? 11 : 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: isMobile ? 1.2 : 2,
+                            ),
                           ),
                         ),
                         // Chart Controls
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             // Toggle Chart Type
                             Container(
@@ -937,11 +885,11 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: isMobile ? 10 : 16),
                     
                     // Multi-Index Chart
                     SizedBox(
-                      height: 400,
+                      height: isMobile ? 280 : 400,
                       child: MultiIndexChart(
                         historicalData: historicalData,
                         selectedIndices: selectedIndicesForChart,
@@ -958,61 +906,57 @@ class _UserDashboardPageState extends ConsumerState<UserDashboardPage> with Tick
                   ],
                 ),
 
-                const SizedBox(height: 40),
+                SizedBox(height: isMobile ? 24 : 40),
                 
-                // --- TOP MOVERS SECTION (Moved Down) ---
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'TOP MOVERS',
-                              style: TextStyle(
-                                color: isDark ? Colors.white38 : Colors.black45,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF00D1FF).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                selectedIndexForMovers,
-                                style: const TextStyle(
-                                  color: Color(0xFF00D1FF),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
+                // --- TOP MOVERS SECTION ---
+                TopMoversWidgetV2(
+                  gainers: topGainers,
+                  losers: topLosers,
+                  isLoading: isLoadingMovers,
+                  headerTrailing: GestureDetector(
+                    onTap: () {
+                      if (MediaQuery.sizeOf(context).width < 768) {
+                        _showMobileAllIndicesBottomSheet(
+                          context,
+                          marketProvider,
+                        );
+                      } else {
+                        _openDrawer();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00D1FF).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF00D1FF).withOpacity(0.35),
                         ),
-                        // Move info hint
-                        Text(
-                          'Based on $selectedTimeframe',
-                          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10),
-                        ),
-                      ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            selectedIndexForMovers,
+                            style: const TextStyle(
+                              color: Color(0xFF00D1FF),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 16,
+                            color: const Color(0xFF00D1FF).withOpacity(0.9),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    
-                    // Unified Top Movers panel: handles Gainers + Losers,
-                    // responsive toggle on mobile, glassmorphic card, MarketColors tokens.
-                    TopMoversWidgetV2(
-                      gainers: topGainers,
-                      losers: topLosers,
-                      isLoading: isLoadingMovers,
-                    ),
-                  ],
+                  ),
                 ),
                 
               ],

@@ -23,9 +23,11 @@ import 'package:am_trade_ui/features/trade/presentation/trade_responsive_layout.
 import 'package:am_trade_ui/features/trade/providers/trade_controller_providers.dart'
     deferred as trade_providers;
 import 'package:am_user_ui/am_user_ui.dart' deferred as user_ui;
+import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_it/get_it.dart';
 
 import '../../features/shell/skeletons/module_skeletons.dart';
 import '../di/injection.dart';
@@ -283,16 +285,85 @@ Widget buildProfileRoute({
     load: _loadUser,
     skeleton: const GenericModuleSkeleton(),
     loadingMessage: 'Loading Profile…',
-    builder: () => user_ui.ProfileSettingsPage(
-      userId: userId,
-      email: email,
-      displayName: displayName,
-      onOpenPrivacyPolicy: onOpenPrivacyPolicy,
-      onOpenTermsOfService: onOpenTermsOfService,
-      onOpenSubscription: onOpenSubscription,
-      highlightSubscription: highlightSubscription,
+    builder: () => _ProfileSubscriptionLoader(
+      builder: (statusLabel, isPaid) => user_ui.ProfileSettingsPage(
+        userId: userId,
+        email: email,
+        displayName: displayName,
+        onOpenPrivacyPolicy: onOpenPrivacyPolicy,
+        onOpenTermsOfService: onOpenTermsOfService,
+        onOpenSubscription: onOpenSubscription,
+        highlightSubscription: highlightSubscription,
+        subscriptionStatusLabel: statusLabel,
+        isPaidSubscription: isPaid,
+      ),
     ),
   );
+}
+
+/// Loads `/subscriptions/me` so Profile can show Free / Pro / Premium · Active.
+class _ProfileSubscriptionLoader extends StatefulWidget {
+  const _ProfileSubscriptionLoader({required this.builder});
+
+  final Widget Function(String? statusLabel, bool isPaid) builder;
+
+  @override
+  State<_ProfileSubscriptionLoader> createState() =>
+      _ProfileSubscriptionLoaderState();
+}
+
+class _ProfileSubscriptionLoaderState extends State<_ProfileSubscriptionLoader> {
+  String? _statusLabel;
+  bool _isPaid = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      if (!GetIt.instance.isRegistered<am_sub.SubscriptionRemoteDataSource>()) {
+        return;
+      }
+      final sub = await GetIt.instance<am_sub.SubscriptionRemoteDataSource>()
+          .getCurrentSubscription();
+      if (!mounted) return;
+      final name = sub.planName.trim().isNotEmpty
+          ? sub.planName.trim()
+          : _planNameFromCode(sub.planCode);
+      final state = _titleCase(sub.state);
+      setState(() {
+        _statusLabel = state.isEmpty ? name : '$name · $state';
+        _isPaid = !_isFreePlan(sub.planCode);
+      });
+    } catch (_) {
+      // Leave default Profile copy if subscription API fails.
+    }
+  }
+
+  static bool _isFreePlan(String planCode) {
+    final code = planCode.toLowerCase();
+    return code.contains('free') || code == 'am_free';
+  }
+
+  static String _planNameFromCode(String planCode) {
+    final code = planCode.toLowerCase();
+    if (code.contains('premium')) return 'Premium';
+    if (code.contains('pro')) return 'Pro';
+    if (code.contains('free')) return 'Free';
+    return planCode;
+  }
+
+  static String _titleCase(String raw) {
+    final s = raw.trim();
+    if (s.isEmpty) return '';
+    return '${s[0].toUpperCase()}${s.substring(1).toLowerCase()}';
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(_statusLabel, _isPaid);
 }
 
 Widget buildPrivacyPolicyRoute({
