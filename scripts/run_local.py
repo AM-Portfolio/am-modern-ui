@@ -84,16 +84,23 @@ def run_flutter_cmd(package, command):
     is_windows = os.name == "nt"
     env = dict(os.environ)
 
+    # Automatically inject .env into flutter build/run commands for web configs
+    env_path = os.path.join(workspace_root, ".env")
+    dart_defines = []
+    if os.path.exists(env_path):
+        dart_defines = [f"--dart-define-from-file={env_path}"]
+
     if is_interactive:
         try:
-            result = subprocess.run(["flutter"] + command.split(), cwd=package_dir, shell=is_windows)
+            cmd = ["flutter"] + command.split() + dart_defines
+            result = subprocess.run(cmd, cwd=package_dir, shell=is_windows)
             return result.returncode == 0
         except Exception as e:
             print(f"Execution failed: {e}")
             return False
     else:
         log_safe_name = package.replace("/", "-").replace("\\", "-")
-        cmd_full = ["flutter"] + command.split()
+        cmd_full = ["flutter"] + command.split() + dart_defines
         return run_with_logging(cmd_full, cwd=package_dir, env=env, log_name=f"{log_safe_name}")
 
 def get_args():
