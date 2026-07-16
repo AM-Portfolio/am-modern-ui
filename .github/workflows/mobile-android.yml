@@ -2,6 +2,7 @@
 # Runs in parallel with modern-ui.yml (web). Does not block web deploy.
 #
 # Phase 2: calls @develop. Switch to @main after am-pipelines Phase 7.
+# Trigger comment to verify pipeline artifact fix.
 
 name: Modern UI Android
 
