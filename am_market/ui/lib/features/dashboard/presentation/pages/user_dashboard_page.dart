@@ -4,6 +4,7 @@ import 'package:provider/provider.dart' hide Consumer;
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_library/am_library.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_common/models/market_data.dart';
 import 'package:am_market_common/models/top_mover_stock.dart';
@@ -403,6 +404,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       isLoadingMovers = true;
     });
 
+    final sw = Stopwatch()..start();
     try {
       // Unified call for both gainers and losers
       final unifiedData = await _apiService.fetchMoversUnified(
@@ -410,15 +412,36 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         indexSymbol: selectedIndexForMovers,
         timeFrame: _selectedTimeframe,
       );
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'market_top_movers',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'market',
+      );
       
       if (!mounted) return;
+
+      final gainers = (unifiedData['gainers'] ?? []).map((e) => TopMoverStock.fromJson(e)).toList();
+      final losers = (unifiedData['losers'] ?? []).map((e) => TopMoverStock.fromJson(e)).toList();
+      if (gainers.isEmpty && losers.isEmpty) {
+        ProductTelemetry.instance.emptyState('market_top_movers_empty');
+      }
       
       setState(() {
-        topGainers = (unifiedData['gainers'] ?? []).map((e) => TopMoverStock.fromJson(e)).toList();
-        topLosers = (unifiedData['losers'] ?? []).map((e) => TopMoverStock.fromJson(e)).toList();
+        topGainers = gainers;
+        topLosers = losers;
         isLoadingMovers = false;
       });
     } catch (e) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'market_top_movers',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch_error',
+        technicalArea: 'market',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'market_top_movers');
       if (!mounted) return;
       setState(() {
         isLoadingMovers = false;
@@ -436,16 +459,37 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       chartError = null;
     });
 
+    final sw = Stopwatch()..start();
     try {
       final data = await _apiService.fetchHistoryBatch(selectedIndicesForChart, _selectedTimeframe);
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'market_history_chart',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'market',
+      );
 
       if (!mounted) return;
+
+      final empty = data.isEmpty || data.values.every((v) => v.isEmpty);
+      if (empty) {
+        ProductTelemetry.instance.emptyState('market_history_empty');
+      }
       
       setState(() {
         historicalData = data;
         isLoadingChart = false;
       });
     } catch (e) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'market_history_chart',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch_error',
+        technicalArea: 'market',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'market_history_chart');
       if (!mounted) return;
       setState(() {
         chartError = 'Failed to load chart data';

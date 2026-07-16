@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +32,8 @@ class _AMAppState extends ConsumerState<AMApp> {
   late final AuthRefreshListenable _authRefresh;
   late final GoRouter _router;
   VoidCallback? _detachRouteListener;
+  FlutterExceptionHandler? _previousFlutterOnError;
+  bool Function(Object, StackTrace)? _previousPlatformOnError;
 
   @override
   void initState() {
@@ -62,12 +65,28 @@ class _AMAppState extends ConsumerState<AMApp> {
         metadata: metadata,
       );
     };
+    _previousFlutterOnError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      _previousFlutterOnError?.call(details);
+      ProductTelemetry.instance.clientError(
+        errorType: details.exception.runtimeType.toString(),
+      );
+    };
+    _previousPlatformOnError = PlatformDispatcher.instance.onError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      ProductTelemetry.instance.clientError(
+        errorType: error.runtimeType.toString(),
+      );
+      return _previousPlatformOnError?.call(error, stack) ?? false;
+    };
   }
 
   @override
   void dispose() {
     _detachRouteListener?.call();
     CommonLogger.onUserAction = null;
+    FlutterError.onError = _previousFlutterOnError;
+    PlatformDispatcher.instance.onError = _previousPlatformOnError;
     _authRefresh.dispose();
     _router.dispose();
     super.dispose();
@@ -89,11 +108,15 @@ class _AMAppState extends ConsumerState<AMApp> {
         ),
       ],
       child: BlocListener<AuthCubit, AuthState>(
-        listenWhen: (prev, curr) => curr is Authenticated,
+        listenWhen: (prev, curr) =>
+            curr is Authenticated ||
+            (prev is Authenticated && curr is! Authenticated),
         listener: (context, state) {
           if (state is Authenticated) {
             common.SessionPersistenceService.instance.load(state.user.id);
             ProductTelemetry.instance.sessionStart();
+          } else {
+            ProductTelemetry.instance.authLogout();
           }
         },
         child: BlocBuilder<ThemeCubit, ThemeState>(

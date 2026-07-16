@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_library/am_library.dart';
 import '../providers/basket_providers.dart';
 import '../basket_navigation.dart';
 import '../../domain/models/basket_opportunity.dart';
@@ -20,6 +21,7 @@ class BasketExplorer extends ConsumerStatefulWidget {
 
 class _BasketExplorerState extends ConsumerState<BasketExplorer> {
   String _query = 'Nifty 50,Nifty Bank,Nifty IT'; // Default query
+  bool _emittedEmpty = false;
   
   final Map<String, String> _categories = {
     'Nifty 50': 'NIFTY 50',
@@ -133,8 +135,13 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
           child: opportunitiesAsync.when(
             data: (opportunities) {
               if (opportunities.isEmpty) {
+                if (!_emittedEmpty) {
+                  _emittedEmpty = true;
+                  ProductTelemetry.instance.emptyState('basket_opportunities_empty');
+                }
                 return const Center(child: Text('No opportunities found'));
               }
+              _emittedEmpty = false;
               return GridView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -149,6 +156,11 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                     opportunity: opportunities[index],
                     onTap: () {
                       final opp = opportunities[index];
+                      ProductTelemetry.instance.featureAction(
+                        'basket_open_preview',
+                        tag: 'basket',
+                        metadata: {'etf_isin': opp.etfIsin},
+                      );
                       BasketNavigation.openPreview(
                         context,
                         etfIsin: opp.etfIsin,

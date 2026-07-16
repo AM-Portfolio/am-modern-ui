@@ -8,10 +8,19 @@ VoidCallback attachProductTelemetryRouteListener(GoRouter router) {
 
   void tick() {
     try {
-      final path = router.routerDelegate.currentConfiguration.uri.path;
+      final uri = router.routerDelegate.currentConfiguration.uri;
+      final path = uri.path;
       if (path.isEmpty || path == lastPath) return;
       lastPath = path;
-      ProductTelemetry.instance.screenView(path);
+      final entrySource = uri.queryParameters['highlight'] == 'subscription'
+          ? 'highlight_subscription'
+          : (uri.queryParameters['utm_source'] != null
+              ? 'utm_${uri.queryParameters['utm_source']}'
+              : null);
+      ProductTelemetry.instance.screenView(
+        uri.toString().startsWith('/') ? '${uri.path}${uri.hasQuery ? '?${uri.query}' : ''}' : path,
+        entrySource: entrySource,
+      );
     } catch (_) {
       // Router not ready yet
     }

@@ -17,6 +17,8 @@ dependencies:
     path: ../am_common
   am_auth_ui:
     path: ../am_auth_ui
+  am_library:
+    path: ../am_library
   am_user_ui:
     path: ../am_user_ui
   am_analysis_ui:

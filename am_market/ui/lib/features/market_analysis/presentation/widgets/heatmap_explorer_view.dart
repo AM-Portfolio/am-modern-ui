@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider_pkg;
 import 'package:provider/provider.dart' show ReadContext, WatchContext;
 import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_library/am_library.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_ui/shared/widgets/glass_container.dart';
 import 'package:intl/intl.dart';
@@ -21,6 +22,7 @@ class HeatmapExplorerView extends ConsumerStatefulWidget {
 class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
   String _selectedSymbol = 'NIFTY BANK'; // Default symbol
+  bool _emittedHeatmapEmpty = false;
   final List<String> _months = [
     'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
     'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
@@ -80,8 +82,19 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
     // If showing constituents -> _selectedSymbol
     String heatmapTarget = _showingIndices ? 'INDICES' : _selectedSymbol;
     if (heatmapTarget.isEmpty && !_showingIndices) heatmapTarget = "NIFTY 50"; // Fallback
-    
+
+    final sw = Stopwatch()..start();
     context.read<MarketProvider>().loadHeatmap(heatmapTarget, _heatmapTimeframe);
+    // loadHeatmap is async on provider; record request timing as navigation cost
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'market_heatmap',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'market',
+      );
+    });
   }
 
   @override
@@ -812,8 +825,13 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                   ));
               }
               if (data == null || data.isEmpty) {
+                  if (!_emittedHeatmapEmpty) {
+                    _emittedHeatmapEmpty = true;
+                    ProductTelemetry.instance.emptyState('market_heatmap_empty');
+                  }
                   return const Center(child: Text("No heatmap data available", style: TextStyle(color: Colors.white38)));
               }
+              _emittedHeatmapEmpty = false;
               
               return GridView.builder(
                   shrinkWrap: true,

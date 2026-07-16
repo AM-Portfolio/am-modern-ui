@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_design_system/am_design_system.dart' show CommonLogger;
+import 'package:am_library/am_library.dart';
 import '../../internal/data/datasources/portfolio_remote_data_source.dart';
 import 'portfolio_intraday_state.dart';
 
@@ -29,9 +30,18 @@ class PortfolioIntradayCubit extends Cubit<PortfolioIntradayState> {
       emit(PortfolioIntradayLoading());
     }
 
+    final sw = Stopwatch()..start();
     try {
       final data = await _dataSource.getPortfolioIntraday(_lastPortfolioId);
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'portfolio_intraday',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'portfolio',
+      );
       if (data.isEmpty) {
+        ProductTelemetry.instance.emptyState('intraday_empty');
         emit(PortfolioIntradayEmpty());
       } else {
         emit(PortfolioIntradayLoaded(data));
@@ -41,6 +51,14 @@ class PortfolioIntradayCubit extends Cubit<PortfolioIntradayState> {
         tag: 'PortfolioIntradayCubit',
       );
     } catch (e, stack) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'portfolio_intraday',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch_error',
+        technicalArea: 'portfolio',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'portfolio_intraday');
       CommonLogger.error(
         'Failed to load portfolio intraday',
         tag: 'PortfolioIntradayCubit',

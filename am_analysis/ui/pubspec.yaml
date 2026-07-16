@@ -22,6 +22,8 @@ dependencies:
   # AM Common Modules
   am_common:
     path: ../../am_common
+  am_library:
+    path: ../../am_library
 
   # Analysis SDK (Generated)
   am_analysis_sdk:

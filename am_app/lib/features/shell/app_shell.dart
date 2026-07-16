@@ -7,6 +7,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart' as common;
+import 'package:am_library/am_library.dart';
 
 import '../../core/navigation/cross_module_section_sequence.dart';
 import '../../core/navigation/cross_section_swipe_host.dart';
@@ -265,6 +266,11 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     final path = AppRoutes.pathForNavTitle(title);
     if (path == null) return;
 
+    ProductTelemetry.instance.featureAction(
+      'global_nav',
+      tag: 'shell',
+      metadata: {'title': title},
+    );
     _showBottomNavWithIdleHide();
     _applyStreamingTabCoordinator(title);
     context.go(path);

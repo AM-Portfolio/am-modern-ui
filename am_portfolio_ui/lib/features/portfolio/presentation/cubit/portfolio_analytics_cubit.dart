@@ -3,6 +3,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_common/am_common.dart';
+import 'package:am_library/am_library.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
 import '../../internal/services/portfolio_analytics_service.dart';
 import 'portfolio_analytics_state.dart';
@@ -72,6 +73,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
 
     SectorAllocation? fastSectorAllocation;
     MarketCapAllocation? fastMarketCapAllocation;
+    final sw = Stopwatch()..start();
 
     // Start full analytics fetch (takes ~58s due to live market data for Movers/Heatmap)
     final fullAnalyticsFuture = _analyticsService.getPortfolioAnalyticsWithDefaults(
@@ -146,6 +148,31 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       );
 
       if (isClosed) return;
+
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'portfolio_analytics',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'portfolio',
+      );
+      final sectorEmpty =
+          (analytics.analytics.sectorAllocation ?? fastSectorAllocation)
+              ?.sectorWeights
+              .isEmpty ??
+          true;
+      final moversEmpty = analytics.analytics.movers == null ||
+          (analytics.analytics.movers!.topGainers.isEmpty &&
+              analytics.analytics.movers!.topLosers.isEmpty);
+      if (sectorEmpty) {
+        ProductTelemetry.instance.emptyState('allocation_empty');
+      }
+      if (moversEmpty) {
+        ProductTelemetry.instance.emptyState('portfolio_movers_empty');
+      }
+      if (analytics.analytics.heatmap == null) {
+        ProductTelemetry.instance.emptyState('heatmap_empty');
+      }
       
       _lastLoadedTimeFrame = timeFrame;
       emit(
@@ -163,6 +190,14 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
 
       CommonLogger.methodExit('loadAnalytics', tag: 'PortfolioAnalyticsCubit');
     } catch (error) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'portfolio_analytics',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch_error',
+        technicalArea: 'portfolio',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'portfolio_analytics');
       CommonLogger.error(
         'Failed to load portfolio analytics',
         tag: 'PortfolioAnalyticsCubit',
