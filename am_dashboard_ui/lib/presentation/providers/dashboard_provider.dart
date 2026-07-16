@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_library/am_library.dart';
 
 part 'dashboard_provider.g.dart';
 
@@ -318,6 +319,7 @@ Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFr
   final repository = await ref.watch(dashboardRepositoryProvider.future);
 
   PerformanceResponse performance;
+  final sw = Stopwatch()..start();
   try {
     performance = await repository.getPerformance(userId, timeFrame: timeFrame);
   } catch (e) {
@@ -329,9 +331,27 @@ Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFr
       final rawData = await ref.read(portfolioSummaryFallbackProvider.future);
       performance = _performanceFromPortfolioRaw(rawData, timeFrame);
     } catch (fallbackError) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'dashboard_performance',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch_error',
+        technicalArea: 'dashboard',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'dashboard_performance');
       AppLogger.error('Dashboard history fallback also failed', error: fallbackError);
       rethrow;
     }
+  }
+  sw.stop();
+  ProductTelemetry.instance.widgetTiming(
+    widget: 'dashboard_performance',
+    durationMs: sw.elapsedMilliseconds,
+    operation: 'fetch',
+    technicalArea: 'dashboard',
+  );
+  if (performance.chartData.isEmpty) {
+    ProductTelemetry.instance.emptyState('dashboard_performance_empty');
   }
 
   yield performance;

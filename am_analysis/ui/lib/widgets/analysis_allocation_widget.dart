@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_library/am_library.dart';
 import '../services/real_analysis_service.dart';
 import 'package:am_analysis_core/am_analysis_core.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
@@ -50,12 +51,23 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
       _error = null;
     });
 
+    final sw = Stopwatch()..start();
     try {
       final items = await _service.getAllocation(
         widget.portfolioId,
         AnalysisEntityType.PORTFOLIO,
         groupBy: _selectedGroupBy,
       );
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'analysis_allocation',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'analysis',
+      );
+      if (items.isEmpty) {
+        ProductTelemetry.instance.emptyState('analysis_allocation_empty');
+      }
       
       if (mounted) {
         setState(() {
@@ -64,6 +76,14 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
         });
       }
     } catch (e) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'analysis_allocation',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch_error',
+        technicalArea: 'analysis',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'analysis_allocation');
       if (mounted) {
         setState(() {
           _error = e.toString();
