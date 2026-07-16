@@ -22,7 +22,7 @@ class ProductTelemetry {
   String? _ingestUrl;
   String? _currentScreen;
   String? _currentSection;
-  String _envLabel = 'production';
+  String _envLabel = 'prod';
 
   /// Call once after config/env is known.
   Future<void> initialize({
@@ -39,8 +39,8 @@ class ProductTelemetry {
       return;
     }
     if (env != null && env.isNotEmpty) {
-      _envLabel = env;
-      EnvironmentConfig.setEnvironment(env);
+      _envLabel = _normalizeEnvLabel(env);
+      EnvironmentConfig.setEnvironment(_envLabel);
     }
     _ingestUrl = '$base/v1/telemetry/events';
     await TelemetryIds.instance.ensureReady();
@@ -182,6 +182,23 @@ class ProductTelemetry {
       }
     } catch (e) {
       debugPrint('[ProductTelemetry] flush error: $e');
+    }
+  }
+
+  /// Canonical telemetry env: only `dev` | `preprod` | `prod`.
+  static String _normalizeEnvLabel(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'development':
+      case 'dev':
+      case 'local':
+        return 'dev';
+      case 'preprod':
+      case 'staging':
+        return 'preprod';
+      case 'production':
+      case 'prod':
+      default:
+        return 'prod';
     }
   }
 
