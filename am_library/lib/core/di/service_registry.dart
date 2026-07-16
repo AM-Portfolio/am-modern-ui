@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:get_it/get_it.dart';
 import '../auth/user_context.dart';
 import '../network/api_client.dart';
@@ -6,6 +8,7 @@ import '../network/websocket/am_stomp_client.dart';
 import '../services/secure_storage_service.dart';
 import '../utils/logger.dart';
 import '../telemetry/telemetry_service.dart';
+import '../telemetry/product_telemetry.dart';
 
 /// The central hub for all core services in the AM Ecosystem.
 /// Provides a unified singleton access point and lifecycle management.
@@ -17,6 +20,8 @@ class ServiceRegistry {
   static void initialize({
     String? analysisBaseUrl,
     String? wsUrl,
+    String? loggingBaseUrl,
+    String? env,
   }) {
     // 1. Storage, Logging & Telemetry
     if (!I.isRegistered<SecureStorageService>()) {
@@ -49,7 +54,17 @@ class ServiceRegistry {
         () => AmStompClient(url: wsUrl),
       );
     }
-    
+
+    // 5. Product telemetry sink (fire-and-forget; gated by analyticsEnabled)
+    if (loggingBaseUrl != null && loggingBaseUrl.isNotEmpty) {
+      unawaited(
+        ProductTelemetry.instance.initialize(
+          loggingBaseUrl: loggingBaseUrl,
+          env: env,
+        ),
+      );
+    }
+
     AppLogger.info('✅ ServiceRegistry: Core infrastructure initialized.', tag: 'Registry');
   }
 

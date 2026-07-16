@@ -14,6 +14,10 @@ class ConfigService {
   /// No baked env host. Prefer same-tab host on web until Helm/config loads.
   static String _domain = _bootstrapDomain();
   static String _resolvedEnv = _envFromDefine;
+
+  /// Active env label from AM_ENV / config.json (`dev`, `preprod`, `prod`, …).
+  static String get resolvedEnv =>
+      _resolvedEnv.isNotEmpty ? _resolvedEnv : 'default';
   static Map<String, String> _services = {};
   static String _googleClientId = '';
 
