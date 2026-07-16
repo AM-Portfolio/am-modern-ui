@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
+import 'package:am_library/am_library.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/services/market_movers_service.dart';
@@ -51,11 +52,22 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
       _isLoading = true;
     });
 
+    final sw = Stopwatch()..start();
     final data = await _service.fetchMarketMovers(
       limit: 5,
       indexSymbol: 'NIFTY 50',
       timeFrame: widget.timeFrame.code,
     );
+    sw.stop();
+    ProductTelemetry.instance.widgetTiming(
+      widget: 'market_movers',
+      durationMs: sw.elapsedMilliseconds,
+      operation: 'fetch',
+      technicalArea: 'portfolio',
+    );
+    if (data.gainers.isEmpty && data.losers.isEmpty) {
+      ProductTelemetry.instance.emptyState('market_movers_empty');
+    }
 
     if (mounted) {
       setState(() {

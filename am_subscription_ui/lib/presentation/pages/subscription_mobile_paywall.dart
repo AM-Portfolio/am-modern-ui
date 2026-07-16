@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:am_library/am_library.dart';
 import '../cubit/subscription_cubit.dart';
 import '../../domain/entities/plan.dart';
 import '../../domain/entities/subscription.dart';
@@ -69,6 +70,13 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
         : (state is SubscriptionActionInProgress ? state.subscription : null);
 
     if (subscription != null && subscription.planCode == plan.code) return;
+
+    ProductTelemetry.instance.featureAction(
+      subscription != null ? 'upgrade_attempt' : 'plan_cta_click',
+      planCode: plan.code,
+      billingInterval: plan.interval,
+      tag: 'subscription',
+    );
 
     if (plan.code != 'am_free') {
       final paymentLink = _stripePaymentLinks[plan.code];

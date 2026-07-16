@@ -60,6 +60,10 @@ class ProductTelemetry with WidgetsBindingObserver {
     }
     _ingestUrl = '$base/v1/telemetry/events';
     await TelemetryIds.instance.ensureReady();
+    // Warm UserContext so session-restored users get hashed user_id on events.
+    try {
+      await UserContext.instance.userId;
+    } catch (_) {}
     _ready = true;
     _flushTimer?.cancel();
     _flushTimer = Timer.periodic(_flushInterval, (_) => flush());
@@ -361,6 +365,10 @@ class ProductTelemetry with WidgetsBindingObserver {
     String? userId;
     try {
       userId = UserContext.instance.cachedUserId;
+      if (userId == null || userId.isEmpty) {
+        // Warm cache for subsequent events (session restore race).
+        unawaited(UserContext.instance.userId);
+      }
     } catch (_) {
       userId = null;
     }
