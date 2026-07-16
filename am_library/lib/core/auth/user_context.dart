@@ -78,6 +78,9 @@ class UserContext {
     return _cachedUserId;
   }
 
+  /// Sync peek at the in-memory cache (null if not populated yet).
+  String? get cachedUserId => _cachedUserId;
+
   /// The authenticated user's email address.
   /// Returns `null` if not yet populated.
   Future<String?> get email async {

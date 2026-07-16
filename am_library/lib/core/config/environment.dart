@@ -79,14 +79,14 @@ class EnvironmentConfig {
       case Environment.development:
         return {
           'appTitle': '[DEV] AM Investment',
-          'analyticsEnabled': false,
+          'analyticsEnabled': true,
           'refreshInterval': 30, // seconds
           'useMockData': false,
         };
       case Environment.preprod:
         return {
           'appTitle': '[PREPROD] AM Investment',
-          'analyticsEnabled': false,
+          'analyticsEnabled': true,
           'refreshInterval': 60, // seconds
           'useMockData': false,
         };
@@ -104,12 +104,16 @@ class EnvironmentConfig {
   static void setEnvironment(String env) {
     switch (env.toLowerCase()) {
       case 'development':
+      case 'dev':
+      case 'local':
         environment = Environment.development;
         break;
       case 'preprod':
+      case 'staging':
         environment = Environment.preprod;
         break;
       case 'production':
+      case 'prod':
       default:
         environment = Environment.production;
         break;

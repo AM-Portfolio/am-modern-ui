@@ -8,6 +8,9 @@ service:
   port: 8080
 language: flutter
 
+# Canonical env for config.json + telemetry: dev | preprod | prod
+environment: prod
+
 appConfig:
   domain: "am.asrax.in"
   # Runtime Google Sign-In client id (not baked into the Docker image)
@@ -36,7 +39,8 @@ resources:
     memory: 128Mi
 
 config:
-  env: "dev"
+  # Legacy key; chart uses top-level `environment` for config.json env.
+  env: "prod"
 
 vault:
   enabled: false

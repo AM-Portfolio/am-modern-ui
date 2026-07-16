@@ -23,4 +23,6 @@ export 'core/utils/token_extractor.dart';
 export 'core/utils/admin_access.dart';
 export 'core/config/environment.dart';
 export 'core/telemetry/telemetry_service.dart';
+export 'core/telemetry/product_telemetry.dart';
+export 'core/telemetry/telemetry_ids.dart';
 
