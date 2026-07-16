@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_common/am_common.dart';
+import 'package:am_library/am_library.dart';
 import '../../internal/domain/entities/trade_controller_entities.dart';
 import '../../internal/domain/usecases/add_trade.dart';
 import '../../internal/domain/usecases/delete_trade.dart';
@@ -45,11 +46,22 @@ class TradeControllerCubit extends Cubit<TradeControllerState> {
       emit(const TradeControllerState.loading());
     }
 
+    final sw = Stopwatch()..start();
     try {
       final trades = await _getTradesByPortfolio(
         portfolioId: portfolioId,
         symbols: symbols,
       );
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'trade_list',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'trade',
+      );
+      if (trades.isEmpty) {
+        ProductTelemetry.instance.emptyState('trades_empty');
+      }
 
       AppLogger.info(
         'Trades loaded successfully - count: ${trades.length}',
@@ -61,6 +73,14 @@ class TradeControllerCubit extends Cubit<TradeControllerState> {
         portfolioId: portfolioId,
       ));
     } catch (e) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'trade_list',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch_error',
+        technicalArea: 'trade',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'trade_list');
       AppLogger.error(
         'Failed to load trades',
         tag: 'TradeControllerCubit',
@@ -90,6 +110,12 @@ class TradeControllerCubit extends Cubit<TradeControllerState> {
 
     try {
       final createdTrade = await _addTrade(tradeDetails);
+
+      ProductTelemetry.instance.featureAction(
+        'trade_add',
+        tag: 'trade',
+        metadata: {'symbol': tradeDetails.instrumentInfo.symbol},
+      );
 
       AppLogger.info(
         'Trade added successfully - tradeId: ${createdTrade.tradeId}',

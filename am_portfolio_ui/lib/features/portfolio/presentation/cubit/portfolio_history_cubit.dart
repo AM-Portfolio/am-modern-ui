@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart' show CommonLogger;
+import 'package:am_library/am_library.dart';
 import '../../internal/data/datasources/portfolio_remote_data_source.dart';
 import 'portfolio_history_state.dart';
 
@@ -25,12 +26,23 @@ class PortfolioHistoryCubit extends Cubit<PortfolioHistoryState> {
     }
 
     emit(PortfolioHistoryLoading());
+    final sw = Stopwatch()..start();
 
     try {
       final snapshots = await _dataSource.getPortfolioHistory(
         portfolioId == 'all' ? null : portfolioId,
         tf,
       );
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'portfolio_history',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'portfolio',
+      );
+      if (snapshots.isEmpty) {
+        ProductTelemetry.instance.emptyState('history_empty');
+      }
 
       // Extract sorted, unique broker names for the tab switcher
       final Set<String> brokerSet = {};
@@ -58,6 +70,14 @@ class PortfolioHistoryCubit extends Cubit<PortfolioHistoryState> {
         tag: 'PortfolioHistoryCubit',
       );
     } catch (e, stack) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'portfolio_history',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch_error',
+        technicalArea: 'portfolio',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'portfolio_history');
       CommonLogger.error(
         'Failed to load portfolio history',
         tag: 'PortfolioHistoryCubit',

@@ -2,6 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_common/am_common.dart';
+import 'package:am_library/am_library.dart';
 import '../../internal/domain/entities/portfolio_holding.dart';
 import '../../internal/domain/entities/portfolio_summary.dart';
 import '../../internal/services/portfolio_service.dart';
@@ -11,7 +12,6 @@ import '../../internal/data/dtos/portfolio_socket_update_dto.dart';
 import 'package:get_it/get_it.dart';
 import 'dart:convert';
 import 'dart:async';
-import 'package:am_common/am_common.dart';
 import 'package:uuid/uuid.dart';
 
 class PortfolioCubit extends Cubit<PortfolioState> {
@@ -452,6 +452,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       }
     }
 
+    final sw = Stopwatch()..start();
     try {
       CommonLogger.info(
         'Starting portfolio data fetch by ID via service',
@@ -475,6 +476,16 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
       // Then fetch Holdings (Slow)
       final holdings = await _portfolioService.getPortfolioHoldingsById(portfolioId);
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'portfolio_holdings',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'portfolio',
+      );
+      if (holdings.holdings.isEmpty) {
+        ProductTelemetry.instance.emptyState('holdings_empty');
+      }
 
       CommonLogger.stateChange(
         'PortfolioLoading',
@@ -505,6 +516,14 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         metadata: {'status': 'success'},
       );
     } catch (error) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'portfolio_holdings',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch_error',
+        technicalArea: 'portfolio',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'portfolio_holdings');
       CommonLogger.stateChange(
         'PortfolioLoading',
         'PortfolioError',

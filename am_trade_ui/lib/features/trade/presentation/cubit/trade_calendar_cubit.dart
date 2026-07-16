@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_common/am_common.dart';
+import 'package:am_library/am_library.dart';
 import 'package:am_design_system/am_design_system.dart' as calendar_types;
 import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/trade_calendar.dart' as entities;
@@ -101,14 +102,23 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
     try {
       AppLogger.info('Fetching trade calendar data via service', tag: 'TradeCalendarCubit');
 
+      final sw = Stopwatch()..start();
       // Fetch trade calendar data from usecase
       final tradeCalendar = await _getTradeCalendar(portfolioId, year: year, month: month);
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'trade_calendar',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'trade',
+      );
 
       // Update cache
       _updateCache(portfolioId, tradeCalendar);
 
       await _processTradeCalendarData(tradeCalendar, portfolioId, dateFilter, isRefresh: isRefresh);
     } catch (error, stackTrace) {
+      ProductTelemetry.instance.clientError(errorType: 'trade_calendar');
       AppLogger.error(
         'Failed to load trade calendar data',
         tag: 'TradeCalendarCubit',
@@ -592,6 +602,7 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
     );
 
     if (tradeDetailsData.isEmpty) {
+      ProductTelemetry.instance.emptyState('trade_calendar_empty');
       AppLogger.error('[Cubit] ⚠️ tradeDetailsData is EMPTY!', tag: 'TradeCalendarCubit');
     } else {
       AppLogger.debug(

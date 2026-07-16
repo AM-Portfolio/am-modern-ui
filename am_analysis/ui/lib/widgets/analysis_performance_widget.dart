@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
+import 'package:am_library/am_library.dart';
 import '../services/real_analysis_service.dart';
 import 'package:am_analysis_core/am_analysis_core.dart';
 
@@ -54,6 +55,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
       _error = null;
     });
 
+    final sw = Stopwatch()..start();
     try {
       print('[Performance] Loading data for portfolio=${widget.portfolioId}, timeFrame=${_selectedTimeFrame.code}');
       final points = await _service.getPerformance(
@@ -61,7 +63,17 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         AnalysisEntityType.PORTFOLIO,
         _selectedTimeFrame.code,
       );
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'analysis_performance',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'analysis',
+      );
       print('[Performance] Successfully loaded ${points.length} data points');
+      if (points.isEmpty) {
+        ProductTelemetry.instance.emptyState('analysis_performance_empty');
+      }
       
       if (mounted) {
         setState(() {
@@ -70,6 +82,14 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         });
       }
     } catch (e, stackTrace) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'analysis_performance',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch_error',
+        technicalArea: 'analysis',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'analysis_performance');
       print('[Performance] Error loading data: $e');
       print('[Performance] Stack trace: $stackTrace');
       if (mounted) {

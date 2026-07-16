@@ -2,6 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_library/am_library.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../../providers/portfolio_providers.dart';
@@ -47,6 +48,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   String? selectedPortfolioId;
   String? selectedPortfolioName;
   String? _streamActivatedForId;
+  bool _emittedNoPortfolios = false;
 
   @override
   void initState() {
@@ -348,8 +350,13 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   /// Builds content when portfolios are loaded
   Widget _buildLoadedContent(List<PortfolioItem> portfolios) {
     if (portfolios.isEmpty) {
+      if (!_emittedNoPortfolios) {
+        _emittedNoPortfolios = true;
+        ProductTelemetry.instance.emptyState('no_portfolios');
+      }
       return _buildEmptyPortfoliosScreen();
     }
+    _emittedNoPortfolios = false;
 
     final cubitState = context.read<PortfolioCubit>().state;
     final effectiveId = _resolveSelectedPortfolioId(portfolios, cubitState);

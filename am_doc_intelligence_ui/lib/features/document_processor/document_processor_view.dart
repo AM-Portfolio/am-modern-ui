@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_library/am_library.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
 import 'package:am_doc_intelligence_ui/utils/file_downloader.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -171,6 +172,15 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       _dragHover = false;
     });
 
+    final sw = Stopwatch()..start();
+    ProductTelemetry.instance.featureAction(
+      'doc_upload',
+      tag: 'docs',
+      metadata: {
+        'doc_type': _selectedDocType,
+        'broker': _selectedBrokerType ?? 'ZERODHA',
+      },
+    );
     try {
       final response = await apiProvider.processDocument(
         bytes,
@@ -178,12 +188,27 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         _selectedDocType!,
         brokerType: _selectedBrokerType ?? 'ZERODHA',
       );
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'doc_process',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'upload',
+        technicalArea: 'docs',
+      );
       setState(() {
         _lastResult = response;
         _status = 'Success! Processed $filename';
         _processing = false;
       });
     } catch (e) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'doc_process',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'upload_error',
+        technicalArea: 'docs',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'doc_process');
       setState(() {
         _status = 'Error uploading: $e';
         _processing = false;
