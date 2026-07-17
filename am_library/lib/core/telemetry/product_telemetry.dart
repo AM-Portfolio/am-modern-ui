@@ -373,19 +373,21 @@ class ProductTelemetry with WidgetsBindingObserver {
       userId = null;
     }
     final cleanScreen = screen == null ? null : _stripQuery(screen);
+    // Always emit id fields (even empty) so Loki `| user_id=~".*"` filters
+    // still match anonymous / pre-auth events.
     _queue.add({
       'event': event,
       'ts': DateTime.now().toUtc().toIso8601String(),
       'anon_id': TelemetryIds.instance.anonId,
       'session_id': TelemetryIds.instance.sessionId,
-      if (userId != null && userId.isNotEmpty) 'user_id': userId,
+      'user_id': (userId != null && userId.isNotEmpty) ? userId : '',
       'platform': TelemetryIds.platformLabel(),
       'env': _envLabel,
       if (section != null) 'section': section,
       if (cleanScreen != null) 'screen': cleanScreen,
       if (cleanScreen != null) 'screen_name': screenName(cleanScreen),
       if (cleanScreen != null) 'route_template': routeTemplate(cleanScreen),
-      if (portfolioId != null) 'portfolio_id': portfolioId,
+      'portfolio_id': portfolioId ?? '',
       if (durationMs != null) 'duration_ms': durationMs,
       if (extra != null) ...extra,
       if (props != null && props.isNotEmpty) 'props': props,
