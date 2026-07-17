@@ -25,8 +25,9 @@ jobs:
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@develop
     with:
       working_directory: "am_app"
-      build_mode: "debug"
-      artifact_type: "apk"
+      build_mode: ${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'release' || 'debug' }}
+      artifact_type: ${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'appbundle' || 'apk' }}
+      package_name: "com.asrax.aminvestment"
       run_analyze: true
       run_tests: true
       upload_artifact: true
