@@ -142,7 +142,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish.yml@main
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish.yml@develop
     with:
       language: "flutter"
       working_directory: "am_app"
@@ -169,7 +169,7 @@ jobs:
       (needs.detect-changes.outputs.android == 'true' || inputs.force_android == true)
     permissions:
       contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@main
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@develop
     with:
       working_directory: "am_app"
       build_mode: ${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'release' || 'debug' }}
