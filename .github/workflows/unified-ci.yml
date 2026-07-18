@@ -1,0 +1,182 @@
+# Unified CI/CD Pipeline — am-modern-ui
+#
+# Replaces: modern-ui.yml (web caller) + mobile-android.yml (android caller)
+#
+# Smart path routing:
+#   - Android files changed  --> Android build only
+#   - Web files changed      --> Web build only
+#   - Both changed           --> Both build in parallel
+#   - Common/shared Dart     --> Both build (safe default)
+#   - docs/README only       --> Nothing builds (fast skip)
+#
+# Security:
+#   - TruffleHog secrets scan runs ONCE (shared gate for both pipelines)
+#   - If scan fails, neither web nor android builds run
+#
+# Phase 8b: Unified caller pointing at am-pipelines@main
+
+name: Unified CI/CD
+
+on:
+  push:
+    branches: ["main", "develop", "feature/**", "hotfix/**", "fix/**"]
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
+      - "ARCHITECTURE.md"
+      - "BUILD_INTEGRATION_PLAN.md"
+      - "DOCKER_README.md"
+      - ".env.example"
+      - ".env.preprod.example"
+  pull_request:
+    branches: ["main", "develop"]
+  workflow_dispatch:
+    inputs:
+      force_web:
+        description: "Force web build even if no web files changed"
+        required: false
+        type: boolean
+        default: false
+      force_android:
+        description: "Force android build even if no android files changed"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  # ============================================================
+  # TRAFFIC COP - detect which paths changed
+  # Outputs: web=true/false, android=true/false
+  # ============================================================
+  detect-changes:
+    name: Detect Changed Paths
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      android: ${{ steps.filter.outputs.android }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            # WEB: Docker image, Helm/K8s charts, nginx config, web assets
+            web:
+              - 'am_app/Dockerfile'
+              - 'am_app/docker-entrypoint.sh'
+              - 'am_app/nginx.conf'
+              - 'am_app/nginx-docker.conf'
+              - 'am_app/nginx.profiles/**'
+              - 'am_app/helm/**'
+              - 'am_app/web/**'
+              - 'am_app/assets/**'
+              - 'am_app/pubspec.yaml'
+              - 'am_app/pubspec.lock'
+              - 'am_app/lib/**'
+              - 'am_app/analysis_options.yaml'
+              - '.github/workflows/unified-ci.yml'
+
+            # ANDROID: Flutter app code, all shared Dart modules, android folder
+            android:
+              - 'am_app/lib/**'
+              - 'am_app/android/**'
+              - 'am_app/assets/**'
+              - 'am_app/pubspec.yaml'
+              - 'am_app/pubspec.lock'
+              - 'am_app/analysis_options.yaml'
+              - 'am_app/test/**'
+              - 'am_library/**'
+              - 'am_common/**'
+              - 'am_design_system/**'
+              - 'am_analysis/**'
+              - 'am_market/**'
+              - 'am_portfolio_ui/**'
+              - 'am_trade_ui/**'
+              - 'am_auth_ui/**'
+              - 'am_dashboard_ui/**'
+              - 'am_ai_ui/**'
+              - 'am_subscription_ui/**'
+              - 'am_user_ui/**'
+              - 'am_diagnostic_ui/**'
+              - 'am_doc_intelligence_ui/**'
+              - '.github/workflows/unified-ci.yml'
+
+  # ============================================================
+  # SHARED SECURITY SCAN - runs once, gates both pipelines
+  # If this fails: neither web nor android will build
+  # ============================================================
+  security-scan:
+    name: Security Scan (Secrets)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secrets Scan
+        uses: trufflesecurity/trufflehog@v3.94.3
+        with:
+          path: ./
+          extra_args: --only-verified
+
+  # ============================================================
+  # WEB BUILD - only when web files changed
+  # Calls central-build-publish.yml@main (Docker -> Helm -> K8s)
+  # ============================================================
+  web-publish:
+    name: Publish Web
+    needs: [detect-changes, security-scan]
+    # Run if: web files changed OR force_web manually set via workflow_dispatch
+    if: |
+      always() &&
+      needs.security-scan.result == 'success' &&
+      (needs.detect-changes.outputs.web == 'true' || inputs.force_web == true)
+    permissions:
+      contents: read
+      packages: write
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish.yml@main
+    with:
+      language: "flutter"
+      working_directory: "am_app"
+      build_context: ".."
+      image_name: "am-modern-ui"
+      preprod_namespace: "am-apps-preprod"
+      prod_namespace: "am-apps-prod"
+      deploy_prod: ${{ github.ref == 'refs/heads/main' }}
+    secrets: inherit
+
+  # ============================================================
+  # ANDROID BUILD - only when android files changed
+  # Calls central-mobile-android.yml@main (Flutter -> AAB -> Play)
+  # ============================================================
+  android-publish:
+    name: Publish Android
+    needs: [detect-changes, security-scan]
+    # Run if: android files changed OR force_android manually set via workflow_dispatch
+    if: |
+      always() &&
+      needs.security-scan.result == 'success' &&
+      (needs.detect-changes.outputs.android == 'true' || inputs.force_android == true)
+    permissions:
+      contents: read
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@main
+    with:
+      working_directory: "am_app"
+      build_mode: ${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'release' || 'debug' }}
+      artifact_type: ${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'appbundle' || 'apk' }}
+      package_name: "com.asrax.aminvestment"
+      run_analyze: true
+      run_tests: true
+      upload_artifact: true
+      deploy_dev: ${{ github.ref == 'refs/heads/develop' }}
+      deploy_preprod: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' }}
+      deploy_prod: ${{ github.ref == 'refs/heads/main' }}
+    secrets: inherit
