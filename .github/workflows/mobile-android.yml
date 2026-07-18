@@ -1,4 +1,4 @@
-# Thin caller — triggers central Android pipeline in am-pipelines (base64 ignore-garbage fix).
+# Thin caller — triggers central Android pipeline in am-pipelines (re-run with corrected keystore secret).
 # Runs in parallel with modern-ui.yml (web). Does not block web deploy.
 #
 # Phase 2: calls @develop. Switch to @main after am-pipelines Phase 7.
