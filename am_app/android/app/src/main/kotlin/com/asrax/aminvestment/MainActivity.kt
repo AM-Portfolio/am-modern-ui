@@ -1,4 +1,4 @@
-package com.example.am_app
+package com.asrax.aminvestment
 
 import io.flutter.embedding.android.FlutterActivity
 
