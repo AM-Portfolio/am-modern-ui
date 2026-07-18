@@ -151,6 +151,8 @@ jobs:
       preprod_namespace: "am-apps-preprod"
       prod_namespace: "am-apps-prod"
       deploy_prod: ${{ github.ref == 'refs/heads/main' }}
+      # Shared security scan already ran above — skip duplicate scans inside web pipeline
+      skip_security_scan: true
     secrets: inherit
 
   # ============================================================
