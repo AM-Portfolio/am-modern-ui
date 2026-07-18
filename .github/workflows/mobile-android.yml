@@ -22,7 +22,7 @@ jobs:
     name: Publish Android
     permissions:
       contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@develop
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@main
     with:
       working_directory: "am_app"
       build_mode: ${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'release' || 'debug' }}
