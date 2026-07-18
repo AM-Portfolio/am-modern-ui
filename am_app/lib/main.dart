@@ -11,6 +11,7 @@ import 'package:am_common/am_common.dart';
 import 'core/di/injection.dart';
 import 'app.dart';
 
+// Android pipeline test trigger
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   BootTrace.configure();
