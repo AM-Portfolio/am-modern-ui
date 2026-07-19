@@ -14,6 +14,46 @@ class ConfigService {
   /// No baked env host. Prefer same-tab host on web until Helm/config loads.
   static String _domain = _bootstrapDomain();
   static String _resolvedEnv = _envFromDefine;
+
+  /// Active env label from AM_ENV / config.json — always `dev`|`preprod`|`prod`.
+  static String get resolvedEnv {
+    if (_resolvedEnv.isNotEmpty) return _normalizeEnvLabel(_resolvedEnv);
+    return _inferEnvFromHost(_resolveApiHost());
+  }
+
+  static String _normalizeEnvLabel(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'development':
+      case 'dev':
+      case 'local':
+        return 'dev';
+      case 'preprod':
+      case 'staging':
+        return 'preprod';
+      case 'production':
+      case 'prod':
+        return 'prod';
+      case 'default':
+      case '':
+        return _inferEnvFromHost(_resolveApiHost());
+      default:
+        return _inferEnvFromHost(_resolveApiHost());
+    }
+  }
+
+  /// Infer env from hostname when config.json / AM_ENV omitted.
+  static String _inferEnvFromHost(String host) {
+    final h = host.toLowerCase();
+    if (h.contains('preprod') || h.contains('munish')) return 'preprod';
+    if (h.contains('dev') ||
+        h == 'localhost' ||
+        h == '127.0.0.1' ||
+        h.isEmpty) {
+      return 'dev';
+    }
+    return 'prod';
+  }
+
   static Map<String, String> _services = {};
   static String _googleClientId = '';
 
@@ -104,17 +144,17 @@ class ConfigService {
     // Runtime Helm/bootstrap `env` wins over compile-time AM_ENV so one image
     // can load config.dev.json / config.preprod.json per namespace.
     final bootstrapEnv = bootstrap?['env'] as String?;
-    final env = (bootstrapEnv != null && bootstrapEnv.isNotEmpty)
+    final rawEnv = (bootstrapEnv != null && bootstrapEnv.isNotEmpty)
         ? bootstrapEnv
         : (_envFromDefine.isNotEmpty ? _envFromDefine : null);
-    _resolvedEnv = env ?? _resolvedEnv;
-    if (env != null && env.isNotEmpty) {
-      final envConfig = await _fetchJson('/config.$env.json');
+    if (rawEnv != null && rawEnv.isNotEmpty) {
+      _resolvedEnv = _normalizeEnvLabel(rawEnv);
+      final envConfig = await _fetchJson('/config.$_resolvedEnv.json');
       if (envConfig != null) {
         merged = _deepMerge(merged, envConfig);
       } else {
         AppLogger.warning(
-          'config.$env.json not found — using template only',
+          'config.$_resolvedEnv.json not found — using template only',
           tag: 'ConfigService',
         );
       }
@@ -158,7 +198,7 @@ class ConfigService {
       _googleClientId = json['googleWebClientId'].toString();
     }
 
-    final envLabel = _resolvedEnv.isNotEmpty ? _resolvedEnv : 'default';
+    final envLabel = resolvedEnv;
     if (_services.isEmpty) {
       AppLogger.info(
         'Config resolved: env=$envLabel, domain=$_domain (gateway paths)',

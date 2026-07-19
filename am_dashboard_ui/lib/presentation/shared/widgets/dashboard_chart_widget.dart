@@ -2,6 +2,7 @@ import 'package:am_dashboard_ui/domain/models/performance_response.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:am_library/am_library.dart';
 import 'glass_card.dart';
 
 /// Performance chart — timeframe is controlled globally via [dashboardTimeFrameProvider].
@@ -19,6 +20,7 @@ class DashboardChartWidget extends StatefulWidget {
 
 class _DashboardChartWidgetState extends State<DashboardChartWidget> {
   bool _showGraph = true;
+  bool _emittedEmpty = false;
 
   List<DataPoint> get _chartData => widget.performance.chartData;
 
@@ -159,6 +161,10 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
     Color onSurfaceVariant,
     bool isDark,
   ) {
+    if (!_emittedEmpty) {
+      _emittedEmpty = true;
+      ProductTelemetry.instance.emptyState('dashboard_chart_empty');
+    }
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(

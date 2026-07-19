@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_library/am_library.dart';
 import '../../../internal/domain/entities/metrics/metrics_filter_request.dart';
 import '../../../internal/domain/usecases/get_trade_performance_summary_usecase.dart';
 import '../../../internal/domain/usecases/get_daily_performance_usecase.dart';
@@ -18,6 +19,7 @@ class TradeReportCubit extends Cubit<TradeReportState> {
   ) : super(TradeReportInitial());
 
   Future<void> loadReport(MetricsFilterRequest filter) async {
+    final sw = Stopwatch()..start();
     try {
       emit(TradeReportLoading());
       
@@ -28,6 +30,13 @@ class TradeReportCubit extends Cubit<TradeReportState> {
         _getDailyUseCase(filter),
         _getTimingUseCase(filter),
       ]);
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'trade_report',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'trade',
+      );
       AppLogger.debug('Cubit: Parallel fetch complete', tag: 'TradeReportCubit');
 
       emit(TradeReportLoaded(
@@ -36,8 +45,15 @@ class TradeReportCubit extends Cubit<TradeReportState> {
         timingAnalysis: results[2] as dynamic,
       ));
     } catch (e) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'trade_report',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch_error',
+        technicalArea: 'trade',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'trade_report');
       emit(TradeReportError(e.toString()));
     }
   }
 }
-

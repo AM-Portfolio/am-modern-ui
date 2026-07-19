@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import '../errors/api_exception.dart';
 import '../services/secure_storage_service.dart';
 import '../utils/logger.dart';
-import '../telemetry/telemetry_service.dart';
+import '../telemetry/product_telemetry.dart';
 import '../di/service_registry.dart';
 
 /// Base API client for handling HTTP requests
@@ -252,6 +252,13 @@ class ApiClient {
           duration: stopwatch.elapsed,
           extra: {'full_url': uri.toString(), 'attempt': attempt},
         );
+        ProductTelemetry.instance.apiTiming(
+          method: 'GET',
+          path: uri.path,
+          status: response.statusCode,
+          durationMs: stopwatch.elapsedMilliseconds,
+          category: category,
+        );
 
         AppLogger.apiResponse(
           'GET',
@@ -340,6 +347,13 @@ class ApiClient {
           duration: stopwatch.elapsed,
           extra: {'full_url': uri.toString(), 'attempt': attempt},
         );
+        ProductTelemetry.instance.apiTiming(
+          method: 'POST',
+          path: uri.path,
+          status: response.statusCode,
+          durationMs: stopwatch.elapsedMilliseconds,
+          category: category,
+        );
 
         AppLogger.apiResponse(
           'POST',
@@ -414,6 +428,13 @@ class ApiClient {
           duration: stopwatch.elapsed,
           extra: {'full_url': uri.toString(), 'attempt': attempt},
         );
+        ProductTelemetry.instance.apiTiming(
+          method: 'PUT',
+          path: uri.path,
+          status: response.statusCode,
+          durationMs: stopwatch.elapsedMilliseconds,
+          category: category,
+        );
 
         return _handleResponse(response, parser);
       } catch (e) {
@@ -471,6 +492,13 @@ class ApiClient {
           response.statusCode, 
           duration: stopwatch.elapsed,
           extra: {'full_url': uri.toString(), 'attempt': attempt},
+        );
+        ProductTelemetry.instance.apiTiming(
+          method: 'DELETE',
+          path: uri.path,
+          status: response.statusCode,
+          durationMs: stopwatch.elapsedMilliseconds,
+          category: category,
         );
 
         return _handleResponse(response, parser);

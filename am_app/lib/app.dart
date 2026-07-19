@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_common/am_common.dart' as common;
+import 'package:am_library/am_library.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +14,7 @@ import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'core/router/app_routes.dart';
 import 'core/router/auth_refresh_listenable.dart';
+import 'core/router/product_telemetry_observer.dart';
 
 /// Main Application Widget
 class AMApp extends ConsumerStatefulWidget {
@@ -28,6 +31,9 @@ class _AMAppState extends ConsumerState<AMApp> {
   late final AuthCubit _authCubit;
   late final AuthRefreshListenable _authRefresh;
   late final GoRouter _router;
+  VoidCallback? _detachRouteListener;
+  FlutterExceptionHandler? _previousFlutterOnError;
+  bool Function(Object, StackTrace)? _previousPlatformOnError;
 
   @override
   void initState() {
@@ -51,10 +57,36 @@ class _AMAppState extends ConsumerState<AMApp> {
       refreshListenable: _authRefresh,
       launchUri: widget.launchUri,
     );
+    _detachRouteListener = attachProductTelemetryRouteListener(_router);
+    CommonLogger.onUserAction = (action, {tag, metadata}) {
+      ProductTelemetry.instance.featureAction(
+        action,
+        tag: tag,
+        metadata: metadata,
+      );
+    };
+    _previousFlutterOnError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      _previousFlutterOnError?.call(details);
+      ProductTelemetry.instance.clientError(
+        errorType: details.exception.runtimeType.toString(),
+      );
+    };
+    _previousPlatformOnError = PlatformDispatcher.instance.onError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      ProductTelemetry.instance.clientError(
+        errorType: error.runtimeType.toString(),
+      );
+      return _previousPlatformOnError?.call(error, stack) ?? false;
+    };
   }
 
   @override
   void dispose() {
+    _detachRouteListener?.call();
+    CommonLogger.onUserAction = null;
+    FlutterError.onError = _previousFlutterOnError;
+    PlatformDispatcher.instance.onError = _previousPlatformOnError;
     _authRefresh.dispose();
     _router.dispose();
     super.dispose();
@@ -76,10 +108,15 @@ class _AMAppState extends ConsumerState<AMApp> {
         ),
       ],
       child: BlocListener<AuthCubit, AuthState>(
-        listenWhen: (prev, curr) => curr is Authenticated,
+        listenWhen: (prev, curr) =>
+            curr is Authenticated ||
+            (prev is Authenticated && curr is! Authenticated),
         listener: (context, state) {
           if (state is Authenticated) {
             common.SessionPersistenceService.instance.load(state.user.id);
+            ProductTelemetry.instance.sessionStart();
+          } else {
+            ProductTelemetry.instance.authLogout();
           }
         },
         child: BlocBuilder<ThemeCubit, ThemeState>(

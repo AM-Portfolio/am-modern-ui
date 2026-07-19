@@ -65,6 +65,7 @@ class BootRumCollector {
     }
 
     _emitSummaryEvent(summary);
+    ProductTelemetry.instance.bootRum(summary);
   }
 
   Map<String, int> _classifyBuckets(

@@ -15,6 +15,8 @@ Future<void> configureCoreDependencies() async {
   ServiceRegistry.initialize(
     analysisBaseUrl: common.EnvDomains.analysis,
     wsUrl: common.EnvDomains.wsStream,
+    loggingBaseUrl: common.EnvDomains.logging,
+    env: common.ConfigService.resolvedEnv,
   );
 
   getIt.registerLazySingleton<ThemeRepository>(() => ThemeRepository());

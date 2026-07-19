@@ -49,9 +49,13 @@ class CommonLogger {
   }
 
   /// Convenience method for logging user actions
+  static void Function(String action, {String? tag, Map<String, dynamic>? metadata})?
+      onUserAction;
+
   static void userAction(String action, {String? tag, Map<String, dynamic>? metadata}) {
     final metaStr = metadata != null ? ' | META: $metadata' : '';
     _log('👤 ACTION: $action$metaStr', LogLevel.info, tag: tag);
+    onUserAction?.call(action, tag: tag, metadata: metadata);
   }
 
   /// Convenience method for method entry tracking

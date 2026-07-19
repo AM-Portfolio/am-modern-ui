@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:am_common/am_common.dart';
+import 'package:am_library/am_library.dart';
 import '../../../providers/gmail_sync_providers.dart';
 
 class GmailSyncModal extends ConsumerStatefulWidget {
@@ -171,6 +172,12 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
   Future<void> _handleSync() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final sw = Stopwatch()..start();
+    ProductTelemetry.instance.featureAction(
+      'gmail_portfolio_sync',
+      tag: 'portfolio',
+      metadata: {'broker': _selectedBroker},
+    );
     try {
       final count = await ref
           .read(gmailPortfolioSyncProvider.notifier)
@@ -178,6 +185,13 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
             broker: _selectedBroker,
             pan: _panController.text.toUpperCase(),
           );
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'gmail_portfolio_sync',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'sync',
+        technicalArea: 'portfolio',
+      );
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -192,6 +206,14 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
         // Refresh portfolio data here if needed, or let real-time streams handle it
       }
     } catch (e) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'gmail_portfolio_sync',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'sync_error',
+        technicalArea: 'portfolio',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'gmail_portfolio_sync');
       // Error handled in UI via syncState
       CommonLogger.error('Sync failed', error: e);
     }

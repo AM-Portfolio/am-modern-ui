@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
+import 'package:am_library/am_library.dart';
 import '../services/real_analysis_service.dart';
 import 'package:am_analysis_core/am_analysis_core.dart';
 
@@ -48,6 +49,7 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
       _error = null;
     });
 
+    final sw = Stopwatch()..start();
     try {
       print('[TopMovers] Loading data for portfolio=${widget.portfolioId}, timeFrame=${_selectedTimeFrame.code}');
       final movers = await _service.getTopMovers(
@@ -55,7 +57,17 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
         type: AnalysisEntityType.PORTFOLIO,
         timeFrame: _selectedTimeFrame.code,
       );
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'analysis_top_movers',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch',
+        technicalArea: 'analysis',
+      );
       print('[TopMovers] Successfully loaded ${movers.length} movers');
+      if (movers.isEmpty) {
+        ProductTelemetry.instance.emptyState('analysis_top_movers_empty');
+      }
       
       if (mounted) {
         setState(() {
@@ -64,6 +76,14 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
         });
       }
     } catch (e, stackTrace) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'analysis_top_movers',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'fetch_error',
+        technicalArea: 'analysis',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'analysis_top_movers');
       print('[TopMovers] Error loading data: $e');
       print('[TopMovers] Stack trace: $stackTrace');
       if (mounted) {

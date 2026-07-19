@@ -4,6 +4,7 @@ import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_design_system/core/utils/responsive_helper.dart';
+import 'package:am_library/am_library.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
 
 class EmailExtractorView extends StatefulWidget {
@@ -151,15 +152,36 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       _activeExtractingBrokerId = brokerId;
       _status = 'Fetching latest email from ${brokerId.toUpperCase()} & scanning for statements...';
     });
-    
+
+    final sw = Stopwatch()..start();
+    ProductTelemetry.instance.featureAction(
+      'gmail_extract',
+      tag: 'docs',
+      metadata: {'broker': brokerId},
+    );
     try {
       final result = await apiProvider.extractFromGmail(brokerId);
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'gmail_extract',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'extract',
+        technicalArea: 'docs',
+      );
       if (!mounted) return;
       setState(() {
         _status = 'Extraction successful!\n- Parsed ${result['count']} holdings\n- Saved Portfolio ID: ${result['db_id']}';
         _activeExtractingBrokerId = null;
       });
     } catch (e) {
+      sw.stop();
+      ProductTelemetry.instance.widgetTiming(
+        widget: 'gmail_extract',
+        durationMs: sw.elapsedMilliseconds,
+        operation: 'extract_error',
+        technicalArea: 'docs',
+      );
+      ProductTelemetry.instance.clientError(errorType: 'gmail_extract');
       if (!mounted) return;
       setState(() {
         _status = 'Extraction failed: $e';

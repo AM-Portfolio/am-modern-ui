@@ -420,6 +420,14 @@ class AuthRepositoryImpl implements AuthRepository {
         tag: 'AuthRepository',
       );
 
+      // Session restore must warm UserContext — ProductTelemetry only reads
+      // cachedUserId synchronously; without this, user_id stays blank after refresh.
+      UserContext.instance.populate(
+        accessToken: accessToken,
+        userId: userId,
+        email: email,
+      );
+
       return Right(authResult);
     } catch (e) {
       CommonLogger.error(
