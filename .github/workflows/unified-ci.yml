@@ -160,8 +160,8 @@ jobs:
       image_name: "am-modern-ui"
       preprod_namespace: "am-apps-preprod"
       prod_namespace: "am-apps-prod"
-      # Manual Deployments Only
-      deploy_dev: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev' }}
+      # Temporary Auto-Deploy for testing (Method 2)
+      deploy_dev: true
       deploy_preprod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod' }}
       deploy_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod' }}
       # Shared security scan already ran above — skip duplicate scans inside web pipeline
@@ -191,8 +191,8 @@ jobs:
       run_analyze: true
       run_tests: true
       upload_artifact: true
-      # Manual Deployments Only
-      deploy_dev: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev' }}
+      # Temporary Auto-Deploy for testing (Method 2)
+      deploy_dev: true
       deploy_preprod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod' }}
       deploy_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod' }}
     secrets: inherit
