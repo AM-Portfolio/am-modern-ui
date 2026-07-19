@@ -12,6 +12,7 @@ import 'core/di/injection.dart';
 import 'app.dart';
 
 // Android pipeline test trigger
+// Second Android/Web pipeline test trigger for manual deploy
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   BootTrace.configure();
