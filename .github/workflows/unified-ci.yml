@@ -42,6 +42,16 @@ on:
         required: false
         type: boolean
         default: false
+      target_env:
+        description: "Environment to Deploy to (Select 'none' just to build/test)"
+        required: true
+        type: choice
+        options:
+          - none
+          - dev
+          - preprod
+          - prod
+        default: 'none'
 
 jobs:
   # ============================================================
@@ -150,7 +160,10 @@ jobs:
       image_name: "am-modern-ui"
       preprod_namespace: "am-apps-preprod"
       prod_namespace: "am-apps-prod"
-      deploy_prod: ${{ github.ref == 'refs/heads/main' }}
+      # Manual Deployments Only
+      deploy_dev: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev' }}
+      deploy_preprod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod' }}
+      deploy_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod' }}
       # Shared security scan already ran above — skip duplicate scans inside web pipeline
       skip_security_scan: true
     secrets: inherit
@@ -178,7 +191,8 @@ jobs:
       run_analyze: true
       run_tests: true
       upload_artifact: true
-      deploy_dev: ${{ github.ref == 'refs/heads/develop' }}
-      deploy_preprod: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' }}
-      deploy_prod: ${{ github.ref == 'refs/heads/main' }}
+      # Manual Deployments Only
+      deploy_dev: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev' }}
+      deploy_preprod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod' }}
+      deploy_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod' }}
     secrets: inherit
