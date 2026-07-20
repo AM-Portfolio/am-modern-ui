@@ -63,4 +63,9 @@ abstract class AuthRepository {
     required String currentPassword,
     required String newPassword,
   });
+
+  /// Request account deletion with feedback
+  Future<Either<Failure, void>> requestAccountDeletion({
+    required String feedback,
+  });
 }

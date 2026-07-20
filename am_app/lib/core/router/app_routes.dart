@@ -21,6 +21,7 @@ class AppRoutes {
   static const privacyPolicy = '/app/privacy-policy';
   static const termsOfService = '/app/terms-of-service';
   static const subscription = '/app/subscription';
+  static const deleteAccount = '/delete-account';
 
   /// Profile deep-link that pulses the Subscription row in Account.
   static String profileHighlightSubscription() =>
@@ -166,7 +167,7 @@ class AppRoutes {
   }
 
   static bool isAuthenticatedAppRoute(String location) =>
-      location.startsWith('/app');
+      location.startsWith('/app') || location.startsWith(deleteAccount);
 
   /// Public auth pages that must survive cold start / refresh without a session.
   static const publicAuthRoutes = {
