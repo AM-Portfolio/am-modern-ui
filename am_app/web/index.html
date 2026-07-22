@@ -121,12 +121,37 @@
       }
     }
 
+    function isDeferredLoadError(errStr) {
+      return errStr && (errStr.indexOf('DeferredLoadException') !== -1 || errStr.indexOf('part.js not loaded') !== -1);
+    }
+
+    function clearCacheAndReload() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (reg) { reg.unregister(); });
+          window.location.reload(true);
+        });
+      } else {
+        window.location.reload(true);
+      }
+    }
+
     window.addEventListener('error', function (event) {
-      showBootError('JavaScript error: ' + (event.message || event));
+      var errStr = event.message || String(event);
+      if (isDeferredLoadError(errStr)) {
+         clearCacheAndReload();
+         return;
+      }
+      showBootError('JavaScript error: ' + errStr);
     });
 
     window.addEventListener('unhandledrejection', function (event) {
-      showBootError('Unhandled promise rejection: ' + (event.reason || event));
+      var errStr = event.reason ? (event.reason.message || String(event.reason)) : String(event);
+      if (isDeferredLoadError(errStr)) {
+         clearCacheAndReload();
+         return;
+      }
+      showBootError('Unhandled promise rejection: ' + errStr);
     });
 
     document.addEventListener('dart-app-ready', function () {

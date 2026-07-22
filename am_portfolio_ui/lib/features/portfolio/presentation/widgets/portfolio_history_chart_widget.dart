@@ -572,22 +572,48 @@ class _PortfolioHistoryChartWidgetState
       }
     }
 
-    int idx = 0;
-    final primaryPoints = uniqueData.map((d) => CommonChartDataPoint(
-      x: (idx++).toDouble(),
-      y: d.totalWealth,
-      // Show label every 40 minutes (every 8th 5-min candle)
-      xLabel: (idx % 8 == 1) ? d.timestamp : '',
-      yLabel: '₹${_formatNum(d.totalWealth)}',
-    )).toList();
+    // Generate the full sequence of market intervals from 09:15 to 15:30 (76 intervals)
+    final List<String> fullMarketTimeline = [];
+    int h = 9;
+    int m = 15;
+    while (h < 15 || (h == 15 && m <= 30)) {
+      final hh = h.toString().padLeft(2, '0');
+      final mm = m.toString().padLeft(2, '0');
+      fullMarketTimeline.add('$hh:$mm');
+      m += 5;
+      if (m >= 60) {
+        m -= 60;
+        h++;
+      }
+    }
 
-    idx = 0;
-    final secondaryPoints = uniqueData.map((d) => CommonChartDataPoint(
-      x: (idx++).toDouble(),
-      y: d.changeFromOpenPct,
-      xLabel: (idx % 8 == 1) ? d.timestamp : '',
-      yLabel: '${d.changeFromOpenPct >= 0 ? "+" : ""}${d.changeFromOpenPct.toStringAsFixed(2)}%',
-    )).toList();
+    final dataMap = { for (var d in uniqueData) d.timestamp : d };
+
+    int idx = 0;
+    final List<CommonChartDataPoint> primaryPoints = [];
+    final List<CommonChartDataPoint> secondaryPoints = [];
+
+    for (final ts in fullMarketTimeline) {
+      final d = dataMap[ts];
+      // Show label every 40 minutes (every 8th 5-min candle)
+      final isLabel = (idx % 8 == 1);
+      
+      primaryPoints.add(CommonChartDataPoint(
+        x: idx.toDouble(),
+        y: d?.totalWealth ?? double.nan,
+        xLabel: isLabel ? ts : '',
+        yLabel: d != null ? '₹${_formatNum(d.totalWealth)}' : '',
+      ));
+      
+      secondaryPoints.add(CommonChartDataPoint(
+        x: idx.toDouble(),
+        y: d?.changeFromOpenPct ?? double.nan,
+        xLabel: isLabel ? ts : '',
+        yLabel: d != null ? '${d.changeFromOpenPct >= 0 ? "+" : ""}${d.changeFromOpenPct.toStringAsFixed(2)}%' : '',
+      ));
+      
+      idx++;
+    }
 
     final startWealth = data.first.totalWealth;
     final endWealth = data.last.totalWealth;
