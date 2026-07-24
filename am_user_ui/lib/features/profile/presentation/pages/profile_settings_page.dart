@@ -63,7 +63,6 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   String? get subscriptionStatusLabel => widget.subscriptionStatusLabel;
   bool get isPaidSubscription => widget.isPaidSubscription ?? false;
 
-
   @override
   void initState() {
     super.initState();
@@ -138,9 +137,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
         scrolledUnderElevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
-        iconTheme: IconThemeData(
-          color: isDark ? Colors.white : Colors.black87,
-        ),
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black87),
         // leading: IconButton(
         //   icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
         //   onPressed: () => Navigator.pop(context),
@@ -158,7 +155,10 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                 child: SizedBox(
                   width: contentWidth,
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 24,
+                    ),
                     child: Column(
                       children: [
                         // Profile Header
@@ -319,7 +319,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
               ),
               child: CircleAvatar(
                 radius: 60,
-                backgroundColor: isDark ? const Color(0xFF2C2C3E) : Colors.white,
+                backgroundColor: isDark
+                    ? const Color(0xFF2C2C3E)
+                    : Colors.white,
                 child: CircleAvatar(
                   radius: 56,
                   backgroundColor: ModuleColors.portfolio.withOpacity(0.1),
@@ -347,7 +349,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
         ),
         const SizedBox(height: 24),
         Text(
-          displayName != null && displayName!.isNotEmpty ? displayName! : userId,
+          displayName != null && displayName!.isNotEmpty
+              ? displayName!
+              : userId,
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black87,
             fontSize: 20,
@@ -359,10 +363,14 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+            color: isDark
+                ? Colors.white.withOpacity(0.05)
+                : Colors.black.withOpacity(0.05),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+              color: isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.black.withOpacity(0.1),
             ),
           ),
           child: Row(
@@ -392,7 +400,11 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
     );
   }
 
-  Widget _buildSettingsContent(BuildContext context, bool isDark, bool isDesktop) {
+  Widget _buildSettingsContent(
+    BuildContext context,
+    bool isDark,
+    bool isDesktop,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -409,8 +421,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                 boxShadow: glow > 0
                     ? [
                         BoxShadow(
-                          color: ModuleColors.portfolio
-                              .withValues(alpha: 0.18 + glow * 0.28),
+                          color: ModuleColors.portfolio.withValues(
+                            alpha: 0.18 + glow * 0.28,
+                          ),
                           blurRadius: 18 + glow * 12,
                           spreadRadius: glow * 2,
                         ),
@@ -429,8 +442,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                 context,
                 icon: Icons.email_outlined,
                 title: 'Email Address',
-                subtitle:
-                    (email != null && email!.isNotEmpty) ? email! : 'Not set',
+                subtitle: (email != null && email!.isNotEmpty)
+                    ? email!
+                    : 'Not set',
                 isDark: isDark,
                 onTap: () => _showEditEmailDialog(context),
               ),
@@ -453,18 +467,32 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                         context,
                         icon: Icons.subscriptions_outlined,
                         title: 'Subscription',
-                        subtitle: subscriptionStatusLabel ??
+                        subtitle:
+                            subscriptionStatusLabel ??
                             'Plans, billing, and access',
                         isDark: isDark,
                         highlighted: _highlightActive,
-                        highlightStrength:
-                            _highlightActive ? _highlightPulse.value : 0,
+                        highlightStrength: _highlightActive
+                            ? _highlightPulse.value
+                            : 0,
                         onTap: onOpenSubscription!,
                       );
                     },
                   ),
                 ),
               ],
+              _buildDivider(isDark),
+              _buildSettingTile(
+                context,
+                icon: Icons.delete_forever_rounded,
+                title: 'Delete Account',
+                subtitle: 'Permanently remove your data',
+                isDark: isDark,
+                iconColor: Colors.redAccent.shade700,
+                textColor: Colors.redAccent.shade700,
+                trailing: const SizedBox(),
+                onTap: () => _showDeleteAccountDialog(context, isDark),
+              ),
             ],
           ),
         ),
@@ -480,7 +508,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           children: [
             _buildSettingTile(
               context,
-              icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+              icon: isDark
+                  ? Icons.light_mode_outlined
+                  : Icons.dark_mode_outlined,
               title: 'Theme Mode',
               subtitle: isDark ? 'Dark Mode' : 'Light Mode',
               isDark: isDark,
@@ -510,7 +540,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
         _buildGlassSection(
           context,
           isDark,
-           children: [
+          children: [
             _buildSettingTile(
               context,
               icon: Icons.info_outline,
@@ -527,7 +557,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
               isDark: isDark,
               onTap: () => _openTerms(context),
             ),
-             _buildDivider(isDark),
+            _buildDivider(isDark),
             _buildSettingTile(
               context,
               icon: Icons.privacy_tip_outlined,
@@ -558,6 +588,18 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   context.read<AuthCubit>().logout();
                 },
               ),
+              _buildDivider(isDark),
+              _buildSettingTile(
+                context,
+                icon: Icons.delete_forever_rounded,
+                title: 'Delete Account',
+                subtitle: 'Permanently remove your data',
+                isDark: isDark,
+                iconColor: Colors.redAccent.shade700,
+                textColor: Colors.redAccent.shade700,
+                trailing: const SizedBox(),
+                onTap: () => _showDeleteAccountDialog(context, isDark),
+              ),
             ],
           ),
         ],
@@ -582,8 +624,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           color: highlighted
               ? ModuleColors.portfolio.withValues(alpha: isDark ? 0.55 : 0.45)
               : (isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.05)),
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.05)),
           width: highlighted ? 1.5 : 1,
         ),
         boxShadow: [
@@ -598,9 +640,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Column(
-            children: children,
-          ),
+          child: Column(children: children),
         ),
       ),
     );
@@ -640,18 +680,17 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   color: highlighted
                       ? accent.withValues(alpha: isDark ? 0.22 : 0.18)
                       : (isDark
-                          ? Colors.white.withValues(alpha: 0.05)
-                          : accent.withValues(alpha: 0.1)),
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : accent.withValues(alpha: 0.1)),
                   borderRadius: BorderRadius.circular(12),
                   border: highlighted
-                      ? Border.all(
-                          color: accent.withValues(alpha: 0.45),
-                        )
+                      ? Border.all(color: accent.withValues(alpha: 0.45))
                       : null,
                 ),
                 child: Icon(
                   icon,
-                  color: iconColor ??
+                  color:
+                      iconColor ??
                       (isDark ? Colors.white : ModuleColors.portfolio),
                   size: 20,
                 ),
@@ -664,7 +703,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                     Text(
                       title,
                       style: TextStyle(
-                        color: textColor ??
+                        color:
+                            textColor ??
                             (isDark ? Colors.white : Colors.black87),
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -704,7 +744,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
       thickness: 1,
       indent: 60,
       endIndent: 0,
-      color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+      color: isDark
+          ? Colors.white.withOpacity(0.05)
+          : Colors.black.withOpacity(0.05),
     );
   }
 
@@ -734,7 +776,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
       builder: (dialogContext) {
         final authState = context.read<AuthCubit>().state;
         final email = authState is Authenticated ? authState.user.email : '';
-        final isGoogle = authState is Authenticated &&
+        final isGoogle =
+            authState is Authenticated &&
             authState.user.authMethod.toLowerCase().contains('google');
 
         if (isGoogle || email.isEmpty) {
@@ -774,9 +817,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                 TextFormField(
                   controller: newController,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'New password',
-                  ),
+                  decoration: const InputDecoration(labelText: 'New password'),
                   validator: Validators.validatePassword,
                 ),
                 const SizedBox(height: 12),
@@ -801,15 +842,17 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
                 await context.read<AuthCubit>().changePassword(
-                      email: email,
-                      currentPassword: currentController.text,
-                      newPassword: newController.text,
-                    );
+                  email: email,
+                  currentPassword: currentController.text,
+                  newPassword: newController.text,
+                );
                 if (dialogContext.mounted) Navigator.pop(dialogContext);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Password updated. Use your new password next sign-in.'),
+                      content: Text(
+                        'Password updated. Use your new password next sign-in.',
+                      ),
                     ),
                   );
                 }
@@ -913,6 +956,151 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           },
         ),
       ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, bool isDark) {
+    final feedbackController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1F1F2E) : Colors.white,
+          title: Text(
+            'Delete Account',
+            style: TextStyle(
+              color: Colors.redAccent.shade700,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Are you sure you want to permanently delete your account? Your account will be deactivated immediately, and all your data will be permanently deleted in 90 days if you do not log back in.',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black87,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Please tell us why you are leaving (Required):',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: feedbackController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Your feedback helps us improve...',
+                    hintStyle: TextStyle(
+                      color: isDark ? Colors.white30 : Colors.black38,
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Feedback is required to delete account.';
+                    }
+                    if (value.trim().length < 5) {
+                      return 'Please provide a bit more detail.';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+              ),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.redAccent.shade700,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final feedback = feedbackController.text.trim();
+
+                  // Call requestAccountDeletion via AuthCubit
+                  final authCubit = context.read<AuthCubit>();
+
+                  // Show loading overlay or just pop and show snackbar
+                  Navigator.pop(dialogContext);
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Processing account deletion...'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+
+                  try {
+                    await authCubit.requestAccountDeletion(feedback: feedback);
+                    if (context.mounted) {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Account Deletion Requested'),
+                          content: const Text(
+                            'Your account will be deleted in 90 days if you don\'t come back and log in again.\n\nWe are sorry to see you go!',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(ctx).pop();
+                                authCubit.logout();
+                              },
+                              child: const Text('Okay'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to delete account: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('Delete Permanently'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

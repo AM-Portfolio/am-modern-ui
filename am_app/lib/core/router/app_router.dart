@@ -2,6 +2,7 @@ import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard;
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
+import 'package:am_user_ui/am_user_ui.dart' as am_user;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -151,6 +152,10 @@ GoRouter createAppRouter({
           token: state.uri.queryParameters['token'],
           code: state.uri.queryParameters['c'],
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.deleteAccount,
+        builder: (context, state) => const am_user.DeleteAccountPage(),
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),

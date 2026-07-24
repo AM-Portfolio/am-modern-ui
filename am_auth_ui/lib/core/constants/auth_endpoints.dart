@@ -3,16 +3,18 @@ import 'package:am_common/am_common.dart';
 /// Authentication & User Management API endpoint constants
 class AuthEndpoints {
   // Base URLs (Standardized via Traefik rewriters)
+  static String get _scheme => ConfigService.domain.contains('localhost') || ConfigService.domain.contains('127.0.0.1') ? 'http' : 'https';
+  
   static String get authBaseUrl =>
       ConfigService.config.api.auth?.baseUrl ??
-      'https://${ConfigService.domain}/identity';
+      '$_scheme://${ConfigService.domain}/identity';
   static String get userBaseUrl =>
       ConfigService.config.api.user?.baseUrl ??
-      'https://${ConfigService.domain}/users';
+      '$_scheme://${ConfigService.domain}/users';
   static String get identityBaseUrl =>
       ConfigService.override('identity') ??
       ConfigService.override('auth') ??
-      'https://${ConfigService.domain}/identity';
+      '$_scheme://${ConfigService.domain}/identity';
 
   // Identity authentication endpoints
   static String get identityLogin => '$identityBaseUrl/auth/login';
