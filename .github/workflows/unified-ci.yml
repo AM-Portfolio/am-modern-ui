@@ -152,7 +152,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish.yml@main
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish.yml@develop
     with:
       language: "flutter"
       working_directory: "am_app"
@@ -192,7 +192,7 @@ jobs:
       run_tests: true
       upload_artifact: true
       # Manual Deployments Only (Reverted for production release)
-      deploy_dev: false
+      deploy_dev: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev' }}
       deploy_preprod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod' }}
       deploy_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod' }}
     secrets: inherit
