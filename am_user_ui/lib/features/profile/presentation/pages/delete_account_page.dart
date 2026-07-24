@@ -12,14 +12,19 @@ class DeleteAccountPage extends StatefulWidget {
 
 class _DeleteAccountPageState extends State<DeleteAccountPage> {
   final _feedbackController = TextEditingController();
-  String _selectedReason = 'No longer using the app';
   final _reasons = [
-    'No longer using the app',
-    'Too expensive',
-    'Missing features',
-    'Privacy concerns',
-    'Other'
+    'Too expensive / high fees',
+    'Difficult to use / complex interface',
+    'Missing key features or products',
+    'Other (please write your custom feedback)',
   ];
+  late String _selectedReason;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedReason = _reasons.first;
+  }
 
   @override
   void dispose() {
@@ -28,7 +33,8 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
   }
 
   void _submit() async {
-    if (_feedbackController.text.trim().length < 5) {
+    final isOtherSelected = _selectedReason == _reasons.last;
+    if (isOtherSelected && _feedbackController.text.trim().length < 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please provide at least 5 characters of feedback.'),
@@ -40,7 +46,10 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
     
     final authCubit = context.read<AuthCubit>();
     try {
-      await authCubit.requestAccountDeletion(feedback: _feedbackController.text);
+      final feedback = isOtherSelected
+          ? 'Other: ${_feedbackController.text.trim()}'
+          : _selectedReason;
+      await authCubit.requestAccountDeletion(feedback: feedback);
       if (mounted) {
         showDialog(
           context: context,
@@ -145,16 +154,18 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                     if (val != null) setState(() => _selectedReason = val);
                   },
                 ),
-                const SizedBox(height: 24),
-                TextField(
-                  controller: _feedbackController,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    labelText: 'Feedback (Required, min 5 chars)',
-                    alignLabelWithHint: true,
-                    border: OutlineInputBorder(),
+                if (_selectedReason == _reasons.last) ...[
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _feedbackController,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: 'Feedback (Required, min 5 chars)',
+                      alignLabelWithHint: true,
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 32),
                 BlocBuilder<AuthCubit, AuthState>(
                   builder: (context, state) {
