@@ -192,7 +192,7 @@ jobs:
       run_tests: true
       upload_artifact: true
       # Manual Deployments Only (Reverted for production release)
-      deploy_dev: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev' }}
+      deploy_dev: false
       deploy_preprod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod' }}
       deploy_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod' }}
     secrets: inherit
