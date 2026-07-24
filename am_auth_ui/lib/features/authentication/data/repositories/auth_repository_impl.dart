@@ -580,5 +580,35 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(UnknownFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> requestAccountDeletion({
+    required String feedback,
+  }) async {
+    try {
+      if (!_featureFlags.useRealBackendAPI) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        return const Right(null);
+      }
+      
+      final token = await _storageService.getAccessToken(checkExpiry: false);
+      if (token == null) {
+        return const Left(AuthFailure('Not authenticated'));
+      }
+
+      await _identityDataSource.requestAccountDeletion(
+        token: token,
+        feedback: feedback,
+      );
+      
+      return const Right(null);
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message, code: e.statusCode.toString()));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
 }
 

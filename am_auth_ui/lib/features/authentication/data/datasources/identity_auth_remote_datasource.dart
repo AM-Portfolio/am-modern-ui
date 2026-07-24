@@ -476,4 +476,45 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
       );
     }
   }
+
+  Future<void> requestAccountDeletion({
+    required String token,
+    required String feedback,
+  }) async {
+    final url = '${AuthEndpoints.identityBaseUrl}/users/me/request-deletion';
+    try {
+      final response = await _dio.post(
+        url,
+        data: {'feedback': feedback},
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      if (response.statusCode != 200) {
+        throw ServerException(
+          'Request account deletion failed',
+          statusCode: response.statusCode ?? 500,
+        );
+      }
+    } on DioException catch (e) {
+      AppLogger.error('Identity Request account deletion API Error: ${e.response?.data}');
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout) {
+        throw NetworkException(AuthConstants.networkError);
+      }
+      var errorMessage = 'Request account deletion failed';
+      final body = e.response?.data;
+      if (body is Map) {
+        final detail = body['detail'];
+        if (detail != null) {
+          errorMessage = detail.toString();
+        }
+      }
+      throw ServerException(
+        errorMessage,
+        statusCode: e.response?.statusCode ?? 500,
+      );
+    }
+  }
 }

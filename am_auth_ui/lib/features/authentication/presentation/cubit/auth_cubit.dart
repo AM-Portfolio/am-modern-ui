@@ -414,6 +414,26 @@ class AuthCubit extends Cubit<AuthState> {
       if (previous is Authenticated) emit(previous);
     }
   }
+
+  Future<void> requestAccountDeletion({required String feedback}) async {
+    final previous = state;
+    emit(const AuthLoading());
+    try {
+      final result = await _authRepository.requestAccountDeletion(feedback: feedback);
+      result.fold(
+        (failure) {
+          emit(AuthError(failure.message));
+          if (previous is Authenticated) emit(previous);
+        },
+        (_) {
+          emit(const Unauthenticated());
+        },
+      );
+    } catch (e) {
+      emit(AuthError(e.toString()));
+      if (previous is Authenticated) emit(previous);
+    }
+  }
 }
 
 bool _isTransientServerFailure(Failure failure) {
