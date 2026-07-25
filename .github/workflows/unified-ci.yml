@@ -172,6 +172,7 @@ jobs:
       skip_secrets_scan: true
       skip_iac_scan: true
       skip_vulnerability_scan: false
+      no_cache: true
     secrets: inherit
 
   # ============================================================
