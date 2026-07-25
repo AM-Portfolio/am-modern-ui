@@ -28,12 +28,13 @@ on:
 jobs:
   deploy:
     name: Deploy Modern UI to ${{ github.event.inputs.environment }}
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-deploy.yml@develop
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-deploy.yml@main
     with:
       service_name: 'am-modern-ui'
       working_directory: 'am_app'
       language: 'flutter'
       environment: ${{ github.event.inputs.environment }}
+      gh_environment: ${{ format('web-{0}', github.event.inputs.environment) }}
       image_tag: ${{ github.event.inputs.image_tag == 'custom' && github.event.inputs.custom_tag || github.event.inputs.image_tag }}
       namespace: ${{ github.event.inputs.environment == 'prod' && 'am-apps-prod' || 'am-apps-preprod' }}
     secrets: inherit
