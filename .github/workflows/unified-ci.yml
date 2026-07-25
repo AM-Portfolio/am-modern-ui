@@ -152,7 +152,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish.yml@main
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish.yml@develop
     with:
       language: "flutter"
       working_directory: "am_app"
@@ -176,7 +176,7 @@ jobs:
 
   # ============================================================
   # ANDROID BUILD - only when android files changed
-  # Calls central-mobile-android.yml@main (Flutter -> AAB -> Play)
+  # Calls central-mobile-android.yml@develop (Flutter -> AAB -> Play)
   # ============================================================
   android-publish:
     name: Publish Android
@@ -188,7 +188,7 @@ jobs:
       (needs.detect-changes.outputs.android == 'true' || inputs.force_android == true)
     permissions:
       contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@main
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@develop
     with:
       working_directory: "am_app"
       build_mode: ${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'release' || 'debug' }}
