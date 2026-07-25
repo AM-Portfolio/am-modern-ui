@@ -161,9 +161,9 @@ jobs:
       preprod_namespace: "am-apps-preprod"
       prod_namespace: "am-apps-prod"
       # Deploy options (Pause/Review via Environment gates)
-      deploy_dev: true
-      deploy_preprod: true
-      deploy_prod: true
+      deploy_dev: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') }}
+      deploy_preprod: ${{ github.ref == 'refs/heads/main' }}
+      deploy_prod: ${{ github.ref == 'refs/heads/main' }}
       # Map environment names
       gh_env_dev: "web-dev"
       gh_env_preprod: "web-preprod"
@@ -198,9 +198,9 @@ jobs:
       run_tests: true
       upload_artifact: true
       # Deploy options (Pause/Review via Environment gates)
-      deploy_dev: true
-      deploy_preprod: true
-      deploy_prod: true
+      deploy_dev: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') }}
+      deploy_preprod: ${{ github.ref == 'refs/heads/main' }}
+      deploy_prod: ${{ github.ref == 'refs/heads/main' }}
       # Map environment names
       gh_env_dev: "android-dev"
       gh_env_preprod: "android-preprod"
