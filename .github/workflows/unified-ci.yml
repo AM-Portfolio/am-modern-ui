@@ -90,6 +90,19 @@ jobs:
               - 'am_app/lib/**'
               - 'am_app/analysis_options.yaml'
               - '.github/workflows/unified-ci.yml'
+              - 'am_library/**'
+              - 'am_common/**'
+              - 'am_design_system/**'
+              - 'am_analysis/**'
+              - 'am_market/**'
+              - 'am_portfolio_ui/**'
+              - 'am_trade_ui/**'
+              - 'am_auth_ui/**'
+              - 'am_dashboard_ui/**'
+              - 'am_ai_ui/**'
+              - 'am_subscription_ui/**'
+              - 'am_user_ui/**'
+              - 'am_diagnostic_ui/**'
 
             # ANDROID: Flutter app code, all shared Dart modules, android folder
             android:
