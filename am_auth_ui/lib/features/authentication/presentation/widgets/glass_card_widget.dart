@@ -74,58 +74,79 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final r = widget.isCompact ? 28.0 : 32.0;   // border radius matching image (1).png
+    final r = widget.isCompact ? 30.0 : 35.0;   // 35px radius for Light Theme
     final pad = widget.isCompact ? 24.0 : 36.0; // inner padding
 
-    // ── Material & Colors matching image (1).png ───────────────────────────
+    // ── Material & Colors ───────────────────────────────────────────────────
+    // Dark Theme: 100% UNCHANGED
+    // Light Theme: Crystal base (12% opacity)
     final baseFill = isDark
         ? const Color(0xFF141C2D).withValues(alpha: 0.22)
-        : const Color(0xFFE5E8FF).withValues(alpha: 0.35);
+        : const Color(0xFFF8F9FF).withValues(alpha: 0.12);
 
-    // 3-stop Gradient
+    // 3-stop Internal Gradient
     final gradStart = isDark
         ? Colors.white.withValues(alpha: 0.15)
-        : Colors.white.withValues(alpha: 0.65);
+        : Colors.white.withValues(alpha: 0.35);
     final gradCenter = isDark
         ? Colors.white.withValues(alpha: 0.06)
-        : const Color(0xFFF0F2FF).withValues(alpha: 0.25);
+        : const Color(0xFFF8F9FF).withValues(alpha: 0.15);
     final gradEnd = isDark
         ? Colors.white.withValues(alpha: 0.02)
-        : const Color(0xFFDFE3FF).withValues(alpha: 0.15);
+        : const Color(0xFFE8ECFF).withValues(alpha: 0.06);
 
     // Borders & Edge Specular Highlights
     final outerBorderColor = isDark
         ? Colors.white.withValues(alpha: 0.30)
-        : Colors.white.withValues(alpha: 0.75);
+        : Colors.white.withValues(alpha: 0.24);
     final topHighlightColor = isDark
         ? Colors.white.withValues(alpha: 0.60)
-        : Colors.white.withValues(alpha: 0.95);
+        : Colors.white.withValues(alpha: 0.55);
     final leftHighlightColor = isDark
         ? Colors.white.withValues(alpha: 0.35)
-        : Colors.white.withValues(alpha: 0.70);
+        : Colors.white.withValues(alpha: 0.35);
 
-    // Layered Shadows matching image (1).png (Vibrant Purple Glow on Right & Bottom)
-    final shadowList = [
-      // Vibrant purple glow on right and bottom-right edge
-      BoxShadow(
-        color: (isDark ? const Color(0xFF8B5CF6) : const Color(0xFFA855F7)).withValues(alpha: isDark ? 0.30 : 0.25),
-        blurRadius: 40,
-        spreadRadius: -2,
-        offset: const Offset(16, 12),
-      ),
-      // Soft ambient indigo shadow below
-      BoxShadow(
-        color: (isDark ? const Color(0xFF4F46E5) : const Color(0xFF6366F1)).withValues(alpha: isDark ? 0.20 : 0.15),
-        blurRadius: 60,
-        offset: const Offset(0, 16),
-      ),
-      // Tight depth drop shadow
-      BoxShadow(
-        color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.06),
-        blurRadius: 20,
-        offset: const Offset(0, 6),
-      ),
-    ];
+    // Layered Shadows (Dark theme: 100% unchanged, Light theme: layered subtle blue bloom & soft contact shadow)
+    final shadowList = isDark
+        ? [
+            BoxShadow(
+              color: const Color(0xFF8B5CF6).withValues(alpha: 0.30),
+              blurRadius: 40,
+              spreadRadius: -2,
+              offset: const Offset(16, 12),
+            ),
+            BoxShadow(
+              color: const Color(0xFF4F46E5).withValues(alpha: 0.20),
+              blurRadius: 60,
+              offset: const Offset(0, 16),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.30),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ]
+        : [
+            // Layer 1: Tiny contact shadow
+            BoxShadow(
+              color: const Color(0xFF1E2850).withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+            // Layer 2: Large soft ambient shadow
+            BoxShadow(
+              color: const Color(0xFF6C63FF).withValues(alpha: 0.08),
+              blurRadius: 40,
+              spreadRadius: -4,
+              offset: const Offset(0, 16),
+            ),
+            // Layer 3: Very subtle blue bloom
+            BoxShadow(
+              color: const Color(0xFF7896FF).withValues(alpha: 0.10),
+              blurRadius: 70,
+              offset: const Offset(0, 20),
+            ),
+          ];
 
     return FadeTransition(
       opacity: _opacity,
@@ -146,8 +167,9 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
               boxShadow: shadowList,
             ),
             child: ColorFiltered(
+              // saturate(185%) brightness(108%) contrast(104%)
               colorFilter: ColorFilter.matrix(_satBrightnessMatrix(
-                saturation: 1.8,
+                saturation: 1.85,
                 brightness: 1.08,
                 contrast: 1.04,
               )),
@@ -161,44 +183,44 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
                       borderRadius: BorderRadius.circular(r),
                       border: Border.all(
                         color: outerBorderColor,
-                        width: 1.2,
+                        width: 1.0,
                       ),
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [gradStart, gradCenter, gradEnd],
-                        stops: const [0.0, 0.4, 1.0],
+                        stops: const [0.0, 0.5, 1.0],
                       ),
                     ),
                     child: Stack(
                       clipBehavior: Clip.hardEdge,
                       children: [
-                        // Upper-left polished glass edge highlights
+                        // Polished glass edge highlights
                         Positioned.fill(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(r - 1),
                               border: Border(
-                                top: BorderSide(color: topHighlightColor, width: 1.5),
-                                left: BorderSide(color: leftHighlightColor, width: 1.2),
+                                top: BorderSide(color: topHighlightColor, width: 1.2),
+                                left: BorderSide(color: leftHighlightColor, width: 1.0),
                               ),
                             ),
                           ),
                         ),
 
-                        // Corner lens flare specular highlight (Top-Left)
+                        // Soft corner reflection (Upper-Left)
                         if (!isDark)
                           Positioned(
-                            top: -30,
-                            left: -30,
+                            top: -40,
+                            left: -40,
                             child: Container(
-                              width: 100,
-                              height: 100,
+                              width: 120,
+                              height: 120,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: RadialGradient(
                                   colors: [
-                                    Colors.white.withValues(alpha: 0.80),
+                                    Colors.white.withValues(alpha: 0.30),
                                     Colors.white.withValues(alpha: 0.0),
                                   ],
                                 ),
@@ -206,7 +228,7 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
                             ),
                           ),
 
-                        // Mouse-following reflection
+                        // Mouse-following light reflection
                         if (_reflPos != Offset.zero)
                           Positioned(
                             left: _reflPos.dx - 150,
@@ -219,7 +241,7 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
                                   shape: BoxShape.circle,
                                   gradient: RadialGradient(
                                     colors: [
-                                      Colors.white.withValues(alpha: isDark ? 0.08 : 0.22),
+                                      Colors.white.withValues(alpha: isDark ? 0.08 : 0.12),
                                       Colors.transparent,
                                     ],
                                   ),

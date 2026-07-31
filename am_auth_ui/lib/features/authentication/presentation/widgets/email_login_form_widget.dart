@@ -200,16 +200,16 @@ class _LiquidTextFieldState extends State<LiquidTextField> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).primaryColor;
     
-    // Exact colors matching image (1).png
+    // Liquid glass background: 14% opacity white glass in Light Mode
     final baseBgColor = isDark
         ? Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.17 : 0.12)
-        : const Color(0xFFDCE2FF).withValues(alpha: (_isHovering || _isFocused) ? 0.65 : 0.50);
+        : Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.22 : 0.14);
 
     final borderColor = _isFocused
         ? primaryColor
         : (isDark
             ? Colors.white.withValues(alpha: 0.35)
-            : Colors.white.withValues(alpha: 0.80));
+            : Colors.white.withValues(alpha: 0.35));
 
     final textColor = isDark ? Colors.white : const Color(0xFF334155);
     final labelColor = isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF475569);

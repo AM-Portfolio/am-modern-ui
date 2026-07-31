@@ -20,11 +20,11 @@ class _GoogleLoginButtonWidgetState extends State<GoogleLoginButtonWidget> {
     
     final baseBgColor = isDark
         ? Colors.white.withValues(alpha: _isHovering ? 0.15 : 0.10)
-        : const Color(0xFFE4E8FF).withValues(alpha: _isHovering ? 0.65 : 0.50);
+        : Colors.white.withValues(alpha: _isHovering ? 0.20 : 0.14);
 
     final borderColor = isDark
         ? Colors.white.withValues(alpha: 0.35)
-        : Colors.white.withValues(alpha: 0.80);
+        : Colors.white.withValues(alpha: 0.35);
 
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
 

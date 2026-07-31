@@ -301,7 +301,7 @@ class _LiquidAuthLinkState extends State<_LiquidAuthLink> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final linkColor = isDark
         ? Colors.white.withValues(alpha: _isHovering ? 1.0 : 0.75)
-        : const Color(0xFF6366F1).withValues(alpha: _isHovering ? 1.0 : 0.85);
+        : const Color(0xFF475569).withValues(alpha: _isHovering ? 1.0 : 0.65);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),

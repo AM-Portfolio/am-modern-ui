@@ -9,7 +9,6 @@ class DemoLoginButtonWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    const primaryIndigo = Color(0xFF6366F1);
 
     return SizedBox(
       width: double.infinity,
@@ -21,11 +20,11 @@ class DemoLoginButtonWidget extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           backgroundColor: isDark
               ? Colors.white.withValues(alpha: 0.08)
-              : const Color(0xFFE4E8FF).withValues(alpha: 0.50),
-          foregroundColor: isDark ? Colors.white : primaryIndigo,
+              : Colors.white.withValues(alpha: 0.14),
+          foregroundColor: isDark ? Colors.white : const Color(0xFF475569),
           side: BorderSide(
-            color: isDark ? Colors.white.withValues(alpha: 0.4) : primaryIndigo.withValues(alpha: 0.70),
-            width: 1.2,
+            color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.35),
+            width: 1.0,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
@@ -40,7 +39,7 @@ class DemoLoginButtonWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : primaryIndigo,
+                color: isDark ? Colors.white : const Color(0xFF475569),
               ),
             ),
           ],
