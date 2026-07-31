@@ -1,6 +1,6 @@
 name: am_trade_ui
 description: "Trade Management Module (Entry, Holdings, P&L, Analytics)"
-version: 0.0.1
+version: 2.0.0
 homepage:
 
 environment:

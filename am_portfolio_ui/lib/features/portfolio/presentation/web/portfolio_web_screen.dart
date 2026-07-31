@@ -132,12 +132,18 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     }
   }
 
+  String? _lastReportedTab;
+
   void _onSwipeControllerChanged() {
     if (mounted) {
       setState(() {});
       final index = _swipeController?.currentIndex;
       if (index != null) {
-        widget.onTabChanged?.call(_slugFromIndex(index));
+        final slug = _slugFromIndex(index);
+        if (slug != _lastReportedTab) {
+          _lastReportedTab = slug;
+          widget.onTabChanged?.call(slug);
+        }
       }
     }
   }
@@ -264,7 +270,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
       title: null,
       subtitle: null,
       showModuleBottomNavigation: false,
-      headerActions: const [ShareLinkButton()],
+      headerActions: const [],
       header: const SizedBox(height: 16),
       onBackToGlobal: widget.onBack,
       onThemeToggle: () {
@@ -292,24 +298,31 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         context.read<AuthCubit>().logout();
         widget.onBack?.call();
       },
-      body: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
-          ? widget.addTradeBuilder!(
-              context,
-              _currentPortfolioId!,
-              _currentPortfolioName ?? widget.selectedPortfolioName,
-              () {
-                setState(() {
-                  _isAddingTrade = false;
-                });
-              }
-            )
-          : (_swipeController == null 
-              ? const Center(child: CircularProgressIndicator())
-              : SwipeablePageView(
-                  controller: _swipeController!,
-                  showIndicator: true,
-                  indicatorPosition: IndicatorPosition.bottom,
-                )),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
+                ? widget.addTradeBuilder!(
+                    context,
+                    _currentPortfolioId!,
+                    _currentPortfolioName ?? widget.selectedPortfolioName,
+                    () {
+                      setState(() {
+                        _isAddingTrade = false;
+                      });
+                    }
+                  )
+                : (_swipeController == null 
+                    ? const Center(child: CircularProgressIndicator())
+                    : SwipeablePageView(
+                        controller: _swipeController!,
+                        showIndicator: true,
+                        indicatorPosition: IndicatorPosition.bottom,
+                      )),
+          ),
+        ],
+      ),
       footer: (_currentPortfolioId == null || _currentPortfolioId == 'all')
           ? const SizedBox.shrink()
           : Padding(

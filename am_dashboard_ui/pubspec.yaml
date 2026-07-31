@@ -1,6 +1,6 @@
 name: am_dashboard_ui
 description: "Dashboard Module (Summary, Charts, Streaming)"
-version: 0.0.1
+version: 2.0.0
 publish_to: "none"
 homepage: "https://example.com"
 

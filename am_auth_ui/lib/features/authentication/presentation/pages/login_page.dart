@@ -165,15 +165,15 @@ class LoginPage extends StatelessWidget {
                       AppColors.darkBackgroundDeep,
                     ]
                   : [
-                      AppColors.lightBackgroundAlt,
-                      AppColors.lightBackground,
-                      AppColors.lightBackgroundAlt,
+                      const Color(0xFFEDEFFF),
+                      const Color(0xFFE2E5FF),
+                      const Color(0xFFE8EAFF),
                     ],
             ),
           ),
           child: InteractiveBackground(
-            baseColor: context.isDark ? AppColors.authAccent : AppColors.primaryLight,
-            highlightColor: context.isDark ? AppColors.accentBlue : AppColors.info,
+            baseColor: context.isDark ? AppColors.authAccent : const Color(0xFF6366F1),
+            highlightColor: context.isDark ? AppColors.accentBlue : const Color(0xFF3B82F6),
           ),
         ),
       ),
@@ -182,6 +182,8 @@ class LoginPage extends StatelessWidget {
 
   
   Widget _buildLoginForm(BuildContext context, AuthState state, bool isCompact) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -197,18 +199,33 @@ class LoginPage extends StatelessWidget {
         // Divider
         Row(
           children: [
-            const Expanded(child: Divider()),
+            Expanded(
+              child: Divider(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : const Color(0xFFCBD5E1),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 'OR',
                 style: TextStyle(
                   fontSize: isCompact ? 11 : 12,
-                  color: context.textTertiary,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.7)
+                      : const Color(0xFF64748B),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const Expanded(child: Divider()),
+            Expanded(
+              child: Divider(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : const Color(0xFFCBD5E1),
+              ),
+            ),
           ],
         ),
         
@@ -224,48 +241,29 @@ class LoginPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Flexible(
-              child: TextButton(
+              child: _LiquidAuthLink(
+                text: 'Forgot Password?',
+                isCompact: isCompact,
                 onPressed: () => context.push('/forgot-password'),
-                child: Text(
-                  'Forgot Password?',
-                  style: TextStyle(
-                    fontSize: isCompact ? 13 : 14,
-                    color: Theme.of(context).primaryColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
               ),
             ),
-            Text(
-              '|',
-              style: TextStyle(
-                color: context.textTertiary,
-                fontSize: isCompact ? 13 : 14,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                '|',
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.4)
+                      : const Color(0xFF94A3B8),
+                  fontSize: isCompact ? 13 : 14,
+                ),
               ),
             ),
             Flexible(
-              child: TextButton(
+              child: _LiquidAuthLink(
+                text: 'Create Account',
+                isCompact: isCompact,
                 onPressed: () => context.push('/register'),
-                child: Text(
-                  'Create Account',
-                  style: TextStyle(
-                    fontSize: isCompact ? 13 : 14,
-                    color: Theme.of(context).primaryColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
               ),
             ),
           ],
@@ -276,6 +274,53 @@ class LoginPage extends StatelessWidget {
         // Developer section (collapsible)
         DevSectionWidget(isCompact: isCompact),
       ],
+    );
+  }
+}
+
+class _LiquidAuthLink extends StatefulWidget {
+  final String text;
+  final bool isCompact;
+  final VoidCallback onPressed;
+
+  const _LiquidAuthLink({
+    required this.text,
+    required this.isCompact,
+    required this.onPressed,
+  });
+
+  @override
+  State<_LiquidAuthLink> createState() => _LiquidAuthLinkState();
+}
+
+class _LiquidAuthLinkState extends State<_LiquidAuthLink> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final linkColor = isDark
+        ? Colors.white.withValues(alpha: _isHovering ? 1.0 : 0.75)
+        : const Color(0xFF6366F1).withValues(alpha: _isHovering ? 1.0 : 0.85);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          style: TextStyle(
+            fontSize: widget.isCompact ? 13 : 14,
+            color: linkColor,
+            fontWeight: FontWeight.w500,
+          ),
+          child: Text(
+            widget.text,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
     );
   }
 }

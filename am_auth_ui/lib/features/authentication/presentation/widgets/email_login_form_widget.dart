@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/auth_cubit.dart';
@@ -23,6 +24,7 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isHoveringBtn = false;
 
   @override
   void dispose() {
@@ -48,36 +50,33 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Email field
-          TextFormField(
+          LiquidTextField(
             controller: _emailController,
             enabled: !widget.isLoading,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              hintText: 'Enter your email',
-              prefixIcon: Icon(Icons.email_outlined),
-              border: OutlineInputBorder(),
-            ),
+            labelText: 'Email',
+            hintText: 'Enter your email',
+            prefixIcon: Icons.email_outlined,
             validator: (value) => Validators.validateEmail(value),
           ),
           const SizedBox(height: 20),
 
           // Password field
-          TextFormField(
+          LiquidTextField(
             controller: _passwordController,
             enabled: !widget.isLoading,
             obscureText: _obscurePassword,
-            decoration: InputDecoration(
-              labelText: 'Password',
-              hintText: 'Enter your password',
-              prefixIcon: Icon(Icons.lock_outline),
-              border: OutlineInputBorder(),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                ),
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+            labelText: 'Password',
+            hintText: 'Enter your password',
+            prefixIcon: Icons.lock_outline,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white70
+                    : const Color(0xFF475569),
               ),
+              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -89,25 +88,189 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
           const SizedBox(height: 32),
 
           // Login button
-          SizedBox(
-            height: 48,
-            child: ElevatedButton(
-              onPressed: widget.isLoading ? null : _handleLogin,
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          MouseRegion(
+            onEnter: (_) => setState(() => _isHoveringBtn = true),
+            onExit: (_) => setState(() => _isHoveringBtn = false),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOutQuad,
+              transform: Matrix4.translationValues(0, _isHoveringBtn ? -2 : 0, 0),
+              height: 48,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6366F1).withValues(alpha: _isHoveringBtn ? 0.55 : 0.40),
+                    blurRadius: _isHoveringBtn ? 25 : 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
+                onPressed: widget.isLoading ? null : _handleLogin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: widget.isLoading
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Sign In',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class LiquidTextField extends StatefulWidget {
+  final TextEditingController controller;
+  final bool enabled;
+  final bool obscureText;
+  final TextInputType keyboardType;
+  final String labelText;
+  final String hintText;
+  final IconData prefixIcon;
+  final Widget? suffixIcon;
+  final String? Function(String?)? validator;
+
+  const LiquidTextField({
+    super.key,
+    required this.controller,
+    this.enabled = true,
+    this.obscureText = false,
+    this.keyboardType = TextInputType.text,
+    required this.labelText,
+    required this.hintText,
+    required this.prefixIcon,
+    this.suffixIcon,
+    this.validator,
+  });
+
+  @override
+  State<LiquidTextField> createState() => _LiquidTextFieldState();
+}
+
+class _LiquidTextFieldState extends State<LiquidTextField> {
+  bool _isHovering = false;
+  bool _isFocused = false;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      setState(() {
+        _isFocused = _focusNode.hasFocus;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).primaryColor;
+    
+    // Exact colors matching image (1).png
+    final baseBgColor = isDark
+        ? Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.17 : 0.12)
+        : const Color(0xFFDCE2FF).withValues(alpha: (_isHovering || _isFocused) ? 0.65 : 0.50);
+
+    final borderColor = _isFocused
+        ? primaryColor
+        : (isDark
+            ? Colors.white.withValues(alpha: 0.35)
+            : Colors.white.withValues(alpha: 0.80));
+
+    final textColor = isDark ? Colors.white : const Color(0xFF334155);
+    final labelColor = isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF475569);
+    final hintColor = isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF64748B);
+    final iconColor = isDark ? Colors.white70 : const Color(0xFF334155);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                if (_isFocused)
+                  BoxShadow(
+                    color: primaryColor.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    spreadRadius: 1,
+                  ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    color: baseBgColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: borderColor,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: TextFormField(
+                    controller: widget.controller,
+                    enabled: widget.enabled,
+                    obscureText: widget.obscureText,
+                    keyboardType: widget.keyboardType,
+                    focusNode: _focusNode,
+                    style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+                    decoration: InputDecoration(
+                      labelText: widget.labelText,
+                      labelStyle: TextStyle(color: labelColor, fontSize: 13),
+                      hintText: widget.hintText,
+                      hintStyle: TextStyle(color: hintColor, fontSize: 13),
+                      prefixIcon: Icon(widget.prefixIcon, color: iconColor, size: 20),
+                      suffixIcon: widget.suffixIcon,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      errorStyle: const TextStyle(color: Color(0xFFFF6B6B)),
+                    ),
+                    validator: widget.validator,
+                  ),
                 ),
               ),
-              child: widget.isLoading
-                  ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text(
-                      'Sign In',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
             ),
           ),
         ],

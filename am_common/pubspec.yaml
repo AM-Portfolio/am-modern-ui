@@ -1,6 +1,6 @@
 name: am_common
 description: Common utilities and cross-cutting concerns for AM Investment application
-version: 1.0.0
+version: 2.0.0
 publish_to: "none"
 
 environment:

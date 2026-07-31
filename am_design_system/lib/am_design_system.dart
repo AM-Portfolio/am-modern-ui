@@ -30,6 +30,7 @@ export 'core/utils/conditional_mouse_region.dart';
 // Constants & API Endpoints
 export 'core/constants/app_constants.dart';
 export 'core/constants/ui_constants.dart';
+export 'core/constants/breakpoints.dart';
 
 // Cache
 export 'core/cache/cache_service.dart';
@@ -64,6 +65,7 @@ export 'shared/widgets/navigation/sidebar_selector.dart';
 export 'shared/widgets/scaffold/unified_sidebar_scaffold.dart';
 
 // --- Layouts ---
+export 'shared/widgets/layouts/am_adaptive_layout.dart';
 export 'shared/widgets/layouts/web_layout.dart';
 export 'shared/widgets/layouts/mobile_layout.dart';
 export 'shared/widgets/containers/module_container.dart';

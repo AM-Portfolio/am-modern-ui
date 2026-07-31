@@ -1,25 +1,26 @@
 import 'package:flutter/material.dart';
+import '../constants/breakpoints.dart';
 
 /// Helper class for responsive design across the application
 class ResponsiveHelper {
-  // Breakpoint constants
-  static const double mobileBreakpoint = 600;
-  static const double tabletBreakpoint = 1024;
+  // Breakpoint constants (delegated to AmBreakpoints)
+  static const double mobileBreakpoint = AmBreakpoints.mobile;
+  static const double tabletBreakpoint = AmBreakpoints.tablet;
 
   /// Check if current screen is mobile size (< 600px)
   static bool isMobile(BuildContext context) {
-    return MediaQuery.of(context).size.width < mobileBreakpoint;
+    return MediaQuery.sizeOf(context).width < mobileBreakpoint;
   }
 
-  /// Check if current screen is tablet size (600px - 1024px)
+  /// Check if current screen is tablet size (600px - 1100px)
   static bool isTablet(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.sizeOf(context).width;
     return width >= mobileBreakpoint && width < tabletBreakpoint;
   }
 
-  /// Check if current screen is desktop size (>= 1024px)
+  /// Check if current screen is desktop size (>= 1100px)
   static bool isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width >= tabletBreakpoint;
+    return MediaQuery.sizeOf(context).width >= tabletBreakpoint;
   }
 
   /// Get responsive value based on screen size

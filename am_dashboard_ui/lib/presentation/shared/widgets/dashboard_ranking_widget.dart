@@ -76,7 +76,8 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
             ),
           ),
           const SizedBox(height: 12),
-          Expanded(
+          SizedBox(
+            height: 280,
             child: PaginatedSortableTable<MoverItem>(
               items: items,
               pageSize: 10,

@@ -310,7 +310,8 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
   Widget _buildMobilePillTabs(BuildContext context, List<SecondarySidebarItem> items) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final fillTrack = items.length <= 3;
+    // User requested 5 elements to be percentage based (20% each), so fillTrack up to 5
+    final fillTrack = items.length <= 5;
     final selectedIndex = items.indexWhere((item) => item.isSelected);
     final selectedKey = GlobalKey();
     // Compact track — between the old thin bar and bottom nav (68).
