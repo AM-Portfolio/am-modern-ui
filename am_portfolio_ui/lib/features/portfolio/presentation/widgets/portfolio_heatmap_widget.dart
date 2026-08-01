@@ -598,63 +598,45 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Builds the "Equity Distribution" header with pill tag, status, and legend.
-  /// Uses LayoutBuilder to conditionally show dropdowns for filters and timeframe.
+  /// Builds the "Equity Distribution" header with title, center filters, and right timeframe.
   Widget _buildEquityDistributionHeader(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Pills need ~420px; below that switch to compact dropdown.
         final useDropdown = constraints.maxWidth < 1100;
 
-        final titleChip = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Equity Distribution',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'MARKET CAP WEIGHTED',
-                style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.55),
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ),
-          ],
-        );
-
-        final legendRow = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildLegendDot(context, const Color(0xFF0BA95B), 'Outperform'),
-            const SizedBox(width: 12),
-            _buildLegendDot(context, const Color(0xFF6B7280), 'Neutral'),
-            const SizedBox(width: 12),
-            _buildLegendDot(context, const Color(0xFFB22222), 'Underperform'),
-          ],
+        final title = Text(
+          'Equity Distribution',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
         );
 
         final filterRow = _buildFilterRow(context, isCompact: constraints.maxWidth < 900);
+
+        final timeframeBar = GlobalTimeFrameBar(
+          variant: useDropdown
+              ? GlobalTimeFrameVariant.dropdown
+              : GlobalTimeFrameVariant.pills,
+        );
+
+        if (constraints.maxWidth > 850) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Left: Title
+              title,
+              
+              // Center: Filter Dropdowns
+              filterRow,
+              
+              // Right: Timeframe
+              timeframeBar,
+            ],
+          );
+        }
 
         return Wrap(
           spacing: 16,
@@ -662,14 +644,9 @@ class _PortfolioHeatmapWidgetState
           crossAxisAlignment: WrapCrossAlignment.center,
           alignment: WrapAlignment.spaceBetween,
           children: [
-            titleChip,
-            legendRow,
+            title,
             filterRow,
-            GlobalTimeFrameBar(
-              variant: useDropdown
-                  ? GlobalTimeFrameVariant.dropdown
-                  : GlobalTimeFrameVariant.pills,
-            ),
+            timeframeBar,
           ],
         );
       },
