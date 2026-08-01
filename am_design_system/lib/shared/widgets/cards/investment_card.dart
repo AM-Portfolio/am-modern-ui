@@ -143,12 +143,14 @@ class InvestmentCard extends StatelessWidget {
   Widget _buildSymbolText() => Text(
     data.symbol,
     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+    maxLines: 1,
     overflow: TextOverflow.ellipsis,
   );
 
   Widget _buildNameText() => Text(
     data.name,
     style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+    maxLines: 1,
     overflow: TextOverflow.ellipsis,
   );
 
@@ -218,6 +220,7 @@ class InvestmentCard extends StatelessWidget {
         child: Text(
           '${config.currencySymbol}${data.investedAmount.toStringAsFixed(2)}',
           style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
       ),

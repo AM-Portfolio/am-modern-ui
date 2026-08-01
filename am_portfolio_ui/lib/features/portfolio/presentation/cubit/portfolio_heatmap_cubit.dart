@@ -39,7 +39,7 @@ bool _matchesSector(String tileName, SectorType targetSector) {
     case SectorType.it:
       return s.contains('information technology') ||
           s == 'it' ||
-          (s.contains('tech') && !s.contains('health'));
+          (s.contains('tech') && !s.contains('health') && !s.contains('bio'));
     case SectorType.healthcare:
     case SectorType.pharma:
       return s.contains('health') ||
@@ -58,7 +58,9 @@ bool _matchesSector(String tileName, SectorType targetSector) {
     case SectorType.automobiles:
       return s.contains('consumer') ||
           s.contains('fmcg') ||
-          s.contains('auto') ||
+          s.contains('automobile') ||
+          s.contains('auto ') ||
+          s == 'auto' ||
           s.contains('retail');
     case SectorType.energy:
     case SectorType.utilities:
@@ -73,7 +75,7 @@ bool _matchesSector(String tileName, SectorType targetSector) {
       return s.contains('industrial') ||
           s.contains('manufactur') ||
           s.contains('infrastruct') ||
-          s.contains('process') ||
+          (s.contains('process') && !s.contains('food')) ||
           s.contains('transport');
     case SectorType.materials:
     case SectorType.metals:

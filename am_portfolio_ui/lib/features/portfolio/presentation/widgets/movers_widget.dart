@@ -338,9 +338,13 @@ class _MoverTileState extends State<MoverTile> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color =
-        widget.isGainer ? ds.AppColors.profit : ds.AppColors.loss;
     final stock = widget.stock;
+    final isPositive = stock.changeAmount != 0
+        ? stock.changeAmount > 0
+        : (stock.changePercent != 0
+            ? stock.changePercent > 0
+            : widget.isGainer);
+    final color = isPositive ? ds.AppColors.profit : ds.AppColors.loss;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -388,7 +392,7 @@ class _MoverTileState extends State<MoverTile> {
                 borderRadius: BorderRadius.circular(7),
               ),
               child: Icon(
-                widget.isGainer
+                isPositive
                     ? Icons.arrow_upward_rounded
                     : Icons.arrow_downward_rounded,
                 size: 14,
@@ -420,9 +424,7 @@ class _MoverTileState extends State<MoverTile> {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.75)
-                            : Colors.black.withValues(alpha: 0.65),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
                 Text(

@@ -654,41 +654,21 @@ class _PortfolioHeatmapWidgetState
           ],
         );
 
-        final filterRow = _buildFilterRow(context);
+        final filterRow = _buildFilterRow(context, isCompact: constraints.maxWidth < 900);
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
+        return Wrap(
+          spacing: 16,
+          runSpacing: 10,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          alignment: WrapAlignment.spaceBetween,
           children: [
-            // Left: Title and Legend
-            Expanded(
-              flex: 1,
-              child: Wrap(
-                spacing: 16,
-                runSpacing: 10,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  titleChip,
-                  legendRow,
-                ],
-              ),
-            ),
-            
-            // Center: Filters
-            if (constraints.maxWidth > 800)
-              filterRow,
-            
-            // Right: Timeframe
-            Expanded(
-              flex: 1,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: GlobalTimeFrameBar(
-                  variant: useDropdown
-                      ? GlobalTimeFrameVariant.dropdown
-                      : GlobalTimeFrameVariant.pills,
-                ),
-              ),
+            titleChip,
+            legendRow,
+            filterRow,
+            GlobalTimeFrameBar(
+              variant: useDropdown
+                  ? GlobalTimeFrameVariant.dropdown
+                  : GlobalTimeFrameVariant.pills,
             ),
           ],
         );
@@ -696,42 +676,51 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  Widget _buildFilterRow(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+  Widget _buildFilterRow(BuildContext context, {bool isCompact = false}) {
+    final dropWidth = isCompact ? 135.0 : 155.0;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
       children: [
         // Sector Filter
         SizedBox(
-          width: 160,
+          width: dropWidth,
           child: CustomDropdown<SectorType>(
             value: _selectedSector ?? SectorType.all,
-            items: SectorType.values.map((item) => item.toDropdownItem(text: item.displayName, icon: Icons.category_outlined)).toList(),
+            items: SectorType.values
+                .map((item) => item.toDropdownItem(
+                    text: item.displayName, icon: Icons.category_outlined))
+                .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(sector: val);
             },
             isExpanded: true,
           ),
         ),
-        const SizedBox(width: 8),
         // Market Cap Filter
         SizedBox(
-          width: 160,
+          width: dropWidth,
           child: CustomDropdown<MarketCapType>(
             value: _selectedMarketCap ?? MarketCapType.all,
-            items: MarketCapType.values.map((item) => item.toDropdownItem(text: item.displayName, icon: Icons.pie_chart_outline)).toList(),
+            items: MarketCapType.values
+                .map((item) => item.toDropdownItem(
+                    text: item.displayName, icon: Icons.pie_chart_outline))
+                .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(marketCap: val);
             },
             isExpanded: true,
           ),
         ),
-        const SizedBox(width: 8),
         // Layout Filter
         SizedBox(
-          width: 160,
+          width: dropWidth,
           child: CustomDropdown<HeatmapLayoutType>(
             value: _selectedLayout,
-            items: HeatmapLayoutType.values.map((item) => item.toDropdownItem(text: item.displayName, icon: Icons.grid_view_outlined)).toList(),
+            items: HeatmapLayoutType.values
+                .map((item) => item.toDropdownItem(
+                    text: item.displayName, icon: Icons.grid_view_outlined))
+                .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(layout: val);
             },
