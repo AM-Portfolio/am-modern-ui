@@ -164,8 +164,15 @@ jobs:
       deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
       deploy_preprod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
       deploy_prod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod') }}
-      # Shared security scan already ran above — skip duplicate scans inside web pipeline
-      skip_security_scan: true
+      # Map environment names
+      gh_env_dev: "web-dev"
+      gh_env_preprod: "web-preprod"
+      gh_env_prod: "web-prod"
+      # Skip duplicate scans, but KEEP vulnerability scan
+      skip_secrets_scan: true
+      skip_iac_scan: true
+      skip_vulnerability_scan: false
+      no_cache: true
     secrets: inherit
 
   # ============================================================
@@ -195,4 +202,8 @@ jobs:
       deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
       deploy_preprod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
       deploy_prod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod') }}
+      # Map environment names
+      gh_env_dev: "android-dev"
+      gh_env_preprod: "android-preprod"
+      gh_env_prod: "android-prod"
     secrets: inherit

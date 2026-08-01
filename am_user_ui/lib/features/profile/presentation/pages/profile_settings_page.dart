@@ -588,18 +588,6 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   context.read<AuthCubit>().logout();
                 },
               ),
-              _buildDivider(isDark),
-              _buildSettingTile(
-                context,
-                icon: Icons.delete_forever_rounded,
-                title: 'Delete Account',
-                subtitle: 'Permanently remove your data',
-                isDark: isDark,
-                iconColor: Colors.redAccent.shade700,
-                textColor: Colors.redAccent.shade700,
-                trailing: const SizedBox(),
-                onTap: () => _showDeleteAccountDialog(context, isDark),
-              ),
             ],
           ),
         ],
@@ -963,142 +951,195 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
     final feedbackController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
+    final reasons = [
+      'Too expensive / high fees',
+      'Difficult to use / complex interface',
+      'Missing key features or products',
+      'Other (please write your custom feedback)',
+    ];
+    String selectedReason = reasons.first;
+
     showDialog(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: isDark ? const Color(0xFF1F1F2E) : Colors.white,
-          title: Text(
-            'Delete Account',
-            style: TextStyle(
-              color: Colors.redAccent.shade700,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Are you sure you want to permanently delete your account? Your account will be deactivated immediately, and all your data will be permanently deleted in 90 days if you do not log back in.',
-                  style: TextStyle(
-                    color: isDark ? Colors.white70 : Colors.black87,
-                    fontSize: 14,
+        return StatefulBuilder(
+          builder: (dialogContext, setState) {
+            final isOtherSelected = selectedReason == reasons.last;
+
+            return AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF1F1F2E) : Colors.white,
+              title: Text(
+                'Delete Account',
+                style: TextStyle(
+                  color: Colors.redAccent.shade700,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Are you sure you want to permanently delete your account? Your account will be deactivated immediately, and all your data will be permanently deleted in 90 days if you do not log back in.',
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black87,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Please tell us why you are leaving (Required):',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: selectedReason,
+                        dropdownColor: isDark ? const Color(0xFF1F1F2E) : Colors.white,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black,
+                          fontSize: 14,
+                        ),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: isDark
+                              ? Colors.white.withOpacity(0.05)
+                              : Colors.grey.shade100,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        items: reasons.map((r) {
+                          return DropdownMenuItem<String>(
+                            value: r,
+                            child: Text(r),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              selectedReason = val;
+                            });
+                          }
+                        },
+                      ),
+                      if (isOtherSelected) ...[
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: feedbackController,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            hintText: 'Your feedback helps us improve...',
+                            hintStyle: TextStyle(
+                              color: isDark ? Colors.white30 : Colors.black38,
+                            ),
+                            filled: true,
+                            fillColor: isDark
+                                ? Colors.white.withOpacity(0.05)
+                                : Colors.grey.shade100,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Feedback is required when selecting "Other".';
+                            }
+                            if (value.trim().length < 5) {
+                              return 'Please provide a bit more detail (min 5 chars).';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Please tell us why you are leaving (Required):',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: feedbackController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'Your feedback helps us improve...',
-                    hintStyle: TextStyle(
-                      color: isDark ? Colors.white30 : Colors.black38,
-                    ),
-                    filled: true,
-                    fillColor: isDark
-                        ? Colors.white.withOpacity(0.05)
-                        : Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.redAccent.shade700,
+                    foregroundColor: Colors.white,
                   ),
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Feedback is required to delete account.';
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      final feedback = isOtherSelected
+                          ? 'Other: ${feedbackController.text.trim()}'
+                          : selectedReason;
+
+                      // Call requestAccountDeletion via AuthCubit
+                      final authCubit = context.read<AuthCubit>();
+
+                      // Show loading overlay or just pop and show snackbar
+                      Navigator.pop(dialogContext);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Processing account deletion...'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+
+                      try {
+                        await authCubit.requestAccountDeletion(feedback: feedback);
+                        if (context.mounted) {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Account Deletion Requested'),
+                              content: const Text(
+                                'Your account will be deleted in 90 days if you don\'t come back and log in again.\n\nWe are sorry to see you go!',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(ctx).pop();
+                                    authCubit.logout();
+                                  },
+                                  child: const Text('Okay'),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to delete account: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
                     }
-                    if (value.trim().length < 5) {
-                      return 'Please provide a bit more detail.';
-                    }
-                    return null;
                   },
+                  child: const Text('Delete Permanently'),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.black54,
-                ),
-              ),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.redAccent.shade700,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  final feedback = feedbackController.text.trim();
-
-                  // Call requestAccountDeletion via AuthCubit
-                  final authCubit = context.read<AuthCubit>();
-
-                  // Show loading overlay or just pop and show snackbar
-                  Navigator.pop(dialogContext);
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Processing account deletion...'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-
-                  try {
-                    await authCubit.requestAccountDeletion(feedback: feedback);
-                    if (context.mounted) {
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Account Deletion Requested'),
-                          content: const Text(
-                            'Your account will be deleted in 90 days if you don\'t come back and log in again.\n\nWe are sorry to see you go!',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(ctx).pop();
-                                authCubit.logout();
-                              },
-                              child: const Text('Okay'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Failed to delete account: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                }
-              },
-              child: const Text('Delete Permanently'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
