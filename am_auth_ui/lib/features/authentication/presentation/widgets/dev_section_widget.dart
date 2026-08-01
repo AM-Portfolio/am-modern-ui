@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:am_common/am_common.dart';
 import 'demo_login_button_widget.dart';
 import 'feature_flag_panel_widget.dart';
 
@@ -23,6 +24,10 @@ class _DevSectionWidgetState extends State<DevSectionWidget> {
   
   @override
   Widget build(BuildContext context) {
+    if (ConfigService.resolvedEnv != 'dev') {
+      return const SizedBox.shrink();
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final toggleColor = isDark
         ? Colors.white.withValues(alpha: _isHovering ? 0.9 : 0.7)
