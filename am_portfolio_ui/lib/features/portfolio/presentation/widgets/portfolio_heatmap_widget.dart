@@ -598,54 +598,66 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Builds the "Equity Distribution" header with title, center filters, and right timeframe.
+  /// Builds the "Equity Distribution" header with perfectly aligned title, filters, and timeframe.
   Widget _buildEquityDistributionHeader(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useDropdown = constraints.maxWidth < 1100;
+        final isNarrow = constraints.maxWidth < 950;
 
-        final title = Text(
-          'Equity Distribution',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+        final titleWidget = Container(
+          height: 40,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Equity Distribution',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+            ),
           ),
         );
 
-        final filterRow = _buildFilterRow(context, isCompact: constraints.maxWidth < 900);
+        final filterRow = _buildFilterRow(context, isCompact: isNarrow);
 
-        final timeframeBar = GlobalTimeFrameBar(
-          variant: useDropdown
-              ? GlobalTimeFrameVariant.dropdown
-              : GlobalTimeFrameVariant.pills,
+        final timeframeBar = Container(
+          height: 40,
+          alignment: Alignment.centerRight,
+          child: GlobalTimeFrameBar(
+            variant: isNarrow
+                ? GlobalTimeFrameVariant.dropdown
+                : GlobalTimeFrameVariant.pills,
+          ),
         );
 
-        if (constraints.maxWidth > 850) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
+        if (isNarrow) {
+          return Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.spaceBetween,
             children: [
-              // Left: Title
-              title,
-              
-              // Center: Filter Dropdowns
+              titleWidget,
               filterRow,
-              
-              // Right: Timeframe
               timeframeBar,
             ],
           );
         }
 
-        return Wrap(
-          spacing: 16,
-          runSpacing: 10,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          alignment: WrapAlignment.spaceBetween,
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            title,
+            // Left: Title
+            titleWidget,
+            
+            const SizedBox(width: 20),
+            
+            // Center-left: Filters grouped beside title
             filterRow,
+            
+            const Spacer(),
+            
+            // Right: Timeframe Pills
             timeframeBar,
           ],
         );
@@ -654,10 +666,10 @@ class _PortfolioHeatmapWidgetState
   }
 
   Widget _buildFilterRow(BuildContext context, {bool isCompact = false}) {
-    final dropWidth = isCompact ? 135.0 : 155.0;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    final dropWidth = isCompact ? 130.0 : 150.0;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Sector Filter
         SizedBox(
@@ -674,6 +686,7 @@ class _PortfolioHeatmapWidgetState
             isExpanded: true,
           ),
         ),
+        const SizedBox(width: 8),
         // Market Cap Filter
         SizedBox(
           width: dropWidth,
@@ -689,6 +702,7 @@ class _PortfolioHeatmapWidgetState
             isExpanded: true,
           ),
         ),
+        const SizedBox(width: 8),
         // Layout Filter
         SizedBox(
           width: dropWidth,
