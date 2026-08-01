@@ -694,7 +694,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
 // Measures the left column height after layout and sizes the right column
 // to match, avoiding IntrinsicHeight which breaks with scrollable children.
 // ---------------------------------------------------------------------------
-class _MoversAllocationRow extends StatefulWidget {
+class _MoversAllocationRow extends StatelessWidget {
   const _MoversAllocationRow({
     required this.portfolioId,
     required this.selectedTimeFrame,
@@ -706,74 +706,38 @@ class _MoversAllocationRow extends StatefulWidget {
   final void Function(double start, double end)? onPeriodStats;
 
   @override
-  State<_MoversAllocationRow> createState() => _MoversAllocationRowState();
-}
-
-class _MoversAllocationRowState extends State<_MoversAllocationRow> {
-  final GlobalKey _leftKey = GlobalKey();
-  double? _leftHeight;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
-  }
-
-  @override
-  void didUpdateWidget(_MoversAllocationRow old) {
-    super.didUpdateWidget(old);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
-  }
-
-  void _measure() {
-    final box = _leftKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box != null && box.hasSize) {
-      final h = box.size.height;
-      if ((h - (_leftHeight ?? 0.0)).abs() > 1.0) {
-        setState(() => _leftHeight = h);
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return BlocListener<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
-      listener: (context, state) {
-        // When state changes (e.g. loading to loaded), remeasure the left column
-        WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
-      },
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         // ── Left column: Chart + Movers ──
         Expanded(
           flex: 2,
           child: Column(
-            key: _leftKey,
             mainAxisSize: MainAxisSize.min,
             children: [
               PortfolioHistoryChartWidget(
-                key: ValueKey('hist_${widget.portfolioId}_${widget.selectedTimeFrame.code}'),
-                portfolioId: widget.portfolioId,
-                timeFrame: widget.selectedTimeFrame,
+                key: ValueKey('hist_${portfolioId}_${selectedTimeFrame.code}'),
+                portfolioId: portfolioId,
+                timeFrame: selectedTimeFrame,
                 height: 360,
-                onPeriodStats: widget.onPeriodStats,
+                onPeriodStats: onPeriodStats,
               ),
               const SizedBox(height: 16),
               PortfolioTopMoversPanel(
-                portfolioId: widget.portfolioId,
-                timeFrame: widget.selectedTimeFrame,
+                portfolioId: portfolioId,
+                timeFrame: selectedTimeFrame,
                 showTimeFrameSelector: false,
               ),
             ],
           ),
         ),
         const SizedBox(width: 16),
-        // ── Right column: Allocation panel sized to match left column ──
+        // ── Right column: Allocation panel with fixed bounded height ──
         Expanded(
           flex: 1,
           child: SizedBox(
-            height: _leftHeight ?? 800, // fallback to tall box until measured
+            height: 720, // Fixed height avoids IntrinsicHeight multi-pass measurement crashes with animated LayoutBuilders
             child: BlocBuilder<PortfolioCubit, PortfolioState>(
               builder: (context, portfolioState) {
                 final holdings = portfolioState is PortfolioLoaded ? portfolioState.holdings : null;
@@ -804,7 +768,6 @@ class _MoversAllocationRowState extends State<_MoversAllocationRow> {
           ),
         ),
       ],
-    ),
     );
   }
 }

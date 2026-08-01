@@ -410,16 +410,30 @@ class _MoverTileState extends State<MoverTile> {
               ),
             ),
 
-            // ── Price ──
-            Text(
-              '₹${stock.lastPrice.toStringAsFixed(2)}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.75)
-                        : Colors.black.withValues(alpha: 0.65),
+            // ── Price & Contribution ──
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '₹${stock.lastPrice.toStringAsFixed(2)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.75)
+                            : Colors.black.withValues(alpha: 0.65),
+                      ),
+                ),
+                Text(
+                  stock.formattedChangeAmount,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: color,
                   ),
+                ),
+              ],
             ),
             const SizedBox(width: 8),
 
