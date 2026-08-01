@@ -85,6 +85,7 @@ class Stock {
     this.marketValue,
     this.totalReturn,
     this.weight,
+    this.previousClose,
   });
   final String symbol;
   final String companyName;
@@ -97,13 +98,17 @@ class Stock {
   final double? marketValue;
   final double? totalReturn;
   final double? weight;
+  final double? previousClose;
 
   /// Helper getter for formatted change percent
   String get formattedChangePercent =>
       '${changePercent >= 0 ? '+' : ''}${changePercent.toStringAsFixed(2)}%';
 
   /// Helper getter for formatted change amount
-  String get formattedChangeAmount => '₹${changeAmount.toStringAsFixed(2)}';
+  String get formattedChangeAmount {
+    final prefix = changeAmount < 0 ? '-' : (changeAmount > 0 ? '+' : '');
+    return '$prefix₹${changeAmount.abs().toStringAsFixed(2)}';
+  }
 
   /// Helper getter for formatted last price
   String get formattedLastPrice => '₹${lastPrice.toStringAsFixed(2)}';
@@ -124,6 +129,7 @@ class Stock {
     double? marketValue,
     double? totalReturn,
     double? weight,
+    double? previousClose,
   }) {
     return Stock(
       symbol: symbol ?? this.symbol,
@@ -137,6 +143,7 @@ class Stock {
       marketValue: marketValue ?? this.marketValue,
       totalReturn: totalReturn ?? this.totalReturn,
       weight: weight ?? this.weight,
+      previousClose: previousClose ?? this.previousClose,
     );
   }
 }
