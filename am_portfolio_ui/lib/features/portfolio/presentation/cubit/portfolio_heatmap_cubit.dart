@@ -10,18 +10,13 @@ import 'portfolio_analytics_cubit.dart';
 import 'portfolio_analytics_state.dart';
 import 'portfolio_heatmap_state.dart';
 
-/// Strict matching: ensures 'tech' does NOT match 'biotech'.
-/// It matches whole words using regex word boundaries (\b).
+/// Strict matching: ensures whole-word boundary matching.
 bool _matchesStrictly(String source, String target) {
   final s = source.toLowerCase().trim();
   final t = target.toLowerCase().trim();
   if (s == t) return true;
-  // Allow matching when spaces are removed (e.g. 'healthcare' vs 'health care')
   if (s.replaceAll(' ', '') == t.replaceAll(' ', '')) return true;
   try {
-    // Word boundary regex: 'tech' in 'information technology' matches,
-    // but 'tech' in 'biotech' does NOT match because 'tech' ends at a
-    // word boundary in 'technology' but not in 'biotech'.
     if (RegExp('\\b${RegExp.escape(t)}', caseSensitive: false).hasMatch(s)) {
       return true;
     }
@@ -30,6 +25,68 @@ bool _matchesStrictly(String source, String target) {
     }
   } catch (_) {}
   return false;
+}
+
+/// Accurate domain-aware matching for investment sectors.
+/// Prevents 'Health Technology' from appearing under 'Technology',
+/// while correctly including sub-sectors (e.g. 'Consumer Durables' under 'Consumer').
+bool _matchesSector(String tileName, SectorType targetSector) {
+  final s = tileName.toLowerCase().trim();
+  switch (targetSector) {
+    case SectorType.all:
+      return true;
+    case SectorType.technology:
+    case SectorType.it:
+      return s.contains('information technology') ||
+          s == 'it' ||
+          (s.contains('tech') && !s.contains('health') && !s.contains('bio'));
+    case SectorType.healthcare:
+    case SectorType.pharma:
+      return s.contains('health') ||
+          s.contains('pharma') ||
+          s.contains('biotech') ||
+          s.contains('medical');
+    case SectorType.finance:
+    case SectorType.banking:
+      return s.contains('finance') ||
+          s.contains('financial') ||
+          s.contains('bank') ||
+          s.contains('insurance');
+    case SectorType.consumer:
+    case SectorType.fmcg:
+    case SectorType.consumerServices:
+    case SectorType.automobiles:
+      return s.contains('consumer') ||
+          s.contains('fmcg') ||
+          s.contains('automobile') ||
+          s.contains('auto ') ||
+          s == 'auto' ||
+          s.contains('retail');
+    case SectorType.energy:
+    case SectorType.utilities:
+      return s.contains('energy') ||
+          s.contains('oil') ||
+          s.contains('gas') ||
+          s.contains('power') ||
+          s.contains('utilit');
+    case SectorType.industrials:
+    case SectorType.manufacturing:
+    case SectorType.infrastructure:
+      return s.contains('industrial') ||
+          s.contains('manufactur') ||
+          s.contains('infrastruct') ||
+          (s.contains('process') && !s.contains('food')) ||
+          s.contains('transport');
+    case SectorType.materials:
+    case SectorType.metals:
+      return s.contains('material') ||
+          s.contains('metal') ||
+          s.contains('mining') ||
+          s.contains('mineral') ||
+          s.contains('chemical');
+    default:
+      return s == targetSector.displayName.toLowerCase().trim();
+  }
 }
 
 /// Portfolio Heatmap Cubit
@@ -80,16 +137,12 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             subtitle: 'Sector Performance Analysis',
           );
 
-
-
-          // Apply Sector filtering — strict word-boundary match prevents
-          // 'tech' from matching 'biotech' etc.
+          // Apply Sector filtering using domain-aware mapping
           if (sector != SectorType.all && sector != SectorType.noGroup) {
-            final targetSectorName = sector.displayName;
             heatmapData = heatmapData.copyWith(
               tiles: heatmapData.uiTiles.where((tile) {
-                return _matchesStrictly(tile.name, targetSectorName) ||
-                       _matchesStrictly(tile.displayName, targetSectorName);
+                return _matchesSector(tile.name, sector) ||
+                       _matchesSector(tile.displayName, sector);
               }).toList(),
             );
           }

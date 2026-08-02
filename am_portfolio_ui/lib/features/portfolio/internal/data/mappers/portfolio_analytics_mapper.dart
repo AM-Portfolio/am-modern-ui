@@ -128,25 +128,16 @@ class PortfolioAnalyticsMapper {
     marketValue: dto.marketValue ?? 0.0,
     totalReturn: dto.totalReturn ?? 0.0,
     weight: dto.weight, // Include weight field from DTO
+    previousClose: dto.previousClose,
   );
 
   /// Convert movers DTO to entity
   static Movers _moversFromDto(MoversDto dto) {
-    // Map gainers (ensure positive values if needed, though usually they are)
+    // Map gainers
     final topGainers = dto.topGainers?.map(_stockFromDto).toList() ?? <Stock>[];
 
-    // Map losers (ensure negative values for accurate display)
-    final topLosers = dto.topLosers?.map((stockDto) {
-      final stock = _stockFromDto(stockDto);
-
-      // Ensure negative signs for losers if they are reported as absolute values
-      return stock.copyWith(
-        changeAmount:
-            stock.changeAmount > 0 ? -stock.changeAmount : stock.changeAmount,
-        changePercent:
-            stock.changePercent > 0 ? -stock.changePercent : stock.changePercent,
-      );
-    }).toList() ?? <Stock>[];
+    // Map losers
+    final topLosers = dto.topLosers?.map(_stockFromDto).toList() ?? <Stock>[];
 
     return Movers(
       topGainers: List<Stock>.from(topGainers),

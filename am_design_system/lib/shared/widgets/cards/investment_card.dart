@@ -113,7 +113,8 @@ class InvestmentCard extends StatelessWidget {
   Widget _buildTopRow() => Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
-      _buildLeftSection(),
+      Expanded(child: _buildLeftSection()),
+      const SizedBox(width: 8),
       config.trailingWidget ??
           (displayOptions.showDefaultValue
               ? _buildValueDisplay()
@@ -125,7 +126,7 @@ class InvestmentCard extends StatelessWidget {
     children: [
       config.leadingIcon ?? _buildDefaultIcon(),
       const SizedBox(width: 12),
-      _buildTitleSection(),
+      Expanded(child: _buildTitleSection()),
     ],
   );
 
@@ -142,11 +143,15 @@ class InvestmentCard extends StatelessWidget {
   Widget _buildSymbolText() => Text(
     data.symbol,
     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
   );
 
   Widget _buildNameText() => Text(
     data.name,
     style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
   );
 
   Widget _buildAdditionalInfo() => Padding(
@@ -188,8 +193,10 @@ class InvestmentCard extends StatelessWidget {
 
   Widget _buildBottomRow() => Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    crossAxisAlignment: CrossAxisAlignment.end,
     children: [
-      if (displayOptions.showInvestmentDetails) _buildInvestmentDetails(),
+      if (displayOptions.showInvestmentDetails)
+        Expanded(child: _buildInvestmentDetails()),
       if (displayOptions.showPerformanceSection) _buildPerformanceSection(),
     ],
   );
@@ -209,14 +216,19 @@ class InvestmentCard extends StatelessWidget {
         'Inv. ',
         style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
       ),
-      Text(
-        '${config.currencySymbol}${data.investedAmount.toStringAsFixed(2)}',
-        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+      Flexible(
+        child: Text(
+          '${config.currencySymbol}${data.investedAmount.toStringAsFixed(2)}',
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
     ],
   );
 
-  Widget _buildDetailsRow() => Row(
+  Widget _buildDetailsRow() => Wrap(
+    crossAxisAlignment: WrapCrossAlignment.center,
     children: [
       if (displayOptions.showAveragePrice) ..._buildAveragePrice(),
       if (displayOptions.showQuantity && displayOptions.showAveragePrice)
