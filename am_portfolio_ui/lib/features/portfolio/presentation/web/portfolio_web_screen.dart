@@ -6,7 +6,6 @@ import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_common/am_common.dart';
 
 import '../../internal/domain/entities/portfolio_list.dart';
-import '../../providers/portfolio_providers.dart';
 import '../cubit/portfolio_cubit.dart';
 
 import 'package:am_design_system/am_design_system.dart';
@@ -54,7 +53,6 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     'baskets',
   ];
 
-  SwipeNavigationController? _swipeController;
   String? _currentPortfolioId;
   String? _currentPortfolioName;
   bool _isAddingTrade = false;
@@ -63,14 +61,6 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   void initState() {
     super.initState();
     _syncPortfolioSelection();
-    _initializeSwipeController();
-  }
-
-  @override
-  void dispose() {
-    _swipeController?.removeListener(_onSwipeControllerChanged);
-    _swipeController?.dispose();
-    super.dispose();
   }
 
   void _syncPortfolioSelection() {
@@ -87,24 +77,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         widget.selectedPortfolioName != oldWidget.selectedPortfolioName ||
         widget.portfolios != oldWidget.portfolios) {
       _syncPortfolioSelection();
-      _swipeController?.updateItems(_buildNavigationItems());
-    } else if (widget.initialTab != oldWidget.initialTab) {
-      _navigateToTabSlug(widget.initialTab, notify: false);
     }
-  }
-
-  int _tabIndexFromSlug(String slug) {
-    final index = _tabSlugs.indexOf(slug);
-    return index >= 0 ? index : 0;
-  }
-
-  String _slugFromIndex(int index) =>
-      _tabSlugs[index.clamp(0, _tabSlugs.length - 1)];
-
-  void _navigateToTabSlug(String slug, {bool notify = true}) {
-    final index = _tabIndexFromSlug(slug);
-    _swipeController?.navigateTo(index);
-    if (notify) widget.onTabChanged?.call(_slugFromIndex(index));
   }
 
   String? get _resolvedPortfolioId {
@@ -117,130 +90,19 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     return null;
   }
 
-  void _initializeSwipeController() {
-    final items = _buildNavigationItems();
-    final initialIndex = _tabIndexFromSlug(widget.initialTab);
-    if (_swipeController == null) {
-      _swipeController = SwipeNavigationController(
-        items: items,
-        initialIndex: initialIndex,
-      );
-      _swipeController!.addListener(_onSwipeControllerChanged);
-    } else {
-      _swipeController!.updateItems(items);
-      _swipeController!.navigateTo(initialIndex);
-    }
+  int get _currentIndex {
+    final index = _tabSlugs.indexOf(widget.initialTab);
+    return index >= 0 ? index : 0;
   }
 
-  String? _lastReportedTab;
-
-  void _onSwipeControllerChanged() {
-    if (mounted) {
-      setState(() {});
-      final index = _swipeController?.currentIndex;
-      if (index != null) {
-        final slug = _slugFromIndex(index);
-        if (slug != _lastReportedTab) {
-          _lastReportedTab = slug;
-          widget.onTabChanged?.call(slug);
-        }
-      }
-    }
-  }
-
-  List<NavigationItem> _buildNavigationItems() {
-    final portfolioId = _resolvedPortfolioId;
-    if (portfolioId == null) {
-      return [
-        NavigationItem(
-          title: 'Overview',
-          subtitle: 'Dashboard',
-          icon: Icons.dashboard_outlined,
-          accentColor: Colors.blue,
-          page: _wrapPage(
-            const Center(child: CircularProgressIndicator()),
-          ),
-        ),
-      ];
-    }
-
-    return [
-      NavigationItem(
-        title: 'Overview',
-        subtitle: 'Dashboard',
-        icon: Icons.dashboard_outlined,
-        accentColor: Colors.blue,
-        page: _wrapPage(
-          PortfolioOverviewWebPage(
-            portfolioId: portfolioId,
-            portfolioName: _currentPortfolioName ?? widget.selectedPortfolioName,
-          ),
-        ),
-      ),
-      NavigationItem(
-        title: 'Holdings',
-        subtitle: 'Assets',
-        icon: Icons.account_balance_wallet_outlined,
-        accentColor: Colors.green,
-        page: _wrapPage(
-          PortfolioHoldingsWebPage(
-            portfolioId: portfolioId,
-          ),
-        ),
-      ),
-      NavigationItem(
-        title: 'Heatmap',
-        subtitle: 'Performance',
-        icon: Icons.grid_view_outlined,
-        accentColor: Colors.orange,
-        page: _wrapPage(
-          PortfolioHeatmapWebPage(
-            portfolioId: portfolioId,
-            portfolioName: _currentPortfolioName ?? widget.selectedPortfolioName,
-          ),
-        ),
-      ),
-      NavigationItem(
-        title: 'Baskets',
-        subtitle: 'Basket replication',
-        icon: Icons.shopping_basket_outlined,
-        accentColor: Colors.teal,
-        page: _wrapPage(
-          PortfolioBasketsWebPage(
-            portfolioId: portfolioId,
-          ),
-        ),
-      ),
-    ];
-  }
-
-  void _navigateToNext() {
-    // Only navigate if not at the last item
-    if (_swipeController != null && _swipeController!.currentIndex < _swipeController!.items.length - 1) {
-      _swipeController!.navigateTo(_swipeController!.currentIndex + 1);
-    }
-  }
-
-  void _navigateToPrev() {
-    // Only navigate if not at the first item
-    if (_swipeController != null && _swipeController!.currentIndex > 0) {
-      _swipeController!.navigateTo(_swipeController!.currentIndex - 1);
-    }
-  }
-
-  Widget _wrapPage(Widget page) {
-    return VerticalScrollNavigator(
-      child: page,
-      onNextPage: _navigateToNext,
-      onPreviousPage: _navigateToPrev,
-    );
+  void _navigateToTabSlug(String slug) {
+    widget.onTabChanged?.call(slug);
   }
 
   void _onPortfolioChanged(String portfolioId, String portfolioName) {
     setState(() {
       _currentPortfolioId = portfolioId;
       _currentPortfolioName = portfolioName;
-      _initializeSwipeController();
     });
 
     try {
@@ -252,8 +114,68 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     }
   }
 
+  List<NavigationItem> _buildNavigationItems() {
+    final portfolioId = _resolvedPortfolioId;
+    if (portfolioId == null) {
+      return [
+        NavigationItem(
+          title: 'Overview',
+          subtitle: 'Dashboard',
+          icon: Icons.dashboard_outlined,
+          accentColor: ModuleColors.portfolio,
+          page: const Center(child: CircularProgressIndicator()),
+        ),
+      ];
+    }
+
+    return [
+      NavigationItem(
+        title: 'Overview',
+        subtitle: 'Dashboard',
+        icon: Icons.dashboard_outlined,
+        accentColor: ModuleColors.portfolio,
+        page: PortfolioOverviewWebPage(
+          portfolioId: portfolioId,
+          portfolioName: _currentPortfolioName ?? widget.selectedPortfolioName,
+        ),
+      ),
+      NavigationItem(
+        title: 'Holdings',
+        subtitle: 'Assets',
+        icon: Icons.account_balance_wallet_outlined,
+        accentColor: ModuleColors.portfolio,
+        page: PortfolioHoldingsWebPage(
+          portfolioId: portfolioId,
+        ),
+      ),
+      NavigationItem(
+        title: 'Heatmap',
+        subtitle: 'Performance',
+        icon: Icons.grid_view_outlined,
+        accentColor: ModuleColors.portfolio,
+        page: PortfolioHeatmapWebPage(
+          portfolioId: portfolioId,
+          portfolioName: _currentPortfolioName ?? widget.selectedPortfolioName,
+        ),
+      ),
+      NavigationItem(
+        title: 'Baskets',
+        subtitle: 'Basket replication',
+        icon: Icons.shopping_basket_outlined,
+        accentColor: ModuleColors.portfolio,
+        page: PortfolioBasketsWebPage(
+          portfolioId: portfolioId,
+        ),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final items = _buildNavigationItems();
+    final currentIndex = _currentIndex;
+    final activePage = currentIndex < items.length ? items[currentIndex].page : items.first.page;
+
     return NotificationListener<OpenAddTradeNotification>(
       onNotification: (notification) {
         if (widget.addTradeBuilder != null) {
@@ -266,119 +188,146 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         return false;
       },
       child: UnifiedSidebarScaffold(
-      module: ModuleType.portfolio,
-      title: null,
-      subtitle: null,
-      showModuleBottomNavigation: false,
-      headerActions: const [],
-      header: const SizedBox(height: 16),
-      onBackToGlobal: widget.onBack,
-      onThemeToggle: () {
-        context.read<ThemeCubit>().toggleTheme();
-      },
-      onProfileTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) {
-              final authState = context.read<AuthCubit>().state;
-              if (authState is Authenticated) {
-                return ProfileSettingsPage(
-                  userId: authState.user.id,
-                  email: authState.user.email,
-                  displayName: authState.user.displayName,
-                );
-              }
-              return const ProfileSettingsPage(userId: '');
-            },
-          ),
-        );
-      },
-      onLogout: () {
-        context.read<AuthCubit>().logout();
-        widget.onBack?.call();
-      },
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
-                ? widget.addTradeBuilder!(
-                    context,
-                    _currentPortfolioId!,
-                    _currentPortfolioName ?? widget.selectedPortfolioName,
-                    () {
+        module: ModuleType.portfolio,
+        title: null,
+        subtitle: null,
+        showModuleBottomNavigation: false,
+        headerActions: const [],
+        header: const SizedBox(height: 16),
+        onBackToGlobal: widget.onBack,
+        onThemeToggle: () {
+          context.read<ThemeCubit>().toggleTheme();
+        },
+        onProfileTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) {
+                final authState = context.read<AuthCubit>().state;
+                if (authState is Authenticated) {
+                  return ProfileSettingsPage(
+                    userId: authState.user.id,
+                    email: authState.user.email,
+                    displayName: authState.user.displayName,
+                  );
+                }
+                return const ProfileSettingsPage(userId: '');
+              },
+            ),
+          );
+        },
+        onLogout: () {
+          context.read<AuthCubit>().logout();
+          widget.onBack?.call();
+        },
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (currentIndex == 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final selected = ref.watch(appTimeFrameProvider);
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        
+                        // Limit width to 40% of screen on large screens, up to a max of 400 pixels
+                        return ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: screenWidth > 800 ? 400 : screenWidth * 0.45,
+                          ),
+                          child: TimeFrameSelector(
+                            compact: true,
+                            selectedTimeFrame: selected,
+                            onTimeFrameChanged: (tf) => ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf),
+                            availableTimeFrames: const [
+                              TimeFrame.oneDay,
+                              TimeFrame.oneWeek,
+                              TimeFrame.oneMonth,
+                              TimeFrame.threeMonths,
+                              TimeFrame.sixMonths,
+                              TimeFrame.oneYear,
+                              TimeFrame.fiveYears,
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
+                  ? widget.addTradeBuilder!(
+                      context,
+                      _currentPortfolioId!,
+                      _currentPortfolioName ?? widget.selectedPortfolioName,
+                      () {
+                        setState(() {
+                          _isAddingTrade = false;
+                        });
+                      }
+                    )
+                  : activePage,
+            ),
+          ],
+        ),
+        footer: (_currentPortfolioId == null || _currentPortfolioId == 'all')
+            ? const SizedBox.shrink()
+            : Padding(
+                padding: const EdgeInsets.all(16),
+                child: SidebarPrimaryAction(
+                  title: 'New Trade',
+                  icon: Icons.add,
+                  accentColor: ModuleColors.portfolio,
+                  onTap: () {
+                    if (widget.addTradeBuilder != null) {
                       setState(() {
-                        _isAddingTrade = false;
+                        _isAddingTrade = true;
                       });
                     }
-                  )
-                : (_swipeController == null 
-                    ? const Center(child: CircularProgressIndicator())
-                    : SwipeablePageView(
-                        controller: _swipeController!,
-                        showIndicator: true,
-                        indicatorPosition: IndicatorPosition.bottom,
-                      )),
-          ),
-        ],
-      ),
-      footer: (_currentPortfolioId == null || _currentPortfolioId == 'all')
-          ? const SizedBox.shrink()
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: SidebarPrimaryAction(
-                title: 'New Trade',
-                icon: Icons.add,
+                  },
+                ),
+              ),
+        sections: [
+          if (widget.portfolios != null && widget.portfolios!.isNotEmpty)
+            SecondarySidebarSection(
+              title: '', // No title as requested ("Institute of account") style
+              customWidget: SharedPortfolioSelector<PortfolioItem>(
+                currentPortfolioId: _currentPortfolioId,
+                currentPortfolioName:
+                    _currentPortfolioName ?? widget.selectedPortfolioName,
+                portfolios: [
+                  const PortfolioItem(
+                    portfolioId: 'all',
+                    portfolioName: 'All Portfolios',
+                  ),
+                  ...widget.portfolios!,
+                ],
+                onPortfolioSelected: _onPortfolioChanged,
+                idExtractor: (p) => p.portfolioId,
+                nameExtractor: (p) => p.portfolioName,
                 accentColor: ModuleColors.portfolio,
-
-                onTap: () {
-                  if (widget.addTradeBuilder != null) {
-                    setState(() {
-                      _isAddingTrade = true;
-                    });
-                  }
-                },
               ),
             ),
-      sections: [
-        if (widget.portfolios != null && widget.portfolios!.isNotEmpty)
           SecondarySidebarSection(
-            title: '', // No title as requested ("Institute of account") style
-            customWidget: SharedPortfolioSelector<PortfolioItem>(
-              currentPortfolioId: _currentPortfolioId,
-              currentPortfolioName:
-                  _currentPortfolioName ?? widget.selectedPortfolioName,
-              portfolios: [
-                const PortfolioItem(
-                  portfolioId: 'all',
-                  portfolioName: 'All Portfolios',
-                ),
-                ...widget.portfolios!,
-              ],
-              onPortfolioSelected: _onPortfolioChanged,
-              idExtractor: (p) => p.portfolioId,
-              nameExtractor: (p) => p.portfolioName,
-              accentColor: ModuleColors.portfolio,
-            ),
+            title: '',
+            items: items.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              return SecondarySidebarItem(
+                title: item.title,
+                icon: item.icon,
+                isSelected: currentIndex == index,
+                onTap: () => _navigateToTabSlug(_tabSlugs[index]),
+                accentColor: item.accentColor,
+              );
+            }).toList(),
           ),
-
-        // Navigation Section (No Title)
-        SecondarySidebarSection(
-          title: '',
-          items: _swipeController == null ? [] : _swipeController!.items.asMap().entries.map((entry) {
-            final index = entry.key;
-            final item = entry.value;
-            return SecondarySidebarItem(
-              title: item.title,
-              icon: item.icon,
-              isSelected: _swipeController!.currentIndex == index,
-              onTap: () => _navigateToTabSlug(_slugFromIndex(index)),
-              accentColor: item.accentColor,
-            );
-          }).toList(),
-        ),
-      ],
+        ],
       ),
     );
   }

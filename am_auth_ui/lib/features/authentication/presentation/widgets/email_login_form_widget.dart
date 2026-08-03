@@ -98,21 +98,36 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
               height: 48,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6366F1).withValues(alpha: _isHoveringBtn ? 0.55 : 0.40),
+                    color: const Color(0xFF6366F1).withValues(alpha: _isHoveringBtn ? 0.35 : 0.20),
                     blurRadius: _isHoveringBtn ? 25 : 18,
                     offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: ElevatedButton(
-                onPressed: widget.isLoading ? null : _handleLogin,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1.2,
+                      ),
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF6366F1).withValues(alpha: 0.75),
+                          const Color(0xFF7C3AED).withValues(alpha: 0.65)
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: widget.isLoading ? null : _handleLogin,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
@@ -137,6 +152,9 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                           color: Colors.white,
                         ),
                       ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -200,18 +218,18 @@ class _LiquidTextFieldState extends State<LiquidTextField> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).primaryColor;
     
-    // Liquid glass background: 14% opacity white glass in Light Mode
+    // Liquid glass background
     final baseBgColor = isDark
         ? Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.17 : 0.12)
-        : Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.22 : 0.14);
+        : Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.15 : 0.05); // Make it highly transparent in light mode
 
     final borderColor = _isFocused
-        ? primaryColor
+        ? primaryColor.withValues(alpha: 0.7)
         : (isDark
             ? Colors.white.withValues(alpha: 0.35)
-            : Colors.white.withValues(alpha: 0.35));
+            : Colors.white.withValues(alpha: 0.45)); // Make border more visible in light mode for glass effect
 
-    final textColor = isDark ? Colors.white : const Color(0xFF334155);
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
     final labelColor = isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF475569);
     final hintColor = isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF64748B);
     final iconColor = isDark ? Colors.white70 : const Color(0xFF334155);
@@ -257,6 +275,7 @@ class _LiquidTextFieldState extends State<LiquidTextField> {
                     focusNode: _focusNode,
                     style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
                     decoration: InputDecoration(
+                      filled: false,
                       labelText: widget.labelText,
                       labelStyle: TextStyle(color: labelColor, fontSize: 13),
                       hintText: widget.hintText,

@@ -227,7 +227,7 @@ class _DashboardMobileScreenState
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF0B1120) : const Color(0xFFF8FAFC);
+    final bgColor = isDark ? Theme.of(context).scaffoldBackgroundColor : const Color(0xFFF8FAFC);
     final onSurface = isDark ? Colors.white : const Color(0xFF0B1C30);
     final chipBg = isDark
         ? Colors.white.withValues(alpha: 0.08)
@@ -297,130 +297,122 @@ class _DashboardMobileScreenState
                   chipBorder: chipBorder,
                 ),
                 Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    scrollDirection: Axis.vertical,
-                    children: [
-                      // 1 — Summary metrics
-                      _sectionScroll(
-                        enablePullToRefresh: true,
-                        onRefresh: refresh,
-                        child: dashboardAsync.when(
-                          data: (summary) =>
-                              DashboardSummaryWidget(summary: summary),
-                          loading: _buildSummaryLoading,
-                          error: (err, stack) => AmErrorWidget(
-                            message: 'Failed to load summary',
-                            onRetry: () =>
-                                ref.invalidate(dashboardStreamProvider(userId)),
-                          ),
-                        ),
+                  child: RefreshIndicator(
+                    onRefresh: refresh,
+                    color: const Color(0xFF00D2D3),
+                    backgroundColor: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF1E293B)
+                        : Colors.white,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
                       ),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // 1 — Summary metrics and Performance Chart
+                          dashboardAsync.when(
+                            data: (summary) =>
+                                DashboardSummaryWidget(summary: summary),
+                            loading: _buildSummaryLoading,
+                            error: (err, stack) => AmErrorWidget(
+                              message: 'Failed to load summary',
+                              onRetry: () =>
+                                  ref.invalidate(dashboardStreamProvider(userId)),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final performanceAsync = ref.watch(
+                                historyStreamProvider(userId, timeFrame: tfCode),
+                              );
+                              return performanceAsync.when(
+                                data: (performance) => SizedBox(
+                                  height: 350,
+                                  child: DashboardChartWidget(
+                                    performance: performance,
+                                  ),
+                                ),
+                                loading: () =>
+                                    _buildLoadingCard(350, label: 'Loading chart…'),
+                                error: (err, stack) => AmErrorWidget(
+                                  message: 'Failed to load chart',
+                                  onRetry: () => ref.invalidate(
+                                    historyStreamProvider(
+                                      userId,
+                                      timeFrame: tfCode,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
 
-                      // 2 — Market Movers
-                      _sectionScroll(
-                        onRefresh: refresh,
-                        child: Consumer(
-                          builder: (context, ref, child) {
-                            final topMoversAsync = ref.watch(
-                              moversStreamProvider(userId, timeFrame: tfCode),
-                            );
-                            return topMoversAsync.when(
-                              data: (topMovers) => SizedBox(
-                                height: 350,
-                                child: DashboardRankingWidget(
+                          const SizedBox(height: 24),
+                          // 2 — Market Movers
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final topMoversAsync = ref.watch(
+                                moversStreamProvider(userId, timeFrame: tfCode),
+                              );
+                              return topMoversAsync.when(
+                                data: (topMovers) => DashboardRankingWidget(
                                   gainers: topMovers.gainers,
                                   losers: topMovers.losers,
                                 ),
-                              ),
-                              loading: () => _buildLoadingCard(350),
-                              error: (err, stack) => SizedBox(
-                                height: 350,
-                                child: DashboardRankingWidget.errorState(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                                loading: () => _buildLoadingCard(350),
+                                error: (err, stack) => DashboardRankingWidget.errorState(),
+                              );
+                            },
+                          ),
 
-                      // 3 — Recent Activity
-                      _sectionScroll(
-                        onRefresh: refresh,
-                        child: DashboardRecentActivitySection(userId: userId),
-                      ),
+                          const SizedBox(height: 24),
+                          // 3 — Recent Activity
+                          DashboardRecentActivitySection(userId: userId),
 
-                      // 4 — Your Portfolios
-                      _sectionScroll(
-                        onRefresh: refresh,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Your Portfolios',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 20,
-                                color: onSurface,
-                                fontFamily: 'Inter',
+                          const SizedBox(height: 24),
+                          // 4 — Your Portfolios
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Your Portfolios',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 20,
+                                  color: onSurface,
+                                  fontFamily: 'Inter',
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            overviewsAsync.when(
-                              data: (overviews) => Column(
-                                children: [
-                                  for (final overview in overviews)
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 12),
-                                      child: DashboardPortfolioOverviewCard(
-                                        overview: overview,
-                                        onTap: () {},
+                              const SizedBox(height: 12),
+                              overviewsAsync.when(
+                                data: (overviews) => Column(
+                                  children: [
+                                    for (final overview in overviews)
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 12),
+                                        child: DashboardPortfolioOverviewCard(
+                                          overview: overview,
+                                          onTap: () {},
+                                        ),
                                       ),
-                                    ),
-                                ],
-                              ),
-                              loading: () => _buildLoadingCard(100),
-                              error: (err, stack) => AmErrorWidget(
-                                message: 'Failed to load portfolios',
-                                onRetry: () => ref.invalidate(
-                                  portfolioOverviewsProvider(userId),
+                                  ],
                                 ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // 5 — Performance Chart
-                      _sectionScroll(
-                        onRefresh: refresh,
-                        child: Consumer(
-                          builder: (context, ref, child) {
-                            final performanceAsync = ref.watch(
-                              historyStreamProvider(userId, timeFrame: tfCode),
-                            );
-                            return performanceAsync.when(
-                              data: (performance) => SizedBox(
-                                height: 350,
-                                child: DashboardChartWidget(
-                                  performance: performance,
-                                ),
-                              ),
-                              loading: () =>
-                                  _buildLoadingCard(350, label: 'Loading chart…'),
-                              error: (err, stack) => AmErrorWidget(
-                                message: 'Failed to load chart',
-                                onRetry: () => ref.invalidate(
-                                  historyStreamProvider(
-                                    userId,
-                                    timeFrame: tfCode,
+                                loading: () => _buildLoadingCard(100),
+                                error: (err, stack) => AmErrorWidget(
+                                  message: 'Failed to load portfolios',
+                                  onRetry: () => ref.invalidate(
+                                    portfolioOverviewsProvider(userId),
                                   ),
                                 ),
                               ),
-                            );
-                          },
-                        ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ],

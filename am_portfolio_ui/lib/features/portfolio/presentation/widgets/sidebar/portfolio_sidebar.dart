@@ -15,7 +15,7 @@ class PortfolioSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Portfolio accent color (Amber/Orange)
-    const portfolioAccent = Color(0xFFFFA500);
+    const portfolioAccent = Color(0xFFec4899);
 
     // Navigation Items
     final overviewItems = [
