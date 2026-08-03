@@ -236,235 +236,217 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             return _buildOverviewSkeleton(context);
           }
 
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 800;
-              final isSmallMobile = constraints.maxWidth < 600;
+          return BlocProvider<PortfolioIntradayCubit>(
+            create: (_) => PortfolioIntradayCubit(
+              ref.read(portfolioRemoteDataSourceProvider).requireValue,
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 800;
+                final isSmallMobile = constraints.maxWidth < 600;
 
-              return Stack(
-                children: [
-                  // ── Ambient glow orb: green (bottom-left) ──
-                  Positioned(
-                    left: -80,
-                    bottom: -60,
-                    child: IgnorePointer(
-                      child: Container(
-                        width: 350,
-                        height: 350,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              Theme.of(context).brightness == Brightness.dark
-                                  ? const Color(0x1700B894)
-                                  : const Color(0x3500B894),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // ── Ambient glow orb: purple (top-right) ──
-                  Positioned(
-                    right: -60,
-                    top: -40,
-                    child: IgnorePointer(
-                      child: Container(
-                        width: 300,
-                        height: 300,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              Theme.of(context).brightness == Brightness.dark
-                                  ? const Color(0x1A6C5DD3)
-                                  : const Color(0x356C5DD3),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // ── Main scrollable content ──
-                  SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Timeframe lives in the mobile AppBar for compact layouts.
-                        if (!isMobile)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 20.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                ConstrainedBox(
-                                  constraints: const BoxConstraints(maxWidth: 550),
-                                  child: ds.GlobalTimeFrameBar(
-                                    availableTimeFrames:
-                                        ds.TimeFrame.chartTimeFrames,
-                                  ),
-                                ),
+                return Stack(
+                  children: [
+                    // ── Ambient glow orb: green (bottom-left) ──
+                    Positioned(
+                      left: -80,
+                      bottom: -60,
+                      child: IgnorePointer(
+                        child: Container(
+                          width: 350,
+                          height: 350,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? const Color(0x1700B894)
+                                    : const Color(0x3500B894),
+                                Colors.transparent,
                               ],
                             ),
                           ),
-                        // ── ROW 1: 4 Metric Cards ──────────────────────────
-                        if (isSmallMobile)
-                          // Intrinsic rows avoid GridView aspect-ratio blank space.
-                          Builder(
-                            builder: (context) {
-                              final cards = _buildMetricCards(
-                                state,
-                                compact: true,
-                                glowBorder: false,
-                              );
-                              return Column(
-                                children: [
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(child: cards[0]),
-                                      const SizedBox(width: 10),
-                                      Expanded(child: cards[1]),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(child: cards[2]),
-                                      const SizedBox(width: 10),
-                                      Expanded(child: cards[3]),
-                                    ],
-                                  ),
-                                ],
-                              );
-                            },
-                          )
-                        else
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildMetricCards(state)[0]
-                                    .animate()
-                                    .fadeIn(duration: 400.ms)
-                                    .slideY(begin: 0.2, end: 0),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildMetricCards(state)[1]
-                                    .animate()
-                                    .fadeIn(duration: 400.ms, delay: 100.ms)
-                                    .slideY(begin: 0.2, end: 0),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildMetricCards(state)[2]
-                                    .animate()
-                                    .fadeIn(duration: 400.ms, delay: 200.ms)
-                                    .slideY(begin: 0.2, end: 0),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildMetricCards(state)[3]
-                                    .animate()
-                                    .fadeIn(duration: 400.ms, delay: 300.ms)
-                                    .slideY(begin: 0.2, end: 0),
-                              ),
-                            ],
-                          ),
-                        SizedBox(height: isSmallMobile ? 12 : 20),
-
-                        // ── ROW 2: Chart + Allocation (or stacked on mobile) ──
-                        if (isMobile) ...[
-                          BlocProvider<PortfolioIntradayCubit>(
-                            create: (_) => PortfolioIntradayCubit(
-                              ref.read(portfolioRemoteDataSourceProvider).requireValue,
+                        ),
+                      ),
+                    ),
+                    // ── Ambient glow orb: purple (top-right) ──
+                    Positioned(
+                      right: -60,
+                      top: -40,
+                      child: IgnorePointer(
+                        child: Container(
+                          width: 300,
+                          height: 300,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? const Color(0x1A6C5DD3)
+                                    : const Color(0x356C5DD3),
+                                Colors.transparent,
+                              ],
                             ),
-                            child: PortfolioHistoryChartWidget(
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // ── Main scrollable content ──
+                    SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── ROW 1: 4 Metric Cards ──────────────────────────
+                          if (isSmallMobile)
+                            // Intrinsic rows avoid GridView aspect-ratio blank space.
+                            Builder(
+                              builder: (context) {
+                                final cards = _buildMetricCards(
+                                  state,
+                                  compact: true,
+                                  glowBorder: false,
+                                );
+                                return Column(
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(child: cards[0]),
+                                        const SizedBox(width: 10),
+                                        Expanded(child: cards[1]),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(child: cards[2]),
+                                        const SizedBox(width: 10),
+                                        Expanded(child: cards[3]),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              },
+                            )
+                          else
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildMetricCards(state)[0]
+                                      .animate()
+                                      .fadeIn(duration: 400.ms)
+                                      .slideY(begin: 0.2, end: 0),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildMetricCards(state)[1]
+                                      .animate()
+                                      .fadeIn(duration: 400.ms, delay: 100.ms)
+                                      .slideY(begin: 0.2, end: 0),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildMetricCards(state)[2]
+                                      .animate()
+                                      .fadeIn(duration: 400.ms, delay: 200.ms)
+                                      .slideY(begin: 0.2, end: 0),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildMetricCards(state)[3]
+                                      .animate()
+                                      .fadeIn(duration: 400.ms, delay: 300.ms)
+                                      .slideY(begin: 0.2, end: 0),
+                                ),
+                              ],
+                            ),
+                          SizedBox(height: isSmallMobile ? 12 : 20),
+
+                          // ── ROW 2: Chart + Allocation (or stacked on mobile) ──
+                          if (isMobile) ...[
+                            PortfolioHistoryChartWidget(
                               key: ValueKey('hist_${portfolioId}_${selectedTimeFrame.code}'),
                               portfolioId: portfolioId,
                               timeFrame: selectedTimeFrame,
                               height: 320,
                               onPeriodStats: (start, end) {
                                 if (mounted) {
-                                  setState(() {
-                                    _periodStartValue = start;
-                                    _periodEndValue = end;
-                                  });
+                                  if (_periodStartValue != start || _periodEndValue != end) {
+                                    setState(() {
+                                      _periodStartValue = start;
+                                      _periodEndValue = end;
+                                    });
+                                  }
                                 }
                               },
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          PortfolioTopMoversPanel(
-                            portfolioId: portfolioId,
-                            timeFrame: selectedTimeFrame,
-                            showTimeFrameSelector: false,
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            height: isSmallMobile ? 650 : 700, // Increased significantly so the sector list doesn't get clipped
-                            child: BlocBuilder<PortfolioCubit, PortfolioState>(
-                              builder: (context, portfolioState) {
-                                final holdings = portfolioState is PortfolioLoaded ? portfolioState.holdings : null;
-                                return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
-                                  builder: (context, state) {
-                                    if (state is PortfolioAnalyticsLoading) {
+                            const SizedBox(height: 16),
+                            PortfolioTopMoversPanel(
+                              portfolioId: portfolioId,
+                              timeFrame: selectedTimeFrame,
+                              showTimeFrameSelector: false,
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              height: isSmallMobile ? 650 : 700, // Increased significantly so the sector list doesn't get clipped
+                              child: BlocBuilder<PortfolioCubit, PortfolioState>(
+                                builder: (context, portfolioState) {
+                                  final holdings = portfolioState is PortfolioLoaded ? portfolioState.holdings : null;
+                                  return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+                                    builder: (context, state) {
+                                      if (state is PortfolioAnalyticsLoading) {
+                                        return const AllocationPanelWidget(isLoading: true);
+                                      } else if (state is PortfolioAnalyticsLoaded) {
+                                        final isLoading =
+                                            state.isLoadingType(AnalyticsDataType.sectorAllocation);
+                                        final error =
+                                            state.getErrorForType(AnalyticsDataType.sectorAllocation);
+                                        return AllocationPanelWidget(
+                                          sectorAllocation: state.sectorAllocation,
+                                          marketCapAllocation: state.marketCapAllocation,
+                                          holdings: holdings,
+                                          isLoading: isLoading,
+                                          error: error,
+                                        );
+                                      } else if (state is PortfolioAnalyticsError) {
+                                        return AllocationPanelWidget(error: state.message);
+                                      }
                                       return const AllocationPanelWidget(isLoading: true);
-                                    } else if (state is PortfolioAnalyticsLoaded) {
-                                      final isLoading =
-                                          state.isLoadingType(AnalyticsDataType.sectorAllocation);
-                                      final error =
-                                          state.getErrorForType(AnalyticsDataType.sectorAllocation);
-                                      return AllocationPanelWidget(
-                                        sectorAllocation: state.sectorAllocation,
-                                        marketCapAllocation: state.marketCapAllocation,
-                                        holdings: holdings,
-                                        isLoading: isLoading,
-                                        error: error,
-                                      );
-                                    } else if (state is PortfolioAnalyticsError) {
-                                      return AllocationPanelWidget(error: state.message);
-                                    }
-                                    return const AllocationPanelWidget(isLoading: true);
-                                  },
-                                );
-                              },
+                                    },
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                        ] else ...[
-                          BlocProvider<PortfolioIntradayCubit>(
-                            create: (_) => PortfolioIntradayCubit(
-                              ref.read(portfolioRemoteDataSourceProvider).requireValue,
-                            ),
-                            child: _MoversAllocationRow(
+                          ] else ...[
+                            _MoversAllocationRow(
                               portfolioId: portfolioId,
                               selectedTimeFrame: selectedTimeFrame,
                               onPeriodStats: (start, end) {
                                 if (mounted) {
-                                  setState(() {
-                                    _periodStartValue = start;
-                                    _periodEndValue = end;
-                                  });
+                                  if (_periodStartValue != start || _periodEndValue != end) {
+                                    setState(() {
+                                      _periodStartValue = start;
+                                      _periodEndValue = end;
+                                    });
+                                  }
                                 }
                               },
                             ),
-                          ),
+                          ],
+                          const SizedBox(height: 20),
                         ],
-                        const SizedBox(height: 20),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           );
         }
 

@@ -76,7 +76,14 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
             ),
           ),
           const SizedBox(height: 12),
-          Expanded(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = MediaQuery.of(context).size.width < 600;
+              if (isMobile) {
+                return _buildMobileList(items, isDark, currencyFormat, onSurface, onSurfaceVariant);
+              }
+              return SizedBox(
+                height: 280,
             child: PaginatedSortableTable<MoverItem>(
               items: items,
               pageSize: 10,
@@ -175,9 +182,132 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                 ),
               ],
             ),
-          ),
-        ],
+          );
+        },
       ),
+    ],
+  ),
+    );
+  }
+
+  Widget _buildMobileList(
+    List<MoverItem> items,
+    bool isDark,
+    NumberFormat currencyFormat,
+    Color onSurface,
+    Color onSurfaceVariant,
+  ) {
+    if (items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: Text('No data available', style: TextStyle(color: onSurfaceVariant)),
+        ),
+      );
+    }
+    
+    // Show only up to 5 items on mobile to save vertical space
+    final displayItems = items.take(5).toList();
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: displayItems.length,
+      separatorBuilder: (context, index) => Divider(
+        color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
+        height: 1,
+      ),
+      itemBuilder: (context, index) {
+        final item = displayItems[index];
+        final positive = item.changePercentage >= 0;
+        final changeColor = positive ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          child: Row(
+            children: [
+              // Avatar
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  item.symbol.isNotEmpty ? item.symbol[0].toUpperCase() : '?',
+                  style: TextStyle(
+                    color: onSurface,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Ticker and Name
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.symbol,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: onSurface,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    if (item.name.isNotEmpty && item.name != item.symbol)
+                      Text(
+                        item.name,
+                        style: TextStyle(
+                          color: onSurfaceVariant,
+                          fontSize: 12,
+                          fontFamily: 'Inter',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+              // Price and Change
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    currencyFormat.format(item.price),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: onSurface,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: changeColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${positive ? '+' : ''}${item.changePercentage.toStringAsFixed(2)}%',
+                      style: TextStyle(
+                        color: changeColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

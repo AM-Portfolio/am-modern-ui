@@ -246,84 +246,44 @@ class DashboardWebScreen extends ConsumerWidget {
               ),
             ),
           ],
-          SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1600),
+          Positioned.fill(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+              child: SizedBox(
+                width: double.infinity,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 16,
-                        runSpacing: 12,
-                        children: [
-                          Text(
-                            'Dashboard',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: onSurface,
-                              fontFamily: 'Inter',
+              children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Dashboard',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: onSurface,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                        const Spacer(),
+                        if (onOpenDocIntel != null)
+                          TextButton.icon(
+                            onPressed: onOpenDocIntel,
+                            icon: const Icon(
+                              Icons.psychology_outlined,
+                              size: 18,
+                              color: Color(0xFF00D2D3),
+                            ),
+                            label: const Text('Add Portfolio'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: onSurface,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             ),
                           ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (onOpenDocIntel != null) ...[
-                                TextButton.icon(
-                                  onPressed: onOpenDocIntel,
-                                  icon: const Icon(
-                                    Icons.psychology_outlined,
-                                    size: 18,
-                                    color: Color(0xFF00D2D3),
-                                  ),
-                                  label: const Text('Add Portfolio'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: onSurface,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                              ],
-                              const GlobalTimeFrameBar(),
-                              const SizedBox(width: 16),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: marketOpenBg,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        color: marketOpenDot,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Market Open',
-                                      style: TextStyle(
-                                        color: marketOpenText,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        fontFamily: 'Inter',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                        const SizedBox(width: 16),
+                        const GlobalTimeFrameBar(),
+                      ],
                     ),
                     const SizedBox(height: 24),
                     dashboardAsync.when(
@@ -337,17 +297,17 @@ class DashboardWebScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
                     if (isCompactWeb) ...[
                       SizedBox(
-                        height: 380,
+                        height: 420,
                         child: _buildPerformanceChart(ref, tfCode),
                       ),
                       const SizedBox(height: 24),
                       SizedBox(
-                        height: 380,
+                        height: 420,
                         child: _buildMoversPanel(ref, tfCode),
                       ),
                     ] else ...[
                       SizedBox(
-                        height: 380,
+                        height: 420,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [

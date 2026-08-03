@@ -1,6 +1,6 @@
 name: am_portfolio_ui
 description: "Portfolio Management Module (Holdings, Analytics, Heatmap)"
-version: 0.0.1
+version: 2.0.0
 homepage:
 
 environment:

@@ -19,41 +19,44 @@ class _FeatureFlagPanelWidgetState extends State<FeatureFlagPanelWidget> {
       BlocBuilder<FeatureFlagCubit, FeatureFlagState>(
         builder: (context, state) => Container(
           decoration: BoxDecoration(
-            color: Colors.black87,
+            color: const Color(0xFF252836),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
+              // Header matching image (1).png
               InkWell(
                 onTap: () {
                   setState(() {
                     _isExpanded = !_isExpanded;
                   });
                 },
+                borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     children: [
-                      const Icon(Icons.build, color: Colors.amber, size: 20),
-                      const SizedBox(width: 8),
+                      const Icon(Icons.handyman_outlined, color: Colors.white, size: 20),
+                      const SizedBox(width: 10),
                       const Text(
                         'Developer Tools',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
                       ),
                       const Spacer(),
                       Icon(
-                        _isExpanded ? Icons.expand_more : Icons.expand_less,
+                        _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                         color: Colors.white,
                       ),
                     ],

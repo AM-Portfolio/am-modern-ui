@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 import '../../providers/custom_basket_provider.dart';
-import '../../domain/models/custom_basket.dart';
-import '../../domain/models/stock_search_result.dart';
+import '../../../domain/models/custom_basket.dart';
+import '../../../domain/models/stock_search_result.dart';
 import '../../widgets/substitute_selector.dart';
-import '../widgets/creator/basket_summary_footer.dart';
+import '../../widgets/creator/basket_summary_footer.dart';
 
 class BasketCreatorPage extends ConsumerStatefulWidget {
   const BasketCreatorPage({Key? key}) : super(key: key);

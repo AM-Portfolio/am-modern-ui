@@ -303,49 +303,32 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   Widget _buildProfileHeader(BuildContext context, bool isDark) {
     return Column(
       children: [
-        Stack(
-          alignment: Alignment.bottomRight,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: ModuleColors.portfolio.withOpacity(0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: ModuleColors.portfolio.withValues(alpha: 0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
-              child: CircleAvatar(
-                radius: 60,
-                backgroundColor: isDark
-                    ? const Color(0xFF2C2C3E)
-                    : Colors.white,
-                child: CircleAvatar(
-                  radius: 56,
-                  backgroundColor: ModuleColors.portfolio.withOpacity(0.1),
-                  child: Icon(
-                    Icons.person,
-                    size: 60,
-                    color: ModuleColors.portfolio,
-                  ),
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
+            ],
+          ),
+          child: CircleAvatar(
+            radius: 60,
+            backgroundColor: isDark
+                ? const Color(0xFF2C2C3E)
+                : Colors.white,
+            child: CircleAvatar(
+              radius: 56,
+              backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.1),
+              child: const Icon(
+                Icons.person,
+                size: 60,
                 color: ModuleColors.portfolio,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDark ? const Color(0xFF1F1F2E) : Colors.white,
-                  width: 3,
-                ),
               ),
-              child: const Icon(Icons.edit, color: Colors.white, size: 16),
             ),
-          ],
+          ),
         ),
         const SizedBox(height: 24),
         Text(

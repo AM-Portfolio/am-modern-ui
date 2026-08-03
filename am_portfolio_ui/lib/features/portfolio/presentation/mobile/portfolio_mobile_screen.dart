@@ -501,65 +501,71 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         ? Colors.white.withValues(alpha: 0.12)
         : const Color(0xFFDDD6FE);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
-      child: Row(
-        children: [
-          Flexible(
-            child: ConstrainedBox(
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Left Group
+            ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 128),
               child: _buildPortfolioSwitcher(context, currentName),
             ),
-          ),
-          const Spacer(),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (widget.onOpenDocIntel != null) ...[
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: widget.onOpenDocIntel,
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      height: 36,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: chipBg,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: chipBorder),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.psychology_outlined,
-                            size: 17,
-                            color: Color(0xFF00D2D3),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Add Portfolio',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: onSurface,
-                              height: 1,
+            // Right Group
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (widget.onOpenDocIntel != null) ...[
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: widget.onOpenDocIntel,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        height: 36,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: chipBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: chipBorder),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.psychology_outlined,
+                              size: 17,
+                              color: Color(0xFF00D2D3),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 5),
+                            Text(
+                              'Add Portfolio',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: onSurface,
+                                height: 1,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
+                  const SizedBox(width: 12), // Strict gap: 12px
+                ],
+                const GlobalTimeFrameBar(
+                  variant: GlobalTimeFrameVariant.dropdown,
                 ),
-                const SizedBox(width: 8),
               ],
-              const GlobalTimeFrameBar(
-                variant: GlobalTimeFrameVariant.dropdown,
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
