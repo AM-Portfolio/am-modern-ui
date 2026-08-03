@@ -14,9 +14,9 @@ class AiChatService {
 
   AiChatService(this._dio);
 
+  /// Identity comes from Bearer via [AuthInterceptor]; do not send body userId.
   Future<AiIntentResponse> chat({
     required String message,
-    required String userId,
     String? sessionId,
   }) async {
     try {
@@ -24,7 +24,6 @@ class AiChatService {
         chatPath,
         data: {
           'message': message,
-          'userId': userId,
           if (sessionId != null) 'sessionId': sessionId,
         },
       );

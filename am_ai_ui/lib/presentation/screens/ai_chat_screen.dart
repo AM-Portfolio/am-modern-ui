@@ -9,8 +9,7 @@ import '../../data/ai_intent_response.dart';
 /// AI Chat Screen — uses [AppColors] and [ThemeColorExtensions] for full
 /// dark/light theme sync with the rest of the AM design system.
 class AiChatScreen extends ConsumerStatefulWidget {
-  final String userId;
-  const AiChatScreen({super.key, required this.userId});
+  const AiChatScreen({super.key});
 
   @override
   ConsumerState<AiChatScreen> createState() => _AiChatScreenState();
@@ -38,7 +37,6 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     _input.clear();
     ref.read(aiChatProvider.notifier).sendMessage(
       text: text,
-      userId: widget.userId,
     );
     _scrollToBottom();
   }
@@ -107,7 +105,6 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
           Expanded(
             child: chatState.messages.isEmpty
                 ? _EmptyState(
-                    userId: widget.userId,
                     onSuggestion: (text) {
                       _input.text = text;
                       _send();
@@ -388,10 +385,9 @@ class _InputBar extends StatelessWidget {
 // ─── Empty State ─────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
-  final String userId;
   final ValueChanged<String> onSuggestion;
 
-  const _EmptyState({required this.userId, required this.onSuggestion});
+  const _EmptyState({required this.onSuggestion});
 
   static const _suggestions = [
     '📊 Show my portfolio summary',

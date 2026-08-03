@@ -54,7 +54,7 @@ class AiChatNotifier extends Notifier<ChatState> {
   @override
   ChatState build() => const ChatState();
 
-  Future<void> sendMessage({required String text, required String userId}) async {
+  Future<void> sendMessage({required String text}) async {
     if (text.trim().isEmpty) return;
 
     final userMsg = ChatMessage(role: ChatRole.user, text: text);
@@ -66,7 +66,6 @@ class AiChatNotifier extends Notifier<ChatState> {
     final service = ref.read(aiChatServiceProvider);
     final response = await service.chat(
       message: text,
-      userId: userId,
       sessionId: state.sessionId,
     );
 

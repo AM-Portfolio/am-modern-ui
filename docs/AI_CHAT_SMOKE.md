@@ -18,9 +18,11 @@
 
 ```powershell
 curl https://am-dev.asrax.in/ai/health
+# Identity = JWT sub; omit body userId
 curl -X POST https://am-dev.asrax.in/ai/api/v1/ai/chat `
   -H "Content-Type: application/json" `
-  -d '{"message":"hello","userId":"b75743c9-fe0e-4c54-8ee0-8da350cc27b3","sessionId":"smoke"}'
+  -H "Authorization: Bearer $TOKEN" `
+  -d '{"message":"hello","sessionId":"smoke"}'
 ```
 
 Postman: Asrax → collection **am-fin-agent** → env **AM Fin-Agent - Dev**.

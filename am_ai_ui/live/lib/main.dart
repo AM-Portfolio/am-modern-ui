@@ -37,14 +37,7 @@ class AIChatExampleApp extends StatelessWidget {
       home: AuthWrapper(
         child: BlocBuilder<AuthCubit, AuthState>(
           builder: (context, state) {
-            String userId = '';
-            if (state is Authenticated) {
-              userId = state.user.id;
-            }
-            // Using AIChatScreen as the home
-            return AiChatScreen(
-              userId: userId,
-            );
+            return const AiChatScreen();
           },
         ),
       ),
