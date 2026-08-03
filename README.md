@@ -6,7 +6,9 @@ A comprehensive Flutter-based investment management platform built with modular 
 
 ![AM Modern UI Architecture](./docs/assets/am_modern_ui_architecture.png)
 
-For detailed architecture documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md)
+For detailed architecture documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+**AI chat smoke:** [docs/AI_CHAT_SMOKE.md](./docs/AI_CHAT_SMOKE.md) — prefer `services.aiGateway` (8120); L3 agent stays in `am-agents/fin-portfolio-agent`.
 
 ## 🚀 Quick Start
 

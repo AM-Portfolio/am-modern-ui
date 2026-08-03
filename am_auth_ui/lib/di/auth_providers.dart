@@ -39,13 +39,15 @@ class AuthProviders {
   }
 
   static Dio get dio {
-    _dio ??= Dio(
-      BaseOptions(
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
-      ),
-    );
-    _dio!.interceptors.add(AuthInterceptor(secureStorageService));
+    if (_dio == null) {
+      _dio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
+      );
+      _dio!.interceptors.add(AuthInterceptor(secureStorageService));
+    }
     return _dio!;
   }
 
@@ -95,19 +97,19 @@ class AuthProviders {
   static RegisterUseCase get registerUseCase => RegisterUseCase(authRepository);
 
   static AuthCubit createAuthCubit() => AuthCubit(
-    emailLoginUseCase: emailLoginUseCase,
-    googleLoginUseCase: googleLoginUseCase,
-    demoLoginUseCase: demoLoginUseCase,
-    logoutUseCase: logoutUseCase,
-    checkAuthStatusUseCase: checkAuthStatusUseCase,
-    getCurrentUserUseCase: getCurrentUserUseCase,
-    registerUseCase: registerUseCase,
-    authRepository: authRepository,
-  );
+        emailLoginUseCase: emailLoginUseCase,
+        googleLoginUseCase: googleLoginUseCase,
+        demoLoginUseCase: demoLoginUseCase,
+        logoutUseCase: logoutUseCase,
+        checkAuthStatusUseCase: checkAuthStatusUseCase,
+        getCurrentUserUseCase: getCurrentUserUseCase,
+        registerUseCase: registerUseCase,
+        authRepository: authRepository,
+      );
 
   static List<BlocProvider> get providers => [
-    BlocProvider<AuthCubit>(
-      create: (context) => createAuthCubit()..checkAuthStatus(),
-    ),
-  ];
+        BlocProvider<AuthCubit>(
+          create: (context) => createAuthCubit()..checkAuthStatus(),
+        ),
+      ];
 }

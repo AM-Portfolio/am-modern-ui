@@ -19,6 +19,7 @@ void main() {
           (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
+          artifactType: 'portfolio.summary.v1',
           widgetId: 'PORTFOLIO_SUMMARY',
           widgetParams: {
             'userId': 'u1',
@@ -52,6 +53,7 @@ void main() {
       testWidgets('without data key shows fallback text', (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
+          artifactType: 'portfolio.summary.v1',
           widgetId: 'PORTFOLIO_SUMMARY',
           widgetParams: const {'userId': 'u1'},
           sessionId: 's',
@@ -81,6 +83,7 @@ void main() {
       testWidgets('returns a SizedBox.shrink (zero-size widget)', (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
+          artifactType: 'data.generic.v1',
           widgetId: 'TOTALLY_UNKNOWN_WIDGET',
           widgetParams: const {},
           sessionId: 's',
@@ -99,6 +102,7 @@ void main() {
       testWidgets('renders Holdings Table title text', (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
+          artifactType: 'holdings.list.v1',
           widgetId: 'HOLDINGS_TABLE',
           widgetParams: const {},
           sessionId: 's',
@@ -109,7 +113,7 @@ void main() {
         await tester.pumpWidget(_wrap(AiWidgetFactory.build(response)));
         await tester.pumpAndSettle();
 
-        expect(find.text('Holdings Table'), findsOneWidget);
+        expect(find.text('Holdings'), findsOneWidget);
       });
     });
   });

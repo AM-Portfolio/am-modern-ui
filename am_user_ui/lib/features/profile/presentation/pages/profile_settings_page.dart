@@ -6,6 +6,7 @@ import 'dart:ui';
 
 import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';
+import 'api_keys_page.dart';
 
 /// Profile and Settings page for user account management
 class ProfileSettingsPage extends StatefulWidget {
@@ -455,6 +456,17 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                 title: 'Change Password',
                 isDark: isDark,
                 onTap: () => _showChangePasswordDialog(context),
+              ),
+              _buildDivider(isDark),
+              _buildSettingTile(
+                context,
+                icon: Icons.key_rounded,
+                title: 'API Keys',
+                subtitle: 'Manage Cursor and MCP access',
+                isDark: isDark,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const ApiKeysPage()),
+                ),
               ),
               if (onOpenSubscription != null) ...[
                 _buildDivider(isDark),
@@ -1001,7 +1013,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         value: selectedReason,
-                        dropdownColor: isDark ? const Color(0xFF1F1F2E) : Colors.white,
+                        dropdownColor: isDark
+                            ? const Color(0xFF1F1F2E)
+                            : Colors.white,
                         style: TextStyle(
                           color: isDark ? Colors.white : Colors.black,
                           fontSize: 14,
@@ -1015,7 +1029,10 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                         ),
                         items: reasons.map((r) {
                           return DropdownMenuItem<String>(
@@ -1050,7 +1067,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                               borderSide: BorderSide.none,
                             ),
                           ),
-                          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Feedback is required when selecting "Other".';
@@ -1101,7 +1120,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       );
 
                       try {
-                        await authCubit.requestAccountDeletion(feedback: feedback);
+                        await authCubit.requestAccountDeletion(
+                          feedback: feedback,
+                        );
                         if (context.mounted) {
                           showDialog(
                             context: context,
