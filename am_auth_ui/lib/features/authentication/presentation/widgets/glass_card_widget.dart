@@ -25,8 +25,8 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
   late final Animation<double> _scale;
   late final Animation<double> _opacity;
 
-  Offset _parallax = Offset.zero;   // card translation (max ±5 px)
-  Offset _reflPos = Offset.zero;    // cursor position inside card
+  Offset _parallax = Offset.zero; // card translation (max ±5 px)
+  Offset _reflPos = Offset.zero; // cursor position inside card
 
   @override
   void initState() {
@@ -74,7 +74,7 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final r = widget.isCompact ? 30.0 : 35.0;   // 35px radius for Light Theme
+    final r = widget.isCompact ? 30.0 : 35.0; // 35px radius for Light Theme
     final pad = widget.isCompact ? 24.0 : 36.0; // inner padding
 
     // ── Material & Colors ───────────────────────────────────────────────────
@@ -160,7 +160,8 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
             curve: Curves.easeOutCubic,
             transform: Matrix4.translationValues(_parallax.dx, _parallax.dy, 0),
             constraints: BoxConstraints(
-              maxWidth: widget.maxWidth ?? (widget.isCompact ? double.infinity : 440),
+              maxWidth:
+                  widget.maxWidth ?? (widget.isCompact ? double.infinity : 440),
             ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(r),
@@ -201,8 +202,10 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(r - 1),
                               border: Border(
-                                top: BorderSide(color: topHighlightColor, width: 1.2),
-                                left: BorderSide(color: leftHighlightColor, width: 1.0),
+                                top: BorderSide(
+                                    color: topHighlightColor, width: 1.2),
+                                left: BorderSide(
+                                    color: leftHighlightColor, width: 1.0),
                               ),
                             ),
                           ),
@@ -241,7 +244,8 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
                                   shape: BoxShape.circle,
                                   gradient: RadialGradient(
                                     colors: [
-                                      Colors.white.withValues(alpha: isDark ? 0.08 : 0.12),
+                                      Colors.white.withValues(
+                                          alpha: isDark ? 0.08 : 0.12),
                                       Colors.transparent,
                                     ],
                                   ),
@@ -282,11 +286,25 @@ Float64List _satBrightnessMatrix({
   final cOffset = (1.0 - contrast) * 0.5 * 255;
 
   return Float64List.fromList([
-    rw + (1 - rw) * s, gw - gw * s,       bw - bw * s,       0, cOffset,
-    rw - rw * s,       gw + (1 - gw) * s, bw - bw * s,       0, cOffset,
-    rw - rw * s,       gw - gw * s,       bw + (1 - bw) * s, 0, cOffset,
-    0,                 0,                 0,                  b, 0,
+    rw + (1 - rw) * s,
+    gw - gw * s,
+    bw - bw * s,
+    0,
+    cOffset,
+    rw - rw * s,
+    gw + (1 - gw) * s,
+    bw - bw * s,
+    0,
+    cOffset,
+    rw - rw * s,
+    gw - gw * s,
+    bw + (1 - bw) * s,
+    0,
+    cOffset,
+    0,
+    0,
+    0,
+    b,
+    0,
   ]);
 }
-
-

@@ -28,12 +28,15 @@ abstract class FavoriteFilterList with _$FavoriteFilterList {
   }) = _FavoriteFilterList;
 
   /// Create empty filter list
-  factory FavoriteFilterList.empty(String userId) => FavoriteFilterList(userId: userId, filters: []);
+  factory FavoriteFilterList.empty(String userId) =>
+      FavoriteFilterList(userId: userId, filters: []);
 }
 
 /// Domain entity for bulk delete result
 @freezed
 abstract class BulkDeleteResult with _$BulkDeleteResult {
-  const factory BulkDeleteResult({required int deletedCount, required int totalRequested, String? message}) =
-      _BulkDeleteResult;
+  const factory BulkDeleteResult(
+      {required int deletedCount,
+      required int totalRequested,
+      String? message}) = _BulkDeleteResult;
 }

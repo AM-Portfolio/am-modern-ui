@@ -48,7 +48,8 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Row(
                 children: [
@@ -58,7 +59,8 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                       color: theme.colorScheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.analytics, color: theme.colorScheme.primary, size: 24),
+                    child: Icon(Icons.analytics,
+                        color: theme.colorScheme.primary, size: 24),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -67,17 +69,21 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                       children: [
                         Text(
                           'Trades for $periodText',
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '${widget.trades.length} trade${widget.trades.length != 1 ? 's' : ''} â€¢ ${_selectedIds.length} selected',
-                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
                   ),
-                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(context).pop()),
+                  IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop()),
                 ],
               ),
             ),
@@ -118,12 +124,16 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                   ),
                   Row(
                     children: [
-                      OutlinedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+                      OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel')),
                       const SizedBox(width: 12),
                       FilledButton.icon(
-                        onPressed: () => Navigator.of(context).pop(_selectedIds.toList()),
+                        onPressed: () =>
+                            Navigator.of(context).pop(_selectedIds.toList()),
                         icon: const Icon(Icons.check, size: 18),
-                        label: Text('Link ${_selectedIds.length} Trade${_selectedIds.length != 1 ? 's' : ''}'),
+                        label: Text(
+                            'Link ${_selectedIds.length} Trade${_selectedIds.length != 1 ? 's' : ''}'),
                       ),
                     ],
                   ),
@@ -141,7 +151,8 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
       case TradePeriodType.daily:
         return DateFormat('MMM dd, yyyy').format(widget.date);
       case TradePeriodType.weekly:
-        final weekStart = widget.date.subtract(Duration(days: widget.date.weekday - 1));
+        final weekStart =
+            widget.date.subtract(Duration(days: widget.date.weekday - 1));
         final weekEnd = weekStart.add(const Duration(days: 6));
         return 'Week of ${DateFormat('MMM dd').format(weekStart)} - ${DateFormat('MMM dd, yyyy').format(weekEnd)}';
       case TradePeriodType.monthly:
@@ -152,25 +163,30 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
   }
 
   Widget _buildEmptyState(ThemeData theme) => Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.inbox_outlined, size: 64, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
-        const SizedBox(height: 16),
-        Text(
-          'No trades found for this period',
-          style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inbox_outlined,
+                size: 64,
+                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            Text(
+              'No trades found for this period',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try selecting a different date or period',
+              style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7)),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Try selecting a different date or period',
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7)),
-        ),
-      ],
-    ),
-  );
+      );
 
-  Widget _buildTradeCard(ThemeData theme, TradeHoldingViewModel trade, bool isSelected) {
+  Widget _buildTradeCard(
+      ThemeData theme, TradeHoldingViewModel trade, bool isSelected) {
     final profitLoss = trade.profitLoss ?? 0.0;
     final profitLossPercentage = trade.profitLossPercentage ?? 0.0;
     final isProfitable = profitLoss >= 0;
@@ -193,11 +209,15 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             border: Border.all(
-              color: isSelected ? theme.colorScheme.primary : theme.dividerColor.withOpacity(0.5),
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.dividerColor.withOpacity(0.5),
               width: isSelected ? 2 : 1,
             ),
             borderRadius: BorderRadius.circular(12),
-            color: isSelected ? theme.colorScheme.primaryContainer.withOpacity(0.1) : theme.colorScheme.surface,
+            color: isSelected
+                ? theme.colorScheme.primaryContainer.withOpacity(0.1)
+                : theme.colorScheme.surface,
           ),
           child: Row(
             children: [
@@ -225,9 +245,11 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                       children: [
                         // Symbol
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.secondaryContainer.withOpacity(0.5),
+                            color: theme.colorScheme.secondaryContainer
+                                .withOpacity(0.5),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -243,11 +265,13 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                         // Status
                         if (trade.status != null)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: statusColor.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: statusColor.withOpacity(0.3)),
+                              border: Border.all(
+                                  color: statusColor.withOpacity(0.3)),
                             ),
                             child: Text(
                               trade.status!.replaceAll('_', ' '),
@@ -266,10 +290,12 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                           Chip(
                             label: Text(
                               trade.tradePositionType!,
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                  fontSize: 10, fontWeight: FontWeight.w600),
                             ),
                             padding: EdgeInsets.zero,
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                             visualDensity: VisualDensity.compact,
                             backgroundColor: trade.tradePositionType == 'LONG'
                                 ? Colors.green.withOpacity(0.15)
@@ -293,12 +319,16 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                           _buildDetailChip(
                             theme,
                             Icons.calendar_today,
-                            DateFormat('MMM dd, yyyy').format(trade.entryTimestamp!),
+                            DateFormat('MMM dd, yyyy')
+                                .format(trade.entryTimestamp!),
                           ),
-                        _buildDetailChip(theme, Icons.shopping_cart, 'Qty: ${trade.quantity ?? 0}'),
-                        _buildDetailChip(theme, Icons.currency_rupee, trade.entryPrice?.toStringAsFixed(2) ?? '0.00'),
+                        _buildDetailChip(theme, Icons.shopping_cart,
+                            'Qty: ${trade.quantity ?? 0}'),
+                        _buildDetailChip(theme, Icons.currency_rupee,
+                            trade.entryPrice?.toStringAsFixed(2) ?? '0.00'),
                         if (trade.exitPrice != null)
-                          _buildDetailChip(theme, Icons.exit_to_app, trade.exitPrice!.toStringAsFixed(2)),
+                          _buildDetailChip(theme, Icons.exit_to_app,
+                              trade.exitPrice!.toStringAsFixed(2)),
                       ],
                     ),
                   ],
@@ -309,9 +339,12 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
 
               // P&L
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isProfitable ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                  color: isProfitable
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -321,13 +354,15 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                       '${isProfitable ? '+' : ''}${profitLoss.toStringAsFixed(2)}',
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: isProfitable ? Colors.green[700] : Colors.red[700],
+                        color:
+                            isProfitable ? Colors.green[700] : Colors.red[700],
                       ),
                     ),
                     Text(
                       '${isProfitable ? '+' : ''}${profitLossPercentage.toStringAsFixed(2)}%',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: isProfitable ? Colors.green[600] : Colors.red[600],
+                        color:
+                            isProfitable ? Colors.green[600] : Colors.red[600],
                       ),
                     ),
                   ],
@@ -340,24 +375,26 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
     );
   }
 
-  Widget _buildDetailChip(ThemeData theme, IconData icon, String label) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-    decoration: BoxDecoration(
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-      borderRadius: BorderRadius.circular(6),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+  Widget _buildDetailChip(ThemeData theme, IconData icon, String label) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(6),
         ),
-      ],
-    ),
-  );
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                  fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      );
 
   Color _getStatusColor(ThemeData theme, String? status) {
     if (status == null) return theme.colorScheme.onSurfaceVariant;
@@ -374,4 +411,3 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
     }
   }
 }
-

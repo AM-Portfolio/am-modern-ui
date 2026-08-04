@@ -129,39 +129,42 @@ class HistoricalDataMetadata {
   String? source_;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is HistoricalDataMetadata &&
-    other.fromDate == fromDate &&
-    other.toDate == toDate &&
-    other.interval == interval &&
-    other.intervalEnum == intervalEnum &&
-    other.totalSymbols == totalSymbols &&
-    other.successfulSymbols == successfulSymbols &&
-    other.totalDataPoints == totalDataPoints &&
-    other.filteredDataPoints == filteredDataPoints &&
-    other.filtered == filtered &&
-    other.filterType == filterType &&
-    other.filterFrequency == filterFrequency &&
-    other.processingTimeMs == processingTimeMs &&
-    other.source_ == source_;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HistoricalDataMetadata &&
+          other.fromDate == fromDate &&
+          other.toDate == toDate &&
+          other.interval == interval &&
+          other.intervalEnum == intervalEnum &&
+          other.totalSymbols == totalSymbols &&
+          other.successfulSymbols == successfulSymbols &&
+          other.totalDataPoints == totalDataPoints &&
+          other.filteredDataPoints == filteredDataPoints &&
+          other.filtered == filtered &&
+          other.filterType == filterType &&
+          other.filterFrequency == filterFrequency &&
+          other.processingTimeMs == processingTimeMs &&
+          other.source_ == source_;
 
   @override
   int get hashCode =>
-    (fromDate == null ? 0 : fromDate!.hashCode) +
-    (toDate == null ? 0 : toDate!.hashCode) +
-    (interval == null ? 0 : interval!.hashCode) +
-    (intervalEnum == null ? 0 : intervalEnum!.hashCode) +
-    (totalSymbols == null ? 0 : totalSymbols!.hashCode) +
-    (successfulSymbols == null ? 0 : successfulSymbols!.hashCode) +
-    (totalDataPoints == null ? 0 : totalDataPoints!.hashCode) +
-    (filteredDataPoints == null ? 0 : filteredDataPoints!.hashCode) +
-    (filtered == null ? 0 : filtered!.hashCode) +
-    (filterType == null ? 0 : filterType!.hashCode) +
-    (filterFrequency == null ? 0 : filterFrequency!.hashCode) +
-    (processingTimeMs == null ? 0 : processingTimeMs!.hashCode) +
-    (source_ == null ? 0 : source_!.hashCode);
+      (fromDate == null ? 0 : fromDate!.hashCode) +
+      (toDate == null ? 0 : toDate!.hashCode) +
+      (interval == null ? 0 : interval!.hashCode) +
+      (intervalEnum == null ? 0 : intervalEnum!.hashCode) +
+      (totalSymbols == null ? 0 : totalSymbols!.hashCode) +
+      (successfulSymbols == null ? 0 : successfulSymbols!.hashCode) +
+      (totalDataPoints == null ? 0 : totalDataPoints!.hashCode) +
+      (filteredDataPoints == null ? 0 : filteredDataPoints!.hashCode) +
+      (filtered == null ? 0 : filtered!.hashCode) +
+      (filterType == null ? 0 : filterType!.hashCode) +
+      (filterFrequency == null ? 0 : filterFrequency!.hashCode) +
+      (processingTimeMs == null ? 0 : processingTimeMs!.hashCode) +
+      (source_ == null ? 0 : source_!.hashCode);
 
   @override
-  String toString() => 'HistoricalDataMetadata[fromDate=$fromDate, toDate=$toDate, interval=$interval, intervalEnum=$intervalEnum, totalSymbols=$totalSymbols, successfulSymbols=$successfulSymbols, totalDataPoints=$totalDataPoints, filteredDataPoints=$filteredDataPoints, filtered=$filtered, filterType=$filterType, filterFrequency=$filterFrequency, processingTimeMs=$processingTimeMs, source_=$source_]';
+  String toString() =>
+      'HistoricalDataMetadata[fromDate=$fromDate, toDate=$toDate, interval=$interval, intervalEnum=$intervalEnum, totalSymbols=$totalSymbols, successfulSymbols=$successfulSymbols, totalDataPoints=$totalDataPoints, filteredDataPoints=$filteredDataPoints, filtered=$filtered, filterType=$filterType, filterFrequency=$filterFrequency, processingTimeMs=$processingTimeMs, source_=$source_]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -244,8 +247,10 @@ class HistoricalDataMetadata {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "HistoricalDataMetadata[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "HistoricalDataMetadata[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "HistoricalDataMetadata[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "HistoricalDataMetadata[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -269,7 +274,10 @@ class HistoricalDataMetadata {
     return null;
   }
 
-  static List<HistoricalDataMetadata> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<HistoricalDataMetadata> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <HistoricalDataMetadata>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -285,7 +293,7 @@ class HistoricalDataMetadata {
   static Map<String, HistoricalDataMetadata> mapFromJson(dynamic json) {
     final map = <String, HistoricalDataMetadata>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = HistoricalDataMetadata.fromJson(entry.value);
         if (value != null) {
@@ -297,19 +305,23 @@ class HistoricalDataMetadata {
   }
 
   // maps a json object with a list of HistoricalDataMetadata-objects as value to a dart map
-  static Map<String, List<HistoricalDataMetadata>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<HistoricalDataMetadata>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<HistoricalDataMetadata>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = HistoricalDataMetadata.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = HistoricalDataMetadata.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

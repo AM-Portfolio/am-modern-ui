@@ -100,38 +100,41 @@ class RecentActivityResponse {
   int? totalNeutral;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is RecentActivityResponse &&
-    _deepEquality.equals(other.items, items) &&
-    other.page == page &&
-    other.size == size &&
-    other.totalItems == totalItems &&
-    other.totalPages == totalPages &&
-    other.hasNext == hasNext &&
-    other.hasPrevious == hasPrevious &&
-    other.totalWinning == totalWinning &&
-    other.totalLosing == totalLosing &&
-    other.totalNeutral == totalNeutral;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RecentActivityResponse &&
+          _deepEquality.equals(other.items, items) &&
+          other.page == page &&
+          other.size == size &&
+          other.totalItems == totalItems &&
+          other.totalPages == totalPages &&
+          other.hasNext == hasNext &&
+          other.hasPrevious == hasPrevious &&
+          other.totalWinning == totalWinning &&
+          other.totalLosing == totalLosing &&
+          other.totalNeutral == totalNeutral;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (items.hashCode) +
-    (page == null ? 0 : page!.hashCode) +
-    (size == null ? 0 : size!.hashCode) +
-    (totalItems == null ? 0 : totalItems!.hashCode) +
-    (totalPages == null ? 0 : totalPages!.hashCode) +
-    (hasNext == null ? 0 : hasNext!.hashCode) +
-    (hasPrevious == null ? 0 : hasPrevious!.hashCode) +
-    (totalWinning == null ? 0 : totalWinning!.hashCode) +
-    (totalLosing == null ? 0 : totalLosing!.hashCode) +
-    (totalNeutral == null ? 0 : totalNeutral!.hashCode);
+      // ignore: unnecessary_parenthesis
+      (items.hashCode) +
+      (page == null ? 0 : page!.hashCode) +
+      (size == null ? 0 : size!.hashCode) +
+      (totalItems == null ? 0 : totalItems!.hashCode) +
+      (totalPages == null ? 0 : totalPages!.hashCode) +
+      (hasNext == null ? 0 : hasNext!.hashCode) +
+      (hasPrevious == null ? 0 : hasPrevious!.hashCode) +
+      (totalWinning == null ? 0 : totalWinning!.hashCode) +
+      (totalLosing == null ? 0 : totalLosing!.hashCode) +
+      (totalNeutral == null ? 0 : totalNeutral!.hashCode);
 
   @override
-  String toString() => 'RecentActivityResponse[items=$items, page=$page, size=$size, totalItems=$totalItems, totalPages=$totalPages, hasNext=$hasNext, hasPrevious=$hasPrevious, totalWinning=$totalWinning, totalLosing=$totalLosing, totalNeutral=$totalNeutral]';
+  String toString() =>
+      'RecentActivityResponse[items=$items, page=$page, size=$size, totalItems=$totalItems, totalPages=$totalPages, hasNext=$hasNext, hasPrevious=$hasPrevious, totalWinning=$totalWinning, totalLosing=$totalLosing, totalNeutral=$totalNeutral]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'items'] = this.items;
+    json[r'items'] = this.items;
     if (this.page != null) {
       json[r'page'] = this.page;
     } else {
@@ -192,8 +195,10 @@ class RecentActivityResponse {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "RecentActivityResponse[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "RecentActivityResponse[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "RecentActivityResponse[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "RecentActivityResponse[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -214,7 +219,10 @@ class RecentActivityResponse {
     return null;
   }
 
-  static List<RecentActivityResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<RecentActivityResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <RecentActivityResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -242,20 +250,24 @@ class RecentActivityResponse {
   }
 
   // maps a json object with a list of RecentActivityResponse-objects as value to a dart map
-  static Map<String, List<RecentActivityResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<RecentActivityResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<RecentActivityResponse>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = RecentActivityResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = RecentActivityResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

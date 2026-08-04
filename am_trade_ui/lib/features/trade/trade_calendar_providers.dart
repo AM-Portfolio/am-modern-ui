@@ -5,14 +5,18 @@ import 'providers/trade_internal_providers.dart';
 import 'trade_controller_providers.dart';
 
 /// Provider for TradeCalendarCubit
-final tradeCalendarCubitProvider = FutureProvider.family<TradeCalendarCubit, String>((
+final tradeCalendarCubitProvider =
+    FutureProvider.family<TradeCalendarCubit, String>((
   ref,
   portfolioId,
 ) async {
   final getTradeCalendar = await ref.watch(getTradeCalendarProvider.future);
-  final getTradeCalendarByMonth = await ref.watch(getTradeCalendarByMonthProvider.future);
-  final getTradeCalendarByDay = await ref.watch(getTradeCalendarByDayProvider.future);
-  final getTradeCalendarByDateRange = await ref.watch(getTradeCalendarByDateRangeProvider.future);
+  final getTradeCalendarByMonth =
+      await ref.watch(getTradeCalendarByMonthProvider.future);
+  final getTradeCalendarByDay =
+      await ref.watch(getTradeCalendarByDayProvider.future);
+  final getTradeCalendarByDateRange =
+      await ref.watch(getTradeCalendarByDateRangeProvider.future);
 
   final cubit = TradeCalendarCubit(
     getTradeCalendar,

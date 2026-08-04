@@ -13,7 +13,8 @@ part 'filter_criteria_dtos.g.dart';
 class DateRangeFilterDto {
   const DateRangeFilterDto({required this.startDate, required this.endDate});
 
-  factory DateRangeFilterDto.fromJson(Map<String, dynamic> json) => _$DateRangeFilterDtoFromJson(json);
+  factory DateRangeFilterDto.fromJson(Map<String, dynamic> json) =>
+      _$DateRangeFilterDtoFromJson(json);
 
   final String startDate;
   final String endDate;
@@ -24,7 +25,11 @@ class DateRangeFilterDto {
 /// DTO for instrument filter criteria
 @JsonSerializable()
 class InstrumentFilterCriteriaDto {
-  const InstrumentFilterCriteriaDto({this.marketSegments, this.baseSymbols, this.indexTypes, this.derivativeTypes});
+  const InstrumentFilterCriteriaDto(
+      {this.marketSegments,
+      this.baseSymbols,
+      this.indexTypes,
+      this.derivativeTypes});
 
   factory InstrumentFilterCriteriaDto.fromJson(Map<String, dynamic> json) =>
       _$InstrumentFilterCriteriaDtoFromJson(json);
@@ -65,9 +70,14 @@ class TradeCharacteristicsFilterDto {
 /// DTO for profit/loss filter criteria
 @JsonSerializable()
 class ProfitLossFilterDto {
-  const ProfitLossFilterDto({this.minProfitLoss, this.maxProfitLoss, this.minPositionSize, this.maxPositionSize});
+  const ProfitLossFilterDto(
+      {this.minProfitLoss,
+      this.maxProfitLoss,
+      this.minPositionSize,
+      this.maxPositionSize});
 
-  factory ProfitLossFilterDto.fromJson(Map<String, dynamic> json) => _$ProfitLossFilterDtoFromJson(json);
+  factory ProfitLossFilterDto.fromJson(Map<String, dynamic> json) =>
+      _$ProfitLossFilterDtoFromJson(json);
 
   final double? minProfitLoss;
   final double? maxProfitLoss;

@@ -56,7 +56,7 @@ class _LoginFormState extends State<LoginForm> {
       listener: (context, state) {
         // Debug logging for state changes
         print('🔵 LoginForm: State changed to ${state.runtimeType}');
-        
+
         if (state is AuthError) {
           print('❌ LoginForm: AuthError received - ${state.message}');
           ScaffoldMessenger.of(context).showSnackBar(
@@ -66,7 +66,7 @@ class _LoginFormState extends State<LoginForm> {
             ),
           );
         }
-        
+
         if (state is AuthLoading) {
           print('⏳ LoginForm: AuthLoading state');
         }
@@ -120,7 +120,9 @@ class _LoginFormState extends State<LoginForm> {
                 onFieldSubmitted: (_) => !isLoading ? _handleLogin() : null,
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
                     color: Colors.black54,
                   ),
                   onPressed: () {
@@ -145,7 +147,8 @@ class _LoginFormState extends State<LoginForm> {
                     backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.white,
                     elevation: 5,
-                    shadowColor: Theme.of(context).primaryColor.withValues(alpha: 0.4),
+                    shadowColor:
+                        Theme.of(context).primaryColor.withValues(alpha: 0.4),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),

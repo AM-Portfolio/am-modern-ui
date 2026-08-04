@@ -258,36 +258,36 @@ class _AttachmentPickerMobileState
   }
 
   Widget _buildUploadButtons() => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    children: [
-      if (widget.allowedType == AttachmentType.image)
-        OutlinedButton.icon(
-          onPressed: _isUploading ? null : _pickFromGallery,
-          icon: const Icon(Icons.photo_library),
-          label: const Text('Gallery'),
-        ),
-      OutlinedButton.icon(
-        onPressed: _isUploading ? null : _pickFile,
-        icon: Icon(_getPickerIcon()),
-        label: Text(_getPickerLabel()),
-      ),
-    ],
-  );
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          if (widget.allowedType == AttachmentType.image)
+            OutlinedButton.icon(
+              onPressed: _isUploading ? null : _pickFromGallery,
+              icon: const Icon(Icons.photo_library),
+              label: const Text('Gallery'),
+            ),
+          OutlinedButton.icon(
+            onPressed: _isUploading ? null : _pickFile,
+            icon: Icon(_getPickerIcon()),
+            label: Text(_getPickerLabel()),
+          ),
+        ],
+      );
 
   Widget _buildMaxReachedMessage(ThemeData theme) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    decoration: BoxDecoration(
-      color: theme.colorScheme.errorContainer.withOpacity(0.3),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Text(
-      'Maximum ${widget.maxAttachments} attachments reached',
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.error,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.errorContainer.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          'Maximum ${widget.maxAttachments} attachments reached',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.error,
+          ),
+        ),
+      );
 
   Future<void> _pickFromGallery() async {
     try {

@@ -23,17 +23,13 @@ abstract class PortfolioRemoteDataSource {
   Future<PortfolioHoldingsDto> getPortfolioHoldings();
 
   /// Get portfolio holdings from remote API for specific portfolio
-  Future<PortfolioHoldingsDto> getPortfolioHoldingsById(
-    String portfolioId,
-  );
+  Future<PortfolioHoldingsDto> getPortfolioHoldingsById(String portfolioId);
 
   /// Get portfolio summary from remote API (legacy - uses default portfolio)
   Future<PortfolioSummaryDto> getPortfolioSummary();
 
   /// Get portfolio summary from remote API for specific portfolio
-  Future<PortfolioSummaryDto> getPortfolioSummaryById(
-    String portfolioId,
-  );
+  Future<PortfolioSummaryDto> getPortfolioSummaryById(String portfolioId);
 
   /// Get portfolio analytics from remote API
   Future<PortfolioAnalyticsResponseDto> getPortfolioAnalytics(
@@ -48,7 +44,10 @@ abstract class PortfolioRemoteDataSource {
   Future<PortfolioItemDto> createPortfolio(PortfolioCreateRequestDto request);
 
   /// Update an existing portfolio
-  Future<PortfolioItemDto> updatePortfolio(String portfolioId, PortfolioUpdateRequestDto request);
+  Future<PortfolioItemDto> updatePortfolio(
+    String portfolioId,
+    PortfolioUpdateRequestDto request,
+  );
 
   /// Delete a portfolio
   Future<void> deletePortfolio(String portfolioId, {bool deleteTrades = false});
@@ -62,9 +61,7 @@ abstract class PortfolioRemoteDataSource {
   );
 
   /// Get intraday data for 1D chart
-  Future<List<PortfolioIntradayDto>> getPortfolioIntraday(
-    String? portfolioId,
-  );
+  Future<List<PortfolioIntradayDto>> getPortfolioIntraday(String? portfolioId);
 }
 
 /// Concrete implementation of portfolio remote data source
@@ -79,7 +76,6 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
   final ApiClient _apiClient;
   final bool _useMockData;
-
 
   // Use localized endpoints
   String get _baseUrl => PortfolioEndpoints.baseUrl;
@@ -175,9 +171,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     CommonLogger.methodEntry(
       'getPortfolioHoldingsById',
       tag: 'PortfolioRemoteDataSource',
-      metadata: {
-        'portfolioId': portfolioId,
-      },
+      metadata: {'portfolioId': portfolioId},
     );
 
     try {
@@ -339,9 +333,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     CommonLogger.methodEntry(
       'getPortfolioSummaryById',
       tag: 'PortfolioRemoteDataSource',
-      metadata: {
-        'portfolioId': portfolioId,
-      },
+      metadata: {'portfolioId': portfolioId},
     );
 
     try {
@@ -659,26 +651,32 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   }
 
   @override
-  Future<PortfolioItemDto> createPortfolio(PortfolioCreateRequestDto request) async {
+  Future<PortfolioItemDto> createPortfolio(
+    PortfolioCreateRequestDto request,
+  ) async {
     CommonLogger.methodEntry(
       'createPortfolio',
       tag: 'PortfolioRemoteDataSource',
     );
 
     try {
-      final baseUri = _buildUri(_tradeBaseUrl, '/v1/portfolios'); // POST to /v1/portfolios
+      final baseUri = _buildUri(
+        _tradeBaseUrl,
+        '/v1/portfolios',
+      ); // POST to /v1/portfolios
 
       final response = await _apiClient.post<PortfolioItemDto>(
         baseUri,
         body: request.toJson(),
-        parser: (data) => PortfolioItemDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            PortfolioItemDto.fromJson(data! as Map<String, dynamic>),
       );
 
       CommonLogger.info(
         'Portfolio created successfully',
         tag: 'PortfolioRemoteDataSource',
       );
-      
+
       return response;
     } catch (e) {
       CommonLogger.error(
@@ -690,12 +688,18 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       if (!_useMockData) {
         rethrow;
       }
-      return PortfolioItemDto(portfolioId: 'mock-id', portfolioName: request.name);
+      return PortfolioItemDto(
+        portfolioId: 'mock-id',
+        portfolioName: request.name,
+      );
     }
   }
 
   @override
-  Future<PortfolioItemDto> updatePortfolio(String portfolioId, PortfolioUpdateRequestDto request) async {
+  Future<PortfolioItemDto> updatePortfolio(
+    String portfolioId,
+    PortfolioUpdateRequestDto request,
+  ) async {
     CommonLogger.methodEntry(
       'updatePortfolio',
       tag: 'PortfolioRemoteDataSource',
@@ -703,19 +707,23 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     );
 
     try {
-      final baseUri = _buildUri(_tradeBaseUrl, '/v1/portfolios/$portfolioId'); // PUT to /v1/portfolios/{id}
+      final baseUri = _buildUri(
+        _tradeBaseUrl,
+        '/v1/portfolios/$portfolioId',
+      ); // PUT to /v1/portfolios/{id}
 
       final response = await _apiClient.put<PortfolioItemDto>(
         baseUri,
         body: request.toJson(),
-        parser: (data) => PortfolioItemDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            PortfolioItemDto.fromJson(data! as Map<String, dynamic>),
       );
 
       CommonLogger.info(
         'Portfolio updated successfully',
         tag: 'PortfolioRemoteDataSource',
       );
-      
+
       return response;
     } catch (e) {
       CommonLogger.error(
@@ -726,12 +734,18 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       if (!_useMockData) {
         rethrow;
       }
-      return PortfolioItemDto(portfolioId: portfolioId, portfolioName: request.name);
+      return PortfolioItemDto(
+        portfolioId: portfolioId,
+        portfolioName: request.name,
+      );
     }
   }
 
   @override
-  Future<void> deletePortfolio(String portfolioId, {bool deleteTrades = false}) async {
+  Future<void> deletePortfolio(
+    String portfolioId, {
+    bool deleteTrades = false,
+  }) async {
     CommonLogger.methodEntry(
       'deletePortfolio',
       tag: 'PortfolioRemoteDataSource',
@@ -739,7 +753,10 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     );
 
     try {
-      final baseUri = _buildUri(_tradeBaseUrl, '/v1/portfolios/$portfolioId?deleteTrades=$deleteTrades');
+      final baseUri = _buildUri(
+        _tradeBaseUrl,
+        '/v1/portfolios/$portfolioId?deleteTrades=$deleteTrades',
+      );
 
       await _apiClient.delete<void>(
         baseUri,
@@ -768,8 +785,10 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     String? portfolioId,
     String timeFrame,
   ) async {
-    CommonLogger.methodEntry('getPortfolioHistory',
-        tag: 'PortfolioRemoteDataSource');
+    CommonLogger.methodEntry(
+      'getPortfolioHistory',
+      tag: 'PortfolioRemoteDataSource',
+    );
     try {
       final String path = (portfolioId == null || portfolioId == 'all')
           ? '/v1/portfolios/history'
@@ -791,8 +810,11 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
       return result;
     } catch (e) {
-      CommonLogger.error('Failed to fetch portfolio history',
-          tag: 'PortfolioRemoteDataSource', error: e);
+      CommonLogger.error(
+        'Failed to fetch portfolio history',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+      );
       rethrow;
     }
   }
@@ -801,8 +823,10 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   Future<List<PortfolioIntradayDto>> getPortfolioIntraday(
     String? portfolioId,
   ) async {
-    CommonLogger.methodEntry('getPortfolioIntraday',
-        tag: 'PortfolioRemoteDataSource');
+    CommonLogger.methodEntry(
+      'getPortfolioIntraday',
+      tag: 'PortfolioRemoteDataSource',
+    );
     try {
       final String path = (portfolioId == null || portfolioId == 'all')
           ? '/v1/portfolios/intraday'
@@ -824,8 +848,11 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
       return result;
     } catch (e) {
-      CommonLogger.error('Failed to fetch portfolio intraday',
-          tag: 'PortfolioRemoteDataSource', error: e);
+      CommonLogger.error(
+        'Failed to fetch portfolio intraday',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+      );
       rethrow;
     }
   }

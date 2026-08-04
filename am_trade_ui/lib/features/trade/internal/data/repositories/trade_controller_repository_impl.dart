@@ -16,8 +16,8 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
   TradeControllerRepositoryImpl({
     required TradeControllerRemoteDataSource remoteDataSource,
     AmStompClient? stompClient,
-  }) : _remoteDataSource = remoteDataSource,
-       _stompClient = stompClient;
+  })  : _remoteDataSource = remoteDataSource,
+        _stompClient = stompClient;
 
   final TradeControllerRemoteDataSource _remoteDataSource;
   final AmStompClient? _stompClient;
@@ -27,7 +27,8 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
   final Map<String, List<TradeDetails>> _portfolioTradesCache = {};
 
   // Stream controller for real-time trade updates
-  final _tradeUpdatesController = StreamController<List<TradeDetails>>.broadcast();
+  final _tradeUpdatesController =
+      StreamController<List<TradeDetails>>.broadcast();
 
   @override
   Future<List<TradeDetails>> getTradeDetailsByPortfolioAndSymbols({
@@ -46,16 +47,22 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
         symbols: symbols,
       );
 
-      final trades = dtos.map(TradeControllerMapper.toTradeDetailsEntity).toList().cast<TradeDetails>();
+      final trades = dtos
+          .map(TradeControllerMapper.toTradeDetailsEntity)
+          .toList()
+          .cast<TradeDetails>();
 
       // Update cache
-      final cacheKey = symbols != null && symbols.isNotEmpty ? '$portfolioId-${symbols.join('_')}' : portfolioId;
+      final cacheKey = symbols != null && symbols.isNotEmpty
+          ? '$portfolioId-${symbols.join('_')}'
+          : portfolioId;
       _portfolioTradesCache[cacheKey] = trades;
 
       // Notify stream listeners
       _tradeUpdatesController.add(trades);
 
-      AppLogger.methodExit('getTradeDetailsByPortfolioAndSymbols', tag: 'TradeControllerRepository');
+      AppLogger.methodExit('getTradeDetailsByPortfolioAndSymbols',
+          tag: 'TradeControllerRepository');
       return trades;
     } catch (e) {
       AppLogger.error(
@@ -80,7 +87,7 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
     // However, if we're in the context of a portfolio, we might want to filter
     // For now, let's assume we use the global userId from AuthCubit (handled in providers)
     // Or we can implement a generic subscription.
-    
+
     // Create a stream controller for this specific portfolio
     final controller = StreamController<List<TradeDetails>>();
 
@@ -89,7 +96,8 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
       controller.add(_portfolioTradesCache[portfolioId]!);
     } else {
       // Fetch initial data
-      getTradeDetailsByPortfolioAndSymbols(portfolioId: portfolioId).then((trades) {
+      getTradeDetailsByPortfolioAndSymbols(portfolioId: portfolioId)
+          .then((trades) {
         if (!controller.isClosed) {
           controller.add(trades);
         }
@@ -138,12 +146,15 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
   }
 
   @override
-  Future<TradeDetails> updateTrade({required String tradeId, required TradeDetails tradeDetails}) async {
-    AppLogger.methodEntry('updateTrade', tag: 'TradeControllerRepository', params: {'tradeId': tradeId});
+  Future<TradeDetails> updateTrade(
+      {required String tradeId, required TradeDetails tradeDetails}) async {
+    AppLogger.methodEntry('updateTrade',
+        tag: 'TradeControllerRepository', params: {'tradeId': tradeId});
 
     try {
       final dto = TradeControllerMapper.toTradeDetailsDto(tradeDetails);
-      final responseDto = await _remoteDataSource.updateTrade(tradeId: tradeId, tradeDetails: dto);
+      final responseDto = await _remoteDataSource.updateTrade(
+          tradeId: tradeId, tradeDetails: dto);
       final trade = TradeControllerMapper.toTradeDetailsEntity(responseDto);
 
       // Refresh cache for the portfolio
@@ -164,7 +175,8 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
 
   @override
   Future<void> deleteTrade(String tradeId) async {
-    AppLogger.methodEntry('deleteTrade', tag: 'TradeControllerRepository', params: {'tradeId': tradeId});
+    AppLogger.methodEntry('deleteTrade',
+        tag: 'TradeControllerRepository', params: {'tradeId': tradeId});
 
     try {
       await _remoteDataSource.deleteTrade(tradeId);
@@ -196,7 +208,8 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
     int size = 20,
     String? sort,
   }) async {
-    AppLogger.methodEntry('getTradesByFilters', tag: 'TradeControllerRepository');
+    AppLogger.methodEntry('getTradesByFilters',
+        tag: 'TradeControllerRepository');
 
     try {
       final responseDto = await _remoteDataSource.getTradesByFilters(
@@ -211,9 +224,11 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
         sort: sort,
       );
 
-      final response = TradeControllerMapper.toPaginatedTradeResponseEntity(responseDto);
+      final response =
+          TradeControllerMapper.toPaginatedTradeResponseEntity(responseDto);
 
-      AppLogger.methodExit('getTradesByFilters', tag: 'TradeControllerRepository');
+      AppLogger.methodExit('getTradesByFilters',
+          tag: 'TradeControllerRepository');
       return response;
     } catch (e) {
       AppLogger.error(
@@ -227,13 +242,21 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
   }
 
   @override
-  Future<List<TradeDetails>> addOrUpdateTrades(List<TradeDetails> trades) async {
-    AppLogger.methodEntry('addOrUpdateTrades', tag: 'TradeControllerRepository', params: {'count': trades.length});
+  Future<List<TradeDetails>> addOrUpdateTrades(
+      List<TradeDetails> trades) async {
+    AppLogger.methodEntry('addOrUpdateTrades',
+        tag: 'TradeControllerRepository', params: {'count': trades.length});
 
     try {
-      final dtos = trades.map(TradeControllerMapper.toTradeDetailsDto).toList().cast<TradeDetailsDto>();
+      final dtos = trades
+          .map(TradeControllerMapper.toTradeDetailsDto)
+          .toList()
+          .cast<TradeDetailsDto>();
       final responseDtos = await _remoteDataSource.addOrUpdateTrades(dtos);
-      final updatedTrades = responseDtos.map(TradeControllerMapper.toTradeDetailsEntity).toList().cast<TradeDetails>();
+      final updatedTrades = responseDtos
+          .map(TradeControllerMapper.toTradeDetailsEntity)
+          .toList()
+          .cast<TradeDetails>();
 
       // Refresh cache for affected portfolios
       final portfolioIds = updatedTrades.map((t) => t.portfolioId).toSet();
@@ -241,7 +264,8 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
         await refreshPortfolioTrades(portfolioId);
       }
 
-      AppLogger.methodExit('addOrUpdateTrades', tag: 'TradeControllerRepository');
+      AppLogger.methodExit('addOrUpdateTrades',
+          tag: 'TradeControllerRepository');
       return updatedTrades;
     } catch (e) {
       AppLogger.error(
@@ -255,7 +279,8 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
   }
 
   @override
-  Future<List<TradeDetails>> getTradeDetailsByTradeIds(List<String> tradeIds) async {
+  Future<List<TradeDetails>> getTradeDetailsByTradeIds(
+      List<String> tradeIds) async {
     AppLogger.methodEntry(
       'getTradeDetailsByTradeIds',
       tag: 'TradeControllerRepository',
@@ -264,9 +289,13 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
 
     try {
       final dtos = await _remoteDataSource.getTradeDetailsByTradeIds(tradeIds);
-      final trades = dtos.map(TradeControllerMapper.toTradeDetailsEntity).toList().cast<TradeDetails>();
+      final trades = dtos
+          .map(TradeControllerMapper.toTradeDetailsEntity)
+          .toList()
+          .cast<TradeDetails>();
 
-      AppLogger.methodExit('getTradeDetailsByTradeIds', tag: 'TradeControllerRepository');
+      AppLogger.methodExit('getTradeDetailsByTradeIds',
+          tag: 'TradeControllerRepository');
       return trades;
     } catch (e) {
       AppLogger.error(
@@ -287,7 +316,8 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
     int size = 20,
     String? sort,
   }) async {
-    AppLogger.methodEntry('filterTradeDetails', tag: 'TradeControllerRepository', params: {});
+    AppLogger.methodEntry('filterTradeDetails',
+        tag: 'TradeControllerRepository', params: {});
 
     try {
       final responseDto = await _remoteDataSource.filterTradeDetails(
@@ -298,9 +328,11 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
         sort: sort,
       );
 
-      final response = TradeControllerMapper.toFilterTradeDetailsResponseEntity(responseDto);
+      final response =
+          TradeControllerMapper.toFilterTradeDetailsResponseEntity(responseDto);
 
-      AppLogger.methodExit('filterTradeDetails', tag: 'TradeControllerRepository');
+      AppLogger.methodExit('filterTradeDetails',
+          tag: 'TradeControllerRepository');
       return response;
     } catch (e) {
       AppLogger.error(
@@ -334,7 +366,8 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
       // Fetch fresh data from server
       await getTradeDetailsByPortfolioAndSymbols(portfolioId: portfolioId);
 
-      AppLogger.methodExit('refreshPortfolioTrades', tag: 'TradeControllerRepository');
+      AppLogger.methodExit('refreshPortfolioTrades',
+          tag: 'TradeControllerRepository');
     } catch (e) {
       AppLogger.error(
         'Failed to refresh portfolio trades',
@@ -348,14 +381,16 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
 
   void _ensureWebSocketSubscribed(String userId) {
     if (_stompClient == null) {
-      AppLogger.warning('AmStompClient is null. WebSocket features disabled.', tag: 'TradeControllerRepository');
+      AppLogger.warning('AmStompClient is null. WebSocket features disabled.',
+          tag: 'TradeControllerRepository');
       return;
     }
 
     final destination = '/user/queue/trade';
 
     if (_stompSubscription == null) {
-      AppLogger.info('📡 Subscribing to: $destination', tag: 'TradeControllerRepository');
+      AppLogger.info('📡 Subscribing to: $destination',
+          tag: 'TradeControllerRepository');
       _stompClient!.subscribe(destination);
 
       _stompSubscription = _stompClient!.messages
@@ -365,19 +400,23 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
           if (frame.body == null) return;
           try {
             final json = jsonDecode(frame.body!);
-            AppLogger.info('Received real-time trade update via WebSocket', tag: 'TradeControllerRepository');
+            AppLogger.info('Received real-time trade update via WebSocket',
+                tag: 'TradeControllerRepository');
 
             // Handle the trade update
             // If it's a single trade, we might need to refresh the whole list or update the cache
-            final trade = TradeControllerMapper.toTradeDetailsEntity(TradeControllerMapper.toTradeDetailsDtoFromJson(json));
-            
+            final trade = TradeControllerMapper.toTradeDetailsEntity(
+                TradeControllerMapper.toTradeDetailsDtoFromJson(json));
+
             // For now, let's just trigger a full refresh of the portfolio to be safe
             refreshPortfolioTrades(trade.portfolioId);
           } catch (e) {
-            AppLogger.error('Failed to parse trade STOMP message', error: e, tag: 'TradeControllerRepository');
+            AppLogger.error('Failed to parse trade STOMP message',
+                error: e, tag: 'TradeControllerRepository');
           }
         },
-        onError: (err) => AppLogger.error('STOMP Subscription error', error: err, tag: 'TradeControllerRepository'),
+        onError: (err) => AppLogger.error('STOMP Subscription error',
+            error: err, tag: 'TradeControllerRepository'),
       );
     }
   }
@@ -389,4 +428,3 @@ class TradeControllerRepositoryImpl implements TradeControllerRepository {
     _tradeUpdatesController.close();
   }
 }
-

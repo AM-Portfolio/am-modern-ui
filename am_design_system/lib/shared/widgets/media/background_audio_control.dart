@@ -12,7 +12,8 @@ class _BackgroundAudioControlState extends State<BackgroundAudioControl> {
   late AudioPlayer _player;
   bool _isPlaying = false;
   bool _isMuted = false;
-  final String _demoAudioUrl = 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3';
+  final String _demoAudioUrl =
+      'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3';
 
   @override
   void initState() {
@@ -25,20 +26,21 @@ class _BackgroundAudioControlState extends State<BackgroundAudioControl> {
     try {
       // First try to play from assets
       try {
-         await _player.play(AssetSource('sounds/theme_song.mp3'));
+        await _player.play(AssetSource('sounds/theme_song.mp3'));
       } catch (e) {
-         // Silently fall back to demo URL if asset missing.
-         // 'e' here might be the "Asset not found" PlatformException.
-         // We don't need to log heavily.
-         await _player.play(UrlSource(_demoAudioUrl));
+        // Silently fall back to demo URL if asset missing.
+        // 'e' here might be the "Asset not found" PlatformException.
+        // We don't need to log heavily.
+        await _player.play(UrlSource(_demoAudioUrl));
       }
-      
+
       setState(() {
         _isPlaying = true;
       });
     } catch (e) {
       // General playback error (network etc)
-      debugPrint('Warning: Audio playback failed. (${e.toString().substring(0, 50)}...)');
+      debugPrint(
+          'Warning: Audio playback failed. (${e.toString().substring(0, 50)}...)');
       setState(() {
         _isPlaying = false; // Reset state if failed
       });

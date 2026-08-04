@@ -90,16 +90,20 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                       children: [
                         Text(
                           'Create New Folder',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Organize your journal entries',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
                         ),
                       ],
                     ),
@@ -113,7 +117,7 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                   ),
                 ],
               ).animate().fadeIn(),
-              
+
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 24),
@@ -130,7 +134,10 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  fillColor: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withOpacity(0.3),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -186,7 +193,8 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                                 : null,
                           ),
                           child: isSelected
-                              ? const Icon(Icons.check, color: Colors.white, size: 20)
+                              ? const Icon(Icons.check,
+                                  color: Colors.white, size: 20)
                               : null,
                         ),
                       );
@@ -220,7 +228,9 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? _selectedColor.withOpacity(0.15)
-                                : Theme.of(context).colorScheme.surfaceContainerHighest,
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isSelected
@@ -233,7 +243,9 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                             icon,
                             color: isSelected
                                 ? _selectedColor
-                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                             size: 22,
                           ),
                         ),
@@ -259,7 +271,8 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                     icon: const Icon(Icons.add, size: 20),
                     label: const Text('Create Folder'),
                     style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
                       backgroundColor: _selectedColor,
                     ),
                   ),

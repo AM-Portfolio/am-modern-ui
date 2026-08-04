@@ -29,7 +29,12 @@ import '../validators/trade_form_validator.dart';
 /// Step 2: Optional Details (psychology, reasoning, strategy - OPTIONAL)
 /// Step 3: Review & Submit
 class AddTradeForm extends StatefulWidget {
-  const AddTradeForm({super.key, this.onCancel, this.onSave, this.isLoading = false, this.initialData});
+  const AddTradeForm(
+      {super.key,
+      this.onCancel,
+      this.onSave,
+      this.isLoading = false,
+      this.initialData});
   final VoidCallback? onCancel;
   final Function(TradeDetails)? onSave;
   final bool isLoading;
@@ -60,7 +65,8 @@ class _AddTradeFormState extends State<AddTradeForm> {
   TradeStatuses _selectedStatus = TradeStatuses.open;
   DateTime? _entryDate;
   final TextEditingController _entryPriceController = TextEditingController();
-  final TextEditingController _entryQuantityController = TextEditingController();
+  final TextEditingController _entryQuantityController =
+      TextEditingController();
   DateTime? _exitDate;
   final TextEditingController _exitPriceController = TextEditingController();
   final TextEditingController _exitQuantityController = TextEditingController();
@@ -79,7 +85,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
   @override
   void initState() {
     super.initState();
-    
+
     if (widget.initialData != null) {
       _loadInitialData();
     }
@@ -94,17 +100,23 @@ class _AddTradeFormState extends State<AddTradeForm> {
     _selectedSegment = trade.instrumentInfo.segment;
 
     if (trade.instrumentInfo.derivativeInfo != null) {
-      _selectedDerivativeType = trade.instrumentInfo.derivativeInfo!.derivativeType;
+      _selectedDerivativeType =
+          trade.instrumentInfo.derivativeInfo!.derivativeType;
       _selectedOptionType = trade.instrumentInfo.derivativeInfo!.optionType;
-      _strikePriceController.text = trade.instrumentInfo.derivativeInfo!.strikePrice?.toString() ?? '';
+      _strikePriceController.text =
+          trade.instrumentInfo.derivativeInfo!.strikePrice?.toString() ?? '';
       _expiryDate = trade.instrumentInfo.derivativeInfo!.expiryDate;
     }
 
     _selectedDirection = trade.tradePositionType;
     _selectedStatus = trade.status;
-    _selectedBroker = trade.tradeExecutions?.isNotEmpty == true ? trade.tradeExecutions!.first.basicInfo?.brokerType : null;
-    _selectedOrderType = trade.tradeExecutions?.isNotEmpty == true ? trade.tradeExecutions!.first.executionInfo?.orderType : null;
-    
+    _selectedBroker = trade.tradeExecutions?.isNotEmpty == true
+        ? trade.tradeExecutions!.first.basicInfo?.brokerType
+        : null;
+    _selectedOrderType = trade.tradeExecutions?.isNotEmpty == true
+        ? trade.tradeExecutions!.first.executionInfo?.orderType
+        : null;
+
     _entryDate = trade.entryInfo.timestamp;
     _entryPriceController.text = trade.entryInfo.price?.toString() ?? '';
     _entryQuantityController.text = trade.entryInfo.quantity?.toString() ?? '';
@@ -117,16 +129,20 @@ class _AddTradeFormState extends State<AddTradeForm> {
 
     _strategyController.text = trade.strategy ?? '';
     _notesController.text = trade.notes ?? '';
-    _attachments = trade.attachments?.map((a) => a.fileUrl ?? '').toList() ?? [];
-    
+    _attachments =
+        trade.attachments?.map((a) => a.fileUrl ?? '').toList() ?? [];
+
     if (trade.psychologyData != null) {
-      _selectedEntryPsychology = trade.psychologyData!.entryPsychologyFactors ?? [];
-      _selectedExitPsychology = trade.psychologyData!.exitPsychologyFactors ?? [];
+      _selectedEntryPsychology =
+          trade.psychologyData!.entryPsychologyFactors ?? [];
+      _selectedExitPsychology =
+          trade.psychologyData!.exitPsychologyFactors ?? [];
     }
 
     if (trade.entryReasoning != null) {
       _selectedTechnicalReasons = trade.entryReasoning!.technicalReasons ?? [];
-      _selectedFundamentalReasons = trade.entryReasoning!.fundamentalReasons ?? [];
+      _selectedFundamentalReasons =
+          trade.entryReasoning!.fundamentalReasons ?? [];
     }
   }
 
@@ -149,14 +165,16 @@ class _AddTradeFormState extends State<AddTradeForm> {
   void _nextStep() {
     if (_currentStep < _totalSteps - 1) {
       setState(() => _currentStep++);
-      _pageController.animateToPage(_currentStep, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _pageController.animateToPage(_currentStep,
+          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
   }
 
   void _previousStep() {
     if (_currentStep > 0) {
       setState(() => _currentStep--);
-      _pageController.animateToPage(_currentStep, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _pageController.animateToPage(_currentStep,
+          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
   }
 
@@ -185,11 +203,15 @@ class _AddTradeFormState extends State<AddTradeForm> {
       // Parse numeric values
       final entryPrice = double.tryParse(_entryPriceController.text);
       final entryQuantity = double.tryParse(_entryQuantityController.text);
-      final exitPrice = _exitPriceController.text.isNotEmpty ? double.tryParse(_exitPriceController.text) : null;
+      final exitPrice = _exitPriceController.text.isNotEmpty
+          ? double.tryParse(_exitPriceController.text)
+          : null;
       final exitQuantity = _exitQuantityController.text.isNotEmpty
           ? double.tryParse(_exitQuantityController.text)
           : null;
-      final strikePrice = _strikePriceController.text.isNotEmpty ? double.tryParse(_strikePriceController.text) : null;
+      final strikePrice = _strikePriceController.text.isNotEmpty
+          ? double.tryParse(_strikePriceController.text)
+          : null;
 
       AppLogger.debug(
         'Parsed values - entryPrice: $entryPrice, entryQuantity: $entryQuantity, exitPrice: $exitPrice',
@@ -197,7 +219,8 @@ class _AddTradeFormState extends State<AddTradeForm> {
       );
 
       // Validate numeric values
-      TradeFormValidator.validateNumericValues(entryPrice: entryPrice, entryQuantity: entryQuantity);
+      TradeFormValidator.validateNumericValues(
+          entryPrice: entryPrice, entryQuantity: entryQuantity);
 
       AppLogger.info('Numeric validation passed', tag: 'AddTradeForm');
 
@@ -218,7 +241,9 @@ class _AddTradeFormState extends State<AddTradeForm> {
         exchange: _selectedExchange,
         segment: _selectedSegment,
         isin: _isinController.text.isNotEmpty ? _isinController.text : null,
-        description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
+        description: _descriptionController.text.isNotEmpty
+            ? _descriptionController.text
+            : null,
         derivativeType: _selectedDerivativeType,
         strikePrice: strikePrice,
         optionType: _selectedOptionType,
@@ -235,7 +260,9 @@ class _AddTradeFormState extends State<AddTradeForm> {
         exitPsychology: _selectedExitPsychology,
         technicalReasons: _selectedTechnicalReasons,
         fundamentalReasons: _selectedFundamentalReasons,
-        strategy: _strategyController.text.isNotEmpty ? _strategyController.text : null,
+        strategy: _strategyController.text.isNotEmpty
+            ? _strategyController.text
+            : null,
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         portfolioId: widget.initialData?.portfolioId,
         attachments: _attachments,
@@ -250,54 +277,57 @@ class _AddTradeFormState extends State<AddTradeForm> {
 
       // Call the parent's onSave callback
       if (widget.onSave != null) {
-        AppLogger.info('📤 Calling onSave callback to parent', tag: 'AddTradeForm');
+        AppLogger.info('📤 Calling onSave callback to parent',
+            tag: 'AddTradeForm');
         widget.onSave!(tradeDetails);
       } else {
         AppLogger.warning('No onSave callback provided!', tag: 'AddTradeForm');
       }
 
-      AppLogger.methodExit('_saveTrade', tag: 'AddTradeForm', result: 'success');
+      AppLogger.methodExit('_saveTrade',
+          tag: 'AddTradeForm', result: 'success');
     } catch (e) {
-      AppLogger.error('Trade save failed', tag: 'AddTradeForm', error: e, stackTrace: StackTrace.current);
+      AppLogger.error('Trade save failed',
+          tag: 'AddTradeForm', error: e, stackTrace: StackTrace.current);
 
       // Show error if validation or construction fails
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Failed to save trade: ${e.toString()}'), backgroundColor: Colors.red));
+      ).showSnackBar(SnackBar(
+          content: Text('Failed to save trade: ${e.toString()}'),
+          backgroundColor: Colors.red));
     }
-    
   }
 
   void _onInstrumentSelected(Map<String, dynamic> instrument) {
     setState(() {
-      _symbolController.text = instrument['symbol'] ?? 
-                              instrument['tradingSymbol'] ?? 
-                              instrument['tradingsymbol'] ?? 
-                              instrument['name'] ?? 
-                              '';
-      _descriptionController.text = instrument['description'] ?? 
-                                   instrument['displayName'] ?? 
-                                   instrument['name'] ?? 
-                                   '';
-      
+      _symbolController.text = instrument['symbol'] ??
+          instrument['tradingSymbol'] ??
+          instrument['tradingsymbol'] ??
+          instrument['name'] ??
+          '';
+      _descriptionController.text = instrument['description'] ??
+          instrument['displayName'] ??
+          instrument['name'] ??
+          '';
+
       // Auto-select exchange if available
       if (instrument['exchange'] != null) {
         final exchangeStr = instrument['exchange'].toString().toLowerCase();
         if (exchangeStr == 'nse') _selectedExchange = ExchangeTypes.nse;
         if (exchangeStr == 'bse') _selectedExchange = ExchangeTypes.bse;
       }
-      
+
       // Auto-select segment if available
       if (instrument['segment'] != null) {
         final segmentStr = instrument['segment'].toString().toUpperCase();
         if (segmentStr == 'EQUITY') _selectedSegment = MarketSegments.equity;
       }
     });
-    
+
     AppLogger.info(
-      'Instrument selected: ${_symbolController.text} - ${_descriptionController.text}', 
-      tag: 'AddTradeForm'
-    );
+        'Instrument selected: ${_symbolController.text} - ${_descriptionController.text}',
+        tag: 'AddTradeForm');
   }
 
   @override
@@ -322,34 +352,46 @@ class _AddTradeFormState extends State<AddTradeForm> {
                 child: TradeDetailsStep(
                   symbolController: _symbolController,
                   selectedExchange: _selectedExchange,
-                  onExchangeChanged: (value) => setState(() => _selectedExchange = value),
+                  onExchangeChanged: (value) =>
+                      setState(() => _selectedExchange = value),
                   selectedSegment: _selectedSegment,
-                  onSegmentChanged: (value) => setState(() => _selectedSegment = value),
+                  onSegmentChanged: (value) =>
+                      setState(() => _selectedSegment = value),
                   selectedDirection: _selectedDirection,
-                  onDirectionChanged: (value) => setState(() => _selectedDirection = value),
+                  onDirectionChanged: (value) =>
+                      setState(() => _selectedDirection = value),
                   selectedStatus: _selectedStatus,
-                  onStatusChanged: (value) => setState(() => _selectedStatus = value),
+                  onStatusChanged: (value) =>
+                      setState(() => _selectedStatus = value),
                   entryDate: _entryDate,
-                  onEntryDateSelected: (date) => setState(() => _entryDate = date),
+                  onEntryDateSelected: (date) =>
+                      setState(() => _entryDate = date),
                   entryPriceController: _entryPriceController,
                   entryQuantityController: _entryQuantityController,
                   exitDate: _exitDate,
-                  onExitDateSelected: (date) => setState(() => _exitDate = date),
+                  onExitDateSelected: (date) =>
+                      setState(() => _exitDate = date),
                   exitPriceController: _exitPriceController,
                   exitQuantityController: _exitQuantityController,
                   selectedBroker: _selectedBroker,
-                  onBrokerChanged: (value) => setState(() => _selectedBroker = value),
+                  onBrokerChanged: (value) =>
+                      setState(() => _selectedBroker = value),
                   selectedOrderType: _selectedOrderType,
-                  onOrderTypeChanged: (value) => setState(() => _selectedOrderType = value),
+                  onOrderTypeChanged: (value) =>
+                      setState(() => _selectedOrderType = value),
                   selectedDerivativeType: _selectedDerivativeType,
-                  onDerivativeTypeChanged: (value) => setState(() => _selectedDerivativeType = value),
+                  onDerivativeTypeChanged: (value) =>
+                      setState(() => _selectedDerivativeType = value),
                   strikePriceController: _strikePriceController,
                   selectedOptionType: _selectedOptionType,
-                  onOptionTypeChanged: (value) => setState(() => _selectedOptionType = value),
+                  onOptionTypeChanged: (value) =>
+                      setState(() => _selectedOptionType = value),
                   expiryDate: _expiryDate,
-                  onExpiryDateSelected: (date) => setState(() => _expiryDate = date),
+                  onExpiryDateSelected: (date) =>
+                      setState(() => _expiryDate = date),
                   attachments: _attachments,
-                  onAttachmentsChanged: (files) => setState(() => _attachments = files),
+                  onAttachmentsChanged: (files) =>
+                      setState(() => _attachments = files),
                   userId: () {
                     final authState = context.read<AuthCubit>().state;
                     return authState is Authenticated ? authState.user.id : '';
@@ -364,13 +406,17 @@ class _AddTradeFormState extends State<AddTradeForm> {
                 child: OptionalDetailsStep(
                   strategyController: _strategyController,
                   selectedEntryPsychology: _selectedEntryPsychology,
-                  onEntryPsychologyChanged: (factors) => setState(() => _selectedEntryPsychology = factors),
+                  onEntryPsychologyChanged: (factors) =>
+                      setState(() => _selectedEntryPsychology = factors),
                   selectedExitPsychology: _selectedExitPsychology,
-                  onExitPsychologyChanged: (factors) => setState(() => _selectedExitPsychology = factors),
+                  onExitPsychologyChanged: (factors) =>
+                      setState(() => _selectedExitPsychology = factors),
                   selectedTechnicalReasons: _selectedTechnicalReasons,
-                  onTechnicalReasonsChanged: (reasons) => setState(() => _selectedTechnicalReasons = reasons),
+                  onTechnicalReasonsChanged: (reasons) =>
+                      setState(() => _selectedTechnicalReasons = reasons),
                   selectedFundamentalReasons: _selectedFundamentalReasons,
-                  onFundamentalReasonsChanged: (reasons) => setState(() => _selectedFundamentalReasons = reasons),
+                  onFundamentalReasonsChanged: (reasons) =>
+                      setState(() => _selectedFundamentalReasons = reasons),
                   notesController: _notesController,
                 ),
               ),
@@ -539,7 +585,8 @@ class _AddTradeFormState extends State<AddTradeForm> {
               : _nextStep,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size(0, 40),
-        visualDensity: isCompact ? VisualDensity.compact : VisualDensity.standard,
+        visualDensity:
+            isCompact ? VisualDensity.compact : VisualDensity.standard,
         padding: EdgeInsets.symmetric(
           horizontal: isCompact ? 16 : 20,
           vertical: isCompact ? 10 : 12,
@@ -617,4 +664,3 @@ class _AddTradeFormState extends State<AddTradeForm> {
     );
   }
 }
-

@@ -13,7 +13,7 @@ class AppLogo extends StatelessWidget {
       child: Image.asset(
         'lib/assets/images/app_logo.png',
         package: 'am_design_system',
-        width: size * 1.8,  // Adjusted scaling for aspect ratio
+        width: size * 1.8, // Adjusted scaling for aspect ratio
         height: size,
         fit: BoxFit.contain,
       ),

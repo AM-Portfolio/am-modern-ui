@@ -18,10 +18,10 @@ import '../../internal/domain/entities/metrics/trade_metrics_response.dart';
 import '../../internal/domain/enums/metric_types.dart';
 
 class TradeMetricsPage extends ConsumerStatefulWidget {
-    final String? portfolioId;
+  final String? portfolioId;
 
   const TradeMetricsPage({
-        this.portfolioId,
+    this.portfolioId,
     super.key,
   });
 
@@ -45,7 +45,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
         endDate: DateTime.now(),
       ),
     );
-    
+
     // Load initial metrics after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialMetrics();
@@ -65,11 +65,12 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
 
     // If no metric types are selected, fetch all available types and use them
     List<MetricTypes>? metricTypesToUse = config.metricTypes;
-    
+
     if (config.metricTypes.isEmpty) {
       try {
         // Fetch available metric types if not already loaded
-        final getMetricTypes = await ref.read(getMetricTypesUseCaseProvider.future);
+        final getMetricTypes =
+            await ref.read(getMetricTypesUseCaseProvider.future);
         final availableTypes = await getMetricTypes();
         if (!mounted) return;
         metricTypesToUse = availableTypes;
@@ -88,9 +89,9 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
       // Map other config fields to request if needed
       instruments: config.instrumentFilters?.baseSymbols,
     );
-    
+
     if (!mounted) return;
-    
+
     final cubit = await ref.read(tradeMetricsCubitProvider.future);
     if (!mounted) return;
     cubit.loadMetrics(request);
@@ -99,7 +100,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
   @override
   Widget build(BuildContext context) {
     final cubitAsync = ref.watch(tradeMetricsCubitProvider);
-    
+
     return Scaffold(
       body: cubitAsync.when(
         data: (cubit) => SingleChildScrollView(
@@ -112,55 +113,63 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
                 initialConfig: _currentConfig,
                 onApplyFilter: _applyFilter,
                 onReset: () => _applyFilter(MetricsFilterConfig.empty()),
-                availableMetricTypes: (cubit.state is TradeMetricsLoaded) 
-                      ? (cubit.state as TradeMetricsLoaded).availableMetricTypes 
-                      : [],
+                availableMetricTypes: (cubit.state is TradeMetricsLoaded)
+                    ? (cubit.state as TradeMetricsLoaded).availableMetricTypes
+                    : [],
               ),
-              
+
               const SizedBox(height: 16),
 
               // Content Area
               Builder(
                 builder: (context) {
                   final state = cubit.state;
-                    
-                    if (state is TradeMetricsLoading) {
-                      return const SizedBox(
-                        height: 400,
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    } else if (state is TradeMetricsError) {
-                      return SizedBox(
-                        height: 400,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
-                              const SizedBox(height: 16),
-                              Text('Error loading metrics', style: Theme.of(context).textTheme.titleMedium),
-                              Text(state.message, style: Theme.of(context).textTheme.bodySmall),
-                              const SizedBox(height: 16),
-                              OutlinedButton.icon(
-                                onPressed: () => _applyFilter(_currentConfig),
-                                icon: const Icon(Icons.refresh),
-                                label: const Text('Retry'),
-                              ),
-                            ],
-                          ),
+
+                  if (state is TradeMetricsLoading) {
+                    return const SizedBox(
+                      height: 400,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  } else if (state is TradeMetricsError) {
+                    return SizedBox(
+                      height: 400,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline,
+                                size: 48,
+                                color: Theme.of(context).colorScheme.error),
+                            const SizedBox(height: 16),
+                            Text('Error loading metrics',
+                                style: Theme.of(context).textTheme.titleMedium),
+                            Text(state.message,
+                                style: Theme.of(context).textTheme.bodySmall),
+                            const SizedBox(height: 16),
+                            OutlinedButton.icon(
+                              onPressed: () => _applyFilter(_currentConfig),
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Retry'),
+                            ),
+                          ],
                         ),
-                      );
-                    } else if (state is TradeMetricsLoaded) {
-                      return _buildDashboard(state.metrics);
-                    }
-                    return const SizedBox(height: 400, child: Center(child: Text('Initialize metrics to view data')));
-                  },
-                ),
-              ],
-            ),
+                      ),
+                    );
+                  } else if (state is TradeMetricsLoaded) {
+                    return _buildDashboard(state.metrics);
+                  }
+                  return const SizedBox(
+                      height: 400,
+                      child: Center(
+                          child: Text('Initialize metrics to view data')));
+                },
+              ),
+            ],
           ),
+        ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error initializing metrics: $error')),
+        error: (error, stack) =>
+            Center(child: Text('Error initializing metrics: $error')),
       ),
     );
   }
@@ -174,17 +183,23 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
         const SizedBox(height: 16), // Reduced from 24
 
         // Key Performance Indicators Grid
-        Text('Performance Overview', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)), // Bolder, slightly smaller
+        Text('Performance Overview',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700)), // Bolder, slightly smaller
         const SizedBox(height: 12), // Reduced from 16
         _buildPerformanceGrid(metrics.performanceMetrics, metrics.riskMetrics),
         const SizedBox(height: 16), // Reduced from 24
-        
+
         // Distribution Analysis with Charts
-        Text('Distribution Analysis', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+        Text('Distribution Analysis',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
         _buildDistributionSection(metrics.distributionMetrics),
         const SizedBox(height: 16),
-        
+
         // Psychology & Patterns
         if (metrics.patternMetrics != null)
           _buildPatternSection(metrics.patternMetrics!),
@@ -202,15 +217,24 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Net P&L', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)), // Improved visibility
+                const Text('Net P&L',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600)), // Improved visibility
                 const SizedBox(height: 4),
                 Text(
                   '\$${metrics.performanceMetrics.totalProfitLoss.toStringAsFixed(2)}',
-                  style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800), // Larger, bolder
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800), // Larger, bolder
                 ),
                 Text(
                   '${metrics.totalTradesCount} Trades',
-                  style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -219,20 +243,30 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
         const SizedBox(width: 12), // Reduced spacing
         Expanded(
           child: GlossyCard(
-            color: metrics.performanceMetrics.winRate >= 0.5 ? Colors.green : Colors.orange,
+            color: metrics.performanceMetrics.winRate >= 0.5
+                ? Colors.green
+                : Colors.orange,
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Win Rate', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                const Text('Win Rate',
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 Text(
                   '${(metrics.performanceMetrics.winRate * 100).toStringAsFixed(1)}%',
-                  style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800),
                 ),
                 Text(
                   'Profit Factor: ${metrics.performanceMetrics.profitFactor.toStringAsFixed(2)}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -251,10 +285,31 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
           spacing: spacing,
           runSpacing: spacing,
           children: [
-            _buildStatCard('Expectancy', '\$${perf.expectancy?.toStringAsFixed(2) ?? '0'}', Icons.attach_money, Colors.blue, width: (constraints.maxWidth - (crossAxisCount - 1) * spacing) / crossAxisCount),
-            _buildStatCard('Sharpe Ratio', risk.sharpeRatio.toStringAsFixed(2), Icons.shield, Colors.purple, width: (constraints.maxWidth - (crossAxisCount - 1) * spacing) / crossAxisCount),
-            _buildStatCard('Max Drawdown', '\$${risk.maxDrawdown.toStringAsFixed(0)}', Icons.trending_down, Colors.red, width: (constraints.maxWidth - (crossAxisCount - 1) * spacing) / crossAxisCount),
-            _buildStatCard('Avg Win', '\$${perf.averageWinningTrade.toStringAsFixed(0)}', Icons.arrow_upward, Colors.green, width: (constraints.maxWidth - (crossAxisCount - 1) * spacing) / crossAxisCount),
+            _buildStatCard(
+                'Expectancy',
+                '\$${perf.expectancy?.toStringAsFixed(2) ?? '0'}',
+                Icons.attach_money,
+                Colors.blue,
+                width: (constraints.maxWidth - (crossAxisCount - 1) * spacing) /
+                    crossAxisCount),
+            _buildStatCard('Sharpe Ratio', risk.sharpeRatio.toStringAsFixed(2),
+                Icons.shield, Colors.purple,
+                width: (constraints.maxWidth - (crossAxisCount - 1) * spacing) /
+                    crossAxisCount),
+            _buildStatCard(
+                'Max Drawdown',
+                '\$${risk.maxDrawdown.toStringAsFixed(0)}',
+                Icons.trending_down,
+                Colors.red,
+                width: (constraints.maxWidth - (crossAxisCount - 1) * spacing) /
+                    crossAxisCount),
+            _buildStatCard(
+                'Avg Win',
+                '\$${perf.averageWinningTrade.toStringAsFixed(0)}',
+                Icons.arrow_upward,
+                Colors.green,
+                width: (constraints.maxWidth - (crossAxisCount - 1) * spacing) /
+                    crossAxisCount),
           ],
         );
       },
@@ -262,139 +317,165 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
   }
 
   Widget _buildDistributionSection(TradeDistributionMetrics dist) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // On wide screens, put bar chart and pie charts side by side
-        final isWide = constraints.maxWidth > 900;
-        
-        if (isWide) {
-          return SizedBox(
-            height: 240,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: GlossyCard(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Trades by Day', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                        const SizedBox(height: 12),
-                        Expanded(child: TradesByDayBarChart(tradesByDay: dist.tradesByDay ?? {})),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
+    return LayoutBuilder(builder: (context, constraints) {
+      // On wide screens, put bar chart and pie charts side by side
+      final isWide = constraints.maxWidth > 900;
+
+      if (isWide) {
+        return SizedBox(
+          height: 240,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 3,
+                child: GlossyCard(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: GlossyCard(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              const Expanded(child: Text('By Asset Class', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                              SizedBox(
-                                width: 100,
-                                height: 100,
-                                child: DistributionPieChart(data: dist.tradeCountByAssetClass ?? {}, animate: false),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      const Text('Trades by Day',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 15)),
                       const SizedBox(height: 12),
                       Expanded(
-                        child: GlossyCard(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              const Expanded(child: Text('By Strategy', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                              SizedBox(
-                                width: 100,
-                                height: 100,
-                                child: DistributionPieChart(data: dist.tradeCountByStrategy ?? {}, animate: false),
-                              ),
-                            ],
-                          ),
+                          child: TradesByDayBarChart(
+                              tradesByDay: dist.tradesByDay ?? {})),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: GlossyCard(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            const Expanded(
+                                child: Text('By Asset Class',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13))),
+                            SizedBox(
+                              width: 100,
+                              height: 100,
+                              child: DistributionPieChart(
+                                  data: dist.tradeCountByAssetClass ?? {},
+                                  animate: false),
+                            ),
+                          ],
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: GlossyCard(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            const Expanded(
+                                child: Text('By Strategy',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13))),
+                            SizedBox(
+                              width: 100,
+                              height: 100,
+                              child: DistributionPieChart(
+                                  data: dist.tradeCountByStrategy ?? {},
+                                  animate: false),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // On smaller screens, keep vertical but compact
+      return Column(
+        children: [
+          GlossyCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Trades by Day',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                const SizedBox(height: 12),
+                SizedBox(
+                    height: 160, // Reduced from 200/180
+                    child: TradesByDayBarChart(
+                        tradesByDay: dist.tradesByDay ?? {})),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: GlossyCard(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    children: [
+                      const Text('By Asset Class',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 120, // Reduced
+                        child: DistributionPieChart(
+                            data: dist.tradeCountByAssetClass ?? {}),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          );
-        }
-
-        // On smaller screens, keep vertical but compact
-        return Column(
-          children: [
-            GlossyCard(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Trades by Day', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 160, // Reduced from 200/180
-                    child: TradesByDayBarChart(tradesByDay: dist.tradesByDay ?? {})
-                  ),
-                ],
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: GlossyCard(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      children: [
-                        const Text('By Asset Class', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          height: 120, // Reduced
-                          child: DistributionPieChart(data: dist.tradeCountByAssetClass ?? {}),
-                        ),
-                      ],
-                    ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GlossyCard(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    children: [
+                      const Text('By Strategy',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 120, // Reduced
+                        child: DistributionPieChart(
+                            data: dist.tradeCountByStrategy ?? {}),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: GlossyCard(
-                     padding: const EdgeInsets.all(12),
-                    child: Column(
-                      children: [
-                        const Text('By Strategy', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          height: 120, // Reduced
-                          child: DistributionPieChart(data: dist.tradeCountByStrategy ?? {}),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      }
-    );
+              ),
+            ],
+          ),
+        ],
+      );
+    });
   }
-  
+
   Widget _buildPatternSection(TradePatternMetrics pattern) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Psychology & Patterns', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+        Text('Psychology & Patterns',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -403,23 +484,28 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   children: [
-                    const Text('Pattern Consistency', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const Text('Pattern Consistency',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 110, // Reduced
-                      child: ConsistencyGauge(score: pattern.patternConsistencyScore),
+                      child: ConsistencyGauge(
+                          score: pattern.patternConsistencyScore),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(width: 12),
-             Expanded(
+            Expanded(
               child: GlossyCard(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   children: [
-                    const Text('Discipline Score', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const Text('Discipline Score',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 110, // Reduced
@@ -435,10 +521,12 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color, {double? width}) {
+  Widget _buildStatCard(String label, String value, IconData icon, Color color,
+      {double? width}) {
     return GlossyCard(
       width: width,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16), // Thinner padding
+      padding: const EdgeInsets.symmetric(
+          horizontal: 14, vertical: 16), // Thinner padding
       // Use a subtle background for individual stat cards
       color: Theme.of(context).cardColor,
       child: Column(
@@ -447,17 +535,22 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).hintColor)),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).hintColor)),
               Icon(icon, color: color, size: 20),
             ],
           ),
           const SizedBox(height: 8),
-          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color)), // Bolder value
+          Text(value,
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: color)), // Bolder value
         ],
       ),
     );
   }
-
-
-
 }

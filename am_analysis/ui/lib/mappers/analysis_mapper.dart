@@ -9,13 +9,14 @@ class AnalysisMapper {
     GroupBy groupBy,
   ) {
     print('[Mapper] toAllocationItems called with groupBy=$groupBy');
-    print('[Mapper] SDK Response: sectors=${sdkResponse?.sectors.length}, assetClasses=${sdkResponse?.assetClasses.length}, marketCaps=${sdkResponse?.marketCaps.length}, stocks=${sdkResponse?.stocks.length}');
-    
+    print(
+        '[Mapper] SDK Response: sectors=${sdkResponse?.sectors.length}, assetClasses=${sdkResponse?.assetClasses.length}, marketCaps=${sdkResponse?.marketCaps.length}, stocks=${sdkResponse?.stocks.length}');
+
     if (sdkResponse == null) {
       print('[Mapper] SDK Response is null!');
       return [];
     }
-    
+
     // Select the appropriate list based on groupBy
     List<sdk.AllocationItem>? sdkItems;
     switch (groupBy) {
@@ -32,12 +33,12 @@ class AnalysisMapper {
         sdkItems = sdkResponse.stocks;
         break;
     }
-    
+
     if (sdkItems == null || sdkItems.isEmpty) {
       print('[Mapper] Selected items for $groupBy is null or empty');
       return [];
     }
-    
+
     print('[Mapper] Mapping ${sdkItems.length} items for $groupBy');
     // Convert SDK AllocationItem to UI AllocationItem
     final result = sdkItems.map((item) {
@@ -48,13 +49,16 @@ class AnalysisMapper {
         // We use dynamic access or check if the generated model supports it
         // Assuming SDK has been updated to include holdings in AllocationItem
         if (item.holdings != null) {
-          holdings = item.holdings!.map((h) => AllocationHolding(
-            symbol: h.symbol ?? '',
-            name: h.name ?? '',
-            value: (h.value ?? 0).toDouble(),
-            percentage: (h.percentage ?? 0).toDouble(),
-            portfolioPercentage: (h.portfolioPercentage ?? 0).toDouble(),
-          )).toList();
+          holdings = item.holdings!
+              .map((h) => AllocationHolding(
+                    symbol: h.symbol ?? '',
+                    name: h.name ?? '',
+                    value: (h.value ?? 0).toDouble(),
+                    percentage: (h.percentage ?? 0).toDouble(),
+                    portfolioPercentage:
+                        (h.portfolioPercentage ?? 0).toDouble(),
+                  ))
+              .toList();
         }
       } catch (e) {
         // Ignore if holdings not present or accessible
@@ -68,7 +72,7 @@ class AnalysisMapper {
         holdings: holdings,
       );
     }).toList();
-    
+
     print('[Mapper] Successfully mapped ${result.length} allocation items');
     return result;
   }
@@ -76,7 +80,7 @@ class AnalysisMapper {
   /// Convert SDK TopMoversResponse to UI MoverItem list
   static List<MoverItem> toMoverItems(sdk.TopMoversResponse? sdkResponse) {
     if (sdkResponse == null) return [];
-    
+
     // Combine gainers and losers
     final allMovers = <sdk.MoverItem>[];
     if (sdkResponse.gainers != null) {
@@ -85,7 +89,7 @@ class AnalysisMapper {
     if (sdkResponse.losers != null) {
       allMovers.addAll(sdkResponse.losers!);
     }
-    
+
     // Convert SDK MoverItem to UI MoverItem
     return allMovers.map((item) {
       return MoverItem(
@@ -103,7 +107,7 @@ class AnalysisMapper {
     sdk.PerformanceResponse? sdkResponse,
   ) {
     if (sdkResponse == null || sdkResponse.chartData == null) return [];
-    
+
     // Convert SDK DataPoint to UI PerformanceDataPoint
     return sdkResponse.chartData!.map((dataPoint) {
       return PerformanceDataPoint(

@@ -6,12 +6,12 @@ import 'movers_widget.dart';
 
 class MoversDetailModal extends StatelessWidget {
   final Movers movers;
-  
+
   const MoversDetailModal({super.key, required this.movers});
 
   static Future<void> show(BuildContext context, Movers movers) async {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     if (isMobile) {
       await showModalBottomSheet(
         context: context,
@@ -61,7 +61,12 @@ class _ModalContainer extends StatefulWidget {
 class _ModalContainerState extends State<_ModalContainer> {
   int _selectedTab = 0; // 0 for Gainers, 1 for Losers
 
-  Widget _buildTabButton(BuildContext context, String title, bool isSelected, VoidCallback onTap) {
+  Widget _buildTabButton(
+    BuildContext context,
+    String title,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
@@ -78,7 +83,7 @@ class _ModalContainerState extends State<_ModalContainer> {
                     color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ]
               : null,
         ),
@@ -101,9 +106,12 @@ class _ModalContainerState extends State<_ModalContainer> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24), bottom: Radius.circular(24)),
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(24),
+        bottom: Radius.circular(24),
+      ),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
@@ -139,7 +147,9 @@ class _ModalContainerState extends State<_ModalContainer> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withValues(alpha: 0.12),
+                        color: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -155,7 +165,8 @@ class _ModalContainerState extends State<_ModalContainer> {
                         children: [
                           Text(
                             'All Top Movers',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 20,
                                   letterSpacing: -0.3,
@@ -163,8 +174,10 @@ class _ModalContainerState extends State<_ModalContainer> {
                           ),
                           Text(
                             'Today\'s highest gainers and losers',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.6),
                                 ),
                           ),
                         ],
@@ -174,22 +187,32 @@ class _ModalContainerState extends State<_ModalContainer> {
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.of(context).pop(),
                       style: IconButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.5),
                       ),
                     ),
                   ],
                 ),
               ),
               const Divider(height: 1, thickness: 1),
-              
+
               if (isMobile)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16), // Added 16px bottom padding
+                  padding: const EdgeInsets.fromLTRB(
+                    24,
+                    24,
+                    24,
+                    16,
+                  ), // Added 16px bottom padding
                   child: Container(
                     height: 40,
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.03),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -214,31 +237,48 @@ class _ModalContainerState extends State<_ModalContainer> {
                     ),
                   ),
                 ),
-              
+
               // ── Content ──
               Flexible(
                 child: SingleChildScrollView(
                   controller: widget.scrollController,
-                  padding: EdgeInsets.fromLTRB(24, isMobile ? 8 : 24, 24, 24), // Reduced top padding on mobile since we added it to the tabs
-                  child: isMobile 
-                    ? _buildColumn(
-                        context, 
-                        _selectedTab == 0 ? 'Gainers' : 'Losers', 
-                        _selectedTab == 0 ? widget.movers.topGainers : widget.movers.topLosers, 
-                        _selectedTab == 0
-                      )
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: _buildColumn(context, 'Gainers', widget.movers.topGainers, true),
-                          ),
-                          const SizedBox(width: 24),
-                          Expanded(
-                            child: _buildColumn(context, 'Losers', widget.movers.topLosers, false),
-                          ),
-                        ],
-                      ),
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    isMobile ? 8 : 24,
+                    24,
+                    24,
+                  ), // Reduced top padding on mobile since we added it to the tabs
+                  child: isMobile
+                      ? _buildColumn(
+                          context,
+                          _selectedTab == 0 ? 'Gainers' : 'Losers',
+                          _selectedTab == 0
+                              ? widget.movers.topGainers
+                              : widget.movers.topLosers,
+                          _selectedTab == 0,
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _buildColumn(
+                                context,
+                                'Gainers',
+                                widget.movers.topGainers,
+                                true,
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            Expanded(
+                              child: _buildColumn(
+                                context,
+                                'Losers',
+                                widget.movers.topLosers,
+                                false,
+                              ),
+                            ),
+                          ],
+                        ),
                 ),
               ),
             ],
@@ -261,7 +301,9 @@ class _ModalContainerState extends State<_ModalContainer> {
         Row(
           children: [
             Icon(
-              isGainers ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+              isGainers
+                  ? Icons.trending_up_rounded
+                  : Icons.trending_down_rounded,
               color: color,
               size: 18,
             ),
@@ -269,9 +311,9 @@ class _ModalContainerState extends State<_ModalContainer> {
             Text(
               '$title (${stocks.length})',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
             ),
           ],
         ),
@@ -283,7 +325,9 @@ class _ModalContainerState extends State<_ModalContainer> {
               child: Text(
                 'No ${isGainers ? 'gainers' : 'losers'} found',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   fontSize: 14,
                 ),
               ),

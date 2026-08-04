@@ -36,7 +36,10 @@ class DerivativeCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
         boxShadow: [
-          BoxShadow(color: theme.colorScheme.shadow.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),
+          BoxShadow(
+              color: theme.colorScheme.shadow.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2)),
         ],
       ),
       padding: const EdgeInsets.all(16),
@@ -52,10 +55,13 @@ class DerivativeCard extends StatelessWidget {
                   color: theme.colorScheme.tertiaryContainer,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.analytics_outlined, size: 20, color: theme.colorScheme.onTertiaryContainer),
+                child: Icon(Icons.analytics_outlined,
+                    size: 20, color: theme.colorScheme.onTertiaryContainer),
               ),
               const SizedBox(width: 12),
-              Text('Derivative (Optional)', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+              Text('Derivative (Optional)',
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600)),
             ],
           ),
 
@@ -64,7 +70,8 @@ class DerivativeCard extends StatelessWidget {
             value: selectedDerivativeType,
             hint: 'Select Type',
             items: DerivativeTypes.values
-                .map((type) => type.toSimpleDropdownItem(text: type.toString().split('.').last.toUpperCase()))
+                .map((type) => type.toSimpleDropdownItem(
+                    text: type.toString().split('.').last.toUpperCase()))
                 .toList(),
             onChanged: onDerivativeTypeChanged,
           ),
@@ -80,9 +87,12 @@ class DerivativeCard extends StatelessWidget {
                       labelText: 'Strike',
                       filled: true,
                       fillColor: theme.colorScheme.surfaceContainerHighest,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none),
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -91,7 +101,9 @@ class DerivativeCard extends StatelessWidget {
                     value: selectedOptionType,
                     hint: 'Select Option',
                     items: OptionTypes.values
-                        .map((type) => type.toSimpleDropdownItem(text: type.toString().split('.').last.toUpperCase()))
+                        .map((type) => type.toSimpleDropdownItem(
+                            text:
+                                type.toString().split('.').last.toUpperCase()))
                         .toList(),
                     onChanged: onOptionTypeChanged,
                   ),
@@ -102,24 +114,28 @@ class DerivativeCard extends StatelessWidget {
               onTap: onExpiryDateTap,
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.calendar_today, size: 20, color: theme.colorScheme.onSurfaceVariant),
+                    Icon(Icons.calendar_today,
+                        size: 20, color: theme.colorScheme.onSurfaceVariant),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Expiry',
-                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant),
                         ),
                         Text(
-                          expiryDate?.toLocal().toString().split(' ')[0] ?? 'Select date',
+                          expiryDate?.toLocal().toString().split(' ')[0] ??
+                              'Select date',
                           style: theme.textTheme.bodyLarge,
                         ),
                       ],

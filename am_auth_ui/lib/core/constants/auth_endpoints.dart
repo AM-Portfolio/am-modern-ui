@@ -3,8 +3,11 @@ import 'package:am_common/am_common.dart';
 /// Authentication & User Management API endpoint constants
 class AuthEndpoints {
   // Base URLs (Standardized via Traefik rewriters)
-  static String get _scheme => ConfigService.domain.contains('localhost') || ConfigService.domain.contains('127.0.0.1') ? 'http' : 'https';
-  
+  static String get _scheme => ConfigService.domain.contains('localhost') ||
+          ConfigService.domain.contains('127.0.0.1')
+      ? 'http'
+      : 'https';
+
   static String get authBaseUrl =>
       ConfigService.config.api.auth?.baseUrl ??
       '$_scheme://${ConfigService.domain}/identity';
@@ -22,7 +25,8 @@ class AuthEndpoints {
   static String get identityLogout => '$identityBaseUrl/auth/logout';
   static String get identityRefreshToken => '$identityBaseUrl/auth/refresh';
   static String get identityGoogleLogin => '$identityBaseUrl/auth/google/token';
-  static String get identityPasswordReset => '$identityBaseUrl/auth/password-reset';
+  static String get identityPasswordReset =>
+      '$identityBaseUrl/auth/password-reset';
   static String get identityPasswordResetConfirm =>
       '$identityBaseUrl/auth/password-reset/confirm';
   static String get identityVerifyEmailResend =>
@@ -49,5 +53,6 @@ class AuthEndpoints {
   static String get updateProfile => '$userBaseUrl/v1/auth/status';
 
   /// Get user status endpoint (for activation/status check)
-  static String userStatus(String userId) => '$userBaseUrl/v1/users/$userId/status';
+  static String userStatus(String userId) =>
+      '$userBaseUrl/v1/users/$userId/status';
 }

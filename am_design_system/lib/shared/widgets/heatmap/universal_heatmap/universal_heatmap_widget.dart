@@ -58,8 +58,7 @@ class UniversalHeatmapWidget extends StatelessWidget {
     SectorType? sector,
     MarketCapType? marketCap,
     HeatmapLayoutType? layout,
-  })?
-  onFiltersChanged;
+  })? onFiltersChanged;
 
   /// Whether to show selectors (can override config)
   final bool? showSelectors;
@@ -87,6 +86,7 @@ class UniversalHeatmapWidget extends StatelessWidget {
 
   /// Currently selected market cap for filtering
   final MarketCapType? selectedMarketCap;
+
   /// Currently selected layout
   final HeatmapLayoutType? selectedLayout;
 
@@ -113,8 +113,7 @@ class UniversalHeatmapWidget extends StatelessWidget {
       tag: 'UniversalHeatmapWidget.HeatmapData',
     );
 
-    var effectiveConfig =
-        config ??
+    var effectiveConfig = config ??
         UniversalHeatmapConfigManager.getBasicConfig(
           title: title,
           compactMode: compactMode ?? false,
@@ -160,14 +159,14 @@ class UniversalHeatmapWidget extends StatelessWidget {
     // 1. Create Display Template (handles tile rendering)
     final displayTemplate =
         UniversalHeatmapTemplateFactory.createDisplayTemplate(
-          heatmapData: data,
-          config: effectiveConfig,
-          isLoading: isLoading,
-          error: error,
-          onTilePressed: onTilePressed,
-          selectedSector: selectedSector,
-          selectedMetric: selectedMetric,
-        );
+      heatmapData: data,
+      config: effectiveConfig,
+      isLoading: isLoading,
+      error: error,
+      onTilePressed: onTilePressed,
+      selectedSector: selectedSector,
+      selectedMetric: selectedMetric,
+    );
 
     CommonLogger.debug(
       'Display template created with layout=${effectiveConfig.layoutType}',

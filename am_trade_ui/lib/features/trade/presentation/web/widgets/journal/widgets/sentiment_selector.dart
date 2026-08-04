@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import '../models/journal_mood_options.dart';
 
 class SentimentSelector extends StatelessWidget {
-  const SentimentSelector({required this.selectedSentiment, required this.onSentimentSelected, super.key});
+  const SentimentSelector(
+      {required this.selectedSentiment,
+      required this.onSentimentSelected,
+      super.key});
 
   final String? selectedSentiment;
   final ValueChanged<String> onSentimentSelected;
@@ -27,7 +30,11 @@ class SentimentSelector extends StatelessWidget {
               color: isSelected
                   ? (sentimentData['color'] as Color).withOpacity(0.15)
                   : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-              border: Border.all(color: isSelected ? sentimentData['color'] as Color : Colors.transparent, width: 1.5),
+              border: Border.all(
+                  color: isSelected
+                      ? sentimentData['color'] as Color
+                      : Colors.transparent,
+                  width: 1.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -36,14 +43,17 @@ class SentimentSelector extends StatelessWidget {
                 Icon(
                   sentimentData['icon'] as IconData,
                   size: 11,
-                  color: isSelected ? sentimentData['color'] as Color : theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: isSelected
+                      ? sentimentData['color'] as Color
+                      : theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
                 const SizedBox(width: 3),
                 Text(
                   sentimentData['label'] as String,
                   style: TextStyle(
                     fontSize: 10,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     color: isSelected ? sentimentData['color'] as Color : null,
                   ),
                 ),

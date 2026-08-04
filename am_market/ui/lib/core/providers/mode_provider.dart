@@ -24,9 +24,8 @@ class ModeProvider with ChangeNotifier {
 
   /// Toggle between developer and user mode
   void toggleMode() {
-    _currentMode = _currentMode == AppMode.developer 
-        ? AppMode.user 
-        : AppMode.developer;
+    _currentMode =
+        _currentMode == AppMode.developer ? AppMode.user : AppMode.developer;
     notifyListeners();
   }
 }

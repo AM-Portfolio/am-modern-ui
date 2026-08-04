@@ -25,15 +25,15 @@ class AuthCubit extends Cubit<AuthState> {
     required GetCurrentUserUseCase getCurrentUserUseCase,
     required RegisterUseCase registerUseCase,
     required AuthRepository authRepository,
-  }) : _emailLoginUseCase = emailLoginUseCase,
-       _googleLoginUseCase = googleLoginUseCase,
-       _demoLoginUseCase = demoLoginUseCase,
-       _logoutUseCase = logoutUseCase,
-       _checkAuthStatusUseCase = checkAuthStatusUseCase,
-       _getCurrentUserUseCase = getCurrentUserUseCase,
-       _registerUseCase = registerUseCase,
-       _authRepository = authRepository,
-       super(const AuthInitial());
+  })  : _emailLoginUseCase = emailLoginUseCase,
+        _googleLoginUseCase = googleLoginUseCase,
+        _demoLoginUseCase = demoLoginUseCase,
+        _logoutUseCase = logoutUseCase,
+        _checkAuthStatusUseCase = checkAuthStatusUseCase,
+        _getCurrentUserUseCase = getCurrentUserUseCase,
+        _registerUseCase = registerUseCase,
+        _authRepository = authRepository,
+        super(const AuthInitial());
   final EmailLoginUseCase _emailLoginUseCase;
   final GoogleLoginUseCase _googleLoginUseCase;
   final DemoLoginUseCase _demoLoginUseCase;
@@ -49,13 +49,13 @@ class AuthCubit extends Cubit<AuthState> {
 
   /// Login with email and password
   Future<void> loginWithEmail(
-    String email, 
+    String email,
     String password,
   ) async {
     emit(const AuthLoading());
 
     final result = await _emailLoginUseCase(
-      email: email, 
+      email: email,
       password: password,
     );
 
@@ -161,7 +161,8 @@ class AuthCubit extends Cubit<AuthState> {
           tag: 'AuthCubit',
         );
         if (isAuthenticated) {
-          CommonLogger.debug('📦 Fetching user from storage...', tag: 'AuthCubit');
+          CommonLogger.debug('📦 Fetching user from storage...',
+              tag: 'AuthCubit');
           // Fetch and restore user from storage
           final userResult = await _getCurrentUserUseCase();
           if (generation != _authGeneration) return;
@@ -419,7 +420,8 @@ class AuthCubit extends Cubit<AuthState> {
     final previous = state;
     emit(const AuthLoading());
     try {
-      final result = await _authRepository.requestAccountDeletion(feedback: feedback);
+      final result =
+          await _authRepository.requestAccountDeletion(feedback: feedback);
       result.fold(
         (failure) {
           emit(AuthError(failure.message));
@@ -441,4 +443,3 @@ bool _isTransientServerFailure(Failure failure) {
   final status = int.tryParse(failure.code ?? '');
   return status != null && status >= 500;
 }
-

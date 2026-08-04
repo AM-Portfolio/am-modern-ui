@@ -37,7 +37,8 @@ enum TechnicalReasons {
 }
 
 /// Converter for TechnicalReasons enum
-class TechnicalReasonsConverter implements JsonConverter<TechnicalReasons?, String?> {
+class TechnicalReasonsConverter
+    implements JsonConverter<TechnicalReasons?, String?> {
   const TechnicalReasonsConverter();
 
   @override
@@ -184,14 +185,18 @@ extension TechnicalReasonsExtension on TechnicalReasons {
 }
 
 /// List converter for TechnicalReasons
-class TechnicalReasonsListConverter implements JsonConverter<List<TechnicalReasons>?, List<dynamic>?> {
+class TechnicalReasonsListConverter
+    implements JsonConverter<List<TechnicalReasons>?, List<dynamic>?> {
   const TechnicalReasonsListConverter();
 
   @override
   List<TechnicalReasons>? fromJson(List<dynamic>? json) {
     if (json == null) return null;
     const converter = TechnicalReasonsConverter();
-    return json.map((e) => converter.fromJson(e as String?)).whereType<TechnicalReasons>().toList();
+    return json
+        .map((e) => converter.fromJson(e as String?))
+        .whereType<TechnicalReasons>()
+        .toList();
   }
 
   @override

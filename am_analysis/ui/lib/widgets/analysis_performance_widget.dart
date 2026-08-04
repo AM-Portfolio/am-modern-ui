@@ -24,7 +24,8 @@ class AnalysisPerformanceWidget extends StatefulWidget {
   final bool showTimeFrameSelector;
 
   @override
-  State<AnalysisPerformanceWidget> createState() => _AnalysisPerformanceWidgetState();
+  State<AnalysisPerformanceWidget> createState() =>
+      _AnalysisPerformanceWidgetState();
 }
 
 enum ChartType { line, area, bar }
@@ -57,7 +58,8 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
 
     final sw = Stopwatch()..start();
     try {
-      print('[Performance] Loading data for portfolio=${widget.portfolioId}, timeFrame=${_selectedTimeFrame.code}');
+      print(
+          '[Performance] Loading data for portfolio=${widget.portfolioId}, timeFrame=${_selectedTimeFrame.code}');
       final points = await _service.getPerformance(
         widget.portfolioId,
         AnalysisEntityType.PORTFOLIO,
@@ -74,7 +76,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
       if (points.isEmpty) {
         ProductTelemetry.instance.emptyState('analysis_performance_empty');
       }
-      
+
       if (mounted) {
         setState(() {
           _dataPoints = points;
@@ -94,7 +96,8 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
       print('[Performance] Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
-          _error = 'Failed to load performance: ${e.toString().replaceAll('Exception:', '').trim()}';
+          _error =
+              'Failed to load performance: ${e.toString().replaceAll('Exception:', '').trim()}';
           _isLoading = false;
         });
       }
@@ -113,8 +116,14 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
-        final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1024;
-        final height = widget.height ?? (isMobile ? 280 : isTablet ? 260 : 250);
+        final isTablet =
+            constraints.maxWidth >= 600 && constraints.maxWidth < 1024;
+        final height = widget.height ??
+            (isMobile
+                ? 280
+                : isTablet
+                    ? 260
+                    : 250);
         final padding = isMobile ? 16.0 : 20.0;
 
         return Container(
@@ -137,9 +146,9 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
                     child: Text(
                       'Performance',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: isMobile ? 16 : 18,
-                      ),
+                            fontWeight: FontWeight.bold,
+                            fontSize: isMobile ? 16 : 18,
+                          ),
                     ),
                   ),
                   if (_isLoading)
@@ -151,7 +160,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
                 ],
               ),
               SizedBox(height: isMobile ? 10 : 12),
-              
+
               // Only show full selector controls if enabled
               if (widget.showTimeFrameSelector) ...[
                 isMobile
@@ -176,9 +185,9 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
                           ),
                         ],
                       ),
-                 SizedBox(height: isMobile ? 12 : 16),
+                SizedBox(height: isMobile ? 12 : 16),
               ],
-              
+
               Expanded(
                 child: _buildContent(isMobile),
               ),
@@ -192,7 +201,7 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
   Widget _buildChartTypeSelector(bool isMobile) {
     return Container(
       padding: const EdgeInsets.all(4),
-      constraints: const BoxConstraints(minHeight: 36), 
+      constraints: const BoxConstraints(minHeight: 36),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
@@ -205,13 +214,13 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         children: ChartType.values.map((type) {
           final isSelected = type == _chartType;
           final iconSize = isMobile ? 16.0 : 18.0;
-          
+
           return GestureDetector(
             onTap: () => setState(() => _chartType = type),
             child: Container(
               constraints: const BoxConstraints(minWidth: 36, minHeight: 28),
               padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 8 : 10, 
+                horizontal: isMobile ? 8 : 10,
                 vertical: 4,
               ),
               decoration: BoxDecoration(
@@ -248,17 +257,21 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, 
-              color: Theme.of(context).colorScheme.error, 
+            Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.error,
               size: isMobile ? 40 : 48,
             ),
             const SizedBox(height: 8),
             Text(
               'Error loading performance',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                fontSize: isMobile ? 13 : 14,
-              ),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.6),
+                    fontSize: isMobile ? 13 : 14,
+                  ),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -278,9 +291,12 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         child: Text(
           'No performance data available',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-            fontSize: isMobile ? 13 : 14,
-          ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6),
+                fontSize: isMobile ? 13 : 14,
+              ),
         ),
       );
     }
@@ -293,23 +309,29 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
       return FlSpot(entry.key.toDouble(), entry.value.value);
     }).toList();
 
-    final minYData = _dataPoints.map((p) => p.value).reduce((a, b) => a < b ? a : b);
-    final maxYData = _dataPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    final minYData =
+        _dataPoints.map((p) => p.value).reduce((a, b) => a < b ? a : b);
+    final maxYData =
+        _dataPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
     final range = maxYData - minYData;
-    
+
     // Dynamic volatility padding (15% breathing room)
-    final padding = range > 0.5 ? range * 0.15 : (minYData * 0.02 > 1.0 ? minYData * 0.02 : 1.0);
+    final padding = range > 0.5
+        ? range * 0.15
+        : (minYData * 0.02 > 1.0 ? minYData * 0.02 : 1.0);
     final minY = minYData - padding;
     final maxY = maxYData + padding;
-    
+
     final isPositive = _dataPoints.last.value >= _dataPoints.first.value;
-    
-    final gainColor = Theme.of(context).brightness == Brightness.dark 
-        ? const Color(0xFF00B894) : const Color(0xFF009975);
+
+    final gainColor = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF00B894)
+        : const Color(0xFF009975);
     final lossColor = Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFFFF7675) : const Color(0xFFE85656);
+        ? const Color(0xFFFF7675)
+        : const Color(0xFFE85656);
     final chartColor = isPositive ? gainColor : lossColor;
-    
+
     // Interval calculation for X axis
     final xInterval = (_dataPoints.length / 5).ceil().toDouble();
 
@@ -337,7 +359,8 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
                   toY: entry.value.y,
                   color: chartColor,
                   width: 4,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(2)),
                 ),
               ],
             );
@@ -359,9 +382,12 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         ),
         titlesData: FlTitlesData(
           show: true,
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -372,17 +398,17 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
                 if (index < 0 || index >= _dataPoints.length) {
                   return const SizedBox.shrink();
                 }
-                
+
                 final date = _dataPoints[index].date;
                 String text;
-                
+
                 if (_selectedTimeFrame == ds.TimeFrame.oneDay) {
                   text = DateFormat('HH:mm').format(date);
                 } else if (_selectedTimeFrame == ds.TimeFrame.oneMonth) {
                   text = DateFormat('MMM d').format(date);
-                } else if (_selectedTimeFrame == ds.TimeFrame.sixMonths || 
-                           _selectedTimeFrame == ds.TimeFrame.oneYear ||
-                           _selectedTimeFrame == ds.TimeFrame.ytd) {
+                } else if (_selectedTimeFrame == ds.TimeFrame.sixMonths ||
+                    _selectedTimeFrame == ds.TimeFrame.oneYear ||
+                    _selectedTimeFrame == ds.TimeFrame.ytd) {
                   text = DateFormat('MMM').format(date);
                 } else {
                   text = DateFormat('MMM yy').format(date);
@@ -408,7 +434,8 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         lineBarsData: [
           LineChartBarData(
             spots: spots,
-            isCurved: _chartType == ChartType.area || _chartType == ChartType.line,
+            isCurved:
+                _chartType == ChartType.area || _chartType == ChartType.line,
             color: chartColor,
             barWidth: 3,
             isStrokeCapRound: true,
@@ -431,12 +458,13 @@ class _AnalysisPerformanceWidgetState extends State<AnalysisPerformanceWidget> {
         lineTouchData: LineTouchData(
           enabled: true,
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (_) => Theme.of(context).cardColor.withValues(alpha: 0.9),
+            getTooltipColor: (_) =>
+                Theme.of(context).cardColor.withValues(alpha: 0.9),
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
                 final date = _dataPoints[spot.x.toInt()].date;
                 final formattedDate = DateFormat('MMM d, yyyy').format(date);
-                
+
                 return LineTooltipItem(
                   '${_formatCurrency(spot.y)}\n$formattedDate',
                   TextStyle(

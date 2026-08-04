@@ -51,23 +51,26 @@ class StockIndicesMarketData {
   AuditData? audit;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is StockIndicesMarketData &&
-    other.indexSymbol == indexSymbol &&
-    _deepEquality.equals(other.data, data) &&
-    other.metadata == metadata &&
-    other.docVersion == docVersion &&
-    other.audit == audit;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StockIndicesMarketData &&
+          other.indexSymbol == indexSymbol &&
+          _deepEquality.equals(other.data, data) &&
+          other.metadata == metadata &&
+          other.docVersion == docVersion &&
+          other.audit == audit;
 
   @override
   int get hashCode =>
-    (indexSymbol == null ? 0 : indexSymbol!.hashCode) +
-    (data.hashCode) +
-    (metadata == null ? 0 : metadata!.hashCode) +
-    (docVersion == null ? 0 : docVersion!.hashCode) +
-    (audit == null ? 0 : audit!.hashCode);
+      (indexSymbol == null ? 0 : indexSymbol!.hashCode) +
+      (data.hashCode) +
+      (metadata == null ? 0 : metadata!.hashCode) +
+      (docVersion == null ? 0 : docVersion!.hashCode) +
+      (audit == null ? 0 : audit!.hashCode);
 
   @override
-  String toString() => 'StockIndicesMarketData[indexSymbol=$indexSymbol, data=$data, metadata=$metadata, docVersion=$docVersion, audit=$audit]';
+  String toString() =>
+      'StockIndicesMarketData[indexSymbol=$indexSymbol, data=$data, metadata=$metadata, docVersion=$docVersion, audit=$audit]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -76,7 +79,7 @@ class StockIndicesMarketData {
     } else {
       json[r'indexSymbol'] = null;
     }
-      json[r'data'] = this.data;
+    json[r'data'] = this.data;
     if (this.metadata != null) {
       json[r'metadata'] = this.metadata;
     } else {
@@ -106,8 +109,10 @@ class StockIndicesMarketData {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "StockIndicesMarketData[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "StockIndicesMarketData[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "StockIndicesMarketData[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "StockIndicesMarketData[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -123,7 +128,10 @@ class StockIndicesMarketData {
     return null;
   }
 
-  static List<StockIndicesMarketData> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<StockIndicesMarketData> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <StockIndicesMarketData>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -139,7 +147,7 @@ class StockIndicesMarketData {
   static Map<String, StockIndicesMarketData> mapFromJson(dynamic json) {
     final map = <String, StockIndicesMarketData>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = StockIndicesMarketData.fromJson(entry.value);
         if (value != null) {
@@ -151,19 +159,23 @@ class StockIndicesMarketData {
   }
 
   // maps a json object with a list of StockIndicesMarketData-objects as value to a dart map
-  static Map<String, List<StockIndicesMarketData>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<StockIndicesMarketData>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<StockIndicesMarketData>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = StockIndicesMarketData.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = StockIndicesMarketData.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

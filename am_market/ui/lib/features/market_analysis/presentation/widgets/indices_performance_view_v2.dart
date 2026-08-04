@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:provider/provider.dart' as provider_pkg; // Aliased to avoid conflict
+import 'package:provider/provider.dart'
+    as provider_pkg; // Aliased to avoid conflict
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/providers/market_provider.dart';
@@ -13,11 +14,12 @@ class IndicesPerformanceViewV2 extends ConsumerStatefulWidget {
   const IndicesPerformanceViewV2({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<IndicesPerformanceViewV2> createState() => _IndicesPerformanceViewV2State();
+  ConsumerState<IndicesPerformanceViewV2> createState() =>
+      _IndicesPerformanceViewV2State();
 }
 
-class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceViewV2> {
-
+class _IndicesPerformanceViewV2State
+    extends ConsumerState<IndicesPerformanceViewV2> {
   Color _getColorSchemeForChange(double pChange) {
     if (pChange >= 2.0) return const Color(0xFF00B894); // Strong Green
     if (pChange >= 0) return const Color(0xFF00D2D3); // Cyan
@@ -27,7 +29,8 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
 
   // String _getColorSchemeName(double pChange) ... (Not used in build? kept if needed or removed if unused)
 
-  StockIndicesMarketData _withLivePrice(MarketProvider provider, StockIndicesMarketData data) {
+  StockIndicesMarketData _withLivePrice(
+      MarketProvider provider, StockIndicesMarketData data) {
     final liveData = provider.getPrice(data.indexSymbol);
     if (liveData == null) return data;
 
@@ -36,7 +39,9 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
     final changePercent = (liveData['changePercent'] as num?)?.toDouble();
     final previousClose = (liveData['previousClose'] as num?)?.toDouble();
 
-    if ((lastPrice == null || lastPrice == 0) && previousClose != null && previousClose > 0) {
+    if ((lastPrice == null || lastPrice == 0) &&
+        previousClose != null &&
+        previousClose > 0) {
       if (change != null && change != 0) {
         lastPrice = previousClose + change;
       } else if (changePercent != null && changePercent != 0) {
@@ -44,7 +49,8 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
       }
     }
 
-    if (lastPrice == null && change == null && changePercent == null) return data;
+    if (lastPrice == null && change == null && changePercent == null)
+      return data;
 
     return data.copyWith(
       lastPrice: lastPrice ?? data.lastPrice,
@@ -57,30 +63,32 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
   Widget build(BuildContext context) {
     // Listen to real-time updates and bridge to MarketProvider
     ref.listen(marketDataStreamProvider, (previous, next) {
-        next.whenData((update) {
-            final mp = provider_pkg.Provider.of<MarketProvider>(context, listen: false);
-            
-            // Convert to Map<String, dynamic> for batch processing
-            final Map<String, dynamic> batchData = {};
-            
-            update.quotes.forEach((symbol, quote) {
-                batchData[symbol] = {
-                    'symbol': symbol,
-                    'lastPrice': quote.lastPrice,
-                    'change': quote.change,
-                    'changePercent': quote.changePercent,
-                    'timestamp': update.timestamp
-                };
-            });
-            
-            // Send batch to provider for efficient logging/processing
-            mp.updateLivePriceBatch(batchData);
+      next.whenData((update) {
+        final mp =
+            provider_pkg.Provider.of<MarketProvider>(context, listen: false);
+
+        // Convert to Map<String, dynamic> for batch processing
+        final Map<String, dynamic> batchData = {};
+
+        update.quotes.forEach((symbol, quote) {
+          batchData[symbol] = {
+            'symbol': symbol,
+            'lastPrice': quote.lastPrice,
+            'change': quote.change,
+            'changePercent': quote.changePercent,
+            'timestamp': update.timestamp
+          };
         });
+
+        // Send batch to provider for efficient logging/processing
+        mp.updateLivePriceBatch(batchData);
+      });
     });
 
     // Synchronize timeframe from global Riverpod state to MarketProvider ChangeNotifier
     ref.listen<TimeFrame>(appTimeFrameProvider, (previous, next) {
-      final mp = provider_pkg.Provider.of<MarketProvider>(context, listen: false);
+      final mp =
+          provider_pkg.Provider.of<MarketProvider>(context, listen: false);
       if (mp.selectedIndicesTimeframe != next.code) {
         mp.setIndicesTimeframe(next.code);
       }
@@ -90,7 +98,8 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
     final globalTimeFrame = ref.watch(appTimeFrameProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
-        final mp = provider_pkg.Provider.of<MarketProvider>(context, listen: false);
+        final mp =
+            provider_pkg.Provider.of<MarketProvider>(context, listen: false);
         if (mp.selectedIndicesTimeframe != globalTimeFrame.code) {
           mp.setIndicesTimeframe(globalTimeFrame.code);
         }
@@ -139,10 +148,12 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
 
         return Container(
           decoration: const BoxDecoration(
-            color: Colors.transparent, // Blends seamlessly into main page gradient background
+            color: Colors
+                .transparent, // Blends seamlessly into main page gradient background
           ),
           child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(), // Native scroll momentum for mobile UX
+            physics:
+                const BouncingScrollPhysics(), // Native scroll momentum for mobile UX
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,7 +184,7 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
                 SizedBox(
                   height: 140, // Height for compact cards
                   child: _AutoScrollingTicker(
-                    indices: allIndices, 
+                    indices: allIndices,
                     isDark: isDark,
                     timeframe: timeframe,
                     basePrices: basePrices,
@@ -209,16 +220,22 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
                     final data = allIndices[index];
                     final pChange = getPChange(data);
                     final isPositive = pChange >= 0;
-                    
+
                     // Cycle schemes for visual variety in White Mode
-                    final schemes = ['primary', 'accent', 'neutral', 'info', 'success'];
+                    final schemes = [
+                      'primary',
+                      'accent',
+                      'neutral',
+                      'info',
+                      'success'
+                    ];
                     final scheme = schemes[index % schemes.length];
                     final colors = AppGlassmorphismV2.colorSchemes[scheme]!;
 
                     return GlassCard(
                       padding: const EdgeInsets.all(16),
                       // Use scheme for V2 styling (pastel fill in white mode)
-                      colorScheme: scheme, 
+                      colorScheme: scheme,
                       onTap: () => provider.selectIndex(data.indexSymbol),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,7 +248,8 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
                                 child: Text(
                                   data.indexSymbol,
                                   style: TextStyle(
-                                    color: isDark ? Colors.white : Colors.black87,
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -240,8 +258,12 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
                                 ),
                               ),
                               Icon(
-                                isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-                                color: isDark ? _getColorSchemeForChange(pChange) : colors[0],
+                                isPositive
+                                    ? Icons.arrow_upward
+                                    : Icons.arrow_downward,
+                                color: isDark
+                                    ? _getColorSchemeForChange(pChange)
+                                    : colors[0],
                                 size: 16,
                               ),
                             ],
@@ -257,7 +279,9 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
                           Text(
                             '${isPositive ? '+' : ''}${pChange.toStringAsFixed(2)}%',
                             style: TextStyle(
-                              color: isDark ? _getColorSchemeForChange(pChange) : colors[0],
+                              color: isDark
+                                  ? _getColorSchemeForChange(pChange)
+                                  : colors[0],
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -309,24 +333,24 @@ class _AutoScrollingTickerState extends State<_AutoScrollingTicker> {
 
   void _startScrolling() {
     if (!_isScrolling || widget.indices.isEmpty) return;
-    
+
     // Smooth scrolling
     // Wait for build
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
       _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
         if (!mounted || !_isScrolling || !_scrollController.hasClients) {
-           timer.cancel();
-           return;
+          timer.cancel();
+          return;
         }
-        
+
         // Calculate max scroll extent
         final maxScroll = _scrollController.position.maxScrollExtent;
         final currentScroll = _scrollController.offset;
-        
+
         // Move 1 pixel
         double nextScroll = currentScroll + 1.0;
-        
+
         if (nextScroll >= maxScroll) {
           // Reset to 0 (or jump if infinite list simulation desired, but jump to 0 is ok for now)
           _scrollController.jumpTo(0);
@@ -345,35 +369,41 @@ class _AutoScrollingTickerState extends State<_AutoScrollingTicker> {
   }
 
   Color _getColorSchemeForChange(double pChange) {
-    if (pChange >= 2.0) return const Color(0xFF00B894); 
-    if (pChange >= 0) return const Color(0xFF00D2D3); 
-    if (pChange >= -2.0) return const Color(0xFFFF9F43); 
-    return const Color(0xFFFF6B6B); 
+    if (pChange >= 2.0) return const Color(0xFF00B894);
+    if (pChange >= 0) return const Color(0xFF00D2D3);
+    if (pChange >= -2.0) return const Color(0xFFFF9F43);
+    return const Color(0xFFFF6B6B);
   }
 
   @override
   Widget build(BuildContext context) {
     // Duplicate the list to create infinite scroll illusion (x3 list)
-    final displayList = [...widget.indices, ...widget.indices, ...widget.indices];
+    final displayList = [
+      ...widget.indices,
+      ...widget.indices,
+      ...widget.indices
+    ];
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isScrolling = false),
       onTapUp: (_) => setState(() {
-         _isScrolling = true;
-         _startScrolling();
+        _isScrolling = true;
+        _startScrolling();
       }),
       onTapCancel: () => setState(() {
-         _isScrolling = true;
-         _startScrolling();
+        _isScrolling = true;
+        _startScrolling();
       }),
       child: ListView.builder(
         controller: _scrollController,
         scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // Smooth native momentum on swiping
+        physics: const BouncingScrollPhysics(
+            parent:
+                AlwaysScrollableScrollPhysics()), // Smooth native momentum on swiping
         itemCount: displayList.length,
         itemBuilder: (context, index) {
           final data = displayList[index];
-          
+
           double pChange = data.pChange;
           if (widget.timeframe != '1D') {
             final basePrice = widget.basePrices[data.indexSymbol];
@@ -381,14 +411,14 @@ class _AutoScrollingTickerState extends State<_AutoScrollingTicker> {
               pChange = ((data.lastPrice - basePrice) / basePrice) * 100;
             }
           }
-          
+
           // Cycle schemes
           final schemes = ['primary', 'accent', 'neutral', 'info', 'success'];
           // Use original index to keep scheme consistent for same item
-          final originalIndex = index % widget.indices.length; 
+          final originalIndex = index % widget.indices.length;
           final scheme = schemes[originalIndex % schemes.length];
           final colors = AppGlassmorphismV2.colorSchemes[scheme]!;
-          
+
           return Container(
             width: 280, // Fixed width card
             margin: const EdgeInsets.only(right: 16),
@@ -396,17 +426,24 @@ class _AutoScrollingTickerState extends State<_AutoScrollingTicker> {
               label: data.indexSymbol,
               value: data.lastPrice.toStringAsFixed(2),
               icon: pChange >= 0 ? Icons.trending_up : Icons.trending_down,
-              accentColor: widget.isDark ? _getColorSchemeForChange(pChange) : colors[0],
+              accentColor:
+                  widget.isDark ? _getColorSchemeForChange(pChange) : colors[0],
               trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: (widget.isDark ? _getColorSchemeForChange(pChange) : colors[0]).withOpacity(0.2),
+                  color: (widget.isDark
+                          ? _getColorSchemeForChange(pChange)
+                          : colors[0])
+                      .withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${pChange >= 0 ? '+' : ''}${pChange.toStringAsFixed(2)}%',
                   style: TextStyle(
-                    color: widget.isDark ? _getColorSchemeForChange(pChange) : colors[0],
+                    color: widget.isDark
+                        ? _getColorSchemeForChange(pChange)
+                        : colors[0],
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),

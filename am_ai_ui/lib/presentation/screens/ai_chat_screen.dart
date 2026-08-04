@@ -36,10 +36,9 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     final text = _input.text.trim();
     if (text.isEmpty) return;
     _input.clear();
-    ref.read(aiChatProvider.notifier).sendMessage(
-      text: text,
-      userId: widget.userId,
-    );
+    ref
+        .read(aiChatProvider.notifier)
+        .sendMessage(text: text, userId: widget.userId);
     _scrollToBottom();
   }
 
@@ -71,20 +70,28 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                 gradient: AppColors.primaryGradient,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: Colors.white,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('AM Finance AI',
-                    style: TextStyle(
-                        color: context.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600)),
-                Text('Powered by am-fin-agent',
-                    style: TextStyle(
-                        color: context.textSecondary, fontSize: 11)),
+                Text(
+                  'AM Finance AI',
+                  style: TextStyle(
+                    color: context.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Powered by am-fin-agent',
+                  style: TextStyle(color: context.textSecondary, fontSize: 11),
+                ),
               ],
             ),
           ],
@@ -111,20 +118,23 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                     onSuggestion: (text) {
                       _input.text = text;
                       _send();
-                    })
+                    },
+                  )
                 : ListView.builder(
                     controller: _scroll,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 16),
-                    itemCount: chatState.messages.length +
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    itemCount:
+                        chatState.messages.length +
                         (chatState.isLoading ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (chatState.isLoading &&
                           index == chatState.messages.length) {
                         return const _TypingIndicator();
                       }
-                      return _MessageBubble(
-                          message: chatState.messages[index]);
+                      return _MessageBubble(message: chatState.messages[index]);
                     },
                   ),
           ),
@@ -155,8 +165,9 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
-        crossAxisAlignment:
-            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isUser
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           // Timestamp label
           Padding(
@@ -164,18 +175,19 @@ class _MessageBubble extends StatelessWidget {
             child: Text(
               isUser ? 'You · $time' : 'AM AI · $time',
               style: TextStyle(
-                  fontSize: 10,
-                  color: context.textSecondary,
-                  fontWeight: FontWeight.w500),
+                fontSize: 10,
+                color: context.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
 
           // Bubble
           Container(
             constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.78),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              maxWidth: MediaQuery.of(context).size.width * 0.78,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: isUser ? AppColors.primary : context.cardColor,
               borderRadius: BorderRadius.only(
@@ -184,16 +196,12 @@ class _MessageBubble extends StatelessWidget {
                 bottomLeft: Radius.circular(isUser ? 16 : 4),
                 bottomRight: Radius.circular(isUser ? 4 : 16),
               ),
-              border: isUser
-                  ? null
-                  : Border.all(color: context.borderColor),
+              border: isUser ? null : Border.all(color: context.borderColor),
             ),
             child: Text(
               message.text,
               style: TextStyle(
-                color: isUser
-                    ? AppColors.textPrimaryDark
-                    : context.textPrimary,
+                color: isUser ? AppColors.textPrimaryDark : context.textPrimary,
                 fontSize: 14,
                 height: 1.4,
               ),
@@ -215,8 +223,7 @@ class _MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.only(top: 4, left: 4),
               child: Text(
                 '⚡ ${message.response!.toolsUsed.join(', ')}',
-                style: TextStyle(
-                    fontSize: 10, color: context.textSecondary),
+                style: TextStyle(fontSize: 10, color: context.textSecondary),
               ),
             ),
         ],
@@ -240,9 +247,10 @@ class _TypingIndicatorState extends State<_TypingIndicator>
   @override
   void initState() {
     super.initState();
-    _ctrl =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 800))
-          ..repeat(reverse: true);
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -258,8 +266,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
       child: Row(
         children: [
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: context.cardColor,
               borderRadius: BorderRadius.circular(16),
@@ -325,8 +332,10 @@ class _InputBar extends StatelessWidget {
               onSubmitted: (_) => onSend(),
               decoration: InputDecoration(
                 hintText: 'Ask about your portfolio…',
-                hintStyle:
-                    TextStyle(color: context.textSecondary, fontSize: 14),
+                hintStyle: TextStyle(
+                  color: context.textSecondary,
+                  fontSize: 14,
+                ),
                 filled: true,
                 fillColor: context.cardColor,
                 border: OutlineInputBorder(
@@ -339,11 +348,12 @@ class _InputBar extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide:
-                      BorderSide(color: AppColors.primary, width: 1.5),
+                  borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
             ),
           ),
@@ -374,8 +384,11 @@ class _InputBar extends StatelessWidget {
                         gradient: AppColors.primaryGradient,
                         borderRadius: BorderRadius.circular(22),
                       ),
-                      child: const Icon(Icons.send_rounded,
-                          color: Colors.white, size: 18),
+                      child: const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
           ),
@@ -418,20 +431,25 @@ class _EmptyState extends StatelessWidget {
                 gradient: AppColors.primaryGradient,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.auto_awesome,
-                  color: Colors.white, size: 32),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: Colors.white,
+                size: 32,
+              ),
             ),
             const SizedBox(height: 16),
-            Text('AM Finance AI',
-                style: TextStyle(
-                    color: context.textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
+            Text(
+              'AM Finance AI',
+              style: TextStyle(
+                color: context.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               'Ask anything about your portfolio',
-              style:
-                  TextStyle(color: context.textSecondary, fontSize: 14),
+              style: TextStyle(color: context.textSecondary, fontSize: 14),
             ),
             const SizedBox(height: 32),
             Wrap(
@@ -439,8 +457,10 @@ class _EmptyState extends StatelessWidget {
               runSpacing: 8,
               alignment: WrapAlignment.center,
               children: _suggestions
-                  .map((s) => _SuggestionChip(
-                      label: s, onTap: () => onSuggestion(s)))
+                  .map(
+                    (s) =>
+                        _SuggestionChip(label: s, onTap: () => onSuggestion(s)),
+                  )
                   .toList(),
             ),
           ],
@@ -465,12 +485,12 @@ class _SuggestionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: context.cardColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.4)),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
         ),
-        child: Text(label,
-            style: TextStyle(
-                color: context.textSecondary, fontSize: 13)),
+        child: Text(
+          label,
+          style: TextStyle(color: context.textSecondary, fontSize: 13),
+        ),
       ),
     );
   }

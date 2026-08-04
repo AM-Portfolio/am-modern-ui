@@ -32,7 +32,9 @@ class DiagnosticDashboardPage extends ConsumerWidget {
           Container(
             width: 350,
             decoration: BoxDecoration(
-              border: Border(right: BorderSide(color: Colors.white10.withOpacity(0.05))),
+              border: Border(
+                right: BorderSide(color: Colors.white10.withOpacity(0.05)),
+              ),
               color: Theme.of(context).cardColor.withOpacity(0.3),
             ),
             child: Column(
@@ -45,14 +47,16 @@ class DiagnosticDashboardPage extends ConsumerWidget {
                     children: [
                       Text(
                         'SDK Health',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                       ),
                       Switch(
                         value: ref.watch(mockDataEnabledProvider),
-                        onChanged: (val) => ref.read(mockDataEnabledProvider.notifier).set(val),
+                        onChanged: (val) =>
+                            ref.read(mockDataEnabledProvider.notifier).set(val),
                         activeColor: Colors.greenAccent,
                       ),
                     ],
@@ -61,7 +65,10 @@ class DiagnosticDashboardPage extends ConsumerWidget {
                 if (ref.watch(mockDataEnabledProvider))
                   Container(
                     width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.orangeAccent.withOpacity(0.2),
@@ -70,19 +77,25 @@ class DiagnosticDashboardPage extends ConsumerWidget {
                     child: const Text(
                       'MOCK DATA ENABLED',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.orangeAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.orangeAccent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    children: metrics.entries.map((e) => SdkHealthCard(metric: e.value)).toList(),
+                    children: metrics.entries
+                        .map((e) => SdkHealthCard(metric: e.value))
+                        .toList(),
                   ),
                 ),
               ],
             ),
           ),
-          
+
           // Main Area: Live Event Log
           Expanded(
             child: Column(
@@ -96,13 +109,16 @@ class DiagnosticDashboardPage extends ConsumerWidget {
                       Text(
                         'Live Traffic Log',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         '${ref.watch(telemetryLogProvider).length} events recorded',
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -214,9 +230,9 @@ class _TelemetryListTile extends StatelessWidget {
     final color = isError
         ? Colors.redAccent
         : isBoot
-            ? Colors.indigoAccent
-            : Colors.greenAccent;
-    
+        ? Colors.indigoAccent
+        : Colors.greenAccent;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8.0),
       padding: const EdgeInsets.all(12.0),
@@ -240,7 +256,10 @@ class _TelemetryListTile extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.blueAccent.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(4),
@@ -265,12 +284,16 @@ class _TelemetryListTile extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (event.metadata != null && event.metadata!['full_url'] != null)
+                if (event.metadata != null &&
+                    event.metadata!['full_url'] != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       event.metadata!['full_url'],
-                      style: const TextStyle(color: Colors.white38, fontSize: 11),
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 11,
+                      ),
                     ),
                   ),
               ],

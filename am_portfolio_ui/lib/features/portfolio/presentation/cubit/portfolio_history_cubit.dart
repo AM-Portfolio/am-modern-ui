@@ -60,10 +60,9 @@ class PortfolioHistoryCubit extends Cubit<PortfolioHistoryState> {
       _lastPortfolioId = portfolioId;
       _lastTimeFrame = tf;
 
-      emit(PortfolioHistoryLoaded(
-        snapshots: snapshots,
-        availableBrokers: brokers,
-      ));
+      emit(
+        PortfolioHistoryLoaded(snapshots: snapshots, availableBrokers: brokers),
+      );
 
       CommonLogger.info(
         'Portfolio history loaded: ${snapshots.length} snapshots, brokers: $brokers',

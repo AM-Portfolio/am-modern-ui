@@ -125,9 +125,7 @@ class _SubscriptionWebPricingScreenState
   ) {
     final subscription = (state is SubscriptionLoaded)
         ? state.subscription
-        : (state is SubscriptionActionInProgress
-            ? state.subscription
-            : null);
+        : (state is SubscriptionActionInProgress ? state.subscription : null);
 
     if (subscription != null && subscription.planCode == plan.code) return;
 
@@ -158,9 +156,11 @@ class _SubscriptionWebPricingScreenState
     }
 
     if (subscription != null) {
-      context
-          .read<SubscriptionCubit>()
-          .upgrade(subscription.id, plan.code, plan.interval);
+      context.read<SubscriptionCubit>().upgrade(
+        subscription.id,
+        plan.code,
+        plan.interval,
+      );
     } else {
       context.read<SubscriptionCubit>().subscribe(plan.code, plan.interval);
     }
@@ -277,14 +277,14 @@ class _SubscriptionWebPricingScreenState
                 ctaText: currentSubscription?.planCode == freePlan.code
                     ? 'Current Plan'
                     : 'Get Started',
-                onCtaPressed: (isActionInProgress ||
+                onCtaPressed:
+                    (isActionInProgress ||
                         currentSubscription?.planCode == freePlan.code)
                     ? null
                     : () => _handlePlanAction(context, state, freePlan),
                 primaryColor: Colors.grey.shade400,
                 features: freePlan.features,
-                isCurrentPlan:
-                    currentSubscription?.planCode == freePlan.code,
+                isCurrentPlan: currentSubscription?.planCode == freePlan.code,
               ),
             if (proPlan != null)
               PricingCard(
@@ -300,7 +300,8 @@ class _SubscriptionWebPricingScreenState
                 ctaText: currentSubscription?.planCode == proPlan.code
                     ? 'Current Plan'
                     : (isActionInProgress ? 'Processing...' : 'Upgrade to Pro'),
-                onCtaPressed: (isActionInProgress ||
+                onCtaPressed:
+                    (isActionInProgress ||
                         currentSubscription?.planCode == proPlan.code)
                     ? null
                     : () => _handlePlanAction(context, state, proPlan),
@@ -323,7 +324,8 @@ class _SubscriptionWebPricingScreenState
                 ctaText: currentSubscription?.planCode == premiumPlan.code
                     ? 'Current Plan'
                     : (isActionInProgress ? 'Processing...' : 'Get Premium'),
-                onCtaPressed: (isActionInProgress ||
+                onCtaPressed:
+                    (isActionInProgress ||
                         currentSubscription?.planCode == premiumPlan.code)
                     ? null
                     : () => _handlePlanAction(context, state, premiumPlan),
@@ -408,9 +410,7 @@ class _SubscriptionWebPricingScreenState
                       controller: _scrollController,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minWidth: screenWidth - 32,
-                        ),
+                        constraints: BoxConstraints(minWidth: screenWidth - 32),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,

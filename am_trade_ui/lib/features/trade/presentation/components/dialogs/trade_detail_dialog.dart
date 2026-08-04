@@ -22,13 +22,16 @@ class TradeDetailDialog extends StatefulWidget {
   State<TradeDetailDialog> createState() => _TradeDetailDialogState();
 
   /// Helper method to show the dialog
-  static Future<void> show(BuildContext context, TradeHoldingViewModel holding) => showDialog(
-    context: context,
-    builder: (context) => TradeDetailDialog(holding: holding),
-  );
+  static Future<void> show(
+          BuildContext context, TradeHoldingViewModel holding) =>
+      showDialog(
+        context: context,
+        builder: (context) => TradeDetailDialog(holding: holding),
+      );
 }
 
-class _TradeDetailDialogState extends State<TradeDetailDialog> with SingleTickerProviderStateMixin {
+class _TradeDetailDialogState extends State<TradeDetailDialog>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -47,8 +50,10 @@ class _TradeDetailDialogState extends State<TradeDetailDialog> with SingleTicker
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 600;
-    final dialogWidth = isSmallScreen ? screenSize.width * 0.95 : screenSize.width * 0.7;
-    final dialogHeight = isSmallScreen ? screenSize.height * 0.85 : screenSize.height * 0.8;
+    final dialogWidth =
+        isSmallScreen ? screenSize.width * 0.95 : screenSize.width * 0.7;
+    final dialogHeight =
+        isSmallScreen ? screenSize.height * 0.85 : screenSize.height * 0.8;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -60,7 +65,10 @@ class _TradeDetailDialogState extends State<TradeDetailDialog> with SingleTicker
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Theme.of(context).colorScheme.surface, Theme.of(context).colorScheme.surface.withOpacity(0.95)],
+            colors: [
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.surface.withOpacity(0.95)
+            ],
           ),
         ),
         child: Column(
@@ -98,7 +106,12 @@ class _TradeDetailDialogState extends State<TradeDetailDialog> with SingleTicker
             Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7),
           ],
         ),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
       ),
       child: Row(
         children: [
@@ -110,7 +123,8 @@ class _TradeDetailDialogState extends State<TradeDetailDialog> with SingleTicker
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: statusColor.withOpacity(0.5), width: 2),
             ),
-            child: Icon(_getStatusIcon(widget.holding.status), color: statusColor, size: isSmallScreen ? 28 : 32),
+            child: Icon(_getStatusIcon(widget.holding.status),
+                color: statusColor, size: isSmallScreen ? 28 : 32),
           ),
           const SizedBox(width: 16),
           // Title and Company
@@ -126,14 +140,16 @@ class _TradeDetailDialogState extends State<TradeDetailDialog> with SingleTicker
                         style: TextStyle(
                           fontSize: isSmallScreen ? 20 : 24,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: statusColor.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
@@ -156,7 +172,10 @@ class _TradeDetailDialogState extends State<TradeDetailDialog> with SingleTicker
                   widget.holding.displayCompanyName,
                   style: TextStyle(
                     fontSize: isSmallScreen ? 12 : 14,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimaryContainer
+                        .withOpacity(0.8),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -167,10 +186,14 @@ class _TradeDetailDialogState extends State<TradeDetailDialog> with SingleTicker
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isProfit ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+              color: isProfit
+                  ? Colors.green.withOpacity(0.2)
+                  : Colors.red.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isProfit ? Colors.green.withOpacity(0.5) : Colors.red.withOpacity(0.5),
+                color: isProfit
+                    ? Colors.green.withOpacity(0.5)
+                    : Colors.red.withOpacity(0.5),
                 width: 2,
               ),
             ),
@@ -222,23 +245,32 @@ class _TradeDetailDialogState extends State<TradeDetailDialog> with SingleTicker
   }
 
   Widget _buildTabBar(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
-    ),
-    child: TabBar(
-      controller: _tabController,
-      labelColor: Theme.of(context).colorScheme.primary,
-      unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-      indicatorColor: Theme.of(context).colorScheme.primary,
-      indicatorWeight: 3,
-      tabs: const [
-        Tab(icon: Icon(Icons.info_outline), text: 'Overview'),
-        Tab(icon: Icon(Icons.analytics_outlined), text: 'Metrics'),
-        Tab(icon: Icon(Icons.show_chart), text: 'Performance'),
-      ],
-    ),
-  );
+        decoration: BoxDecoration(
+          color: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest
+              .withOpacity(0.5),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2))
+          ],
+        ),
+        child: TabBar(
+          controller: _tabController,
+          labelColor: Theme.of(context).colorScheme.primary,
+          unselectedLabelColor:
+              Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          indicatorColor: Theme.of(context).colorScheme.primary,
+          indicatorWeight: 3,
+          tabs: const [
+            Tab(icon: Icon(Icons.info_outline), text: 'Overview'),
+            Tab(icon: Icon(Icons.analytics_outlined), text: 'Metrics'),
+            Tab(icon: Icon(Icons.show_chart), text: 'Performance'),
+          ],
+        ),
+      );
 
   Color _getStatusColor(String? status) {
     switch (status?.toUpperCase()) {

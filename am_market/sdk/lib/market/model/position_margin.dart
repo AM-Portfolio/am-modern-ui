@@ -75,27 +75,30 @@ class PositionMargin {
   String? exchange;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is PositionMargin &&
-    other.tradingSymbol == tradingSymbol &&
-    other.totalMargin == totalMargin &&
-    other.spanMargin == spanMargin &&
-    other.exposureMargin == exposureMargin &&
-    other.additionalMargin == additionalMargin &&
-    other.type == type &&
-    other.exchange == exchange;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PositionMargin &&
+          other.tradingSymbol == tradingSymbol &&
+          other.totalMargin == totalMargin &&
+          other.spanMargin == spanMargin &&
+          other.exposureMargin == exposureMargin &&
+          other.additionalMargin == additionalMargin &&
+          other.type == type &&
+          other.exchange == exchange;
 
   @override
   int get hashCode =>
-    (tradingSymbol == null ? 0 : tradingSymbol!.hashCode) +
-    (totalMargin == null ? 0 : totalMargin!.hashCode) +
-    (spanMargin == null ? 0 : spanMargin!.hashCode) +
-    (exposureMargin == null ? 0 : exposureMargin!.hashCode) +
-    (additionalMargin == null ? 0 : additionalMargin!.hashCode) +
-    (type == null ? 0 : type!.hashCode) +
-    (exchange == null ? 0 : exchange!.hashCode);
+      (tradingSymbol == null ? 0 : tradingSymbol!.hashCode) +
+      (totalMargin == null ? 0 : totalMargin!.hashCode) +
+      (spanMargin == null ? 0 : spanMargin!.hashCode) +
+      (exposureMargin == null ? 0 : exposureMargin!.hashCode) +
+      (additionalMargin == null ? 0 : additionalMargin!.hashCode) +
+      (type == null ? 0 : type!.hashCode) +
+      (exchange == null ? 0 : exchange!.hashCode);
 
   @override
-  String toString() => 'PositionMargin[tradingSymbol=$tradingSymbol, totalMargin=$totalMargin, spanMargin=$spanMargin, exposureMargin=$exposureMargin, additionalMargin=$additionalMargin, type=$type, exchange=$exchange]';
+  String toString() =>
+      'PositionMargin[tradingSymbol=$tradingSymbol, totalMargin=$totalMargin, spanMargin=$spanMargin, exposureMargin=$exposureMargin, additionalMargin=$additionalMargin, type=$type, exchange=$exchange]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -148,8 +151,10 @@ class PositionMargin {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "PositionMargin[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "PositionMargin[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "PositionMargin[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "PositionMargin[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -167,7 +172,10 @@ class PositionMargin {
     return null;
   }
 
-  static List<PositionMargin> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<PositionMargin> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <PositionMargin>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -183,7 +191,7 @@ class PositionMargin {
   static Map<String, PositionMargin> mapFromJson(dynamic json) {
     final map = <String, PositionMargin>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = PositionMargin.fromJson(entry.value);
         if (value != null) {
@@ -195,19 +203,23 @@ class PositionMargin {
   }
 
   // maps a json object with a list of PositionMargin-objects as value to a dart map
-  static Map<String, List<PositionMargin>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<PositionMargin>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<PositionMargin>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = PositionMargin.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = PositionMargin.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

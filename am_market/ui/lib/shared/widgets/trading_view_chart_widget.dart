@@ -69,8 +69,7 @@ class _TradingViewChartWidgetState extends State<TradingViewChartWidget> {
     }
   }
 
-  String _buildHtml(ChartConfig config) =>
-      '''
+  String _buildHtml(ChartConfig config) => '''
       <!DOCTYPE html>
       <html>
       <head>

@@ -18,7 +18,9 @@ VoidCallback attachProductTelemetryRouteListener(GoRouter router) {
               ? 'utm_${uri.queryParameters['utm_source']}'
               : null);
       ProductTelemetry.instance.screenView(
-        uri.toString().startsWith('/') ? '${uri.path}${uri.hasQuery ? '?${uri.query}' : ''}' : path,
+        uri.toString().startsWith('/')
+            ? '${uri.path}${uri.hasQuery ? '?${uri.query}' : ''}'
+            : path,
         entrySource: entrySource,
       );
     } catch (_) {

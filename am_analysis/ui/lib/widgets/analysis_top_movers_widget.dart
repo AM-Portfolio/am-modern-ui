@@ -21,7 +21,8 @@ class AnalysisTopMoversWidget extends StatefulWidget {
   final bool showTimeFrameSelector;
 
   @override
-  State<AnalysisTopMoversWidget> createState() => _AnalysisTopMoversWidgetState();
+  State<AnalysisTopMoversWidget> createState() =>
+      _AnalysisTopMoversWidgetState();
 }
 
 class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
@@ -51,7 +52,8 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
 
     final sw = Stopwatch()..start();
     try {
-      print('[TopMovers] Loading data for portfolio=${widget.portfolioId}, timeFrame=${_selectedTimeFrame.code}');
+      print(
+          '[TopMovers] Loading data for portfolio=${widget.portfolioId}, timeFrame=${_selectedTimeFrame.code}');
       final movers = await _service.getTopMovers(
         id: widget.portfolioId,
         type: AnalysisEntityType.PORTFOLIO,
@@ -68,7 +70,7 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
       if (movers.isEmpty) {
         ProductTelemetry.instance.emptyState('analysis_top_movers_empty');
       }
-      
+
       if (mounted) {
         setState(() {
           _movers = movers;
@@ -88,7 +90,8 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
       print('[TopMovers] Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
-          _error = 'Failed to load top movers: ${e.toString().replaceAll('Exception:', '').trim()}';
+          _error =
+              'Failed to load top movers: ${e.toString().replaceAll('Exception:', '').trim()}';
           _isLoading = false;
         });
       }
@@ -107,8 +110,14 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
-        final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1024;
-        final height = widget.height ?? (isMobile ? 380 : isTablet ? 340 : 300);
+        final isTablet =
+            constraints.maxWidth >= 600 && constraints.maxWidth < 1024;
+        final height = widget.height ??
+            (isMobile
+                ? 380
+                : isTablet
+                    ? 340
+                    : 300);
         final padding = isMobile ? 16.0 : 20.0;
 
         return Container(
@@ -131,9 +140,9 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
                     child: Text(
                       'Top Movers',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: isMobile ? 16 : 18,
-                      ),
+                            fontWeight: FontWeight.bold,
+                            fontSize: isMobile ? 16 : 18,
+                          ),
                     ),
                   ),
                   if (_isLoading)
@@ -172,17 +181,21 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, 
-              color: Theme.of(context).colorScheme.error, 
+            Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.error,
               size: isMobile ? 40 : 48,
             ),
             const SizedBox(height: 8),
             Text(
               'Error loading top movers',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                fontSize: isMobile ? 13 : 14,
-              ),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.6),
+                    fontSize: isMobile ? 13 : 14,
+                  ),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -202,9 +215,12 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
         child: Text(
           'No movers data available',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-            fontSize: isMobile ? 13 : 14,
-          ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6),
+                fontSize: isMobile ? 13 : 14,
+              ),
         ),
       );
     }
@@ -217,9 +233,12 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
       return SingleChildScrollView(
         child: Column(
           children: [
-            if (gainers.isNotEmpty) _buildMoversList('Gainers', gainers, true, isMobile),
-            if (gainers.isNotEmpty && losers.isNotEmpty) const SizedBox(height: 16),
-            if (losers.isNotEmpty) _buildMoversList('Losers', losers, false, isMobile),
+            if (gainers.isNotEmpty)
+              _buildMoversList('Gainers', gainers, true, isMobile),
+            if (gainers.isNotEmpty && losers.isNotEmpty)
+              const SizedBox(height: 16),
+            if (losers.isNotEmpty)
+              _buildMoversList('Losers', losers, false, isMobile),
           ],
         ),
       );
@@ -239,13 +258,16 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
     );
   }
 
-  Widget _buildMoversList(String title, List<MoverItem> items, bool isGainer, bool isMobile) {
-    final color = isGainer 
-        ? (Theme.of(context).brightness == Brightness.dark 
-            ? const Color(0xFF00B894) : const Color(0xFF009975))
+  Widget _buildMoversList(
+      String title, List<MoverItem> items, bool isGainer, bool isMobile) {
+    final color = isGainer
+        ? (Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF00B894)
+            : const Color(0xFF009975))
         : (Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFFFF7675) : const Color(0xFFE85656));
-    
+            ? const Color(0xFFFF7675)
+            : const Color(0xFFE85656));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: isMobile ? MainAxisSize.min : MainAxisSize.max,
@@ -274,13 +296,17 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
         SizedBox(height: isMobile ? 10 : 12),
         isMobile
             ? Column(
-                children: items.take(5).map((mover) => _buildMoverItem(mover, color, isMobile)).toList(),
+                children: items
+                    .take(5)
+                    .map((mover) => _buildMoverItem(mover, color, isMobile))
+                    .toList(),
               )
             : Expanded(
                 child: ListView.builder(
                   padding: EdgeInsets.zero,
                   itemCount: items.take(5).length,
-                  itemBuilder: (context, index) => _buildMoverItem(items[index], color, isMobile),
+                  itemBuilder: (context, index) =>
+                      _buildMoverItem(items[index], color, isMobile),
                 ),
               ),
       ],
@@ -319,17 +345,21 @@ class _AnalysisTopMoversWidgetState extends State<AnalysisTopMoversWidget> {
                 Text(
                   mover.symbol,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: isMobile ? 13 : 14,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                  ),
+                        fontWeight: FontWeight.w600,
+                        fontSize: isMobile ? 13 : 14,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
                 ),
                 Text(
                   '₹${mover.price.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: isMobile ? 10 : 11,
-                    color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
-                  ),
+                        fontSize: isMobile ? 10 : 11,
+                        color: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.color
+                            ?.withValues(alpha: 0.6),
+                      ),
                 ),
               ],
             ),

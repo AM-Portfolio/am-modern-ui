@@ -9,7 +9,11 @@ import '../notifications.dart';
 /// - Tooltip support
 /// - Responsive sizing
 class AddTradeFAB extends StatelessWidget {
-  const AddTradeFAB({required this.onPressed, super.key, this.label = 'Add Trade', this.isExtended = true});
+  const AddTradeFAB(
+      {required this.onPressed,
+      super.key,
+      this.label = 'Add Trade',
+      this.isExtended = true});
 
   final VoidCallback onPressed;
   final String label;
@@ -51,16 +55,16 @@ class AddTradeFAB extends StatelessWidget {
 
 /// Positioned floating action button for consistent placement
 class PositionedAddTradeFAB extends StatelessWidget {
-  const PositionedAddTradeFAB({required this.portfolioId, this.portfolioName, super.key});
+  const PositionedAddTradeFAB(
+      {required this.portfolioId, this.portfolioName, super.key});
 
   final String portfolioId;
   final String? portfolioName;
 
   @override
-  Widget build(BuildContext context) =>
-      Positioned(
-        right: 24, 
-        bottom: 24, 
+  Widget build(BuildContext context) => Positioned(
+        right: 24,
+        bottom: 24,
         child: AddTradeFAB(
           onPressed: () => _navigateToAddTrade(context),
         ),

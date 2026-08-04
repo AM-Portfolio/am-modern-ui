@@ -7,11 +7,7 @@ class PortfolioOverviewCard extends StatelessWidget {
   final PortfolioOverview overview;
   final VoidCallback? onTap;
 
-  const PortfolioOverviewCard({
-    super.key,
-    required this.overview,
-    this.onTap,
-  });
+  const PortfolioOverviewCard({super.key, required this.overview, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -39,9 +35,9 @@ class PortfolioOverviewCard extends StatelessWidget {
                   Text(
                     currencyFormat.format(overview.totalValue),
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ],
               ),
@@ -68,7 +64,11 @@ class PortfolioOverviewCard extends StatelessWidget {
               ],
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textSecondaryLight),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: AppColors.textSecondaryLight,
+            ),
           ],
         ),
       ),

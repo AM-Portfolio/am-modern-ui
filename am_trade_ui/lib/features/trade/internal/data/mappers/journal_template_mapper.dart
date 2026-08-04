@@ -57,8 +57,10 @@ class JournalTemplateMapper {
       isFavorite: dto.isFavorite ?? false,
       tags: dto.tags ?? [],
       thumbnailUrl: dto.thumbnailUrl,
-      createdAt: dto.createdAt != null ? DateTime.tryParse(dto.createdAt!) : null,
-      updatedAt: dto.updatedAt != null ? DateTime.tryParse(dto.updatedAt!) : null,
+      createdAt:
+          dto.createdAt != null ? DateTime.tryParse(dto.createdAt!) : null,
+      updatedAt:
+          dto.updatedAt != null ? DateTime.tryParse(dto.updatedAt!) : null,
     );
   }
 
@@ -86,7 +88,8 @@ class JournalTemplateMapper {
       return TemplateFieldRequestDto(
         fieldId: entry.key,
         fieldLabel: entry.key,
-        fieldType: 'TEXT', // Default type, actual type should come from template
+        fieldType:
+            'TEXT', // Default type, actual type should come from template
         defaultValue: entry.value?.toString(),
       );
     }).toList();

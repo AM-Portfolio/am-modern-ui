@@ -316,9 +316,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           ),
           child: CircleAvatar(
             radius: 60,
-            backgroundColor: isDark
-                ? const Color(0xFF2C2C3E)
-                : Colors.white,
+            backgroundColor: isDark ? const Color(0xFF2C2C3E) : Colors.white,
             child: CircleAvatar(
               radius: 56,
               backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.1),
@@ -984,7 +982,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         value: selectedReason,
-                        dropdownColor: isDark ? const Color(0xFF1F1F2E) : Colors.white,
+                        dropdownColor: isDark
+                            ? const Color(0xFF1F1F2E)
+                            : Colors.white,
                         style: TextStyle(
                           color: isDark ? Colors.white : Colors.black,
                           fontSize: 14,
@@ -998,7 +998,10 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                         ),
                         items: reasons.map((r) {
                           return DropdownMenuItem<String>(
@@ -1033,7 +1036,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                               borderSide: BorderSide.none,
                             ),
                           ),
-                          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Feedback is required when selecting "Other".';
@@ -1084,7 +1089,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       );
 
                       try {
-                        await authCubit.requestAccountDeletion(feedback: feedback);
+                        await authCubit.requestAccountDeletion(
+                          feedback: feedback,
+                        );
                         if (context.mounted) {
                           showDialog(
                             context: context,

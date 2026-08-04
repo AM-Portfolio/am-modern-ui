@@ -28,10 +28,10 @@ class AuthTokensModel {
   Map<String, dynamic> toJson() => _$AuthTokensModelToJson(this);
 
   AuthTokensEntity toEntity() => AuthTokensEntity(
-    accessToken: accessToken,
-    refreshToken: refreshToken,
-    expiresAt: expiresAt,
-  );
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        expiresAt: expiresAt,
+      );
 
   static DateTime _dateTimeFromJson(String dateTimeString) =>
       DateTime.parse(dateTimeString);

@@ -6,15 +6,10 @@ import '../../domain/entities/portfolio_holding.dart';
 /// This provides isolation between external API structure and internal business logic
 class PortfolioHoldingsMapper {
   /// Convert API response to domain entity
-  static PortfolioHoldings fromApiModel(
-    PortfolioHoldingsDto apiModel,
-  ) {
+  static PortfolioHoldings fromApiModel(PortfolioHoldingsDto apiModel) {
     final holdings = apiModel.equityHoldings.map(_mapEquityHolding).toList();
 
-    return PortfolioHoldings(
-      holdings: holdings,
-      lastUpdated: DateTime.now(),
-    );
+    return PortfolioHoldings(holdings: holdings, lastUpdated: DateTime.now());
   }
 
   /// Convert domain entity to API model (for updates/requests)

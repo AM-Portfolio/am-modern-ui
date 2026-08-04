@@ -46,9 +46,7 @@ class LegalDocumentPage extends StatelessWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(
-          color: isDark ? Colors.white : Colors.black87,
-        ),
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black87),
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new,
@@ -78,7 +76,9 @@ class LegalDocumentPage extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
+                          color: Colors.black.withValues(
+                            alpha: isDark ? 0.45 : 0.08,
+                          ),
                           blurRadius: isDark ? 40 : 24,
                           offset: const Offset(0, 8),
                         ),
@@ -207,8 +207,12 @@ class _LegalSectionTheme extends InheritedWidget {
   });
 
   static _LegalSectionTheme of(BuildContext context) {
-    final theme = context.dependOnInheritedWidgetOfExactType<_LegalSectionTheme>();
-    assert(theme != null, 'Legal helpers must be used inside LegalDocumentPage');
+    final theme = context
+        .dependOnInheritedWidgetOfExactType<_LegalSectionTheme>();
+    assert(
+      theme != null,
+      'Legal helpers must be used inside LegalDocumentPage',
+    );
     return theme!;
   }
 
@@ -357,9 +361,7 @@ class LegalBulletList extends StatelessWidget {
 
   /// Convenience for plain or simple bold-prefix items.
   factory LegalBulletList.strings(List<String> items) {
-    return LegalBulletList(
-      items.map((e) => TextSpan(text: e)).toList(),
-    );
+    return LegalBulletList(items.map((e) => TextSpan(text: e)).toList());
   }
 
   @override
@@ -401,15 +403,15 @@ class LegalBulletList extends StatelessWidget {
 
 class LegalBoldItem extends TextSpan {
   LegalBoldItem(String bold, String rest)
-      : super(
-          children: [
-            TextSpan(
-              text: bold,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            TextSpan(text: rest),
-          ],
-        );
+    : super(
+        children: [
+          TextSpan(
+            text: bold,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          TextSpan(text: rest),
+        ],
+      );
 }
 
 class LegalAddress extends StatelessWidget {

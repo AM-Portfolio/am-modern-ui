@@ -25,7 +25,7 @@ abstract class JournalTemplateRepository {
   /// Get a specific template by ID
   Future<JournalTemplate> getTemplate({
     required String templateId,
-    });
+  });
 
   /// Update a template
   Future<JournalTemplate> updateTemplate({
@@ -43,7 +43,7 @@ abstract class JournalTemplateRepository {
   /// Delete a template
   Future<void> deleteTemplate({
     required String templateId,
-    });
+  });
 
   /// Get favorite templates
   Future<List<JournalTemplate>> getFavoriteTemplates();
@@ -57,7 +57,7 @@ abstract class JournalTemplateRepository {
   /// Toggle favorite status of a template
   Future<JournalTemplate> toggleFavorite({
     required String templateId,
-    });
+  });
 
   /// Use a template to create a journal entry
   Future<JournalEntry> useTemplate({

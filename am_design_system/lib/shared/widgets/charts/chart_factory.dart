@@ -7,7 +7,6 @@ import 'package:am_design_system/core/theme/app_typography.dart';
 import 'package:am_design_system/core/config/design_system_provider.dart';
 import 'chart_types.dart';
 
-
 /// Factory widget for creating standardized charts
 class ChartFactory extends StatelessWidget {
   final ChartType type;
@@ -99,8 +98,8 @@ class ChartFactory extends StatelessWidget {
         child: Text(
           'No data available',
           style: AppTypography.getTextTheme(
-            isDark: Theme.of(context).brightness == Brightness.dark
-          ).bodyMedium,
+                  isDark: Theme.of(context).brightness == Brightness.dark)
+              .bodyMedium,
         ),
       );
     }
@@ -122,21 +121,30 @@ class ChartFactory extends StatelessWidget {
   Widget _buildTableChart(BuildContext context) {
     return SingleChildScrollView(
       child: Table(
-        border: TableBorder.all(color: Theme.of(context).dividerColor.withOpacity(0.5)),
+        border: TableBorder.all(
+            color: Theme.of(context).dividerColor.withOpacity(0.5)),
         children: [
           TableRow(
-             decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest),
-             children: const [
-               Padding(padding: EdgeInsets.all(8.0), child: Text('Label', style: TextStyle(fontWeight: FontWeight.bold))),
-               Padding(padding: EdgeInsets.all(8.0), child: Text('Value', style: TextStyle(fontWeight: FontWeight.bold))),
-             ]
-          ),
-          ...data.map((point) => TableRow(
-            children: [
-              Padding(padding: const EdgeInsets.all(8.0), child: Text(point.xLabel ?? '')),
-              Padding(padding: const EdgeInsets.all(8.0), child: Text(point.yLabel ?? point.y.toStringAsFixed(2))),
-            ]
-          )),
+              decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest),
+              children: const [
+                Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text('Label',
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+                Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text('Value',
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+              ]),
+          ...data.map((point) => TableRow(children: [
+                Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(point.xLabel ?? '')),
+                Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(point.yLabel ?? point.y.toStringAsFixed(2))),
+              ])),
         ],
       ),
     );
@@ -148,7 +156,7 @@ class ChartFactory extends StatelessWidget {
     final color = primaryColor ?? designConfig.primaryColor;
     final gridColor = config.gridColor ?? theme.dividerColor.withOpacity(0.1);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     final bool hasMultiLines = lines != null && lines!.isNotEmpty;
 
     // Calculate minY and maxY dynamically with 15% padding so the line doesn't hit the ceiling
@@ -160,7 +168,8 @@ class ChartFactory extends StatelessWidget {
 
       void processPoints(List<CommonChartDataPoint> pts) {
         for (var p in pts) {
-          if (p.y.isNaN || p.y.isInfinite) continue; // skip NaN/gap padding points
+          if (p.y.isNaN || p.y.isInfinite)
+            continue; // skip NaN/gap padding points
           if (p.y < minVal) minVal = p.y;
           if (p.y > maxVal) maxVal = p.y;
         }
@@ -175,7 +184,7 @@ class ChartFactory extends StatelessWidget {
       if (minVal != double.infinity && maxVal != double.negativeInfinity) {
         final double range = (maxVal - minVal).abs();
         final double padding = range == 0 ? maxVal.abs() * 0.15 : range * 0.15;
-        
+
         calculatedMinY = minVal - padding;
         calculatedMaxY = maxVal + padding;
 
@@ -185,8 +194,10 @@ class ChartFactory extends StatelessWidget {
         }
       }
     } // end of: if (data.isNotEmpty || hasMultiLines)
-    
-    if (onMinMaxCalculated != null && calculatedMinY != null && calculatedMaxY != null) {
+
+    if (onMinMaxCalculated != null &&
+        calculatedMinY != null &&
+        calculatedMaxY != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         onMinMaxCalculated!(calculatedMinY!, calculatedMaxY!);
       });
@@ -196,43 +207,66 @@ class ChartFactory extends StatelessWidget {
     if (calculatedMinY != null && calculatedMaxY != null) {
       final double range = calculatedMaxY! - calculatedMinY!;
       if (range > 0) {
-        if (range <= 10) calculatedYInterval = 2;
-        else if (range <= 50) calculatedYInterval = 10;
-        else if (range <= 100) calculatedYInterval = 20;
-        else if (range <= 500) calculatedYInterval = 100;
-        else if (range <= 1000) calculatedYInterval = 200;
-        else if (range <= 5000) calculatedYInterval = 1000;
-        else if (range <= 10000) calculatedYInterval = 2000;
-        else if (range <= 50000) calculatedYInterval = 10000;
-        else if (range <= 100000) calculatedYInterval = 20000;
-        else calculatedYInterval = range / 5;
+        if (range <= 10)
+          calculatedYInterval = 2;
+        else if (range <= 50)
+          calculatedYInterval = 10;
+        else if (range <= 100)
+          calculatedYInterval = 20;
+        else if (range <= 500)
+          calculatedYInterval = 100;
+        else if (range <= 1000)
+          calculatedYInterval = 200;
+        else if (range <= 5000)
+          calculatedYInterval = 1000;
+        else if (range <= 10000)
+          calculatedYInterval = 2000;
+        else if (range <= 50000)
+          calculatedYInterval = 10000;
+        else if (range <= 100000)
+          calculatedYInterval = 20000;
+        else
+          calculatedYInterval = range / 5;
       }
     }
 
     // Resolve bars: either map multi-lines or create single bar from data
     final List<LineChartBarData> bars = hasMultiLines
-        ? lines!.map((lineData) => LineChartBarData(
-            spots: lineData.points.map((d) => d.y.isNaN ? FlSpot.nullSpot : FlSpot(d.x, d.y)).toList(),
-            isCurved: true,
-            color: lineData.color ?? color,
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: FlDotData(
-              show: true,
-              checkToShowDot: (spot, barData) {
-                final index = barData.spots.indexOf(spot);
-                if (barData.spots.length <= 1) return true;
-                final prev = index > 0 ? barData.spots[index - 1] : null;
-                final next = index < barData.spots.length - 1 ? barData.spots[index + 1] : null;
-                final isPrevNull = prev == null || prev.y.isNaN || prev == FlSpot.nullSpot;
-                final isNextNull = next == null || next.y.isNaN || next == FlSpot.nullSpot;
-                return isPrevNull && isNextNull;
-              },
-            ),
-          )).toList()
+        ? lines!
+            .map((lineData) => LineChartBarData(
+                  spots: lineData.points
+                      .map(
+                          (d) => d.y.isNaN ? FlSpot.nullSpot : FlSpot(d.x, d.y))
+                      .toList(),
+                  isCurved: true,
+                  color: lineData.color ?? color,
+                  barWidth: 3,
+                  isStrokeCapRound: true,
+                  dotData: FlDotData(
+                    show: true,
+                    checkToShowDot: (spot, barData) {
+                      final index = barData.spots.indexOf(spot);
+                      if (barData.spots.length <= 1) return true;
+                      final prev = index > 0 ? barData.spots[index - 1] : null;
+                      final next = index < barData.spots.length - 1
+                          ? barData.spots[index + 1]
+                          : null;
+                      final isPrevNull = prev == null ||
+                          prev.y.isNaN ||
+                          prev == FlSpot.nullSpot;
+                      final isNextNull = next == null ||
+                          next.y.isNaN ||
+                          next == FlSpot.nullSpot;
+                      return isPrevNull && isNextNull;
+                    },
+                  ),
+                ))
+            .toList()
         : [
             LineChartBarData(
-              spots: data.map((d) => d.y.isNaN ? FlSpot.nullSpot : FlSpot(d.x, d.y)).toList(),
+              spots: data
+                  .map((d) => d.y.isNaN ? FlSpot.nullSpot : FlSpot(d.x, d.y))
+                  .toList(),
               isCurved: true,
               color: color,
               barWidth: 3,
@@ -243,9 +277,13 @@ class ChartFactory extends StatelessWidget {
                   final index = barData.spots.indexOf(spot);
                   if (barData.spots.length <= 1) return true;
                   final prev = index > 0 ? barData.spots[index - 1] : null;
-                  final next = index < barData.spots.length - 1 ? barData.spots[index + 1] : null;
-                  final isPrevNull = prev == null || prev.y.isNaN || prev == FlSpot.nullSpot;
-                  final isNextNull = next == null || next.y.isNaN || next == FlSpot.nullSpot;
+                  final next = index < barData.spots.length - 1
+                      ? barData.spots[index + 1]
+                      : null;
+                  final isPrevNull =
+                      prev == null || prev.y.isNaN || prev == FlSpot.nullSpot;
+                  final isNextNull =
+                      next == null || next.y.isNaN || next == FlSpot.nullSpot;
                   return isPrevNull && isNextNull;
                 },
               ),
@@ -263,7 +301,8 @@ class ChartFactory extends StatelessWidget {
             ),
           ];
 
-    final int dataLength = hasMultiLines ? lines!.first.points.length : data.length;
+    final int dataLength =
+        hasMultiLines ? lines!.first.points.length : data.length;
     double calculatedInterval = (dataLength / 6).ceil().toDouble();
     if (calculatedInterval < 1) calculatedInterval = 1;
 
@@ -285,12 +324,12 @@ class ChartFactory extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: config.xInterval ?? calculatedInterval, // Dynamically space out dates to prevent overlap
+              interval: config.xInterval ??
+                  calculatedInterval, // Dynamically space out dates to prevent overlap
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                final List<CommonChartDataPoint> activePoints = hasMultiLines
-                    ? lines!.first.points
-                    : data;
+                final List<CommonChartDataPoint> activePoints =
+                    hasMultiLines ? lines!.first.points : data;
                 if (index >= 0 && index < activePoints.length) {
                   return Text(
                     activePoints[index].xLabel ?? '',
@@ -302,27 +341,31 @@ class ChartFactory extends StatelessWidget {
               reservedSize: 14,
             ),
           ),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           topTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 16, // Acts as internal top padding to prevent left Y-axis labels from clipping
+              reservedSize:
+                  16, // Acts as internal top padding to prevent left Y-axis labels from clipping
               getTitlesWidget: (value, meta) => const SizedBox.shrink(),
             ),
           ),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: calculatedYInterval, // Use calculated interval for clean spacing
+              interval:
+                  calculatedYInterval, // Use calculated interval for clean spacing
               reservedSize: 48,
               getTitlesWidget: (value, meta) {
                 // Hide exact min/max if they don't align with our interval to prevent overlapping labels
-                if (calculatedYInterval != null && (value == calculatedMinY || value == calculatedMaxY)) {
+                if (calculatedYInterval != null &&
+                    (value == calculatedMinY || value == calculatedMaxY)) {
                   if ((value % calculatedYInterval!) != 0) {
                     return const SizedBox.shrink();
                   }
                 }
-                
+
                 // Smart formatter: cleanly format 0, and show decimals for small non-zero numbers
                 String text;
                 if (config.formatYLabel != null) {
@@ -338,7 +381,7 @@ class ChartFactory extends StatelessWidget {
                 } else {
                   text = value.toInt().toString();
                 }
-                
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: Text(
@@ -354,7 +397,8 @@ class ChartFactory extends StatelessWidget {
         lineBarsData: bars,
         lineTouchData: LineTouchData(
           enabled: config.showTooltips,
-          getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
+          getTouchedSpotIndicator:
+              (LineChartBarData barData, List<int> spotIndexes) {
             return spotIndexes.map((spotIndex) {
               return TouchedSpotIndicatorData(
                 FlLine(
@@ -390,21 +434,21 @@ class ChartFactory extends StatelessWidget {
             fitInsideVertically: true,
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
-                final List<CommonChartDataPoint> activePoints = hasMultiLines
-                    ? lines![spot.barIndex].points
-                    : data;
+                final List<CommonChartDataPoint> activePoints =
+                    hasMultiLines ? lines![spot.barIndex].points : data;
                 final point = activePoints[spot.spotIndex];
-                final String lineLabel = hasMultiLines
-                    ? '${lines![spot.barIndex].label}: '
-                    : '';
+                final String lineLabel =
+                    hasMultiLines ? '${lines![spot.barIndex].label}: ' : '';
                 // [Interactive] Color tooltip text to match the line color when top-locked
                 final Color textColor = config.lockTooltipToTop && hasMultiLines
                     ? (lines![spot.barIndex].color ?? Colors.white)
-                    : (hasMultiLines ? (lines![spot.barIndex].color ?? Colors.white) : Colors.white);
+                    : (hasMultiLines
+                        ? (lines![spot.barIndex].color ?? Colors.white)
+                        : Colors.white);
                 final Color dateColor = config.lockTooltipToTop
                     ? (isDark ? Colors.white60 : Colors.black54)
                     : Colors.white70;
-                
+
                 // If locked to top, we might want a different layout, but for now just show date first
                 return LineTooltipItem(
                   '${point.xLabel ?? ''}\n',
@@ -412,7 +456,10 @@ class ChartFactory extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: '$lineLabel${point.yLabel ?? point.y.toString()}',
-                      style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12),
+                      style: TextStyle(
+                          color: textColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12),
                     ),
                   ],
                 );
@@ -474,23 +521,26 @@ class ChartFactory extends StatelessWidget {
         titlesData: FlTitlesData(
           show: config.showTitles,
           bottomTitles: AxisTitles(
-             sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < data.length) {
-                  return Padding(
-                     padding: const EdgeInsets.only(top: 8),
-                     child: Text(data[index].xLabel ?? '', style: TextStyle(fontSize: 10, color: theme.hintColor))
-                  );
-                }
-                return const SizedBox();
-              },
-             )
-          ),
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              sideTitles: SideTitles(
+            showTitles: true,
+            getTitlesWidget: (value, meta) {
+              final index = value.toInt();
+              if (index >= 0 && index < data.length) {
+                return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(data[index].xLabel ?? '',
+                        style:
+                            TextStyle(fontSize: 10, color: theme.hintColor)));
+              }
+              return const SizedBox();
+            },
+          )),
+          leftTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(show: false),
         barGroups: data.asMap().entries.map((entry) {
@@ -503,7 +553,8 @@ class ChartFactory extends StatelessWidget {
                 toY: point.y,
                 color: point.color ?? color,
                 width: 16,
-                borderRadius: BorderRadius.circular(designConfig.defaultRadius / 2),
+                borderRadius:
+                    BorderRadius.circular(designConfig.defaultRadius / 2),
               ),
             ],
           );
@@ -519,10 +570,15 @@ class ChartFactory extends StatelessWidget {
       final point = entry.value;
       final isTouched = false; // TODO: Implement touch if needed
       final radius = isTouched ? 60.0 : 50.0;
-      
+
       // Default colors if not provided
       final defaultColors = [
-        Colors.blue, Colors.red, Colors.green, Colors.orange, Colors.purple, Colors.teal
+        Colors.blue,
+        Colors.red,
+        Colors.green,
+        Colors.orange,
+        Colors.purple,
+        Colors.teal
       ];
       final color = point.color ?? defaultColors[index % defaultColors.length];
 
@@ -542,10 +598,13 @@ class ChartFactory extends StatelessWidget {
     return PieChart(
       PieChartData(
         sections: sections,
-        centerSpaceRadius: type == ChartType.donut ? (config.pieCenterRadius > 0 ? config.pieCenterRadius : 40) : 0,
+        centerSpaceRadius: type == ChartType.donut
+            ? (config.pieCenterRadius > 0 ? config.pieCenterRadius : 40)
+            : 0,
         sectionsSpace: 2,
       ),
-      swapAnimationDuration: config.animate ? config.animationDuration : Duration.zero,
+      swapAnimationDuration:
+          config.animate ? config.animationDuration : Duration.zero,
     );
   }
 }
@@ -558,7 +617,8 @@ class ChartFactory extends StatelessWidget {
 class _ZoomableChartWrapper extends StatefulWidget {
   final Widget child;
   final double initialZoomScale;
-  final void Function(double zoomScale, void Function(double) adjustZoom)? onZoomChanged;
+  final void Function(double zoomScale, void Function(double) adjustZoom)?
+      onZoomChanged;
 
   const _ZoomableChartWrapper({
     required this.child,
@@ -608,8 +668,9 @@ class _ZoomableChartWrapperState extends State<_ZoomableChartWrapper> {
       // Ctrl + Mouse Wheel to zoom
       onPointerSignal: (event) {
         if (event is PointerScrollEvent) {
-          final isCtrl = HardwareKeyboard.instance.logicalKeysPressed
-              .any((k) => k == LogicalKeyboardKey.controlLeft || k == LogicalKeyboardKey.controlRight);
+          final isCtrl = HardwareKeyboard.instance.logicalKeysPressed.any((k) =>
+              k == LogicalKeyboardKey.controlLeft ||
+              k == LogicalKeyboardKey.controlRight);
           if (isCtrl) {
             final delta = event.scrollDelta.dy < 0 ? _zoomStep : -_zoomStep;
             _adjustZoom(delta);
@@ -652,7 +713,8 @@ class _ZoomButton extends StatelessWidget {
       child: Container(
         width: 26,
         height: 26,
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+        decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
         child: Icon(icon, size: 14, color: fg),
       ),
     );

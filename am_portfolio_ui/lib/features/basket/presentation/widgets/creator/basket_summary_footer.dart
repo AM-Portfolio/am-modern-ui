@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../../domain/models/custom_basket.dart';
@@ -35,10 +34,7 @@ class BasketSummaryFooter extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.1),
               border: Border(
-                top: BorderSide(
-                  color: Colors.white.withOpacity(0.2),
-                  width: 1,
-                ),
+                top: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
               ),
             ),
             child: SafeArea(
@@ -86,7 +82,7 @@ class BasketSummaryFooter extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Build Button
                   SizedBox(
                     width: double.infinity,
@@ -144,8 +140,13 @@ class BasketSummaryFooter extends StatelessWidget {
     );
   }
 
-  Widget _buildStat(BuildContext context, String label, String value,
-      IconData icon, Color color) {
+  Widget _buildStat(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color, size: 20),
@@ -161,10 +162,7 @@ class BasketSummaryFooter extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.6),
-            fontSize: 11,
-          ),
+          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
         ),
       ],
     );

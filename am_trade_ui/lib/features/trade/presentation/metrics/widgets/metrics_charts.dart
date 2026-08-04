@@ -15,8 +15,16 @@ class TradesByDayBarChart extends StatelessWidget {
 
     // Sort days chronologically if needed, or just map them
     // Assuming keys are like MONDAY, TUESDAY, etc.
-    final days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
-    
+    final days = [
+      'MONDAY',
+      'TUESDAY',
+      'WEDNESDAY',
+      'THURSDAY',
+      'FRIDAY',
+      'SATURDAY',
+      'SUNDAY'
+    ];
+
     final data = days.mapIndexed((index, day) {
       final count = tradesByDay[day] ?? 0;
       return CommonChartDataPoint(
@@ -55,7 +63,8 @@ class DistributionPieChart extends StatelessWidget {
   final Map<String, int> data;
   final bool animate;
 
-  const DistributionPieChart({super.key, required this.data, this.animate = true});
+  const DistributionPieChart(
+      {super.key, required this.data, this.animate = true});
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +86,7 @@ class DistributionPieChart extends StatelessWidget {
     final chartData = data.entries.map((e) {
       final color = colors[colorIndex % colors.length];
       colorIndex++;
-      
+
       return CommonChartDataPoint(
         x: 0, // Not used for pie
         y: e.value.toDouble(),
@@ -141,9 +150,9 @@ class ConsistencyGauge extends StatelessWidget {
               Text(
                 '${score.toStringAsFixed(1)}%',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: _getColorForScore(context, score),
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: _getColorForScore(context, score),
+                    ),
               ),
               Text(
                 'Score',

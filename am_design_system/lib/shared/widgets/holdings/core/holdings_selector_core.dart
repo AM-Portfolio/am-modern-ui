@@ -33,7 +33,8 @@ class HoldingsSelectorCore extends ChangeNotifier {
     this.onFiltersChanged,
   }) {
     _selectedSortBy = initialSortBy ?? HoldingsSortBy.currentValue;
-    _selectedDisplayFormat = initialDisplayFormat ?? HoldingsDisplayFormat.value;
+    _selectedDisplayFormat =
+        initialDisplayFormat ?? HoldingsDisplayFormat.value;
     _selectedChangeType = initialChangeType ?? HoldingsChangeType.total;
     _selectedViewMode = initialViewMode ?? HoldingsViewMode.table;
     _sortAscending = initialSortAscending ?? false;

@@ -7,7 +7,8 @@ import 'package:am_market_ui/core/styles/am_text_styles.dart';
 class PerformanceRankingDialog extends StatelessWidget {
   final MonthlyIndicesPerformance data;
 
-  const PerformanceRankingDialog({Key? key, required this.data}) : super(key: key);
+  const PerformanceRankingDialog({Key? key, required this.data})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +19,9 @@ class PerformanceRankingDialog extends StatelessWidget {
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
       child: Dialog(
-        backgroundColor: isDark ? AppColors.darkCard.withOpacity(0.9) : AppColors.lightCard.withOpacity(0.95),
+        backgroundColor: isDark
+            ? AppColors.darkCard.withOpacity(0.9)
+            : AppColors.lightCard.withOpacity(0.95),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           width: 500,
@@ -35,48 +38,61 @@ class PerformanceRankingDialog extends StatelessWidget {
                 children: [
                   Text(
                     'Performance Ranking - ${data.monthName} ${data.year}',
-                    style: AmTextStyles.h6.copyWith(color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                    style: AmTextStyles.h6.copyWith(
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close, color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                    icon: Icon(Icons.close,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
               const Divider(height: 24),
-              
+
               // List
               Expanded(
                 child: ListView.separated(
                   itemCount: data.allIndices.length,
-                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final perf = data.allIndices[index];
                     final isPositive = perf.returnPercentage >= 0;
                     final rank = index + 1;
-                    
+
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: CircleAvatar(
-                        backgroundColor: isPositive 
-                            ? AppColors.success.withOpacity(0.1) 
+                        backgroundColor: isPositive
+                            ? AppColors.success.withOpacity(0.1)
                             : AppColors.error.withOpacity(0.1),
                         child: Text(
                           '$rank',
                           style: AmTextStyles.body2.copyWith(
-                            color: isPositive ? AppColors.success : AppColors.error,
+                            color: isPositive
+                                ? AppColors.success
+                                : AppColors.error,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                       title: Text(
                         perf.symbol,
-                        style: AmTextStyles.body1.copyWith(color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                        style: AmTextStyles.body1.copyWith(
+                            color: isDark
+                                ? AppColors.textPrimaryDark
+                                : AppColors.textPrimaryLight),
                       ),
                       trailing: Text(
                         '${isPositive ? '+' : ''}${perf.returnPercentage.toStringAsFixed(2)}%',
                         style: AmTextStyles.body1.copyWith(
-                          color: isPositive ? AppColors.success : AppColors.error,
+                          color:
+                              isPositive ? AppColors.success : AppColors.error,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

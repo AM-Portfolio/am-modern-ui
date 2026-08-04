@@ -110,7 +110,8 @@ class CrossModuleSectionSequence {
       return steps.indexWhere((s) => s.contains('/trade'));
     }
     if (normalized.startsWith(AppRoutes.market)) {
-      final tab = ShareUrlBuilder.marketTabFromLocation(location) ?? 'dashboard';
+      final tab =
+          ShareUrlBuilder.marketTabFromLocation(location) ?? 'dashboard';
       // Map legacy / alternate user landings onto the first market swipe step.
       final resolved = (tab == 'all-indices' || tab == 'heatmap-explorer')
           ? (tab == 'heatmap-explorer' ? 'market-analysis' : 'dashboard')

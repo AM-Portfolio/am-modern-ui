@@ -49,11 +49,11 @@ class TradePerformanceSummaryDto {
       final value = patchedJson[key];
       if (value is String) {
         if (value == 'Infinity' || value == '+Infinity') {
-            patchedJson[key] = double.infinity;
+          patchedJson[key] = double.infinity;
         } else if (value == '-Infinity') {
-            patchedJson[key] = double.negativeInfinity;
+          patchedJson[key] = double.negativeInfinity;
         } else if (value == 'NaN') {
-            patchedJson[key] = double.nan;
+          patchedJson[key] = double.nan;
         }
       }
     }

@@ -54,6 +54,5 @@ export 'features/authentication/presentation/widgets/registration_form_widget.da
 export 'features/authentication/presentation/widgets/feature_flag_panel_widget.dart';
 export 'features/authentication/presentation/widgets/auth_layout.dart';
 
-
 // DI
 export 'di/auth_providers.dart';

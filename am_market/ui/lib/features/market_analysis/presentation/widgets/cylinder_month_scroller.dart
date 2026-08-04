@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:am_market_common/models/indices_performance_model.dart';
@@ -48,23 +48,22 @@ class CylinderMonthScroller extends StatefulWidget {
 
 class _CylinderMonthScrollerState extends State<CylinderMonthScroller>
     with TickerProviderStateMixin {
-
-  double _offset = 0.0;        // Current fractional month index (0=JAN, 11=DEC)
-  double _drumFactor = 0.0;    // 0=flat, 1=full drum cylinder
-  double _itemWidth = 110.0;   // Set in build() from LayoutBuilder
+  double _offset = 0.0; // Current fractional month index (0=JAN, 11=DEC)
+  double _drumFactor = 0.0; // 0=flat, 1=full drum cylinder
+  double _itemWidth = 110.0; // Set in build() from LayoutBuilder
   int _lastHapticPage = 0;
 
-  late AnimationController _drumController;  // Activates/deactivates drum morph
-  late AnimationController _snapController;  // Snaps _offset to nearest integer
+  late AnimationController _drumController; // Activates/deactivates drum morph
+  late AnimationController _snapController; // Snaps _offset to nearest integer
 
   // ─── Cylinder config ─────────────────────────────────────────────────────
   /// 30° per month step on the cylinder.
   /// With R = 2×itemWidth: R×sin(30°) = itemWidth → drum X == flat X for adjacent items.
   /// This means the morph from flat→drum causes ZERO lateral shift — only rotation appears.
-  static const double _anglePerStep = pi / 6.0;   // 30° per month
+  static const double _anglePerStep = pi / 6.0; // 30° per month
 
   /// Drum activation: how fast the cylinder morphs in/out.
-  static const Duration _drumInDuration  = Duration(milliseconds: 220);
+  static const Duration _drumInDuration = Duration(milliseconds: 220);
   static const Duration _drumOutDuration = Duration(milliseconds: 300);
 
   /// Max perspective depth at full drum factor.
@@ -120,9 +119,7 @@ class _CylinderMonthScrollerState extends State<CylinderMonthScroller>
     int target;
     if (vx.abs() > 350) {
       // Fling: jump one full month in the throw direction
-      target = vx < 0
-          ? (_offset + 0.5).ceil()
-          : (_offset - 0.5).floor();
+      target = vx < 0 ? (_offset + 0.5).ceil() : (_offset - 0.5).floor();
     } else {
       target = _offset.round();
     }
@@ -210,9 +207,8 @@ class _CylinderMonthScrollerState extends State<CylinderMonthScroller>
               // Left-align so months start flush beside the YEAR column.
               alignment: Alignment.topLeft,
               clipBehavior: Clip.hardEdge,
-              children: items
-                  .map((e) => _buildItem(context, e.key, R))
-                  .toList(),
+              children:
+                  items.map((e) => _buildItem(context, e.key, R)).toList(),
             ),
           ),
         ),
@@ -224,20 +220,20 @@ class _CylinderMonthScrollerState extends State<CylinderMonthScroller>
 
   Widget _buildItem(BuildContext context, int index, double R) {
     final double offset = index - _offset;
-    final double angle  = offset * _anglePerStep;  // drum rotation angle
+    final double angle = offset * _anglePerStep; // drum rotation angle
 
     // Flat: pack from the left edge (beside YEAR), not the screen center.
     final double flatX = offset * _itemWidth;
 
     // Drum: same calibration so adjacent X matches flat X.
-    final double drumX     = R * sin(angle);
-    final double drumZ     = R * cos(angle) - R;
-    final double drumRotY  = -angle;
+    final double drumX = R * sin(angle);
+    final double drumZ = R * cos(angle) - R;
+    final double drumRotY = -angle;
 
-    final double leftX    = flatX + (drumX - flatX) * _drumFactor;
-    final double tz       = drumZ  * _drumFactor;
-    final double rotY     = drumRotY * _drumFactor;
-    final double persp    = _maxPerspective * _drumFactor;
+    final double leftX = flatX + (drumX - flatX) * _drumFactor;
+    final double tz = drumZ * _drumFactor;
+    final double rotY = drumRotY * _drumFactor;
+    final double persp = _maxPerspective * _drumFactor;
 
     final double drumOpacity = cos(angle).clamp(0.0, 1.0);
     final double opacity = 1.0 - (1.0 - drumOpacity) * _drumFactor;
@@ -266,7 +262,7 @@ class _CylinderMonthScrollerState extends State<CylinderMonthScroller>
 
   Widget _buildMonthColumn(BuildContext context, int index) {
     final String shortMonth = widget.shortMonths[index];
-    final String fullMonth  = widget.months[index];
+    final String fullMonth = widget.months[index];
     final bool isDark = widget.isDark;
 
     return Column(

@@ -26,7 +26,11 @@ class NotebookRepositoryImpl implements NotebookRepository {
   }) async {
     final dtos = await _remoteDataSource.getNotebookItems(
       parentId: parentId,
-      type: type != null ? NotebookMapper.toNotebookItemDto(NotebookItem(userId: '', type: type, title: '')).type : null, // Hacky way to get enum, better to expose helper in mapper
+      type: type != null
+          ? NotebookMapper.toNotebookItemDto(
+                  NotebookItem(userId: '', type: type, title: ''))
+              .type
+          : null, // Hacky way to get enum, better to expose helper in mapper
     );
     // Wait, the mapper has private helper methods. I should expose them or handle enum mapping better.
     // Let's fix the mapper usage.
@@ -43,7 +47,8 @@ class NotebookRepositoryImpl implements NotebookRepository {
   Future<NotebookItem> updateNotebookItem(NotebookItem item) async {
     if (item.id == null) throw Exception('Item ID is required for update');
     final dto = NotebookMapper.toNotebookItemDto(item);
-    final updatedDto = await _remoteDataSource.updateNotebookItem(item.id!, dto);
+    final updatedDto =
+        await _remoteDataSource.updateNotebookItem(item.id!, dto);
     return NotebookMapper.toNotebookItem(updatedDto);
   }
 

@@ -13,7 +13,11 @@ enum TradeDayStatus {
 
 /// Data for a single day
 class CalendarDayData {
-  const CalendarDayData({required this.date, required this.status, this.pnl = 0.0, this.tradeCount = 0});
+  const CalendarDayData(
+      {required this.date,
+      required this.status,
+      this.pnl = 0.0,
+      this.tradeCount = 0});
 
   final DateTime date;
   final TradeDayStatus status;
@@ -39,14 +43,28 @@ class CalendarDayData {
 
 /// Data for a month
 class CalendarMonthData {
-  const CalendarMonthData({required this.year, required this.month, required this.days});
+  const CalendarMonthData(
+      {required this.year, required this.month, required this.days});
 
   final int year;
   final int month; // 1-12
   final Map<int, CalendarDayData> days; // day number (1-31) -> data
 
   String get monthName {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return months[month - 1];
   }
 

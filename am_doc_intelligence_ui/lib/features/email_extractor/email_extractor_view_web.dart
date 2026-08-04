@@ -19,19 +19,19 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   bool _loading = true;
   String _status = '';
   Map<String, dynamic>? _gmailStatus;
-  
+
   // Health
   bool? _isServiceConnected;
   bool _checkingHealth = true;
   String? _activeExtractingBrokerId;
-  
+
   Timer? _statusPollTimer;
 
   @override
   void initState() {
     super.initState();
     _checkHealthAndLoad();
-    
+
     // Periodically poll Gmail status to see if OAuth succeeded in the other window
     _statusPollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_isServiceConnected == true) {
@@ -105,15 +105,17 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         _gmailStatus = status;
       });
     } catch (e) {
-       debugPrint('Gmail check error: $e');
+      debugPrint('Gmail check error: $e');
     }
   }
 
   Future<void> _handleGmailConnectionToggle(bool isConnected) async {
     setState(() {
-      _status = isConnected ? 'Disconnecting Gmail account...' : 'Initiating Google OAuth connection...';
+      _status = isConnected
+          ? 'Disconnecting Gmail account...'
+          : 'Initiating Google OAuth connection...';
     });
-    
+
     try {
       if (isConnected) {
         final result = await apiProvider.disconnectGmail();
@@ -135,7 +137,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
           // Open OAuth in new tab
           html.window.open(authUrl, '_blank');
           setState(() {
-            _status = 'Please complete the Google OAuth sign-in in the newly opened tab.';
+            _status =
+                'Please complete the Google OAuth sign-in in the newly opened tab.';
           });
         }
       }
@@ -150,7 +153,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   Future<void> _extract(String brokerId) async {
     setState(() {
       _activeExtractingBrokerId = brokerId;
-      _status = 'Fetching latest email from ${brokerId.toUpperCase()} & scanning for statements...';
+      _status =
+          'Fetching latest email from ${brokerId.toUpperCase()} & scanning for statements...';
     });
 
     final sw = Stopwatch()..start();
@@ -170,7 +174,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       );
       if (!mounted) return;
       setState(() {
-        _status = 'Extraction successful!\n- Parsed ${result['count']} holdings\n- Saved Portfolio ID: ${result['db_id']}';
+        _status =
+            'Extraction successful!\n- Parsed ${result['count']} holdings\n- Saved Portfolio ID: ${result['db_id']}';
         _activeExtractingBrokerId = null;
       });
     } catch (e) {
@@ -195,10 +200,10 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     bool isConnected = _gmailStatus?['connected'] == true;
     String email = _gmailStatus?['email'] ?? 'Not Connected';
     final bool isMobile = ResponsiveHelper.isMobile(context);
-    
+
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16.0 : 32.0, 
+        horizontal: isMobile ? 16.0 : 32.0,
         vertical: 24.0,
       ),
       child: Column(
@@ -206,7 +211,6 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         children: [
           _buildHeader(),
           const SizedBox(height: 28),
-          
           if (_checkingHealth)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 40),
@@ -215,34 +219,35 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 16),
-                    Text('Checking email extractor connectivity...', style: TextStyle(color: Colors.grey)),
+                    Text('Checking email extractor connectivity...',
+                        style: TextStyle(color: Colors.grey)),
                   ],
                 ),
               ),
             )
           else if (_isServiceConnected == false)
-             _buildConnectionError()
+            _buildConnectionError()
           else ...[
             _buildGmailStatusCard(isConnected, email),
             const SizedBox(height: 32),
             Row(
               children: [
-                Icon(Icons.list_alt_outlined, color: Theme.of(context).colorScheme.primary, size: 22),
+                Icon(Icons.list_alt_outlined,
+                    color: Theme.of(context).colorScheme.primary, size: 22),
                 const SizedBox(width: 12),
-                Text(
-                  'Available Broker Profiles', 
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: isMobile ? 18 : null,
-                  )
-                ),
+                Text('Available Broker Profiles',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: isMobile ? 18 : null,
+                        )),
               ],
             ),
             const SizedBox(height: 16),
             if (_loading)
-               const ShimmerLoading(child: SkeletonBox(height: 180, width: double.infinity))
+              const ShimmerLoading(
+                  child: SkeletonBox(height: 180, width: double.infinity))
             else
-               _buildBrokerGrid(isConnected),
+              _buildBrokerGrid(isConnected),
             const SizedBox(height: 28),
             _buildStatusLog(),
           ],
@@ -252,8 +257,12 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   }
 
   Widget _buildHeader() {
-    Color statusColor = _isServiceConnected == true ? Colors.green : (_isServiceConnected == false ? Colors.red : Colors.grey);
-    String statusText = _isServiceConnected == true ? 'Online' : (_isServiceConnected == false ? 'Offline' : 'Unknown');
+    Color statusColor = _isServiceConnected == true
+        ? Colors.green
+        : (_isServiceConnected == false ? Colors.red : Colors.grey);
+    String statusText = _isServiceConnected == true
+        ? 'Online'
+        : (_isServiceConnected == false ? 'Offline' : 'Unknown');
     final bool isMobile = ResponsiveHelper.isMobile(context);
 
     final headerContent = Column(
@@ -262,17 +271,17 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         Text(
           'Email Extractor',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-            fontSize: isMobile ? 22 : null,
-          ),
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+                fontSize: isMobile ? 22 : null,
+              ),
         ),
         const SizedBox(height: 4),
         Text(
           'Extract holding statements directly from your secure mailbox',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
         ),
       ],
     );
@@ -344,17 +353,22 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         padding: const EdgeInsets.all(40.0),
         child: Column(
           children: [
-            Icon(Icons.mail_lock_outlined, size: 64, color: Theme.of(context).colorScheme.error),
+            Icon(Icons.mail_lock_outlined,
+                size: 64, color: Theme.of(context).colorScheme.error),
             const SizedBox(height: 20),
             Text(
               'Email Extraction Service Offline',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'The Email Extractor backend in the "${apiProvider.environment == AppEnvironment.local ? "Local" : "Dev"}" environment is unreachable.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 32),
             AppButton(
@@ -383,12 +397,17 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: (isConnected ? Colors.green : Colors.amber).withOpacity(0.08),
+                      color: (isConnected ? Colors.green : Colors.amber)
+                          .withOpacity(0.08),
                       shape: BoxShape.circle,
-                      border: Border.all(color: (isConnected ? Colors.green : Colors.amber).withOpacity(0.3)),
+                      border: Border.all(
+                          color: (isConnected ? Colors.green : Colors.amber)
+                              .withOpacity(0.3)),
                     ),
                     child: Icon(
-                      isConnected ? Icons.verified_user_outlined : Icons.lock_open_outlined,
+                      isConnected
+                          ? Icons.verified_user_outlined
+                          : Icons.lock_open_outlined,
                       color: isConnected ? Colors.green : Colors.amber,
                       size: 24,
                     ),
@@ -399,20 +418,30 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isConnected ? 'GMAIL MAILBOX CONNECTED' : 'SECURE GMAIL INTEGRATION REQUIRED',
+                          isConnected
+                              ? 'GMAIL MAILBOX CONNECTED'
+                              : 'SECURE GMAIL INTEGRATION REQUIRED',
                           style: TextStyle(
-                            fontWeight: FontWeight.bold, 
-                            fontSize: 10, 
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
                             letterSpacing: 0.5,
-                            color: isConnected 
-                                ? Colors.green 
-                                : (Theme.of(context).brightness == Brightness.dark ? Colors.amber : Colors.orange.shade800),
+                            color: isConnected
+                                ? Colors.green
+                                : (Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.amber
+                                    : Colors.orange.shade800),
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          isConnected ? email : 'Authorize read-only scanning to extract holdings.',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                          isConnected
+                              ? email
+                              : 'Authorize read-only scanning to extract holdings.',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -421,9 +450,13 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
               ),
               const SizedBox(height: 16),
               AppButton(
-                text: isConnected ? 'Disconnect Access' : 'Authenticate Google Mail',
+                text: isConnected
+                    ? 'Disconnect Access'
+                    : 'Authenticate Google Mail',
                 onPressed: () => _handleGmailConnectionToggle(isConnected),
-                type: isConnected ? AppButtonType.secondary : AppButtonType.primary,
+                type: isConnected
+                    ? AppButtonType.secondary
+                    : AppButtonType.primary,
               ),
             ],
           ),
@@ -439,12 +472,17 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: (isConnected ? Colors.green : Colors.amber).withOpacity(0.08),
+                color: (isConnected ? Colors.green : Colors.amber)
+                    .withOpacity(0.08),
                 shape: BoxShape.circle,
-                border: Border.all(color: (isConnected ? Colors.green : Colors.amber).withOpacity(0.3)),
+                border: Border.all(
+                    color: (isConnected ? Colors.green : Colors.amber)
+                        .withOpacity(0.3)),
               ),
               child: Icon(
-                isConnected ? Icons.verified_user_outlined : Icons.lock_open_outlined,
+                isConnected
+                    ? Icons.verified_user_outlined
+                    : Icons.lock_open_outlined,
                 color: isConnected ? Colors.green : Colors.amber,
                 size: 32,
               ),
@@ -455,29 +493,41 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isConnected ? 'GMAIL MAILBOX CONNECTED' : 'SECURE GMAIL INTEGRATION REQUIRED',
+                    isConnected
+                        ? 'GMAIL MAILBOX CONNECTED'
+                        : 'SECURE GMAIL INTEGRATION REQUIRED',
                     style: TextStyle(
-                      fontWeight: FontWeight.bold, 
-                      fontSize: 11, 
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
                       letterSpacing: 0.8,
-                      color: isConnected 
-                          ? Colors.green 
-                          : (Theme.of(context).brightness == Brightness.dark ? Colors.amber : Colors.orange.shade800),
+                      color: isConnected
+                          ? Colors.green
+                          : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.amber
+                              : Colors.orange.shade800),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    isConnected ? email : 'Authorize read-only statement scanning to extract holdings automatically.',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    isConnected
+                        ? email
+                        : 'Authorize read-only statement scanning to extract holdings automatically.',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 16),
             AppButton(
-              text: isConnected ? 'Disconnect Access' : 'Authenticate Google Mail',
+              text: isConnected
+                  ? 'Disconnect Access'
+                  : 'Authenticate Google Mail',
               onPressed: () => _handleGmailConnectionToggle(isConnected),
-              type: isConnected ? AppButtonType.secondary : AppButtonType.primary,
+              type:
+                  isConnected ? AppButtonType.secondary : AppButtonType.primary,
             ),
           ],
         ),
@@ -527,20 +577,24 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(brokerName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(brokerName,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.grey.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text(
-                            format, 
-                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)
-                          ),
+                          child: Text(format,
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey)),
                         ),
                       ],
                     ),
@@ -555,16 +609,24 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                     )
                   : Container(
                       decoration: BoxDecoration(
-                        color: isConnected ? Theme.of(context).colorScheme.primary.withOpacity(0.08) : Colors.grey.withOpacity(0.05),
+                        color: isConnected
+                            ? Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(0.08)
+                            : Colors.grey.withOpacity(0.05),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        onPressed: isConnected ? () => _extract(brokerId) : null,
-                        icon: Icon(
-                          Icons.arrow_circle_down_outlined, 
-                          color: isConnected ? Theme.of(context).colorScheme.primary : Colors.grey.withOpacity(0.4)
-                        ),
-                        tooltip: isConnected ? 'Extract holdings from mailbox' : 'Connect Gmail to enable mailbox scanning',
+                        onPressed:
+                            isConnected ? () => _extract(brokerId) : null,
+                        icon: Icon(Icons.arrow_circle_down_outlined,
+                            color: isConnected
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey.withOpacity(0.4)),
+                        tooltip: isConnected
+                            ? 'Extract holdings from mailbox'
+                            : 'Connect Gmail to enable mailbox scanning',
                       ),
                     ),
             ],
@@ -575,10 +637,12 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
 
     if (isMobile) {
       return Column(
-        children: _brokers.map((broker) => Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
-          child: buildBrokerCard(broker),
-        )).toList(),
+        children: _brokers
+            .map((broker) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: buildBrokerCard(broker),
+                ))
+            .toList(),
       );
     }
 
@@ -600,9 +664,11 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
 
   Widget _buildStatusLog() {
     if (_status.isEmpty) return const SizedBox.shrink();
-    
-    bool isError = _status.toLowerCase().contains('failed') || _status.toLowerCase().contains('error');
-    Color statusColor = isError ? Colors.red : Theme.of(context).colorScheme.primary;
+
+    bool isError = _status.toLowerCase().contains('failed') ||
+        _status.toLowerCase().contains('error');
+    Color statusColor =
+        isError ? Colors.red : Theme.of(context).colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -617,29 +683,25 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         children: [
           Row(
             children: [
-              Icon(isError ? Icons.error_outline : Icons.terminal_outlined, color: statusColor, size: 20),
+              Icon(isError ? Icons.error_outline : Icons.terminal_outlined,
+                  color: statusColor, size: 20),
               const SizedBox(width: 12),
-              Text(
-                'EXTRACTION AUDIT LOG', 
-                style: TextStyle(
-                  fontWeight: FontWeight.bold, 
-                  fontSize: 11, 
-                  letterSpacing: 0.8, 
-                  color: statusColor
-                )
-              ),
+              Text('EXTRACTION AUDIT LOG',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      letterSpacing: 0.8,
+                      color: statusColor)),
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            _status, 
-            style: TextStyle(
-              color: isError ? Colors.red : Colors.black87, 
-              fontFamily: 'monospace', 
-              fontSize: 12,
-              height: 1.4,
-            )
-          ),
+          Text(_status,
+              style: TextStyle(
+                color: isError ? Colors.red : Colors.black87,
+                fontFamily: 'monospace',
+                fontSize: 12,
+                height: 1.4,
+              )),
         ],
       ),
     );

@@ -3,7 +3,8 @@ import 'package:intl/intl.dart';
 
 /// A premium, user-friendly date-time picker
 class ModernDateTimePicker extends StatefulWidget {
-  const ModernDateTimePicker({required this.onDateTimeChanged, super.key, this.initialDateTime});
+  const ModernDateTimePicker(
+      {required this.onDateTimeChanged, super.key, this.initialDateTime});
   final DateTime? initialDateTime;
   final ValueChanged<DateTime> onDateTimeChanged;
 
@@ -86,62 +87,68 @@ class _ModernDateTimePickerState extends State<ModernDateTimePicker> {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Date & Time clickable area
-          InkWell(
-            onTap: _showCalendarPicker,
-            borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.calendar_month_outlined, size: 18, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    formattedDate,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
+            InkWell(
+              onTap: _showCalendarPicker,
+              borderRadius:
+                  const BorderRadius.horizontal(left: Radius.circular(12)),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.calendar_month_outlined,
+                        size: 18, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      formattedDate,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(Icons.access_time_rounded, size: 18, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    formattedTime,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
+                    const SizedBox(width: 16),
+                    Icon(Icons.access_time_rounded,
+                        size: 18, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      formattedTime,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Divider
-          Container(
-            width: 1,
-            height: 24,
-            color: theme.colorScheme.outline.withOpacity(0.3),
-          ),
-          
-          // Now Button
-          InkWell(
-            onTap: _setNow,
-            borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Text(
-                'Now',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.bold,
+                  ],
                 ),
               ),
             ),
-          ),
-        ],
-      ),
+
+            // Divider
+            Container(
+              width: 1,
+              height: 24,
+              color: theme.colorScheme.outline.withOpacity(0.3),
+            ),
+
+            // Now Button
+            InkWell(
+              onTap: _setNow,
+              borderRadius:
+                  const BorderRadius.horizontal(right: Radius.circular(12)),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(
+                  'Now',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

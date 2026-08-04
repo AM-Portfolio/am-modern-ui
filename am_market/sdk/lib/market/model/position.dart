@@ -93,31 +93,34 @@ class Position {
   String? expiry;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is Position &&
-    other.tradingSymbol == tradingSymbol &&
-    other.quantity == quantity &&
-    other.type == type &&
-    other.product == product &&
-    other.exchange == exchange &&
-    other.price == price &&
-    other.optionType == optionType &&
-    other.strikePrice == strikePrice &&
-    other.expiry == expiry;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Position &&
+          other.tradingSymbol == tradingSymbol &&
+          other.quantity == quantity &&
+          other.type == type &&
+          other.product == product &&
+          other.exchange == exchange &&
+          other.price == price &&
+          other.optionType == optionType &&
+          other.strikePrice == strikePrice &&
+          other.expiry == expiry;
 
   @override
   int get hashCode =>
-    (tradingSymbol == null ? 0 : tradingSymbol!.hashCode) +
-    (quantity == null ? 0 : quantity!.hashCode) +
-    (type == null ? 0 : type!.hashCode) +
-    (product == null ? 0 : product!.hashCode) +
-    (exchange == null ? 0 : exchange!.hashCode) +
-    (price == null ? 0 : price!.hashCode) +
-    (optionType == null ? 0 : optionType!.hashCode) +
-    (strikePrice == null ? 0 : strikePrice!.hashCode) +
-    (expiry == null ? 0 : expiry!.hashCode);
+      (tradingSymbol == null ? 0 : tradingSymbol!.hashCode) +
+      (quantity == null ? 0 : quantity!.hashCode) +
+      (type == null ? 0 : type!.hashCode) +
+      (product == null ? 0 : product!.hashCode) +
+      (exchange == null ? 0 : exchange!.hashCode) +
+      (price == null ? 0 : price!.hashCode) +
+      (optionType == null ? 0 : optionType!.hashCode) +
+      (strikePrice == null ? 0 : strikePrice!.hashCode) +
+      (expiry == null ? 0 : expiry!.hashCode);
 
   @override
-  String toString() => 'Position[tradingSymbol=$tradingSymbol, quantity=$quantity, type=$type, product=$product, exchange=$exchange, price=$price, optionType=$optionType, strikePrice=$strikePrice, expiry=$expiry]';
+  String toString() =>
+      'Position[tradingSymbol=$tradingSymbol, quantity=$quantity, type=$type, product=$product, exchange=$exchange, price=$price, optionType=$optionType, strikePrice=$strikePrice, expiry=$expiry]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -180,8 +183,10 @@ class Position {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "Position[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "Position[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "Position[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "Position[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -201,7 +206,10 @@ class Position {
     return null;
   }
 
-  static List<Position> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<Position> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <Position>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -217,7 +225,7 @@ class Position {
   static Map<String, Position> mapFromJson(dynamic json) {
     final map = <String, Position>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = Position.fromJson(entry.value);
         if (value != null) {
@@ -229,19 +237,23 @@ class Position {
   }
 
   // maps a json object with a list of Position-objects as value to a dart map
-  static Map<String, List<Position>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<Position>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<Position>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = Position.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = Position.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

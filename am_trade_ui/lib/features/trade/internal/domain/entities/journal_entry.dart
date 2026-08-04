@@ -12,7 +12,8 @@ abstract class BehaviorPatternSummary with _$BehaviorPatternSummary {
     @Default([]) List<String> tags,
   }) = _BehaviorPatternSummary;
 
-  factory BehaviorPatternSummary.fromJson(Map<String, dynamic> json) => _$BehaviorPatternSummaryFromJson(json);
+  factory BehaviorPatternSummary.fromJson(Map<String, dynamic> json) =>
+      _$BehaviorPatternSummaryFromJson(json);
 }
 
 @freezed
@@ -25,7 +26,8 @@ abstract class JournalAttachment with _$JournalAttachment {
     String? description,
   }) = _JournalAttachment;
 
-  factory JournalAttachment.fromJson(Map<String, dynamic> json) => _$JournalAttachmentFromJson(json);
+  factory JournalAttachment.fromJson(Map<String, dynamic> json) =>
+      _$JournalAttachmentFromJson(json);
 }
 
 @freezed
@@ -47,5 +49,6 @@ abstract class JournalEntry with _$JournalEntry {
     @Default([]) List<String> tagIds,
   }) = _JournalEntry;
 
-  factory JournalEntry.fromJson(Map<String, dynamic> json) => _$JournalEntryFromJson(json);
+  factory JournalEntry.fromJson(Map<String, dynamic> json) =>
+      _$JournalEntryFromJson(json);
 }

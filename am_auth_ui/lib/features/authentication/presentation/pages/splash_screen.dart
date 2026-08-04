@@ -31,39 +31,39 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.info,
-            AppColors.accentBlue,
-            AppColors.primary,
-          ],
-        ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // App logo/title
-            Text('🌟', style: TextStyle(fontSize: 80)),
-            SizedBox(height: 24),
-            Text(
-              'AM Investment UI',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: context.textPrimary,
-              ),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.info,
+                AppColors.accentBlue,
+                AppColors.primary,
+              ],
             ),
-            SizedBox(height: 48),
-            // Loading indicator
-            CircularProgressIndicator(color: Colors.white),
-          ],
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // App logo/title
+                Text('🌟', style: TextStyle(fontSize: 80)),
+                SizedBox(height: 24),
+                Text(
+                  'AM Investment UI',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: context.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 48),
+                // Loading indicator
+                CircularProgressIndicator(color: Colors.white),
+              ],
+            ),
+          ),
         ),
-      ),
-    ),
-  );
+      );
 }

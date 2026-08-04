@@ -37,36 +37,36 @@ class PortfolioSnapshotEntryDto extends Equatable {
         close: (json['close'] as num?)?.toDouble(),
         totalInvestment: (json['totalInvestment'] as num?)?.toDouble(),
         totalGainLoss: (json['totalGainLoss'] as num?)?.toDouble(),
-        totalGainLossPercentage:
-            (json['totalGainLossPercentage'] as num?)?.toDouble(),
+        totalGainLossPercentage: (json['totalGainLossPercentage'] as num?)
+            ?.toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
-        'portfolioId': portfolioId,
-        'portfolioName': portfolioName,
-        'brokerType': brokerType,
-        'open': open,
-        'high': high,
-        'low': low,
-        'close': close,
-        'totalInvestment': totalInvestment,
-        'totalGainLoss': totalGainLoss,
-        'totalGainLossPercentage': totalGainLossPercentage,
-      };
+    'portfolioId': portfolioId,
+    'portfolioName': portfolioName,
+    'brokerType': brokerType,
+    'open': open,
+    'high': high,
+    'low': low,
+    'close': close,
+    'totalInvestment': totalInvestment,
+    'totalGainLoss': totalGainLoss,
+    'totalGainLossPercentage': totalGainLossPercentage,
+  };
 
   @override
   List<Object?> get props => [
-        portfolioId,
-        portfolioName,
-        brokerType,
-        open,
-        high,
-        low,
-        close,
-        totalInvestment,
-        totalGainLoss,
-        totalGainLossPercentage,
-      ];
+    portfolioId,
+    portfolioName,
+    brokerType,
+    open,
+    high,
+    low,
+    close,
+    totalInvestment,
+    totalGainLoss,
+    totalGainLossPercentage,
+  ];
 }
 
 /// DTO for a single daily snapshot (one day = one document)
@@ -105,33 +105,35 @@ class PortfolioSnapshotDto extends Equatable {
         totalUserGainLossPercentage:
             (json['totalUserGainLossPercentage'] as num?)?.toDouble(),
         portfolios: (json['portfolios'] as List<dynamic>? ?? [])
-            .map((e) =>
-                PortfolioSnapshotEntryDto.fromJson(e as Map<String, dynamic>))
+            .map(
+              (e) =>
+                  PortfolioSnapshotEntryDto.fromJson(e as Map<String, dynamic>),
+            )
             .toList(),
       );
 
   Map<String, dynamic> toJson() => {
-        'snapshotDate': snapshotDate,
-        'totalUserWealth': totalUserWealth,
-        'totalUserWealthOpen': totalUserWealthOpen,
-        'totalUserWealthHigh': totalUserWealthHigh,
-        'totalUserWealthLow': totalUserWealthLow,
-        'totalUserInvestment': totalUserInvestment,
-        'totalUserGainLoss': totalUserGainLoss,
-        'totalUserGainLossPercentage': totalUserGainLossPercentage,
-        'portfolios': portfolios.map((e) => e.toJson()).toList(),
-      };
+    'snapshotDate': snapshotDate,
+    'totalUserWealth': totalUserWealth,
+    'totalUserWealthOpen': totalUserWealthOpen,
+    'totalUserWealthHigh': totalUserWealthHigh,
+    'totalUserWealthLow': totalUserWealthLow,
+    'totalUserInvestment': totalUserInvestment,
+    'totalUserGainLoss': totalUserGainLoss,
+    'totalUserGainLossPercentage': totalUserGainLossPercentage,
+    'portfolios': portfolios.map((e) => e.toJson()).toList(),
+  };
 
   @override
   List<Object?> get props => [
-        snapshotDate,
-        totalUserWealth,
-        totalUserWealthOpen,
-        totalUserWealthHigh,
-        totalUserWealthLow,
-        totalUserInvestment,
-        totalUserGainLoss,
-        totalUserGainLossPercentage,
-        portfolios,
-      ];
+    snapshotDate,
+    totalUserWealth,
+    totalUserWealthOpen,
+    totalUserWealthHigh,
+    totalUserWealthLow,
+    totalUserInvestment,
+    totalUserGainLoss,
+    totalUserGainLossPercentage,
+    portfolios,
+  ];
 }

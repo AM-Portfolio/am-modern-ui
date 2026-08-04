@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:am_design_system/core/contracts/design_contract.dart';
+
 /// A standardized shell for Filter Panels.
-/// 
+///
 /// Handles the outer container styling (Glassmorphism/Card) and the header layout.
 /// Content is injected via [child] or [children].
 class AmFilterPanel extends StatelessWidget {
@@ -26,7 +27,7 @@ class AmFilterPanel extends StatelessWidget {
   final int? activeFilterCount;
   final bool isExpanded;
   final VoidCallback? onExpandToggle;
-  
+
   final ContainerStyleOverride? overrideContract;
 
   @override
@@ -36,12 +37,18 @@ class AmFilterPanel extends StatelessWidget {
 
     // Standard Styles
     final decoration = BoxDecoration(
-      color: overrideContract?.backgroundColor ?? (isDark ? theme.cardColor : Colors.white),
+      color: overrideContract?.backgroundColor ??
+          (isDark ? theme.cardColor : Colors.white),
       borderRadius: overrideContract?.borderRadius ?? BorderRadius.circular(12),
-      border: overrideContract?.border ?? Border.all(color: theme.dividerColor.withOpacity(0.5)),
-      boxShadow: overrideContract?.boxShadow ?? [
-        BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),
-      ],
+      border: overrideContract?.border ??
+          Border.all(color: theme.dividerColor.withOpacity(0.5)),
+      boxShadow: overrideContract?.boxShadow ??
+          [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2)),
+          ],
     );
 
     return Container(
@@ -54,14 +61,20 @@ class AmFilterPanel extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: onExpandToggle,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [theme.primaryColor.withOpacity(0.05), theme.primaryColor.withOpacity(0.02)],
+                    colors: [
+                      theme.primaryColor.withOpacity(0.05),
+                      theme.primaryColor.withOpacity(0.02)
+                    ],
                   ),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(12)),
                 ),
                 child: Row(
                   children: [
@@ -72,7 +85,8 @@ class AmFilterPanel extends StatelessWidget {
                         color: theme.primaryColor.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(Icons.tune_rounded, color: theme.primaryColor, size: 18),
+                      child: Icon(Icons.tune_rounded,
+                          color: theme.primaryColor, size: 18),
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -89,10 +103,12 @@ class AmFilterPanel extends StatelessWidget {
                                 letterSpacing: 0.2,
                               ),
                             ),
-                            if (activeFilterCount != null && activeFilterCount! > 0) ...[
+                            if (activeFilterCount != null &&
+                                activeFilterCount! > 0) ...[
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: theme.primaryColor.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(12),
@@ -112,7 +128,8 @@ class AmFilterPanel extends StatelessWidget {
                         if (subtitle != null)
                           Text(
                             subtitle!,
-                            style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor, fontSize: 11),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.hintColor, fontSize: 11),
                           ),
                       ],
                     ),
@@ -123,19 +140,21 @@ class AmFilterPanel extends StatelessWidget {
                     // Expand Toggle
                     if (onExpandToggle != null)
                       RotationTransition(
-                        turns: const AlwaysStoppedAnimation(0), // TODO: Animate this
+                        turns: const AlwaysStoppedAnimation(
+                            0), // TODO: Animate this
                         child: Icon(
-                          isExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-                          size: 20, 
-                          color: theme.hintColor
-                        ),
+                            isExpanded
+                                ? Icons.expand_less_rounded
+                                : Icons.expand_more_rounded,
+                            size: 20,
+                            color: theme.hintColor),
                       ),
                   ],
                 ),
               ),
             ),
           ),
-          
+
           // Body
           AnimatedSize(
             duration: 250.ms,

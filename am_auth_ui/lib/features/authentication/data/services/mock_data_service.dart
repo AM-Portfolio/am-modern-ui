@@ -63,9 +63,9 @@ class MockDataService {
     // First try test_users.json (default JSON)
     final testUsers = await loadTestUsers();
     final testUserJson = testUsers.cast<Map<String, dynamic>?>().firstWhere(
-      (u) => u!['email'] == email && u['password'] == password,
-      orElse: () => null,
-    );
+          (u) => u!['email'] == email && u['password'] == password,
+          orElse: () => null,
+        );
 
     if (testUserJson != null) {
       // Map from test_users.json format to UserModel format
@@ -83,9 +83,9 @@ class MockDataService {
     // Fallback to mock users if not found in test users
     final users = await loadMockUsers();
     final user = users.cast<UserModel?>().firstWhere(
-      (u) => u!.email == email,
-      orElse: () => null,
-    );
+          (u) => u!.email == email,
+          orElse: () => null,
+        );
 
     if (user != null) {
       // In a real implementation, verify password hash
@@ -124,14 +124,16 @@ class MockDataService {
 
     // Load users from test_users.json (default JSON)
     final testUsers = await loadTestUsers();
-    
+
     // Find demo user or fallback to first user
     UserModel user;
     final demoUserJson = testUsers.cast<Map<String, dynamic>?>().firstWhere(
-      (u) => u!['email'] == 'ssd2658@gmail.com' || u['username'] == '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec',
-      orElse: () => null,
-    );
-    
+          (u) =>
+              u!['email'] == 'ssd2658@gmail.com' ||
+              u['username'] == '64d5f6c9-9516-4eca-ac45-c73cfff7a8ec',
+          orElse: () => null,
+        );
+
     if (demoUserJson != null) {
       // Map from test_users.json format to UserModel format
       user = UserModel(

@@ -37,8 +37,9 @@ class PortfolioMetricCard extends StatelessWidget {
     final vPad = compact ? 12.0 : 16.0;
     final hPad = compact ? 12.0 : 16.0;
 
-    final Color cardBase =
-        isDark ? const Color(0xFF0D1B2A) : const Color(0xFFFFFFFF);
+    final Color cardBase = isDark
+        ? const Color(0xFF0D1B2A)
+        : const Color(0xFFFFFFFF);
     final bool useAccentValue = glowBorder || isPositive != null;
 
     return Tooltip(
@@ -92,30 +93,31 @@ class PortfolioMetricCard extends StatelessWidget {
                     color: glowBorder
                         ? accentColor.withValues(alpha: 0.35)
                         : (isDark
-                            ? Colors.white.withValues(alpha: 0.07)
-                            : Colors.black.withValues(alpha: 0.06)),
+                              ? Colors.white.withValues(alpha: 0.07)
+                              : Colors.black.withValues(alpha: 0.06)),
                     width: 1,
                   ),
                   // No drop shadows on compact (mobile) — keeps the grid tight.
                   boxShadow: compact
                       ? null
                       : glowBorder
-                          ? [
-                              BoxShadow(
-                                color: accentColor.withValues(alpha: 0.22),
-                                blurRadius: 24,
-                                spreadRadius: -2,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : [
-                              BoxShadow(
-                                color: Colors.black.withValues(
-                                    alpha: isDark ? 0.3 : 0.06),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                      ? [
+                          BoxShadow(
+                            color: accentColor.withValues(alpha: 0.22),
+                            blurRadius: 24,
+                            spreadRadius: -2,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.3 : 0.06,
+                            ),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
@@ -141,7 +143,9 @@ class PortfolioMetricCard extends StatelessWidget {
                       // ── Main Content ──
                       Padding(
                         padding: EdgeInsets.symmetric(
-                            horizontal: hPad, vertical: vPad),
+                          horizontal: hPad,
+                          vertical: vPad,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
@@ -156,8 +160,10 @@ class PortfolioMetricCard extends StatelessWidget {
                                 color: isHighlight
                                     ? Colors.white.withValues(alpha: 0.85)
                                     : (isDark
-                                        ? Colors.white.withValues(alpha: 0.5)
-                                        : Colors.black.withValues(alpha: 0.45)),
+                                          ? Colors.white.withValues(alpha: 0.5)
+                                          : Colors.black.withValues(
+                                              alpha: 0.45,
+                                            )),
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.4,
                               ),
@@ -176,16 +182,17 @@ class PortfolioMetricCard extends StatelessWidget {
                                   color: isHighlight
                                       ? Colors.white
                                       : (useAccentValue
-                                          ? accentColor
-                                          : (isDark
-                                              ? Colors.white
-                                              : const Color(0xFF1A1A2E))),
+                                            ? accentColor
+                                            : (isDark
+                                                  ? Colors.white
+                                                  : const Color(0xFF1A1A2E))),
                                   height: 1.1,
                                   shadows: (glowBorder && isDark)
                                       ? [
                                           Shadow(
-                                            color: accentColor
-                                                .withValues(alpha: 0.6),
+                                            color: accentColor.withValues(
+                                              alpha: 0.6,
+                                            ),
                                             blurRadius: 12,
                                           ),
                                         ]
@@ -219,17 +226,20 @@ class PortfolioMetricCard extends StatelessWidget {
                                       color: isHighlight
                                           ? Colors.white.withValues(alpha: 0.75)
                                           : (isPositive != null
-                                              ? accentColor
-                                                  .withValues(alpha: 0.9)
-                                              : (isDark
-                                                  ? Colors.white
-                                                      .withValues(alpha: 0.4)
-                                                  : Colors.black
-                                                      .withValues(alpha: 0.4))),
+                                                ? accentColor.withValues(
+                                                    alpha: 0.9,
+                                                  )
+                                                : (isDark
+                                                      ? Colors.white.withValues(
+                                                          alpha: 0.4,
+                                                        )
+                                                      : Colors.black.withValues(
+                                                          alpha: 0.4,
+                                                        ))),
                                       fontWeight:
                                           (isPositive != null && isPositive!)
-                                              ? FontWeight.w600
-                                              : FontWeight.w400,
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),

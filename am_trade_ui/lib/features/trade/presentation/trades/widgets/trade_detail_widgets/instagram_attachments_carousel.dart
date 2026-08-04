@@ -12,10 +12,12 @@ class InstagramAttachmentsCarousel extends StatefulWidget {
   final TradeHoldingViewModel trade;
 
   @override
-  State<InstagramAttachmentsCarousel> createState() => _InstagramAttachmentsCarouselState();
+  State<InstagramAttachmentsCarousel> createState() =>
+      _InstagramAttachmentsCarouselState();
 }
 
-class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarousel> {
+class _InstagramAttachmentsCarouselState
+    extends State<InstagramAttachmentsCarousel> {
   late PageController _pageController;
   int _currentIndex = 0;
 
@@ -49,7 +51,8 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
           child: Row(
             children: [
-              Icon(Icons.image_rounded, size: 24, color: Theme.of(context).primaryColor),
+              Icon(Icons.image_rounded,
+                  size: 24, color: Theme.of(context).primaryColor),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,13 +62,18 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                     'Evidence & Analysis',
                     style: Theme.of(
                       context,
-                    ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.3),
+                    ).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold, letterSpacing: 0.3),
                   ),
                   Text(
                     '${attachments.length} ${attachments.length == 1 ? 'image' : 'images'} attached',
                     style: Theme.of(
                       context,
-                    ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                    ).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6)),
                   ),
                 ],
               ),
@@ -99,18 +107,20 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                   attachments.length,
                   (index) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child:
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          width: _currentIndex == index ? 28 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: _currentIndex == index
-                                ? Theme.of(context).primaryColor
-                                : Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ).animate().scale(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: _currentIndex == index ? 28 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _currentIndex == index
+                            ? Theme.of(context).primaryColor
+                            : Theme.of(context)
+                                .colorScheme
+                                .outline
+                                .withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ).animate().scale(
                           begin: const Offset(0.8, 0.8),
                           delay: Duration(milliseconds: index * 50),
                         ),
@@ -141,16 +151,24 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
       // Date parsing failed, use null
     }
 
-    final formattedDate = uploadDate != null ? DateFormat('MMM dd, yyyy • hh:mm a').format(uploadDate) : 'Date unknown';
+    final formattedDate = uploadDate != null
+        ? DateFormat('MMM dd, yyyy • hh:mm a').format(uploadDate)
+        : 'Date unknown';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: GestureDetector(
-        onTap: () => _showFullImageDialog(context, fileUrl, fileName, description, formattedDate),
+        onTap: () => _showFullImageDialog(
+            context, fileUrl, fileName, description, formattedDate),
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 20, offset: const Offset(0, 8))],
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8))
+            ],
             color: Theme.of(context).colorScheme.surface,
           ),
           child: ClipRRect(
@@ -178,10 +196,13 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                                     // File Name / Title (Bold, larger)
                                     Text(
                                       fileName,
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.2,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.2,
+                                          ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -192,15 +213,24 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                                         Icon(
                                           Icons.access_time_rounded,
                                           size: 13,
-                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6),
                                         ),
                                         const SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
                                             formattedDate,
-                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                            ),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withOpacity(0.6),
+                                                ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
@@ -213,11 +243,15 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(20),
                                 child: BackdropFilter(
-                                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                  filter:
+                                      ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).primaryColor.withOpacity(0.85),
+                                      color: Theme.of(context)
+                                          .primaryColor
+                                          .withOpacity(0.85),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
@@ -241,10 +275,16 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                             child: Text(
                               description,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                height: 1.5,
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    height: 1.5,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.8),
+                                  ),
                               maxLines: 4,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -253,7 +293,11 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                           const SizedBox(height: 8),
 
                         // Divider
-                        Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.3)),
+                        Divider(
+                            height: 1,
+                            color: Theme.of(context)
+                                .dividerColor
+                                .withOpacity(0.3)),
 
                         // Additional spacing before image
                         const SizedBox(height: 8),
@@ -270,7 +314,9 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                     children: [
                       // Background Image
                       Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
                         child: Image.network(
                           fileUrl,
                           fit: BoxFit.cover,
@@ -281,14 +327,23 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                                 Icon(
                                   Icons.image_not_supported_outlined,
                                   size: 48,
-                                  color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outline
+                                      .withOpacity(0.5),
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
                                   'Image failed to load',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.outline.withOpacity(0.7),
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .outline
+                                            .withOpacity(0.7),
+                                      ),
                                 ),
                               ],
                             ),
@@ -297,11 +352,14 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                             if (loadingProgress == null) return child;
                             return Center(
                               child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                value: loadingProgress.expectedTotalBytes !=
+                                        null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
                                     : null,
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Theme.of(context).primaryColor),
                               ),
                             );
                           },
@@ -317,10 +375,12 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                           children: [
                             _buildActionButton(
                               Icons.fullscreen_rounded,
-                              () => _showFullImageDialog(context, fileUrl, fileName, description, formattedDate),
+                              () => _showFullImageDialog(context, fileUrl,
+                                  fileName, description, formattedDate),
                             ),
                             const SizedBox(width: 8),
-                            _buildActionButton(Icons.download_rounded, () => _downloadImage(fileUrl, fileName)),
+                            _buildActionButton(Icons.download_rounded,
+                                () => _downloadImage(fileUrl, fileName)),
                           ],
                         ),
                       ),
@@ -328,7 +388,8 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                       // Center Tap Hint
                       Center(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.6),
                             borderRadius: BorderRadius.circular(20),
@@ -336,7 +397,9 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.touch_app_rounded, size: 14, color: Colors.white.withOpacity(0.9)),
+                              Icon(Icons.touch_app_rounded,
+                                  size: 14,
+                                  color: Colors.white.withOpacity(0.9)),
                               const SizedBox(width: 8),
                               Text(
                                 'Tap for full view',
@@ -357,53 +420,65 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
             ),
           ),
         ),
-      ).animate().fadeIn(duration: const Duration(milliseconds: 400)).scale(begin: const Offset(0.9, 0.9)),
+      )
+          .animate()
+          .fadeIn(duration: const Duration(milliseconds: 400))
+          .scale(begin: const Offset(0.9, 0.9)),
     );
   }
 
   Widget _buildActionButton(IconData icon, VoidCallback onTap) => Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: Colors.black.withOpacity(0.4), borderRadius: BorderRadius.circular(20)),
-        child: Icon(icon, size: 18, color: Colors.white),
-      ),
-    ),
-  );
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(20)),
+            child: Icon(icon, size: 18, color: Colors.white),
+          ),
+        ),
+      );
 
   Widget _buildEmptyState(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-    child: Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.image_not_supported_outlined,
-            size: 56,
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.4),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.image_not_supported_outlined,
+                size: 56,
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.4),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No Images Attached',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.7),
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Attach images to this trade to see them here',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.5)),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'No Images Attached',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Attach images to this trade to see them here',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 
   void _showFullImageDialog(
     BuildContext context,
@@ -437,7 +512,10 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                         Icon(
                           Icons.image_not_supported_outlined,
                           size: 48,
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .outline
+                              .withOpacity(0.5),
                         ),
                         const SizedBox(height: 12),
                         const Text('Image failed to load'),
@@ -463,7 +541,8 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                       color: Colors.black.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                    child: const Icon(Icons.close_rounded,
+                        color: Colors.white, size: 20),
                   ),
                 ),
               ),
@@ -493,17 +572,26 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                   children: [
                     Text(
                       fileName,
-                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    Text(formattedDate, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
+                    Text(formattedDate,
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 12)),
                     if (description.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(
                         description,
-                        style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13, height: 1.4),
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 13,
+                            height: 1.4),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -522,6 +610,8 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
     // TODO: Implement actual download functionality
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('Downloading $fileName...'), duration: const Duration(seconds: 2)));
+    ).showSnackBar(SnackBar(
+        content: Text('Downloading $fileName...'),
+        duration: const Duration(seconds: 2)));
   }
 }

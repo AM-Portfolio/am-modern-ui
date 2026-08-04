@@ -9,7 +9,7 @@ void main() {
         portfolioId: 'test-id',
         analysisService: service,
       );
-      
+
       expect(cubit.state, isA<AllocationInitial>());
     });
   });

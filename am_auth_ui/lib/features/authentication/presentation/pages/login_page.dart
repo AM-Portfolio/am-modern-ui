@@ -16,12 +16,11 @@ import '../widgets/google_login_button_widget.dart';
 import '../widgets/theme_toggle_widget.dart';
 import 'package:am_design_system/shared/widgets/display/interactive_background.dart';
 
-
 /// Redesigned login page with glassmorphism, global theme, and better mobile UX
 class LoginPage extends StatelessWidget {
   final String? appName;
   final IconData? appIcon;
-  
+
   const LoginPage({
     super.key,
     this.appName,
@@ -32,7 +31,7 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveAppName = appName ?? AppConfig.getAppName();
     final effectiveAppIcon = appIcon ?? AppConfig.getAppIcon();
-    
+
     return Scaffold(
       body: SafeArea(
         child: BlocConsumer<AuthCubit, AuthState>(
@@ -42,7 +41,8 @@ class LoginPage extends StatelessWidget {
               if (router != null) {
                 final redirect =
                     GoRouterState.of(context).uri.queryParameters['redirect'];
-                final target = _sanitizeAppRedirect(redirect) ?? '/app/dashboard';
+                final target =
+                    _sanitizeAppRedirect(redirect) ?? '/app/dashboard';
                 context.go(target);
               } else {
                 Navigator.of(context).pushReplacementNamed('/home');
@@ -101,12 +101,12 @@ class LoginPage extends StatelessWidget {
                 return LayoutBuilder(
                   builder: (context, constraints) {
                     final isCompact = constraints.maxWidth < 600;
-                    
+
                     return Stack(
                       children: [
                         // Background gradient (adapts to theme)
                         _buildBackground(),
-                        
+
                         // Main content
                         Center(
                           child: SingleChildScrollView(
@@ -121,22 +121,24 @@ class LoginPage extends StatelessWidget {
                                   isCompact: isCompact,
                                 ),
                                 if (isCompact) const SizedBox(height: 24),
-                                
+
                                 // Login card with glassmorphism
                                 GlassCardWidget(
                                   isCompact: isCompact,
-                                  child: _buildLoginForm(context, state, isCompact),
+                                  child: _buildLoginForm(
+                                      context, state, isCompact),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        
+
                         // Theme toggle (top-right)
                         Positioned(
                           top: 16,
                           right: 16,
-                          child: ThemeToggleWidget(iconSize: isCompact ? 20 : 24),
+                          child:
+                              ThemeToggleWidget(iconSize: isCompact ? 20 : 24),
                         ),
                       ],
                     );
@@ -149,7 +151,7 @@ class LoginPage extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildBackground() {
     return Positioned.fill(
       child: Builder(
@@ -172,18 +174,20 @@ class LoginPage extends StatelessWidget {
             ),
           ),
           child: InteractiveBackground(
-            baseColor: context.isDark ? AppColors.authAccent : const Color(0xFF6366F1),
-            highlightColor: context.isDark ? AppColors.accentBlue : const Color(0xFF3B82F6),
+            baseColor:
+                context.isDark ? AppColors.authAccent : const Color(0xFF6366F1),
+            highlightColor:
+                context.isDark ? AppColors.accentBlue : const Color(0xFF3B82F6),
           ),
         ),
       ),
     );
   }
 
-  
-  Widget _buildLoginForm(BuildContext context, AuthState state, bool isCompact) {
+  Widget _buildLoginForm(
+      BuildContext context, AuthState state, bool isCompact) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -193,9 +197,9 @@ class LoginPage extends StatelessWidget {
           isCompact: isCompact,
           isLoading: state is AuthLoading,
         ),
-        
+
         SizedBox(height: isCompact ? 16 : 24),
-        
+
         // Divider
         Row(
           children: [
@@ -228,14 +232,14 @@ class LoginPage extends StatelessWidget {
             ),
           ],
         ),
-        
+
         SizedBox(height: isCompact ? 16 : 24),
-        
+
         // Google login
         const GoogleLoginButtonWidget(),
-        
+
         SizedBox(height: isCompact ? 16 : 24),
-        
+
         // Auth links (Forgot Password | Create Account)
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -268,9 +272,9 @@ class LoginPage extends StatelessWidget {
             ),
           ],
         ),
-        
+
         SizedBox(height: isCompact ? 12 : 16),
-        
+
         // Developer section (collapsible)
         DevSectionWidget(isCompact: isCompact),
       ],

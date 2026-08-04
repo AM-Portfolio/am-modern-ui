@@ -34,7 +34,7 @@ void main() {
             AnalysisEntityType.PORTFOLIO,
             groupBy: GroupBy.sector,
           );
-          
+
           // Expect some result (could be empty or populated)
           expect(result, isNotNull);
           expect(result, isA<List>());
@@ -51,7 +51,7 @@ void main() {
             timeFrame: '1D',
             groupBy: GroupBy.stock,
           );
-          
+
           expect(result, isNotNull);
           expect(result, isA<List>());
         } catch (e) {
@@ -66,7 +66,7 @@ void main() {
             AnalysisEntityType.PORTFOLIO,
             '1M',
           );
-          
+
           expect(result, isNotNull);
           expect(result, isA<List>());
         } catch (e) {

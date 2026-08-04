@@ -254,7 +254,8 @@ class ProductTelemetry with WidgetsBindingObserver {
         if (planCode != null) 'plan_code': planCode,
         if (billingInterval != null) 'billing_interval': billingInterval,
         if (metadata != null)
-          ...metadata.map((k, v) => MapEntry(k, v is String || v is num || v is bool ? v : '$v')),
+          ...metadata.map((k, v) =>
+              MapEntry(k, v is String || v is num || v is bool ? v : '$v')),
       },
     );
   }

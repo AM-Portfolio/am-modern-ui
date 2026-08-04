@@ -36,11 +36,13 @@ class BasketOpportunity {
       heldCount: json['heldCount'] as int? ?? 0,
       missingCount: json['missingCount'] as int? ?? 0,
       totalPortfolioValue: (json['totalPortfolioValue'] as num?)?.toDouble(),
-      composition: (json['composition'] as List<dynamic>?)
+      composition:
+          (json['composition'] as List<dynamic>?)
               ?.map((e) => BasketItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      buyList: (json['buyList'] as List<dynamic>?)
+      buyList:
+          (json['buyList'] as List<dynamic>?)
               ?.map((e) => BasketItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
@@ -135,7 +137,8 @@ class BasketItem {
       isin: json['isin'] as String? ?? '',
       sector: json['sector'] as String? ?? 'Unknown',
       status: ItemStatus.values.firstWhere(
-        (e) => e.name.toUpperCase() == (json['status'] as String?)?.toUpperCase(),
+        (e) =>
+            e.name.toUpperCase() == (json['status'] as String?)?.toUpperCase(),
         orElse: () => ItemStatus.missing,
       ),
       userHoldingSymbol: json['userHoldingSymbol'] as String?,
@@ -149,7 +152,8 @@ class BasketItem {
       marketCapValue: (json['marketCapValue'] as num?)?.toDouble(),
       heldQuantity: (json['heldQuantity'] as num?)?.toDouble(),
       heldAveragePrice: (json['heldAveragePrice'] as num?)?.toDouble(),
-      alternatives: (json['alternatives'] as List<dynamic>?)
+      alternatives:
+          (json['alternatives'] as List<dynamic>?)
               ?.map((e) => Alternative.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
@@ -230,18 +234,10 @@ class Alternative {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'symbol': symbol,
-      'isin': isin,
-      'userWeight': userWeight,
-    };
+    return {'symbol': symbol, 'isin': isin, 'userWeight': userWeight};
   }
 
-  Alternative copyWith({
-    String? symbol,
-    String? isin,
-    double? userWeight,
-  }) {
+  Alternative copyWith({String? symbol, String? isin, double? userWeight}) {
     return Alternative(
       symbol: symbol ?? this.symbol,
       isin: isin ?? this.isin,
@@ -250,8 +246,4 @@ class Alternative {
   }
 }
 
-enum ItemStatus {
-  held,
-  missing,
-  substitute,
-}
+enum ItemStatus { held, missing, substitute }

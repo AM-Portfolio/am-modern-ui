@@ -76,7 +76,8 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                     ? Colors.white70
                     : const Color(0xFF475569),
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -94,13 +95,15 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               curve: Curves.easeOutQuad,
-              transform: Matrix4.translationValues(0, _isHoveringBtn ? -2 : 0, 0),
+              transform:
+                  Matrix4.translationValues(0, _isHoveringBtn ? -2 : 0, 0),
               height: 48,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6366F1).withValues(alpha: _isHoveringBtn ? 0.35 : 0.20),
+                    color: const Color(0xFF6366F1)
+                        .withValues(alpha: _isHoveringBtn ? 0.35 : 0.20),
                     blurRadius: _isHoveringBtn ? 25 : 18,
                     offset: const Offset(0, 8),
                   ),
@@ -128,30 +131,31 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                     ),
                     child: ElevatedButton(
                       onPressed: widget.isLoading ? null : _handleLogin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: widget.isLoading
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Text(
-                        'Sign In',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
+                      child: widget.isLoading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text(
+                              'Sign In',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -217,21 +221,29 @@ class _LiquidTextFieldState extends State<LiquidTextField> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).primaryColor;
-    
+
     // Liquid glass background
     final baseBgColor = isDark
-        ? Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.17 : 0.12)
-        : Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.15 : 0.05); // Make it highly transparent in light mode
+        ? Colors.white
+            .withValues(alpha: (_isHovering || _isFocused) ? 0.17 : 0.12)
+        : Colors.white.withValues(
+            alpha: (_isHovering || _isFocused)
+                ? 0.15
+                : 0.05); // Make it highly transparent in light mode
 
     final borderColor = _isFocused
         ? primaryColor.withValues(alpha: 0.7)
         : (isDark
             ? Colors.white.withValues(alpha: 0.35)
-            : Colors.white.withValues(alpha: 0.45)); // Make border more visible in light mode for glass effect
+            : Colors.white.withValues(
+                alpha:
+                    0.45)); // Make border more visible in light mode for glass effect
 
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final labelColor = isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF475569);
-    final hintColor = isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF64748B);
+    final labelColor =
+        isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF475569);
+    final hintColor =
+        isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF64748B);
     final iconColor = isDark ? Colors.white70 : const Color(0xFF334155);
 
     return MouseRegion(
@@ -273,17 +285,20 @@ class _LiquidTextFieldState extends State<LiquidTextField> {
                     obscureText: widget.obscureText,
                     keyboardType: widget.keyboardType,
                     focusNode: _focusNode,
-                    style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        color: textColor, fontWeight: FontWeight.w500),
                     decoration: InputDecoration(
                       filled: false,
                       labelText: widget.labelText,
                       labelStyle: TextStyle(color: labelColor, fontSize: 13),
                       hintText: widget.hintText,
                       hintStyle: TextStyle(color: hintColor, fontSize: 13),
-                      prefixIcon: Icon(widget.prefixIcon, color: iconColor, size: 20),
+                      prefixIcon:
+                          Icon(widget.prefixIcon, color: iconColor, size: 20),
                       suffixIcon: widget.suffixIcon,
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 14),
                       errorStyle: const TextStyle(color: Color(0xFFFF6B6B)),
                     ),
                     validator: widget.validator,

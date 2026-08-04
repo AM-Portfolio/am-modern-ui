@@ -10,12 +10,15 @@ class ShareUrlBuilder {
   static String trade(String portfolioId, [String tab = 'portfolios']) =>
       AppRoutes.tradePath(portfolioId, tab);
 
-  static String market([String tab = 'all-indices']) => AppRoutes.marketPath(tab);
+  static String market([String tab = 'all-indices']) =>
+      AppRoutes.marketPath(tab);
 
   /// Tab slug from market URL (`/app/market/:tab`).
   static String? marketTabFromLocation(String location) {
     final segments = _pathSegments(location);
-    if (segments.length < 3 || segments[0] != 'app' || segments[1] != 'market') {
+    if (segments.length < 3 ||
+        segments[0] != 'app' ||
+        segments[1] != 'market') {
       return null;
     }
     return segments[2];
@@ -24,7 +27,9 @@ class ShareUrlBuilder {
   /// Tab slug from doc-intel URL (`/app/doc-intel` or `/app/doc-intel/:tab`).
   static String? docIntelTabFromLocation(String location) {
     final segments = _pathSegments(location);
-    if (segments.length < 2 || segments[0] != 'app' || segments[1] != 'doc-intel') {
+    if (segments.length < 2 ||
+        segments[0] != 'app' ||
+        segments[1] != 'doc-intel') {
       return null;
     }
     if (segments.length >= 3) return segments[2];
@@ -51,7 +56,9 @@ class ShareUrlBuilder {
   /// Tab slug from portfolio URL (3-segment or legacy 2-segment tab-only).
   static String? portfolioTabFromLocation(String location) {
     final segments = _pathSegments(location);
-    if (segments.length < 3 || segments[0] != 'app' || segments[1] != 'portfolio') {
+    if (segments.length < 3 ||
+        segments[0] != 'app' ||
+        segments[1] != 'portfolio') {
       return null;
     }
     if (segments.length >= 4) return segments[3];
@@ -104,9 +111,8 @@ class ShareUrlBuilder {
     if (candidate.startsWith('http://') || candidate.startsWith('https://')) {
       try {
         candidate = Uri.parse(candidate).path;
-        final query = Uri.parse(redirect).hasQuery
-            ? '?${Uri.parse(redirect).query}'
-            : '';
+        final query =
+            Uri.parse(redirect).hasQuery ? '?${Uri.parse(redirect).query}' : '';
         candidate = '$candidate$query';
       } catch (_) {
         return null;

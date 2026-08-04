@@ -17,7 +17,7 @@ import 'package:am_design_system/shared/widgets/display/interactive_background.d
 /// Reset password page with redesigned UI
 class ResetPasswordPage extends StatelessWidget {
   const ResetPasswordPage({super.key, this.resetToken, this.resetCode});
-  
+
   final String? resetToken;
   final String? resetCode;
 
@@ -30,14 +30,17 @@ class ResetPasswordPage extends StatelessWidget {
             if (state is PasswordResetSuccess) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Password reset successfully! Please sign in with your new password.'),
+                  content: Text(
+                      'Password reset successfully! Please sign in with your new password.'),
                   backgroundColor: AppColors.success,
                 ),
               );
               context.go('/login');
             } else if (state is AuthError) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
+                SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: AppColors.error),
               );
             }
           },
@@ -47,12 +50,12 @@ class ResetPasswordPage extends StatelessWidget {
                 return LayoutBuilder(
                   builder: (context, constraints) {
                     final isCompact = constraints.maxWidth < 600;
-                    
+
                     return Stack(
                       children: [
                         // Background
                         _buildBackground(),
-                        
+
                         // Main content
                         Center(
                           child: SingleChildScrollView(
@@ -66,7 +69,6 @@ class ResetPasswordPage extends StatelessWidget {
                                   isCompact: isCompact,
                                 ),
                                 if (isCompact) const SizedBox(height: 24),
-                                
                                 GlassCardWidget(
                                   isCompact: isCompact,
                                   child: ResetPasswordPageForm(
@@ -78,14 +80,15 @@ class ResetPasswordPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                        
+
                         // Theme toggle
                         Positioned(
                           top: 16,
                           right: 16,
-                          child: ThemeToggleWidget(iconSize: isCompact ? 20 : 24),
+                          child:
+                              ThemeToggleWidget(iconSize: isCompact ? 20 : 24),
                         ),
-                        
+
                         // Back button
                         Positioned(
                           top: 16,
@@ -129,8 +132,10 @@ class ResetPasswordPage extends StatelessWidget {
             ),
           ),
           child: InteractiveBackground(
-            baseColor: context.isDark ? AppColors.authAccent : AppColors.primaryLight,
-            highlightColor: context.isDark ? AppColors.accentBlue : AppColors.info,
+            baseColor:
+                context.isDark ? AppColors.authAccent : AppColors.primaryLight,
+            highlightColor:
+                context.isDark ? AppColors.accentBlue : AppColors.info,
           ),
         ),
       ),
@@ -141,7 +146,7 @@ class ResetPasswordPage extends StatelessWidget {
 /// Reset password form widget
 class ResetPasswordPageForm extends StatefulWidget {
   const ResetPasswordPageForm({super.key, this.resetToken, this.resetCode});
-  
+
   final String? resetToken;
   final String? resetCode;
 
@@ -188,130 +193,136 @@ class _ResetPasswordPageFormState extends State<ResetPasswordPageForm> {
   void _handleSubmit() {
     if (_formKey.currentState!.validate()) {
       context.read<AuthCubit>().resetPassword(
-        resetToken: _linkCode == null ? _tokenController.text : null,
-        resetCode: _linkCode,
-        newPassword: _passwordController.text,
-        confirmPassword: _confirmPasswordController.text,
-      );
+            resetToken: _linkCode == null ? _tokenController.text : null,
+            resetCode: _linkCode,
+            newPassword: _passwordController.text,
+            confirmPassword: _confirmPasswordController.text,
+          );
     }
   }
 
   @override
   Widget build(BuildContext context) => Form(
-    key: _formKey,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Reset Password 🔐',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 32),
-
-        if (!_hasDeepLink) ...[
-          TextFormField(
-            controller: _tokenController,
-            decoration: const InputDecoration(
-              labelText: 'Reset Token',
-              prefixIcon: Icon(Icons.vpn_key_outlined),
-              border: OutlineInputBorder(),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Reset token is required';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-        ],
-
-        // New Password
-        TextFormField(
-          controller: _passwordController,
-          obscureText: _obscurePassword,
-          decoration: InputDecoration(
-            labelText: 'New Password',
-            prefixIcon: const Icon(Icons.lock),
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword ? Icons.visibility : Icons.visibility_off,
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Reset Password 🔐',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
-              onPressed: () {
-                setState(() {
-                  _obscurePassword = !_obscurePassword;
-                });
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+
+            if (!_hasDeepLink) ...[
+              TextFormField(
+                controller: _tokenController,
+                decoration: const InputDecoration(
+                  labelText: 'Reset Token',
+                  prefixIcon: Icon(Icons.vpn_key_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Reset token is required';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // New Password
+            TextFormField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                labelText: 'New Password',
+                prefixIcon: const Icon(Icons.lock),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty)
+                  return 'Please enter a password';
+                if (value.length < 8)
+                  return 'Password must be at least 8 characters';
+                return null;
               },
             ),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) return 'Please enter a password';
-            if (value.length < 8) return 'Password must be at least 8 characters';
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-        // Confirm Password
-        TextFormField(
-          controller: _confirmPasswordController,
-          obscureText: _obscureConfirmPassword,
-          decoration: InputDecoration(
-            labelText: 'Confirm Password',
-            prefixIcon: const Icon(Icons.lock_outline),
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+            // Confirm Password
+            TextFormField(
+              controller: _confirmPasswordController,
+              obscureText: _obscureConfirmPassword,
+              decoration: InputDecoration(
+                labelText: 'Confirm Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirmPassword
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                    });
+                  },
+                ),
               ),
-              onPressed: () {
-                setState(() {
-                  _obscureConfirmPassword = !_obscureConfirmPassword;
-                });
+              validator: (value) {
+                if (value == null || value.isEmpty)
+                  return 'Please confirm your password';
+                if (value != _passwordController.text)
+                  return 'Passwords do not match';
+                return null;
               },
             ),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) return 'Please confirm your password';
-            if (value != _passwordController.text) return 'Passwords do not match';
-            return null;
-          },
-        ),
-        const SizedBox(height: 32),
+            const SizedBox(height: 32),
 
-        // Reset Password Button
-        SizedBox(
-          height: 48,
-          child: ElevatedButton(
-            onPressed: _handleSubmit,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            // Reset Password Button
+            SizedBox(
+              height: 48,
+              child: ElevatedButton(
+                onPressed: _handleSubmit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Reset Password',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
-            child: const Text(
-              'Reset Password',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+
+            const SizedBox(height: 16),
+
+            // Back to login link
+            TextButton(
+              onPressed: () => context.go('/login'),
+              child: const Text('Back to Sign In'),
             ),
-          ),
+          ],
         ),
-        
-        const SizedBox(height: 16),
-        
-        // Back to login link
-        TextButton(
-          onPressed: () => context.go('/login'),
-          child: const Text('Back to Sign In'),
-        ),
-      ],
-    ),
-  );
+      );
 }

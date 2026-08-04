@@ -72,10 +72,8 @@ abstract class PortfolioHoldings with _$PortfolioHoldings {
   factory PortfolioHoldings.fromJson(Map<String, dynamic> json) =>
       _$PortfolioHoldingsFromJson(json);
 
-  factory PortfolioHoldings.empty() => PortfolioHoldings(
-    holdings: const [],
-    lastUpdated: DateTime.now(),
-  );
+  factory PortfolioHoldings.empty() =>
+      PortfolioHoldings(holdings: const [], lastUpdated: DateTime.now());
 
   /// Check if portfolio is empty
   bool get isEmpty => holdings.isEmpty;

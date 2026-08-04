@@ -27,7 +27,7 @@ class PriceFormatters {
   /// Returns '-' if parsing fails
   static String formatTimestamp(dynamic timestamp) {
     if (timestamp == null) return '-';
-    
+
     try {
       if (timestamp is int) {
         final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
@@ -40,7 +40,7 @@ class PriceFormatters {
     } catch (e) {
       // Return original value if parsing fails
     }
-    
+
     return timestamp.toString();
   }
 
@@ -49,7 +49,7 @@ class PriceFormatters {
   /// Returns null if parsing fails
   static DateTime? parseTimestamp(dynamic timestamp) {
     if (timestamp == null) return null;
-    
+
     try {
       if (timestamp is int) {
         return DateTime.fromMillisecondsSinceEpoch(timestamp);
@@ -60,7 +60,7 @@ class PriceFormatters {
     } catch (e) {
       return null;
     }
-    
+
     return null;
   }
 

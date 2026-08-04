@@ -22,12 +22,12 @@ abstract class HeatmapLayoutBuilder {
 
   /// Gets the display tiles from the heatmap data
   List<HeatmapTileData> getUiTiles(HeatmapData data) => data.tiles.map((tile) {
-    if (tile is HeatmapTileData) {
-      return tile;
-    } else {
-      return HeatmapTileData.fromEntity(tile);
-    }
-  }).toList();
+        if (tile is HeatmapTileData) {
+          return tile;
+        } else {
+          return HeatmapTileData.fromEntity(tile);
+        }
+      }).toList();
 
   /// Builds a single heatmap tile with consistent styling
   Widget buildHeatmapTile(
@@ -80,7 +80,8 @@ abstract class HeatmapLayoutBuilder {
           ],
         ),
         child: Padding(
-          padding: config.tilePadding ?? const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          padding: config.tilePadding ??
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           child: buildTileContent(
             context,
             tile,
@@ -489,9 +490,8 @@ abstract class HeatmapLayoutBuilder {
 
     return Container(
       decoration: BoxDecoration(
-        border: hierarchyLevel > 0
-            ? Border.all(color: Colors.grey.shade400)
-            : null,
+        border:
+            hierarchyLevel > 0 ? Border.all(color: Colors.grey.shade400) : null,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Stack(
@@ -583,13 +583,13 @@ abstract class HeatmapLayoutBuilder {
     final titleSize = effectiveW < 100
         ? 9.0
         : effectiveW < 180
-        ? 11.0
-        : 13.0;
+            ? 11.0
+            : 13.0;
     final perfSize = effectiveW < 100
         ? 13.0
         : effectiveW < 180
-        ? 18.0
-        : 24.0;
+            ? 18.0
+            : 24.0;
     final weightSize = effectiveW < 100 ? 8.0 : 10.0;
     final trendIcon = isPositive ? Icons.trending_up : Icons.trending_down;
 
@@ -839,20 +839,20 @@ abstract class HeatmapLayoutBuilder {
 
   /// Builds a hierarchy indicator badge
   Widget _buildHierarchyIndicator(int hierarchyLevel) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-    decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.8),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Text(
-      'L${hierarchyLevel + 1}',
-      style: TextStyle(
-        fontSize: 8,
-        fontWeight: FontWeight.bold,
-        color: Colors.grey.shade600,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          'L${hierarchyLevel + 1}',
+          style: TextStyle(
+            fontSize: 8,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      );
 
   /// Calculates the hierarchy level of a tile (0 for root, 1+ for children)
   int _calculateHierarchyLevel(HeatmapTileData targetTile, HeatmapData data) {

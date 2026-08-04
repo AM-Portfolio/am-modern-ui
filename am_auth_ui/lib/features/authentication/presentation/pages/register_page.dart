@@ -26,12 +26,12 @@ class RegisterPage extends StatelessWidget {
             return LayoutBuilder(
               builder: (context, constraints) {
                 final isCompact = constraints.maxWidth < 600;
-                
+
                 return Stack(
                   children: [
                     // Background
                     _buildBackground(),
-                    
+
                     // Main content
                     Center(
                       child: SingleChildScrollView(
@@ -45,7 +45,6 @@ class RegisterPage extends StatelessWidget {
                               isCompact: isCompact,
                             ),
                             if (isCompact) const SizedBox(height: 24),
-                            
                             GlassCardWidget(
                               isCompact: isCompact,
                               child: RegisterPageForm(
@@ -56,14 +55,14 @@ class RegisterPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
+
                     // Theme toggle
                     Positioned(
                       top: 16,
                       right: 16,
                       child: ThemeToggleWidget(iconSize: isCompact ? 20 : 24),
                     ),
-                    
+
                     // Back button
                     Positioned(
                       top: 16,
@@ -105,8 +104,10 @@ class RegisterPage extends StatelessWidget {
             ),
           ),
           child: InteractiveBackground(
-            baseColor: context.isDark ? AppColors.authAccent : AppColors.primaryLight,
-            highlightColor: context.isDark ? AppColors.accentBlue : AppColors.info,
+            baseColor:
+                context.isDark ? AppColors.authAccent : AppColors.primaryLight,
+            highlightColor:
+                context.isDark ? AppColors.accentBlue : AppColors.info,
           ),
         ),
       ),
@@ -122,164 +123,168 @@ class RegisterPageForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => BlocConsumer<AuthCubit, AuthState>(
-    listener: (context, state) {
-      if (state is RegisterPendingVerification) {
-        // Stay on a dismissible dialog — SnackBar + immediate navigate left a
-        // stuck/orphaned banner under the login form on web.
-        showDialog<void>(
-          context: context,
-          barrierDismissible: false,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Check your email'),
-            content: Text(
-              'Account created for ${state.email}. Verify your Asrax account from the email we sent, then sign in.\n\n'
-              'If you do not see the email, check spam or tap Resend.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  context.read<AuthCubit>().resendVerifyEmail(state.email);
-                },
-                child: const Text('Resend'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(dialogContext).pop();
-                  onLogin();
-                },
-                child: const Text('Go to sign in'),
-              ),
-            ],
-          ),
-        );
-      } else if (state is Authenticated) {
-        // Navigate to home page after successful registration
-        Navigator.of(context).pushReplacementNamed('/home');
-      } else if (state is AuthError) {
-        // Check if message contains User ID (UUID)
-        if (state.message.contains('User ID:')) {
-          // Extract UUID from message
-          final uuidMatch = RegExp(
-            r'User ID: ([a-f0-9-]+)',
-          ).firstMatch(state.message);
-          final userId = uuidMatch?.group(1) ?? '';
-
-          // Show dialog with copy button
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Row(
-                children: [
-                  Icon(Icons.check_circle, color: AppColors.success),
-                  const SizedBox(width: 8),
-                  const Text('Account Created!'),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Your account has been created successfully.',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Copy your User ID to activate:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: SelectableText(
-                            userId,
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.copy, size: 18),
-                          tooltip: 'Copy to clipboard',
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: userId));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('UUID copied to clipboard!'),
-                                duration: Duration(seconds: 2),
-                                backgroundColor: AppColors.success,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Open Developer Controls on the login screen to activate your account.',
-                    style: TextStyle(fontSize: 12, color: context.textTertiary),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close dialog
-                    onLogin(); // Back to login via callback
-                  },
-                  child: const Text('OK'),
+        listener: (context, state) {
+          if (state is RegisterPendingVerification) {
+            // Stay on a dismissible dialog — SnackBar + immediate navigate left a
+            // stuck/orphaned banner under the login form on web.
+            showDialog<void>(
+              context: context,
+              barrierDismissible: false,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Check your email'),
+                content: Text(
+                  'Account created for ${state.email}. Verify your Asrax account from the email we sent, then sign in.\n\n'
+                  'If you do not see the email, check spam or tap Resend.',
                 ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      context.read<AuthCubit>().resendVerifyEmail(state.email);
+                    },
+                    child: const Text('Resend'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                      onLogin();
+                    },
+                    child: const Text('Go to sign in'),
+                  ),
+                ],
+              ),
+            );
+          } else if (state is Authenticated) {
+            // Navigate to home page after successful registration
+            Navigator.of(context).pushReplacementNamed('/home');
+          } else if (state is AuthError) {
+            // Check if message contains User ID (UUID)
+            if (state.message.contains('User ID:')) {
+              // Extract UUID from message
+              final uuidMatch = RegExp(
+                r'User ID: ([a-f0-9-]+)',
+              ).firstMatch(state.message);
+              final userId = uuidMatch?.group(1) ?? '';
+
+              // Show dialog with copy button
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: AppColors.success),
+                      const SizedBox(width: 8),
+                      const Text('Account Created!'),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Your account has been created successfully.',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Copy your User ID to activate:',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: SelectableText(
+                                userId,
+                                style: const TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.copy, size: 18),
+                              tooltip: 'Copy to clipboard',
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: userId));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('UUID copied to clipboard!'),
+                                    duration: Duration(seconds: 2),
+                                    backgroundColor: AppColors.success,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Open Developer Controls on the login screen to activate your account.',
+                        style: TextStyle(
+                            fontSize: 12, color: context.textTertiary),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close dialog
+                        onLogin(); // Back to login via callback
+                      },
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              // Show regular error message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: AppColors.error),
+              );
+            }
+          }
+        },
+        builder: (context, state) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Create Account',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+
+            // Registration form
+            if (state is AuthLoading)
+              const Center(child: CircularProgressIndicator())
+            else
+              const RegistrationFormWidget(),
+
+            const SizedBox(height: 24),
+
+            // Already have account link
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Already have an account? '),
+                TextButton(onPressed: onLogin, child: const Text('Sign In')),
               ],
             ),
-          );
-        } else {
-          // Show regular error message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
-          );
-        }
-      }
-    },
-    builder: (context, state) => Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text(
-          'Create Account',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 32),
-
-        // Registration form
-        if (state is AuthLoading)
-          const Center(child: CircularProgressIndicator())
-        else
-          const RegistrationFormWidget(),
-
-        const SizedBox(height: 24),
-
-        // Already have account link
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Already have an account? '),
-            TextButton(onPressed: onLogin, child: const Text('Sign In')),
           ],
         ),
-      ],
-    ),
-  );
+      );
 }

@@ -76,13 +76,13 @@ class SwipeNavigationController extends ChangeNotifier {
   void updateItems(List<NavigationItem> newItems) {
     if (newItems.isEmpty) return;
     _items = newItems;
-    
+
     // Ensure index is valid
     if (_currentIndex >= _items.length) {
       _currentIndex = _items.length - 1;
       // We might want to jump to the new valid index effectively?
     }
-    
+
     notifyListeners();
   }
 

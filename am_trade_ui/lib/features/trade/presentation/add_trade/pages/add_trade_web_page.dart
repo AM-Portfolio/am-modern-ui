@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -14,7 +13,13 @@ import '../components/add_trade_form.dart';
 /// Web page for adding new trades with responsive design
 /// Streamlined 4-step process with click-and-select focus
 class AddTradeWebPage extends StatefulWidget {
-  const AddTradeWebPage({required this.portfolioId, super.key, this.portfolioName, this.onTradeAdded, this.onCancel, this.existingTrade});
+  const AddTradeWebPage(
+      {required this.portfolioId,
+      super.key,
+      this.portfolioName,
+      this.onTradeAdded,
+      this.onCancel,
+      this.existingTrade});
 
   final String portfolioId;
   final String? portfolioName;
@@ -46,7 +51,9 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
     // _isSaving is set synchronously before any async work, so there is no
     // race window between two rapid taps on the Save button.
     if (_isSaving) {
-      AppLogger.warning('⚠️ _handleSave called while already saving — ignoring duplicate.', tag: 'AddTradeWebPage');
+      AppLogger.warning(
+          '⚠️ _handleSave called while already saving — ignoring duplicate.',
+          tag: 'AddTradeWebPage');
       return;
     }
     _isSaving = true;
@@ -63,10 +70,14 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
     final userId = authState is Authenticated ? authState.user.id : null;
 
     if (userId == null || userId.isEmpty) {
-      AppLogger.error('🚨 CRITICAL: Cannot save trade - userId is null or empty!', tag: 'AddTradeWebPage');
+      AppLogger.error(
+          '🚨 CRITICAL: Cannot save trade - userId is null or empty!',
+          tag: 'AddTradeWebPage');
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Authentication error. Please log in again.'), backgroundColor: Colors.red),
+        const SnackBar(
+            content: Text('Authentication error. Please log in again.'),
+            backgroundColor: Colors.red),
       );
       return;
     }
@@ -77,13 +88,19 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
       userId: userId,
     );
 
-    AppLogger.debug('📋 Trade Details (with portfolioId & userId): ${tradeToSave.toString()}', tag: 'AddTradeWebPage');
-    AppLogger.info('🚀 Calling TradeControllerCubit.addNewTrade() with userId: $userId', tag: 'AddTradeWebPage');
+    AppLogger.debug(
+        '📋 Trade Details (with portfolioId & userId): ${tradeToSave.toString()}',
+        tag: 'AddTradeWebPage');
+    AppLogger.info(
+        '🚀 Calling TradeControllerCubit.addNewTrade() with userId: $userId',
+        tag: 'AddTradeWebPage');
 
     // Call the TradeControllerCubit to save the trade
     if (widget.existingTrade != null) {
-      final tradeToUpdate = tradeToSave.copyWith(tradeId: widget.existingTrade!.tradeId);
-      context.read<TradeControllerCubit>().updateExistingTrade(tradeId: tradeToUpdate.tradeId, tradeDetails: tradeToUpdate);
+      final tradeToUpdate =
+          tradeToSave.copyWith(tradeId: widget.existingTrade!.tradeId);
+      context.read<TradeControllerCubit>().updateExistingTrade(
+          tradeId: tradeToUpdate.tradeId, tradeDetails: tradeToUpdate);
     } else {
       context.read<TradeControllerCubit>().addNewTrade(tradeToSave);
     }
@@ -99,18 +116,25 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Discard Trade?'),
-        content: const Text('Are you sure you want to discard this trade? All entered data will be lost.'),
+        content: const Text(
+            'Are you sure you want to discard this trade? All entered data will be lost.'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Continue Editing')),
-          ElevatedButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Discard')),
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Continue Editing')),
+          ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Discard')),
         ],
       ),
     ).then((confirmed) {
       if (confirmed == true) {
-        AppLogger.info('✅ User confirmed discard, navigating back', tag: 'AddTradeWebPage');
+        AppLogger.info('✅ User confirmed discard, navigating back',
+            tag: 'AddTradeWebPage');
         _navigateBack();
       } else {
-        AppLogger.info('↩️ User chose to continue editing', tag: 'AddTradeWebPage');
+        AppLogger.info('↩️ User chose to continue editing',
+            tag: 'AddTradeWebPage');
       }
     });
   }
@@ -143,16 +167,21 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
       listener: (context, state) {
         state.when(
           initial: () {
-            AppLogger.debug('[TradeControllerCubit] State: Initial', tag: 'AddTradeWebPage');
+            AppLogger.debug('[TradeControllerCubit] State: Initial',
+                tag: 'AddTradeWebPage');
           },
           loading: () {
-            AppLogger.debug('[TradeControllerCubit] State: Loading trades', tag: 'AddTradeWebPage');
+            AppLogger.debug('[TradeControllerCubit] State: Loading trades',
+                tag: 'AddTradeWebPage');
           },
           loaded: (trades, portfolioId) {
-            AppLogger.info('[TradeControllerCubit] State: Loaded ${trades.length} trades', tag: 'AddTradeWebPage');
+            AppLogger.info(
+                '[TradeControllerCubit] State: Loaded ${trades.length} trades',
+                tag: 'AddTradeWebPage');
           },
           adding: () {
-            AppLogger.info('[TradeControllerCubit] State: Adding trade...', tag: 'AddTradeWebPage');
+            AppLogger.info('[TradeControllerCubit] State: Adding trade...',
+                tag: 'AddTradeWebPage');
             setState(() => _isLoading = true);
           },
           addSuccess: (trade) {
@@ -167,17 +196,22 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
 
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(const SnackBar(content: Text('Trade added successfully!'), backgroundColor: Colors.green));
+            ).showSnackBar(const SnackBar(
+                content: Text('Trade added successfully!'),
+                backgroundColor: Colors.green));
 
             widget.onTradeAdded?.call();
             _navigateBack();
           },
           updating: () {
-            AppLogger.debug('[TradeControllerCubit] State: Updating trade', tag: 'AddTradeWebPage');
+            AppLogger.debug('[TradeControllerCubit] State: Updating trade',
+                tag: 'AddTradeWebPage');
             setState(() => _isLoading = true);
           },
           updateSuccess: (trade) {
-            AppLogger.info('[TradeControllerCubit] State: Trade updated successfully', tag: 'AddTradeWebPage');
+            AppLogger.info(
+                '[TradeControllerCubit] State: Trade updated successfully',
+                tag: 'AddTradeWebPage');
             setState(() {
               _isLoading = false;
               _isSaving = false; // Reset guard on success
@@ -185,19 +219,25 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
 
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(const SnackBar(content: Text('Trade updated successfully!'), backgroundColor: Colors.green));
+            ).showSnackBar(const SnackBar(
+                content: Text('Trade updated successfully!'),
+                backgroundColor: Colors.green));
 
             widget.onTradeAdded?.call();
             _navigateBack();
           },
           deleting: () {
-            AppLogger.debug('[TradeControllerCubit] State: Deleting trade', tag: 'AddTradeWebPage');
+            AppLogger.debug('[TradeControllerCubit] State: Deleting trade',
+                tag: 'AddTradeWebPage');
           },
           deleteSuccess: (tradeId) {
-            AppLogger.info('[TradeControllerCubit] State: Trade deleted successfully', tag: 'AddTradeWebPage');
+            AppLogger.info(
+                '[TradeControllerCubit] State: Trade deleted successfully',
+                tag: 'AddTradeWebPage');
           },
           error: (message, error) {
-            AppLogger.error('❌ [TradeControllerCubit] Error: $message', tag: 'AddTradeWebPage', error: error);
+            AppLogger.error('❌ [TradeControllerCubit] Error: $message',
+                tag: 'AddTradeWebPage', error: error);
             setState(() {
               _isLoading = false;
               _isSaving = false; // Reset guard on error so user can retry
@@ -205,7 +245,9 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
 
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(SnackBar(content: Text('Failed to save trade: $message'), backgroundColor: Colors.red));
+            ).showSnackBar(SnackBar(
+                content: Text('Failed to save trade: $message'),
+                backgroundColor: Colors.red));
           },
         );
       },
@@ -250,4 +292,3 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
     );
   }
 }
-

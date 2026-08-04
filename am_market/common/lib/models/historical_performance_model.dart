@@ -56,7 +56,7 @@ class YearlyPerformance {
       (json['dailyReturns'] as Map<String, dynamic>).forEach((month, daysMap) {
         final Map<int, double> days = {};
         (daysMap as Map<String, dynamic>).forEach((dayStr, val) {
-           days[int.parse(dayStr)] = (val as num).toDouble();
+          days[int.parse(dayStr)] = (val as num).toDouble();
         });
         daily![month] = days;
       });

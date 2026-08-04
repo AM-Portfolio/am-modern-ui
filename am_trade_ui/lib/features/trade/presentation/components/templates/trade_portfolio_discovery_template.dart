@@ -9,12 +9,30 @@ import '../mobile/trade_portfolio_mobile_filter.dart';
 import '../mobile/trade_portfolio_mobile_header.dart';
 
 // Dark theme constants matching the app's existing dark palette
-Color _getCardBorder(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2A2A45) : Theme.of(context).colorScheme.outline.withOpacity(0.1);
-Color _getCardHoverBorder(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF7C3AED) : Theme.of(context).colorScheme.primary;
-Color _getBadgeBg(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E30) : Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5);
-Color _getBadgeBorder(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2D2D45) : Theme.of(context).colorScheme.outline.withOpacity(0.1);
-Color _getSearchBg(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E30) : Theme.of(context).colorScheme.surface;
-Color _getSearchBorder(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2D2D45) : Theme.of(context).colorScheme.outline.withOpacity(0.2);
+Color _getCardBorder(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF2A2A45)
+        : Theme.of(context).colorScheme.outline.withOpacity(0.1);
+Color _getCardHoverBorder(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF7C3AED)
+        : Theme.of(context).colorScheme.primary;
+Color _getBadgeBg(BuildContext context) => Theme.of(context).brightness ==
+        Brightness.dark
+    ? const Color(0xFF1E1E30)
+    : Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5);
+Color _getBadgeBorder(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF2D2D45)
+        : Theme.of(context).colorScheme.outline.withOpacity(0.1);
+Color _getSearchBg(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF1E1E30)
+        : Theme.of(context).colorScheme.surface;
+Color _getSearchBorder(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF2D2D45)
+        : Theme.of(context).colorScheme.outline.withOpacity(0.2);
 
 class TradePortfolioDiscoveryTemplate extends StatefulWidget {
   const TradePortfolioDiscoveryTemplate({
@@ -70,8 +88,7 @@ class _TradePortfolioDiscoveryTemplateState
             if (widget.onRefresh != null) ...[
               const SizedBox(height: 16),
               ElevatedButton(
-                  onPressed: widget.onRefresh,
-                  child: const Text('Retry')),
+                  onPressed: widget.onRefresh, child: const Text('Retry')),
             ],
           ],
         ),
@@ -103,9 +120,7 @@ class _TradePortfolioDiscoveryTemplateState
     final filtered = widget.portfolios.where((p) {
       final matchesSearch = _searchQuery.isEmpty ||
           p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (p.description
-                  ?.toLowerCase()
-                  .contains(_searchQuery.toLowerCase()) ??
+          (p.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ??
               false);
       final matchesFilter = !_showOnlyProfit || p.isProfit;
       return matchesSearch && matchesFilter;
@@ -145,24 +160,23 @@ class _TradePortfolioDiscoveryTemplateState
                   .bodyMedium
                   ?.copyWith(color: Colors.grey[500]),
             ),
-            if (widget.onCreatePortfolio != null) ...
-              [
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: widget.onCreatePortfolio,
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Create Portfolio'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7C3AED),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+            if (widget.onCreatePortfolio != null) ...[
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: widget.onCreatePortfolio,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Create Portfolio'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7C3AED),
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-              ],
+              ),
+            ],
           ],
         ),
       );
@@ -171,15 +185,14 @@ class _TradePortfolioDiscoveryTemplateState
   Widget _buildHeaderSection(BuildContext context) {
     final totalValue =
         widget.portfolios.fold<double>(0.0, (sum, p) => sum + p.totalValue);
-    final profitableCount =
-        widget.portfolios.where((p) => p.isProfit).length;
+    final profitableCount = widget.portfolios.where((p) => p.isProfit).length;
     final totalTrades =
         widget.portfolios.fold<int>(0, (sum, p) => sum + p.totalTrades);
     final totalNetProfitLoss = widget.portfolios
         .fold<double>(0.0, (sum, p) => sum + (p.netProfitLoss ?? 0.0));
     final avgWinRate = widget.portfolios.isNotEmpty
-        ? widget.portfolios.fold<double>(
-                0.0, (sum, p) => sum + (p.winRate ?? 0.0)) /
+        ? widget.portfolios
+                .fold<double>(0.0, (sum, p) => sum + (p.winRate ?? 0.0)) /
             widget.portfolios.length
         : 0.0;
 
@@ -213,10 +226,11 @@ class _TradePortfolioDiscoveryTemplateState
                     children: [
                       Text(
                         'Trade Portfolios',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: -0.5,
+                                ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -372,12 +386,18 @@ class _TradePortfolioDiscoveryTemplateState
               searchQuery: _searchQuery,
               sortBy: _sortBy,
               showOnlyProfit: _showOnlyProfit,
-              onSearchChanged: (value) =>
-                  setState(() { _searchQuery = value; _currentPage = 0; }),
-              onSortChanged: (value) =>
-                  setState(() { _sortBy = value; _currentPage = 0; }),
-              onProfitFilterChanged: (value) =>
-                  setState(() { _showOnlyProfit = value; _currentPage = 0; }),
+              onSearchChanged: (value) => setState(() {
+                _searchQuery = value;
+                _currentPage = 0;
+              }),
+              onSortChanged: (value) => setState(() {
+                _sortBy = value;
+                _currentPage = 0;
+              }),
+              onProfitFilterChanged: (value) => setState(() {
+                _showOnlyProfit = value;
+                _currentPage = 0;
+              }),
             );
           }
 
@@ -430,13 +450,13 @@ class _TradePortfolioDiscoveryTemplateState
                         isDense: true,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide:
-                              BorderSide(color: _getSearchBorder(context), width: 1),
+                          borderSide: BorderSide(
+                              color: _getSearchBorder(context), width: 1),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide:
-                              BorderSide(color: _getSearchBorder(context), width: 1),
+                          borderSide: BorderSide(
+                              color: _getSearchBorder(context), width: 1),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -480,13 +500,10 @@ class _TradePortfolioDiscoveryTemplateState
                       ),
                       dropdownColor: Theme.of(context).colorScheme.surface,
                       items: const [
+                        DropdownMenuItem(value: 'name', child: Text('Name')),
+                        DropdownMenuItem(value: 'value', child: Text('Value')),
                         DropdownMenuItem(
-                            value: 'name', child: Text('Name')),
-                        DropdownMenuItem(
-                            value: 'value', child: Text('Value')),
-                        DropdownMenuItem(
-                            value: 'performance',
-                            child: Text('Performance')),
+                            value: 'performance', child: Text('Performance')),
                       ],
                       onChanged: (v) {
                         if (v != null) {
@@ -570,7 +587,8 @@ class _TradePortfolioDiscoveryTemplateState
           const double maxCardWidth = 420.0;
 
           // Calculate columns dynamically so cards are never wider than maxCardWidth
-          final double usableWidth = constraints.maxWidth - 40; // 20 padding on each side
+          final double usableWidth =
+              constraints.maxWidth - 40; // 20 padding on each side
           crossAxisCount = (usableWidth / (maxCardWidth + 12)).ceil();
           if (crossAxisCount < 1) crossAxisCount = 1;
 
@@ -596,16 +614,21 @@ class _TradePortfolioDiscoveryTemplateState
                 portfolio: paginatedPortfolios[index],
                 onTap: () =>
                     widget.onPortfolioSelected(paginatedPortfolios[index]),
-                onEdit: widget.onEditPortfolio != null 
-                    ? () => widget.onEditPortfolio!(paginatedPortfolios[index]) 
+                onEdit: widget.onEditPortfolio != null
+                    ? () => widget.onEditPortfolio!(paginatedPortfolios[index])
                     : null,
-                onDelete: widget.onDeletePortfolio != null 
-                    ? () => widget.onDeletePortfolio!(paginatedPortfolios[index]) 
+                onDelete: widget.onDeletePortfolio != null
+                    ? () =>
+                        widget.onDeletePortfolio!(paginatedPortfolios[index])
                     : null,
               )
                   .animate()
                   .fadeIn(duration: 500.ms, delay: (80 * index).ms)
-                  .slideY(begin: 0.08, end: 0, duration: 500.ms, delay: (80 * index).ms);
+                  .slideY(
+                      begin: 0.08,
+                      end: 0,
+                      duration: 500.ms,
+                      delay: (80 * index).ms);
             },
           );
         },
@@ -613,14 +636,13 @@ class _TradePortfolioDiscoveryTemplateState
 
   Widget _buildListView(List<TradePortfolioViewModel> portfolios) {
     final startIndex = _currentPage * _itemsPerPage;
-    final endIndex =
-        (startIndex + _itemsPerPage).clamp(0, portfolios.length);
+    final endIndex = (startIndex + _itemsPerPage).clamp(0, portfolios.length);
     final paginatedPortfolios = portfolios.sublist(startIndex, endIndex);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
-        
+
         Widget listView = ListView.builder(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           itemCount: paginatedPortfolios.length,
@@ -640,16 +662,20 @@ class _TradePortfolioDiscoveryTemplateState
               child: _PortfolioHoverCard(
                 portfolio: portfolio,
                 onTap: () => widget.onPortfolioSelected(portfolio),
-                onEdit: widget.onEditPortfolio != null 
-                    ? () => widget.onEditPortfolio!(portfolio) 
+                onEdit: widget.onEditPortfolio != null
+                    ? () => widget.onEditPortfolio!(portfolio)
                     : null,
-                onDelete: widget.onDeletePortfolio != null 
-                    ? () => widget.onDeletePortfolio!(portfolio) 
+                onDelete: widget.onDeletePortfolio != null
+                    ? () => widget.onDeletePortfolio!(portfolio)
                     : null,
               )
                   .animate()
                   .fadeIn(duration: 500.ms, delay: (80 * index).ms)
-                  .slideX(begin: 0.08, end: 0, duration: 500.ms, delay: (80 * index).ms),
+                  .slideX(
+                      begin: 0.08,
+                      end: 0,
+                      duration: 500.ms,
+                      delay: (80 * index).ms),
             );
           },
         );
@@ -702,10 +728,16 @@ class _TradePortfolioDiscoveryTemplateState
               const SizedBox(width: 4),
               ..._buildPageNumbers(totalPages, context),
               const SizedBox(width: 4),
-              _pageBtn(context, Icons.chevron_right_rounded, _currentPage < totalPages - 1,
+              _pageBtn(
+                  context,
+                  Icons.chevron_right_rounded,
+                  _currentPage < totalPages - 1,
                   () => setState(() => _currentPage++)),
               const SizedBox(width: 4),
-              _pageBtn(context, Icons.last_page_rounded, _currentPage < totalPages - 1,
+              _pageBtn(
+                  context,
+                  Icons.last_page_rounded,
+                  _currentPage < totalPages - 1,
                   () => setState(() => _currentPage = totalPages - 1)),
             ],
           ),
@@ -714,7 +746,8 @@ class _TradePortfolioDiscoveryTemplateState
     );
   }
 
-  Widget _pageBtn(BuildContext context, IconData icon, bool enabled, VoidCallback onTap) =>
+  Widget _pageBtn(BuildContext context, IconData icon, bool enabled,
+          VoidCallback onTap) =>
       GestureDetector(
         onTap: enabled ? onTap : null,
         child: Container(
@@ -845,8 +878,7 @@ class _StatBadge extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: valueColor ??
-                      Theme.of(context).colorScheme.onSurface,
+                  color: valueColor ?? Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -865,7 +897,10 @@ class _PortfolioHoverCard extends StatefulWidget {
   final VoidCallback? onDelete;
 
   const _PortfolioHoverCard(
-      {required this.portfolio, required this.onTap, this.onEdit, this.onDelete});
+      {required this.portfolio,
+      required this.onTap,
+      this.onEdit,
+      this.onDelete});
 
   @override
   State<_PortfolioHoverCard> createState() => _PortfolioHoverCardState();
@@ -888,15 +923,19 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            gradient: Theme.of(context).brightness == Brightness.dark ? const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF1E1B4B),
-                Color(0xFF1C1C2E),
-              ],
-            ) : null,
-            color: Theme.of(context).brightness == Brightness.dark ? null : Theme.of(context).colorScheme.surface,
+            gradient: Theme.of(context).brightness == Brightness.dark
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF1E1B4B),
+                      Color(0xFF1C1C2E),
+                    ],
+                  )
+                : null,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? null
+                : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: _isHovered
@@ -976,8 +1015,10 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                           Text(
                             p.description ?? 'No description',
                             style: TextStyle(
-                              color:
-                                  Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.5),
                               fontSize: 11,
                             ),
                             maxLines: 1,
@@ -988,7 +1029,12 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                     ),
                     if (widget.onEdit != null || widget.onDelete != null)
                       PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert, size: 20, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                        icon: Icon(Icons.more_vert,
+                            size: 20,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.5)),
                         color: Theme.of(context).colorScheme.surface,
                         itemBuilder: (context) => [
                           if (widget.onEdit != null)
@@ -996,7 +1042,11 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                               value: 'edit',
                               child: Row(
                                 children: [
-                                  Icon(Icons.edit, size: 16, color: Theme.of(context).colorScheme.onSurface),
+                                  Icon(Icons.edit,
+                                      size: 16,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface),
                                   const SizedBox(width: 8),
                                   const Text('Edit'),
                                 ],
@@ -1007,9 +1057,11 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                               value: 'delete',
                               child: Row(
                                 children: [
-                                  Icon(Icons.delete, size: 16, color: Colors.red),
+                                  Icon(Icons.delete,
+                                      size: 16, color: Colors.red),
                                   const SizedBox(width: 8),
-                                  const Text('Delete', style: TextStyle(color: Colors.red)),
+                                  const Text('Delete',
+                                      style: TextStyle(color: Colors.red)),
                                 ],
                               ),
                             ),
@@ -1027,15 +1079,24 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(5),
                           border: Border.all(
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12)),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.12)),
                         ),
                         child: Text(
                           'TRADE',
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.7),
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
@@ -1049,10 +1110,13 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
 
                 // ── Metrics row ──────────────────────────────────────
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 14, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -1067,7 +1131,10 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                       Container(
                           width: 1,
                           height: 28,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08)),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.08)),
                       _metric(
                         icon: Icons.trending_up_rounded,
                         iconColor: p.isTradeProfit
@@ -1082,7 +1149,10 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                       Container(
                           width: 1,
                           height: 28,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08)),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.08)),
                       _metric(
                         icon: Icons.check_circle_outline_rounded,
                         iconColor: const Color(0xFF7C3AED),
@@ -1095,7 +1165,11 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
 
                 const SizedBox(height: 18),
                 Divider(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.07), height: 1),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.07),
+                    height: 1),
                 const SizedBox(height: 18),
 
                 // ── Bottom: value + sparkline ────────────────────────
@@ -1110,7 +1184,10 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                             'Portfolio Value',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.45),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1120,7 +1197,8 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                               Text(
                                 p.displayValue,
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1167,7 +1245,6 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                           ),
                         ),
                         const SizedBox(height: 4),
-
                       ],
                     ),
                   ],
@@ -1203,7 +1280,10 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                 label,
                 style: TextStyle(
                   fontSize: 10,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -1225,4 +1305,3 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
     );
   }
 }
-

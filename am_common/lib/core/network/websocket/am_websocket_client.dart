@@ -27,7 +27,8 @@ class AMWebSocketClient {
   final _messageSubject = PublishSubject<dynamic>();
 
   // Status broadcaster
-  final _statusSubject = BehaviorSubject<SocketStatus>.seeded(SocketStatus.disconnected);
+  final _statusSubject =
+      BehaviorSubject<SocketStatus>.seeded(SocketStatus.disconnected);
 
   Stream<dynamic> get messages => _messageSubject.stream;
   Stream<SocketStatus> get status => _statusSubject.stream;
@@ -48,7 +49,7 @@ class AMWebSocketClient {
       return;
     }
 
-    if (_statusSubject.value == SocketStatus.connected || 
+    if (_statusSubject.value == SocketStatus.connected ||
         _statusSubject.value == SocketStatus.connecting) {
       return;
     }
@@ -58,7 +59,7 @@ class AMWebSocketClient {
 
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_url!));
-      
+
       // Wait for the connection to be established
       _channel!.ready.then((_) {
         if (_statusSubject.value != SocketStatus.connected) {
@@ -91,7 +92,8 @@ class AMWebSocketClient {
         try {
           send("ping");
         } catch (e) {
-          AppLogger.error('AMWebSocketClient: Error sending ping heartbeat', error: e);
+          AppLogger.error('AMWebSocketClient: Error sending ping heartbeat',
+              error: e);
         }
       }
     });
@@ -140,20 +142,20 @@ class AMWebSocketClient {
 
   void _scheduleReconnect() {
     if (!_autoReconnect) return;
-    
+
     if (_reconnectTimer?.isActive ?? false) return;
 
-    AppLogger.info('AMWebSocketClient: Reconnecting in ${_reconnectInterval.inSeconds}s...');
+    AppLogger.info(
+        'AMWebSocketClient: Reconnecting in ${_reconnectInterval.inSeconds}s...');
     _reconnectTimer = Timer(_reconnectInterval, () {
       _reconnectTimer = null;
       connect();
     });
   }
-  
+
   void dispose() {
     disconnect();
     _messageSubject.close();
     _statusSubject.close();
   }
 }
-

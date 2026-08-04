@@ -208,7 +208,7 @@ class _CompactDateRangePickerDialogState
                                   color: _selectingStart
                                       ? theme.colorScheme.primary
                                       : theme.textTheme.bodyMedium?.color
-                                            ?.withOpacity(0.6),
+                                          ?.withOpacity(0.6),
                                 ),
                               ),
                             ),
@@ -228,7 +228,7 @@ class _CompactDateRangePickerDialogState
                                     color: !_selectingStart
                                         ? theme.colorScheme.primary
                                         : theme.textTheme.bodyMedium?.color
-                                              ?.withOpacity(0.6),
+                                            ?.withOpacity(0.6),
                                   ),
                                 ),
                               ),
@@ -242,7 +242,6 @@ class _CompactDateRangePickerDialogState
                                 icon: const Icon(Icons.chevron_left),
                                 onPressed: () => _changeMonth(-1),
                               ),
-
                             InkWell(
                               onTap: () {
                                 if (_viewMode == _PickerView.calendar) {
@@ -263,10 +262,10 @@ class _CompactDateRangePickerDialogState
                                       _viewMode == _PickerView.year
                                           ? 'Select Year'
                                           : _viewMode == _PickerView.month
-                                          ? '${_displayedMonth.year}'
-                                          : DateFormat(
-                                              'MMMM yyyy',
-                                            ).format(_displayedMonth),
+                                              ? '${_displayedMonth.year}'
+                                              : DateFormat(
+                                                  'MMMM yyyy',
+                                                ).format(_displayedMonth),
                                       style: theme.textTheme.titleMedium,
                                     ),
                                     Icon(
@@ -279,7 +278,6 @@ class _CompactDateRangePickerDialogState
                                 ),
                               ),
                             ),
-
                             if (_viewMode == _PickerView.calendar)
                               IconButton(
                                 icon: const Icon(Icons.chevron_right),
@@ -414,10 +412,10 @@ class _CompactDateRangePickerDialogState
               color: isSelected
                   ? theme.colorScheme.primary
                   : (isFuture
-                        ? null
-                        : theme.colorScheme.surfaceContainerHighest.withOpacity(
-                            0.3,
-                          )),
+                      ? null
+                      : theme.colorScheme.surfaceContainerHighest.withOpacity(
+                          0.3,
+                        )),
               borderRadius: BorderRadius.circular(8),
             ),
             alignment: Alignment.center,
@@ -427,8 +425,8 @@ class _CompactDateRangePickerDialogState
                 color: isSelected
                     ? theme.colorScheme.onPrimary
                     : isFuture
-                    ? theme.disabledColor
-                    : theme.textTheme.bodyMedium?.color,
+                        ? theme.disabledColor
+                        : theme.textTheme.bodyMedium?.color,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -482,10 +480,10 @@ class _CompactDateRangePickerDialogState
               color: isSelected
                   ? theme.colorScheme.primary
                   : (isFuture
-                        ? null
-                        : theme.colorScheme.surfaceContainerHighest.withOpacity(
-                            0.3,
-                          )),
+                      ? null
+                      : theme.colorScheme.surfaceContainerHighest.withOpacity(
+                          0.3,
+                        )),
               borderRadius: BorderRadius.circular(8),
             ),
             alignment: Alignment.center,
@@ -495,8 +493,8 @@ class _CompactDateRangePickerDialogState
                 color: isSelected
                     ? theme.colorScheme.onPrimary
                     : isFuture
-                    ? theme.disabledColor
-                    : theme.textTheme.bodyMedium?.color,
+                        ? theme.disabledColor
+                        : theme.textTheme.bodyMedium?.color,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -521,9 +519,10 @@ class _CompactDateRangePickerDialogState
         child: Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: isSelected ? Theme.of(context).colorScheme.primary : null,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
+                color:
+                    isSelected ? Theme.of(context).colorScheme.primary : null,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
         ),
       ),
     );
@@ -558,8 +557,7 @@ class _CompactDateRangePickerDialogState
         final date = DateTime(year, month, dayOffset);
         final isStart = _startDate != null && isSameDay(date, _startDate!);
         final isEnd = _endDate != null && isSameDay(date, _endDate!);
-        final inBetween =
-            _startDate != null &&
+        final inBetween = _startDate != null &&
             _endDate != null &&
             date.isAfter(_startDate!) &&
             date.isBefore(_endDate!);
@@ -592,9 +590,8 @@ class _CompactDateRangePickerDialogState
                 '$dayOffset',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: textColor,
-                  fontWeight: (isStart || isEnd)
-                      ? FontWeight.bold
-                      : FontWeight.normal,
+                  fontWeight:
+                      (isStart || isEnd) ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ),

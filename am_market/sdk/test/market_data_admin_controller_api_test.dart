@@ -11,7 +11,6 @@
 import 'package:am_market_client/api.dart';
 import 'package:test/test.dart';
 
-
 /// tests for MarketDataAdminControllerApi
 void main() {
   // final instance = MarketDataAdminControllerApi();
@@ -41,6 +40,5 @@ void main() {
     test('test triggerHistoricalSync', () async {
       // TODO
     });
-
   });
 }

@@ -2,16 +2,16 @@
 enum MarketCapType {
   /// All market cap sizes
   all,
-  
+
   /// Large cap companies (typically > ₹20,000 Cr)
   largeCap,
-  
+
   /// Mid cap companies (typically ₹5,000 Cr - ₹20,000 Cr)
   midCap,
-  
+
   /// Small cap companies (typically < ₹5,000 Cr)
   smallCap,
-  
+
   /// Micro cap companies (very small market capitalization)
   microCap,
 
@@ -78,4 +78,3 @@ extension MarketCapTypeExtension on MarketCapType {
   }
   // icon getter is defined in am_design_system's MarketCapTypeUIExtension (UI layer)
 }
-

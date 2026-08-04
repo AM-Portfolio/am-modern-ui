@@ -18,7 +18,8 @@ class GetJournalEntriesUseCase {
     return _repository.getJournalEntriesByTrade(tradeId);
   }
 
-  Future<List<JournalEntry>> getByDateRange(DateTime startDate, DateTime endDate) {
+  Future<List<JournalEntry>> getByDateRange(
+      DateTime startDate, DateTime endDate) {
     return _repository.getJournalEntriesByDateRange(startDate, endDate);
   }
 }

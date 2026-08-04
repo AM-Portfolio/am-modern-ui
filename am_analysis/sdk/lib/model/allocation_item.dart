@@ -82,30 +82,33 @@ class AllocationItem {
   num? totalChangeAmount;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is AllocationItem &&
-    other.name == name &&
-    other.value == value &&
-    other.percentage == percentage &&
-    _deepEquality.equals(other.holdings, holdings) &&
-    other.dayChangePercentage == dayChangePercentage &&
-    other.dayChangeAmount == dayChangeAmount &&
-    other.totalChangePercentage == totalChangePercentage &&
-    other.totalChangeAmount == totalChangeAmount;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AllocationItem &&
+          other.name == name &&
+          other.value == value &&
+          other.percentage == percentage &&
+          _deepEquality.equals(other.holdings, holdings) &&
+          other.dayChangePercentage == dayChangePercentage &&
+          other.dayChangeAmount == dayChangeAmount &&
+          other.totalChangePercentage == totalChangePercentage &&
+          other.totalChangeAmount == totalChangeAmount;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (name == null ? 0 : name!.hashCode) +
-    (value == null ? 0 : value!.hashCode) +
-    (percentage == null ? 0 : percentage!.hashCode) +
-    (holdings.hashCode) +
-    (dayChangePercentage == null ? 0 : dayChangePercentage!.hashCode) +
-    (dayChangeAmount == null ? 0 : dayChangeAmount!.hashCode) +
-    (totalChangePercentage == null ? 0 : totalChangePercentage!.hashCode) +
-    (totalChangeAmount == null ? 0 : totalChangeAmount!.hashCode);
+      // ignore: unnecessary_parenthesis
+      (name == null ? 0 : name!.hashCode) +
+      (value == null ? 0 : value!.hashCode) +
+      (percentage == null ? 0 : percentage!.hashCode) +
+      (holdings.hashCode) +
+      (dayChangePercentage == null ? 0 : dayChangePercentage!.hashCode) +
+      (dayChangeAmount == null ? 0 : dayChangeAmount!.hashCode) +
+      (totalChangePercentage == null ? 0 : totalChangePercentage!.hashCode) +
+      (totalChangeAmount == null ? 0 : totalChangeAmount!.hashCode);
 
   @override
-  String toString() => 'AllocationItem[name=$name, value=$value, percentage=$percentage, holdings=$holdings, dayChangePercentage=$dayChangePercentage, dayChangeAmount=$dayChangeAmount, totalChangePercentage=$totalChangePercentage, totalChangeAmount=$totalChangeAmount]';
+  String toString() =>
+      'AllocationItem[name=$name, value=$value, percentage=$percentage, holdings=$holdings, dayChangePercentage=$dayChangePercentage, dayChangeAmount=$dayChangeAmount, totalChangePercentage=$totalChangePercentage, totalChangeAmount=$totalChangeAmount]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -124,7 +127,7 @@ class AllocationItem {
     } else {
       json[r'percentage'] = null;
     }
-      json[r'holdings'] = this.holdings;
+    json[r'holdings'] = this.holdings;
     if (this.dayChangePercentage != null) {
       json[r'dayChangePercentage'] = this.dayChangePercentage;
     } else {
@@ -160,27 +163,46 @@ class AllocationItem {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "AllocationItem[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "AllocationItem[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "AllocationItem[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "AllocationItem[$key]" has a null value in JSON.');
         });
         return true;
       }());
 
       return AllocationItem(
         name: mapValueOfType<String>(json, r'name'),
-        value: json[r'value'] == null ? null : (json[r'value'] is num ? json[r'value'] : num.tryParse('${json[r'value']}')),
+        value: json[r'value'] == null
+            ? null
+            : (json[r'value'] is num
+                ? json[r'value']
+                : num.tryParse('${json[r'value']}')),
         percentage: mapValueOfType<double>(json, r'percentage'),
         holdings: AllocationHolding.listFromJson(json[r'holdings']),
-        dayChangePercentage: mapValueOfType<double>(json, r'dayChangePercentage'),
-        dayChangeAmount: json[r'dayChangeAmount'] == null ? null : (json[r'dayChangeAmount'] is num ? json[r'dayChangeAmount'] : num.tryParse('${json[r'dayChangeAmount']}')),
-        totalChangePercentage: mapValueOfType<double>(json, r'totalChangePercentage'),
-        totalChangeAmount: json[r'totalChangeAmount'] == null ? null : (json[r'totalChangeAmount'] is num ? json[r'totalChangeAmount'] : num.tryParse('${json[r'totalChangeAmount']}')),
+        dayChangePercentage:
+            mapValueOfType<double>(json, r'dayChangePercentage'),
+        dayChangeAmount: json[r'dayChangeAmount'] == null
+            ? null
+            : (json[r'dayChangeAmount'] is num
+                ? json[r'dayChangeAmount']
+                : num.tryParse('${json[r'dayChangeAmount']}')),
+        totalChangePercentage:
+            mapValueOfType<double>(json, r'totalChangePercentage'),
+        totalChangeAmount: json[r'totalChangeAmount'] == null
+            ? null
+            : (json[r'totalChangeAmount'] is num
+                ? json[r'totalChangeAmount']
+                : num.tryParse('${json[r'totalChangeAmount']}')),
       );
     }
     return null;
   }
 
-  static List<AllocationItem> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<AllocationItem> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <AllocationItem>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -208,20 +230,24 @@ class AllocationItem {
   }
 
   // maps a json object with a list of AllocationItem-objects as value to a dart map
-  static Map<String, List<AllocationItem>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<AllocationItem>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<AllocationItem>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = AllocationItem.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = AllocationItem.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

@@ -28,7 +28,9 @@ class JournalFormActions extends StatelessWidget {
           onPressed: onToggleEditMode,
           icon: const Icon(Icons.edit, size: 18),
           label: const Text('Edit Journal'),
-          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 17)),
+          style: FilledButton.styleFrom(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 17)),
         ),
       );
     }
@@ -42,7 +44,9 @@ class JournalFormActions extends StatelessWidget {
             onPressed: onCancel,
             icon: const Icon(Icons.close, size: 18),
             label: const Text('Cancel'),
-            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 17)),
+            style: OutlinedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 17)),
           ),
           const SizedBox(width: 12),
         ],
@@ -52,11 +56,16 @@ class JournalFormActions extends StatelessWidget {
               ? const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : Icon(isNewEntry ? Icons.add : Icons.save, size: 18),
-          label: Text(isSubmitting ? 'Saving...' : (isNewEntry ? 'Create Journal' : 'Update Journal')),
-          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 17)),
+          label: Text(isSubmitting
+              ? 'Saving...'
+              : (isNewEntry ? 'Create Journal' : 'Update Journal')),
+          style: FilledButton.styleFrom(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 17)),
         ),
       ],
     );

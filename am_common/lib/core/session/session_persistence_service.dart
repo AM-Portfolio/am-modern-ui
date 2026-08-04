@@ -9,7 +9,8 @@ import 'app_session_state.dart';
 /// Persists lightweight UI session per user (local device only).
 class SessionPersistenceService {
   SessionPersistenceService._();
-  static final SessionPersistenceService instance = SessionPersistenceService._();
+  static final SessionPersistenceService instance =
+      SessionPersistenceService._();
 
   static const String _keyPrefix = 'app_session_v1_';
   static const Duration _debounce = Duration(milliseconds: 400);
@@ -93,7 +94,8 @@ class SessionPersistenceService {
         jsonEncode(state.toJson()),
       );
     } catch (e) {
-      AppLogger.warning('Failed to save session: $e', tag: 'SessionPersistence');
+      AppLogger.warning('Failed to save session: $e',
+          tag: 'SessionPersistence');
     }
   }
 

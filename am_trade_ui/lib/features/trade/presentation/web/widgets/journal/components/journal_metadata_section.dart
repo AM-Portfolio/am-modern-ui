@@ -26,22 +26,26 @@ class JournalMetadataSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      IgnorePointer(
-        ignoring: !isEditMode,
-        child: MoodSelector(selectedMood: selectedMood, onMoodSelected: onMoodSelected),
-      ),
-      const SizedBox(height: 16),
-      IgnorePointer(
-        ignoring: !isEditMode,
-        child: SentimentSelector(selectedSentiment: marketSentiment, onSentimentSelected: onSentimentSelected),
-      ),
-      const SizedBox(height: 16),
-      IgnorePointer(
-        ignoring: !isEditMode,
-        child: TagsSelector(selectedTags: selectedTags, onTagToggled: onTagToggled),
-      ),
-    ],
-  );
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IgnorePointer(
+            ignoring: !isEditMode,
+            child: MoodSelector(
+                selectedMood: selectedMood, onMoodSelected: onMoodSelected),
+          ),
+          const SizedBox(height: 16),
+          IgnorePointer(
+            ignoring: !isEditMode,
+            child: SentimentSelector(
+                selectedSentiment: marketSentiment,
+                onSentimentSelected: onSentimentSelected),
+          ),
+          const SizedBox(height: 16),
+          IgnorePointer(
+            ignoring: !isEditMode,
+            child: TagsSelector(
+                selectedTags: selectedTags, onTagToggled: onTagToggled),
+          ),
+        ],
+      );
 }

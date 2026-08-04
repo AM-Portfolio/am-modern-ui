@@ -46,10 +46,12 @@ class BehaviorTrackingSection extends StatefulWidget {
   final bool isEditMode;
 
   @override
-  State<BehaviorTrackingSection> createState() => _BehaviorTrackingSectionState();
+  State<BehaviorTrackingSection> createState() =>
+      _BehaviorTrackingSectionState();
 }
 
-class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> with SingleTickerProviderStateMixin {
+class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -67,12 +69,16 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> with 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasPlanningBehavior = widget.planningBehaviorController.text.trim().isNotEmpty;
+    final hasPlanningBehavior =
+        widget.planningBehaviorController.text.trim().isNotEmpty;
     final hasMidBehavior = widget.midBehaviorController.text.trim().isNotEmpty;
     final hasEndBehavior = widget.endBehaviorController.text.trim().isNotEmpty;
 
     // Only show in edit mode or if any behavior data exists
-    if (!widget.isEditMode && !hasPlanningBehavior && !hasMidBehavior && !hasEndBehavior) {
+    if (!widget.isEditMode &&
+        !hasPlanningBehavior &&
+        !hasMidBehavior &&
+        !hasEndBehavior) {
       return const SizedBox.shrink();
     }
 
@@ -90,7 +96,8 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> with 
             padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
             child: Row(
               children: [
-                Icon(Icons.psychology, size: 13, color: theme.colorScheme.primary),
+                Icon(Icons.psychology,
+                    size: 13, color: theme.colorScheme.primary),
                 const SizedBox(width: 3),
                 Text(
                   'Daily Behavior & Mood Tracking',
@@ -114,8 +121,10 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> with 
             indicatorSize: TabBarIndicatorSize.tab,
             labelPadding: const EdgeInsets.symmetric(horizontal: 4),
             padding: EdgeInsets.zero,
-            labelStyle: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600, fontSize: 10),
-            unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(fontSize: 10),
+            labelStyle: theme.textTheme.labelSmall
+                ?.copyWith(fontWeight: FontWeight.w600, fontSize: 10),
+            unselectedLabelStyle:
+                theme.textTheme.labelSmall?.copyWith(fontSize: 10),
             tabs: const [
               Tab(
                 icon: Icon(Icons.lightbulb_outline, size: 12),
@@ -206,7 +215,9 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> with 
           Container(
             decoration: BoxDecoration(
               border: Border.all(
-                color: hasBehavior ? theme.colorScheme.primary.withOpacity(0.3) : theme.dividerColor.withOpacity(0.2),
+                color: hasBehavior
+                    ? theme.colorScheme.primary.withOpacity(0.3)
+                    : theme.dividerColor.withOpacity(0.2),
               ),
               borderRadius: BorderRadius.circular(6),
             ),
@@ -218,7 +229,9 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> with 
               style: theme.textTheme.bodySmall?.copyWith(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: widget.isEditMode ? null : theme.colorScheme.onSurface.withOpacity(0.85),
+                color: widget.isEditMode
+                    ? null
+                    : theme.colorScheme.onSurface.withOpacity(0.85),
               ),
               decoration: InputDecoration(
                 hintText: hint,
@@ -230,7 +243,8 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> with 
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 disabledBorder: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 isDense: true,
               ),
             ),

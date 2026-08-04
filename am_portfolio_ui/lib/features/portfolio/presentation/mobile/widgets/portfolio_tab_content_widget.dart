@@ -25,25 +25,22 @@ class PortfolioTabContentWidget extends ConsumerWidget {
   final TabController tabController;
   final String currentPortfolioId;
   @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) => TabBarView(
-      controller: tabController,
-      // Local page swipe disabled — cross-section swipe is owned by AppShell.
-      physics: const NeverScrollableScrollPhysics(),
-      children: [
-        _OverviewTab(currentPortfolioId: currentPortfolioId, ),
-        _HoldingsTab(currentPortfolioId: currentPortfolioId, ),
-        _HeatmapTab(currentPortfolioId: currentPortfolioId, ),
-        _BasketsTab(ref: ref, currentPortfolioId: currentPortfolioId),
-      ],
-    );
+  Widget build(BuildContext context, WidgetRef ref) => TabBarView(
+    controller: tabController,
+    // Local page swipe disabled — cross-section swipe is owned by AppShell.
+    physics: const NeverScrollableScrollPhysics(),
+    children: [
+      _OverviewTab(currentPortfolioId: currentPortfolioId),
+      _HoldingsTab(currentPortfolioId: currentPortfolioId),
+      _HeatmapTab(currentPortfolioId: currentPortfolioId),
+      _BasketsTab(ref: ref, currentPortfolioId: currentPortfolioId),
+    ],
+  );
 }
 
 /// Overview tab widget
 class _OverviewTab extends StatefulWidget {
-  const _OverviewTab({required this.currentPortfolioId, });
+  const _OverviewTab({required this.currentPortfolioId});
   final String currentPortfolioId;
   @override
   State<_OverviewTab> createState() => _OverviewTabState();
@@ -58,26 +55,26 @@ class _OverviewTabState extends State<_OverviewTab>
   Widget build(BuildContext context) {
     super.build(context);
     return BlocBuilder<PortfolioCubit, PortfolioState>(
-        builder: (context, state) {
-          if (state is PortfolioLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      builder: (context, state) {
+        if (state is PortfolioLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          if (state is PortfolioError) {
-            return _buildErrorWithRefresh(
-              context,
-              state.message,
-              'Pull to Refresh Portfolio',
-            );
-          }
+        if (state is PortfolioError) {
+          return _buildErrorWithRefresh(
+            context,
+            state.message,
+            'Pull to Refresh Portfolio',
+          );
+        }
 
-          if (state is PortfolioLoaded) {
-            return _buildOverviewContent(context);
-          }
+        if (state is PortfolioLoaded) {
+          return _buildOverviewContent(context);
+        }
 
-          return _buildLoadingWithRefresh(context, 'Pull to Refresh Portfolio');
-        },
-      );
+        return _buildLoadingWithRefresh(context, 'Pull to Refresh Portfolio');
+      },
+    );
   }
 
   Widget _buildOverviewContent(BuildContext context) {
@@ -124,17 +121,17 @@ class _OverviewTabState extends State<_OverviewTab>
     CommonLogger.userAction(
       action,
       tag: 'PortfolioOverviewTab',
-      metadata: {
-        'portfolioId': widget.currentPortfolioId,
-      },
+      metadata: {'portfolioId': widget.currentPortfolioId},
     );
-    context.read<PortfolioCubit>().refreshPortfolioById(widget.currentPortfolioId);
+    context.read<PortfolioCubit>().refreshPortfolioById(
+      widget.currentPortfolioId,
+    );
   }
 }
 
 /// Holdings tab widget
 class _HoldingsTab extends StatelessWidget {
-  const _HoldingsTab({required this.currentPortfolioId, });
+  const _HoldingsTab({required this.currentPortfolioId});
   final String currentPortfolioId;
   @override
   Widget build(BuildContext context) =>
@@ -182,7 +179,7 @@ class _HoldingsTab extends StatelessWidget {
 
 /// Heatmap tab widget using the new mobile heatmap page
 class _HeatmapTab extends StatelessWidget {
-  const _HeatmapTab({required this.currentPortfolioId, });
+  const _HeatmapTab({required this.currentPortfolioId});
   final String currentPortfolioId;
   @override
   Widget build(BuildContext context) {

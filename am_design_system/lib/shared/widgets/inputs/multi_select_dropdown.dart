@@ -105,11 +105,11 @@ class _MultiSelectDropdownState<T> extends State<MultiSelectDropdown<T>> {
   }
 
   Widget _buildBackgroundDismiss() => Positioned.fill(
-    child: GestureDetector(
-      onTap: _closeDropdown,
-      behavior: HitTestBehavior.translucent,
-    ),
-  );
+        child: GestureDetector(
+          onTap: _closeDropdown,
+          behavior: HitTestBehavior.translucent,
+        ),
+      );
 
   Widget _buildDropdownContent(Size size, StateSetter setOverlayState) =>
       Positioned(
@@ -141,22 +141,22 @@ class _MultiSelectDropdownState<T> extends State<MultiSelectDropdown<T>> {
       );
 
   Widget _buildDropdownHeader(StateSetter setOverlayState) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: Colors.grey.shade100,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          widget.label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
         ),
-        _buildHeaderActions(setOverlayState),
-      ],
-    ),
-  );
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              widget.label,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            _buildHeaderActions(setOverlayState),
+          ],
+        ),
+      );
 
   Widget _buildHeaderActions(StateSetter setOverlayState) {
     if (_tempSelected.isEmpty) {
@@ -175,14 +175,14 @@ class _MultiSelectDropdownState<T> extends State<MultiSelectDropdown<T>> {
   }
 
   Widget _buildOptionsList(StateSetter setOverlayState) => Flexible(
-    child: ListView(
-      shrinkWrap: true,
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      children: widget.allValues
-          .map((value) => _buildOptionItem(value, setOverlayState))
-          .toList(),
-    ),
-  );
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          children: widget.allValues
+              .map((value) => _buildOptionItem(value, setOverlayState))
+              .toList(),
+        ),
+      );
 
   Widget _buildOptionItem(T value, StateSetter setOverlayState) {
     final isSelected = _tempSelected.contains(value);
@@ -325,7 +325,8 @@ class _HoverableCheckboxOption extends StatefulWidget {
   });
 
   @override
-  State<_HoverableCheckboxOption> createState() => _HoverableCheckboxOptionState();
+  State<_HoverableCheckboxOption> createState() =>
+      _HoverableCheckboxOptionState();
 }
 
 class _HoverableCheckboxOptionState extends State<_HoverableCheckboxOption> {
@@ -342,16 +343,22 @@ class _HoverableCheckboxOptionState extends State<_HoverableCheckboxOption> {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
-          color: _isHovered 
-              ? theme.primaryColor.withValues(alpha: 0.08) 
-              : (widget.isSelected ? theme.primaryColor.withValues(alpha: 0.04) : Colors.transparent),
+          color: _isHovered
+              ? theme.primaryColor.withValues(alpha: 0.08)
+              : (widget.isSelected
+                  ? theme.primaryColor.withValues(alpha: 0.04)
+                  : Colors.transparent),
         ),
         child: AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
           style: TextStyle(
-            color: _isHovered || widget.isSelected ? theme.primaryColor : theme.colorScheme.onSurface,
-            fontWeight: _isHovered || widget.isSelected ? FontWeight.w600 : FontWeight.w500,
+            color: _isHovered || widget.isSelected
+                ? theme.primaryColor
+                : theme.colorScheme.onSurface,
+            fontWeight: _isHovered || widget.isSelected
+                ? FontWeight.w600
+                : FontWeight.w500,
           ),
           child: widget.child,
         ),

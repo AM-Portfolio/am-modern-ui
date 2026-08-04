@@ -118,38 +118,41 @@ class PortfolioOverview {
   List<String> topSymbols;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is PortfolioOverview &&
-    other.portfolioId == portfolioId &&
-    other.portfolioName == portfolioName &&
-    other.type == type &&
-    other.portfolioCount == portfolioCount &&
-    other.holdingCount == holdingCount &&
-    other.totalValue == totalValue &&
-    other.investedValue == investedValue &&
-    other.totalReturn == totalReturn &&
-    other.returnPercentage == returnPercentage &&
-    other.dayChange == dayChange &&
-    other.dayChangePercentage == dayChangePercentage &&
-    _deepEquality.equals(other.topSymbols, topSymbols);
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PortfolioOverview &&
+          other.portfolioId == portfolioId &&
+          other.portfolioName == portfolioName &&
+          other.type == type &&
+          other.portfolioCount == portfolioCount &&
+          other.holdingCount == holdingCount &&
+          other.totalValue == totalValue &&
+          other.investedValue == investedValue &&
+          other.totalReturn == totalReturn &&
+          other.returnPercentage == returnPercentage &&
+          other.dayChange == dayChange &&
+          other.dayChangePercentage == dayChangePercentage &&
+          _deepEquality.equals(other.topSymbols, topSymbols);
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (portfolioId == null ? 0 : portfolioId!.hashCode) +
-    (portfolioName == null ? 0 : portfolioName!.hashCode) +
-    (type == null ? 0 : type!.hashCode) +
-    (portfolioCount == null ? 0 : portfolioCount!.hashCode) +
-    (holdingCount == null ? 0 : holdingCount!.hashCode) +
-    (totalValue == null ? 0 : totalValue!.hashCode) +
-    (investedValue == null ? 0 : investedValue!.hashCode) +
-    (totalReturn == null ? 0 : totalReturn!.hashCode) +
-    (returnPercentage == null ? 0 : returnPercentage!.hashCode) +
-    (dayChange == null ? 0 : dayChange!.hashCode) +
-    (dayChangePercentage == null ? 0 : dayChangePercentage!.hashCode) +
-    (topSymbols.hashCode);
+      // ignore: unnecessary_parenthesis
+      (portfolioId == null ? 0 : portfolioId!.hashCode) +
+      (portfolioName == null ? 0 : portfolioName!.hashCode) +
+      (type == null ? 0 : type!.hashCode) +
+      (portfolioCount == null ? 0 : portfolioCount!.hashCode) +
+      (holdingCount == null ? 0 : holdingCount!.hashCode) +
+      (totalValue == null ? 0 : totalValue!.hashCode) +
+      (investedValue == null ? 0 : investedValue!.hashCode) +
+      (totalReturn == null ? 0 : totalReturn!.hashCode) +
+      (returnPercentage == null ? 0 : returnPercentage!.hashCode) +
+      (dayChange == null ? 0 : dayChange!.hashCode) +
+      (dayChangePercentage == null ? 0 : dayChangePercentage!.hashCode) +
+      (topSymbols.hashCode);
 
   @override
-  String toString() => 'PortfolioOverview[portfolioId=$portfolioId, portfolioName=$portfolioName, type=$type, portfolioCount=$portfolioCount, holdingCount=$holdingCount, totalValue=$totalValue, investedValue=$investedValue, totalReturn=$totalReturn, returnPercentage=$returnPercentage, dayChange=$dayChange, dayChangePercentage=$dayChangePercentage, topSymbols=$topSymbols]';
+  String toString() =>
+      'PortfolioOverview[portfolioId=$portfolioId, portfolioName=$portfolioName, type=$type, portfolioCount=$portfolioCount, holdingCount=$holdingCount, totalValue=$totalValue, investedValue=$investedValue, totalReturn=$totalReturn, returnPercentage=$returnPercentage, dayChange=$dayChange, dayChangePercentage=$dayChangePercentage, topSymbols=$topSymbols]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -208,7 +211,7 @@ class PortfolioOverview {
     } else {
       json[r'dayChangePercentage'] = null;
     }
-      json[r'topSymbols'] = this.topSymbols;
+    json[r'topSymbols'] = this.topSymbols;
     return json;
   }
 
@@ -224,8 +227,10 @@ class PortfolioOverview {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "PortfolioOverview[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "PortfolioOverview[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "PortfolioOverview[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "PortfolioOverview[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -236,21 +241,43 @@ class PortfolioOverview {
         type: mapValueOfType<String>(json, r'type'),
         portfolioCount: mapValueOfType<int>(json, r'portfolioCount'),
         holdingCount: mapValueOfType<int>(json, r'holdingCount'),
-        totalValue: json[r'totalValue'] == null ? null : (json[r'totalValue'] is num ? json[r'totalValue'] : num.tryParse('${json[r'totalValue']}')),
-        investedValue: json[r'investedValue'] == null ? null : (json[r'investedValue'] is num ? json[r'investedValue'] : num.tryParse('${json[r'investedValue']}')),
-        totalReturn: json[r'totalReturn'] == null ? null : (json[r'totalReturn'] is num ? json[r'totalReturn'] : num.tryParse('${json[r'totalReturn']}')),
+        totalValue: json[r'totalValue'] == null
+            ? null
+            : (json[r'totalValue'] is num
+                ? json[r'totalValue']
+                : num.tryParse('${json[r'totalValue']}')),
+        investedValue: json[r'investedValue'] == null
+            ? null
+            : (json[r'investedValue'] is num
+                ? json[r'investedValue']
+                : num.tryParse('${json[r'investedValue']}')),
+        totalReturn: json[r'totalReturn'] == null
+            ? null
+            : (json[r'totalReturn'] is num
+                ? json[r'totalReturn']
+                : num.tryParse('${json[r'totalReturn']}')),
         returnPercentage: mapValueOfType<double>(json, r'returnPercentage'),
-        dayChange: json[r'dayChange'] == null ? null : (json[r'dayChange'] is num ? json[r'dayChange'] : num.tryParse('${json[r'dayChange']}')),
-        dayChangePercentage: mapValueOfType<double>(json, r'dayChangePercentage'),
+        dayChange: json[r'dayChange'] == null
+            ? null
+            : (json[r'dayChange'] is num
+                ? json[r'dayChange']
+                : num.tryParse('${json[r'dayChange']}')),
+        dayChangePercentage:
+            mapValueOfType<double>(json, r'dayChangePercentage'),
         topSymbols: json[r'topSymbols'] is Iterable
-            ? (json[r'topSymbols'] as Iterable).cast<String>().toList(growable: false)
+            ? (json[r'topSymbols'] as Iterable)
+                .cast<String>()
+                .toList(growable: false)
             : const [],
       );
     }
     return null;
   }
 
-  static List<PortfolioOverview> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<PortfolioOverview> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <PortfolioOverview>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -278,20 +305,24 @@ class PortfolioOverview {
   }
 
   // maps a json object with a list of PortfolioOverview-objects as value to a dart map
-  static Map<String, List<PortfolioOverview>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<PortfolioOverview>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<PortfolioOverview>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = PortfolioOverview.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = PortfolioOverview.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

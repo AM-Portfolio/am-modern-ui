@@ -14,10 +14,12 @@ class VerticalScrollNavigator extends StatefulWidget {
   });
 
   @override
-  State<VerticalScrollNavigator> createState() => _VerticalScrollNavigatorState();
+  State<VerticalScrollNavigator> createState() =>
+      _VerticalScrollNavigatorState();
 }
 
-class _VerticalScrollNavigatorState extends State<VerticalScrollNavigator> with AutomaticKeepAliveClientMixin {
+class _VerticalScrollNavigatorState extends State<VerticalScrollNavigator>
+    with AutomaticKeepAliveClientMixin {
   bool _isNavigating = false;
   bool _isAtTop = true;
   bool _isAtBottom = false;
@@ -37,11 +39,11 @@ class _VerticalScrollNavigatorState extends State<VerticalScrollNavigator> with 
     }
 
     setState(() => _isNavigating = true);
-    
+
     if (isNext) {
-       widget.onNextPage?.call();
+      widget.onNextPage?.call();
     } else {
-       widget.onPreviousPage?.call();
+      widget.onPreviousPage?.call();
     }
 
     // Debounce navigation to prevent rapid firing

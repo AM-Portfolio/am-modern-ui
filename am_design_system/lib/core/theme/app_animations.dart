@@ -13,16 +13,16 @@ class AppAnimations {
   static const Curve bounce = Curves.elasticOut;
   static const Curve emphasize = Curves.easeInOutCubic;
   static const Curve decelerate = Curves.decelerate;
-  
+
   // Transitions
   static Widget fadeTransition(Widget child, Animation<double> animation) {
     return FadeTransition(opacity: animation, child: child);
   }
-  
+
   static Widget scaleTransition(Widget child, Animation<double> animation) {
     return ScaleTransition(scale: animation, child: child);
   }
-  
+
   static Widget slideUpTransition(Widget child, Animation<double> animation) {
     return SlideTransition(
       position: Tween<Offset>(

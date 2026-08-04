@@ -5,24 +5,21 @@ import 'package:am_common/am_common.dart';
 import 'package:get_it/get_it.dart';
 
 final stockSearchServiceProvider = Provider<StockSearchService>((ref) {
-  return StockSearchService(
-    dio: Dio(), 
-  );
+  return StockSearchService(dio: Dio());
 });
+
 class StockSearchService {
   final Dio _dio;
   final _storage = GetIt.I<SecureStorageService>();
 
-  StockSearchService({
-    required Dio dio,
-  })  : _dio = dio;
+  StockSearchService({required Dio dio}) : _dio = dio;
 
   Future<List<StockSearchResult>> searchStocks(String query) async {
     if (query.isEmpty) return [];
 
     try {
       final token = await _storage.getAccessToken();
-      
+
       final response = await _dio.get(
         '${EnvDomains.market}/v1/securities/search',
         queryParameters: {'query': query},
@@ -40,7 +37,7 @@ class StockSearchService {
             .map((e) => StockSearchResult.fromJson(e as Map<String, dynamic>))
             .toList();
       }
-      
+
       return [];
     } catch (e) {
       // Log error or handle significantly

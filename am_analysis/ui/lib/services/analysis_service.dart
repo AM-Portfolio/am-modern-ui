@@ -63,10 +63,30 @@ class MockAnalysisService implements UiAnalysisService {
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
     return [
-      MoverItem(symbol: 'AAPL', name: 'Apple Inc.', price: 175.50, changePercentage: 2.5, changeAmount: 4.30),
-      MoverItem(symbol: 'GOOGL', name: 'Alphabet Inc.', price: 135.20, changePercentage: 1.8, changeAmount: 2.40),
-      MoverItem(symbol: 'AMZN', name: 'Amazon.com', price: 145.00, changePercentage: -0.5, changeAmount: -0.75),
-      MoverItem(symbol: 'MSFT', name: 'Microsoft', price: 330.00, changePercentage: -1.2, changeAmount: -4.00),
+      MoverItem(
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          price: 175.50,
+          changePercentage: 2.5,
+          changeAmount: 4.30),
+      MoverItem(
+          symbol: 'GOOGL',
+          name: 'Alphabet Inc.',
+          price: 135.20,
+          changePercentage: 1.8,
+          changeAmount: 2.40),
+      MoverItem(
+          symbol: 'AMZN',
+          name: 'Amazon.com',
+          price: 145.00,
+          changePercentage: -0.5,
+          changeAmount: -0.75),
+      MoverItem(
+          symbol: 'MSFT',
+          name: 'Microsoft',
+          price: 330.00,
+          changePercentage: -1.2,
+          changeAmount: -4.00),
     ];
   }
 }

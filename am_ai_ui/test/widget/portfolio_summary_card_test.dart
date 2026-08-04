@@ -12,43 +12,43 @@ import 'package:am_ai_ui/presentation/widgets/ai_widget_factory.dart';
 /// Builds the PORTFOLIO_SUMMARY card inside a scrollable scaffold so that
 /// Flutter does not generate overflow errors for tall card content.
 Widget _buildCard(Map<String, dynamic> data) => ProviderScope(
-      child: MaterialApp(
-        theme: AppTheme.darkTheme,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: AiWidgetFactory.build(
-              AiIntentResponse(
-                message: '',
-                widgetId: 'PORTFOLIO_SUMMARY',
-                widgetParams: {'userId': 'u1', 'data': data},
-                sessionId: 's',
-                toolsUsed: const [],
-                traceId: 't',
-              ),
-            ),
+  child: MaterialApp(
+    theme: AppTheme.darkTheme,
+    home: Scaffold(
+      body: SingleChildScrollView(
+        child: AiWidgetFactory.build(
+          AiIntentResponse(
+            message: '',
+            widgetId: 'PORTFOLIO_SUMMARY',
+            widgetParams: {'userId': 'u1', 'data': data},
+            sessionId: 's',
+            toolsUsed: const [],
+            traceId: 't',
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
 
 /// Builds the card when widgetParams has NO 'data' key — triggers fallback.
 Widget _buildFallbackCard() => ProviderScope(
-      child: MaterialApp(
-        theme: AppTheme.darkTheme,
-        home: Scaffold(
-          body: AiWidgetFactory.build(
-            AiIntentResponse(
-              message: '',
-              widgetId: 'PORTFOLIO_SUMMARY',
-              widgetParams: const {'userId': 'u1'},
-              sessionId: 's',
-              toolsUsed: const [],
-              traceId: 't',
-            ),
-          ),
+  child: MaterialApp(
+    theme: AppTheme.darkTheme,
+    home: Scaffold(
+      body: AiWidgetFactory.build(
+        AiIntentResponse(
+          message: '',
+          widgetId: 'PORTFOLIO_SUMMARY',
+          widgetParams: const {'userId': 'u1'},
+          sessionId: 's',
+          toolsUsed: const [],
+          traceId: 't',
         ),
       ),
-    );
+    ),
+  ),
+);
 
 // ---------------------------------------------------------------------------
 // Sample data factories
@@ -84,10 +84,10 @@ Map<String, dynamic> _baseData({
 }
 
 Map<String, dynamic> _breakdownItem(String name, num value, num gainPct) => {
-      'portfolioName': name,
-      'currentValue': value,
-      'gainLossPercent': gainPct,
-    };
+  'portfolioName': name,
+  'currentValue': value,
+  'gainLossPercent': gainPct,
+};
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -98,16 +98,18 @@ void main() {
     // ── Fallback ─────────────────────────────────────────────────────────────
 
     group('fallback (null data)', () {
-      testWidgets('shows "Tap to view portfolio" when data is absent',
-          (WidgetTester tester) async {
+      testWidgets('shows "Tap to view portfolio" when data is absent', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(_buildFallbackCard());
         await tester.pumpAndSettle();
 
         expect(find.text('Tap to view portfolio'), findsOneWidget);
       });
 
-      testWidgets('does not throw when data key is absent',
-          (WidgetTester tester) async {
+      testWidgets('does not throw when data key is absent', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(_buildFallbackCard());
         await tester.pumpAndSettle();
 
@@ -115,8 +117,9 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
-      testWidgets('shows "Portfolio Summary" label in fallback',
-          (WidgetTester tester) async {
+      testWidgets('shows "Portfolio Summary" label in fallback', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(_buildFallbackCard());
         await tester.pumpAndSettle();
 
@@ -128,19 +131,21 @@ void main() {
 
     group('_formatCurrency', () {
       testWidgets(
-          'value >= 1000 renders with no decimal places (₹ symbol present)',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(
-          _buildCard(_baseData(totalValue: 1000, totalInvested: 1000)),
-        );
-        await tester.pumpAndSettle();
+        'value >= 1000 renders with no decimal places (₹ symbol present)',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(
+            _buildCard(_baseData(totalValue: 1000, totalInvested: 1000)),
+          );
+          await tester.pumpAndSettle();
 
-        // A value of 1000 formatted with 0dp in en_IN locale renders as ₹1,000
-        expect(find.textContaining('₹1,000'), findsWidgets);
-      });
+          // A value of 1000 formatted with 0dp in en_IN locale renders as ₹1,000
+          expect(find.textContaining('₹1,000'), findsWidgets);
+        },
+      );
 
-      testWidgets('value < 1000 renders with 2 decimal places',
-          (WidgetTester tester) async {
+      testWidgets('value < 1000 renders with 2 decimal places', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           _buildCard(_baseData(totalValue: 500, totalInvested: 500)),
         );
@@ -150,8 +155,9 @@ void main() {
         expect(find.textContaining('₹500.00'), findsWidgets);
       });
 
-      testWidgets('null totalValue renders ₹— placeholder',
-          (WidgetTester tester) async {
+      testWidgets('null totalValue renders ₹— placeholder', (
+        WidgetTester tester,
+      ) async {
         final data = _baseData();
         data.remove('totalValue'); // force null
         data['totalValue'] = null;
@@ -166,13 +172,13 @@ void main() {
     // ── Percentage formatting ─────────────────────────────────────────────────
 
     group('_formatPct', () {
-      testWidgets('positive percentage has + prefix',
-          (WidgetTester tester) async {
+      testWidgets('positive percentage has + prefix', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
-          _buildCard(_baseData(
-            totalGainLoss: 10000,
-            totalGainLossPercentage: 8.33,
-          )),
+          _buildCard(
+            _baseData(totalGainLoss: 10000, totalGainLossPercentage: 8.33),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -180,13 +186,13 @@ void main() {
         expect(find.textContaining('+8.33%'), findsOneWidget);
       });
 
-      testWidgets('negative percentage has - prefix and no +- combination',
-          (WidgetTester tester) async {
+      testWidgets('negative percentage has - prefix and no +- combination', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
-          _buildCard(_baseData(
-            totalGainLoss: -5000,
-            totalGainLossPercentage: -4.17,
-          )),
+          _buildCard(
+            _baseData(totalGainLoss: -5000, totalGainLossPercentage: -4.17),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -201,72 +207,78 @@ void main() {
 
     group('gain/loss color', () {
       testWidgets(
-          'positive totalGainLoss — at least one Text has AppColors.profit color',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(
-          _buildCard(_baseData(
-            totalGainLoss: 30000,
-            totalGainLossPercentage: 25.0,
-          )),
-        );
-        await tester.pumpAndSettle();
+        'positive totalGainLoss — at least one Text has AppColors.profit color',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(
+            _buildCard(
+              _baseData(totalGainLoss: 30000, totalGainLossPercentage: 25.0),
+            ),
+          );
+          await tester.pumpAndSettle();
 
-        final profitTexts = tester
-            .widgetList<Text>(find.byType(Text))
-            .where((t) => t.style?.color == AppColors.profit)
-            .toList();
+          final profitTexts = tester
+              .widgetList<Text>(find.byType(Text))
+              .where((t) => t.style?.color == AppColors.profit)
+              .toList();
 
-        expect(profitTexts, isNotEmpty);
-      });
+          expect(profitTexts, isNotEmpty);
+        },
+      );
 
       testWidgets(
-          'negative totalGainLoss — at least one Text has AppColors.loss color',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(
-          _buildCard(_baseData(
-            totalGainLoss: -8000,
-            totalGainLossPercentage: -6.67,
-          )),
-        );
-        await tester.pumpAndSettle();
+        'negative totalGainLoss — at least one Text has AppColors.loss color',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(
+            _buildCard(
+              _baseData(totalGainLoss: -8000, totalGainLossPercentage: -6.67),
+            ),
+          );
+          await tester.pumpAndSettle();
 
-        final lossTexts = tester
-            .widgetList<Text>(find.byType(Text))
-            .where((t) => t.style?.color == AppColors.loss)
-            .toList();
+          final lossTexts = tester
+              .widgetList<Text>(find.byType(Text))
+              .where((t) => t.style?.color == AppColors.loss)
+              .toList();
 
-        expect(lossTexts, isNotEmpty);
-      });
+          expect(lossTexts, isNotEmpty);
+        },
+      );
     });
 
     // ── Portfolio breakdown overflow ──────────────────────────────────────────
 
     group('portfolio breakdown', () {
       testWidgets(
-          '5 breakdown items shows "+1 more portfolios" overflow indicator',
-          (WidgetTester tester) async {
-        final items = List.generate(
-          5,
-          (i) => _breakdownItem('Portfolio ${i + 1}', 20000 + i * 1000, 5.0),
-        );
+        '5 breakdown items shows "+1 more portfolios" overflow indicator',
+        (WidgetTester tester) async {
+          final items = List.generate(
+            5,
+            (i) => _breakdownItem('Portfolio ${i + 1}', 20000 + i * 1000, 5.0),
+          );
 
-        await tester.pumpWidget(_buildCard(_baseData(portfolioBreakdown: items)));
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(
+            _buildCard(_baseData(portfolioBreakdown: items)),
+          );
+          await tester.pumpAndSettle();
 
-        // Overflow text: '+${5 - 4} more portfolios' = '+1 more portfolios'
-        expect(find.text('+1 more portfolios'), findsOneWidget);
-        // 5th item name must NOT be rendered (capped at 4)
-        expect(find.text('Portfolio 5'), findsNothing);
-      });
+          // Overflow text: '+${5 - 4} more portfolios' = '+1 more portfolios'
+          expect(find.text('+1 more portfolios'), findsOneWidget);
+          // 5th item name must NOT be rendered (capped at 4)
+          expect(find.text('Portfolio 5'), findsNothing);
+        },
+      );
 
-      testWidgets('4 breakdown items shows no overflow indicator',
-          (WidgetTester tester) async {
+      testWidgets('4 breakdown items shows no overflow indicator', (
+        WidgetTester tester,
+      ) async {
         final items = List.generate(
           4,
           (i) => _breakdownItem('Portfolio ${i + 1}', 20000 + i * 1000, 5.0),
         );
 
-        await tester.pumpWidget(_buildCard(_baseData(portfolioBreakdown: items)));
+        await tester.pumpWidget(
+          _buildCard(_baseData(portfolioBreakdown: items)),
+        );
         await tester.pumpAndSettle();
 
         expect(find.textContaining('more portfolios'), findsNothing);
@@ -274,14 +286,17 @@ void main() {
         expect(find.text('Portfolio 4'), findsOneWidget);
       });
 
-      testWidgets('exactly 3 items — all rendered, no overflow',
-          (WidgetTester tester) async {
+      testWidgets('exactly 3 items — all rendered, no overflow', (
+        WidgetTester tester,
+      ) async {
         final items = List.generate(
           3,
           (i) => _breakdownItem('Portfolio ${i + 1}', 10000, 2.5),
         );
 
-        await tester.pumpWidget(_buildCard(_baseData(portfolioBreakdown: items)));
+        await tester.pumpWidget(
+          _buildCard(_baseData(portfolioBreakdown: items)),
+        );
         await tester.pumpAndSettle();
 
         expect(find.textContaining('more portfolios'), findsNothing);
@@ -293,26 +308,31 @@ void main() {
 
     group('performer chips', () {
       testWidgets(
-          'bestPerformer present — renders "Best: RELIANCE" chip text',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(
-          _buildCard(_baseData(
-            bestPerformer: {'symbol': 'RELIANCE', 'changePercent': 3.45},
-          )),
-        );
-        await tester.pumpAndSettle();
+        'bestPerformer present — renders "Best: RELIANCE" chip text',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(
+            _buildCard(
+              _baseData(
+                bestPerformer: {'symbol': 'RELIANCE', 'changePercent': 3.45},
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
 
-        // Chip label format: '$label: $symbol' → 'Best: RELIANCE'
-        expect(find.text('Best: RELIANCE'), findsOneWidget);
-      });
+          // Chip label format: '$label: $symbol' → 'Best: RELIANCE'
+          expect(find.text('Best: RELIANCE'), findsOneWidget);
+        },
+      );
 
-      testWidgets(
-          'worstPerformer present — renders "Worst: INFY" chip text',
-          (WidgetTester tester) async {
+      testWidgets('worstPerformer present — renders "Worst: INFY" chip text', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
-          _buildCard(_baseData(
-            worstPerformer: {'symbol': 'INFY', 'changePercent': -2.10},
-          )),
+          _buildCard(
+            _baseData(
+              worstPerformer: {'symbol': 'INFY', 'changePercent': -2.10},
+            ),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -320,14 +340,16 @@ void main() {
         expect(find.text('Worst: INFY'), findsOneWidget);
       });
 
-      testWidgets(
-          'worstPerformer absent — worst performer chip not visible',
-          (WidgetTester tester) async {
+      testWidgets('worstPerformer absent — worst performer chip not visible', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
-          _buildCard(_baseData(
-            bestPerformer: {'symbol': 'TCS', 'changePercent': 2.0},
-            // No worstPerformer
-          )),
+          _buildCard(
+            _baseData(
+              bestPerformer: {'symbol': 'TCS', 'changePercent': 2.0},
+              // No worstPerformer
+            ),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -335,14 +357,16 @@ void main() {
         expect(find.textContaining('Worst:'), findsNothing);
       });
 
-      testWidgets(
-          'bestPerformer absent — best performer chip not visible',
-          (WidgetTester tester) async {
+      testWidgets('bestPerformer absent — best performer chip not visible', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
-          _buildCard(_baseData(
-            worstPerformer: {'symbol': 'HDFC', 'changePercent': -1.5},
-            // No bestPerformer
-          )),
+          _buildCard(
+            _baseData(
+              worstPerformer: {'symbol': 'HDFC', 'changePercent': -1.5},
+              // No bestPerformer
+            ),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -351,21 +375,23 @@ void main() {
       });
 
       testWidgets(
-          'neither performer present — performer section not rendered',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(_buildCard(_baseData()));
-        await tester.pumpAndSettle();
+        'neither performer present — performer section not rendered',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(_buildCard(_baseData()));
+          await tester.pumpAndSettle();
 
-        expect(find.textContaining('Best:'), findsNothing);
-        expect(find.textContaining('Worst:'), findsNothing);
-      });
+          expect(find.textContaining('Best:'), findsNothing);
+          expect(find.textContaining('Worst:'), findsNothing);
+        },
+      );
     });
 
     // ── Portfolio / holdings stat labels ─────────────────────────────────────
 
     group('portfolio and holdings count labels', () {
-      testWidgets('single portfolio uses singular "Portfolio"',
-          (WidgetTester tester) async {
+      testWidgets('single portfolio uses singular "Portfolio"', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           _buildCard(_baseData(totalPortfolios: 1, totalHoldings: 5)),
         );
@@ -375,8 +401,9 @@ void main() {
         expect(find.text('5 Holdings'), findsOneWidget);
       });
 
-      testWidgets('multiple portfolios uses plural "Portfolios"',
-          (WidgetTester tester) async {
+      testWidgets('multiple portfolios uses plural "Portfolios"', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           _buildCard(_baseData(totalPortfolios: 3, totalHoldings: 1)),
         );
@@ -389,8 +416,9 @@ void main() {
 
     // ── Header label ─────────────────────────────────────────────────────────
 
-    testWidgets('header shows "Portfolio Summary" label when data is present',
-        (WidgetTester tester) async {
+    testWidgets('header shows "Portfolio Summary" label when data is present', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(_buildCard(_baseData(totalValue: 200000)));
       await tester.pumpAndSettle();
 

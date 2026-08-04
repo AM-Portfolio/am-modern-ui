@@ -16,6 +16,7 @@ class TradeMetricsRepositoryImpl implements TradeMetricsRepository {
     final responseDto = await remoteDataSource.getMetrics(filterDto);
     return responseDto.toEntity();
   }
+
   @override
   Future<List<MetricTypes>> getMetricTypes() async {
     final types = await remoteDataSource.getMetricTypes();

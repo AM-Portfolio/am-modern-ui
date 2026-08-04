@@ -73,7 +73,8 @@ class DashboardJsonSanitizer {
     final m = Map<String, dynamic>.from(json);
     m['id'] = m['id']?.toString() ?? '';
     m['type'] = _coerceType(m['type']);
-    m['title'] = m['title']?.toString() ?? m['symbol']?.toString() ?? 'Activity';
+    m['title'] =
+        m['title']?.toString() ?? m['symbol']?.toString() ?? 'Activity';
     m['description'] ??= '';
     m['timestamp'] = _coerceTimestamp(m['timestamp']);
     return m;

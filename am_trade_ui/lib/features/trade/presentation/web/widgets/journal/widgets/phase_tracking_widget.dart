@@ -72,7 +72,9 @@ class PhaseTrackingWidget extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: hasBehavior ? theme.colorScheme.primary.withOpacity(0.3) : theme.dividerColor.withOpacity(0.2),
+                  color: hasBehavior
+                      ? theme.colorScheme.primary.withOpacity(0.3)
+                      : theme.dividerColor.withOpacity(0.2),
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -83,7 +85,9 @@ class PhaseTrackingWidget extends StatelessWidget {
                 minLines: 1,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontSize: 12,
-                  color: isEditMode ? null : theme.colorScheme.onSurface.withOpacity(0.85),
+                  color: isEditMode
+                      ? null
+                      : theme.colorScheme.onSurface.withOpacity(0.85),
                 ),
                 decoration: InputDecoration(
                   hintText: hint,
@@ -95,7 +99,8 @@ class PhaseTrackingWidget extends StatelessWidget {
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
                   disabledBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   isDense: true,
                 ),
               ),
@@ -117,19 +122,23 @@ class PhaseTrackingWidget extends StatelessWidget {
                           'Mood',
                           style: theme.textTheme.labelSmall?.copyWith(
                             fontSize: 10,
-                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withOpacity(0.6),
                           ),
                         ),
                         const SizedBox(height: 4),
                         IgnorePointer(
                           ignoring: !isEditMode,
-                          child: MoodSelector(selectedMood: mood, onMoodSelected: onMoodChanged),
+                          child: MoodSelector(
+                              selectedMood: mood,
+                              onMoodSelected: onMoodChanged),
                         ),
                       ],
                     ),
                   ),
 
-                if ((isEditMode || hasMood) && (isEditMode || hasSentiment)) const SizedBox(width: 10),
+                if ((isEditMode || hasMood) && (isEditMode || hasSentiment))
+                  const SizedBox(width: 10),
 
                 // Sentiment selector
                 if (isEditMode || hasSentiment)
@@ -141,7 +150,8 @@ class PhaseTrackingWidget extends StatelessWidget {
                           'Sentiment',
                           style: theme.textTheme.labelSmall?.copyWith(
                             fontSize: 10,
-                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withOpacity(0.6),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -167,16 +177,22 @@ class PhaseTrackingWidget extends StatelessWidget {
     required String? mood,
     required Function(String?) onMoodChanged,
     required bool isEditMode,
-  }) => MoodSelector(selectedMood: mood, onMoodSelected: onMoodChanged);
+  }) =>
+      MoodSelector(selectedMood: mood, onMoodSelected: onMoodChanged);
 
   /// Static helper to build sentiment selector for use in tab views
   static Widget buildSentimentSelector({
     required String? sentiment,
     required Function(String?) onSentimentChanged,
     required bool isEditMode,
-  }) => SentimentSelector(selectedSentiment: sentiment, onSentimentSelected: onSentimentChanged);
+  }) =>
+      SentimentSelector(
+          selectedSentiment: sentiment,
+          onSentimentSelected: onSentimentChanged);
 
   /// Static helper to build tags selector for use in tab views
-  static Widget buildTagsSelector({required Set<String> selectedTags, required Function(String) onTagToggled}) =>
+  static Widget buildTagsSelector(
+          {required Set<String> selectedTags,
+          required Function(String) onTagToggled}) =>
       TagsSelector(selectedTags: selectedTags, onTagToggled: onTagToggled);
 }

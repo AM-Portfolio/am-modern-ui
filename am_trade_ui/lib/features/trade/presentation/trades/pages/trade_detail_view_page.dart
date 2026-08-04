@@ -14,19 +14,20 @@ import '../widgets/trade_detail_widgets/vertical_attachments_feed.dart';
 class TradeDetailViewPage extends ConsumerStatefulWidget {
   const TradeDetailViewPage({
     required this.trade,
-        required this.portfolioId,
+    required this.portfolioId,
     this.onClose,
     this.onNavigateToChart,
     super.key,
   });
 
   final TradeHoldingViewModel trade;
-    final String portfolioId;
+  final String portfolioId;
   final VoidCallback? onClose;
   final Function(String symbol)? onNavigateToChart;
 
   @override
-  ConsumerState<TradeDetailViewPage> createState() => _TradeDetailViewPageState();
+  ConsumerState<TradeDetailViewPage> createState() =>
+      _TradeDetailViewPageState();
 }
 
 class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
@@ -42,9 +43,12 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
   @override
   Widget build(BuildContext context) {
     AppLogger.debug('?? Building TradeDetailViewPage', tag: 'TradeDetail');
-    AppLogger.debug('?? Trade Symbol: ${widget.trade.symbol}', tag: 'TradeDetail');
-    AppLogger.debug('?? Has Attachments: ${widget.trade.hasAttachments}', tag: 'TradeDetail');
-    AppLogger.debug('?? Attachment Count: ${widget.trade.attachmentCount}', tag: 'TradeDetail');
+    AppLogger.debug('?? Trade Symbol: ${widget.trade.symbol}',
+        tag: 'TradeDetail');
+    AppLogger.debug('?? Has Attachments: ${widget.trade.hasAttachments}',
+        tag: 'TradeDetail');
+    AppLogger.debug('?? Attachment Count: ${widget.trade.attachmentCount}',
+        tag: 'TradeDetail');
 
     return Material(
       color: Theme.of(context).colorScheme.surfaceContainerLowest,
@@ -69,8 +73,6 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
               controller: _scrollController,
               child: Column(
                 children: [
-
-                  
                   // Summary Cards (Trade Details, Price, Fees, Performance)
                   Padding(
                     padding: const EdgeInsets.all(24),
@@ -90,7 +92,9 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
                   ),
 
                   // Attachments Grid View - SHOWN FIRST IN GRID FORMAT
-                  if (widget.trade.hasAttachments) ...[AttachmentsGridView(trade: widget.trade)],
+                  if (widget.trade.hasAttachments) ...[
+                    AttachmentsGridView(trade: widget.trade)
+                  ],
 
                   // Evidence & Analysis Section (Vertical Feed) - AT THE BOTTOM
                   if (widget.trade.hasAttachments) ...[
@@ -107,4 +111,3 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
     );
   }
 }
-

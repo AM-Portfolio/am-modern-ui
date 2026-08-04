@@ -96,7 +96,8 @@ class TradeDetailsStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 1200;
-    final isTablet = MediaQuery.of(context).size.width > 600 && MediaQuery.of(context).size.width <= 1200;
+    final isTablet = MediaQuery.of(context).size.width > 600 &&
+        MediaQuery.of(context).size.width <= 1200;
     final isWeb = isDesktop || isTablet;
     final isMobile = !isWeb;
 

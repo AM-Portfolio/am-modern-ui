@@ -16,7 +16,8 @@ class HeatmapExplorerView extends ConsumerStatefulWidget {
   const HeatmapExplorerView({super.key});
 
   @override
-  ConsumerState<HeatmapExplorerView> createState() => _HeatmapExplorerViewState();
+  ConsumerState<HeatmapExplorerView> createState() =>
+      _HeatmapExplorerViewState();
 }
 
 class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
@@ -24,28 +25,48 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   String _selectedSymbol = 'NIFTY BANK'; // Default symbol
   bool _emittedHeatmapEmpty = false;
   final List<String> _months = [
-    'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-    'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+    'JANUARY',
+    'FEBRUARY',
+    'MARCH',
+    'APRIL',
+    'MAY',
+    'JUNE',
+    'JULY',
+    'AUGUST',
+    'SEPTEMBER',
+    'OCTOBER',
+    'NOVEMBER',
+    'DECEMBER'
   ];
 
   final List<String> _shortMonths = [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC'
   ];
-  
+
   late TextEditingController _searchController;
 
   // Heatmap State
   String _heatmapTimeframe = '1D';
-  bool _showingIndices = true; // Use separate state for Heatmap section drill-down
+  bool _showingIndices =
+      true; // Use separate state for Heatmap section drill-down
   bool _isHeatmapExpanded = true; // Control visibility of the heatmap grid
-  
-  final ScrollController _scrollController = ScrollController();
 
+  final ScrollController _scrollController = ScrollController();
 
   // _selectedSymbol is used for General Analysis (Seasonality/Historical)
   // For Heatmap, we use _showingIndices to determine if showing "List of Indices" or "Constituents of _selectedSymbol"
-  // Wait, if _showingIndices is false, we show constituents of _selectedSymbol. 
+  // Wait, if _showingIndices is false, we show constituents of _selectedSymbol.
 
   @override
   void initState() {
@@ -55,7 +76,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
       _fetchData();
     });
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -71,8 +92,8 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   void _fetchGeneralData() {
     // 1. Fetch General Analysis Data (Seasonality & Historical)
     if (_selectedSymbol.isNotEmpty && _selectedSymbol != "INDICES") {
-        context.read<MarketProvider>().loadHistoricalPerformance(_selectedSymbol);
-        context.read<MarketProvider>().loadSeasonality(_selectedSymbol);
+      context.read<MarketProvider>().loadHistoricalPerformance(_selectedSymbol);
+      context.read<MarketProvider>().loadSeasonality(_selectedSymbol);
     }
   }
 
@@ -81,10 +102,13 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
     // Target: if showing indices -> "INDICES"
     // If showing constituents -> _selectedSymbol
     String heatmapTarget = _showingIndices ? 'INDICES' : _selectedSymbol;
-    if (heatmapTarget.isEmpty && !_showingIndices) heatmapTarget = "NIFTY 50"; // Fallback
+    if (heatmapTarget.isEmpty && !_showingIndices)
+      heatmapTarget = "NIFTY 50"; // Fallback
 
     final sw = Stopwatch()..start();
-    context.read<MarketProvider>().loadHeatmap(heatmapTarget, _heatmapTimeframe);
+    context
+        .read<MarketProvider>()
+        .loadHeatmap(heatmapTarget, _heatmapTimeframe);
     // loadHeatmap is async on provider; record request timing as navigation cost
     WidgetsBinding.instance.addPostFrameCallback((_) {
       sw.stop();
@@ -101,7 +125,8 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final provider = provider_pkg.Provider.of<MarketProvider>(context, listen: false);
+    final provider =
+        provider_pkg.Provider.of<MarketProvider>(context, listen: false);
 
     // Listen to global timeframe changes and synchronize internal data state
     ref.listen<TimeFrame>(appTimeFrameProvider, (previous, next) {
@@ -142,340 +167,471 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
             Container(
               margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
               padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
-            boxShadow: isDark
-                ? []
-                : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Search & Controls Row
-              Row(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF1E1E2C).withOpacity(0.4)
+                    : AppColors.lightCard.withOpacity(0.85),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : Colors.black.withOpacity(0.05)),
+                boxShadow: isDark
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   // Expanded Search Field
-                   Expanded(
-                     child: Container(
-                       height: 42,
-                       decoration: BoxDecoration(
-                         color: isDark ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.03),
-                         borderRadius: BorderRadius.circular(12),
-                         border: Border.all(color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.08)),
-                       ),
-                       child: TextField(
-                         controller: _searchController,
-                         style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
-                         decoration: InputDecoration(
-                           hintText: 'Search Symbol (e.g. RELIANCE, NIFTY 50)',
-                           hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 13),
-                           prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54, size: 20),
-                           border: InputBorder.none,
-                           contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                         ),
-                         onSubmitted: (value) {
-                           if (value.isNotEmpty) {
-                             setState(() {
-                               _selectedSymbol = value.toUpperCase();
-                             });
-                             _fetchData();
-                           }
-                         },
-                       ),
-                     ),
-                   ),
-                   const SizedBox(width: 10),
-                   
-                   // Go Button
-                   GestureDetector(
-                     onTap: () {
-                        if (_searchController.text.isNotEmpty) {
-                           setState(() {
-                             _selectedSymbol = _searchController.text.toUpperCase();
-                           });
-                           _fetchData();
-                        }
-                     },
-                     child: Container(
-                       height: 42,
-                       padding: const EdgeInsets.symmetric(horizontal: 18),
-                       decoration: BoxDecoration(
-                         color: isDark
-                             ? const Color(0xFF00D1FF).withOpacity(0.2)
-                             : const Color(0xFF0E7490),
-                         borderRadius: BorderRadius.circular(12),
-                         border: Border.all(
-                           color: isDark
-                               ? const Color(0xFF00D1FF).withOpacity(0.45)
-                               : const Color(0xFF0E7490),
-                         ),
-                         boxShadow: isDark
-                             ? []
-                             : [
-                                 BoxShadow(
-                                   color: const Color(0xFF0E7490)
-                                       .withOpacity(0.18),
-                                   blurRadius: 6,
-                                   offset: const Offset(0, 2),
-                                 ),
-                               ],
-                       ),
-                        child: Center(
-                          child: provider_pkg.Selector<MarketProvider, bool>(
-                            selector: (_, p) => p.isLoading,
-                            builder: (context, isLoading, child) {
-                              final labelColor = isDark
-                                  ? const Color(0xFF00D1FF)
-                                  : Colors.white;
-                              return isLoading 
-                                  ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        color: labelColor,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Text(
-                                      'GO',
-                                      style: TextStyle(
-                                        color: labelColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    );
+                  // Search & Controls Row
+                  Row(
+                    children: [
+                      // Expanded Search Field
+                      Expanded(
+                        child: Container(
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.black.withOpacity(0.2)
+                                : Colors.black.withOpacity(0.03),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withOpacity(0.1)
+                                    : Colors.black.withOpacity(0.08)),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black87,
+                                fontSize: 14),
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Search Symbol (e.g. RELIANCE, NIFTY 50)',
+                              hintStyle: TextStyle(
+                                  color:
+                                      isDark ? Colors.white38 : Colors.black38,
+                                  fontSize: 13),
+                              prefixIcon: Icon(Icons.search,
+                                  color:
+                                      isDark ? Colors.white54 : Colors.black54,
+                                  size: 20),
+                              border: InputBorder.none,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 10),
+                            ),
+                            onSubmitted: (value) {
+                              if (value.isNotEmpty) {
+                                setState(() {
+                                  _selectedSymbol = value.toUpperCase();
+                                });
+                                _fetchData();
+                              }
                             },
                           ),
                         ),
-                     ),
-                   ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              
+                      ),
+                      const SizedBox(width: 10),
+
+                      // Go Button
+                      GestureDetector(
+                        onTap: () {
+                          if (_searchController.text.isNotEmpty) {
+                            setState(() {
+                              _selectedSymbol =
+                                  _searchController.text.toUpperCase();
+                            });
+                            _fetchData();
+                          }
+                        },
+                        child: Container(
+                          height: 42,
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF00D1FF).withOpacity(0.2)
+                                : const Color(0xFF0E7490),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF00D1FF).withOpacity(0.45)
+                                  : const Color(0xFF0E7490),
+                            ),
+                            boxShadow: isDark
+                                ? []
+                                : [
+                                    BoxShadow(
+                                      color: const Color(0xFF0E7490)
+                                          .withOpacity(0.18),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                          ),
+                          child: Center(
+                            child: provider_pkg.Selector<MarketProvider, bool>(
+                              selector: (_, p) => p.isLoading,
+                              builder: (context, isLoading, child) {
+                                final labelColor = isDark
+                                    ? const Color(0xFF00D1FF)
+                                    : Colors.white;
+                                return isLoading
+                                    ? SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          color: labelColor,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(
+                                        'GO',
+                                        style: TextStyle(
+                                          color: labelColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
                   // Quick Suggestions
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        _buildQuickActionChip(provider, "NIFTY BANK", "NIFTY BANK"),
+                        _buildQuickActionChip(
+                            provider, "NIFTY BANK", "NIFTY BANK"),
                         _buildQuickActionChip(provider, "NIFTY IT", "NIFTY IT"),
-                        _buildQuickActionChip(provider, "MIDCAP", "NIFTY MIDCAP 50"),
-                        _buildQuickActionChip(provider, "INDIA VIX", "INDIA VIX"),
+                        _buildQuickActionChip(
+                            provider, "MIDCAP", "NIFTY MIDCAP 50"),
+                        _buildQuickActionChip(
+                            provider, "INDIA VIX", "INDIA VIX"),
                         _buildQuickActionChip(provider, "NIFTY 50", "NIFTY 50"),
                         // Note: Using "NIFTY SMLCAP 50" to match database index symbol
-                        _buildQuickActionChip(provider, "SMALL CAP", "NIFTY SMLCAP 50"),
+                        _buildQuickActionChip(
+                            provider, "SMALL CAP", "NIFTY SMLCAP 50"),
                       ],
                     ),
                   )
-            ],
-          ),
-        ),
+                ],
+              ),
+            ),
 
-        const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-        // Main Content Area
-        Expanded(
-          child: _showingIndices
-            ? SingleChildScrollView(
-                controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: Column(
-                  children: [
-                    _buildHeatmapSection(),
-                    const SizedBox(height: 10),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
-                        boxShadow: isDark
-                            ? []
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                )
-                              ],
-                      ),
-                      child: const HistoricalPerformanceSection(),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                ),
-              )
-            : provider_pkg.Selector<MarketProvider, (HistoricalPerformanceResponse?, SeasonalityResponse?, bool)>(
-                selector: (_, p) => (p.historicalPerformance, p.seasonality, p.isLoading),
-                builder: (context, dataTuple, child) {
-                  final hData = dataTuple.$1;
-                  final sData = dataTuple.$2;
-                  final isLoading = dataTuple.$3;
-                  return SingleChildScrollView(
-                    controller: _scrollController,
-                    child: Column(
-                      children: [
-                        _buildHeatmapSection(),
-                        const SizedBox(height: 16),
-                        hData == null 
-                            ? SizedBox(
-                                height: 200,
-                                child: Center(child: Text(isLoading ? 'Loading...' : 'No data available', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)))
-                              )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                                Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
-                                  boxShadow: isDark
-                                      ? []
-                                      : [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.04),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 4),
-                                          )
-                                        ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                     // Overall Return Header (Optional)
-                                     if (hData.overallReturn != null)
-                                       Padding(
-                                         padding: const EdgeInsets.only(bottom: 16.0),
-                                         child: Text(
-                                           "Overall Return (${hData.startYear}-${hData.endYear}): ${hData.overallReturn}%",
-                                           style: TextStyle(
-                                               color: _getColorForChange(hData.overallReturn!),
-                                               fontWeight: FontWeight.bold,
-                                               fontSize: 16
-                                           ),
-                                         ),
-                                       ),
-          
-                                     // Responsive Table with Horizontal Scroll
-                                     LayoutBuilder(
-                                       builder: (context, constraints) {
-                                         // On Desktop, use full available width.
-                                         // On Mobile, force a minimum width (e.g., 900) to prevent squashing, enabling scrolling.
-                                         const double minTableWidth = 900.0;
-                                         final double effectiveWidth = constraints.maxWidth < minTableWidth 
-                                             ? minTableWidth 
-                                             : constraints.maxWidth;
-
-                                         return SingleChildScrollView(
-                                           scrollDirection: Axis.horizontal,
-                                           child: SizedBox(
-                                             width: effectiveWidth,
-                                             child: Column(
-                                               children: [
-                                                  // Header Row
-                                                  Row(
-                                                    children: [
-                                                      const SizedBox(width: 60), // Year column width
-                                                      ..._shortMonths.map((m) => Expanded(
-                                                        child: Center(
-                                                          child: Text(
-                                                            m,
-                                                            style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 11, fontWeight: FontWeight.bold),
-                                                          ),
-                                                        ),
-                                                      )),
-                                                      const SizedBox(width: 60), // Yearly Total width
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Divider(color: Colors.white.withOpacity(0.1), height: 1),
-                                                  const SizedBox(height: 8),
-
-                                                  // Data Rows
-                                                  ...hData.yearlyPerformance.map((yearly) {
-                                                      return Padding(
-                                                        padding: const EdgeInsets.symmetric(vertical: 6.0),
-                                                        child: Row(
-                                                          children: [
-                                                            // Year Label
-                                                            SizedBox(
-                                                              width: 60,
-                                                              child: Text(
-                                                                '${yearly.year}',
-                                                                style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 13),
-                                                              ),
-                                                            ),
-                                                            
-                                                            // Monthly Cells
-                                                            ..._months.map((monthKey) {
-                                                                final val = yearly.monthlyReturns[monthKey];
-                                                                final baseColor = val != null ? _getColorForChange(val).withOpacity(0.8) : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05));
-                                                                final glowColor = (val != null && val >= 0) ? const Color(0xFF47E266).withOpacity(0.3) : const Color(0xFFFFB4AB).withOpacity(0.3);
-                                                                return Expanded(
-                                                                  child: _HoverableHeatmapCell(
-                                                                     val: val,
-                                                                     baseColor: baseColor,
-                                                                     glowColor: glowColor,
-                                                                  ),
-                                                                );
-                                                            }).toList(),
-
-                                                            // Yearly Total
-                                                            SizedBox(
-                                                              width: 60,
-                                                              child: Center(
-                                                                child: Text(
-                                                                  yearly.yearlyReturn != null ? '${yearly.yearlyReturn}%' : '-',
-                                                                    style: TextStyle(
-                                                                      color: _getColorForChange(yearly.yearlyReturn ?? 0),
-                                                                      fontSize: 12,
-                                                                      fontWeight: FontWeight.bold
-                                                                    ),
-                                                                    textAlign: TextAlign.end,
-                                                                ),
-                                                              ),
-                                                            )
-                                                          ],
-                                                        ),
-                                                      );
-                                                  }).toList(),
-                                               ],
-                                             ),
-                                           ),
-                                         );
-                                       }
-                                     ),
-                                  ],
-                                ),
+            // Main Content Area
+            Expanded(
+              child: _showingIndices
+                  ? SingleChildScrollView(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                      child: Column(
+                        children: [
+                          _buildHeatmapSection(),
+                          const SizedBox(height: 10),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF1E1E2C).withOpacity(0.4)
+                                  : AppColors.lightCard.withOpacity(0.85),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                  color: isDark
+                                      ? Colors.white.withOpacity(0.05)
+                                      : Colors.black.withOpacity(0.05)),
+                              boxShadow: isDark
+                                  ? []
+                                  : [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.04),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      )
+                                    ],
                             ),
-                             const SizedBox(height: 16),
-                             if (sData != null) _buildSeasonality(sData),
-                             const SizedBox(height: 16), // Bottom padding
-                            ],
-                           ),
+                            child: const HistoricalPerformanceSection(),
+                          ),
+                          const SizedBox(height: 10),
                         ],
                       ),
-                    );
-                  },
-                ),
-        ),
-      ],
-    ),
-  ),
-);
-     
-  }
+                    )
+                  : provider_pkg.Selector<
+                      MarketProvider,
+                      (
+                        HistoricalPerformanceResponse?,
+                        SeasonalityResponse?,
+                        bool
+                      )>(
+                      selector: (_, p) =>
+                          (p.historicalPerformance, p.seasonality, p.isLoading),
+                      builder: (context, dataTuple, child) {
+                        final hData = dataTuple.$1;
+                        final sData = dataTuple.$2;
+                        final isLoading = dataTuple.$3;
+                        return SingleChildScrollView(
+                          controller: _scrollController,
+                          child: Column(
+                            children: [
+                              _buildHeatmapSection(),
+                              const SizedBox(height: 16),
+                              hData == null
+                                  ? SizedBox(
+                                      height: 200,
+                                      child: Center(
+                                          child: Text(
+                                              isLoading
+                                                  ? 'Loading...'
+                                                  : 'No data available',
+                                              style: TextStyle(
+                                                  color: isDark
+                                                      ? Colors.white54
+                                                      : Colors.black54))))
+                                  : Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: isDark
+                                                ? const Color(0xFF1E1E2C)
+                                                    .withOpacity(0.4)
+                                                : AppColors.lightCard
+                                                    .withOpacity(0.85),
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                            border: Border.all(
+                                                color: isDark
+                                                    ? Colors.white
+                                                        .withOpacity(0.05)
+                                                    : Colors.black
+                                                        .withOpacity(0.05)),
+                                            boxShadow: isDark
+                                                ? []
+                                                : [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.04),
+                                                      blurRadius: 10,
+                                                      offset:
+                                                          const Offset(0, 4),
+                                                    )
+                                                  ],
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              // Overall Return Header (Optional)
+                                              if (hData.overallReturn != null)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          bottom: 16.0),
+                                                  child: Text(
+                                                    "Overall Return (${hData.startYear}-${hData.endYear}): ${hData.overallReturn}%",
+                                                    style: TextStyle(
+                                                        color: _getColorForChange(
+                                                            hData
+                                                                .overallReturn!),
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 16),
+                                                  ),
+                                                ),
 
+                                              // Responsive Table with Horizontal Scroll
+                                              LayoutBuilder(builder:
+                                                  (context, constraints) {
+                                                // On Desktop, use full available width.
+                                                // On Mobile, force a minimum width (e.g., 900) to prevent squashing, enabling scrolling.
+                                                const double minTableWidth =
+                                                    900.0;
+                                                final double effectiveWidth =
+                                                    constraints.maxWidth <
+                                                            minTableWidth
+                                                        ? minTableWidth
+                                                        : constraints.maxWidth;
+
+                                                return SingleChildScrollView(
+                                                  scrollDirection:
+                                                      Axis.horizontal,
+                                                  child: SizedBox(
+                                                    width: effectiveWidth,
+                                                    child: Column(
+                                                      children: [
+                                                        // Header Row
+                                                        Row(
+                                                          children: [
+                                                            const SizedBox(
+                                                                width:
+                                                                    60), // Year column width
+                                                            ..._shortMonths.map(
+                                                                (m) => Expanded(
+                                                                      child:
+                                                                          Center(
+                                                                        child:
+                                                                            Text(
+                                                                          m,
+                                                                          style: TextStyle(
+                                                                              color: isDark ? Colors.white54 : Colors.black54,
+                                                                              fontSize: 11,
+                                                                              fontWeight: FontWeight.bold),
+                                                                        ),
+                                                                      ),
+                                                                    )),
+                                                            const SizedBox(
+                                                                width:
+                                                                    60), // Yearly Total width
+                                                          ],
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 8),
+                                                        Divider(
+                                                            color: Colors.white
+                                                                .withOpacity(
+                                                                    0.1),
+                                                            height: 1),
+                                                        const SizedBox(
+                                                            height: 8),
+
+                                                        // Data Rows
+                                                        ...hData
+                                                            .yearlyPerformance
+                                                            .map((yearly) {
+                                                          return Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    vertical:
+                                                                        6.0),
+                                                            child: Row(
+                                                              children: [
+                                                                // Year Label
+                                                                SizedBox(
+                                                                  width: 60,
+                                                                  child: Text(
+                                                                    '${yearly.year}',
+                                                                    style: TextStyle(
+                                                                        color: isDark
+                                                                            ? Colors
+                                                                                .white
+                                                                            : Colors
+                                                                                .black87,
+                                                                        fontWeight:
+                                                                            FontWeight
+                                                                                .bold,
+                                                                        fontSize:
+                                                                            13),
+                                                                  ),
+                                                                ),
+
+                                                                // Monthly Cells
+                                                                ..._months.map(
+                                                                    (monthKey) {
+                                                                  final val = yearly
+                                                                          .monthlyReturns[
+                                                                      monthKey];
+                                                                  final baseColor = val !=
+                                                                          null
+                                                                      ? _getColorForChange(val)
+                                                                          .withOpacity(
+                                                                              0.8)
+                                                                      : (isDark
+                                                                          ? Colors.white.withOpacity(
+                                                                              0.05)
+                                                                          : Colors
+                                                                              .black
+                                                                              .withOpacity(0.05));
+                                                                  final glowColor = (val !=
+                                                                              null &&
+                                                                          val >=
+                                                                              0)
+                                                                      ? const Color(
+                                                                              0xFF47E266)
+                                                                          .withOpacity(
+                                                                              0.3)
+                                                                      : const Color(
+                                                                              0xFFFFB4AB)
+                                                                          .withOpacity(
+                                                                              0.3);
+                                                                  return Expanded(
+                                                                    child:
+                                                                        _HoverableHeatmapCell(
+                                                                      val: val,
+                                                                      baseColor:
+                                                                          baseColor,
+                                                                      glowColor:
+                                                                          glowColor,
+                                                                    ),
+                                                                  );
+                                                                }).toList(),
+
+                                                                // Yearly Total
+                                                                SizedBox(
+                                                                  width: 60,
+                                                                  child: Center(
+                                                                    child: Text(
+                                                                      yearly.yearlyReturn !=
+                                                                              null
+                                                                          ? '${yearly.yearlyReturn}%'
+                                                                          : '-',
+                                                                      style: TextStyle(
+                                                                          color: _getColorForChange(yearly.yearlyReturn ??
+                                                                              0),
+                                                                          fontSize:
+                                                                              12,
+                                                                          fontWeight:
+                                                                              FontWeight.bold),
+                                                                      textAlign:
+                                                                          TextAlign
+                                                                              .end,
+                                                                    ),
+                                                                  ),
+                                                                )
+                                                              ],
+                                                            ),
+                                                          );
+                                                        }).toList(),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                );
+                                              }),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        if (sData != null)
+                                          _buildSeasonality(sData),
+                                        const SizedBox(
+                                            height: 16), // Bottom padding
+                                      ],
+                                    ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildSeasonality(SeasonalityResponse seasonality) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -487,9 +643,14 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
+        color: isDark
+            ? const Color(0xFF1E1E2C).withOpacity(0.4)
+            : AppColors.lightCard.withOpacity(0.85),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+        border: Border.all(
+            color: isDark
+                ? Colors.white.withOpacity(0.05)
+                : Colors.black.withOpacity(0.05)),
         boxShadow: isDark
             ? []
             : [
@@ -517,41 +678,208 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
               Tooltip(
                 message: 'Average percentage return based on historical data.',
                 triggerMode: TooltipTriggerMode.tap,
-                child: Icon(Icons.info_outline, color: isDark ? Colors.white.withOpacity(0.5) : Colors.black.withOpacity(0.4), size: 14),
+                child: Icon(Icons.info_outline,
+                    color: isDark
+                        ? Colors.white.withOpacity(0.5)
+                        : Colors.black.withOpacity(0.4),
+                    size: 14),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 600;
-              if (isMobile) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Day of Week Analysis
-                    Column(
+          LayoutBuilder(builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 600;
+            if (isMobile) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Day of Week Analysis
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Day of Week',
+                          style: TextStyle(
+                              color: isDark ? Colors.white54 : Colors.black54,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 8),
+                      ...dayOfWeekData.map((e) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6.0),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                  width: 80,
+                                  child: Text(e.key,
+                                      style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white70
+                                              : Colors.black87,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500))),
+                              Expanded(
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                        height: 4,
+                                        decoration: BoxDecoration(
+                                            color: isDark
+                                                ? Colors.white.withOpacity(0.05)
+                                                : Colors.black
+                                                    .withOpacity(0.05),
+                                            borderRadius:
+                                                BorderRadius.circular(2))),
+                                    FractionallySizedBox(
+                                      widthFactor: (e.value.abs() / 1.0)
+                                          .clamp(0.0, 1.0), // Normalize
+                                      child: Container(
+                                        height: 4,
+                                        decoration: BoxDecoration(
+                                          color: _getColorForChange(e.value),
+                                          borderRadius:
+                                              BorderRadius.circular(2),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                  width: 45,
+                                  child: Text('${e.value.toStringAsFixed(2)}%',
+                                      textAlign: TextAlign.end,
+                                      style: TextStyle(
+                                          color: _getColorForChange(e.value),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold))),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Monthly Analysis
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Monthly',
+                          style: TextStyle(
+                              color: isDark ? Colors.white54 : Colors.black54,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 8),
+                      ...seasonality.monthlyReturns.entries.map((e) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6.0),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                  width: 80,
+                                  child: Text(e.key,
+                                      style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white70
+                                              : Colors.black87,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500))),
+                              Expanded(
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                        height: 4,
+                                        decoration: BoxDecoration(
+                                            color: isDark
+                                                ? Colors.white.withOpacity(0.05)
+                                                : Colors.black
+                                                    .withOpacity(0.05),
+                                            borderRadius:
+                                                BorderRadius.circular(2))),
+                                    FractionallySizedBox(
+                                      widthFactor: (e.value.abs() / 5.0)
+                                          .clamp(0.0, 1.0), // Normalize
+                                      child: Container(
+                                        height: 4,
+                                        decoration: BoxDecoration(
+                                          color: _getColorForChange(e.value),
+                                          borderRadius:
+                                              BorderRadius.circular(2),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                  width: 45,
+                                  child: Text('${e.value.toStringAsFixed(2)}%',
+                                      textAlign: TextAlign.end,
+                                      style: TextStyle(
+                                          color: _getColorForChange(e.value),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold))),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ],
+              );
+            } else {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Day of Week Analysis
+                  Expanded(
+                    flex: 2,
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Day of Week', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 11, fontWeight: FontWeight.w600)),
+                        Text('Day of Week',
+                            style: TextStyle(
+                                color: isDark ? Colors.white54 : Colors.black54,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
                         ...dayOfWeekData.map((e) {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 6.0),
                             child: Row(
                               children: [
-                                SizedBox(width: 80, child: Text(e.key, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 11, fontWeight: FontWeight.w500))),
+                                SizedBox(
+                                    width: 80,
+                                    child: Text(e.key,
+                                        style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black87,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500))),
                                 Expanded(
                                   child: Stack(
                                     children: [
-                                      Container(height: 4, decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(2))),
+                                      Container(
+                                          height: 4,
+                                          decoration: BoxDecoration(
+                                              color: isDark
+                                                  ? Colors.white
+                                                      .withOpacity(0.05)
+                                                  : Colors.black
+                                                      .withOpacity(0.05),
+                                              borderRadius:
+                                                  BorderRadius.circular(2))),
                                       FractionallySizedBox(
-                                        widthFactor: (e.value.abs() / 1.0).clamp(0.0, 1.0), // Normalize
+                                        widthFactor: (e.value.abs() / 1.0)
+                                            .clamp(0.0, 1.0), // Normalize
                                         child: Container(
-                                          height: 4, 
+                                          height: 4,
                                           decoration: BoxDecoration(
                                             color: _getColorForChange(e.value),
-                                            borderRadius: BorderRadius.circular(2),
+                                            borderRadius:
+                                                BorderRadius.circular(2),
                                           ),
                                         ),
                                       ),
@@ -559,37 +887,71 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                SizedBox(width: 45, child: Text('${e.value.toStringAsFixed(2)}%', textAlign: TextAlign.end, style: TextStyle(color: _getColorForChange(e.value), fontSize: 11, fontWeight: FontWeight.bold))),
+                                SizedBox(
+                                    width: 45,
+                                    child: Text(
+                                        '${e.value.toStringAsFixed(2)}%',
+                                        textAlign: TextAlign.end,
+                                        style: TextStyle(
+                                            color: _getColorForChange(e.value),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold))),
                               ],
                             ),
                           );
                         }).toList(),
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    // Monthly Analysis
-                    Column(
+                  ),
+                  const SizedBox(width: 24),
+                  // Monthly Analysis
+                  Expanded(
+                    flex: 3,
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Monthly', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 11, fontWeight: FontWeight.w600)),
+                        Text('Monthly',
+                            style: TextStyle(
+                                color: isDark ? Colors.white54 : Colors.black54,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
-                         ...seasonality.monthlyReturns.entries.map((e) {
+                        ...seasonality.monthlyReturns.entries.map((e) {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 6.0),
                             child: Row(
                               children: [
-                                SizedBox(width: 80, child: Text(e.key, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 11, fontWeight: FontWeight.w500))),
+                                SizedBox(
+                                    width: 80,
+                                    child: Text(e.key,
+                                        style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black87,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500))),
                                 Expanded(
                                   child: Stack(
                                     children: [
-                                      Container(height: 4, decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(2))),
+                                      Container(
+                                          height: 4,
+                                          decoration: BoxDecoration(
+                                              color: isDark
+                                                  ? Colors.white
+                                                      .withOpacity(0.05)
+                                                  : Colors.black
+                                                      .withOpacity(0.05),
+                                              borderRadius:
+                                                  BorderRadius.circular(2))),
                                       FractionallySizedBox(
-                                        widthFactor: (e.value.abs() / 5.0).clamp(0.0, 1.0), // Normalize
+                                        widthFactor: (e.value.abs() / 5.0)
+                                            .clamp(0.0, 1.0), // Normalize
                                         child: Container(
-                                          height: 4, 
+                                          height: 4,
                                           decoration: BoxDecoration(
                                             color: _getColorForChange(e.value),
-                                            borderRadius: BorderRadius.circular(2),
+                                            borderRadius:
+                                                BorderRadius.circular(2),
                                           ),
                                         ),
                                       ),
@@ -597,273 +959,216 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                SizedBox(width: 45, child: Text('${e.value.toStringAsFixed(2)}%', textAlign: TextAlign.end, style: TextStyle(color: _getColorForChange(e.value), fontSize: 11, fontWeight: FontWeight.bold))),
+                                SizedBox(
+                                    width: 45,
+                                    child: Text(
+                                        '${e.value.toStringAsFixed(2)}%',
+                                        textAlign: TextAlign.end,
+                                        style: TextStyle(
+                                            color: _getColorForChange(e.value),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold))),
                               ],
                             ),
                           );
                         }).toList(),
                       ],
                     ),
-                  ],
-                );
-              } else {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Day of Week Analysis
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Day of Week', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 11, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 8),
-                          ...dayOfWeekData.map((e) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 6.0),
-                              child: Row(
-                                children: [
-                                  SizedBox(width: 80, child: Text(e.key, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 11, fontWeight: FontWeight.w500))),
-                                  Expanded(
-                                    child: Stack(
-                                      children: [
-                                        Container(height: 4, decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(2))),
-                                        FractionallySizedBox(
-                                          widthFactor: (e.value.abs() / 1.0).clamp(0.0, 1.0), // Normalize
-                                          child: Container(
-                                            height: 4, 
-                                            decoration: BoxDecoration(
-                                              color: _getColorForChange(e.value),
-                                              borderRadius: BorderRadius.circular(2),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(width: 45, child: Text('${e.value.toStringAsFixed(2)}%', textAlign: TextAlign.end, style: TextStyle(color: _getColorForChange(e.value), fontSize: 11, fontWeight: FontWeight.bold))),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 24),
-                    // Monthly Analysis
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Monthly', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 11, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 8),
-                           ...seasonality.monthlyReturns.entries.map((e) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 6.0),
-                              child: Row(
-                                children: [
-                                  SizedBox(width: 80, child: Text(e.key, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 11, fontWeight: FontWeight.w500))),
-                                  Expanded(
-                                    child: Stack(
-                                      children: [
-                                        Container(height: 4, decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(2))),
-                                        FractionallySizedBox(
-                                          widthFactor: (e.value.abs() / 5.0).clamp(0.0, 1.0), // Normalize
-                                          child: Container(
-                                            height: 4, 
-                                            decoration: BoxDecoration(
-                                              color: _getColorForChange(e.value),
-                                              borderRadius: BorderRadius.circular(2),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(width: 45, child: Text('${e.value.toStringAsFixed(2)}%', textAlign: TextAlign.end, style: TextStyle(color: _getColorForChange(e.value), fontSize: 11, fontWeight: FontWeight.bold))),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              }
+                  ),
+                ],
+              );
             }
-          ),
+          }),
         ],
       ),
     );
   }
 
   Color _getColorForChange(double pChange) {
-      if (pChange > 0) return const Color(0xFF47E266); // Success Green
-      if (pChange == 0) return const Color(0xFF918FA0); // Outline/Neutral Gray
-      return const Color(0xFFFFB4AB); // Error Red
+    if (pChange > 0) return const Color(0xFF47E266); // Success Green
+    if (pChange == 0) return const Color(0xFF918FA0); // Outline/Neutral Gray
+    return const Color(0xFFFFB4AB); // Error Red
   }
 
   // --- New Market Heatmap Section ---
 
   Widget _buildHeatmapSection() {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      // Logic to determine title
-      String title = _showingIndices ? "Market Heatmap (Indices)" : "Heatmap: $_selectedSymbol";
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Logic to determine title
+    String title = _showingIndices
+        ? "Market Heatmap (Indices)"
+        : "Heatmap: $_selectedSymbol";
 
-      return Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
-            boxShadow: isDark
-                ? []
-                : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
-          ),
-          padding: const EdgeInsets.all(12),
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                  Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 8.0,
-                      runSpacing: 4.0,
-                      children: [
-                          Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                  if (!_showingIndices)
-                                    IconButton(
-                                        icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87, size: 20),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: _onBackToIndices,
-                                    ),
-                                  if (!_showingIndices) const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
-                                      title,
-                                      style: TextStyle(
-                                          color: isDark ? Colors.white : Colors.black87,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 0.3,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  IconButton(
-                                      icon: Icon(_isHeatmapExpanded ? Icons.expand_less : Icons.expand_more, color: isDark ? Colors.white70 : Colors.black54),
-                                      onPressed: () => setState(() => _isHeatmapExpanded = !_isHeatmapExpanded),
-                                      tooltip: _isHeatmapExpanded ? "Minimize Section" : "Expand Section",
-                                      visualDensity: VisualDensity.compact,
-                                  ),
-                              ],
-                          ),
-                      ],
-                  ),
-                  if (_isHeatmapExpanded) ...[
-                      const SizedBox(height: 12),
-                      _buildHeatmapGrid(),
-                  ]
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF1E1E2C).withOpacity(0.4)
+            : AppColors.lightCard.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: isDark
+                ? Colors.white.withOpacity(0.05)
+                : Colors.black.withOpacity(0.05)),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
               ],
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8.0,
+            runSpacing: 4.0,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!_showingIndices)
+                    IconButton(
+                      icon: Icon(Icons.arrow_back,
+                          color: isDark ? Colors.white : Colors.black87,
+                          size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: _onBackToIndices,
+                    ),
+                  if (!_showingIndices) const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                        _isHeatmapExpanded
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                        color: isDark ? Colors.white70 : Colors.black54),
+                    onPressed: () => setState(
+                        () => _isHeatmapExpanded = !_isHeatmapExpanded),
+                    tooltip: _isHeatmapExpanded
+                        ? "Minimize Section"
+                        : "Expand Section",
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+            ],
           ),
-      );
+          if (_isHeatmapExpanded) ...[
+            const SizedBox(height: 12),
+            _buildHeatmapGrid(),
+          ]
+        ],
+      ),
+    );
   }
 
   void _onBackToIndices() {
-      setState(() {
-          _showingIndices = true;
-          _selectedSymbol = ""; 
-          _searchController.clear();
-          _isHeatmapExpanded = true; // Reset expansion when going back
-      });
-      _fetchData();
+    setState(() {
+      _showingIndices = true;
+      _selectedSymbol = "";
+      _searchController.clear();
+      _isHeatmapExpanded = true; // Reset expansion when going back
+    });
+    _fetchData();
   }
 
   void _onHeatmapItemTap(String symbol, double value) {
-      if (_showingIndices) {
-          // Drill down
-          setState(() {
-              _showingIndices = false;
-              _selectedSymbol = symbol;
-              _isHeatmapExpanded = true; // Keep expanded to show constituents
-          });
-          _fetchData();
-      } else {
-          // Select stock but don't drill further (unless we have stock details)
-          // Just update generalized view
-          setState(() {
-              _selectedSymbol = symbol;
-              _isHeatmapExpanded = false; // Minimize heatmap to show details below
-          });
-          // Also fetch history/seasonality for this stock
-          context.read<MarketProvider>().loadHistoricalPerformance(symbol);
-          context.read<MarketProvider>().loadSeasonality(symbol);
-      }
+    if (_showingIndices) {
+      // Drill down
+      setState(() {
+        _showingIndices = false;
+        _selectedSymbol = symbol;
+        _isHeatmapExpanded = true; // Keep expanded to show constituents
+      });
+      _fetchData();
+    } else {
+      // Select stock but don't drill further (unless we have stock details)
+      // Just update generalized view
+      setState(() {
+        _selectedSymbol = symbol;
+        _isHeatmapExpanded = false; // Minimize heatmap to show details below
+      });
+      // Also fetch history/seasonality for this stock
+      context.read<MarketProvider>().loadHistoricalPerformance(symbol);
+      context.read<MarketProvider>().loadSeasonality(symbol);
+    }
   }
 
   Widget _buildHeatmapGrid() {
-      return provider_pkg.Selector<MarketProvider, Map<String, double>?>(
-          selector: (_, p) => p.heatmapValues,
-          builder: (context, data, child) {
-              final isLoading = provider_pkg.Provider.of<MarketProvider>(context, listen: false).isLoading;
-              if (isLoading && (data == null || data.isEmpty)) {
-                  return const Center(child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                  ));
-              }
-              if (data == null || data.isEmpty) {
-                  if (!_emittedHeatmapEmpty) {
-                    _emittedHeatmapEmpty = true;
-                    ProductTelemetry.instance.emptyState('market_heatmap_empty');
-                  }
-                  return const Center(child: Text("No heatmap data available", style: TextStyle(color: Colors.white38)));
-              }
-              _emittedHeatmapEmpty = false;
-              
-              return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 120, // Responsive width
-                      childAspectRatio: 1.2,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                  ),
-                  itemCount: data.length,
-                  itemBuilder: (context, index) {
-                      final symbol = data.keys.elementAt(index);
-                      final value = data.values.elementAt(index);
-                      return _buildHeatmapCard(symbol, value);
-                  },
-              );
+    return provider_pkg.Selector<MarketProvider, Map<String, double>?>(
+      selector: (_, p) => p.heatmapValues,
+      builder: (context, data, child) {
+        final isLoading =
+            provider_pkg.Provider.of<MarketProvider>(context, listen: false)
+                .isLoading;
+        if (isLoading && (data == null || data.isEmpty)) {
+          return const Center(
+              child: Padding(
+            padding: EdgeInsets.all(20),
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ));
+        }
+        if (data == null || data.isEmpty) {
+          if (!_emittedHeatmapEmpty) {
+            _emittedHeatmapEmpty = true;
+            ProductTelemetry.instance.emptyState('market_heatmap_empty');
+          }
+          return const Center(
+              child: Text("No heatmap data available",
+                  style: TextStyle(color: Colors.white38)));
+        }
+        _emittedHeatmapEmpty = false;
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 120, // Responsive width
+            childAspectRatio: 1.2,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: data.length,
+          itemBuilder: (context, index) {
+            final symbol = data.keys.elementAt(index);
+            final value = data.values.elementAt(index);
+            return _buildHeatmapCard(symbol, value);
           },
-      );
+        );
+      },
+    );
   }
 
   Widget _buildHeatmapCard(String symbol, double value) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      return _HoverableMarketHeatmapCard(
-        symbol: symbol,
-        value: value,
-        isDark: isDark,
-        onTap: () => _onHeatmapItemTap(symbol, value),
-      );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return _HoverableMarketHeatmapCard(
+      symbol: symbol,
+      value: value,
+      isDark: isDark,
+      onTap: () => _onHeatmapItemTap(symbol, value),
+    );
   }
 
-  Widget _buildQuickActionChip(MarketProvider provider, String label, String symbol) {
+  Widget _buildQuickActionChip(
+      MarketProvider provider, String label, String symbol) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     bool isSelected = _selectedSymbol == symbol;
     return GestureDetector(
@@ -880,10 +1185,17 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isDark
-              ? (isSelected ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.2))
-              : (isSelected ? Colors.black.withOpacity(0.1) : Colors.black.withOpacity(0.03)),
+              ? (isSelected
+                  ? Colors.white.withOpacity(0.2)
+                  : Colors.black.withOpacity(0.2))
+              : (isSelected
+                  ? Colors.black.withOpacity(0.1)
+                  : Colors.black.withOpacity(0.03)),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? (isDark ? Colors.white54 : Colors.black26) : Colors.transparent),
+          border: Border.all(
+              color: isSelected
+                  ? (isDark ? Colors.white54 : Colors.black26)
+                  : Colors.transparent),
         ),
         child: Text(
           label,
@@ -897,7 +1209,6 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
       ),
     );
   }
-
 }
 
 class _HoverableHeatmapCell extends StatefulWidget {
@@ -938,7 +1249,8 @@ class _HoverableHeatmapCellState extends State<_HoverableHeatmapCell> {
             boxShadow: _isHovered && widget.val != null
                 ? [
                     BoxShadow(
-                      color: widget.glowColor.withOpacity(0.6), // Boosted glow opacity
+                      color: widget.glowColor
+                          .withOpacity(0.6), // Boosted glow opacity
                       blurRadius: 12,
                       spreadRadius: 1,
                     )
@@ -951,7 +1263,8 @@ class _HoverableHeatmapCellState extends State<_HoverableHeatmapCell> {
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 11,
-                fontWeight: widget.val != null ? FontWeight.w600 : FontWeight.normal,
+                fontWeight:
+                    widget.val != null ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ),
@@ -976,10 +1289,12 @@ class _HoverableMarketHeatmapCard extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<_HoverableMarketHeatmapCard> createState() => _HoverableMarketHeatmapCardState();
+  State<_HoverableMarketHeatmapCard> createState() =>
+      _HoverableMarketHeatmapCardState();
 }
 
-class _HoverableMarketHeatmapCardState extends State<_HoverableMarketHeatmapCard> {
+class _HoverableMarketHeatmapCardState
+    extends State<_HoverableMarketHeatmapCard> {
   bool _isHovered = false;
 
   @override
@@ -993,40 +1308,48 @@ class _HoverableMarketHeatmapCardState extends State<_HoverableMarketHeatmapCard
       cardColor = const Color(0xFF47E266);
       textColor = const Color(0xFF47E266);
       borderOutlineColor = cardColor.withOpacity(0.12);
-      glowShadows = _isHovered ? [
-        BoxShadow(
-          color: cardColor.withOpacity(0.6),
-          blurRadius: 16,
-          spreadRadius: 1,
-          offset: const Offset(0, 4),
-        )
-      ] : (widget.isDark ? [
-        BoxShadow(
-          color: cardColor.withOpacity(0.12),
-          blurRadius: 12,
-          spreadRadius: 1,
-          offset: const Offset(0, 4),
-        )
-      ] : []);
+      glowShadows = _isHovered
+          ? [
+              BoxShadow(
+                color: cardColor.withOpacity(0.6),
+                blurRadius: 16,
+                spreadRadius: 1,
+                offset: const Offset(0, 4),
+              )
+            ]
+          : (widget.isDark
+              ? [
+                  BoxShadow(
+                    color: cardColor.withOpacity(0.12),
+                    blurRadius: 12,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : []);
     } else if (widget.value < 0) {
       cardColor = const Color(0xFFFFB4AB);
       textColor = const Color(0xFFFFB4AB);
       borderOutlineColor = cardColor.withOpacity(0.12);
-      glowShadows = _isHovered ? [
-        BoxShadow(
-          color: cardColor.withOpacity(0.6),
-          blurRadius: 16,
-          spreadRadius: 1,
-          offset: const Offset(0, 4),
-        )
-      ] : (widget.isDark ? [
-        BoxShadow(
-          color: cardColor.withOpacity(0.12),
-          blurRadius: 12,
-          spreadRadius: 1,
-          offset: const Offset(0, 4),
-        )
-      ] : []);
+      glowShadows = _isHovered
+          ? [
+              BoxShadow(
+                color: cardColor.withOpacity(0.6),
+                blurRadius: 16,
+                spreadRadius: 1,
+                offset: const Offset(0, 4),
+              )
+            ]
+          : (widget.isDark
+              ? [
+                  BoxShadow(
+                    color: cardColor.withOpacity(0.12),
+                    blurRadius: 12,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : []);
     } else {
       cardColor = const Color(0xFF918FA0);
       textColor = const Color(0xFF918FA0);

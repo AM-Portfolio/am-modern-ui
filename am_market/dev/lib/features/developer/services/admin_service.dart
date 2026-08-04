@@ -17,7 +17,11 @@ class AdminService {
     };
   }
 
-  Future<List<IngestionLog>> getLogs({int page = 0, int size = 20, DateTime? startDate, DateTime? endDate}) async {
+  Future<List<IngestionLog>> getLogs(
+      {int page = 0,
+      int size = 20,
+      DateTime? startDate,
+      DateTime? endDate}) async {
     String query = 'page=$page&size=$size';
     if (startDate != null) {
       query += '&startDate=${startDate.toIso8601String().split('T')[0]}';
@@ -25,10 +29,11 @@ class AdminService {
     if (endDate != null) {
       query += '&endDate=${endDate.toIso8601String().split('T')[0]}';
     }
-    
+
     final headers = await _getHeaders();
-    final response = await http.get(Uri.parse('$baseUrl/v1/admin/logs?$query'), headers: headers);
-    
+    final response = await http.get(Uri.parse('$baseUrl/v1/admin/logs?$query'),
+        headers: headers);
+
     if (response.statusCode == 200) {
       final List<dynamic> body = jsonDecode(response.body);
       return body.map((e) => IngestionLog.fromJson(e)).toList();
@@ -39,7 +44,8 @@ class AdminService {
 
   Future<IngestionLog> getJobDetails(String jobId) async {
     final headers = await _getHeaders();
-    final response = await http.get(Uri.parse('$baseUrl/v1/admin/logs/$jobId'), headers: headers);
+    final response = await http.get(Uri.parse('$baseUrl/v1/admin/logs/$jobId'),
+        headers: headers);
     if (response.statusCode == 200) {
       return IngestionLog.fromJson(jsonDecode(response.body));
     } else {
@@ -48,17 +54,16 @@ class AdminService {
   }
 
   Future<void> triggerHistoricalSync({
-    String? symbol, 
+    String? symbol,
     bool forceRefresh = true,
     bool fetchIndexStocks = false,
   }) async {
-    final uri = Uri.parse('$baseUrl/v1/admin/sync/historical').replace(
-      queryParameters: {
-        if (symbol != null && symbol.isNotEmpty) 'symbol': symbol,
-        'forceRefresh': forceRefresh.toString(),
-        'fetchIndexStocks': fetchIndexStocks.toString(),
-      }
-    );
+    final uri = Uri.parse('$baseUrl/v1/admin/sync/historical')
+        .replace(queryParameters: {
+      if (symbol != null && symbol.isNotEmpty) 'symbol': symbol,
+      'forceRefresh': forceRefresh.toString(),
+      'fetchIndexStocks': fetchIndexStocks.toString(),
+    });
     final headers = await _getHeaders();
     final response = await http.post(uri, headers: headers);
     if (response.statusCode != 200) {
@@ -80,7 +85,9 @@ class AdminService {
 
   Future<void> stopIngestion(String provider) async {
     final headers = await _getHeaders();
-    final response = await http.post(Uri.parse('$baseUrl/v1/admin/ingestion/stop?provider=$provider'), headers: headers);
+    final response = await http.post(
+        Uri.parse('$baseUrl/v1/admin/ingestion/stop?provider=$provider'),
+        headers: headers);
     if (response.statusCode != 200) {
       throw Exception('Failed to stop ingestion: ${response.body}');
     }

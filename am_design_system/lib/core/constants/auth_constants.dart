@@ -1,5 +1,3 @@
-
-
 /// Authentication-related constants
 class AuthConstants {
   // Error messages
@@ -20,9 +18,10 @@ class AuthConstants {
   // Demo user credentials
   static const String demoEmail = 'ssd2658@gmail.com';
   static const String demoPassword = '@M1unish';
-  
+
   // Google Auth
-  static const String googleClientId = '307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com';
+  static const String googleClientId =
+      '307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com';
 
   // Token settings
   static const Duration tokenExpiryDuration = Duration(hours: 24);
@@ -40,4 +39,3 @@ class AuthConstants {
   static const String authMethodGoogle = 'google';
   static const String authMethodDemo = 'demo';
 }
-

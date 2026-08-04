@@ -6,9 +6,9 @@
 
 part of openapi.api;
 
-
 class MarketDataAdminControllerApi {
-  MarketDataAdminControllerApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  MarketDataAdminControllerApi([ApiClient? apiClient])
+      : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
@@ -16,9 +16,10 @@ class MarketDataAdminControllerApi {
   /// Parameters:
   ///
   /// * [String] jobId (required):
-  Future<Response> getJobDetailsWithHttpInfo(String jobId,) async {
-    final path = r'/v1/admin/logs/{jobId}'
-      .replaceAll('{jobId}', jobId);
+  Future<Response> getJobDetailsWithHttpInfo(
+    String jobId,
+  ) async {
+    final path = r'/v1/admin/logs/{jobId}'.replaceAll('{jobId}', jobId);
     Object? postBody;
 
     final queryParams = <QueryParam>[];
@@ -26,7 +27,6 @@ class MarketDataAdminControllerApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -42,17 +42,24 @@ class MarketDataAdminControllerApi {
   /// Parameters:
   ///
   /// * [String] jobId (required):
-  Future<IngestionJobLog?> getJobDetails(String jobId,) async {
-    final response = await getJobDetailsWithHttpInfo(jobId,);
+  Future<IngestionJobLog?> getJobDetails(
+    String jobId,
+  ) async {
+    final response = await getJobDetailsWithHttpInfo(
+      jobId,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'IngestionJobLog',) as IngestionJobLog;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'IngestionJobLog',
+      ) as IngestionJobLog;
     }
     return null;
   }
@@ -67,7 +74,12 @@ class MarketDataAdminControllerApi {
   /// * [DateTime] startDate:
   ///
   /// * [DateTime] endDate:
-  Future<Response> getLogsWithHttpInfo({ int? page, int? size, DateTime? startDate, DateTime? endDate, }) async {
+  Future<Response> getLogsWithHttpInfo({
+    int? page,
+    int? size,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
     final path = r'/v1/admin/logs';
     Object? postBody;
 
@@ -90,7 +102,6 @@ class MarketDataAdminControllerApi {
 
     const contentTypes = <String>[];
 
-
     return apiClient.invokeAPI(
       path,
       'GET',
@@ -111,20 +122,31 @@ class MarketDataAdminControllerApi {
   /// * [DateTime] startDate:
   ///
   /// * [DateTime] endDate:
-  Future<List<IngestionJobLog>?> getLogs({ int? page, int? size, DateTime? startDate, DateTime? endDate, }) async {
-    final response = await getLogsWithHttpInfo( page: page, size: size, startDate: startDate, endDate: endDate, );
+  Future<List<IngestionJobLog>?> getLogs({
+    int? page,
+    int? size,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final response = await getLogsWithHttpInfo(
+      page: page,
+      size: size,
+      startDate: startDate,
+      endDate: endDate,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final responseBody = await _decodeBodyBytes(response);
-      return (await apiClient.deserializeAsync(responseBody, 'List<IngestionJobLog>') as List)
-        .cast<IngestionJobLog>()
-        .toList(growable: false);
-
+      return (await apiClient.deserializeAsync(
+              responseBody, 'List<IngestionJobLog>') as List)
+          .cast<IngestionJobLog>()
+          .toList(growable: false);
     }
     return null;
   }
@@ -135,7 +157,10 @@ class MarketDataAdminControllerApi {
   /// * [String] provider:
   ///
   /// * [List<String>] symbols:
-  Future<Response> startIngestionWithHttpInfo({ String? provider, List<String>? symbols, }) async {
+  Future<Response> startIngestionWithHttpInfo({
+    String? provider,
+    List<String>? symbols,
+  }) async {
     final path = r'/v1/admin/ingestion/start';
     Object? postBody;
 
@@ -152,7 +177,6 @@ class MarketDataAdminControllerApi {
 
     const contentTypes = <String>[];
 
-
     return apiClient.invokeAPI(
       path,
       'POST',
@@ -169,17 +193,26 @@ class MarketDataAdminControllerApi {
   /// * [String] provider:
   ///
   /// * [List<String>] symbols:
-  Future<String?> startIngestion({ String? provider, List<String>? symbols, }) async {
-    final response = await startIngestionWithHttpInfo( provider: provider, symbols: symbols, );
+  Future<String?> startIngestion({
+    String? provider,
+    List<String>? symbols,
+  }) async {
+    final response = await startIngestionWithHttpInfo(
+      provider: provider,
+      symbols: symbols,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'String',) as String;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'String',
+      ) as String;
     }
     return null;
   }
@@ -188,7 +221,9 @@ class MarketDataAdminControllerApi {
   /// Parameters:
   ///
   /// * [String] provider (required):
-  Future<Response> stopIngestionWithHttpInfo(String provider,) async {
+  Future<Response> stopIngestionWithHttpInfo(
+    String provider,
+  ) async {
     final path = r'/v1/admin/ingestion/stop';
     Object? postBody;
 
@@ -196,10 +231,9 @@ class MarketDataAdminControllerApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'provider', provider));
+    queryParams.addAll(_queryParams('', 'provider', provider));
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -215,17 +249,24 @@ class MarketDataAdminControllerApi {
   /// Parameters:
   ///
   /// * [String] provider (required):
-  Future<String?> stopIngestion(String provider,) async {
-    final response = await stopIngestionWithHttpInfo(provider,);
+  Future<String?> stopIngestion(
+    String provider,
+  ) async {
+    final response = await stopIngestionWithHttpInfo(
+      provider,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'String',) as String;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'String',
+      ) as String;
     }
     return null;
   }
@@ -238,7 +279,11 @@ class MarketDataAdminControllerApi {
   /// * [bool] forceRefresh:
   ///
   /// * [bool] fetchIndexStocks:
-  Future<Response> triggerHistoricalSyncWithHttpInfo({ String? symbol, bool? forceRefresh, bool? fetchIndexStocks, }) async {
+  Future<Response> triggerHistoricalSyncWithHttpInfo({
+    String? symbol,
+    bool? forceRefresh,
+    bool? fetchIndexStocks,
+  }) async {
     final path = r'/v1/admin/sync/historical';
     Object? postBody;
 
@@ -253,11 +298,11 @@ class MarketDataAdminControllerApi {
       queryParams.addAll(_queryParams('', 'forceRefresh', forceRefresh));
     }
     if (fetchIndexStocks != null) {
-      queryParams.addAll(_queryParams('', 'fetchIndexStocks', fetchIndexStocks));
+      queryParams
+          .addAll(_queryParams('', 'fetchIndexStocks', fetchIndexStocks));
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -277,17 +322,28 @@ class MarketDataAdminControllerApi {
   /// * [bool] forceRefresh:
   ///
   /// * [bool] fetchIndexStocks:
-  Future<String?> triggerHistoricalSync({ String? symbol, bool? forceRefresh, bool? fetchIndexStocks, }) async {
-    final response = await triggerHistoricalSyncWithHttpInfo( symbol: symbol, forceRefresh: forceRefresh, fetchIndexStocks: fetchIndexStocks, );
+  Future<String?> triggerHistoricalSync({
+    String? symbol,
+    bool? forceRefresh,
+    bool? fetchIndexStocks,
+  }) async {
+    final response = await triggerHistoricalSyncWithHttpInfo(
+      symbol: symbol,
+      forceRefresh: forceRefresh,
+      fetchIndexStocks: fetchIndexStocks,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'String',) as String;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'String',
+      ) as String;
     }
     return null;
   }

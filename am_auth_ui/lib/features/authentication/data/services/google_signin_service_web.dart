@@ -63,7 +63,9 @@ class GoogleSignInService {
       }
 
       final configClientId = ConfigService.config.google.webClientId;
-      final clientId = configClientId.isNotEmpty ? configClientId : AuthConstants.googleClientId;
+      final clientId = configClientId.isNotEmpty
+          ? configClientId
+          : AuthConstants.googleClientId;
 
       // Initialize Google Sign-In (once)
       if (!_initialized) {
@@ -83,46 +85,49 @@ class GoogleSignInService {
       // Open Google Sign-In popup directly
       print('🔵 Opening Google Sign-In popup window...');
       CommonLogger.info('🔵 Opening Google Sign-In popup window...');
-      
-      print('🔵 Using client ID: ${clientId.substring(0, clientId.length > 20 ? 20 : clientId.length)}...');
-      
+
+      print(
+          '🔵 Using client ID: ${clientId.substring(0, clientId.length > 20 ? 20 : clientId.length)}...');
+
       // Dynamically determine redirect URI based on current origin
       final currentOrigin = html.window.location.origin;
-      final redirectUri = Uri.encodeComponent('$currentOrigin/oauth_callback.html');
+      final redirectUri =
+          Uri.encodeComponent('$currentOrigin/oauth_callback.html');
       print('🔵 Redirect URI: $redirectUri');
-      
+
       final authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?'
           'client_id=$clientId&'
           'redirect_uri=$redirectUri&'
           'response_type=token id_token&'
           'scope=openid email profile&'
           'nonce=${DateTime.now().millisecondsSinceEpoch}';
-      
+
       // Open popup window
       final popup = html.window.open(
         authUrl,
         'Google Sign-In',
         'width=500,height=600,menubar=no,toolbar=no',
       );
-      
+
       if (popup == null) {
         print('❌ Popup was blocked!');
-        throw AuthException('Popup was blocked. Please allow popups for localhost:3000');
+        throw AuthException(
+            'Popup was blocked. Please allow popups for localhost:3000');
       }
       print('✅ Popup window opened successfully');
-      
+
       // Listen for the callback from the popup window
       late StreamSubscription<html.MessageEvent> subscription;
       subscription = html.window.onMessage.listen((event) {
         print('🔵 Received message from popup: ${event.data}');
         CommonLogger.info('🔵 Received message from popup: ${event.data}');
-        
+
         try {
           if (event.data != null) {
             // Handle both string and object data
             dynamic data = event.data;
             String? idToken;
-            
+
             // If it's a Map, extract the id_token
             if (data is Map) {
               if (data['type'] == 'google-signin-success') {
@@ -130,14 +135,14 @@ class GoogleSignInService {
                 CommonLogger.info('🔵 Extracted ID token from message');
               }
             }
-            
+
             if (idToken != null && idToken.isNotEmpty) {
               final account = GoogleSignInAccount(
                 email: 'google-user',
                 id: 'google-id',
                 idToken: idToken,
               );
-              
+
               if (_signInCompleter != null && !_signInCompleter!.isCompleted) {
                 CommonLogger.info('✅ Completing sign-in with token');
                 _signInCompleter!.complete(account);
@@ -228,4 +233,3 @@ class GoogleSignInService {
   /// Get currently signed in account
   GoogleSignInAccount? getCurrentAccount() => null;
 }
-

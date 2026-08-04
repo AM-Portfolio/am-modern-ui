@@ -14,7 +14,7 @@ class MarketDataSdkService {
 
   MarketDataSdkService() {
     _apiClient = ApiClient(basePath: EnvDomains.market);
-    
+
     // Initialize all API clients
     marketDataApi = MarketDataApi(_apiClient);
     marketIndexApi = IndicesApi(_apiClient);

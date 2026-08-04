@@ -42,7 +42,8 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollActiveIntoView());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _scrollActiveIntoView());
   }
 
   @override
@@ -50,7 +51,8 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.activeNavItem != widget.activeNavItem ||
         oldWidget.items.length != widget.items.length) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollActiveIntoView());
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _scrollActiveIntoView());
     }
   }
 
@@ -77,8 +79,8 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    final visibleCount =
-        widget.visibleCount.clamp(1, widget.items.isEmpty ? 1 : widget.items.length);
+    final visibleCount = widget.visibleCount
+        .clamp(1, widget.items.isEmpty ? 1 : widget.items.length);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),

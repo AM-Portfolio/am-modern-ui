@@ -7,63 +7,70 @@ import '../cubit/favorite_filter/favorite_filter_cubit.dart';
 /// Panel for managing and applying favorite filters
 /// Displays a compact dropdown with all saved filters
 class FavoriteFilterPanel extends StatelessWidget {
-  const FavoriteFilterPanel({ super.key, this.onFilterSelected});
+  const FavoriteFilterPanel({super.key, this.onFilterSelected});
 
-    final void Function(FavoriteFilter filter)? onFilterSelected;
+  final void Function(FavoriteFilter filter)? onFilterSelected;
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<FavoriteFilterCubit, FavoriteFilterState>(
-    builder: (context, state) => state.when(
-      initial: () => const SizedBox.shrink(),
-      loading: () => const SizedBox.shrink(),
-      loaded: (filterList, selectedFilter) {
-        if (filterList.filters.isEmpty) return const SizedBox.shrink();
-        return _buildDropdown(context, filterList, selectedFilter);
-      },
-      error: (message) => const SizedBox.shrink(),
-    ),
-  );
+  Widget build(BuildContext context) =>
+      BlocBuilder<FavoriteFilterCubit, FavoriteFilterState>(
+        builder: (context, state) => state.when(
+          initial: () => const SizedBox.shrink(),
+          loading: () => const SizedBox.shrink(),
+          loaded: (filterList, selectedFilter) {
+            if (filterList.filters.isEmpty) return const SizedBox.shrink();
+            return _buildDropdown(context, filterList, selectedFilter);
+          },
+          error: (message) => const SizedBox.shrink(),
+        ),
+      );
 
-  Widget _buildDropdownIcon(ThemeData theme, FavoriteFilter? selectedFilter) => Stack(
-    clipBehavior: Clip.none,
-    children: [
-      Icon(Icons.bookmark_rounded, color: theme.primaryColor, size: 20),
-      if (selectedFilter != null)
-        Positioned(
-          right: -2,
-          top: -2,
-          child: Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: theme.primaryColor,
-              shape: BoxShape.circle,
-              border: Border.all(color: theme.scaffoldBackgroundColor, width: 1.5),
+  Widget _buildDropdownIcon(ThemeData theme, FavoriteFilter? selectedFilter) =>
+      Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(Icons.bookmark_rounded, color: theme.primaryColor, size: 20),
+          if (selectedFilter != null)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: theme.primaryColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: theme.scaffoldBackgroundColor, width: 1.5),
+                ),
+                child: const Icon(Icons.check, size: 8, color: Colors.white),
+              ),
             ),
-            child: const Icon(Icons.check, size: 8, color: Colors.white),
-          ),
-        ),
-    ],
-  );
+        ],
+      );
 
-  PopupMenuItem<String> _buildHeaderMenuItem(ThemeData theme, int filterCount) => PopupMenuItem<String>(
-    enabled: false,
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    child: Row(
-      children: [
-        Icon(Icons.bookmark_rounded, size: 18, color: theme.primaryColor),
-        const SizedBox(width: 8),
-        Text(
-          'Favorite Filters',
-          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.primaryColor),
+  PopupMenuItem<String> _buildHeaderMenuItem(
+          ThemeData theme, int filterCount) =>
+      PopupMenuItem<String>(
+        enabled: false,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(Icons.bookmark_rounded, size: 18, color: theme.primaryColor),
+            const SizedBox(width: 8),
+            Text(
+              'Favorite Filters',
+              style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold, color: theme.primaryColor),
+            ),
+            const Spacer(),
+            Text(
+              '$filterCount',
+              style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.hintColor, fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
-        const Spacer(),
-        Text(
-          '$filterCount',
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor, fontWeight: FontWeight.bold),
-        ),
-      ],
-    ),
-  );
+      );
 
   PopupMenuItem<String> _buildFilterMenuItem(
     BuildContext context,
@@ -78,9 +85,15 @@ class FavoriteFilterPanel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Row(
         children: [
-          if (isSelected) Icon(Icons.check_circle, size: 16, color: theme.primaryColor) else const SizedBox(width: 16),
+          if (isSelected)
+            Icon(Icons.check_circle, size: 16, color: theme.primaryColor)
+          else
+            const SizedBox(width: 16),
           const SizedBox(width: 8),
-          if (isDefault) ...[Icon(Icons.star, size: 14, color: Colors.amber[700]), const SizedBox(width: 4)],
+          if (isDefault) ...[
+            Icon(Icons.star, size: 14, color: Colors.amber[700]),
+            const SizedBox(width: 4)
+          ],
           Expanded(
             child: Text(
               filter.name,
@@ -105,22 +118,25 @@ class FavoriteFilterPanel extends StatelessWidget {
     );
   }
 
-  PopupMenuItem<String> _buildManageMenuItem(ThemeData theme) => PopupMenuItem<String>(
-    value: 'manage',
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    child: Row(
-      children: [
-        Icon(Icons.settings_outlined, size: 18, color: theme.hintColor),
-        const SizedBox(width: 12),
-        Text(
-          'Manage Filters',
-          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500, color: theme.hintColor),
+  PopupMenuItem<String> _buildManageMenuItem(ThemeData theme) =>
+      PopupMenuItem<String>(
+        value: 'manage',
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(Icons.settings_outlined, size: 18, color: theme.hintColor),
+            const SizedBox(width: 12),
+            Text(
+              'Manage Filters',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500, color: theme.hintColor),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 
-  void _handleFilterSelection(BuildContext context, String value, FavoriteFilterList filterList) {
+  void _handleFilterSelection(
+      BuildContext context, String value, FavoriteFilterList filterList) {
     if (value == 'manage') {
       _showManageDialog(context, filterList);
     } else {
@@ -132,7 +148,8 @@ class FavoriteFilterPanel extends StatelessWidget {
     }
   }
 
-  Widget _buildDropdown(BuildContext context, FavoriteFilterList filterList, FavoriteFilter? selectedFilter) {
+  Widget _buildDropdown(BuildContext context, FavoriteFilterList filterList,
+      FavoriteFilter? selectedFilter) {
     final theme = Theme.of(context);
 
     return PopupMenuButton<String>(
@@ -163,7 +180,8 @@ class FavoriteFilterPanel extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: Icon(isDefault ? Icons.star : Icons.bookmark_outline, color: isDefault ? Colors.amber[700] : null),
+        leading: Icon(isDefault ? Icons.star : Icons.bookmark_outline,
+            color: isDefault ? Colors.amber[700] : null),
         title: Text(filter.name),
         subtitle: filter.description != null ? Text(filter.description!) : null,
         trailing: Row(
@@ -172,7 +190,7 @@ class FavoriteFilterPanel extends StatelessWidget {
             if (!isDefault)
               IconButton(
                 icon: const Icon(Icons.star_outline),
-                onPressed: () => cubit.setAsDefault( filter.id),
+                onPressed: () => cubit.setAsDefault(filter.id),
                 tooltip: 'Set as default',
               ),
             IconButton(
@@ -189,7 +207,8 @@ class FavoriteFilterPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildManageDialogContent(BuildContext dialogContext, BuildContext context, FavoriteFilterCubit cubit) =>
+  Widget _buildManageDialogContent(BuildContext dialogContext,
+          BuildContext context, FavoriteFilterCubit cubit) =>
       BlocBuilder<FavoriteFilterCubit, FavoriteFilterState>(
         builder: (context, state) => state.when(
           initial: () => const SizedBox.shrink(),
@@ -201,7 +220,8 @@ class FavoriteFilterPanel extends StatelessWidget {
                   itemCount: filterList.filters.length,
                   itemBuilder: (context, index) {
                     final filter = filterList.filters[index];
-                    return _buildFilterListTile(dialogContext, context, cubit, filter);
+                    return _buildFilterListTile(
+                        dialogContext, context, cubit, filter);
                   },
                 ),
           error: (message) => Center(child: Text('Error: $message')),
@@ -217,8 +237,14 @@ class FavoriteFilterPanel extends StatelessWidget {
         value: cubit,
         child: AlertDialog(
           title: const Text('Manage Favorite Filters'),
-          content: SizedBox(width: 500, child: _buildManageDialogContent(dialogContext, context, cubit)),
-          actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Close'))],
+          content: SizedBox(
+              width: 500,
+              child: _buildManageDialogContent(dialogContext, context, cubit)),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Close'))
+          ],
         ),
       ),
     );
@@ -231,10 +257,12 @@ class FavoriteFilterPanel extends StatelessWidget {
         title: const Text('Delete Favorite Filter'),
         content: Text('Are you sure you want to delete "${filter.name}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel')),
           TextButton(
             onPressed: () {
-              context.read<FavoriteFilterCubit>().deleteFilter( filter.id);
+              context.read<FavoriteFilterCubit>().deleteFilter(filter.id);
               Navigator.of(dialogContext).pop();
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),

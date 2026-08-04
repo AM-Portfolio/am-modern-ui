@@ -4,7 +4,8 @@ library am_market_ui;
 /// Export widgets and pages available for external use
 
 // Export core pages
-export 'features/dashboard/presentation/pages/dashboard_page.dart' show MarketPage;
+export 'features/dashboard/presentation/pages/dashboard_page.dart'
+    show MarketPage;
 
 // Export providers for Trade UI integration
 // Export providers for Trade UI integration

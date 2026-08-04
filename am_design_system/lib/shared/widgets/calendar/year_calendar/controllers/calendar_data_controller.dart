@@ -7,7 +7,8 @@ class CalendarDataController extends ChangeNotifier {
   CalendarDataController({this.onDateSelected, this.onDashboardDataRequested});
 
   final Function(DateTime date, CalendarDayData dayData)? onDateSelected;
-  final Function(DateTime startDate, DateTime? endDate)? onDashboardDataRequested;
+  final Function(DateTime startDate, DateTime? endDate)?
+      onDashboardDataRequested;
 
   DateTime? _selectedDate;
   CalendarDayData? _selectedDayData;
@@ -56,7 +57,8 @@ class CalendarDataController extends ChangeNotifier {
   }
 
   /// Load dashboard data for a date range
-  Future<void> loadDashboardDataForRange(DateTime startDate, DateTime endDate) async {
+  Future<void> loadDashboardDataForRange(
+      DateTime startDate, DateTime endDate) async {
     _isLoadingDashboard = true;
     notifyListeners();
 
@@ -64,7 +66,8 @@ class CalendarDataController extends ChangeNotifier {
       onDashboardDataRequested?.call(startDate, endDate);
 
       if (kDebugMode) {
-        print('Loading dashboard data for range: ${startDate.toIso8601String()} to ${endDate.toIso8601String()}');
+        print(
+            'Loading dashboard data for range: ${startDate.toIso8601String()} to ${endDate.toIso8601String()}');
       }
     } catch (e) {
       if (kDebugMode) {

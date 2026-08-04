@@ -28,12 +28,12 @@ class WatchlistFilterWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GenericFilterWidget<dynamic>(
-    items: watchlistItems,
-    filterProvider: WatchlistFilterProvider(),
-    onFiltersApplied: onFiltersApplied,
-    onFiltersReset: onFiltersReset,
-    initiallyExpanded: initiallyExpanded,
-    title: 'Watchlist Filters',
-    icon: Icons.visibility_outlined,
-  );
+        items: watchlistItems,
+        filterProvider: WatchlistFilterProvider(),
+        onFiltersApplied: onFiltersApplied,
+        onFiltersReset: onFiltersReset,
+        initiallyExpanded: initiallyExpanded,
+        title: 'Watchlist Filters',
+        icon: Icons.visibility_outlined,
+      );
 }

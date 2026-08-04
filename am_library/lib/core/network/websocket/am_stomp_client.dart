@@ -19,19 +19,20 @@ enum StompStatus {
 class AmStompClient {
   String? _url;
   StompClient? _client;
-  
+
   // Maps subscription paths to their unsubscribe callbacks
   final Map<String, dynamic> _subscriptions = {};
-  
+
   // Queues for operations requested while connecting
   final List<String> _pendingSubscriptions = [];
   final List<Map<String, dynamic>> _pendingSends = [];
-  
+
   // Stream controller for all incoming messages
   final _messageSubject = PublishSubject<StompFrame>();
-  
+
   // Status broadcaster
-  final _statusSubject = BehaviorSubject<StompStatus>.seeded(StompStatus.disconnected);
+  final _statusSubject =
+      BehaviorSubject<StompStatus>.seeded(StompStatus.disconnected);
 
   Stream<StompStatus> get status => _statusSubject.stream;
   Stream<StompFrame> get messages => _messageSubject.stream;
@@ -72,7 +73,8 @@ class AmStompClient {
         final queryParams = Map<String, String>.from(uri.queryParameters);
         queryParams['access_token'] = token;
         connectionUrl = uri.replace(queryParameters: queryParams).toString();
-        AppLogger.debug('AmStompClient: Web detected, appending access_token to URL for handshake.');
+        AppLogger.debug(
+            'AmStompClient: Web detected, appending access_token to URL for handshake.');
       }
     }
 
@@ -89,10 +91,10 @@ class AmStompClient {
         onConnect: (StompFrame frame) {
           _statusSubject.add(StompStatus.connected);
           AppLogger.info('AmStompClient: ✅ Connected to STOMP broker.');
-          
+
           // Process queued operations
           _processQueues();
-          
+
           onConnect?.call(frame);
         },
         onWebSocketError: (dynamic error) {
@@ -103,10 +105,10 @@ class AmStompClient {
         onDisconnect: (StompFrame frame) {
           _statusSubject.add(StompStatus.disconnected);
           AppLogger.info('AmStompClient: Disconnected.');
-          _subscriptions.clear(); 
+          _subscriptions.clear();
         },
         onStompError: (StompFrame frame) {
-           AppLogger.error('AmStompClient: STOMP Error: ${frame.body}');
+          AppLogger.error('AmStompClient: STOMP Error: ${frame.body}');
         },
         reconnectDelay: const Duration(seconds: 5),
         connectionTimeout: const Duration(seconds: 10),
@@ -120,7 +122,8 @@ class AmStompClient {
     if (!isConnected) return;
 
     if (_pendingSubscriptions.isNotEmpty) {
-      AppLogger.info('AmStompClient: Processing ${_pendingSubscriptions.length} queued subscriptions...');
+      AppLogger.info(
+          'AmStompClient: Processing ${_pendingSubscriptions.length} queued subscriptions...');
       final subs = List<String>.from(_pendingSubscriptions);
       _pendingSubscriptions.clear();
       for (var dest in subs) {
@@ -129,7 +132,8 @@ class AmStompClient {
     }
 
     if (_pendingSends.isNotEmpty) {
-      AppLogger.info('AmStompClient: Processing ${_pendingSends.length} queued messages...');
+      AppLogger.info(
+          'AmStompClient: Processing ${_pendingSends.length} queued messages...');
       final sends = List<Map<String, dynamic>>.from(_pendingSends);
       _pendingSends.clear();
       for (var s in sends) {
@@ -144,7 +148,8 @@ class AmStompClient {
 
   void subscribe(String destination, {bool forceResubscribe = false}) {
     if (!isConnected) {
-      AppLogger.info('AmStompClient: Queueing subscription to $destination (Connecting...)');
+      AppLogger.info(
+          'AmStompClient: Queueing subscription to $destination (Connecting...)');
       if (!_pendingSubscriptions.contains(destination)) {
         _pendingSubscriptions.add(destination);
       }
@@ -160,17 +165,20 @@ class AmStompClient {
       }
     }
 
-    AppLogger.info('AmStompClient: 📡 Attempting subscription to: $destination');
-    
+    AppLogger.info(
+        'AmStompClient: 📡 Attempting subscription to: $destination');
+
     _subscriptions[destination] = _client!.subscribe(
       destination: destination,
       callback: (StompFrame frame) {
         _messageSubject.add(frame);
-        AppLogger.debug('AmStompClient: Msg on $destination -> ${frame.body?.substring(0, frame.body!.length > 100 ? 100 : frame.body!.length) ?? "null"}');
+        AppLogger.debug(
+            'AmStompClient: Msg on $destination -> ${frame.body?.substring(0, frame.body!.length > 100 ? 100 : frame.body!.length) ?? "null"}');
       },
     );
-    
-    AppLogger.info('AmStompClient: ✅ Subscription registered for: $destination');
+
+    AppLogger.info(
+        'AmStompClient: ✅ Subscription registered for: $destination');
   }
 
   void unsubscribe(String destination) {
@@ -190,9 +198,13 @@ class AmStompClient {
     _pendingSends.clear();
   }
 
-  void send({required String destination, String? body, Map<String, String>? headers}) {
+  void send(
+      {required String destination,
+      String? body,
+      Map<String, String>? headers}) {
     if (!isConnected) {
-      AppLogger.info('AmStompClient: Queueing message to $destination (Connecting...)');
+      AppLogger.info(
+          'AmStompClient: Queueing message to $destination (Connecting...)');
       _pendingSends.add({
         'destination': destination,
         'body': body,
@@ -201,7 +213,8 @@ class AmStompClient {
       return;
     }
 
-    AppLogger.info('AmStompClient: 🚀 Sending message to $destination (Body: ${body?.length ?? 0} chars)');
+    AppLogger.info(
+        'AmStompClient: 🚀 Sending message to $destination (Body: ${body?.length ?? 0} chars)');
     _client!.send(
       destination: destination,
       body: body,

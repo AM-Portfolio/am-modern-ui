@@ -9,7 +9,7 @@ import 'package:am_subscription_ui/am_subscription_ui.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize dynamic environment and configuration
   await ConfigService.initialize();
 
@@ -33,9 +33,10 @@ void main() async {
     ),
   );
   subscriptionDio.interceptors.add(AuthInterceptor(storage));
-  
+
   // Register named Dio client
-  GetIt.I.registerSingleton<Dio>(subscriptionDio, instanceName: 'subscriptionDio');
+  GetIt.I
+      .registerSingleton<Dio>(subscriptionDio, instanceName: 'subscriptionDio');
 
   // Register remote data sources and cubit
   final remoteDataSource = SubscriptionRemoteDataSourceImpl(

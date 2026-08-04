@@ -65,8 +65,5 @@ void main() {
     test('to test the property `holdingCount`', () async {
       // TODO
     });
-
-
   });
-
 }

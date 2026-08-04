@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/navigation/swipe_navigation_controller.dart';
 
-
 /// A swipeable PageView widget that works with SwipeNavigationController
 /// Supports horizontal swiping, haptic feedback, and page indicators
 class SwipeablePageView extends StatelessWidget {
@@ -16,7 +15,8 @@ class SwipeablePageView extends StatelessWidget {
   final IndicatorPosition indicatorPosition;
 
   /// Custom indicator widget (overrides default dots)
-  final Widget Function(BuildContext, int currentIndex, int itemCount)? customIndicator;
+  final Widget Function(BuildContext, int currentIndex, int itemCount)?
+      customIndicator;
 
   /// Callback when page changes
   final void Function(int index)? onPageChanged;
@@ -40,7 +40,6 @@ class SwipeablePageView extends StatelessWidget {
       children: [
         if (showIndicator && indicatorPosition == IndicatorPosition.top)
           _buildIndicator(),
-
         Expanded(
           child: AnimatedBuilder(
             animation: controller,
@@ -60,7 +59,6 @@ class SwipeablePageView extends StatelessWidget {
             },
           ),
         ),
-
         if (showIndicator && indicatorPosition == IndicatorPosition.bottom)
           _buildIndicator(),
       ],

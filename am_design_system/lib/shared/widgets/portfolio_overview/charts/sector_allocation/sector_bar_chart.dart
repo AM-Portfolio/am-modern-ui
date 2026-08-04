@@ -24,7 +24,10 @@ class SectorBarChart extends StatelessWidget {
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
-        maxY: allocations.map((e) => e.percentage).reduce((a, b) => a > b ? a : b) * 1.2,
+        maxY: allocations
+                .map((e) => e.percentage)
+                .reduce((a, b) => a > b ? a : b) *
+            1.2,
         barGroups: _buildBarGroups(),
         titlesData: FlTitlesData(
           show: true,
@@ -59,8 +62,10 @@ class SectorBarChart extends StatelessWidget {
               reservedSize: 40,
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         gridData: FlGridData(
           show: true,

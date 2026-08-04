@@ -219,59 +219,62 @@ class BrokerageCalculationResponse {
   String? error;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is BrokerageCalculationResponse &&
-    other.buyTransactionValue == buyTransactionValue &&
-    other.sellTransactionValue == sellTransactionValue &&
-    other.buyBrokerage == buyBrokerage &&
-    other.sellBrokerage == sellBrokerage &&
-    other.buySTT == buySTT &&
-    other.sellSTT == sellSTT &&
-    other.buyExchangeCharges == buyExchangeCharges &&
-    other.sellExchangeCharges == sellExchangeCharges &&
-    other.buyGST == buyGST &&
-    other.sellGST == sellGST &&
-    other.buySEBICharges == buySEBICharges &&
-    other.sellSEBICharges == sellSEBICharges &&
-    other.buyStampDuty == buyStampDuty &&
-    other.sellStampDuty == sellStampDuty &&
-    other.dpCharges == dpCharges &&
-    other.totalBuyCharges == totalBuyCharges &&
-    other.totalSellCharges == totalSellCharges &&
-    other.totalCharges == totalCharges &&
-    other.netProfitLoss == netProfitLoss &&
-    other.chargesPercentage == chargesPercentage &&
-    other.breakEvenPrice == breakEvenPrice &&
-    other.status == status &&
-    other.error == error;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BrokerageCalculationResponse &&
+          other.buyTransactionValue == buyTransactionValue &&
+          other.sellTransactionValue == sellTransactionValue &&
+          other.buyBrokerage == buyBrokerage &&
+          other.sellBrokerage == sellBrokerage &&
+          other.buySTT == buySTT &&
+          other.sellSTT == sellSTT &&
+          other.buyExchangeCharges == buyExchangeCharges &&
+          other.sellExchangeCharges == sellExchangeCharges &&
+          other.buyGST == buyGST &&
+          other.sellGST == sellGST &&
+          other.buySEBICharges == buySEBICharges &&
+          other.sellSEBICharges == sellSEBICharges &&
+          other.buyStampDuty == buyStampDuty &&
+          other.sellStampDuty == sellStampDuty &&
+          other.dpCharges == dpCharges &&
+          other.totalBuyCharges == totalBuyCharges &&
+          other.totalSellCharges == totalSellCharges &&
+          other.totalCharges == totalCharges &&
+          other.netProfitLoss == netProfitLoss &&
+          other.chargesPercentage == chargesPercentage &&
+          other.breakEvenPrice == breakEvenPrice &&
+          other.status == status &&
+          other.error == error;
 
   @override
   int get hashCode =>
-    (buyTransactionValue == null ? 0 : buyTransactionValue!.hashCode) +
-    (sellTransactionValue == null ? 0 : sellTransactionValue!.hashCode) +
-    (buyBrokerage == null ? 0 : buyBrokerage!.hashCode) +
-    (sellBrokerage == null ? 0 : sellBrokerage!.hashCode) +
-    (buySTT == null ? 0 : buySTT!.hashCode) +
-    (sellSTT == null ? 0 : sellSTT!.hashCode) +
-    (buyExchangeCharges == null ? 0 : buyExchangeCharges!.hashCode) +
-    (sellExchangeCharges == null ? 0 : sellExchangeCharges!.hashCode) +
-    (buyGST == null ? 0 : buyGST!.hashCode) +
-    (sellGST == null ? 0 : sellGST!.hashCode) +
-    (buySEBICharges == null ? 0 : buySEBICharges!.hashCode) +
-    (sellSEBICharges == null ? 0 : sellSEBICharges!.hashCode) +
-    (buyStampDuty == null ? 0 : buyStampDuty!.hashCode) +
-    (sellStampDuty == null ? 0 : sellStampDuty!.hashCode) +
-    (dpCharges == null ? 0 : dpCharges!.hashCode) +
-    (totalBuyCharges == null ? 0 : totalBuyCharges!.hashCode) +
-    (totalSellCharges == null ? 0 : totalSellCharges!.hashCode) +
-    (totalCharges == null ? 0 : totalCharges!.hashCode) +
-    (netProfitLoss == null ? 0 : netProfitLoss!.hashCode) +
-    (chargesPercentage == null ? 0 : chargesPercentage!.hashCode) +
-    (breakEvenPrice == null ? 0 : breakEvenPrice!.hashCode) +
-    (status == null ? 0 : status!.hashCode) +
-    (error == null ? 0 : error!.hashCode);
+      (buyTransactionValue == null ? 0 : buyTransactionValue!.hashCode) +
+      (sellTransactionValue == null ? 0 : sellTransactionValue!.hashCode) +
+      (buyBrokerage == null ? 0 : buyBrokerage!.hashCode) +
+      (sellBrokerage == null ? 0 : sellBrokerage!.hashCode) +
+      (buySTT == null ? 0 : buySTT!.hashCode) +
+      (sellSTT == null ? 0 : sellSTT!.hashCode) +
+      (buyExchangeCharges == null ? 0 : buyExchangeCharges!.hashCode) +
+      (sellExchangeCharges == null ? 0 : sellExchangeCharges!.hashCode) +
+      (buyGST == null ? 0 : buyGST!.hashCode) +
+      (sellGST == null ? 0 : sellGST!.hashCode) +
+      (buySEBICharges == null ? 0 : buySEBICharges!.hashCode) +
+      (sellSEBICharges == null ? 0 : sellSEBICharges!.hashCode) +
+      (buyStampDuty == null ? 0 : buyStampDuty!.hashCode) +
+      (sellStampDuty == null ? 0 : sellStampDuty!.hashCode) +
+      (dpCharges == null ? 0 : dpCharges!.hashCode) +
+      (totalBuyCharges == null ? 0 : totalBuyCharges!.hashCode) +
+      (totalSellCharges == null ? 0 : totalSellCharges!.hashCode) +
+      (totalCharges == null ? 0 : totalCharges!.hashCode) +
+      (netProfitLoss == null ? 0 : netProfitLoss!.hashCode) +
+      (chargesPercentage == null ? 0 : chargesPercentage!.hashCode) +
+      (breakEvenPrice == null ? 0 : breakEvenPrice!.hashCode) +
+      (status == null ? 0 : status!.hashCode) +
+      (error == null ? 0 : error!.hashCode);
 
   @override
-  String toString() => 'BrokerageCalculationResponse[buyTransactionValue=$buyTransactionValue, sellTransactionValue=$sellTransactionValue, buyBrokerage=$buyBrokerage, sellBrokerage=$sellBrokerage, buySTT=$buySTT, sellSTT=$sellSTT, buyExchangeCharges=$buyExchangeCharges, sellExchangeCharges=$sellExchangeCharges, buyGST=$buyGST, sellGST=$sellGST, buySEBICharges=$buySEBICharges, sellSEBICharges=$sellSEBICharges, buyStampDuty=$buyStampDuty, sellStampDuty=$sellStampDuty, dpCharges=$dpCharges, totalBuyCharges=$totalBuyCharges, totalSellCharges=$totalSellCharges, totalCharges=$totalCharges, netProfitLoss=$netProfitLoss, chargesPercentage=$chargesPercentage, breakEvenPrice=$breakEvenPrice, status=$status, error=$error]';
+  String toString() =>
+      'BrokerageCalculationResponse[buyTransactionValue=$buyTransactionValue, sellTransactionValue=$sellTransactionValue, buyBrokerage=$buyBrokerage, sellBrokerage=$sellBrokerage, buySTT=$buySTT, sellSTT=$sellSTT, buyExchangeCharges=$buyExchangeCharges, sellExchangeCharges=$sellExchangeCharges, buyGST=$buyGST, sellGST=$sellGST, buySEBICharges=$buySEBICharges, sellSEBICharges=$sellSEBICharges, buyStampDuty=$buyStampDuty, sellStampDuty=$sellStampDuty, dpCharges=$dpCharges, totalBuyCharges=$totalBuyCharges, totalSellCharges=$totalSellCharges, totalCharges=$totalCharges, netProfitLoss=$netProfitLoss, chargesPercentage=$chargesPercentage, breakEvenPrice=$breakEvenPrice, status=$status, error=$error]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -404,8 +407,10 @@ class BrokerageCalculationResponse {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "BrokerageCalculationResponse[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "BrokerageCalculationResponse[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "BrokerageCalculationResponse[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "BrokerageCalculationResponse[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -439,7 +444,10 @@ class BrokerageCalculationResponse {
     return null;
   }
 
-  static List<BrokerageCalculationResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<BrokerageCalculationResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <BrokerageCalculationResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -455,7 +463,7 @@ class BrokerageCalculationResponse {
   static Map<String, BrokerageCalculationResponse> mapFromJson(dynamic json) {
     final map = <String, BrokerageCalculationResponse>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = BrokerageCalculationResponse.fromJson(entry.value);
         if (value != null) {
@@ -467,19 +475,23 @@ class BrokerageCalculationResponse {
   }
 
   // maps a json object with a list of BrokerageCalculationResponse-objects as value to a dart map
-  static Map<String, List<BrokerageCalculationResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<BrokerageCalculationResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<BrokerageCalculationResponse>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = BrokerageCalculationResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = BrokerageCalculationResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

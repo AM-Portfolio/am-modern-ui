@@ -24,9 +24,8 @@ class CloudinaryMapper {
         width: dto.width,
         height: dto.height,
         resourceType: dto.resourceType,
-        createdAt: dto.createdAt != null
-            ? DateTime.parse(dto.createdAt!)
-            : null,
+        createdAt:
+            dto.createdAt != null ? DateTime.parse(dto.createdAt!) : null,
         folder: dto.folder,
         metadata: dto.metadata,
       );
@@ -34,7 +33,8 @@ class CloudinaryMapper {
   /// Map list of resource DTOs to CloudinaryResource entities
   static List<CloudinaryResource> fromResourceDtoList(
     List<CloudinaryResourceDto> dtos,
-  ) => dtos.map(fromResourceDto).toList();
+  ) =>
+      dtos.map(fromResourceDto).toList();
 
   /// Map signature response DTO to SignatureDetails entity
   static SignatureDetails fromSignatureResponseDto(SignatureResponseDto dto) =>
@@ -56,13 +56,14 @@ class CloudinaryMapper {
     String? folder,
     bool overwrite = false,
     String resourceType = 'auto',
-  }) => UploadRequestDto(
-    fileContent: fileContent,
-    filename: filename,
-    folder: folder,
-    overwrite: overwrite,
-    resourceType: resourceType,
-  );
+  }) =>
+      UploadRequestDto(
+        fileContent: fileContent,
+        filename: filename,
+        folder: folder,
+        overwrite: overwrite,
+        resourceType: resourceType,
+      );
 
   /// Map signature request to DTO
   static SignatureRequestDto toSignatureRequestDto({
@@ -71,11 +72,12 @@ class CloudinaryMapper {
     String resourceType = 'auto',
     int? timestamp,
     Map<String, dynamic>? params,
-  }) => SignatureRequestDto(
-    publicId: publicId,
-    folder: folder,
-    resourceType: resourceType,
-    timestamp: timestamp,
-    params: params,
-  );
+  }) =>
+      SignatureRequestDto(
+        publicId: publicId,
+        folder: folder,
+        resourceType: resourceType,
+        timestamp: timestamp,
+        params: params,
+      );
 }

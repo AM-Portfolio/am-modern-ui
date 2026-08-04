@@ -45,10 +45,12 @@ class EnvDomains {
       ConfigService.override('auth') ??
       ConfigService.override('identity') ??
       '$apiBase/identity';
-  static String get users => ConfigService.override('users') ?? '$apiBase/users';
+  static String get users =>
+      ConfigService.override('users') ?? '$apiBase/users';
   static String get portfolio =>
       ConfigService.override('portfolio') ?? '$apiBase/portfolio';
-  static String get market => ConfigService.override('market') ?? '$apiBase/market';
+  static String get market =>
+      ConfigService.override('market') ?? '$apiBase/market';
   static String get trades =>
       ConfigService.override('trade') ??
       ConfigService.override('trades') ??
@@ -57,7 +59,8 @@ class EnvDomains {
       ConfigService.override('analysis') ?? '$apiBase/analysis';
   static String get docs =>
       ConfigService.override('docs') ?? '$apiBase/doc/processor';
-  static String get gmail => ConfigService.override('gmail') ?? '$apiBase/gmail';
+  static String get gmail =>
+      ConfigService.override('gmail') ?? '$apiBase/gmail';
   static String get etf => ConfigService.override('etf') ?? '$apiBase/api/etf';
   static String get subscription =>
       ConfigService.override('subscription') ?? '$apiBase/subscriptions';
@@ -69,7 +72,8 @@ class EnvDomains {
       ConfigService.override('wsStream') ?? '$wsBase/v1/streams';
 
   /// Deprecated: use [wsStream].
-  @Deprecated('Use wsStream via AmStompClient instead of direct am-market WebSocket')
+  @Deprecated(
+      'Use wsStream via AmStompClient instead of direct am-market WebSocket')
   static String get marketWs =>
       ConfigService.override('marketWs') ??
       '$wsBase/market/ws/market-data-stream';

@@ -34,14 +34,14 @@ class UserEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-    id,
-    email,
-    displayName,
-    photoUrl,
-    authMethod,
-    isDemo,
-    roles,
-  ];
+        id,
+        email,
+        displayName,
+        photoUrl,
+        authMethod,
+        isDemo,
+        roles,
+      ];
 
   UserEntity copyWith({
     String? id,
@@ -51,13 +51,14 @@ class UserEntity extends Equatable {
     String? authMethod,
     bool? isDemo,
     List<String>? roles,
-  }) => UserEntity(
-    id: id ?? this.id,
-    email: email ?? this.email,
-    displayName: displayName ?? this.displayName,
-    photoUrl: photoUrl ?? this.photoUrl,
-    authMethod: authMethod ?? this.authMethod,
-    isDemo: isDemo ?? this.isDemo,
-    roles: roles ?? this.roles,
-  );
+  }) =>
+      UserEntity(
+        id: id ?? this.id,
+        email: email ?? this.email,
+        displayName: displayName ?? this.displayName,
+        photoUrl: photoUrl ?? this.photoUrl,
+        authMethod: authMethod ?? this.authMethod,
+        isDemo: isDemo ?? this.isDemo,
+        roles: roles ?? this.roles,
+      );
 }

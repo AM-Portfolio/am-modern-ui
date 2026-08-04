@@ -66,110 +66,117 @@ class HeatmapDisplayTemplate extends StatelessWidget {
   }
 
   Widget _buildErrorState(BuildContext context) => Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.error_outline,
-          color: Theme.of(context).colorScheme.error,
-          size: 48,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Failed to load heatmap data',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.error,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          error!,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 12,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ),
-  );
-
-  Widget _buildEmptyState(BuildContext context) => Center(
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      margin: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.grid_view_rounded,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-              size: 40,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Heatmap Data Unavailable',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.error,
+              size: 48,
             ),
             const SizedBox(height: 8),
             Text(
-              'No sector performance data is currently available.',
+              'Failed to load heatmap data',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              error!,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 14,
+                fontSize: 12,
               ),
               textAlign: TextAlign.center,
             ),
           ],
         ),
-      ),
-    ),
-  );
+      );
+
+  Widget _buildEmptyState(BuildContext context) => Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          margin: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .outlineVariant
+                    .withOpacity(0.5)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.grid_view_rounded,
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  size: 40,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Heatmap Data Unavailable',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'No sector performance data is currently available.',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
 
   Widget _buildHeatmap(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final width = constraints.maxWidth;
-      final height = constraints.maxHeight;
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final height = constraints.maxHeight;
 
-      final HeatmapLayoutBuilder layoutBuilder;
+          final HeatmapLayoutBuilder layoutBuilder;
 
-      switch (layout) {
-        case HeatmapLayoutType.treemap:
-          layoutBuilder = TreemapLayoutBuilder();
-          break;
-        case HeatmapLayoutType.grid:
-          layoutBuilder = GridLayoutBuilder();
-          break;
-        case HeatmapLayoutType.list:
-          layoutBuilder = ListLayoutBuilder();
-          break;
-      }
+          switch (layout) {
+            case HeatmapLayoutType.treemap:
+              layoutBuilder = TreemapLayoutBuilder();
+              break;
+            case HeatmapLayoutType.grid:
+              layoutBuilder = GridLayoutBuilder();
+              break;
+            case HeatmapLayoutType.list:
+              layoutBuilder = ListLayoutBuilder();
+              break;
+          }
 
-      return layoutBuilder.build(
-        context,
-        data,
-        width,
-        height,
-        onTilePressed: onTilePressed,
-        customTileBuilder: customTileBuilder,
-        selectedSector: selectedSector,
-        selectedMetric: selectedMetric,
+          return layoutBuilder.build(
+            context,
+            data,
+            width,
+            height,
+            onTilePressed: onTilePressed,
+            customTileBuilder: customTileBuilder,
+            selectedSector: selectedSector,
+            selectedMetric: selectedMetric,
+          );
+        },
       );
-    },
-  );
 
   /// Logs basic information about heatmap tile data
   /// Shows count of tiles, their names, and children count
@@ -190,9 +197,8 @@ class HeatmapDisplayTemplate extends StatelessWidget {
     // Log each tile with basic info
     for (var i = 0; i < data.tiles.length; i++) {
       final tile = data.tiles[i];
-      final uiTile = tile is HeatmapTileData
-          ? tile
-          : HeatmapTileData.fromEntity(tile);
+      final uiTile =
+          tile is HeatmapTileData ? tile : HeatmapTileData.fromEntity(tile);
 
       final childrenCount = uiTile.children?.length ?? 0;
 

@@ -2,7 +2,16 @@ import 'package:json_annotation/json_annotation.dart';
 
 /// Dimensions for grouping metrics
 @JsonEnum(fieldRename: FieldRename.screamingSnake)
-enum GroupByDimensions { strategy, symbol, dayOfWeek, month, portfolio, tradeType, instrumentType, direction }
+enum GroupByDimensions {
+  strategy,
+  symbol,
+  dayOfWeek,
+  month,
+  portfolio,
+  tradeType,
+  instrumentType,
+  direction
+}
 
 /// Extension for GroupByDimensions enum
 extension GroupByDimensionsExtension on GroupByDimensions {

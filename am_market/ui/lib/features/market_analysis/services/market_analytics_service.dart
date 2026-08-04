@@ -12,7 +12,7 @@ class MarketAnalyticsService {
   }) : _dio = dio ?? Dio();
 
   /// Get top gainers/losers for a specific index
-  /// 
+  ///
   /// Endpoint: GET /v1/market-analytics/movers
   /// Params:
   ///   - type: 'gainers' or 'losers'
@@ -54,7 +54,7 @@ class MarketAnalyticsService {
   }
 
   /// Get historical chart data for multiple symbols
-  /// 
+  ///
   /// Endpoint: GET /v1/market-analytics/historical-charts/{symbol}
   /// Params:
   ///   - range: '1D', '1W', '1M', '3M', '6M', '1Y', '5Y', '10Y'
@@ -86,17 +86,19 @@ class MarketAnalyticsService {
 
         if (response.statusCode == 200 && response.data != null) {
           final data = response.data;
-          
+
           if (data is Map && data.containsKey('data')) {
             final Map<String, dynamic> symbolsData = data['data'];
-            
+
             // Iterate through the response map where keys are symbols
             symbolsData.forEach((symbol, symbolData) {
               if (symbolData is Map && symbolData.containsKey('dataPoints')) {
-                result[symbol] = List<Map<String, dynamic>>.from(symbolData['dataPoints'] as List);
+                result[symbol] = List<Map<String, dynamic>>.from(
+                    symbolData['dataPoints'] as List);
               } else if (symbolData is Map && symbolData.containsKey('data')) {
-                 // Fallback if structure is slightly different
-                 result[symbol] = List<Map<String, dynamic>>.from(symbolData['data'] as List);
+                // Fallback if structure is slightly different
+                result[symbol] =
+                    List<Map<String, dynamic>>.from(symbolData['data'] as List);
               }
             });
           }

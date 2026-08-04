@@ -14,6 +14,7 @@ import '../../providers/portfolio_providers.dart';
 class GlobalPortfolioWrapper extends ConsumerStatefulWidget {
   final Widget child;
   final Function(String, String)? onPortfolioChanged;
+
   /// Active app-shell tab title (e.g. `Dashboard`, `Portfolio`).
   final String streamingTab;
 
@@ -132,7 +133,12 @@ class _GlobalPortfolioWrapperState
 
     for (final p in portfolios) {
       if (p.portfolioId == urlId) {
-        _selectPortfolio(innerContext, p.portfolioId, p.portfolioName, notifyUrl: false);
+        _selectPortfolio(
+          innerContext,
+          p.portfolioId,
+          p.portfolioName,
+          notifyUrl: false,
+        );
         return;
       }
     }
@@ -151,7 +157,9 @@ class _GlobalPortfolioWrapperState
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Portfolio not found or access denied. Showing default.'),
+          content: Text(
+            'Portfolio not found or access denied. Showing default.',
+          ),
         ),
       );
     }
@@ -191,10 +199,12 @@ class _GlobalPortfolioWrapperState
 
     if (!_portfolioDetailFetchAllowed) return;
 
-    final hasList = cubit.state is PortfolioListLoaded ||
-        cubit.state.portfolioList != null;
+    final hasList =
+        cubit.state is PortfolioListLoaded || cubit.state.portfolioList != null;
 
-    if (_portfolioListNeeded && !hasList && cubit.state is! PortfolioListLoading) {
+    if (_portfolioListNeeded &&
+        !hasList &&
+        cubit.state is! PortfolioListLoading) {
       cubit.loadPortfoliosList();
     }
 
@@ -210,8 +220,7 @@ class _GlobalPortfolioWrapperState
         }
         cubit.loadPortfolioById(_selectedPortfolioId!);
       }
-    } else if (hasList &&
-        cubit.state.portfolioList!.portfolios.isNotEmpty) {
+    } else if (hasList && cubit.state.portfolioList!.portfolios.isNotEmpty) {
       final inner = _portfolioBlocContext;
       if (inner == null) return;
       final first = cubit.state.portfolioList!.portfolios.first;
@@ -227,14 +236,16 @@ class _GlobalPortfolioWrapperState
     final urlPortfolioId = _portfolioIdFromUrl(context);
     final shellChild = widget.child;
 
-    final isLoading = portfolioServiceAsync.isLoading ||
+    final isLoading =
+        portfolioServiceAsync.isLoading ||
         analyticsServiceAsync.isLoading ||
         remoteDataSourceAsync.isLoading;
     if (isLoading) {
       return shellChild;
     }
 
-    final hasError = portfolioServiceAsync.hasError ||
+    final hasError =
+        portfolioServiceAsync.hasError ||
         analyticsServiceAsync.hasError ||
         remoteDataSourceAsync.hasError;
     if (hasError) {

@@ -11,7 +11,6 @@
 import 'package:am_market_client/api.dart';
 import 'package:test/test.dart';
 
-
 /// tests for SecurityExplorerApi
 void main() {
   // final instance = SecurityExplorerApi();
@@ -30,6 +29,5 @@ void main() {
     test('test searchAdvanced', () async {
       // TODO
     });
-
   });
 }

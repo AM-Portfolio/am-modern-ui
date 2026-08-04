@@ -38,7 +38,8 @@ class _StockDetailPageState extends State<StockDetailPage> {
     });
 
     try {
-      final data = await _apiService.fetchHistory(widget.symbol, _selectedRange);
+      final data =
+          await _apiService.fetchHistory(widget.symbol, _selectedRange);
       // Sort data by time ascending (oldest to newest)
       data.sort((a, b) {
         final dateA = DateTime.tryParse(a['time'].toString()) ?? DateTime.now();
@@ -67,35 +68,34 @@ class _StockDetailPageState extends State<StockDetailPage> {
       backgroundColor: const Color(0xFF1E1E2E), // Dark Theme Background
       appBar: AppBar(
         title: StreamBuilder<Map<String, dynamic>>(
-          stream: marketProvider.livePriceStream,
-          builder: (context, snapshot) {
-            final liveData = marketProvider.getPrice(widget.symbol);
-            
-            double? ltp;
-            double? change;
-            double? pChange;
-            Color color = Colors.grey;
+            stream: marketProvider.livePriceStream,
+            builder: (context, snapshot) {
+              final liveData = marketProvider.getPrice(widget.symbol);
 
-            if (liveData != null) {
-               ltp = (liveData['lastPrice'] as num).toDouble();
-               change = (liveData['change'] as num).toDouble();
-               pChange = (liveData['changePercent'] as num).toDouble();
-               color = change >= 0 ? Colors.greenAccent : Colors.redAccent;
-            }
+              double? ltp;
+              double? change;
+              double? pChange;
+              Color color = Colors.grey;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(widget.symbol),
-                if (ltp != null)
-                  Text(
-                    "₹${ltp.toStringAsFixed(2)}  ${change! >= 0 ? '+' : ''}${change.toStringAsFixed(2)} (${pChange!.toStringAsFixed(2)}%)",
-                     style: TextStyle(fontSize: 12, color: color),
-                  ),
-              ],
-            );
-          }
-        ),
+              if (liveData != null) {
+                ltp = (liveData['lastPrice'] as num).toDouble();
+                change = (liveData['change'] as num).toDouble();
+                pChange = (liveData['changePercent'] as num).toDouble();
+                color = change >= 0 ? Colors.greenAccent : Colors.redAccent;
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(widget.symbol),
+                  if (ltp != null)
+                    Text(
+                      "₹${ltp.toStringAsFixed(2)}  ${change! >= 0 ? '+' : ''}${change.toStringAsFixed(2)} (${pChange!.toStringAsFixed(2)}%)",
+                      style: TextStyle(fontSize: 12, color: color),
+                    ),
+                ],
+              );
+            }),
         backgroundColor: const Color(0xFF2E2E3E),
       ),
       body: Column(
@@ -111,9 +111,19 @@ class _StockDetailPageState extends State<StockDetailPage> {
                 _fetchData();
               }
             },
-            ranges: const ['10m', '15m', '30m', '1H', '4H', '1D', '1W', '1M', '5Y'],
+            ranges: const [
+              '10m',
+              '15m',
+              '30m',
+              '1H',
+              '4H',
+              '1D',
+              '1W',
+              '1M',
+              '5Y'
+            ],
           ),
-          
+
           // Chart Area
           Expanded(
             child: StockChart(

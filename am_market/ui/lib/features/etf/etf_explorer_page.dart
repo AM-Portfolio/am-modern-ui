@@ -40,11 +40,10 @@ class _EtfExplorerPageState extends State<EtfExplorerPage> {
 
   @override
   Widget build(BuildContext context) {
-    
     // If an ETF is selected, show detail view inline
     if (_selectedEtf != null) {
       return EtfDetailPage(
-        symbol: _selectedEtf!.symbol, 
+        symbol: _selectedEtf!.symbol,
         name: _selectedEtf!.name,
         onBack: () {
           setState(() {
@@ -53,9 +52,9 @@ class _EtfExplorerPageState extends State<EtfExplorerPage> {
         },
       );
     }
-    
+
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -63,7 +62,8 @@ class _EtfExplorerPageState extends State<EtfExplorerPage> {
         children: [
           Row(
             children: [
-              Icon(Icons.dashboard_customize, color: theme.primaryColor, size: 28),
+              Icon(Icons.dashboard_customize,
+                  color: theme.primaryColor, size: 28),
               const SizedBox(width: 10),
               Text(
                 "ETF Explorer",
@@ -85,14 +85,17 @@ class _EtfExplorerPageState extends State<EtfExplorerPage> {
               // Debounce could be added here if needed, but for now direct call
               return await _etfService.searchEtfs(textEditingValue.text);
             },
-            displayStringForOption: (Etf option) => "${option.symbol} - ${option.name}",
+            displayStringForOption: (Etf option) =>
+                "${option.symbol} - ${option.name}",
             onSelected: (Etf selection) {
-               setState(() {
-                 _selectedEtf = selection;
-               });
+              setState(() {
+                _selectedEtf = selection;
+              });
             },
-            fieldViewBuilder: (BuildContext context, TextEditingController fieldTextEditingController,
-                FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
+            fieldViewBuilder: (BuildContext context,
+                TextEditingController fieldTextEditingController,
+                FocusNode fieldFocusNode,
+                VoidCallback onFieldSubmitted) {
               return TextField(
                 controller: fieldTextEditingController,
                 focusNode: fieldFocusNode,
@@ -100,7 +103,8 @@ class _EtfExplorerPageState extends State<EtfExplorerPage> {
                 decoration: InputDecoration(
                   prefixIcon: Icon(Icons.search, color: theme.iconTheme.color),
                   hintText: "Search ETFs (e.g. NIFTYBEES, GOLDBEES)...",
-                  hintStyle: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+                  hintStyle: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.hintColor),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(color: theme.dividerColor),
@@ -108,28 +112,30 @@ class _EtfExplorerPageState extends State<EtfExplorerPage> {
                   filled: true,
                   fillColor: theme.cardColor,
                   suffixIcon: fieldTextEditingController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          fieldTextEditingController.clear();
-                          _loadEtfs("Nifty"); // Reset to default
-                        },
-                      )
-                    : null,
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            fieldTextEditingController.clear();
+                            _loadEtfs("Nifty"); // Reset to default
+                          },
+                        )
+                      : null,
                 ),
                 onSubmitted: (value) {
                   _loadEtfs(value.isEmpty ? "Nifty" : value);
                 },
               );
             },
-            optionsViewBuilder: (BuildContext context, AutocompleteOnSelected<Etf> onSelected, Iterable<Etf> options) {
+            optionsViewBuilder: (BuildContext context,
+                AutocompleteOnSelected<Etf> onSelected, Iterable<Etf> options) {
               return Align(
                 alignment: Alignment.topLeft,
                 child: Material(
                   elevation: 4.0,
                   color: theme.cardColor,
                   child: SizedBox(
-                    width: MediaQuery.of(context).size.width - 32, // Match parent padding
+                    width: MediaQuery.of(context).size.width -
+                        32, // Match parent padding
                     child: ListView.builder(
                       padding: EdgeInsets.zero,
                       shrinkWrap: true,
@@ -137,7 +143,9 @@ class _EtfExplorerPageState extends State<EtfExplorerPage> {
                       itemBuilder: (BuildContext context, int index) {
                         final Etf option = options.elementAt(index);
                         return ListTile(
-                          title: Text(option.symbol, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          title: Text(option.symbol,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text(option.name),
                           onTap: () => onSelected(option),
                         );
@@ -153,7 +161,9 @@ class _EtfExplorerPageState extends State<EtfExplorerPage> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _etfs.isEmpty
-                    ? Center(child: Text("No ETFs found.", style: theme.textTheme.bodyLarge))
+                    ? Center(
+                        child: Text("No ETFs found.",
+                            style: theme.textTheme.bodyLarge))
                     : ListView.builder(
                         itemCount: _etfs.length,
                         itemBuilder: (context, index) {
@@ -164,21 +174,30 @@ class _EtfExplorerPageState extends State<EtfExplorerPage> {
                             color: theme.cardColor,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                side: BorderSide(color: theme.dividerColor.withOpacity(0.5))),
+                                side: BorderSide(
+                                    color:
+                                        theme.dividerColor.withOpacity(0.5))),
                             child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
                               leading: CircleAvatar(
-                                backgroundColor: theme.primaryColor.withOpacity(0.1),
+                                backgroundColor:
+                                    theme.primaryColor.withOpacity(0.1),
                                 child: Text(etf.symbol.substring(0, 1),
-                                    style: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold)),
+                                    style: TextStyle(
+                                        color: theme.primaryColor,
+                                        fontWeight: FontWeight.bold)),
                               ),
                               title: Text(etf.name,
-                                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                  style: theme.textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold)),
                               subtitle: Text(
                                   "${etf.symbol} • ${etf.assetClass ?? 'N/A'} • ${etf.marketCapCategory ?? 'N/A'}",
                                   style: theme.textTheme.bodySmall),
-                              trailing:
-                                  Icon(Icons.arrow_forward_ios, size: 14, color: theme.iconTheme.color?.withOpacity(0.5)),
+                              trailing: Icon(Icons.arrow_forward_ios,
+                                  size: 14,
+                                  color:
+                                      theme.iconTheme.color?.withOpacity(0.5)),
                               onTap: () {
                                 setState(() {
                                   _selectedEtf = etf;

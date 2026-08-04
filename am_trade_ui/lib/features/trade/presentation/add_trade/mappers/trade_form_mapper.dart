@@ -63,23 +63,31 @@ class TradeFormMapper {
     );
 
     // Construct EntryExitInfo for entry
-    final entryInfo = EntryExitInfo(timestamp: entryDate, price: entryPrice, quantity: entryQuantity.toInt());
+    final entryInfo = EntryExitInfo(
+        timestamp: entryDate,
+        price: entryPrice,
+        quantity: entryQuantity.toInt());
 
     // Construct EntryExitInfo for exit (if not open)
     final exitInfo = status != TradeStatuses.open && exitDate != null
-        ? EntryExitInfo(timestamp: exitDate, price: exitPrice, quantity: exitQuantity?.toInt())
+        ? EntryExitInfo(
+            timestamp: exitDate,
+            price: exitPrice,
+            quantity: exitQuantity?.toInt())
         : null;
 
     // Construct TradePsychologyData
     final psychologyData = TradePsychologyData(
-      entryPsychologyFactors: entryPsychology.isNotEmpty ? entryPsychology : null,
+      entryPsychologyFactors:
+          entryPsychology.isNotEmpty ? entryPsychology : null,
       exitPsychologyFactors: exitPsychology.isNotEmpty ? exitPsychology : null,
     );
 
     // Construct TradeEntryExitReasoning
     final entryReasoning = TradeEntryExitReasoning(
       technicalReasons: technicalReasons.isNotEmpty ? technicalReasons : null,
-      fundamentalReasons: fundamentalReasons.isNotEmpty ? fundamentalReasons : null,
+      fundamentalReasons:
+          fundamentalReasons.isNotEmpty ? fundamentalReasons : null,
       strategy: strategy,
     );
 
@@ -96,17 +104,25 @@ class TradeFormMapper {
       entryReasoning: entryReasoning,
       notes: notes,
       strategy: strategy,
-      attachments: attachments.isNotEmpty ? attachments.map((url) => Attachment(fileUrl: url)).toList() : null,
-      tradeExecutions: (selectedBroker != null || selectedOrderType != null) ? [
-        TradeModel(
-          basicInfo: selectedBroker != null ? BasicInfo(
-            brokerType: selectedBroker,
-          ) : null,
-          executionInfo: selectedOrderType != null ? ExecutionInfo(
-            orderType: selectedOrderType,
-          ) : null,
-        )
-      ] : null,
+      attachments: attachments.isNotEmpty
+          ? attachments.map((url) => Attachment(fileUrl: url)).toList()
+          : null,
+      tradeExecutions: (selectedBroker != null || selectedOrderType != null)
+          ? [
+              TradeModel(
+                basicInfo: selectedBroker != null
+                    ? BasicInfo(
+                        brokerType: selectedBroker,
+                      )
+                    : null,
+                executionInfo: selectedOrderType != null
+                    ? ExecutionInfo(
+                        orderType: selectedOrderType,
+                      )
+                    : null,
+              )
+            ]
+          : null,
     );
   }
 }

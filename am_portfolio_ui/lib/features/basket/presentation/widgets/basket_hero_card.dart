@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'basket_gauge_painter.dart';
@@ -50,52 +49,54 @@ class BasketHeroCard extends StatelessWidget {
                   fillColor: _getColorForScore(matchScore),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // ETF Name
                 Text(
                   etfName,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                
+
                 // Gap Summary
                 if (missingStockCount != null && missingStockCount! > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.orange.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.orange.withOpacity(0.4),
-                      ),
+                      border: Border.all(color: Colors.orange.withOpacity(0.4)),
                     ),
                     child: Text(
                       'You are $missingStockCount stock${missingStockCount! > 1 ? 's' : ''} away from completing this basket',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.orange[200],
-                          ),
+                        color: Colors.orange[200],
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   )
                 else
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.green.withOpacity(0.4),
-                      ),
+                      border: Border.all(color: Colors.green.withOpacity(0.4)),
                     ),
                     child: Text(
                       'Perfect Match! You hold all required stocks.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.green[200],
-                          ),
+                        color: Colors.green[200],
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),

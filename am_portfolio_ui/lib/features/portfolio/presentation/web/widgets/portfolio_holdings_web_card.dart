@@ -108,9 +108,7 @@ class _PortfolioHoldingsWebCardState
 
     // Use the appropriate provider based on whether portfolioId is provided
     final portfolioHoldingsAsync = widget.portfolioId != null
-        ? ref.watch(
-            portfolioHoldingsProvider(widget.portfolioId!),
-          )
+        ? ref.watch(portfolioHoldingsProvider(widget.portfolioId!))
         : ref.watch(portfolioHoldingsProvider(''));
 
     return portfolioHoldingsAsync.when(
@@ -209,8 +207,9 @@ class _PortfolioHoldingsWebCardState
                                     ? 'No holdings'
                                     : '${startIndex + 1}-$endIndex of ${_sortedHoldings.length}',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withValues(alpha: 0.6),
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.6,
+                                  ),
                                   fontSize: cardConstraints.maxWidth * 0.015,
                                 ),
                               ),
@@ -307,9 +306,7 @@ class _PortfolioHoldingsWebCardState
                   // Invalidate the appropriate provider based on portfolioId
                   if (widget.portfolioId != null) {
                     ref.invalidate(
-                      portfolioHoldingsProvider(
-                        widget.portfolioId!,
-                      ),
+                      portfolioHoldingsProvider(widget.portfolioId!),
                     );
                   } else {
                     ref.invalidate(portfolioHoldingsProvider(''));
@@ -351,7 +348,9 @@ class _PortfolioHoldingsWebCardState
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
       ),
       child: Row(
         children: [

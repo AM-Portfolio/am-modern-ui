@@ -6,9 +6,9 @@
 
 part of openapi.api;
 
-
 class MarketDataApi {
-  MarketDataApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  MarketDataApi([ApiClient? apiClient])
+      : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
@@ -27,7 +27,12 @@ class MarketDataApi {
   /// * [String] code:
   ///
   /// * [String] status:
-  Future<Response> generateSessionWithHttpInfo({ String? requestToken, String? requestToken2, String? code, String? status, }) async {
+  Future<Response> generateSessionWithHttpInfo({
+    String? requestToken,
+    String? requestToken2,
+    String? code,
+    String? status,
+  }) async {
     final path = r'/v1/market-data/auth/session';
     Object? postBody;
 
@@ -50,7 +55,6 @@ class MarketDataApi {
 
     const contentTypes = <String>[];
 
-
     return apiClient.invokeAPI(
       path,
       'GET',
@@ -75,17 +79,30 @@ class MarketDataApi {
   /// * [String] code:
   ///
   /// * [String] status:
-  Future<Object?> generateSession({ String? requestToken, String? requestToken2, String? code, String? status, }) async {
-    final response = await generateSessionWithHttpInfo( requestToken: requestToken, requestToken2: requestToken2, code: code, status: status, );
+  Future<Object?> generateSession({
+    String? requestToken,
+    String? requestToken2,
+    String? code,
+    String? status,
+  }) async {
+    final response = await generateSessionWithHttpInfo(
+      requestToken: requestToken,
+      requestToken2: requestToken2,
+      code: code,
+      status: status,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Object',) as Object;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'Object',
+      ) as Object;
     }
     return null;
   }
@@ -99,7 +116,9 @@ class MarketDataApi {
   /// Parameters:
   ///
   /// * [HistoricalDataRequest] historicalDataRequest (required):
-  Future<Response> getHistoricalDataWithHttpInfo(HistoricalDataRequest historicalDataRequest,) async {
+  Future<Response> getHistoricalDataWithHttpInfo(
+    HistoricalDataRequest historicalDataRequest,
+  ) async {
     final path = r'/v1/market-data/historical-data';
     Object? postBody = historicalDataRequest;
 
@@ -108,7 +127,6 @@ class MarketDataApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>['application/json'];
-
 
     return apiClient.invokeAPI(
       path,
@@ -128,17 +146,24 @@ class MarketDataApi {
   /// Parameters:
   ///
   /// * [HistoricalDataRequest] historicalDataRequest (required):
-  Future<HistoricalDataResponseV1?> getHistoricalData(HistoricalDataRequest historicalDataRequest,) async {
-    final response = await getHistoricalDataWithHttpInfo(historicalDataRequest,);
+  Future<HistoricalDataResponseV1?> getHistoricalData(
+    HistoricalDataRequest historicalDataRequest,
+  ) async {
+    final response = await getHistoricalDataWithHttpInfo(
+      historicalDataRequest,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'HistoricalDataResponseV1',) as HistoricalDataResponseV1;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'HistoricalDataResponseV1',
+      ) as HistoricalDataResponseV1;
     }
     return null;
   }
@@ -158,7 +183,12 @@ class MarketDataApi {
   /// * [bool] isIndexSymbol:
   ///
   /// * [bool] refresh:
-  Future<Response> getLiveLTPWithHttpInfo(String symbols, { String? timeframe, bool? isIndexSymbol, bool? refresh, }) async {
+  Future<Response> getLiveLTPWithHttpInfo(
+    String symbols, {
+    String? timeframe,
+    bool? isIndexSymbol,
+    bool? refresh,
+  }) async {
     final path = r'/v1/market-data/live-ltp';
     Object? postBody;
 
@@ -166,7 +196,7 @@ class MarketDataApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'symbols', symbols));
+    queryParams.addAll(_queryParams('', 'symbols', symbols));
     if (timeframe != null) {
       queryParams.addAll(_queryParams('', 'timeframe', timeframe));
     }
@@ -178,7 +208,6 @@ class MarketDataApi {
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -204,17 +233,30 @@ class MarketDataApi {
   /// * [bool] isIndexSymbol:
   ///
   /// * [bool] refresh:
-  Future<Map<String, Object>?> getLiveLTP(String symbols, { String? timeframe, bool? isIndexSymbol, bool? refresh, }) async {
-    final response = await getLiveLTPWithHttpInfo(symbols,  timeframe: timeframe, isIndexSymbol: isIndexSymbol, refresh: refresh, );
+  Future<Map<String, Object>?> getLiveLTP(
+    String symbols, {
+    String? timeframe,
+    bool? isIndexSymbol,
+    bool? refresh,
+  }) async {
+    final response = await getLiveLTPWithHttpInfo(
+      symbols,
+      timeframe: timeframe,
+      isIndexSymbol: isIndexSymbol,
+      refresh: refresh,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return Map<String, Object>.from(await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Map<String, Object>'),);
-
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return Map<String, Object>.from(
+        await apiClient.deserializeAsync(
+            await _decodeBodyBytes(response), 'Map<String, Object>'),
+      );
     }
     return null;
   }
@@ -232,7 +274,11 @@ class MarketDataApi {
   /// * [bool] isIndexSymbol:
   ///
   /// * [bool] refresh:
-  Future<Response> getLivePricesWithHttpInfo({ String? symbols, bool? isIndexSymbol, bool? refresh, }) async {
+  Future<Response> getLivePricesWithHttpInfo({
+    String? symbols,
+    bool? isIndexSymbol,
+    bool? refresh,
+  }) async {
     final path = r'/v1/market-data/live-prices';
     Object? postBody;
 
@@ -252,7 +298,6 @@ class MarketDataApi {
 
     const contentTypes = <String>[];
 
-
     return apiClient.invokeAPI(
       path,
       'GET',
@@ -275,17 +320,28 @@ class MarketDataApi {
   /// * [bool] isIndexSymbol:
   ///
   /// * [bool] refresh:
-  Future<Map<String, Object>?> getLivePrices({ String? symbols, bool? isIndexSymbol, bool? refresh, }) async {
-    final response = await getLivePricesWithHttpInfo( symbols: symbols, isIndexSymbol: isIndexSymbol, refresh: refresh, );
+  Future<Map<String, Object>?> getLivePrices({
+    String? symbols,
+    bool? isIndexSymbol,
+    bool? refresh,
+  }) async {
+    final response = await getLivePricesWithHttpInfo(
+      symbols: symbols,
+      isIndexSymbol: isIndexSymbol,
+      refresh: refresh,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return Map<String, Object>.from(await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Map<String, Object>'),);
-
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return Map<String, Object>.from(
+        await apiClient.deserializeAsync(
+            await _decodeBodyBytes(response), 'Map<String, Object>'),
+      );
     }
     return null;
   }
@@ -299,7 +355,9 @@ class MarketDataApi {
   /// Parameters:
   ///
   /// * [String] provider:
-  Future<Response> getLoginUrlWithHttpInfo({ String? provider, }) async {
+  Future<Response> getLoginUrlWithHttpInfo({
+    String? provider,
+  }) async {
     final path = r'/v1/market-data/auth/login-url';
     Object? postBody;
 
@@ -313,7 +371,6 @@ class MarketDataApi {
 
     const contentTypes = <String>[];
 
-
     return apiClient.invokeAPI(
       path,
       'GET',
@@ -332,17 +389,24 @@ class MarketDataApi {
   /// Parameters:
   ///
   /// * [String] provider:
-  Future<Map<String, String>?> getLoginUrl({ String? provider, }) async {
-    final response = await getLoginUrlWithHttpInfo( provider: provider, );
+  Future<Map<String, String>?> getLoginUrl({
+    String? provider,
+  }) async {
+    final response = await getLoginUrlWithHttpInfo(
+      provider: provider,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return Map<String, String>.from(await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Map<String, String>'),);
-
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return Map<String, String>.from(
+        await apiClient.deserializeAsync(
+            await _decodeBodyBytes(response), 'Map<String, String>'),
+      );
     }
     return null;
   }
@@ -358,9 +422,12 @@ class MarketDataApi {
   /// * [String] schemeCode (required):
   ///
   /// * [bool] refresh:
-  Future<Response> getMutualFundDetailsWithHttpInfo(String schemeCode, { bool? refresh, }) async {
+  Future<Response> getMutualFundDetailsWithHttpInfo(
+    String schemeCode, {
+    bool? refresh,
+  }) async {
     final path = r'/v1/market-data/mutual-fund/{schemeCode}'
-      .replaceAll('{schemeCode}', schemeCode);
+        .replaceAll('{schemeCode}', schemeCode);
     Object? postBody;
 
     final queryParams = <QueryParam>[];
@@ -372,7 +439,6 @@ class MarketDataApi {
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -394,17 +460,26 @@ class MarketDataApi {
   /// * [String] schemeCode (required):
   ///
   /// * [bool] refresh:
-  Future<Map<String, Object>?> getMutualFundDetails(String schemeCode, { bool? refresh, }) async {
-    final response = await getMutualFundDetailsWithHttpInfo(schemeCode,  refresh: refresh, );
+  Future<Map<String, Object>?> getMutualFundDetails(
+    String schemeCode, {
+    bool? refresh,
+  }) async {
+    final response = await getMutualFundDetailsWithHttpInfo(
+      schemeCode,
+      refresh: refresh,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return Map<String, Object>.from(await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Map<String, Object>'),);
-
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return Map<String, Object>.from(
+        await apiClient.deserializeAsync(
+            await _decodeBodyBytes(response), 'Map<String, Object>'),
+      );
     }
     return null;
   }
@@ -424,23 +499,27 @@ class MarketDataApi {
   /// * [String] to (required):
   ///
   /// * [bool] refresh:
-  Future<Response> getMutualFundNavHistoryWithHttpInfo(String schemeCode, String from, String to, { bool? refresh, }) async {
+  Future<Response> getMutualFundNavHistoryWithHttpInfo(
+    String schemeCode,
+    String from,
+    String to, {
+    bool? refresh,
+  }) async {
     final path = r'/v1/market-data/mutual-fund/{schemeCode}/history'
-      .replaceAll('{schemeCode}', schemeCode);
+        .replaceAll('{schemeCode}', schemeCode);
     Object? postBody;
 
     final queryParams = <QueryParam>[];
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'from', from));
-      queryParams.addAll(_queryParams('', 'to', to));
+    queryParams.addAll(_queryParams('', 'from', from));
+    queryParams.addAll(_queryParams('', 'to', to));
     if (refresh != null) {
       queryParams.addAll(_queryParams('', 'refresh', refresh));
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -466,17 +545,30 @@ class MarketDataApi {
   /// * [String] to (required):
   ///
   /// * [bool] refresh:
-  Future<Map<String, Object>?> getMutualFundNavHistory(String schemeCode, String from, String to, { bool? refresh, }) async {
-    final response = await getMutualFundNavHistoryWithHttpInfo(schemeCode, from, to,  refresh: refresh, );
+  Future<Map<String, Object>?> getMutualFundNavHistory(
+    String schemeCode,
+    String from,
+    String to, {
+    bool? refresh,
+  }) async {
+    final response = await getMutualFundNavHistoryWithHttpInfo(
+      schemeCode,
+      from,
+      to,
+      refresh: refresh,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return Map<String, Object>.from(await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Map<String, Object>'),);
-
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return Map<String, Object>.from(
+        await apiClient.deserializeAsync(
+            await _decodeBodyBytes(response), 'Map<String, Object>'),
+      );
     }
     return null;
   }
@@ -490,7 +582,9 @@ class MarketDataApi {
   /// Parameters:
   ///
   /// * [OHLCRequest] oHLCRequest (required):
-  Future<Response> getOHLCWithHttpInfo(OHLCRequest oHLCRequest,) async {
+  Future<Response> getOHLCWithHttpInfo(
+    OHLCRequest oHLCRequest,
+  ) async {
     final path = r'/v1/market-data/ohlc';
     Object? postBody = oHLCRequest;
 
@@ -500,7 +594,6 @@ class MarketDataApi {
 
     const contentTypes = <String>['application/json'];
 
-
     return apiClient.invokeAPI(
       path,
       'POST',
@@ -519,17 +612,24 @@ class MarketDataApi {
   /// Parameters:
   ///
   /// * [OHLCRequest] oHLCRequest (required):
-  Future<Object?> getOHLC(OHLCRequest oHLCRequest,) async {
-    final response = await getOHLCWithHttpInfo(oHLCRequest,);
+  Future<Object?> getOHLC(
+    OHLCRequest oHLCRequest,
+  ) async {
+    final response = await getOHLCWithHttpInfo(
+      oHLCRequest,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Object',) as Object;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'Object',
+      ) as Object;
     }
     return null;
   }
@@ -547,7 +647,11 @@ class MarketDataApi {
   /// * [String] expiryDate:
   ///
   /// * [bool] refresh:
-  Future<Response> getOptionChainWithHttpInfo(String symbol, { String? expiryDate, bool? refresh, }) async {
+  Future<Response> getOptionChainWithHttpInfo(
+    String symbol, {
+    String? expiryDate,
+    bool? refresh,
+  }) async {
     final path = r'/v1/market-data/option-chain';
     Object? postBody;
 
@@ -555,7 +659,7 @@ class MarketDataApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'symbol', symbol));
+    queryParams.addAll(_queryParams('', 'symbol', symbol));
     if (expiryDate != null) {
       queryParams.addAll(_queryParams('', 'expiryDate', expiryDate));
     }
@@ -565,7 +669,6 @@ class MarketDataApi {
 
     const contentTypes = <String>[];
 
-
     return apiClient.invokeAPI(
       path,
       'GET',
@@ -588,17 +691,28 @@ class MarketDataApi {
   /// * [String] expiryDate:
   ///
   /// * [bool] refresh:
-  Future<Map<String, Object>?> getOptionChain(String symbol, { String? expiryDate, bool? refresh, }) async {
-    final response = await getOptionChainWithHttpInfo(symbol,  expiryDate: expiryDate, refresh: refresh, );
+  Future<Map<String, Object>?> getOptionChain(
+    String symbol, {
+    String? expiryDate,
+    bool? refresh,
+  }) async {
+    final response = await getOptionChainWithHttpInfo(
+      symbol,
+      expiryDate: expiryDate,
+      refresh: refresh,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return Map<String, Object>.from(await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Map<String, Object>'),);
-
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return Map<String, Object>.from(
+        await apiClient.deserializeAsync(
+            await _decodeBodyBytes(response), 'Map<String, Object>'),
+      );
     }
     return null;
   }
@@ -616,7 +730,11 @@ class MarketDataApi {
   /// * [String] timeFrame:
   ///
   /// * [bool] refresh:
-  Future<Response> getQuotesWithHttpInfo(String symbols, { String? timeFrame, bool? refresh, }) async {
+  Future<Response> getQuotesWithHttpInfo(
+    String symbols, {
+    String? timeFrame,
+    bool? refresh,
+  }) async {
     final path = r'/v1/market-data/quotes';
     Object? postBody;
 
@@ -624,7 +742,7 @@ class MarketDataApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'symbols', symbols));
+    queryParams.addAll(_queryParams('', 'symbols', symbols));
     if (timeFrame != null) {
       queryParams.addAll(_queryParams('', 'timeFrame', timeFrame));
     }
@@ -633,7 +751,6 @@ class MarketDataApi {
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -657,17 +774,28 @@ class MarketDataApi {
   /// * [String] timeFrame:
   ///
   /// * [bool] refresh:
-  Future<Map<String, Object>?> getQuotes(String symbols, { String? timeFrame, bool? refresh, }) async {
-    final response = await getQuotesWithHttpInfo(symbols,  timeFrame: timeFrame, refresh: refresh, );
+  Future<Map<String, Object>?> getQuotes(
+    String symbols, {
+    String? timeFrame,
+    bool? refresh,
+  }) async {
+    final response = await getQuotesWithHttpInfo(
+      symbols,
+      timeFrame: timeFrame,
+      refresh: refresh,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return Map<String, Object>.from(await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Map<String, Object>'),);
-
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return Map<String, Object>.from(
+        await apiClient.deserializeAsync(
+            await _decodeBodyBytes(response), 'Map<String, Object>'),
+      );
     }
     return null;
   }
@@ -681,7 +809,9 @@ class MarketDataApi {
   /// Parameters:
   ///
   /// * [QuotesRequest] quotesRequest (required):
-  Future<Response> getQuotesPostWithHttpInfo(QuotesRequest quotesRequest,) async {
+  Future<Response> getQuotesPostWithHttpInfo(
+    QuotesRequest quotesRequest,
+  ) async {
     final path = r'/v1/market-data/quotes';
     Object? postBody = quotesRequest;
 
@@ -690,7 +820,6 @@ class MarketDataApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>['application/json'];
-
 
     return apiClient.invokeAPI(
       path,
@@ -710,17 +839,24 @@ class MarketDataApi {
   /// Parameters:
   ///
   /// * [QuotesRequest] quotesRequest (required):
-  Future<Map<String, Object>?> getQuotesPost(QuotesRequest quotesRequest,) async {
-    final response = await getQuotesPostWithHttpInfo(quotesRequest,);
+  Future<Map<String, Object>?> getQuotesPost(
+    QuotesRequest quotesRequest,
+  ) async {
+    final response = await getQuotesPostWithHttpInfo(
+      quotesRequest,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return Map<String, Object>.from(await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Map<String, Object>'),);
-
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return Map<String, Object>.from(
+        await apiClient.deserializeAsync(
+            await _decodeBodyBytes(response), 'Map<String, Object>'),
+      );
     }
     return null;
   }
@@ -734,9 +870,11 @@ class MarketDataApi {
   /// Parameters:
   ///
   /// * [String] exchange (required):
-  Future<Response> getSymbolsForExchangeWithHttpInfo(String exchange,) async {
+  Future<Response> getSymbolsForExchangeWithHttpInfo(
+    String exchange,
+  ) async {
     final path = r'/v1/market-data/symbols/{exchange}'
-      .replaceAll('{exchange}', exchange);
+        .replaceAll('{exchange}', exchange);
     Object? postBody;
 
     final queryParams = <QueryParam>[];
@@ -744,7 +882,6 @@ class MarketDataApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -764,20 +901,25 @@ class MarketDataApi {
   /// Parameters:
   ///
   /// * [String] exchange (required):
-  Future<List<Object>?> getSymbolsForExchange(String exchange,) async {
-    final response = await getSymbolsForExchangeWithHttpInfo(exchange,);
+  Future<List<Object>?> getSymbolsForExchange(
+    String exchange,
+  ) async {
+    final response = await getSymbolsForExchangeWithHttpInfo(
+      exchange,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final responseBody = await _decodeBodyBytes(response);
-      return (await apiClient.deserializeAsync(responseBody, 'List<Object>') as List)
-        .cast<Object>()
-        .toList(growable: false);
-
+      return (await apiClient.deserializeAsync(responseBody, 'List<Object>')
+              as List)
+          .cast<Object>()
+          .toList(growable: false);
     }
     return null;
   }
@@ -796,7 +938,6 @@ class MarketDataApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -820,9 +961,12 @@ class MarketDataApi {
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return Map<String, Object>.from(await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Map<String, Object>'),);
-
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return Map<String, Object>.from(
+        await apiClient.deserializeAsync(
+            await _decodeBodyBytes(response), 'Map<String, Object>'),
+      );
     }
     return null;
   }

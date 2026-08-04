@@ -72,18 +72,17 @@ class FilterCriteria {
 
   /// Clone the filter criteria
   FilterCriteria clone() => FilterCriteria(
-    field: field,
-    type: type,
-    category: category,
-    displayName: displayName,
-    textValue: textValue,
-    minValue: minValue,
-    maxValue: maxValue,
-    selectedCategories: selectedCategories != null
-        ? List.from(selectedCategories!)
-        : null,
-    isPositive: isPositive,
-  );
+        field: field,
+        type: type,
+        category: category,
+        displayName: displayName,
+        textValue: textValue,
+        minValue: minValue,
+        maxValue: maxValue,
+        selectedCategories:
+            selectedCategories != null ? List.from(selectedCategories!) : null,
+        isPositive: isPositive,
+      );
 
   /// Check if the filter is active
   bool get isActive {

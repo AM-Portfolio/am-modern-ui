@@ -8,9 +8,8 @@ import 'app_animations.dart';
 /// Main Theme Engine for the Application
 /// Provides Light and Dark modes with granular control
 class AppTheme {
-  
   //-- Theme Definitions --//
-  
+
   static ThemeData get darkTheme {
     return _buildTheme(
       brightness: Brightness.dark,
@@ -50,7 +49,7 @@ class AppTheme {
   }) {
     final isDark = brightness == Brightness.dark;
     final textTheme = AppTypography.getTextTheme(isDark: isDark);
-    
+
     // Apply Google Fonts Inter globally if desired, overlaying our custom TextTheme
     // final fontTheme = GoogleFonts.interTextTheme(textTheme);
     final fontTheme = textTheme; // Temporarily using default textTheme
@@ -61,7 +60,7 @@ class AppTheme {
       primaryColor: primaryColor,
       scaffoldBackgroundColor: backgroundColor,
       fontFamily: 'Inter',
-      
+
       // Color Scheme
       colorScheme: ColorScheme(
         brightness: brightness,
@@ -74,13 +73,14 @@ class AppTheme {
         surface: surfaceColor,
         onSurface: textColor, // Usually text color
         // Surface Container Highest is often used for input fields / cards in M3
-        surfaceContainerHighest: isDark ? AppColors.darkCard : AppColors.lightCard,
+        surfaceContainerHighest:
+            isDark ? AppColors.darkCard : AppColors.lightCard,
         outline: isDark ? Colors.white24 : Colors.grey.shade300,
       ),
-      
+
       // Typography
       textTheme: fontTheme,
-      
+
       // Component Themes
       cardTheme: CardThemeData(
         color: isDark ? AppColors.darkCard : AppColors.lightCard,
@@ -89,12 +89,14 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+            color: isDark
+                ? Colors.white.withOpacity(0.05)
+                : Colors.black.withOpacity(0.05),
             width: 1,
           ),
         ),
       ),
-      
+
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -105,22 +107,23 @@ class AppTheme {
           fontWeight: FontWeight.bold,
         ),
       ),
-      
+
       dividerTheme: DividerThemeData(
         color: isDark ? Colors.white10 : Colors.black12,
         thickness: 1,
         space: 1,
       ),
-      
+
       iconTheme: IconThemeData(
         color: textColor,
         size: 24,
       ),
-      
+
       // Inputs
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+        fillColor:
+            isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -144,7 +147,7 @@ class AppTheme {
           color: isDark ? Colors.white38 : Colors.black38,
         ),
       ),
-      
+
       // Buttons
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

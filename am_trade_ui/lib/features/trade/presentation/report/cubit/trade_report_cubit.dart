@@ -22,9 +22,10 @@ class TradeReportCubit extends Cubit<TradeReportState> {
     final sw = Stopwatch()..start();
     try {
       emit(TradeReportLoading());
-      
+
       // Fetch all data in parallel
-      AppLogger.debug('Cubit: Starting parallel fetch', tag: 'TradeReportCubit');
+      AppLogger.debug('Cubit: Starting parallel fetch',
+          tag: 'TradeReportCubit');
       final results = await Future.wait([
         _getSummaryUseCase(filter),
         _getDailyUseCase(filter),
@@ -37,7 +38,8 @@ class TradeReportCubit extends Cubit<TradeReportState> {
         operation: 'fetch',
         technicalArea: 'trade',
       );
-      AppLogger.debug('Cubit: Parallel fetch complete', tag: 'TradeReportCubit');
+      AppLogger.debug('Cubit: Parallel fetch complete',
+          tag: 'TradeReportCubit');
 
       emit(TradeReportLoaded(
         summary: results[0] as dynamic,

@@ -8,7 +8,8 @@ class GetTradeCalendarByDay {
   final TradeRepository _repository;
 
   /// Execute the use case to get trade calendar for a specific portfolio by day
-  Future<TradeCalendar> call(String portfolioId, {required DateTime date}) async {
+  Future<TradeCalendar> call(String portfolioId,
+      {required DateTime date}) async {
     AppLogger.methodEntry(
       'GetTradeCalendarByDay.call',
       tag: 'GetTradeCalendarByDay',
@@ -16,17 +17,22 @@ class GetTradeCalendarByDay {
     );
 
     if (portfolioId.isEmpty) {
-      AppLogger.error('Validation failed - empty userId or portfolioId', tag: 'GetTradeCalendarByDay');
+      AppLogger.error('Validation failed - empty userId or portfolioId',
+          tag: 'GetTradeCalendarByDay');
       throw ArgumentError('Portfolio ID cannot be empty');
     }
 
     try {
-      AppLogger.info('Executing get trade calendar by day use case', tag: 'GetTradeCalendarByDay');
+      AppLogger.info('Executing get trade calendar by day use case',
+          tag: 'GetTradeCalendarByDay');
 
-      final result = await _repository.getTradeCalendarByDay(portfolioId, date: date);
+      final result =
+          await _repository.getTradeCalendarByDay(portfolioId, date: date);
 
-      AppLogger.info('Trade calendar by day use case completed successfully', tag: 'GetTradeCalendarByDay');
-      AppLogger.methodExit('GetTradeCalendarByDay.call', tag: 'GetTradeCalendarByDay', result: 'success');
+      AppLogger.info('Trade calendar by day use case completed successfully',
+          tag: 'GetTradeCalendarByDay');
+      AppLogger.methodExit('GetTradeCalendarByDay.call',
+          tag: 'GetTradeCalendarByDay', result: 'success');
 
       return result;
     } catch (e) {
@@ -36,9 +42,9 @@ class GetTradeCalendarByDay {
         error: e,
         stackTrace: StackTrace.current,
       );
-      AppLogger.methodExit('GetTradeCalendarByDay.call', tag: 'GetTradeCalendarByDay', result: 'error');
+      AppLogger.methodExit('GetTradeCalendarByDay.call',
+          tag: 'GetTradeCalendarByDay', result: 'error');
       rethrow;
     }
   }
 }
-

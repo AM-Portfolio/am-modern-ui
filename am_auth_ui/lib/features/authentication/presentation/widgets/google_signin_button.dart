@@ -54,48 +54,49 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
   }
 
   Widget _buildMobileButton(BuildContext context) => SizedBox(
-    width: double.infinity,
-    height: 48,
-    child: OutlinedButton(
-      onPressed: widget.isLoading ? null : widget.onPressed,
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        backgroundColor: Colors.white,
-      ),
-      child: widget.isLoading
-          ? SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Theme.of(context).primaryColor,
-                ),
-              ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Google logo
-                Image.network(
-                  'https://developers.google.com/identity/images/g-logo.png',
+        width: double.infinity,
+        height: 48,
+        child: OutlinedButton(
+          onPressed: widget.isLoading ? null : widget.onPressed,
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            backgroundColor: Colors.white,
+          ),
+          child: widget.isLoading
+              ? SizedBox(
                   height: 20,
                   width: 20,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.g_mobiledata, size: 20),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Continue with Google',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimaryLight,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).primaryColor,
+                    ),
                   ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Google logo
+                    Image.network(
+                      'https://developers.google.com/identity/images/g-logo.png',
+                      height: 20,
+                      width: 20,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.g_mobiledata, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Continue with Google',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimaryLight,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-    ),
-  );
+        ),
+      );
 }

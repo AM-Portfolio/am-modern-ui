@@ -6,9 +6,9 @@
 
 part of openapi.api;
 
-
 class BrokerageCalculatorApi {
-  BrokerageCalculatorApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  BrokerageCalculatorApi([ApiClient? apiClient])
+      : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
@@ -31,7 +31,14 @@ class BrokerageCalculatorApi {
   /// * [String] tradeType (required):
   ///
   /// * [String] brokerType (required):
-  Future<Response> calculateBreakevenWithHttpInfo(String symbol, double price, int quantity, String exchange, String tradeType, String brokerType,) async {
+  Future<Response> calculateBreakevenWithHttpInfo(
+    String symbol,
+    double price,
+    int quantity,
+    String exchange,
+    String tradeType,
+    String brokerType,
+  ) async {
     final path = r'/v1/brokerage/breakeven';
     Object? postBody;
 
@@ -39,15 +46,14 @@ class BrokerageCalculatorApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'symbol', symbol));
-      queryParams.addAll(_queryParams('', 'price', price));
-      queryParams.addAll(_queryParams('', 'quantity', quantity));
-      queryParams.addAll(_queryParams('', 'exchange', exchange));
-      queryParams.addAll(_queryParams('', 'tradeType', tradeType));
-      queryParams.addAll(_queryParams('', 'brokerType', brokerType));
+    queryParams.addAll(_queryParams('', 'symbol', symbol));
+    queryParams.addAll(_queryParams('', 'price', price));
+    queryParams.addAll(_queryParams('', 'quantity', quantity));
+    queryParams.addAll(_queryParams('', 'exchange', exchange));
+    queryParams.addAll(_queryParams('', 'tradeType', tradeType));
+    queryParams.addAll(_queryParams('', 'brokerType', brokerType));
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -77,17 +83,34 @@ class BrokerageCalculatorApi {
   /// * [String] tradeType (required):
   ///
   /// * [String] brokerType (required):
-  Future<BrokerageCalculationResponse?> calculateBreakeven(String symbol, double price, int quantity, String exchange, String tradeType, String brokerType,) async {
-    final response = await calculateBreakevenWithHttpInfo(symbol, price, quantity, exchange, tradeType, brokerType,);
+  Future<BrokerageCalculationResponse?> calculateBreakeven(
+    String symbol,
+    double price,
+    int quantity,
+    String exchange,
+    String tradeType,
+    String brokerType,
+  ) async {
+    final response = await calculateBreakevenWithHttpInfo(
+      symbol,
+      price,
+      quantity,
+      exchange,
+      tradeType,
+      brokerType,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'BrokerageCalculationResponse',) as BrokerageCalculationResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'BrokerageCalculationResponse',
+      ) as BrokerageCalculationResponse;
     }
     return null;
   }
@@ -101,7 +124,9 @@ class BrokerageCalculatorApi {
   /// Parameters:
   ///
   /// * [BrokerageCalculationRequest] brokerageCalculationRequest (required):
-  Future<Response> calculateBrokerageWithHttpInfo(BrokerageCalculationRequest brokerageCalculationRequest,) async {
+  Future<Response> calculateBrokerageWithHttpInfo(
+    BrokerageCalculationRequest brokerageCalculationRequest,
+  ) async {
     final path = r'/v1/brokerage/calculate';
     Object? postBody = brokerageCalculationRequest;
 
@@ -111,7 +136,6 @@ class BrokerageCalculatorApi {
 
     const contentTypes = <String>['application/json'];
 
-
     return apiClient.invokeAPI(
       path,
       'POST',
@@ -130,17 +154,24 @@ class BrokerageCalculatorApi {
   /// Parameters:
   ///
   /// * [BrokerageCalculationRequest] brokerageCalculationRequest (required):
-  Future<BrokerageCalculationResponse?> calculateBrokerage(BrokerageCalculationRequest brokerageCalculationRequest,) async {
-    final response = await calculateBrokerageWithHttpInfo(brokerageCalculationRequest,);
+  Future<BrokerageCalculationResponse?> calculateBrokerage(
+    BrokerageCalculationRequest brokerageCalculationRequest,
+  ) async {
+    final response = await calculateBrokerageWithHttpInfo(
+      brokerageCalculationRequest,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'BrokerageCalculationResponse',) as BrokerageCalculationResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'BrokerageCalculationResponse',
+      ) as BrokerageCalculationResponse;
     }
     return null;
   }
@@ -154,7 +185,9 @@ class BrokerageCalculatorApi {
   /// Parameters:
   ///
   /// * [BrokerageCalculationRequest] brokerageCalculationRequest (required):
-  Future<Response> calculateBrokerageAsyncWithHttpInfo(BrokerageCalculationRequest brokerageCalculationRequest,) async {
+  Future<Response> calculateBrokerageAsyncWithHttpInfo(
+    BrokerageCalculationRequest brokerageCalculationRequest,
+  ) async {
     final path = r'/v1/brokerage/calculate-async';
     Object? postBody = brokerageCalculationRequest;
 
@@ -163,7 +196,6 @@ class BrokerageCalculatorApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>['application/json'];
-
 
     return apiClient.invokeAPI(
       path,
@@ -183,17 +215,24 @@ class BrokerageCalculatorApi {
   /// Parameters:
   ///
   /// * [BrokerageCalculationRequest] brokerageCalculationRequest (required):
-  Future<BrokerageCalculationResponse?> calculateBrokerageAsync(BrokerageCalculationRequest brokerageCalculationRequest,) async {
-    final response = await calculateBrokerageAsyncWithHttpInfo(brokerageCalculationRequest,);
+  Future<BrokerageCalculationResponse?> calculateBrokerageAsync(
+    BrokerageCalculationRequest brokerageCalculationRequest,
+  ) async {
+    final response = await calculateBrokerageAsyncWithHttpInfo(
+      brokerageCalculationRequest,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'BrokerageCalculationResponse',) as BrokerageCalculationResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'BrokerageCalculationResponse',
+      ) as BrokerageCalculationResponse;
     }
     return null;
   }

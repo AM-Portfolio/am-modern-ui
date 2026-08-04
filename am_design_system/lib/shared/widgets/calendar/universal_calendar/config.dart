@@ -49,15 +49,16 @@ class FilterConfig {
     bool? allowCustomRange,
     DateTime? minDate,
     DateTime? maxDate,
-  }) => FilterConfig(
-    enabledModes: enabledModes ?? this.enabledModes,
-    defaultMode: defaultMode ?? this.defaultMode,
-    enabledQuickRanges: enabledQuickRanges ?? this.enabledQuickRanges,
-    enabledTimePeriods: enabledTimePeriods ?? this.enabledTimePeriods,
-    allowCustomRange: allowCustomRange ?? this.allowCustomRange,
-    minDate: minDate ?? this.minDate,
-    maxDate: maxDate ?? this.maxDate,
-  );
+  }) =>
+      FilterConfig(
+        enabledModes: enabledModes ?? this.enabledModes,
+        defaultMode: defaultMode ?? this.defaultMode,
+        enabledQuickRanges: enabledQuickRanges ?? this.enabledQuickRanges,
+        enabledTimePeriods: enabledTimePeriods ?? this.enabledTimePeriods,
+        allowCustomRange: allowCustomRange ?? this.allowCustomRange,
+        minDate: minDate ?? this.minDate,
+        maxDate: maxDate ?? this.maxDate,
+      );
 }
 
 /// Configuration for display appearance
@@ -91,16 +92,17 @@ class DisplayConfig {
     double? itemHeight,
     double? spacing,
     EdgeInsets? padding,
-  }) => DisplayConfig(
-    compactMode: compactMode ?? this.compactMode,
-    showIcons: showIcons ?? this.showIcons,
-    showDescriptions: showDescriptions ?? this.showDescriptions,
-    buttonStyle: buttonStyle ?? this.buttonStyle,
-    gridColumns: gridColumns ?? this.gridColumns,
-    itemHeight: itemHeight ?? this.itemHeight,
-    spacing: spacing ?? this.spacing,
-    padding: padding ?? this.padding,
-  );
+  }) =>
+      DisplayConfig(
+        compactMode: compactMode ?? this.compactMode,
+        showIcons: showIcons ?? this.showIcons,
+        showDescriptions: showDescriptions ?? this.showDescriptions,
+        buttonStyle: buttonStyle ?? this.buttonStyle,
+        gridColumns: gridColumns ?? this.gridColumns,
+        itemHeight: itemHeight ?? this.itemHeight,
+        spacing: spacing ?? this.spacing,
+        padding: padding ?? this.padding,
+      );
 }
 
 /// Configuration for layout behavior
@@ -134,16 +136,17 @@ class LayoutConfig {
     bool? initiallyExpanded,
     double? cardElevation,
     double? borderRadius,
-  }) => LayoutConfig(
-    templateType: templateType ?? this.templateType,
-    showHeader: showHeader ?? this.showHeader,
-    headerTitle: headerTitle ?? this.headerTitle,
-    showClearButton: showClearButton ?? this.showClearButton,
-    collapsible: collapsible ?? this.collapsible,
-    initiallyExpanded: initiallyExpanded ?? this.initiallyExpanded,
-    cardElevation: cardElevation ?? this.cardElevation,
-    borderRadius: borderRadius ?? this.borderRadius,
-  );
+  }) =>
+      LayoutConfig(
+        templateType: templateType ?? this.templateType,
+        showHeader: showHeader ?? this.showHeader,
+        headerTitle: headerTitle ?? this.headerTitle,
+        showClearButton: showClearButton ?? this.showClearButton,
+        collapsible: collapsible ?? this.collapsible,
+        initiallyExpanded: initiallyExpanded ?? this.initiallyExpanded,
+        cardElevation: cardElevation ?? this.cardElevation,
+        borderRadius: borderRadius ?? this.borderRadius,
+      );
 }
 
 /// Button style options

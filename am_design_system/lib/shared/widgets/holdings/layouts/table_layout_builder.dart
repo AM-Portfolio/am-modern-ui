@@ -136,7 +136,8 @@ class TableLayoutBuilder extends HoldingsLayoutBuilder {
                   formatPercentage(changePercent),
                   style: TextStyle(
                     color: valueColor,
-                    fontSize: displayFormat == HoldingsDisplayFormat.both ? 11 : null,
+                    fontSize:
+                        displayFormat == HoldingsDisplayFormat.both ? 11 : null,
                   ),
                   textAlign: TextAlign.end,
                   overflow: TextOverflow.ellipsis,

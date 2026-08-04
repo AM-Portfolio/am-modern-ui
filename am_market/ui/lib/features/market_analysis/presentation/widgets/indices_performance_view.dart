@@ -7,7 +7,6 @@ import '../models/market_data.dart';
 import '../services/api_service.dart';
 import '../widgets/multi_index_chart.dart';
 
-
 class IndicesPerformanceView extends StatefulWidget {
   const IndicesPerformanceView({Key? key}) : super(key: key);
 
@@ -45,11 +44,13 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Fetch historical data for default indices when live data is available
     final provider = context.watch<MarketProvider>();
-    if (provider.allIndicesData.isNotEmpty && _historicalDataCache.isEmpty && !_isLoadingHistorical) {
-      CommonLogger.info("IndicesPerformanceView.didChangeDependencies", 
+    if (provider.allIndicesData.isNotEmpty &&
+        _historicalDataCache.isEmpty &&
+        !_isLoadingHistorical) {
+      CommonLogger.info("IndicesPerformanceView.didChangeDependencies",
           "Live data loaded (${provider.allIndicesData.length} indices), fetching historical data for defaults");
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _fetchHistoricalDataForIndices(_defaultIndices);
@@ -62,14 +63,15 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
     super.dispose();
   }
 
-  Future<void> _fetchHistoricalDataForIndices(List<String> indicesToFetch) async {
+  Future<void> _fetchHistoricalDataForIndices(
+      List<String> indicesToFetch) async {
     final provider = context.read<MarketProvider>();
-    
-    CommonLogger.info("IndicesPerformanceView.fetchHistorical", 
+
+    CommonLogger.info("IndicesPerformanceView.fetchHistorical",
         "Starting fetch for ${indicesToFetch.length} indices: ${indicesToFetch.join(', ')}");
-    
+
     if (provider.allIndicesData.isEmpty) {
-      CommonLogger.warning("IndicesPerformanceView.fetchHistorical", 
+      CommonLogger.warning("IndicesPerformanceView.fetchHistorical",
           "No indices data available, skipping historical fetch");
       return;
     }
@@ -84,22 +86,23 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
       final fromStr = dateFormat.format(_fromDate);
       final toStr = dateFormat.format(_toDate);
 
-      CommonLogger.info("IndicesPerformanceView.fetchHistorical", 
+      CommonLogger.info("IndicesPerformanceView.fetchHistorical",
           "Fetching data from $fromStr to $toStr");
 
-      final Map<String, List<Map<String, dynamic>>> newCache = Map.from(_historicalDataCache);
+      final Map<String, List<Map<String, dynamic>>> newCache =
+          Map.from(_historicalDataCache);
 
       for (final indexSymbol in indicesToFetch) {
         if (newCache.containsKey(indexSymbol)) {
-          CommonLogger.info("IndicesPerformanceView.fetchHistorical", 
+          CommonLogger.info("IndicesPerformanceView.fetchHistorical",
               "Skipping $indexSymbol (already cached)");
           continue;
         }
 
         try {
-          CommonLogger.info("IndicesPerformanceView.fetchHistorical", 
+          CommonLogger.info("IndicesPerformanceView.fetchHistorical",
               "Fetching for $indexSymbol");
-          
+
           final data = await _apiService.fetchHistoricalData(
             symbols: [indexSymbol],
             from: fromStr,
@@ -109,15 +112,15 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
             forceRefresh: false,
           );
 
-          CommonLogger.info("IndicesPerformanceView.fetchHistorical", 
+          CommonLogger.info("IndicesPerformanceView.fetchHistorical",
               "Response for $indexSymbol: ${data.keys.join(', ')}");
 
           if (data.containsKey('data')) {
             final historicalData = data['data'] as Map<String, dynamic>;
             historicalData.forEach((sym, stockData) {
-              CommonLogger.info("IndicesPerformanceView.fetchHistorical", 
+              CommonLogger.info("IndicesPerformanceView.fetchHistorical",
                   "Processing symbol: $sym");
-              
+
               if (stockData is Map && stockData['dataPoints'] != null) {
                 final dataPoints = (stockData['dataPoints'] as List)
                     .map((e) => Map<String, dynamic>.from(e))
@@ -125,7 +128,7 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
 
                 if (dataPoints.isNotEmpty) {
                   newCache[sym] = dataPoints;
-                  CommonLogger.info("IndicesPerformanceView.fetchHistorical", 
+                  CommonLogger.info("IndicesPerformanceView.fetchHistorical",
                       "Cached ${dataPoints.length} points for $sym");
                 }
               }
@@ -149,14 +152,15 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
         _error = e.toString();
         _isLoadingHistorical = false;
       });
-      CommonLogger.error(
-          "IndicesPerformanceView.fetchHistorical", "Error fetching historical data", e);
+      CommonLogger.error("IndicesPerformanceView.fetchHistorical",
+          "Error fetching historical data", e);
     }
   }
 
   Future<void> _fetchHistoricalDataForAll() async {
     final provider = context.read<MarketProvider>();
-    final allSymbols = provider.allIndicesData.map((e) => e.indexSymbol).toList();
+    final allSymbols =
+        provider.allIndicesData.map((e) => e.indexSymbol).toList();
     await _fetchHistoricalDataForIndices(allSymbols);
   }
 
@@ -166,10 +170,10 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
         _selectedForChart.remove(symbol);
       } else {
         _selectedForChart.add(symbol);
-        
+
         // Fetch historical data if not already cached
         if (!_historicalDataCache.containsKey(symbol)) {
-          CommonLogger.info("IndicesPerformanceView.toggleIndexForChart", 
+          CommonLogger.info("IndicesPerformanceView.toggleIndexForChart",
               "Fetching historical data for newly selected index: $symbol");
           _fetchHistoricalDataForIndices([symbol]);
         }
@@ -183,7 +187,7 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
       builder: (context, provider, child) {
         if (provider.isLoading) {
           // Return empty box so parent LoadingWrapper shows skeleton
-          return const SizedBox.shrink(); 
+          return const SizedBox.shrink();
         }
 
         if (provider.error != null) {
@@ -204,7 +208,8 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
           );
         }
 
-        final allIndices = List<StockIndicesMarketData>.from(provider.allIndicesData);
+        final allIndices =
+            List<StockIndicesMarketData>.from(provider.allIndicesData);
         allIndices.sort((a, b) => b.pChange.compareTo(a.pChange));
 
         return Container(
@@ -274,7 +279,8 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
               ),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(Icons.dashboard, color: theme.colorScheme.onPrimary, size: 24),
+            child: Icon(Icons.dashboard,
+                color: theme.colorScheme.onPrimary, size: 24),
           ),
           const SizedBox(width: 12),
           Column(
@@ -367,7 +373,8 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
     );
   }
 
-  Widget _buildIndexSelector(BuildContext context, List<StockIndicesMarketData> allIndices) {
+  Widget _buildIndexSelector(
+      BuildContext context, List<StockIndicesMarketData> allIndices) {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
@@ -395,8 +402,10 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
                 ),
               ),
               TextButton.icon(
-                onPressed: () => setState(() => _showIndexList = !_showIndexList),
-                icon: Icon(_showIndexList ? Icons.expand_less : Icons.expand_more),
+                onPressed: () =>
+                    setState(() => _showIndexList = !_showIndexList),
+                icon: Icon(
+                    _showIndexList ? Icons.expand_less : Icons.expand_more),
                 label: Text(_showIndexList ? 'Hide All' : 'Show All'),
               ),
             ],
@@ -406,19 +415,24 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
             spacing: 8,
             runSpacing: 8,
             children: allIndices.take(15).map((indexData) {
-              final isSelected = _selectedForChart.contains(indexData.indexSymbol);
+              final isSelected =
+                  _selectedForChart.contains(indexData.indexSymbol);
               final isPositive = indexData.change >= 0;
 
               return InkWell(
                 onTap: () => _toggleIndexForChart(indexData.indexSymbol),
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSelected ? theme.primaryColor.withOpacity(0.1) : theme.canvasColor,
+                    color: isSelected
+                        ? theme.primaryColor.withOpacity(0.1)
+                        : theme.canvasColor,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: isSelected ? theme.primaryColor : theme.dividerColor,
+                      color:
+                          isSelected ? theme.primaryColor : theme.dividerColor,
                       width: isSelected ? 1.5 : 1,
                     ),
                   ),
@@ -428,13 +442,17 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
                       if (isSelected)
                         Padding(
                           padding: const EdgeInsets.only(right: 6),
-                          child: Icon(Icons.check_circle, color: theme.primaryColor, size: 14),
+                          child: Icon(Icons.check_circle,
+                              color: theme.primaryColor, size: 14),
                         ),
                       Text(
                         indexData.indexSymbol,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: isSelected ? theme.primaryColor : theme.textTheme.bodyMedium?.color,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? theme.primaryColor
+                              : theme.textTheme.bodyMedium?.color,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -457,7 +475,8 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
     );
   }
 
-  Widget _buildIndexGrid(BuildContext context, List<StockIndicesMarketData> allIndices) {
+  Widget _buildIndexGrid(
+      BuildContext context, List<StockIndicesMarketData> allIndices) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -487,7 +506,8 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
     );
   }
 
-  Widget _buildCompactIndexCard(BuildContext context, StockIndicesMarketData data) {
+  Widget _buildCompactIndexCard(
+      BuildContext context, StockIndicesMarketData data) {
     final theme = Theme.of(context);
     final isPositive = data.change >= 0;
     final isSelected = _selectedForChart.contains(data.indexSymbol);

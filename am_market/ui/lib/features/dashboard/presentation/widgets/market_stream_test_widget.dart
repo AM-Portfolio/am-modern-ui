@@ -39,7 +39,8 @@ class MarketStreamTestWidget extends ConsumerWidget {
             child: pricesAsync.when(
               data: (prices) {
                 if (prices.isEmpty) {
-                  return const Center(child: Text('No price data received yet'));
+                  return const Center(
+                      child: Text('No price data received yet'));
                 }
                 return ListView.builder(
                   itemCount: prices.length,
@@ -50,7 +51,8 @@ class MarketStreamTestWidget extends ConsumerWidget {
                     return ListTile(
                       dense: true,
                       title: Text(symbol),
-                      subtitle: Text('Vol: ${quote?.open}'), // Just an example usage
+                      subtitle:
+                          Text('Vol: ${quote?.open}'), // Just an example usage
                       trailing: Text(
                         price?.toStringAsFixed(2) ?? '--',
                         style: const TextStyle(fontWeight: FontWeight.bold),

@@ -17,18 +17,18 @@ class TradePerformanceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
-    padding: const EdgeInsets.all(20),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildPerformanceSummary(context),
-        const SizedBox(height: 16),
-        _buildStatusIndicators(context),
-        const SizedBox(height: 16),
-        _buildChartPlaceholder(context),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildPerformanceSummary(context),
+            const SizedBox(height: 16),
+            _buildStatusIndicators(context),
+            const SizedBox(height: 16),
+            _buildChartPlaceholder(context),
+          ],
+        ),
+      );
 
   Widget _buildPerformanceSummary(BuildContext context) {
     final isProfit = holding.isProfit;
@@ -44,8 +44,14 @@ class TradePerformanceSection extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              if (isProfit) Colors.green.withOpacity(0.1) else Colors.red.withOpacity(0.1),
-              if (isProfit) Colors.green.withOpacity(0.05) else Colors.red.withOpacity(0.05),
+              if (isProfit)
+                Colors.green.withOpacity(0.1)
+              else
+                Colors.red.withOpacity(0.1),
+              if (isProfit)
+                Colors.green.withOpacity(0.05)
+              else
+                Colors.red.withOpacity(0.05),
             ],
           ),
         ),
@@ -59,23 +65,35 @@ class TradePerformanceSection extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               isProfit ? 'Profitable Trade' : 'Loss Trade',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isProfit ? Colors.green : Colors.red),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isProfit ? Colors.green : Colors.red),
             ),
             const SizedBox(height: 8),
             Text(
               holding.displayProfitLoss,
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: isProfit ? Colors.green : Colors.red),
+              style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: isProfit ? Colors.green : Colors.red),
             ),
             const SizedBox(height: 4),
             Text(
               holding.displayProfitLossPercentage,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: isProfit ? Colors.green : Colors.red),
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: isProfit ? Colors.green : Colors.red),
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                color: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest
+                    .withOpacity(0.5),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -85,7 +103,10 @@ class TradePerformanceSection extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     'Held for ${holding.displayHoldingPeriod}',
-                    style: TextStyle(fontSize: 13, color: Colors.grey[700], fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -97,101 +118,121 @@ class TradePerformanceSection extends StatelessWidget {
   }
 
   Widget _buildStatusIndicators(BuildContext context) => InfoCard(
-    title: 'Trade Status',
-    icon: Icons.info_outline,
-    iconColor: Colors.blue,
-    children: [
-      Row(
+        title: 'Trade Status',
+        icon: Icons.info_outline,
+        iconColor: Colors.blue,
         children: [
-          Expanded(
-            child: _buildIndicator(
-              context,
-              'Status',
-              holding.displayStatus.toUpperCase(),
-              _getStatusColor(holding.status),
-              _getStatusIcon(holding.status),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildIndicator(context, 'Executions', '${holding.executionCount}', Colors.purple, Icons.swap_horiz),
-          ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          Expanded(child: _buildIndicator(context, 'Quantity', holding.displayQuantity, Colors.indigo, Icons.numbers)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildIndicator(
-              context,
-              'R:R Ratio',
-              holding.displayRiskRewardRatio,
-              _getRiskRewardColor(holding.riskRewardRatio),
-              Icons.balance,
-            ),
-          ),
-        ],
-      ),
-    ],
-  );
-
-  Widget _buildIndicator(BuildContext context, String label, String value, Color color, IconData icon) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: color.withOpacity(0.3)),
-    ),
-    child: Column(
-      children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ),
-  );
-
-  Widget _buildChartPlaceholder(BuildContext context) => InfoCard(
-    title: 'Performance Chart',
-    icon: Icons.show_chart,
-    iconColor: Colors.teal,
-    children: [
-      Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.withOpacity(0.2)),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Row(
             children: [
-              Icon(Icons.bar_chart, size: 48, color: Colors.grey[400]),
-              const SizedBox(height: 12),
-              Text(
-                'Chart visualization coming soon',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w500),
+              Expanded(
+                child: _buildIndicator(
+                  context,
+                  'Status',
+                  holding.displayStatus.toUpperCase(),
+                  _getStatusColor(holding.status),
+                  _getStatusIcon(holding.status),
+                ),
               ),
-              const SizedBox(height: 4),
-              Text('Price movement and performance trends', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildIndicator(
+                    context,
+                    'Executions',
+                    '${holding.executionCount}',
+                    Colors.purple,
+                    Icons.swap_horiz),
+              ),
             ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                  child: _buildIndicator(context, 'Quantity',
+                      holding.displayQuantity, Colors.indigo, Icons.numbers)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildIndicator(
+                  context,
+                  'R:R Ratio',
+                  holding.displayRiskRewardRatio,
+                  _getRiskRewardColor(holding.riskRewardRatio),
+                  Icons.balance,
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+
+  Widget _buildIndicator(BuildContext context, String label, String value,
+          Color color, IconData icon) =>
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.3)),
         ),
-      ),
-    ],
-  );
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                  fontSize: 15, fontWeight: FontWeight.bold, color: color),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+
+  Widget _buildChartPlaceholder(BuildContext context) => InfoCard(
+        title: 'Performance Chart',
+        icon: Icons.show_chart,
+        iconColor: Colors.teal,
+        children: [
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              color: Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withOpacity(0.3),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.bar_chart, size: 48, color: Colors.grey[400]),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Chart visualization coming soon',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('Price movement and performance trends',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
 
   Color _getStatusColor(String? status) {
     switch (status?.toUpperCase()) {

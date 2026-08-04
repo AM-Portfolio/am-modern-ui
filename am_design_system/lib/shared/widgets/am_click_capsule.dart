@@ -49,7 +49,9 @@ class _AmClickCapsuleState extends State<AmClickCapsule> {
     _isHoveringTarget = false;
     // Small delay so moving into the popup doesn't close it
     Future.delayed(const Duration(milliseconds: 80), () {
-      if (!_isHoveringTarget && !_isHoveringPopup && _overlayController.isShowing) {
+      if (!_isHoveringTarget &&
+          !_isHoveringPopup &&
+          _overlayController.isShowing) {
         _overlayController.hide();
       }
     });
@@ -62,7 +64,9 @@ class _AmClickCapsuleState extends State<AmClickCapsule> {
   void _onPopupExit() {
     _isHoveringPopup = false;
     Future.delayed(const Duration(milliseconds: 80), () {
-      if (!_isHoveringTarget && !_isHoveringPopup && _overlayController.isShowing) {
+      if (!_isHoveringTarget &&
+          !_isHoveringPopup &&
+          _overlayController.isShowing) {
         _overlayController.hide();
       }
     });
@@ -99,10 +103,15 @@ class _AmClickCapsuleState extends State<AmClickCapsule> {
                         child: TapRegion(
                           groupId: this,
                           child: MouseRegion(
-                            onEnter: widget.triggerOnHover ? (_) => _onPopupEnter() : null,
-                            onExit: widget.triggerOnHover ? (_) => _onPopupExit() : null,
+                            onEnter: widget.triggerOnHover
+                                ? (_) => _onPopupEnter()
+                                : null,
+                            onExit: widget.triggerOnHover
+                                ? (_) => _onPopupExit()
+                                : null,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: widget.backgroundColor,
                                 borderRadius: BorderRadius.circular(20),
@@ -114,7 +123,8 @@ class _AmClickCapsuleState extends State<AmClickCapsule> {
                                     offset: const Offset(0, 4),
                                   )
                                 ],
-                                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                                border: Border.all(
+                                    color: Colors.white.withOpacity(0.1)),
                               ),
                               child: widget.popupContent,
                             ),

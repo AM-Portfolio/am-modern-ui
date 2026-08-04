@@ -78,13 +78,12 @@ class _RightFloatingQuickActionsState
     );
 
     // Slide animation from right to left
-    _slideAnimation =
-        Tween<Offset>(
-          begin: const Offset(1.2, 0.0), // Start from right side
-          end: Offset.zero, // End at normal position
-        ).animate(
-          CurvedAnimation(parent: _flyController, curve: Curves.easeOutBack),
-        );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(1.2, 0.0), // Start from right side
+      end: Offset.zero, // End at normal position
+    ).animate(
+      CurvedAnimation(parent: _flyController, curve: Curves.easeOutBack),
+    );
 
     // Fade animation
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -133,83 +132,83 @@ class _RightFloatingQuickActionsState
 
   @override
   Widget build(BuildContext context) => Stack(
-    children: [
-      // Overlay to close actions when tapping outside
-      if (_isExpanded)
-        Positioned.fill(
-          child: GestureDetector(
-            onTap: _toggleActions,
-            child: Container(color: Colors.black.withOpacity(0.1)),
-          ),
-        ),
+        children: [
+          // Overlay to close actions when tapping outside
+          if (_isExpanded)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _toggleActions,
+                child: Container(color: Colors.black.withOpacity(0.1)),
+              ),
+            ),
 
-      // Flying actions panel
-      if (_isExpanded)
-        Positioned(
-          right: 80,
-          top: 20,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: _buildActionsPanel(),
+          // Flying actions panel
+          if (_isExpanded)
+            Positioned(
+              right: 80,
+              top: 20,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: _buildActionsPanel(),
+                  ),
+                ),
+              ),
+            ),
+
+          // Floating action button (trigger)
+          Positioned(right: 16, top: 16, child: _buildFloatingTrigger()),
+        ],
+      );
+
+  Widget _buildFloatingTrigger() => Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).primaryColor,
+              Theme.of(context).primaryColor.withOpacity(0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).primaryColor.withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _isProcessing ? null : _toggleActions,
+            borderRadius: BorderRadius.circular(28),
+            child: AnimatedBuilder(
+              animation: _iconRotation,
+              builder: (context, child) => Transform.rotate(
+                angle: _iconRotation.value * 2 * 3.14159,
+                child: Icon(
+                  _isExpanded ? Icons.close : Icons.flash_on,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
             ),
           ),
         ),
-
-      // Floating action button (trigger)
-      Positioned(right: 16, top: 16, child: _buildFloatingTrigger()),
-    ],
-  );
-
-  Widget _buildFloatingTrigger() => Container(
-    width: 56,
-    height: 56,
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [
-          Theme.of(context).primaryColor,
-          Theme.of(context).primaryColor.withOpacity(0.8),
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      borderRadius: BorderRadius.circular(28),
-      boxShadow: [
-        BoxShadow(
-          color: Theme.of(context).primaryColor.withOpacity(0.4),
-          blurRadius: 12,
-          offset: const Offset(0, 4),
-        ),
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: _isProcessing ? null : _toggleActions,
-        borderRadius: BorderRadius.circular(28),
-        child: AnimatedBuilder(
-          animation: _iconRotation,
-          builder: (context, child) => Transform.rotate(
-            angle: _iconRotation.value * 2 * 3.14159,
-            child: Icon(
-              _isExpanded ? Icons.close : Icons.flash_on,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
+      );
 
   Widget _buildActionsPanel() {
     if (_isProcessing) {
@@ -330,76 +329,77 @@ class _RightFloatingQuickActionsState
   }
 
   Widget _buildActionItem(QuickActionItem action) => Container(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(16),
-      color: action.color.withOpacity(0.08),
-      border: Border.all(color: action.color.withOpacity(0.2)),
-    ),
-    child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _handleQuickAction(action.id),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Icon container
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: action.color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(action.icon, color: action.color, size: 24),
-              ),
-
-              const SizedBox(width: 16),
-
-              // Text content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      action.label,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: action.color.withOpacity(0.08),
+          border: Border.all(color: action.color.withOpacity(0.2)),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _handleQuickAction(action.id),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // Icon container
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: action.color.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      action.description,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                    child: Icon(action.icon, color: action.color, size: 24),
+                  ),
 
-              // Arrow indicator
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: action.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.arrow_forward, size: 16, color: action.color),
+                  const SizedBox(width: 16),
+
+                  // Text content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          action.label,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          action.description,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Arrow indicator
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: action.color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.arrow_forward,
+                        size: 16, color: action.color),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
-      ),
-    ),
-  );
+      );
 
   Future<void> _handleQuickAction(String actionId) async {
     // Close the actions panel first

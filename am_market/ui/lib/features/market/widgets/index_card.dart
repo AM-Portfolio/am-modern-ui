@@ -48,7 +48,9 @@ class IndexCard extends StatelessWidget {
         final isPositive = displayChange >= 0;
         final changeColor = isLoading
             ? MarketColors.textMuted(context)
-            : (isPositive ? MarketColors.positive(context) : MarketColors.negative(context));
+            : (isPositive
+                ? MarketColors.positive(context)
+                : MarketColors.negative(context));
 
         final displayPChangeFormatted = displayPChange.toStringAsFixed(2);
         final displayChangeFormatted = numberFormat.format(displayChange.abs());

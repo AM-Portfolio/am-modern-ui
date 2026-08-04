@@ -49,8 +49,7 @@ class AppConstants {
       '/v1/portfolio-summary';
   static const String defaultTradeHoldingsResource =
       '/v1/trades/portfolio-details';
-  static const String defaultTradeDetailsResource =
-      '/v1/trades/details/by-ids';
+  static const String defaultTradeDetailsResource = '/v1/trades/details/by-ids';
   static const String defaultTradeCalendarMonthResource =
       '/v1/trades/calendar/{portfolioId}/month';
   static const String defaultTradeCalendarDayResource =
@@ -98,19 +97,18 @@ class AppConstants {
 
   /// Legal pages (hosted with the web app on the active domain).
   static String get privacyPolicyUrl => _legalPageUrl('/privacy-policy.html');
-  static String get termsOfServiceUrl => _legalPageUrl('/terms-of-service.html');
+  static String get termsOfServiceUrl =>
+      _legalPageUrl('/terms-of-service.html');
 
   /// Legal page URL with theme query param so static pages match the app theme.
   static String legalPageUrl(String path, {required bool isDark}) {
     final uri = Uri.parse(_legalPageUrl(path));
-    return uri
-        .replace(
-          queryParameters: {
-            ...uri.queryParameters,
-            'theme': isDark ? 'dark' : 'light',
-          },
-        )
-        .toString();
+    return uri.replace(
+      queryParameters: {
+        ...uri.queryParameters,
+        'theme': isDark ? 'dark' : 'light',
+      },
+    ).toString();
   }
 
   static String privacyPolicyUrlForTheme(bool isDark) =>

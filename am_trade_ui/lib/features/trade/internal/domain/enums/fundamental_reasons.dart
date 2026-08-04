@@ -23,7 +23,8 @@ enum FundamentalReasons {
 }
 
 /// Converter for FundamentalReasons enum
-class FundamentalReasonsConverter implements JsonConverter<FundamentalReasons?, String?> {
+class FundamentalReasonsConverter
+    implements JsonConverter<FundamentalReasons?, String?> {
   const FundamentalReasonsConverter();
 
   @override
@@ -123,14 +124,18 @@ extension FundamentalReasonsExtension on FundamentalReasons {
 }
 
 /// List converter for FundamentalReasons
-class FundamentalReasonsListConverter implements JsonConverter<List<FundamentalReasons>?, List<dynamic>?> {
+class FundamentalReasonsListConverter
+    implements JsonConverter<List<FundamentalReasons>?, List<dynamic>?> {
   const FundamentalReasonsListConverter();
 
   @override
   List<FundamentalReasons>? fromJson(List<dynamic>? json) {
     if (json == null) return null;
     const converter = FundamentalReasonsConverter();
-    return json.map((e) => converter.fromJson(e as String?)).whereType<FundamentalReasons>().toList();
+    return json
+        .map((e) => converter.fromJson(e as String?))
+        .whereType<FundamentalReasons>()
+        .toList();
   }
 
   @override

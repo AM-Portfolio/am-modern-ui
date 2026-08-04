@@ -154,7 +154,8 @@ abstract class BasicInfo with _$BasicInfo {
 /// Domain entity for execution details
 @freezed
 abstract class ExecutionInfo with _$ExecutionInfo {
-  const factory ExecutionInfo({int? quantity, double? price, OrderTypes? orderType}) = _ExecutionInfo;
+  const factory ExecutionInfo(
+      {int? quantity, double? price, OrderTypes? orderType}) = _ExecutionInfo;
 
   factory ExecutionInfo.empty() => const ExecutionInfo();
 }
@@ -162,7 +163,10 @@ abstract class ExecutionInfo with _$ExecutionInfo {
 /// Domain entity for F&O specific info
 @freezed
 abstract class FnOInfo with _$FnOInfo {
-  const factory FnOInfo({DateTime? expiryDate, double? strikePrice, OptionTypes? optionType}) = _FnOInfo;
+  const factory FnOInfo(
+      {DateTime? expiryDate,
+      double? strikePrice,
+      OptionTypes? optionType}) = _FnOInfo;
 
   factory FnOInfo.empty() => const FnOInfo();
 }
@@ -232,13 +236,13 @@ abstract class TradeDetails with _$TradeDetails {
   }) = _TradeDetails;
 
   factory TradeDetails.empty() => TradeDetails(
-    tradeId: '',
-    portfolioId: '',
-    instrumentInfo: InstrumentInfo.empty(),
-    status: TradeStatuses.open,
-    tradePositionType: TradeDirections.long,
-    entryInfo: EntryExitInfo.empty(),
-  );
+        tradeId: '',
+        portfolioId: '',
+        instrumentInfo: InstrumentInfo.empty(),
+        status: TradeStatuses.open,
+        tradePositionType: TradeDirections.long,
+        entryInfo: EntryExitInfo.empty(),
+      );
 }
 
 /// Domain entity for filter summary
@@ -272,7 +276,8 @@ abstract class FilterTradeDetailsResponse with _$FilterTradeDetailsResponse {
     bool? isLast,
   }) = _FilterTradeDetailsResponse;
 
-  factory FilterTradeDetailsResponse.empty() => const FilterTradeDetailsResponse();
+  factory FilterTradeDetailsResponse.empty() =>
+      const FilterTradeDetailsResponse();
 }
 
 /// Domain entity for paginated trade response

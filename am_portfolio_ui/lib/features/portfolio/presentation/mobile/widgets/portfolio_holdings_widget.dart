@@ -6,10 +6,7 @@ import '../../../providers/portfolio_providers.dart';
 
 /// Portfolio holdings widget with comprehensive display controller at bottom
 class PortfolioHoldingsWidget extends ConsumerStatefulWidget {
-  const PortfolioHoldingsWidget({
-    super.key,
-    this.portfolioId,
-  });
+  const PortfolioHoldingsWidget({super.key, this.portfolioId});
   final String? portfolioId;
 
   @override
@@ -138,9 +135,7 @@ class _PortfolioHoldingsWidgetState
                             portfolioHoldingsProvider(widget.portfolioId!),
                           );
                         } else {
-                          ref.invalidate(
-                            portfolioHoldingsProvider(''),
-                          );
+                          ref.invalidate(portfolioHoldingsProvider(''));
                         }
                       },
                       child: const Text('Retry'),
@@ -252,13 +247,17 @@ class _PortfolioHoldingsWidgetState
               ),
             ],
           ),
-          if (widget.portfolioId == 'all' && holding.brokerHoldings.isNotEmpty) ...[
+          if (widget.portfolioId == 'all' &&
+              holding.brokerHoldings.isNotEmpty) ...[
             const SizedBox(height: 6),
             Wrap(
               spacing: 4,
               children: holding.brokerHoldings.map<Widget>((b) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).primaryColor.withAlpha(25),
                     borderRadius: BorderRadius.circular(4),

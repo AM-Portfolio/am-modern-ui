@@ -44,5 +44,6 @@ abstract class JournalRepository {
   Future<List<JournalEntry>> getJournalEntriesByTrade(String tradeId);
 
   /// Get journal entries by date range
-  Future<List<JournalEntry>> getJournalEntriesByDateRange(DateTime startDate, DateTime endDate);
+  Future<List<JournalEntry>> getJournalEntriesByDateRange(
+      DateTime startDate, DateTime endDate);
 }

@@ -67,22 +67,27 @@ class _MobileLayoutState extends State<MobileLayout> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: widget.child,
-    bottomNavigationBar: widget.hideBottomNav
-        ? null
-        : BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            currentIndex: _selectedIndex,
-            onTap: _onItemTapped,
-            selectedItemColor: Theme.of(context).primaryColor,
-            unselectedItemColor: Colors.grey[600],
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: 'Portfolio'),
-              BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-              BottomNavigationBarItem(icon: Icon(Icons.trending_up), label: 'Trade'),
-              BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: 'Market'),
-              BottomNavigationBarItem(icon: Icon(Icons.article), label: 'News'),
-            ],
-          ),
-  );
+        body: widget.child,
+        bottomNavigationBar: widget.hideBottomNav
+            ? null
+            : BottomNavigationBar(
+                type: BottomNavigationBarType.fixed,
+                currentIndex: _selectedIndex,
+                onTap: _onItemTapped,
+                selectedItemColor: Theme.of(context).primaryColor,
+                unselectedItemColor: Colors.grey[600],
+                items: const [
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.pie_chart), label: 'Portfolio'),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.dashboard), label: 'Dashboard'),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.trending_up), label: 'Trade'),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.show_chart), label: 'Market'),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.article), label: 'News'),
+                ],
+              ),
+      );
 }

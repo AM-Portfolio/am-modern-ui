@@ -5,7 +5,6 @@ import '../../selectors/selectors.dart';
 import '../core/heatmap_selector_core.dart';
 import '../configs/selector_config.dart';
 
-
 /// Mobile-optimized heatmap selector with user-friendly design
 /// Uses bottom sheets, expandable sections, and touch-friendly controls
 class HeatmapSelectorMobile extends StatefulWidget {
@@ -255,7 +254,8 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
       iconSize: 16,
       borderRadius: 10,
       menuMaxHeight: 180,
-      primaryColor: widget.primaryColor ?? Theme.of(context).colorScheme.primary,
+      primaryColor:
+          widget.primaryColor ?? Theme.of(context).colorScheme.primary,
       backgroundColor: backgroundColor,
       borderColor: borderColor,
       textColor: textColor,
@@ -269,37 +269,39 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
       _buildCompactDropdownRow(context);
 
   Widget _buildCompactHeader(BuildContext context) => InkWell(
-    onTap: _toggleExpanded,
-    borderRadius: BorderRadius.circular(8),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        children: [
-          Icon(
-            Icons.tune,
-            color: widget.primaryColor ?? Theme.of(context).primaryColor,
-            size: 18,
+        onTap: _toggleExpanded,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.tune,
+                color: widget.primaryColor ?? Theme.of(context).primaryColor,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _getCompactSummary(),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(
+                _isExpanded
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                size: 18,
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _getCompactSummary(),
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Icon(
-            _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            size: 18,
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 
   String _getCompactSummary() {
     final parts = <String>[];
@@ -322,149 +324,154 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
   }
 
   Widget _buildStandardMode(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (widget.title != null) _buildCompactTitle(context),
-        _buildQuickActions(context),
-      ],
-    ),
-  );
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (widget.title != null) _buildCompactTitle(context),
+            _buildQuickActions(context),
+          ],
+        ),
+      );
 
   Widget _buildCompactTitle(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-    child: Row(
-      children: [
-        Icon(
-          Icons.filter_alt_outlined,
-          color: widget.primaryColor ?? Theme.of(context).primaryColor,
-          size: 18,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            widget.title!,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+        child: Row(
+          children: [
+            Icon(
+              Icons.filter_alt_outlined,
               color: widget.primaryColor ?? Theme.of(context).primaryColor,
+              size: 18,
             ),
-          ),
-        ),
-        if (widget.showResetButton)
-          InkWell(
-            onTap: widget.core.resetFilters,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.refresh,
-                    size: 14,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Reset',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(0.7),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                widget.title!,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color:
+                          widget.primaryColor ?? Theme.of(context).primaryColor,
                     ),
-                  ),
-                ],
               ),
             ),
-          ),
-      ],
-    ),
-  );
+            if (widget.showResetButton)
+              InkWell(
+                onTap: widget.core.resetFilters,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.refresh,
+                        size: 14,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Reset',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
 
   Widget _buildQuickActions(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    child: Column(
-      children: [
-        if (widget.showTimeFrame) _buildCompactTimeFrameRow(context),
-        const SizedBox(height: 8),
-        _buildCompactFiltersRow(context),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          children: [
+            if (widget.showTimeFrame) _buildCompactTimeFrameRow(context),
+            const SizedBox(height: 8),
+            _buildCompactFiltersRow(context),
+          ],
+        ),
+      );
 
   Widget _buildCompactTimeFrameRow(BuildContext context) => SizedBox(
-    height: 32,
-    child: ListView.separated(
-      scrollDirection: Axis.horizontal,
-      itemCount: widget.core.timeFrameOptions.length,
-      separatorBuilder: (_, __) => const SizedBox(width: 6),
-      itemBuilder: (context, index) {
-        final timeFrame = widget.core.timeFrameOptions[index];
-        final isSelected = widget.core.selectedTimeFrame == timeFrame;
+        height: 32,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: widget.core.timeFrameOptions.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 6),
+          itemBuilder: (context, index) {
+            final timeFrame = widget.core.timeFrameOptions[index];
+            final isSelected = widget.core.selectedTimeFrame == timeFrame;
 
-        return _buildCompactPill(
-          context,
-          text: timeFrame.displayName,
-          isSelected: isSelected,
-          onTap: () => widget.core.updateTimeFrame(timeFrame),
-        );
-      },
-    ),
-  );
+            return _buildCompactPill(
+              context,
+              text: timeFrame.displayName,
+              isSelected: isSelected,
+              onTap: () => widget.core.updateTimeFrame(timeFrame),
+            );
+          },
+        ),
+      );
 
   Widget _buildCompactPill(
     BuildContext context, {
     required String text,
     required bool isSelected,
     required VoidCallback onTap,
-  }) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(16),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? (widget.primaryColor ?? Theme.of(context).primaryColor)
-            : Theme.of(context).colorScheme.surfaceContainerHighest,
+  }) =>
+      InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        border: isSelected
-            ? null
-            : Border.all(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-              ),
-      ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: isSelected
-              ? Theme.of(context).colorScheme.onPrimary
-              : Theme.of(context).colorScheme.onSurface,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          fontSize: 12,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (widget.primaryColor ?? Theme.of(context).primaryColor)
+                : Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+            border: isSelected
+                ? null
+                : Border.all(
+                    color:
+                        Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                  ),
+          ),
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Theme.of(context).colorScheme.onSurface,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 12,
+                ),
+          ),
         ),
-      ),
-    ),
-  );
+      );
 
   Widget _buildCompactFilterChip(
     BuildContext context, {
@@ -472,283 +479,286 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
     required String label,
     required String value,
     required VoidCallback onTap,
-  }) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(8),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+  }) =>
+      InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 12,
-                color: widget.primaryColor ?? Theme.of(context).primaryColor,
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  label,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.7),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 12,
+                    color:
+                        widget.primaryColor ?? Theme.of(context).primaryColor,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
             ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 
   Widget _buildCompactFiltersRow(BuildContext context) => Row(
-    children: [
-      if (widget.showSector) ...[
-        Expanded(
-          child: _buildCompactFilterChip(
-            context,
-            icon: Icons.business,
-            label: 'Sector',
-            value: widget.core.selectedSector.shortName,
-            onTap: () => _showSectorSelector(context),
-          ),
-        ),
-        const SizedBox(width: 6),
-      ],
-      if (widget.showMarketCap) ...[
-        Expanded(
-          child: _buildCompactFilterChip(
-            context,
-            icon: Icons.account_balance,
-            label: 'Cap',
-            value: widget.core.selectedMarketCap.shortName,
-            onTap: () => _showMarketCapSelector(context),
-          ),
-        ),
-        const SizedBox(width: 6),
-      ],
-      if (widget.showLayout) ...[
-        Expanded(
-          child: _buildCompactFilterChip(
-            context,
-            icon: widget.core.selectedLayout.icon,
-            label: 'Layout',
-            value: widget.core.selectedLayout.displayName,
-            onTap: () => _showLayoutSelector(context),
-          ),
-        ),
-      ],
-    ],
-  );
+        children: [
+          if (widget.showSector) ...[
+            Expanded(
+              child: _buildCompactFilterChip(
+                context,
+                icon: Icons.business,
+                label: 'Sector',
+                value: widget.core.selectedSector.shortName,
+                onTap: () => _showSectorSelector(context),
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
+          if (widget.showMarketCap) ...[
+            Expanded(
+              child: _buildCompactFilterChip(
+                context,
+                icon: Icons.account_balance,
+                label: 'Cap',
+                value: widget.core.selectedMarketCap.shortName,
+                onTap: () => _showMarketCapSelector(context),
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
+          if (widget.showLayout) ...[
+            Expanded(
+              child: _buildCompactFilterChip(
+                context,
+                icon: widget.core.selectedLayout.icon,
+                label: 'Layout',
+                value: widget.core.selectedLayout.displayName,
+                onTap: () => _showLayoutSelector(context),
+              ),
+            ),
+          ],
+        ],
+      );
 
   Widget _buildFiltersList(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      children: [
-        if (widget.showMetric)
-          _buildFilterTile(
-            context,
-            icon: Icons.trending_up,
-            title: 'Metric',
-            value: widget.core.selectedMetric.shortName,
-            onTap: () => _showMetricSelector(context),
-          ),
-        if (widget.showSector)
-          _buildFilterTile(
-            context,
-            icon: Icons.business,
-            title: 'Sector',
-            value: widget.core.selectedSector.displayName,
-            onTap: () => _showSectorSelector(context),
-          ),
-        if (widget.showMarketCap)
-          _buildFilterTile(
-            context,
-            icon: Icons.account_balance,
-            title: 'Market Cap',
-            value: widget.core.selectedMarketCap.displayName,
-            onTap: () => _showMarketCapSelector(context),
-          ),
-        if (widget.showLayout)
-          _buildFilterTile(
-            context,
-            icon: Icons.view_module,
-            title: 'Layout',
-            value: widget.core.selectedLayout.displayName,
-            onTap: () => _showLayoutSelector(context),
-          ),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            if (widget.showMetric)
+              _buildFilterTile(
+                context,
+                icon: Icons.trending_up,
+                title: 'Metric',
+                value: widget.core.selectedMetric.shortName,
+                onTap: () => _showMetricSelector(context),
+              ),
+            if (widget.showSector)
+              _buildFilterTile(
+                context,
+                icon: Icons.business,
+                title: 'Sector',
+                value: widget.core.selectedSector.displayName,
+                onTap: () => _showSectorSelector(context),
+              ),
+            if (widget.showMarketCap)
+              _buildFilterTile(
+                context,
+                icon: Icons.account_balance,
+                title: 'Market Cap',
+                value: widget.core.selectedMarketCap.displayName,
+                onTap: () => _showMarketCapSelector(context),
+              ),
+            if (widget.showLayout)
+              _buildFilterTile(
+                context,
+                icon: Icons.view_module,
+                title: 'Layout',
+                value: widget.core.selectedLayout.displayName,
+                onTap: () => _showLayoutSelector(context),
+              ),
+          ],
+        ),
+      );
 
   Widget _buildCompactExpandedFilters(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
-    child: Column(
-      children: [
-        if (widget.showTimeFrame) ...[
-          _buildCompactFilterSection(
-            context,
-            title: 'Time Period',
-            child: _buildCompactTimeFrameRow(context),
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (widget.showMetric) ...[
-          _buildCompactFilterSection(
-            context,
-            title: 'Metric',
-            child: _buildCompactMetricList(context),
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (widget.showSector) ...[
-          _buildCompactFilterSection(
-            context,
-            title: 'Sector',
-            child: _buildCompactSectorList(context),
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (widget.showMarketCap) ...[
-          _buildCompactFilterSection(
-            context,
-            title: 'Market Cap',
-            child: _buildCompactMarketCapList(context),
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (widget.showLayout) ...[
-          _buildCompactFilterSection(
-            context,
-            title: 'Layout',
-            child: _buildCompactLayoutList(context),
-          ),
-        ],
-      ],
-    ),
-  );
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            if (widget.showTimeFrame) ...[
+              _buildCompactFilterSection(
+                context,
+                title: 'Time Period',
+                child: _buildCompactTimeFrameRow(context),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (widget.showMetric) ...[
+              _buildCompactFilterSection(
+                context,
+                title: 'Metric',
+                child: _buildCompactMetricList(context),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (widget.showSector) ...[
+              _buildCompactFilterSection(
+                context,
+                title: 'Sector',
+                child: _buildCompactSectorList(context),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (widget.showMarketCap) ...[
+              _buildCompactFilterSection(
+                context,
+                title: 'Market Cap',
+                child: _buildCompactMarketCapList(context),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (widget.showLayout) ...[
+              _buildCompactFilterSection(
+                context,
+                title: 'Layout',
+                child: _buildCompactLayoutList(context),
+              ),
+            ],
+          ],
+        ),
+      );
 
   Widget _buildCompactFilterSection(
     BuildContext context, {
     required String title,
     required Widget child,
-  }) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        title,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: widget.primaryColor ?? Theme.of(context).primaryColor,
-          fontSize: 12,
-        ),
-      ),
-      const SizedBox(height: 6),
-      child,
-    ],
-  );
+  }) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: widget.primaryColor ?? Theme.of(context).primaryColor,
+                  fontSize: 12,
+                ),
+          ),
+          const SizedBox(height: 6),
+          child,
+        ],
+      );
 
   Widget _buildCompactMetricList(BuildContext context) => SizedBox(
-    height: 32,
-    child: ListView.separated(
-      scrollDirection: Axis.horizontal,
-      itemCount: widget.core.metricOptions.length,
-      separatorBuilder: (_, __) => const SizedBox(width: 6),
-      itemBuilder: (context, index) {
-        final metric = widget.core.metricOptions[index];
-        final isSelected = widget.core.selectedMetric == metric;
-        return _buildCompactPill(
-          context,
-          text: metric.shortName,
-          isSelected: isSelected,
-          onTap: () => widget.core.updateMetric(metric),
-        );
-      },
-    ),
-  );
+        height: 32,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: widget.core.metricOptions.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 6),
+          itemBuilder: (context, index) {
+            final metric = widget.core.metricOptions[index];
+            final isSelected = widget.core.selectedMetric == metric;
+            return _buildCompactPill(
+              context,
+              text: metric.shortName,
+              isSelected: isSelected,
+              onTap: () => widget.core.updateMetric(metric),
+            );
+          },
+        ),
+      );
 
   Widget _buildCompactSectorList(BuildContext context) => SizedBox(
-    height: 32,
-    child: ListView.separated(
-      scrollDirection: Axis.horizontal,
-      itemCount: widget.core.sectorOptions.length,
-      separatorBuilder: (_, __) => const SizedBox(width: 6),
-      itemBuilder: (context, index) {
-        final sector = widget.core.sectorOptions[index];
-        final isSelected = widget.core.selectedSector == sector;
-        return _buildCompactPill(
-          context,
-          text: sector.shortName,
-          isSelected: isSelected,
-          onTap: () => widget.core.updateSector(sector),
-        );
-      },
-    ),
-  );
+        height: 32,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: widget.core.sectorOptions.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 6),
+          itemBuilder: (context, index) {
+            final sector = widget.core.sectorOptions[index];
+            final isSelected = widget.core.selectedSector == sector;
+            return _buildCompactPill(
+              context,
+              text: sector.shortName,
+              isSelected: isSelected,
+              onTap: () => widget.core.updateSector(sector),
+            );
+          },
+        ),
+      );
 
   Widget _buildCompactMarketCapList(BuildContext context) => SizedBox(
-    height: 32,
-    child: ListView.separated(
-      scrollDirection: Axis.horizontal,
-      itemCount: widget.core.marketCapOptions.length,
-      separatorBuilder: (_, __) => const SizedBox(width: 6),
-      itemBuilder: (context, index) {
-        final marketCap = widget.core.marketCapOptions[index];
-        final isSelected = widget.core.selectedMarketCap == marketCap;
-        return _buildCompactPill(
-          context,
-          text: marketCap.shortName,
-          isSelected: isSelected,
-          onTap: () => widget.core.updateMarketCap(marketCap),
-        );
-      },
-    ),
-  );
+        height: 32,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: widget.core.marketCapOptions.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 6),
+          itemBuilder: (context, index) {
+            final marketCap = widget.core.marketCapOptions[index];
+            final isSelected = widget.core.selectedMarketCap == marketCap;
+            return _buildCompactPill(
+              context,
+              text: marketCap.shortName,
+              isSelected: isSelected,
+              onTap: () => widget.core.updateMarketCap(marketCap),
+            );
+          },
+        ),
+      );
 
   Widget _buildCompactLayoutList(BuildContext context) => SizedBox(
-    height: 32,
-    child: ListView.separated(
-      scrollDirection: Axis.horizontal,
-      itemCount: widget.core.layoutOptions.length,
-      separatorBuilder: (_, __) => const SizedBox(width: 6),
-      itemBuilder: (context, index) {
-        final layout = widget.core.layoutOptions[index];
-        final isSelected = widget.core.selectedLayout == layout;
-        return _buildCompactPill(
-          context,
-          text: layout.displayName,
-          isSelected: isSelected,
-          onTap: () => widget.core.updateLayout(layout),
-        );
-      },
-    ),
-  );
+        height: 32,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: widget.core.layoutOptions.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 6),
+          itemBuilder: (context, index) {
+            final layout = widget.core.layoutOptions[index];
+            final isSelected = widget.core.selectedLayout == layout;
+            return _buildCompactPill(
+              context,
+              text: layout.displayName,
+              isSelected: isSelected,
+              onTap: () => widget.core.updateLayout(layout),
+            );
+          },
+        ),
+      );
 
   Widget _buildFilterTile(
     BuildContext context, {
@@ -756,60 +766,64 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
     required String title,
     required String value,
     required VoidCallback onTap,
-  }) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(12),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+  }) =>
+      InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: widget.primaryColor ?? Theme.of(context).primaryColor,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.7),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
             ),
           ),
-          Icon(
-            Icons.chevron_right,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: widget.primaryColor ?? Theme.of(context).primaryColor,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.7),
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: Theme.of(
+                        context,
+                      )
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ],
           ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 
   void _showFiltersBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -821,165 +835,166 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
   }
 
   Widget _buildBottomSheet(BuildContext context) => Container(
-    constraints: BoxConstraints(
-      maxHeight: MediaQuery.of(context).size.height * 0.8,
-    ),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildBottomSheetHeader(context),
-        Flexible(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                if (widget.showMetric) ...[
-                  _buildBottomSheetSection(
-                    context,
-                    title: 'Metric',
-                    child: _buildMetricList(context),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-                if (widget.showSector) ...[
-                  _buildBottomSheetSection(
-                    context,
-                    title: 'Sector',
-                    child: _buildSectorList(context),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-                if (widget.showMarketCap) ...[
-                  _buildBottomSheetSection(
-                    context,
-                    title: 'Market Cap',
-                    child: _buildMarketCapList(context),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-                if (widget.showLayout) ...[
-                  _buildBottomSheetSection(
-                    context,
-                    title: 'Layout',
-                    child: _buildLayoutList(context),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ],
-            ),
-          ),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
         ),
-      ],
-    ),
-  );
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildBottomSheetHeader(context),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    if (widget.showMetric) ...[
+                      _buildBottomSheetSection(
+                        context,
+                        title: 'Metric',
+                        child: _buildMetricList(context),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    if (widget.showSector) ...[
+                      _buildBottomSheetSection(
+                        context,
+                        title: 'Sector',
+                        child: _buildSectorList(context),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    if (widget.showMarketCap) ...[
+                      _buildBottomSheetSection(
+                        context,
+                        title: 'Market Cap',
+                        child: _buildMarketCapList(context),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    if (widget.showLayout) ...[
+                      _buildBottomSheetSection(
+                        context,
+                        title: 'Layout',
+                        child: _buildLayoutList(context),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 
   Widget _buildBottomSheetHeader(BuildContext context) => Container(
-    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            'Filter Options',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Filter Options',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close),
+            ),
+          ],
         ),
-        IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.close),
-        ),
-      ],
-    ),
-  );
+      );
 
   Widget _buildBottomSheetSection(
     BuildContext context, {
     required String title,
     required Widget child,
-  }) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: widget.primaryColor ?? Theme.of(context).primaryColor,
-        ),
-      ),
-      const SizedBox(height: 12),
-      child,
-    ],
-  );
+  }) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: widget.primaryColor ?? Theme.of(context).primaryColor,
+                ),
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      );
 
   Widget _buildMetricList(BuildContext context) => Column(
-    children: widget.core.metricOptions.map((metric) {
-      final isSelected = widget.core.selectedMetric == metric;
-      return _buildBottomSheetTile(
-        context,
-        title: metric.displayName,
-        subtitle: metric.shortName,
-        isSelected: isSelected,
-        onTap: () {
-          widget.core.updateMetric(metric);
-          Navigator.of(context).pop();
-        },
+        children: widget.core.metricOptions.map((metric) {
+          final isSelected = widget.core.selectedMetric == metric;
+          return _buildBottomSheetTile(
+            context,
+            title: metric.displayName,
+            subtitle: metric.shortName,
+            isSelected: isSelected,
+            onTap: () {
+              widget.core.updateMetric(metric);
+              Navigator.of(context).pop();
+            },
+          );
+        }).toList(),
       );
-    }).toList(),
-  );
 
   Widget _buildSectorList(BuildContext context) => Column(
-    children: widget.core.sectorOptions.map((sector) {
-      final isSelected = widget.core.selectedSector == sector;
-      return _buildBottomSheetTile(
-        context,
-        title: sector.displayName,
-        subtitle: sector.shortName,
-        isSelected: isSelected,
-        onTap: () {
-          widget.core.updateSector(sector);
-          Navigator.of(context).pop();
-        },
+        children: widget.core.sectorOptions.map((sector) {
+          final isSelected = widget.core.selectedSector == sector;
+          return _buildBottomSheetTile(
+            context,
+            title: sector.displayName,
+            subtitle: sector.shortName,
+            isSelected: isSelected,
+            onTap: () {
+              widget.core.updateSector(sector);
+              Navigator.of(context).pop();
+            },
+          );
+        }).toList(),
       );
-    }).toList(),
-  );
 
   Widget _buildMarketCapList(BuildContext context) => Column(
-    children: widget.core.marketCapOptions.map((marketCap) {
-      final isSelected = widget.core.selectedMarketCap == marketCap;
-      return _buildBottomSheetTile(
-        context,
-        title: marketCap.displayName,
-        subtitle: marketCap.shortName,
-        isSelected: isSelected,
-        onTap: () {
-          widget.core.updateMarketCap(marketCap);
-          Navigator.of(context).pop();
-        },
+        children: widget.core.marketCapOptions.map((marketCap) {
+          final isSelected = widget.core.selectedMarketCap == marketCap;
+          return _buildBottomSheetTile(
+            context,
+            title: marketCap.displayName,
+            subtitle: marketCap.shortName,
+            isSelected: isSelected,
+            onTap: () {
+              widget.core.updateMarketCap(marketCap);
+              Navigator.of(context).pop();
+            },
+          );
+        }).toList(),
       );
-    }).toList(),
-  );
 
   Widget _buildLayoutList(BuildContext context) => Column(
-    children: widget.core.layoutOptions.map((layout) {
-      final isSelected = widget.core.selectedLayout == layout;
-      return _buildBottomSheetTile(
-        context,
-        title: layout.displayName,
-        subtitle: 'View as ${layout.displayName.toLowerCase()}',
-        icon: layout.icon,
-        isSelected: isSelected,
-        onTap: () {
-          widget.core.updateLayout(layout);
-          Navigator.of(context).pop();
-        },
+        children: widget.core.layoutOptions.map((layout) {
+          final isSelected = widget.core.selectedLayout == layout;
+          return _buildBottomSheetTile(
+            context,
+            title: layout.displayName,
+            subtitle: 'View as ${layout.displayName.toLowerCase()}',
+            icon: layout.icon,
+            isSelected: isSelected,
+            onTap: () {
+              widget.core.updateLayout(layout);
+              Navigator.of(context).pop();
+            },
+          );
+        }).toList(),
       );
-    }).toList(),
-  );
 
   Widget _buildBottomSheetTile(
     BuildContext context, {
@@ -988,72 +1003,78 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
     required VoidCallback onTap,
     String? subtitle,
     IconData? icon,
-  }) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(12),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      margin: const EdgeInsets.only(bottom: 4),
-      decoration: isSelected
-          ? BoxDecoration(
-              color: (widget.primaryColor ?? Theme.of(context).primaryColor)
-                  .withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: widget.primaryColor ?? Theme.of(context).primaryColor,
-              ),
-            )
-          : null,
-      child: Row(
-        children: [
-          if (icon != null) ...[
-            Icon(
-              icon,
-              size: 24,
-              color: isSelected
-                  ? (widget.primaryColor ?? Theme.of(context).primaryColor)
-                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-            ),
-            const SizedBox(width: 16),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected
-                        ? (widget.primaryColor ??
-                              Theme.of(context).primaryColor)
-                        : null,
+  }) =>
+      InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          margin: const EdgeInsets.only(bottom: 4),
+          decoration: isSelected
+              ? BoxDecoration(
+                  color: (widget.primaryColor ?? Theme.of(context).primaryColor)
+                      .withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color:
+                        widget.primaryColor ?? Theme.of(context).primaryColor,
                   ),
+                )
+              : null,
+          child: Row(
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 24,
+                  color: isSelected
+                      ? (widget.primaryColor ?? Theme.of(context).primaryColor)
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.7),
                 ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ],
+                const SizedBox(width: 16),
               ],
-            ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w500,
+                            color: isSelected
+                                ? (widget.primaryColor ??
+                                    Theme.of(context).primaryColor)
+                                : null,
+                          ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (isSelected)
+                Icon(
+                  Icons.check_circle,
+                  color: widget.primaryColor ?? Theme.of(context).primaryColor,
+                  size: 20,
+                ),
+            ],
           ),
-          if (isSelected)
-            Icon(
-              Icons.check_circle,
-              color: widget.primaryColor ?? Theme.of(context).primaryColor,
-              size: 20,
-            ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 
   // Individual selector methods
   void _showMetricSelector(BuildContext context) {
@@ -1100,7 +1121,8 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
       selectedItem: widget.core.selectedLayout,
       onItemSelected: widget.core.updateLayout,
       getDisplayText: (layout) => (layout as HeatmapLayoutType).displayName,
-      getSubtitle: (layout) => 'View as ${(layout as HeatmapLayoutType).displayName.toLowerCase()}',
+      getSubtitle: (layout) =>
+          'View as ${(layout as HeatmapLayoutType).displayName.toLowerCase()}',
       getIcon: (layout) => (layout as HeatmapLayoutType).icon,
     );
   }
@@ -1135,19 +1157,18 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
                         getIcon(item),
                         color: isSelected
                             ? (widget.primaryColor ??
-                                  Theme.of(context).primaryColor)
+                                Theme.of(context).primaryColor)
                             : null,
                       )
                     : null,
                 title: Text(
                   getDisplayText(item),
                   style: TextStyle(
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     color: isSelected
                         ? (widget.primaryColor ??
-                              Theme.of(context).primaryColor)
+                            Theme.of(context).primaryColor)
                         : null,
                   ),
                 ),
@@ -1155,8 +1176,7 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
                 trailing: isSelected
                     ? Icon(
                         Icons.check,
-                        color:
-                            widget.primaryColor ??
+                        color: widget.primaryColor ??
                             Theme.of(context).primaryColor,
                       )
                     : null,

@@ -1,4 +1,3 @@
-
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
@@ -61,7 +60,8 @@ class SecondarySidebar extends StatelessWidget {
     this.accentColor = const Color(0xFF6C5DD3),
     this.icon = Icons.grid_view_rounded,
     this.showDividers = false,
-  }) : assert(child != null || items != null || sections != null, 'Either child, items, or sections must be provided');
+  }) : assert(child != null || items != null || sections != null,
+            'Either child, items, or sections must be provided');
 
   final String? title;
   final String? subtitle;
@@ -78,15 +78,17 @@ class SecondarySidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       width: width,
       height: double.infinity,
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkBackground : const Color(0xFFF9FAFB),
         border: Border(
-           right: BorderSide(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+          right: BorderSide(
+            color: isDark
+                ? Colors.white.withOpacity(0.05)
+                : Colors.black.withOpacity(0.05),
             width: 1,
           ),
         ),
@@ -96,15 +98,16 @@ class SecondarySidebar extends StatelessWidget {
         children: [
           // Header Section (Workspace / Title)
           _buildHeader(context, isDark),
-          
+
           if (showDividers)
             Divider(color: isDark ? Colors.white10 : Colors.black12, height: 1),
 
           // Scrollable Content
           Expanded(
-            child: child ?? (sections != null 
-                ? _buildSectionsList(context, isDark)
-                : _buildItemsList(context, items!, isDark)),
+            child: child ??
+                (sections != null
+                    ? _buildSectionsList(context, isDark)
+                    : _buildItemsList(context, items!, isDark)),
           ),
 
           // Footer Section (New Trade Button)
@@ -143,7 +146,7 @@ class SecondarySidebar extends StatelessWidget {
             child: Icon(icon, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
-          
+
           // Title & Subtitle
           Expanded(
             child: Column(
@@ -186,7 +189,8 @@ class SecondarySidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildItemsList(BuildContext context, List<SecondarySidebarItem> itemList, bool isDark) {
+  Widget _buildItemsList(
+      BuildContext context, List<SecondarySidebarItem> itemList, bool isDark) {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: itemList.length,
@@ -229,10 +233,12 @@ class _SecondarySidebarSectionWidget extends StatefulWidget {
   });
 
   @override
-  State<_SecondarySidebarSectionWidget> createState() => _SecondarySidebarSectionWidgetState();
+  State<_SecondarySidebarSectionWidget> createState() =>
+      _SecondarySidebarSectionWidgetState();
 }
 
-class _SecondarySidebarSectionWidgetState extends State<_SecondarySidebarSectionWidget> {
+class _SecondarySidebarSectionWidgetState
+    extends State<_SecondarySidebarSectionWidget> {
   late bool _isExpanded;
 
   @override
@@ -266,9 +272,11 @@ class _SecondarySidebarSectionWidgetState extends State<_SecondarySidebarSection
                       ),
                     ),
                   ),
-                  if (widget.section.items != null) // Only show arrow if expandable items exist
+                  if (widget.section.items !=
+                      null) // Only show arrow if expandable items exist
                     AnimatedRotation(
-                      turns: _isExpanded ? 0 : -0.25, // 0 is down, -0.25 is right
+                      turns:
+                          _isExpanded ? 0 : -0.25, // 0 is down, -0.25 is right
                       duration: const Duration(milliseconds: 200),
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
@@ -282,7 +290,8 @@ class _SecondarySidebarSectionWidgetState extends State<_SecondarySidebarSection
           ),
 
         // Section Items or Custom Widget
-        if (_isExpanded || widget.section.title.isEmpty) ...[ // Always show if no title (e.g. top section)
+        if (_isExpanded || widget.section.title.isEmpty) ...[
+          // Always show if no title (e.g. top section)
           if (widget.section.customWidget != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -302,7 +311,7 @@ class _SecondarySidebarSectionWidgetState extends State<_SecondarySidebarSection
               ),
             ),
         ],
-        const SizedBox(height: 8), 
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -329,9 +338,9 @@ class _SecondarySidebarTileState extends State<_SecondarySidebarTile> {
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
-    final isDark = widget.isDark;    // Determine colors
+    final isDark = widget.isDark; // Determine colors
     final isSelected = item.isSelected;
-    
+
     // Icon Color: Accent if selected or hovered
     final iconColor = isSelected || _isHovered
         ? (widget.item.accentColor ?? widget.accentColor)
@@ -341,11 +350,11 @@ class _SecondarySidebarTileState extends State<_SecondarySidebarTile> {
     final textColor = isSelected || _isHovered
         ? (isDark ? Colors.white : Colors.black)
         : (isDark ? Colors.white54 : Colors.black87);
-    
+
     // Background Color: Accent opacity if selected/hovered
-    final bgColor = isSelected 
+    final bgColor = isSelected
         ? (widget.item.accentColor ?? widget.accentColor).withOpacity(0.15)
-        : _isHovered 
+        : _isHovered
             ? (widget.item.accentColor ?? widget.accentColor).withOpacity(0.08)
             : Colors.transparent;
 
@@ -382,13 +391,14 @@ class _SecondarySidebarTileState extends State<_SecondarySidebarTile> {
                     style: TextStyle(
                       color: textColor,
                       fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w400,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (item.trailing != null) 
+                if (item.trailing != null)
                   item.trailing!
                 else if (item.subtitle != null) // e.g. "Coming Soon" badge
                   Text(

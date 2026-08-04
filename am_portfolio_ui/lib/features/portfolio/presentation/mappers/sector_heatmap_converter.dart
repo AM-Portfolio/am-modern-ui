@@ -91,30 +91,44 @@ class SectorHeatmapConverter {
         final n = t.name.trim().toLowerCase();
         return n.isEmpty || n == '-' || n == 'unknown';
       });
-      final combinedWeight = otherTiles.fold(0.0, (sum, t) => sum + t.weightage);
-      final combinedValue = otherTiles.fold(0.0, (sum, t) => sum + (t.value ?? 0));
-      final avgPerformance = otherTiles.fold(0.0, (sum, t) => sum + t.performance) / otherTiles.length;
-      
+      final combinedWeight = otherTiles.fold(
+        0.0,
+        (sum, t) => sum + t.weightage,
+      );
+      final combinedValue = otherTiles.fold(
+        0.0,
+        (sum, t) => sum + (t.value ?? 0),
+      );
+      final avgPerformance =
+          otherTiles.fold(0.0, (sum, t) => sum + t.performance) /
+          otherTiles.length;
+
       // Merge children
       final List<HeatmapTileData> combinedChildren = [];
       for (final t in otherTiles) {
         if (t.children != null) {
           for (final child in t.children!) {
-            combinedChildren.add(child is HeatmapTileData ? child : HeatmapTileData.fromEntity(child));
+            combinedChildren.add(
+              child is HeatmapTileData
+                  ? child
+                  : HeatmapTileData.fromEntity(child),
+            );
           }
         }
       }
 
-      tiles.add(HeatmapTileData(
-        id: 'other',
-        name: 'Other',
-        displayName: 'Other',
-        weightage: combinedWeight,
-        performance: avgPerformance,
-        value: combinedValue,
-        children: combinedChildren.isNotEmpty ? combinedChildren : null,
-        metadata: {'type': 'sector', 'sectorName': 'Other'},
-      ));
+      tiles.add(
+        HeatmapTileData(
+          id: 'other',
+          name: 'Other',
+          displayName: 'Other',
+          weightage: combinedWeight,
+          performance: avgPerformance,
+          value: combinedValue,
+          children: combinedChildren.isNotEmpty ? combinedChildren : null,
+          metadata: {'type': 'sector', 'sectorName': 'Other'},
+        ),
+      );
     }
 
     // Sort sectors by weightage descending (largest sectors first)
@@ -269,7 +283,9 @@ class SectorHeatmapConverter {
                 'name': tile.name,
                 'displayName': tile.displayName,
                 'weightage': double.parse(tile.weightage.toStringAsFixed(2)),
-                'performance': double.parse(tile.performance.toStringAsFixed(2)),
+                'performance': double.parse(
+                  tile.performance.toStringAsFixed(2),
+                ),
                 'value': tile.value != null
                     ? double.parse(tile.value!.toStringAsFixed(2))
                     : null,
@@ -296,7 +312,9 @@ class SectorHeatmapConverter {
                     'performance': double.parse(
                       child.performance.toStringAsFixed(2),
                     ),
-                    'weightage': double.parse(child.weightage.toStringAsFixed(2)),
+                    'weightage': double.parse(
+                      child.weightage.toStringAsFixed(2),
+                    ),
                     'value': child.value != null
                         ? double.parse(child.value!.toStringAsFixed(2))
                         : null,
@@ -314,11 +332,18 @@ class SectorHeatmapConverter {
           );
         }
 
-        final totalWeightage = tiles.fold(0.0, (sum, tile) => sum + tile.weightage);
+        final totalWeightage = tiles.fold(
+          0.0,
+          (sum, tile) => sum + tile.weightage,
+        );
         final avgPerformance = tiles.isNotEmpty
-            ? tiles.fold(0.0, (sum, tile) => sum + tile.performance) / tiles.length
+            ? tiles.fold(0.0, (sum, tile) => sum + tile.performance) /
+                  tiles.length
             : 0.0;
-        final totalChildren = tiles.fold(0, (sum, tile) => sum + (tile.children?.length ?? 0));
+        final totalChildren = tiles.fold(
+          0,
+          (sum, tile) => sum + (tile.children?.length ?? 0),
+        );
 
         final statistics = {
           'totalWeightage': double.parse(totalWeightage.toStringAsFixed(2)),

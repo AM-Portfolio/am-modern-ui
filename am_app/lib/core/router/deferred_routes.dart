@@ -3,7 +3,8 @@ import 'package:am_analysis_ui/services/real_analysis_service.dart'
 import 'package:am_analysis_ui/widgets/analysis_dashboard.dart'
     deferred as analysis_ui;
 import 'package:am_analysis_core/am_analysis_core.dart' show AnalysisEntityType;
-import 'package:am_ai_ui/presentation/screens/ai_chat_screen.dart' deferred as ai_ui;
+import 'package:am_ai_ui/presentation/screens/ai_chat_screen.dart'
+    deferred as ai_ui;
 import 'package:am_diagnostic_ui/presentation/pages/diagnostic_dashboard_page.dart'
     deferred as diagnostic_ui;
 import 'package:am_doc_intelligence_ui/features/doc_intelligence_screen.dart'
@@ -65,7 +66,8 @@ Widget _defaultPortfolioAddTradeBuilder(
 ) {
   return Consumer(
     builder: (context, ref, _) {
-      final cubitAsync = ref.watch(trade_providers.tradeControllerCubitProvider);
+      final cubitAsync =
+          ref.watch(trade_providers.tradeControllerCubitProvider);
       return cubitAsync.when(
         data: (cubit) => BlocProvider.value(
           value: cubit,
@@ -312,7 +314,8 @@ class _ProfileSubscriptionLoader extends StatefulWidget {
       _ProfileSubscriptionLoaderState();
 }
 
-class _ProfileSubscriptionLoaderState extends State<_ProfileSubscriptionLoader> {
+class _ProfileSubscriptionLoaderState
+    extends State<_ProfileSubscriptionLoader> {
   String? _statusLabel;
   bool _isPaid = false;
 

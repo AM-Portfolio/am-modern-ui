@@ -23,19 +23,25 @@ class AppGlassmorphism {
   }) {
     return BoxDecoration(
       gradient: LinearGradient(
-        colors: gradientColors ?? (isDark ? [
-          Colors.white.withOpacity(0.05),
-          Colors.white.withOpacity(0.02),
-        ] : [
-          Colors.white.withOpacity(0.85),
-          Colors.white.withOpacity(0.65),
-        ]),
+        colors: gradientColors ??
+            (isDark
+                ? [
+                    Colors.white.withOpacity(0.05),
+                    Colors.white.withOpacity(0.02),
+                  ]
+                : [
+                    Colors.white.withOpacity(0.85),
+                    Colors.white.withOpacity(0.65),
+                  ]),
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
       borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(
-        color: borderColor ?? (isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.08)),
+        color: borderColor ??
+            (isDark
+                ? Colors.white.withOpacity(0.1)
+                : Colors.black.withOpacity(0.08)),
         width: borderWidth,
       ),
       boxShadow: [
@@ -62,7 +68,7 @@ class AppGlassmorphism {
     bool isGlowing = true,
   }) {
     final colors = colorSchemes[colorScheme] ?? colorSchemes['primary']!;
-    
+
     return BoxDecoration(
       gradient: LinearGradient(
         colors: [
@@ -260,11 +266,12 @@ class AppGlassmorphism {
     AlignmentGeometry? end,
   }) {
     return LinearGradient(
-      colors: colors ?? [
-        const Color(0xFF6C5DD3),
-        const Color(0xFFFF9F43),
-        const Color(0xFF00D2D3),
-      ],
+      colors: colors ??
+          [
+            const Color(0xFF6C5DD3),
+            const Color(0xFFFF9F43),
+            const Color(0xFF00D2D3),
+          ],
       begin: begin ?? Alignment.topLeft,
       end: end ?? Alignment.bottomRight,
       stops: const [0.0, 0.5, 1.0],
@@ -299,6 +306,7 @@ class AppGlassmorphism {
       ],
     );
   }
+
   // Dropdown decoration with glass effect
   static BoxDecoration dropdownDecoration(BuildContext context) {
     return BoxDecoration(

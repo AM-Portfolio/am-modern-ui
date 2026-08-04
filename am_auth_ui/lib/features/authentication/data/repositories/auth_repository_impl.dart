@@ -144,7 +144,8 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, AuthResultEntity>> googleLogin() async {
     try {
-      CommonLogger.info('🟢 [GOOGLE OAUTH] Step 1: Starting Google Sign-In flow');
+      CommonLogger.info(
+          '🟢 [GOOGLE OAUTH] Step 1: Starting Google Sign-In flow');
 
       // Step 1: Get Google account and authentication
       CommonLogger.info(
@@ -210,7 +211,8 @@ class AuthRepositoryImpl implements AuthRepository {
       await _storageService.saveUserEmail(result.user.email);
       await _storageService.saveTokenExpiry(result.tokens.expiresAt);
 
-      CommonLogger.info('🟢 [GOOGLE OAUTH] Step 9: All tokens saved successfully');
+      CommonLogger.info(
+          '🟢 [GOOGLE OAUTH] Step 9: All tokens saved successfully');
       CommonLogger.info(
         '🟢 [GOOGLE OAUTH] ✅ GOOGLE SIGN-IN COMPLETE! Returning success.',
       );
@@ -307,7 +309,8 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, bool>> checkAuthStatus() async {
     try {
-      final accessToken = await _storageService.getAccessToken(checkExpiry: false);
+      final accessToken =
+          await _storageService.getAccessToken(checkExpiry: false);
       if (accessToken == null) return const Right(false);
 
       final isExpired = await _storageService.isTokenExpired();
@@ -321,7 +324,8 @@ class AuthRepositoryImpl implements AuthRepository {
           (failure) {
             // Invalid or expired session — treat as logged out.
             if (failure is AuthFailure) return const Right(false);
-            if (failure is ServerFailure && _isInvalidSessionStatus(failure.code)) {
+            if (failure is ServerFailure &&
+                _isInvalidSessionStatus(failure.code)) {
               return const Right(false);
             }
             // Transient network/5xx — propagate so UI can retry without login flash.
@@ -367,21 +371,9 @@ class AuthRepositoryImpl implements AuthRepository {
           accessToken.isEmpty ||
           expiry == null) {
         CommonLogger.warning(
-          '⚠️ Validation failed - userId: ${userId == null
-              ? 'NULL'
-              : userId.isEmpty
-              ? 'EMPTY'
-              : 'OK'}, '
-          'email: ${email == null
-              ? 'NULL'
-              : email.isEmpty
-              ? 'EMPTY'
-              : 'OK'}, '
-          'accessToken: ${accessToken == null
-              ? 'NULL'
-              : accessToken.isEmpty
-              ? 'EMPTY'
-              : 'OK'}',
+          '⚠️ Validation failed - userId: ${userId == null ? 'NULL' : userId.isEmpty ? 'EMPTY' : 'OK'}, '
+          'email: ${email == null ? 'NULL' : email.isEmpty ? 'EMPTY' : 'OK'}, '
+          'accessToken: ${accessToken == null ? 'NULL' : accessToken.isEmpty ? 'EMPTY' : 'OK'}',
           tag: 'AuthRepository',
         );
 
@@ -590,7 +582,7 @@ class AuthRepositoryImpl implements AuthRepository {
         await Future<void>.delayed(const Duration(milliseconds: 400));
         return const Right(null);
       }
-      
+
       final token = await _storageService.getAccessToken(checkExpiry: false);
       if (token == null) {
         return const Left(AuthFailure('Not authenticated'));
@@ -600,7 +592,7 @@ class AuthRepositoryImpl implements AuthRepository {
         token: token,
         feedback: feedback,
       );
-      
+
       return const Right(null);
     } on NetworkException catch (e) {
       return Left(NetworkFailure(e.message));
@@ -611,4 +603,3 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 }
-

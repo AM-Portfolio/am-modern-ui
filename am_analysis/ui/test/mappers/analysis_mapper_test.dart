@@ -9,12 +9,15 @@ void main() {
       test('should convert SDK AllocationResponse with sector data', () {
         final sdkResponse = sdk.AllocationResponse(
           sectors: [
-            sdk.AllocationItem(name: 'Technology', percentage: 45.0, value: 45000.0),
-            sdk.AllocationItem(name: 'Finance', percentage: 25.0, value: 25000.0),
+            sdk.AllocationItem(
+                name: 'Technology', percentage: 45.0, value: 45000.0),
+            sdk.AllocationItem(
+                name: 'Finance', percentage: 25.0, value: 25000.0),
           ],
         );
 
-        final result = AnalysisMapper.toAllocationItems(sdkResponse, GroupBy.sector);
+        final result =
+            AnalysisMapper.toAllocationItems(sdkResponse, GroupBy.sector);
 
         expect(result.length, 2);
         expect(result[0].name, 'Technology');
@@ -29,7 +32,8 @@ void main() {
 
       test('should handle empty sectors list', () {
         final sdkResponse = sdk.AllocationResponse(sectors: []);
-        final result = AnalysisMapper.toAllocationItems(sdkResponse, GroupBy.sector);
+        final result =
+            AnalysisMapper.toAllocationItems(sdkResponse, GroupBy.sector);
         expect(result, isEmpty);
       });
 
@@ -40,7 +44,8 @@ void main() {
           ],
         );
 
-        final result = AnalysisMapper.toAllocationItems(sdkResponse, GroupBy.sector);
+        final result =
+            AnalysisMapper.toAllocationItems(sdkResponse, GroupBy.sector);
 
         expect(result.length, 1);
         expect(result[0].name, 'Unknown');
@@ -55,7 +60,8 @@ void main() {
           ],
         );
 
-        final result = AnalysisMapper.toAllocationItems(sdkResponse, GroupBy.stock);
+        final result =
+            AnalysisMapper.toAllocationItems(sdkResponse, GroupBy.stock);
 
         expect(result.length, 1);
         expect(result[0].name, 'AAPL');
@@ -116,8 +122,10 @@ void main() {
       test('should convert SDK PerformanceResponse to DataPoints', () {
         final sdkResponse = sdk.PerformanceResponse(
           chartData: [
-            sdk.DataPoint(date: DateTime.parse('2024-01-01T00:00:00Z'), value: 10000.0),
-            sdk.DataPoint(date: DateTime.parse('2024-01-02T00:00:00Z'), value: 10100.0),
+            sdk.DataPoint(
+                date: DateTime.parse('2024-01-01T00:00:00Z'), value: 10000.0),
+            sdk.DataPoint(
+                date: DateTime.parse('2024-01-02T00:00:00Z'), value: 10100.0),
           ],
         );
 

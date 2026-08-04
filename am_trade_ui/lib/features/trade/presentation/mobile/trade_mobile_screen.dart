@@ -227,8 +227,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                     title: 'Portfolios',
                     icon: Icons.account_balance_wallet,
                     isSelected: _selectedView == MobileTradeViewType.portfolios,
-                    onTap: () =>
-                        _onViewChanged(MobileTradeViewType.portfolios),
+                    onTap: () => _onViewChanged(MobileTradeViewType.portfolios),
                   ),
                   SecondarySidebarItem(
                     title: 'Holdings',
@@ -305,7 +304,8 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         if (_currentPortfolioId == null) {
           return _buildSelectPortfolioPrompt(MobileTradeViewType.addTrade);
         }
-        final tradeControllerCubitAsync = ref.watch(tradeControllerCubitProvider);
+        final tradeControllerCubitAsync =
+            ref.watch(tradeControllerCubitProvider);
 
         return tradeControllerCubitAsync.when(
           data: (tradeControllerCubit) =>

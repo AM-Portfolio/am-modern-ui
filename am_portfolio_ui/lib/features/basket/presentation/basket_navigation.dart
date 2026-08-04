@@ -52,9 +52,7 @@ class BasketNavigation {
       default:
         return MaterialPageRoute(
           settings: settings,
-          builder: (_) => BasketExplorer(
-            portfolioId: portfolioId,
-          ),
+          builder: (_) => BasketExplorer(portfolioId: portfolioId),
         );
     }
   }
@@ -116,7 +114,9 @@ class BasketNavigation {
   }) {
     if (etfIsin.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ETF ISIN is missing for this opportunity')),
+        const SnackBar(
+          content: Text('ETF ISIN is missing for this opportunity'),
+        ),
       );
       return;
     }
@@ -127,11 +127,7 @@ class BasketNavigation {
       portfolioId: portfolioId,
     );
 
-    _persistPreview(
-      userId: userId,
-      portfolioId: portfolioId,
-      etfIsin: etfIsin,
-    );
+    _persistPreview(userId: userId, portfolioId: portfolioId, etfIsin: etfIsin);
 
     final nested = navigatorKey.currentState;
     if (nested != null) {
@@ -208,10 +204,10 @@ class BasketPreviewArgs {
   final String portfolioId;
 
   Map<String, dynamic> toMap() => {
-        'etfIsin': etfIsin,
-        'userId': userId,
-        'portfolioId': portfolioId,
-      };
+    'etfIsin': etfIsin,
+    'userId': userId,
+    'portfolioId': portfolioId,
+  };
 
   factory BasketPreviewArgs.fromMap(Map<String, dynamic> map) {
     return BasketPreviewArgs(
@@ -234,10 +230,10 @@ class BasketCreatorArgs {
   final String portfolioId;
 
   Map<String, dynamic> toMap() => {
-        'opportunity': opportunity,
-        'userId': userId,
-        'portfolioId': portfolioId,
-      };
+    'opportunity': opportunity,
+    'userId': userId,
+    'portfolioId': portfolioId,
+  };
 }
 
 class _BasketNavigatorObserver extends NavigatorObserver {
@@ -283,7 +279,8 @@ class _BasketSectionNavigatorState extends State<BasketSectionNavigator> {
     if (_restored) return;
     _restored = true;
 
-    final session = SessionPersistenceService.instance.cached ??
+    final session =
+        SessionPersistenceService.instance.cached ??
         await SessionPersistenceService.instance.load(widget.userId);
     final basket = session?.basket;
     if (basket == null || basket.route == BasketNavigation.explorerRoute) {

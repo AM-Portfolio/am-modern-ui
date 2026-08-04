@@ -31,8 +31,7 @@ class DashboardMobileScreen extends ConsumerStatefulWidget {
       _DashboardMobileScreenState();
 }
 
-class _DashboardMobileScreenState
-    extends ConsumerState<DashboardMobileScreen> {
+class _DashboardMobileScreenState extends ConsumerState<DashboardMobileScreen> {
   late final PageController _pageController;
 
   @override
@@ -90,7 +89,10 @@ class _DashboardMobileScreenState
       }
     }
 
-    ref.listen(dashboardStreamProvider(widget.userId), (_, next) => markIfReady(next));
+    ref.listen(
+      dashboardStreamProvider(widget.userId),
+      (_, next) => markIfReady(next),
+    );
     ref.listen(
       moversStreamProvider(widget.userId, timeFrame: tfCode),
       (_, next) => markIfReady(next),
@@ -99,7 +101,10 @@ class _DashboardMobileScreenState
       recentActivityProvider(widget.userId, page: 0, size: 10),
       (_, next) => markIfReady(next),
     );
-    ref.listen(portfolioOverviewsProvider(widget.userId), (_, next) => markIfReady(next));
+    ref.listen(
+      portfolioOverviewsProvider(widget.userId),
+      (_, next) => markIfReady(next),
+    );
     ref.listen(
       historyStreamProvider(widget.userId, timeFrame: tfCode),
       (_, next) => markIfReady(next),
@@ -227,7 +232,9 @@ class _DashboardMobileScreenState
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? Theme.of(context).scaffoldBackgroundColor : const Color(0xFFF8FAFC);
+    final bgColor = isDark
+        ? Theme.of(context).scaffoldBackgroundColor
+        : const Color(0xFFF8FAFC);
     final onSurface = isDark ? Colors.white : const Color(0xFF0B1C30);
     final chipBg = isDark
         ? Colors.white.withValues(alpha: 0.08)
@@ -300,7 +307,8 @@ class _DashboardMobileScreenState
                   child: RefreshIndicator(
                     onRefresh: refresh,
                     color: const Color(0xFF00D2D3),
-                    backgroundColor: Theme.of(context).brightness == Brightness.dark
+                    backgroundColor:
+                        Theme.of(context).brightness == Brightness.dark
                         ? const Color(0xFF1E293B)
                         : Colors.white,
                     child: SingleChildScrollView(
@@ -318,15 +326,19 @@ class _DashboardMobileScreenState
                             loading: _buildSummaryLoading,
                             error: (err, stack) => AmErrorWidget(
                               message: 'Failed to load summary',
-                              onRetry: () =>
-                                  ref.invalidate(dashboardStreamProvider(userId)),
+                              onRetry: () => ref.invalidate(
+                                dashboardStreamProvider(userId),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
                           Consumer(
                             builder: (context, ref, child) {
                               final performanceAsync = ref.watch(
-                                historyStreamProvider(userId, timeFrame: tfCode),
+                                historyStreamProvider(
+                                  userId,
+                                  timeFrame: tfCode,
+                                ),
                               );
                               return performanceAsync.when(
                                 data: (performance) => SizedBox(
@@ -335,8 +347,10 @@ class _DashboardMobileScreenState
                                     performance: performance,
                                   ),
                                 ),
-                                loading: () =>
-                                    _buildLoadingCard(350, label: 'Loading chart…'),
+                                loading: () => _buildLoadingCard(
+                                  350,
+                                  label: 'Loading chart…',
+                                ),
                                 error: (err, stack) => AmErrorWidget(
                                   message: 'Failed to load chart',
                                   onRetry: () => ref.invalidate(
@@ -363,7 +377,8 @@ class _DashboardMobileScreenState
                                   losers: topMovers.losers,
                                 ),
                                 loading: () => _buildLoadingCard(350),
-                                error: (err, stack) => DashboardRankingWidget.errorState(),
+                                error: (err, stack) =>
+                                    DashboardRankingWidget.errorState(),
                               );
                             },
                           ),
@@ -392,7 +407,9 @@ class _DashboardMobileScreenState
                                   children: [
                                     for (final overview in overviews)
                                       Padding(
-                                        padding: const EdgeInsets.only(bottom: 12),
+                                        padding: const EdgeInsets.only(
+                                          bottom: 12,
+                                        ),
                                         child: DashboardPortfolioOverviewCard(
                                           overview: overview,
                                           onTap: () {},

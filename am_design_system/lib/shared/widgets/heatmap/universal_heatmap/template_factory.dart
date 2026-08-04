@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/utils/common_logger.dart';
 
-
 import '../../../models/heatmap.dart';
 import '../../selectors/selectors.dart';
 import '../configs/selector_config.dart';
@@ -53,8 +52,7 @@ class UniversalHeatmapTemplateFactory {
       SectorType? sector,
       MarketCapType? marketCap,
       HeatmapLayoutType? layout,
-    })?
-    onFiltersChanged,
+    })? onFiltersChanged,
     TimeFrame? selectedTimeFrame,
     MetricType? selectedMetric,
     SectorType? selectedSector,
@@ -81,18 +79,22 @@ class UniversalHeatmapTemplateFactory {
     final isCompact = selectorLayout == SelectorLayoutType.compact;
 
     return HeatmapSelectorTemplate(
-      initialTimeFrame: selectedTimeFrame ?? UniversalHeatmapConfigManager.getInitialTimeFrame(
-        investmentType,
-      ),
-      initialMetric: selectedMetric ?? UniversalHeatmapConfigManager.getInitialMetric(
-        investmentType,
-      ),
-      initialSector: selectedSector ?? UniversalHeatmapConfigManager.getInitialSector(
-        investmentType,
-      ),
-      initialMarketCap: selectedMarketCap ?? UniversalHeatmapConfigManager.getInitialMarketCap(
-        investmentType,
-      ),
+      initialTimeFrame: selectedTimeFrame ??
+          UniversalHeatmapConfigManager.getInitialTimeFrame(
+            investmentType,
+          ),
+      initialMetric: selectedMetric ??
+          UniversalHeatmapConfigManager.getInitialMetric(
+            investmentType,
+          ),
+      initialSector: selectedSector ??
+          UniversalHeatmapConfigManager.getInitialSector(
+            investmentType,
+          ),
+      initialMarketCap: selectedMarketCap ??
+          UniversalHeatmapConfigManager.getInitialMarketCap(
+            investmentType,
+          ),
       initialLayout: selectedLayout ?? HeatmapLayoutType.treemap,
       onFiltersChanged: onFiltersChanged,
       // Compact mobile: sector · market-cap · layout dropdowns only
@@ -109,8 +111,7 @@ class UniversalHeatmapTemplateFactory {
       availableMetrics: config.availableMetrics,
       availableSectors: config.availableSectors,
       availableMarketCaps: config.availableMarketCaps,
-      availableLayouts:
-          config.selectors?.availableLayouts ??
+      availableLayouts: config.selectors?.availableLayouts ??
           [
             HeatmapLayoutType.treemap,
             HeatmapLayoutType.grid,
@@ -141,12 +142,12 @@ class UniversalHeatmapTemplateFactory {
       },
     );
 
-    final title =
-        customTitle ??
+    final title = customTitle ??
         UniversalHeatmapConfigManager.getDefaultTitle(investmentType);
-    final subtitle = customSubtitle ?? UniversalHeatmapConfigManager.getDefaultSubtitle(
-      investmentType,
-    );
+    final subtitle = customSubtitle ??
+        UniversalHeatmapConfigManager.getDefaultSubtitle(
+          investmentType,
+        );
     final icon = UniversalHeatmapConfigManager.getInvestmentIcon(
       investmentType,
     );

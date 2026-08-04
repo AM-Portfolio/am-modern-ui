@@ -44,6 +44,7 @@ class PaginatedSortableTable<T> extends StatefulWidget {
   final bool showDividers;
   final bool showPagination;
   final String emptyMessage;
+
   /// When true, [items] is the current server page; sort/pagination callbacks fire refetch.
   final bool serverPagination;
   final int? serverTotalItems;
@@ -173,7 +174,8 @@ class _PaginatedSortableTableState<T> extends State<PaginatedSortableTable<T>> {
   Widget _buildTableRow(T item, ThemeData theme) => Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: widget.onItemTap != null ? () => widget.onItemTap!(item) : null,
+          onTap:
+              widget.onItemTap != null ? () => widget.onItemTap!(item) : null,
           hoverColor: widget.rowHoverColor ?? theme.hoverColor,
           child: SizedBox(
             height: widget.rowHeight,
@@ -185,7 +187,8 @@ class _PaginatedSortableTableState<T> extends State<PaginatedSortableTable<T>> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: DefaultTextStyle(
-                        style: widget.rowTextStyle ?? theme.textTheme.bodyMedium!,
+                        style:
+                            widget.rowTextStyle ?? theme.textTheme.bodyMedium!,
                         overflow: TextOverflow.ellipsis,
                         child: column.builder(item),
                       ),
@@ -203,8 +206,9 @@ class _PaginatedSortableTableState<T> extends State<PaginatedSortableTable<T>> {
     final sorted = widget.serverPagination ? widget.items : _sortedItems();
     final pageItems =
         widget.serverPagination ? widget.items : _pageItems(sorted);
-    final totalItems =
-        widget.serverPagination ? (widget.serverTotalItems ?? sorted.length) : sorted.length;
+    final totalItems = widget.serverPagination
+        ? (widget.serverTotalItems ?? sorted.length)
+        : sorted.length;
     final totalPages = widget.serverPagination
         ? (widget.serverTotalPages ?? 1)
         : _totalPages(sorted.length);

@@ -51,7 +51,9 @@ class _TemplateCardState extends State<TemplateCard>
 
   @override
   Widget build(BuildContext context) {
-    return widget.isListView ? _buildListCard(context) : _buildGridCard(context);
+    return widget.isListView
+        ? _buildListCard(context)
+        : _buildGridCard(context);
   }
 
   Widget _buildGridCard(BuildContext context) {
@@ -76,7 +78,10 @@ class _TemplateCardState extends State<TemplateCard>
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.1),
                       blurRadius: _elevationAnimation.value,
                       offset: Offset(0, _elevationAnimation.value / 2),
                     ),
@@ -92,15 +97,27 @@ class _TemplateCardState extends State<TemplateCard>
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Theme.of(context).colorScheme.surface.withOpacity(0.8),
-                            Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.6),
+                            Theme.of(context)
+                                .colorScheme
+                                .surface
+                                .withOpacity(0.8),
+                            Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withOpacity(0.6),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: _isHovered
-                              ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
-                              : Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                              ? Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withOpacity(0.3)
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .outline
+                                  .withOpacity(0.1),
                           width: 1.5,
                         ),
                       ),
@@ -151,7 +168,8 @@ class _TemplateCardState extends State<TemplateCard>
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    color:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
                     blurRadius: _elevationAnimation.value,
                     offset: Offset(0, _elevationAnimation.value / 2),
                   ),
@@ -167,15 +185,27 @@ class _TemplateCardState extends State<TemplateCard>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Theme.of(context).colorScheme.surface.withOpacity(0.8),
-                          Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.6),
+                          Theme.of(context)
+                              .colorScheme
+                              .surface
+                              .withOpacity(0.8),
+                          Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withOpacity(0.6),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: _isHovered
-                            ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
-                            : Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                            ? Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(0.3)
+                            : Theme.of(context)
+                                .colorScheme
+                                .outline
+                                .withOpacity(0.1),
                         width: 1.5,
                       ),
                     ),
@@ -256,7 +286,9 @@ class _TemplateCardState extends State<TemplateCard>
           scale: 1.0 + (value * 0.2),
           child: IconButton(
             icon: Icon(
-              widget.template.isFavorite ? Icons.favorite : Icons.favorite_border,
+              widget.template.isFavorite
+                  ? Icons.favorite
+                  : Icons.favorite_border,
               color: widget.template.isFavorite
                   ? Colors.red
                   : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
@@ -298,7 +330,10 @@ class _TemplateCardState extends State<TemplateCard>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.5),
+              color: Theme.of(context)
+                  .colorScheme
+                  .secondaryContainer
+                  .withOpacity(0.5),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Row(
@@ -313,7 +348,8 @@ class _TemplateCardState extends State<TemplateCard>
                 Text(
                   'System',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                        color:
+                            Theme.of(context).colorScheme.onSecondaryContainer,
                       ),
                 ),
               ],

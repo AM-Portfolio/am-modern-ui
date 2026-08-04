@@ -72,13 +72,14 @@ class DateSelection {
     String? description,
     DateFilterMode? filterType,
     Map<String, dynamic>? metadata,
-  }) => DateSelection(
-    startDate: startDate ?? this.startDate,
-    endDate: endDate ?? this.endDate,
-    description: description ?? this.description,
-    filterType: filterType ?? this.filterType,
-    metadata: metadata ?? this.metadata,
-  );
+  }) =>
+      DateSelection(
+        startDate: startDate ?? this.startDate,
+        endDate: endDate ?? this.endDate,
+        description: description ?? this.description,
+        filterType: filterType ?? this.filterType,
+        metadata: metadata ?? this.metadata,
+      );
 
   bool get hasDateRange => startDate != null && endDate != null;
   bool get isEmpty => !hasDateRange;

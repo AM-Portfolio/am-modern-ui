@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:am_design_system/shared/widgets/navigation/secondary_sidebar.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
@@ -17,7 +16,7 @@ class MarketSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedIndex = provider.selectedIndex ?? 'All Indices';
     // Using Cyan for Market context
-    const marketAccent = Color(0xFF00D1FF); 
+    const marketAccent = Color(0xFF00D1FF);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Define navigation items
@@ -35,15 +34,15 @@ class MarketSidebar extends StatelessWidget {
         accentColor: marketAccent,
         isSelected: selectedIndex == 'Major Indices',
         onTap: () => provider.selectIndex('Major Indices'),
-         // Subtitle/Trailing can be added if needed
+        // Subtitle/Trailing can be added if needed
       ),
-       SecondarySidebarItem(
+      SecondarySidebarItem(
         title: 'Streamer',
         icon: Icons.waves_rounded,
         accentColor: marketAccent,
         isSelected: selectedIndex == 'Streamer',
         onTap: () => provider.selectIndex('Streamer'),
-         subtitle: 'Live',
+        subtitle: 'Live',
       ),
     ];
 
@@ -69,7 +68,7 @@ class MarketSidebar extends StatelessWidget {
         isSelected: selectedIndex == 'Heatmap Explorer',
         onTap: () => provider.selectIndex('Heatmap Explorer'),
       ),
-       SecondarySidebarItem(
+      SecondarySidebarItem(
         title: 'Market Analysis',
         icon: Icons.analytics_rounded,
         accentColor: marketAccent,
@@ -91,9 +90,9 @@ class MarketSidebar extends StatelessWidget {
         onTap: () => provider.selectIndex('Price Test'),
       ),
     ];
-    
-     final systemToolsItems = [
-       SecondarySidebarItem(
+
+    final systemToolsItems = [
+      SecondarySidebarItem(
         title: 'Admin Dashboard',
         icon: Icons.admin_panel_settings_rounded,
         accentColor: const Color(0xFFFF6B6B), // Red for Admin
@@ -101,7 +100,6 @@ class MarketSidebar extends StatelessWidget {
         onTap: () => provider.selectIndex('Admin Dashboard'),
       ),
     ];
-
 
     // Build sections with dynamic headers
     final sections = <SecondarySidebarSection>[
@@ -115,7 +113,7 @@ class MarketSidebar extends StatelessWidget {
         items: discoveryItems,
         initiallyExpanded: true,
       ),
-       SecondarySidebarSection(
+      SecondarySidebarSection(
         title: 'SYSTEM',
         items: systemToolsItems,
         initiallyExpanded: true,
@@ -166,7 +164,6 @@ class MarketSidebar extends StatelessWidget {
         ),
       ),
     );
-
 
     return SecondarySidebar(
       title: 'WORKSPACE',

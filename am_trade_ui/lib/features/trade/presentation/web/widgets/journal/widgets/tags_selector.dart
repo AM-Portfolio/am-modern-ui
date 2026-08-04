@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../models/journal_mood_options.dart';
 
 class TagsSelector extends StatelessWidget {
-  const TagsSelector({required this.selectedTags, required this.onTagToggled, super.key});
+  const TagsSelector(
+      {required this.selectedTags, required this.onTagToggled, super.key});
 
   final Set<String> selectedTags;
   final ValueChanged<String> onTagToggled;
@@ -25,9 +26,13 @@ class TagsSelector extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             decoration: BoxDecoration(
-              color: isSelected ? color.withOpacity(0.15) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.8),
+              color: isSelected
+                  ? color.withOpacity(0.15)
+                  : theme.colorScheme.surfaceContainerHighest.withOpacity(0.8),
               border: Border.all(
-                color: isSelected ? color : theme.colorScheme.outline.withOpacity(0.3),
+                color: isSelected
+                    ? color
+                    : theme.colorScheme.outline.withOpacity(0.3),
                 width: isSelected ? 1.5 : 1,
               ),
               borderRadius: BorderRadius.circular(12),
@@ -45,7 +50,9 @@ class TagsSelector extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? color : theme.colorScheme.onSurface.withOpacity(0.75),
+                    color: isSelected
+                        ? color
+                        : theme.colorScheme.onSurface.withOpacity(0.75),
                   ),
                 ),
               ],

@@ -20,10 +20,14 @@ class StockChart extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
     if (error != null) {
-      return Center(child: Text('Error: $error', style: TextStyle(color: AppColors.error)));
+      return Center(
+          child:
+              Text('Error: $error', style: TextStyle(color: AppColors.error)));
     }
     if (chartData.isEmpty) {
-      return Center(child: Text('No data available', style: TextStyle(color: Theme.of(context).hintColor)));
+      return Center(
+          child: Text('No data available',
+              style: TextStyle(color: Theme.of(context).hintColor)));
     }
 
     final dataPoints = _mapDataToPoints();
@@ -48,13 +52,13 @@ class StockChart extends StatelessWidget {
       final item = chartData[index];
       final closePrice = (item['close'] as num).toDouble();
       final dateStr = item['time'] as String;
-      
+
       String? label;
       try {
         final date = DateTime.parse(dateStr);
         // Show label only for specific intervals to avoid crowding
         if (index % (chartData.length / 5).ceil() == 0) {
-           label = DateFormat('dd MMM').format(date);
+          label = DateFormat('dd MMM').format(date);
         }
       } catch (_) {}
 

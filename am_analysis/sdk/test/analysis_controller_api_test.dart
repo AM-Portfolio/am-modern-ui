@@ -11,7 +11,6 @@
 import 'package:am_analysis_client/api.dart';
 import 'package:test/test.dart';
 
-
 /// tests for AnalysisControllerApi
 void main() {
   // final instance = AnalysisControllerApi();
@@ -36,6 +35,5 @@ void main() {
     test('test getTopMoversByEntity', () async {
       // TODO
     });
-
   });
 }

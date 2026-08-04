@@ -19,14 +19,19 @@ class StockIndicesMarketData {
     Map<String, dynamic> json,
     Map<String, dynamic> metadata,
   ) {
-    final direct = _number(json['lastPrice'] ?? json['last'] ?? metadata['last']);
+    final direct =
+        _number(json['lastPrice'] ?? json['last'] ?? metadata['last']);
     if (direct > 0) return direct;
 
-    final previousClose = _number(json['previousClose'] ?? metadata['previousClose']);
+    final previousClose =
+        _number(json['previousClose'] ?? metadata['previousClose']);
     final change = _number(json['change'] ?? metadata['change']);
     if (previousClose > 0 && change != 0) return previousClose + change;
 
-    final pChange = _number(json['pChange'] ?? json['percentChange'] ?? metadata['percChange'] ?? metadata['percentChange']);
+    final pChange = _number(json['pChange'] ??
+        json['percentChange'] ??
+        metadata['percChange'] ??
+        metadata['percentChange']);
     if (previousClose > 0 && pChange != 0) {
       return previousClose * (1 + (pChange / 100));
     }
@@ -38,7 +43,8 @@ class StockIndicesMarketData {
     // Handle differences in API response vs expected
     // market.html checks 'data' or 'stocks'
     var list = json['data'] as List? ?? json['stocks'] as List? ?? [];
-    List<StockData> stocksList = list.map((i) => StockData.fromJson(i)).toList();
+    List<StockData> stocksList =
+        list.map((i) => StockData.fromJson(i)).toList();
     final metadata = json['metadata'] is Map<String, dynamic>
         ? json['metadata'] as Map<String, dynamic>
         : const <String, dynamic>{};
@@ -47,7 +53,10 @@ class StockIndicesMarketData {
       indexSymbol: json['indexSymbol'] ?? 'Unknown',
       lastPrice: _resolveLastPrice(json, metadata),
       change: _number(json['change'] ?? metadata['change']),
-      pChange: _number(json['pChange'] ?? json['percentChange'] ?? metadata['percChange'] ?? metadata['percentChange']),
+      pChange: _number(json['pChange'] ??
+          json['percentChange'] ??
+          metadata['percChange'] ??
+          metadata['percentChange']),
       stocks: stocksList,
     );
   }

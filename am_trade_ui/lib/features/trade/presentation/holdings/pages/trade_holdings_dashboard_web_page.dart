@@ -11,15 +11,18 @@ import '../../widgets/filter_panel.dart';
 import '../components/trade_holdings_advanced_template.dart';
 
 class TradeHoldingsDashboardWebPage extends ConsumerStatefulWidget {
-  const TradeHoldingsDashboardWebPage({ required this.portfolioId, this.onNavigateToChart, super.key});
-    final String portfolioId;
+  const TradeHoldingsDashboardWebPage(
+      {required this.portfolioId, this.onNavigateToChart, super.key});
+  final String portfolioId;
   final Function(String symbol)? onNavigateToChart;
 
   @override
-  ConsumerState<TradeHoldingsDashboardWebPage> createState() => _TradeHoldingsDashboardWebPageState();
+  ConsumerState<TradeHoldingsDashboardWebPage> createState() =>
+      _TradeHoldingsDashboardWebPageState();
 }
 
-class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDashboardWebPage> {
+class _TradeHoldingsDashboardWebPageState
+    extends ConsumerState<TradeHoldingsDashboardWebPage> {
   // Current active filter configuration
   MetricsFilterConfig _currentFilter = MetricsFilterConfig.empty();
   TradeHoldingViewModel? _selectedTrade;
@@ -36,8 +39,8 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
   }
 
   @override
-  Widget build(BuildContext context) =>
-      Scaffold(body: _selectedTrade != null ? _buildDetailView() : _buildHoldingsTab());
+  Widget build(BuildContext context) => Scaffold(
+      body: _selectedTrade != null ? _buildDetailView() : _buildHoldingsTab());
 
   Widget _buildHoldingsTab() {
     final portfolioId = widget.portfolioId;
@@ -59,7 +62,9 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
                       });
                       ScaffoldMessenger.of(
                         context,
-                      ).showSnackBar(const SnackBar(content: Text('Custom filters applied'), duration: Duration(seconds: 2)));
+                      ).showSnackBar(const SnackBar(
+                          content: Text('Custom filters applied'),
+                          duration: Duration(seconds: 2)));
                     },
                     onReset: () {
                       setState(() {
@@ -67,12 +72,15 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
                       });
                       ScaffoldMessenger.of(
                         context,
-                      ).showSnackBar(const SnackBar(content: Text('Filters reset'), duration: Duration(seconds: 1)));
+                      ).showSnackBar(const SnackBar(
+                          content: Text('Filters reset'),
+                          duration: Duration(seconds: 1)));
                     },
                   ),
                 ),
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(child: Text('Error loading filters: $error')),
+                error: (error, stack) =>
+                    Center(child: Text('Error loading filters: $error')),
               ),
         ),
 
@@ -83,12 +91,14 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
           child: holdingsAsync.when(
             data: (tradeHoldings) {
               // Apply filters to holdings
-              final filteredHoldings = _applyFilters(tradeHoldings.holdings, _currentFilter);
+              final filteredHoldings =
+                  _applyFilters(tradeHoldings.holdings, _currentFilter);
 
               return TradeHoldingsAdvancedTemplate(
                 holdings: filteredHoldings,
                 isLoading: false,
-                onHoldingSelected: (holding) => _showHoldingDetails(context, holding),
+                onHoldingSelected: (holding) =>
+                    _showHoldingDetails(context, holding),
                 onSymbolTap: widget.onNavigateToChart,
                 onRefresh: () {
                   ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
@@ -111,7 +121,8 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
   }
 
   /// Apply filters to holdings list
-  List<TradeHoldingViewModel> _applyFilters(List<TradeHoldingViewModel> holdings, MetricsFilterConfig filter) {
+  List<TradeHoldingViewModel> _applyFilters(
+      List<TradeHoldingViewModel> holdings, MetricsFilterConfig filter) {
     var filtered = holdings;
 
     // Date Range Filter
@@ -139,8 +150,8 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
       if (instrumentFilter.baseSymbols.isNotEmpty) {
         filtered = filtered
             .where(
-              (h) =>
-                  instrumentFilter.baseSymbols.any((symbol) => h.symbol.toUpperCase().contains(symbol.toUpperCase())),
+              (h) => instrumentFilter.baseSymbols.any((symbol) =>
+                  h.symbol.toUpperCase().contains(symbol.toUpperCase())),
             )
             .toList();
       }
@@ -178,7 +189,8 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
       if (tradeFilter.statuses.isNotEmpty) {
         filtered = filtered.where((h) {
           if (h.status == null) return false;
-          return tradeFilter.statuses.any((status) => h.status!.toLowerCase() == status.name.toLowerCase());
+          return tradeFilter.statuses.any(
+              (status) => h.status!.toLowerCase() == status.name.toLowerCase());
         }).toList();
       }
 
@@ -199,7 +211,8 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
       }
 
       // Holding Time
-      if (tradeFilter.minHoldingTimeHours != null || tradeFilter.maxHoldingTimeHours != null) {
+      if (tradeFilter.minHoldingTimeHours != null ||
+          tradeFilter.maxHoldingTimeHours != null) {
         filtered = filtered.where((h) {
           // TODO: Calculate holding time and filter
           return true; // Placeholder
@@ -243,7 +256,8 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
     return filtered;
   }
 
-  void _showHoldingDetails(BuildContext context, TradeHoldingViewModel holding) {
+  void _showHoldingDetails(
+      BuildContext context, TradeHoldingViewModel holding) {
     setState(() {
       _selectedTrade = holding;
     });

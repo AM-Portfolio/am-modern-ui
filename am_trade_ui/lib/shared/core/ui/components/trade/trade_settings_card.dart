@@ -39,7 +39,9 @@ class TradeSettingsCard extends StatelessWidget {
           if (!isMobile) ...[
             Container(
               padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: Colors.purple.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+              decoration: BoxDecoration(
+                  color: Colors.purple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6)),
               child: const Icon(Icons.tune, size: 16, color: Colors.purple),
             ),
             const SizedBox(width: 8),
@@ -53,7 +55,8 @@ class TradeSettingsCard extends StatelessWidget {
               value: selectedBroker,
               hint: isMobile ? 'Broker' : 'Select Broker',
               items: BrokerTypes.values
-                  .map((broker) => broker.toSimpleDropdownItem(text: broker.toString().split('.').last.toUpperCase()))
+                  .map((broker) => broker.toSimpleDropdownItem(
+                      text: broker.toString().split('.').last.toUpperCase()))
                   .toList(),
               onChanged: onBrokerChanged,
               icon: isMobile ? null : Icons.business_center,
@@ -65,7 +68,8 @@ class TradeSettingsCard extends StatelessWidget {
               value: selectedOrderType,
               hint: isMobile ? 'Order' : 'Select Order Type',
               items: OrderTypes.values
-                  .map((type) => type.toSimpleDropdownItem(text: type.toString().split('.').last.toUpperCase()))
+                  .map((type) => type.toSimpleDropdownItem(
+                      text: type.toString().split('.').last.toUpperCase()))
                   .toList(),
               onChanged: onOrderTypeChanged,
               icon: isMobile ? null : Icons.receipt_long,

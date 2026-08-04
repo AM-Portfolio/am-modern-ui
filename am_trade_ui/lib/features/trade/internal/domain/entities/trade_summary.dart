@@ -38,7 +38,8 @@ abstract class TradeMetrics with _$TradeMetrics {
     Map<String, double>? weeklyReturns,
   }) = _TradeMetrics;
 
-  factory TradeMetrics.fromJson(Map<String, dynamic> json) => _$TradeMetricsFromJson(json);
+  factory TradeMetrics.fromJson(Map<String, dynamic> json) =>
+      _$TradeMetricsFromJson(json);
 
   /// Create empty metrics
   factory TradeMetrics.empty() => const TradeMetrics();
@@ -54,7 +55,8 @@ abstract class TradeAssetAllocation with _$TradeAssetAllocation {
     @Default(0) int count,
   }) = _TradeAssetAllocation;
 
-  factory TradeAssetAllocation.fromJson(Map<String, dynamic> json) => _$TradeAssetAllocationFromJson(json);
+  factory TradeAssetAllocation.fromJson(Map<String, dynamic> json) =>
+      _$TradeAssetAllocationFromJson(json);
 }
 
 /// Domain entity for top movers in trade (To be calculated later)
@@ -68,7 +70,8 @@ abstract class TradeTopMover with _$TradeTopMover {
     required double currentPrice,
   }) = _TradeTopMover;
 
-  factory TradeTopMover.fromJson(Map<String, dynamic> json) => _$TradeTopMoverFromJson(json);
+  factory TradeTopMover.fromJson(Map<String, dynamic> json) =>
+      _$TradeTopMoverFromJson(json);
 }
 
 /// Domain entity for trade portfolio summary
@@ -108,9 +111,11 @@ abstract class TradeSummary with _$TradeSummary {
     @Default([]) List<TradeTopMover> topLosers,
   }) = _TradeSummary;
 
-  factory TradeSummary.fromJson(Map<String, dynamic> json) => _$TradeSummaryFromJson(json);
+  factory TradeSummary.fromJson(Map<String, dynamic> json) =>
+      _$TradeSummaryFromJson(json);
 
   /// Create empty summary
   factory TradeSummary.empty(String portfolioId, String ownerId) =>
-      TradeSummary(portfolioId: portfolioId, name: portfolioId, ownerId: ownerId);
+      TradeSummary(
+          portfolioId: portfolioId, name: portfolioId, ownerId: ownerId);
 }

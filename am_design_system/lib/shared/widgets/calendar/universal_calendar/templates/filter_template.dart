@@ -24,7 +24,8 @@ class CalendarFilterTemplate extends StatefulWidget {
 class _CalendarFilterTemplateState extends State<CalendarFilterTemplate> {
   /// Select a quick range filter
   void _selectQuickRange(QuickRangeType rangeType) {
-    CommonLogger.info('Quick range selected: ${rangeType.label}', tag: 'CalendarFilterTemplate');
+    CommonLogger.info('Quick range selected: ${rangeType.label}',
+        tag: 'CalendarFilterTemplate');
     final endDate = DateTime.now();
     final startDate = endDate.subtract(Duration(days: rangeType.days));
 
@@ -39,10 +40,10 @@ class _CalendarFilterTemplateState extends State<CalendarFilterTemplate> {
     widget.onSelectionChanged(selection);
   }
 
-
   /// Select a time period filter
   void _selectTimePeriod(TimePeriodType periodType) {
-    CommonLogger.info('Time period selected: ${periodType.label}', tag: 'CalendarFilterTemplate');
+    CommonLogger.info('Time period selected: ${periodType.label}',
+        tag: 'CalendarFilterTemplate');
     final now = DateTime.now();
     DateTime startDate;
     DateTime endDate;
@@ -108,8 +109,6 @@ class _CalendarFilterTemplateState extends State<CalendarFilterTemplate> {
 
     widget.onSelectionChanged(selection);
   }
-
-
 
   /// Select custom date range
   Future<void> _selectCustomRange(BuildContext context) async {
@@ -180,7 +179,8 @@ class _CalendarFilterTemplateState extends State<CalendarFilterTemplate> {
 
   @override
   Widget build(BuildContext context) {
-    CommonLogger.debug('Building CalendarFilterTemplate UI', tag: 'CalendarFilterTemplate');
+    CommonLogger.debug('Building CalendarFilterTemplate UI',
+        tag: 'CalendarFilterTemplate');
     // Implement a simple scrollable row of chips for quick ranges
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -189,21 +189,21 @@ class _CalendarFilterTemplateState extends State<CalendarFilterTemplate> {
         child: Row(
           children: [
             ..._availableQuickRanges.map((range) => Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: FilterChip(
-                label: Text(range.label),
-                selected: _isQuickRangeSelected(range),
-                onSelected: (_) => _selectQuickRange(range),
-              ),
-            )),
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: FilterChip(
+                    label: Text(range.label),
+                    selected: _isQuickRangeSelected(range),
+                    onSelected: (_) => _selectQuickRange(range),
+                  ),
+                )),
             ..._availableTimePeriods.map((period) => Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: FilterChip(
-                label: Text(period.label),
-                selected: _isTimePeriodSelected(period),
-                onSelected: (_) => _selectTimePeriod(period),
-              ),
-            )),
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: FilterChip(
+                    label: Text(period.label),
+                    selected: _isTimePeriodSelected(period),
+                    onSelected: (_) => _selectTimePeriod(period),
+                  ),
+                )),
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: ActionChip(
@@ -217,7 +217,6 @@ class _CalendarFilterTemplateState extends State<CalendarFilterTemplate> {
       ),
     );
   }
-
 
   // Expose methods for display template to use
   void selectQuickRange(QuickRangeType rangeType) =>

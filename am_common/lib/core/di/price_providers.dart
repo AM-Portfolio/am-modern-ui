@@ -23,12 +23,14 @@ final priceServiceProvider = FutureProvider<PriceService>((ref) async {
   return service;
 });
 
-final priceStreamProvider = StreamProvider<Map<String, QuoteChange>>((ref) async* {
+final priceStreamProvider =
+    StreamProvider<Map<String, QuoteChange>>((ref) async* {
   final service = await ref.watch(priceServiceProvider.future);
   yield* service.priceStream;
 });
 
-final priceUpdatesStreamProvider = StreamProvider<MarketDataUpdate>((ref) async* {
+final priceUpdatesStreamProvider =
+    StreamProvider<MarketDataUpdate>((ref) async* {
   final service = await ref.watch(priceServiceProvider.future);
   yield* service.updateStream;
 });

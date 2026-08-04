@@ -7,16 +7,16 @@ import 'allocation_cubit.dart'; // For AnalysisService interface
 class TopMoversCubit extends Cubit<TopMoversState> {
   final String portfolioId;
   final AnalysisService analysisService;
-  
+
   TopMoversCubit({
     required this.portfolioId,
     required this.analysisService,
   }) : super(const TopMoversInitial());
-  
+
   /// Load top movers data for a given timeFrame
   Future<void> loadTopMovers(TimeFrame timeFrame) async {
     emit(const TopMoversLoading());
-    
+
     try {
       final movers = await analysisService.getTopMovers(
         portfolioId: portfolioId,
@@ -27,7 +27,7 @@ class TopMoversCubit extends Cubit<TopMoversState> {
       emit(TopMoversError(e.toString(), stackTrace));
     }
   }
-  
+
   /// Apply filter to current data
   void applyFilter(MoverFilter filter) {
     final currentState = state;
@@ -39,7 +39,7 @@ class TopMoversCubit extends Cubit<TopMoversState> {
       ));
     }
   }
-  
+
   /// Refresh current data
   Future<void> refresh() async {
     final currentState = state;
@@ -47,7 +47,7 @@ class TopMoversCubit extends Cubit<TopMoversState> {
       await loadTopMovers(currentState.timeFrame);
     }
   }
-  
+
   /// Change time frame and reload data
   Future<void> changeTimeFrame(TimeFrame timeFrame) async {
     await loadTopMovers(timeFrame);

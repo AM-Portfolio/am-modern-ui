@@ -144,7 +144,8 @@ class _BootstrapAppState extends State<_BootstrapApp> {
                     restoring
                         ? 'Restoring your session…'
                         : 'Starting AM Investment Platform…',
-                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
+                    style:
+                        const TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
                   ),
                 ],
               ),
@@ -364,7 +365,8 @@ class _FallbackHorizonPainter extends CustomPainter {
       ..color = const Color(0xFFFFD479).withValues(alpha: 0.95);
     final horizonPath = Path()
       ..moveTo(0, horizonY)
-      ..quadraticBezierTo(size.width * 0.5, horizonY - 36, size.width, horizonY);
+      ..quadraticBezierTo(
+          size.width * 0.5, horizonY - 36, size.width, horizonY);
     canvas.drawPath(horizonPath, horizonPaint);
   }
 
@@ -409,8 +411,8 @@ class _MarketCandlesPainter extends CustomPainter {
           ? size.width * (0.04 + normalized * 0.16)
           : size.width * (0.96 - normalized * 0.16);
       final phase = progress * math.pi * 2 + i * 0.65;
-      final centerY = size.height * (0.86 - normalized * 0.55) +
-          math.sin(phase) * 8;
+      final centerY =
+          size.height * (0.86 - normalized * 0.55) + math.sin(phase) * 8;
       final height = 48 + (normalized * 84) + math.cos(phase) * 10;
       final width = 11.0;
       final isBull = (i % 3 != 1);

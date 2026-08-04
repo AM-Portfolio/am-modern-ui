@@ -27,7 +27,7 @@ class _AuthLayoutState extends State<AuthLayout> {
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
     final isTablet = ResponsiveHelper.isTablet(context);
-    
+
     // Responsive control positioning
     final controlsTop = isMobile ? 8.0 : 24.0;
     final controlsRight = isMobile ? 8.0 : 24.0;
@@ -52,13 +52,13 @@ class _AuthLayoutState extends State<AuthLayout> {
               ),
             ),
           ),
-          
+
           // Full Screen Background Animation
           Positioned.fill(
             child: InteractiveBackground(
               baseColor: Theme.of(context).primaryColor,
-              highlightColor: _currentTheme == BackgroundTheme.market 
-                  ? Colors.greenAccent 
+              highlightColor: _currentTheme == BackgroundTheme.market
+                  ? Colors.greenAccent
                   : Colors.tealAccent,
               theme: _currentTheme,
             ),
@@ -83,7 +83,8 @@ class _AuthLayoutState extends State<AuthLayout> {
               children: [
                 ThemeSelector(
                   currentTheme: _currentTheme,
-                  onThemeChanged: (theme) => setState(() => _currentTheme = theme),
+                  onThemeChanged: (theme) =>
+                      setState(() => _currentTheme = theme),
                 ),
                 SizedBox(width: controlsSpacing),
                 const BackgroundAudioControl(),
@@ -112,7 +113,8 @@ class _AuthLayoutState extends State<AuthLayout> {
               child: Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(48),
-                  child: _buildGlassContainer(widget.child, maxWidth: 450, padding: 40),
+                  child: _buildGlassContainer(widget.child,
+                      maxWidth: 450, padding: 40),
                 ),
               ),
             ),
@@ -147,7 +149,7 @@ class _AuthLayoutState extends State<AuthLayout> {
     final padding = isMobile ? 12.0 : 16.0;
     final spacing = isMobile ? 24.0 : 32.0;
     final containerPadding = isMobile ? 20.0 : 24.0;
-    
+
     return SafeArea(
       child: Center(
         child: SingleChildScrollView(
@@ -159,7 +161,8 @@ class _AuthLayoutState extends State<AuthLayout> {
                 _buildMobileBranding(),
                 SizedBox(height: spacing),
               ],
-              _buildGlassContainer(widget.child, maxWidth: double.infinity, padding: containerPadding),
+              _buildGlassContainer(widget.child,
+                  maxWidth: double.infinity, padding: containerPadding),
             ],
           ),
         ),
@@ -168,7 +171,8 @@ class _AuthLayoutState extends State<AuthLayout> {
   }
 
   /// Glassmorphic container for the form (Responsive)
-  Widget _buildGlassContainer(Widget child, {required double maxWidth, required double padding}) {
+  Widget _buildGlassContainer(Widget child,
+      {required double maxWidth, required double padding}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
@@ -176,16 +180,16 @@ class _AuthLayoutState extends State<AuthLayout> {
         child: Container(
           constraints: BoxConstraints(maxWidth: maxWidth),
           decoration: BoxDecoration(
-             color: Colors.white.withValues(alpha: 0.7),
-             borderRadius: BorderRadius.circular(24),
-             border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
-             boxShadow: [
-               BoxShadow(
-                 color: Colors.black.withValues(alpha: 0.1),
-                 blurRadius: 30,
-                 spreadRadius: 5,
-               ),
-             ],
+            color: Colors.white.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 30,
+                spreadRadius: 5,
+              ),
+            ],
           ),
           child: Padding(
             padding: EdgeInsets.all(padding),
@@ -197,80 +201,80 @@ class _AuthLayoutState extends State<AuthLayout> {
   }
 
   Widget _buildBranding() {
-     return Padding(
-        padding: const EdgeInsets.all(64),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.account_balance_wallet_rounded,
-                size: 80,
-                color: Colors.white.withValues(alpha: 0.95),
-              ),
-            ),
-            const SizedBox(height: 32),
-            RichText(
-              text: TextSpan(
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 64,
-                  height: 1.1,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      offset: const Offset(2, 2),
-                      blurRadius: 10,
-                    ),
-                  ],
+    return Padding(
+      padding: const EdgeInsets.all(64),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  spreadRadius: 5,
                 ),
-                children: const [
-                  TextSpan(text: 'AM\n'),
-                  TextSpan(text: 'Investment'),
-                ],
-              ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Your gateway to smart\nportfolio management',
+            child: Icon(
+              Icons.account_balance_wallet_rounded,
+              size: 80,
+              color: Colors.white.withValues(alpha: 0.95),
+            ),
+          ),
+          const SizedBox(height: 32),
+          RichText(
+            text: TextSpan(
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.95),
-                fontSize: 24,
-                height: 1.3,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 64,
+                height: 1.1,
                 shadows: [
                   Shadow(
                     color: Colors.black.withValues(alpha: 0.5),
-                    offset: const Offset(1, 1),
-                    blurRadius: 5,
+                    offset: const Offset(2, 2),
+                    blurRadius: 10,
                   ),
                 ],
               ),
+              children: const [
+                TextSpan(text: 'AM\n'),
+                TextSpan(text: 'Investment'),
+              ],
             ),
-            const SizedBox(height: 48),
-            _buildFeatureItem('📊 Real-time analytics'),
-            const SizedBox(height: 16),
-            _buildFeatureItem('📈 Smart tracking'),
-            const SizedBox(height: 16),
-            _buildFeatureItem('🔍 Market insights'),
-            const SizedBox(height: 16),
-            _buildFeatureItem('💼 Portfolio tools'),
-          ],
-        ),
-      );
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Your gateway to smart\nportfolio management',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.95),
+              fontSize: 24,
+              height: 1.3,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  offset: const Offset(1, 1),
+                  blurRadius: 5,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 48),
+          _buildFeatureItem('📊 Real-time analytics'),
+          const SizedBox(height: 16),
+          _buildFeatureItem('📈 Smart tracking'),
+          const SizedBox(height: 16),
+          _buildFeatureItem('🔍 Market insights'),
+          const SizedBox(height: 16),
+          _buildFeatureItem('💼 Portfolio tools'),
+        ],
+      ),
+    );
   }
 
   Widget _buildMobileBranding() {

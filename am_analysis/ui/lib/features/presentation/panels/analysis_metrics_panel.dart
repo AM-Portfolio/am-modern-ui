@@ -11,7 +11,8 @@ class AnalysisMetricsPanel extends StatelessWidget {
       child: AppCard(
         child: Column(
           children: const [
-            Text('Risk Return Metrics Curve', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Risk Return Metrics Curve',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             SizedBox(height: 16),
             AspectRatio(
               aspectRatio: 16 / 9,

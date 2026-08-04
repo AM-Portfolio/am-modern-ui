@@ -4,7 +4,11 @@ import 'filter_group.dart';
 
 /// Modern collapsible filter group card with smooth animations
 class FilterGroupCard extends StatefulWidget {
-  const FilterGroupCard({required this.filterGroup, super.key, this.onRemove, this.canRemove = true});
+  const FilterGroupCard(
+      {required this.filterGroup,
+      super.key,
+      this.onRemove,
+      this.canRemove = true});
   final FilterGroup filterGroup;
   final VoidCallback? onRemove;
   final bool canRemove;
@@ -13,7 +17,8 @@ class FilterGroupCard extends StatefulWidget {
   State<FilterGroupCard> createState() => _FilterGroupCardState();
 }
 
-class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProviderStateMixin {
+class _FilterGroupCardState extends State<FilterGroupCard>
+    with SingleTickerProviderStateMixin {
   bool _isExpanded = true;
   late AnimationController _controller;
   late Animation<double> _rotationAnimation;
@@ -21,7 +26,8 @@ class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(duration: const Duration(milliseconds: 200), vsync: this);
+    _controller = AnimationController(
+        duration: const Duration(milliseconds: 200), vsync: this);
     _rotationAnimation = Tween<double>(
       begin: 0,
       end: 0.5,
@@ -52,7 +58,10 @@ class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProv
         ),
         boxShadow: [
           if (widget.filterGroup.hasActiveFilters)
-            BoxShadow(color: theme.primaryColor.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 1)),
+            BoxShadow(
+                color: theme.primaryColor.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 1)),
         ],
       ),
       child: Column(
@@ -68,16 +77,21 @@ class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProv
               },
               borderRadius: BorderRadius.circular(10),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   gradient: widget.filterGroup.hasActiveFilters
                       ? LinearGradient(
-                          colors: [theme.primaryColor.withOpacity(0.08), theme.primaryColor.withOpacity(0.03)],
+                          colors: [
+                            theme.primaryColor.withOpacity(0.08),
+                            theme.primaryColor.withOpacity(0.03)
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         )
                       : null,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(10)),
                 ),
                 child: Row(
                   children: [
@@ -87,7 +101,8 @@ class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProv
                         color: theme.primaryColor.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Icon(widget.filterGroup.icon, size: 14, color: theme.primaryColor),
+                      child: Icon(widget.filterGroup.icon,
+                          size: 14, color: theme.primaryColor),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -102,7 +117,8 @@ class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProv
                     ),
                     if (widget.filterGroup.hasActiveFilters)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
                           color: theme.primaryColor,
                           borderRadius: BorderRadius.circular(5),
@@ -133,14 +149,16 @@ class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProv
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
                             padding: const EdgeInsets.all(2),
-                            child: Icon(Icons.close_rounded, size: 14, color: theme.hintColor),
+                            child: Icon(Icons.close_rounded,
+                                size: 14, color: theme.hintColor),
                           ),
                         ),
                       ),
                     const SizedBox(width: 4),
                     RotationTransition(
                       turns: _rotationAnimation,
-                      child: Icon(Icons.expand_more_rounded, size: 18, color: theme.hintColor),
+                      child: Icon(Icons.expand_more_rounded,
+                          size: 18, color: theme.hintColor),
                     ),
                   ],
                 ),
@@ -156,8 +174,10 @@ class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProv
                 ? Container(
                     padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
                     decoration: BoxDecoration(
-                      color: isDark ? null : theme.primaryColor.withOpacity(0.01),
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                      color:
+                          isDark ? null : theme.primaryColor.withOpacity(0.01),
+                      borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(10)),
                     ),
                     child: widget.filterGroup.buildContent(context),
                   )

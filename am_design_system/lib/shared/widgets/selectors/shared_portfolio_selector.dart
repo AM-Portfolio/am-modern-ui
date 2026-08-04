@@ -50,32 +50,36 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Determine theme mode
-    final isDarkMode = isDark ?? Theme.of(context).brightness == Brightness.dark;
-    
+    final isDarkMode =
+        isDark ?? Theme.of(context).brightness == Brightness.dark;
+
     // Determine accent color (default to current primary or purple fallback)
     final effectiveAccent = accentColor ?? const Color(0xFF6C5DD3);
-    
+
     // Text colors
     final textColor = isDarkMode ? Colors.white : Colors.black87;
     final subTextColor = isDarkMode ? Colors.white54 : Colors.black54;
-    
+
     // Background color for the card
     final cardBgColor = isDarkMode ? const Color(0xFF2C2C3E) : Colors.white;
-    final cardBorderColor = isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
+    final cardBorderColor = isDarkMode
+        ? Colors.white.withOpacity(0.05)
+        : Colors.black.withOpacity(0.05);
 
     String displayName = 'Select Portfolio';
     if (currentPortfolioName != null) {
       displayName = currentPortfolioName!;
     } else if (currentPortfolioId != null && portfolios.isNotEmpty) {
       try {
-        final portfolio = portfolios.firstWhere((p) => idExtractor(p) == currentPortfolioId);
+        final portfolio =
+            portfolios.firstWhere((p) => idExtractor(p) == currentPortfolioId);
         displayName = nameExtractor(portfolio);
       } catch (_) {}
     }
 
     if (isCompact) {
       if (portfolios.isEmpty) return const SizedBox.shrink();
-      
+
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: PopupMenuButton<String>(
@@ -83,26 +87,31 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
           offset: const Offset(40, 0),
           color: cardBgColor,
           surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: effectiveAccent.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.account_balance_wallet, color: effectiveAccent, size: 20),
+            child: Icon(Icons.account_balance_wallet,
+                color: effectiveAccent, size: 20),
           ),
           onSelected: (portfolioId) {
-            final portfolio = portfolios.firstWhere((p) => idExtractor(p) == portfolioId);
+            final portfolio =
+                portfolios.firstWhere((p) => idExtractor(p) == portfolioId);
             onPortfolioSelected(portfolioId, nameExtractor(portfolio));
           },
-          itemBuilder: (context) => portfolios.map((portfolio) => PopupMenuItem<String>(
-            value: idExtractor(portfolio),
-            child: Text(
-              nameExtractor(portfolio),
-              style: TextStyle(color: textColor),
-            ),
-          )).toList(),
+          itemBuilder: (context) => portfolios
+              .map((portfolio) => PopupMenuItem<String>(
+                    value: idExtractor(portfolio),
+                    child: Text(
+                      nameExtractor(portfolio),
+                      style: TextStyle(color: textColor),
+                    ),
+                  ))
+              .toList(),
         ),
       );
     }
@@ -135,7 +144,8 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
             ),
             elevation: 8,
             onSelected: (portfolioId) {
-              final portfolio = portfolios.firstWhere((p) => idExtractor(p) == portfolioId);
+              final portfolio =
+                  portfolios.firstWhere((p) => idExtractor(p) == portfolioId);
               onPortfolioSelected(portfolioId, nameExtractor(portfolio));
             },
             itemBuilder: (context) => portfolios.map((portfolio) {
@@ -150,7 +160,8 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                         nameExtractor(portfolio),
                         style: TextStyle(
                           color: isSelected ? effectiveAccent : textColor,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -163,7 +174,8 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                         },
                         child: Padding(
                           padding: const EdgeInsets.only(left: 8.0, right: 4.0),
-                          child: Icon(Icons.edit, size: 16, color: subTextColor),
+                          child:
+                              Icon(Icons.edit, size: 16, color: subTextColor),
                         ),
                       ),
                     if (isSelected)
@@ -177,7 +189,10 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDarkMode ? Colors.transparent : Colors.white,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1)),
+                border: Border.all(
+                    color: isDarkMode
+                        ? Colors.white.withOpacity(0.1)
+                        : Colors.black.withOpacity(0.1)),
               ),
               child: Row(
                 children: [
@@ -207,4 +222,3 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
     );
   }
 }
-

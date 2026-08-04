@@ -6,7 +6,8 @@ class DeveloperMarketDataService {
   static String get baseUrl => '${EnvDomains.market}/v1/market-data';
   final Dio _dio = Dio();
 
-  Future<Map<String, dynamic>> getQuotes(String symbols, {bool refresh = false}) async {
+  Future<Map<String, dynamic>> getQuotes(String symbols,
+      {bool refresh = false}) async {
     try {
       final response = await _dio.get(
         '$baseUrl/quotes',
@@ -22,7 +23,8 @@ class DeveloperMarketDataService {
     }
   }
 
-  Future<Map<String, dynamic>> getOHLC(String symbols, {bool refresh = false}) async {
+  Future<Map<String, dynamic>> getOHLC(String symbols,
+      {bool refresh = false}) async {
     try {
       final response = await _dio.post(
         '$baseUrl/ohlc',
@@ -40,13 +42,17 @@ class DeveloperMarketDataService {
     }
   }
 
-  Future<Map<String, dynamic>> getHistorical(String symbols, {bool refresh = false}) async {
+  Future<Map<String, dynamic>> getHistorical(String symbols,
+      {bool refresh = false}) async {
     try {
       final response = await _dio.post(
         '$baseUrl/historical-data',
         data: {
           'symbols': symbols,
-          'fromDate': DateTime.now().subtract(const Duration(days: 7)).toIso8601String().split('T')[0],
+          'fromDate': DateTime.now()
+              .subtract(const Duration(days: 7))
+              .toIso8601String()
+              .split('T')[0],
           'toDate': DateTime.now().toIso8601String().split('T')[0],
           'interval': '1D',
           'forceRefresh': refresh,

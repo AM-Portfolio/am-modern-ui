@@ -24,7 +24,8 @@ void main() {
     test('keeps reset-password with short code query', () {
       expect(
         resolveLaunchLocation(
-          launchUri: Uri.parse('https://am.asrax.in/reset-password?c=3vxnvHhX0IP3'),
+          launchUri:
+              Uri.parse('https://am.asrax.in/reset-password?c=3vxnvHhX0IP3'),
         ),
         '/reset-password?c=3vxnvHhX0IP3',
       );
@@ -53,7 +54,8 @@ void main() {
     test('keeps verify-email deep link', () {
       expect(
         resolveLaunchLocation(
-          launchUri: Uri.parse('https://am.asrax.in/verify-email?c=CwgH9qkDWi9V'),
+          launchUri:
+              Uri.parse('https://am.asrax.in/verify-email?c=CwgH9qkDWi9V'),
         ),
         '/verify-email?c=CwgH9qkDWi9V',
       );
@@ -74,7 +76,8 @@ void main() {
         AppRoutes.dashboard,
       );
       expect(
-        resolveLaunchLocation(launchUri: Uri.parse('https://am.asrax.in/unknown')),
+        resolveLaunchLocation(
+            launchUri: Uri.parse('https://am.asrax.in/unknown')),
         AppRoutes.dashboard,
       );
     });

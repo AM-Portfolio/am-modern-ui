@@ -29,18 +29,22 @@ class ConstituentsTable extends StatelessWidget {
           columns: [
             SortableColumn<StockData>(
               title: 'Symbol',
-              builder: (stock) => Text(stock.symbol, style: const TextStyle(fontWeight: FontWeight.bold)),
+              builder: (stock) => Text(stock.symbol,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               sortBy: (stock) => stock.symbol,
             ),
             SortableColumn<StockData>(
               title: 'Price',
               builder: (stock) {
                 final liveData = provider.getPrice(stock.symbol);
-                final price = liveData != null ? (liveData['lastPrice'] as num).toDouble() : stock.lastPrice;
+                final price = liveData != null
+                    ? (liveData['lastPrice'] as num).toDouble()
+                    : stock.lastPrice;
                 return Text(
                   price.toStringAsFixed(2),
                   style: TextStyle(
-                    fontWeight: liveData != null ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        liveData != null ? FontWeight.bold : FontWeight.normal,
                     color: liveData != null ? AppColors.info : null,
                   ),
                 );
@@ -52,7 +56,9 @@ class ConstituentsTable extends StatelessWidget {
               title: 'Change %',
               builder: (stock) {
                 final liveData = provider.getPrice(stock.symbol);
-                final pChange = liveData != null ? (liveData['changePercent'] as num).toDouble() : stock.pChange;
+                final pChange = liveData != null
+                    ? (liveData['changePercent'] as num).toDouble()
+                    : stock.pChange;
                 final isPositive = pChange >= 0;
                 return Text(
                   '${isPositive ? '+' : ''}${pChange.toStringAsFixed(2)}%',
@@ -77,7 +83,7 @@ class ConstituentsTable extends StatelessWidget {
               sortBy: (stock) => stock.dayHigh,
               textAlign: TextAlign.right,
             ),
-             SortableColumn<StockData>(
+            SortableColumn<StockData>(
               title: 'Low',
               builder: (stock) => Text(stock.dayLow.toStringAsFixed(2)),
               sortBy: (stock) => stock.dayLow,
@@ -90,7 +96,7 @@ class ConstituentsTable extends StatelessWidget {
   }
 
   void _navigateToDetail(BuildContext context, StockData stock) {
-     Navigator.push(
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => StockDetailPage(symbol: stock.symbol),

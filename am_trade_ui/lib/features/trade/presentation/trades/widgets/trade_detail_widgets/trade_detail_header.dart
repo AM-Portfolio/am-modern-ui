@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import '../../../models/trade_holding_view_model.dart';
 
 class TradeDetailHeader extends StatelessWidget {
-  const TradeDetailHeader({required this.trade, required this.onClose, required this.onFilterChanged, super.key});
+  const TradeDetailHeader(
+      {required this.trade,
+      required this.onClose,
+      required this.onFilterChanged,
+      super.key});
 
   final TradeHoldingViewModel trade;
   final VoidCallback? onClose;
@@ -24,7 +28,9 @@ class TradeDetailHeader extends StatelessWidget {
             Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.3),
           ],
         ),
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
+        border: Border(
+            bottom: BorderSide(
+                color: Theme.of(context).dividerColor.withOpacity(0.1))),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
@@ -35,7 +41,8 @@ class TradeDetailHeader extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+                border: Border.all(
+                    color: Theme.of(context).dividerColor.withOpacity(0.2)),
               ),
               child: Material(
                 color: Colors.transparent,
@@ -43,11 +50,14 @@ class TradeDetailHeader extends StatelessWidget {
                   onTap: onClose,
                   borderRadius: BorderRadius.circular(10),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.arrow_back_rounded, size: 18, color: Theme.of(context).colorScheme.onSurface),
+                        Icon(Icons.arrow_back_rounded,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.onSurface),
                         const SizedBox(width: 6),
                         Text(
                           'Back',
@@ -72,12 +82,17 @@ class TradeDetailHeader extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [statusColor.withOpacity(0.15), statusColor.withOpacity(0.05)],
+                  colors: [
+                    statusColor.withOpacity(0.15),
+                    statusColor.withOpacity(0.05)
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: statusColor.withOpacity(0.3), width: 1.5),
+                border:
+                    Border.all(color: statusColor.withOpacity(0.3), width: 1.5),
               ),
-              child: Icon(_getStatusIcon(trade.status), color: statusColor, size: 26),
+              child: Icon(_getStatusIcon(trade.status),
+                  color: statusColor, size: 26),
             ),
             const SizedBox(width: 16),
 
@@ -100,16 +115,19 @@ class TradeDetailHeader extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: statusColor.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: statusColor.withOpacity(0.4)),
+                          border:
+                              Border.all(color: statusColor.withOpacity(0.4)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(_getStatusIcon(trade.status), size: 12, color: statusColor),
+                            Icon(_getStatusIcon(trade.status),
+                                size: 12, color: statusColor),
                             const SizedBox(width: 5),
                             Text(
                               trade.displayStatus.toUpperCase(),
@@ -131,7 +149,10 @@ class TradeDetailHeader extends StatelessWidget {
                     trade.displayCompanyName,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.7),
                       fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
@@ -190,18 +211,22 @@ class TradeDetailHeader extends StatelessWidget {
                     icon: const Icon(Icons.clear, size: 18),
                     onPressed: () => onFilterChanged(null),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Theme.of(context).dividerColor),
+                    borderSide:
+                        BorderSide(color: Theme.of(context).dividerColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.3)),
+                    borderSide: BorderSide(
+                        color: Theme.of(context).dividerColor.withOpacity(0.3)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Theme.of(context).primaryColor),
+                    borderSide:
+                        BorderSide(color: Theme.of(context).primaryColor),
                   ),
                   isDense: true,
                 ),
@@ -226,7 +251,8 @@ class TradeDetailHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: (isProfit ? Colors.green : Colors.red).withOpacity(0.25),
+                    color: (isProfit ? Colors.green : Colors.red)
+                        .withOpacity(0.25),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -236,7 +262,9 @@ class TradeDetailHeader extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    isProfit ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                    isProfit
+                        ? Icons.trending_up_rounded
+                        : Icons.trending_down_rounded,
                     color: Colors.white,
                     size: 20,
                   ),
@@ -279,33 +307,35 @@ class TradeDetailHeader extends StatelessWidget {
     required String label,
     required String value,
     required Color color,
-  }) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(6),
-      border: Border.all(color: color.withOpacity(0.3)),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: color),
-        const SizedBox(width: 4),
-        Text(
-          '$label: ',
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-          ),
+  }) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withOpacity(0.3)),
         ),
-        Text(
-          value,
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 4),
+            Text(
+              '$label: ',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w600, color: color),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 
   IconData _getStatusIcon(String? status) {
     switch (status?.toUpperCase()) {

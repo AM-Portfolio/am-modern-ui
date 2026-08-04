@@ -8,16 +8,19 @@ class TradeUnifiedViewPage extends ConsumerStatefulWidget {
   const TradeUnifiedViewPage({super.key});
 
   @override
-  ConsumerState<TradeUnifiedViewPage> createState() => _TradeUnifiedViewPageState();
+  ConsumerState<TradeUnifiedViewPage> createState() =>
+      _TradeUnifiedViewPageState();
 }
 
-class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage> with TickerProviderStateMixin {
+class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage>
+    with TickerProviderStateMixin {
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this, initialIndex: 1); // Default to Chart
+    _tabController = TabController(
+        length: 3, vsync: this, initialIndex: 1); // Default to Chart
   }
 
   @override
@@ -49,7 +52,9 @@ class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage> wit
               children: [
                 Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Text("Trades", style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                  child: Text("Trades",
+                      style: theme.textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold)),
                 ),
                 Expanded(
                   child: ListView.builder(
@@ -57,9 +62,13 @@ class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage> wit
                     itemBuilder: (context, index) {
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: index % 2 == 0 ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                          backgroundColor: index % 2 == 0
+                              ? Colors.green.withOpacity(0.1)
+                              : Colors.red.withOpacity(0.1),
                           child: Icon(
-                            index % 2 == 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                            index % 2 == 0
+                                ? Icons.arrow_upward
+                                : Icons.arrow_downward,
                             color: index % 2 == 0 ? Colors.green : Colors.red,
                             size: 16,
                           ),
@@ -88,14 +97,18 @@ class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage> wit
               children: [
                 // Header / Stats Bar (Keep it compact)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface,
-                    border: Border(bottom: BorderSide(color: theme.dividerColor)),
+                    border:
+                        Border(bottom: BorderSide(color: theme.dividerColor)),
                   ),
                   child: Row(
                     children: [
-                      Text("TCS", style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                      Text("TCS",
+                          style: theme.textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(width: 16),
                       _buildStatChip(context, "Net P&L", "-₹16", Colors.red),
                       const SizedBox(width: 12),
@@ -118,7 +131,8 @@ class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage> wit
                             borderRadius: BorderRadius.circular(8),
                           ),
                           labelColor: Colors.white,
-                          unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+                          unselectedLabelColor:
+                              theme.colorScheme.onSurfaceVariant,
                           tabs: const [
                             Tab(text: "Stats & Strategy"),
                             Tab(text: "Chart"),
@@ -134,18 +148,20 @@ class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage> wit
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
-                    physics: const NeverScrollableScrollPhysics(), // Disable swipe on web
+                    physics:
+                        const NeverScrollableScrollPhysics(), // Disable swipe on web
                     children: [
                       // Tab 1: Stats
-                      const Center(child: Text("Detailed Statistics & Strategy Info Here")),
-                      
+                      const Center(
+                          child:
+                              Text("Detailed Statistics & Strategy Info Here")),
+
                       // Tab 2: Chart (Reusing the Fullscreen Widget)
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final config = ref.watch(marketAnalysisChartConfigProvider);
-                          return TradingViewChartWidget(config: config);
-                        }
-                      ),
+                      Consumer(builder: (context, ref, child) {
+                        final config =
+                            ref.watch(marketAnalysisChartConfigProvider);
+                        return TradingViewChartWidget(config: config);
+                      }),
 
                       // Tab 3: Journal
                       JournalWebPage(),
@@ -160,7 +176,8 @@ class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage> wit
     ).animate().fadeIn(duration: 400.ms);
   }
 
-  Widget _buildStatChip(BuildContext context, String label, String value, Color color) {
+  Widget _buildStatChip(
+      BuildContext context, String label, String value, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -171,9 +188,16 @@ class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage> wit
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withOpacity(0.6))),
           const SizedBox(width: 6),
-          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+          Text(value,
+              style: TextStyle(fontWeight: FontWeight.bold, color: color)),
         ],
       ),
     );

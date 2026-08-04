@@ -38,12 +38,11 @@ class ChatState {
     List<ChatMessage>? messages,
     bool? isLoading,
     String? sessionId,
-  }) =>
-      ChatState(
-        messages: messages ?? this.messages,
-        isLoading: isLoading ?? this.isLoading,
-        sessionId: sessionId ?? this.sessionId,
-      );
+  }) => ChatState(
+    messages: messages ?? this.messages,
+    isLoading: isLoading ?? this.isLoading,
+    sessionId: sessionId ?? this.sessionId,
+  );
 }
 
 // ─── Chat Notifier (Riverpod v3) ──────────────────────────────────────────────
@@ -52,7 +51,10 @@ class AiChatNotifier extends Notifier<ChatState> {
   @override
   ChatState build() => const ChatState();
 
-  Future<void> sendMessage({required String text, required String userId}) async {
+  Future<void> sendMessage({
+    required String text,
+    required String userId,
+  }) async {
     if (text.trim().isEmpty) return;
 
     final userMsg = ChatMessage(role: ChatRole.user, text: text);
@@ -88,5 +90,6 @@ class AiChatNotifier extends Notifier<ChatState> {
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
-final aiChatProvider =
-    NotifierProvider<AiChatNotifier, ChatState>(AiChatNotifier.new);
+final aiChatProvider = NotifierProvider<AiChatNotifier, ChatState>(
+  AiChatNotifier.new,
+);

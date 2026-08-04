@@ -106,34 +106,37 @@ class PortfolioBreakdown {
   int? holdingCount;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is PortfolioBreakdown &&
-    other.portfolioId == portfolioId &&
-    other.portfolioName == portfolioName &&
-    other.portfolioType == portfolioType &&
-    other.currentValue == currentValue &&
-    other.investedValue == investedValue &&
-    other.gainLoss == gainLoss &&
-    other.gainLossPercent == gainLossPercent &&
-    other.dayChange == dayChange &&
-    other.dayChangePercent == dayChangePercent &&
-    other.holdingCount == holdingCount;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PortfolioBreakdown &&
+          other.portfolioId == portfolioId &&
+          other.portfolioName == portfolioName &&
+          other.portfolioType == portfolioType &&
+          other.currentValue == currentValue &&
+          other.investedValue == investedValue &&
+          other.gainLoss == gainLoss &&
+          other.gainLossPercent == gainLossPercent &&
+          other.dayChange == dayChange &&
+          other.dayChangePercent == dayChangePercent &&
+          other.holdingCount == holdingCount;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (portfolioId == null ? 0 : portfolioId!.hashCode) +
-    (portfolioName == null ? 0 : portfolioName!.hashCode) +
-    (portfolioType == null ? 0 : portfolioType!.hashCode) +
-    (currentValue == null ? 0 : currentValue!.hashCode) +
-    (investedValue == null ? 0 : investedValue!.hashCode) +
-    (gainLoss == null ? 0 : gainLoss!.hashCode) +
-    (gainLossPercent == null ? 0 : gainLossPercent!.hashCode) +
-    (dayChange == null ? 0 : dayChange!.hashCode) +
-    (dayChangePercent == null ? 0 : dayChangePercent!.hashCode) +
-    (holdingCount == null ? 0 : holdingCount!.hashCode);
+      // ignore: unnecessary_parenthesis
+      (portfolioId == null ? 0 : portfolioId!.hashCode) +
+      (portfolioName == null ? 0 : portfolioName!.hashCode) +
+      (portfolioType == null ? 0 : portfolioType!.hashCode) +
+      (currentValue == null ? 0 : currentValue!.hashCode) +
+      (investedValue == null ? 0 : investedValue!.hashCode) +
+      (gainLoss == null ? 0 : gainLoss!.hashCode) +
+      (gainLossPercent == null ? 0 : gainLossPercent!.hashCode) +
+      (dayChange == null ? 0 : dayChange!.hashCode) +
+      (dayChangePercent == null ? 0 : dayChangePercent!.hashCode) +
+      (holdingCount == null ? 0 : holdingCount!.hashCode);
 
   @override
-  String toString() => 'PortfolioBreakdown[portfolioId=$portfolioId, portfolioName=$portfolioName, portfolioType=$portfolioType, currentValue=$currentValue, investedValue=$investedValue, gainLoss=$gainLoss, gainLossPercent=$gainLossPercent, dayChange=$dayChange, dayChangePercent=$dayChangePercent, holdingCount=$holdingCount]';
+  String toString() =>
+      'PortfolioBreakdown[portfolioId=$portfolioId, portfolioName=$portfolioName, portfolioType=$portfolioType, currentValue=$currentValue, investedValue=$investedValue, gainLoss=$gainLoss, gainLossPercent=$gainLossPercent, dayChange=$dayChange, dayChangePercent=$dayChangePercent, holdingCount=$holdingCount]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -202,8 +205,10 @@ class PortfolioBreakdown {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "PortfolioBreakdown[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "PortfolioBreakdown[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "PortfolioBreakdown[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "PortfolioBreakdown[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -212,11 +217,27 @@ class PortfolioBreakdown {
         portfolioId: mapValueOfType<String>(json, r'portfolioId'),
         portfolioName: mapValueOfType<String>(json, r'portfolioName'),
         portfolioType: mapValueOfType<String>(json, r'portfolioType'),
-        currentValue: json[r'currentValue'] == null ? null : (json[r'currentValue'] is num ? json[r'currentValue'] : num.tryParse('${json[r'currentValue']}')),
-        investedValue: json[r'investedValue'] == null ? null : (json[r'investedValue'] is num ? json[r'investedValue'] : num.tryParse('${json[r'investedValue']}')),
-        gainLoss: json[r'gainLoss'] == null ? null : (json[r'gainLoss'] is num ? json[r'gainLoss'] : num.tryParse('${json[r'gainLoss']}')),
+        currentValue: json[r'currentValue'] == null
+            ? null
+            : (json[r'currentValue'] is num
+                ? json[r'currentValue']
+                : num.tryParse('${json[r'currentValue']}')),
+        investedValue: json[r'investedValue'] == null
+            ? null
+            : (json[r'investedValue'] is num
+                ? json[r'investedValue']
+                : num.tryParse('${json[r'investedValue']}')),
+        gainLoss: json[r'gainLoss'] == null
+            ? null
+            : (json[r'gainLoss'] is num
+                ? json[r'gainLoss']
+                : num.tryParse('${json[r'gainLoss']}')),
         gainLossPercent: mapValueOfType<double>(json, r'gainLossPercent'),
-        dayChange: json[r'dayChange'] == null ? null : (json[r'dayChange'] is num ? json[r'dayChange'] : num.tryParse('${json[r'dayChange']}')),
+        dayChange: json[r'dayChange'] == null
+            ? null
+            : (json[r'dayChange'] is num
+                ? json[r'dayChange']
+                : num.tryParse('${json[r'dayChange']}')),
         dayChangePercent: mapValueOfType<double>(json, r'dayChangePercent'),
         holdingCount: mapValueOfType<int>(json, r'holdingCount'),
       );
@@ -224,7 +245,10 @@ class PortfolioBreakdown {
     return null;
   }
 
-  static List<PortfolioBreakdown> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<PortfolioBreakdown> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <PortfolioBreakdown>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -252,20 +276,24 @@ class PortfolioBreakdown {
   }
 
   // maps a json object with a list of PortfolioBreakdown-objects as value to a dart map
-  static Map<String, List<PortfolioBreakdown>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<PortfolioBreakdown>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<PortfolioBreakdown>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = PortfolioBreakdown.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = PortfolioBreakdown.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

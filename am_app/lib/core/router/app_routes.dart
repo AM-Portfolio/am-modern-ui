@@ -93,7 +93,8 @@ class AppRoutes {
         title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
   }
 
-  static String marketTitleForSlug(String slug, {List<String> dynamicTitles = const []}) {
+  static String marketTitleForSlug(String slug,
+      {List<String> dynamicTitles = const []}) {
     for (final entry in marketStaticSlugs.entries) {
       if (entry.value == slug) return entry.key;
     }

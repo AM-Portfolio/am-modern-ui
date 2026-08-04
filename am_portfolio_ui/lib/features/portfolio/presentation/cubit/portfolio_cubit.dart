@@ -34,7 +34,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   // Subscription management
   bool _isSubscribed = false;
   StreamSubscription? _socketSubscription;
-  
+
   String? _subPortfolioId;
   String? _lastSentPortfolioId;
   DateTime? _lastStatusErrorTime;
@@ -90,8 +90,9 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       if (status == StompStatus.error) {
         // Throttle error logs to once every 30 seconds
         final now = DateTime.now();
-        if (_lastStatusErrorTime == null || 
-            now.difference(_lastStatusErrorTime!) > const Duration(seconds: 30)) {
+        if (_lastStatusErrorTime == null ||
+            now.difference(_lastStatusErrorTime!) >
+                const Duration(seconds: 30)) {
           CommonLogger.info(
             '[$_debugId] PortfolioCubit: Status changed to $status (Throttled)',
             tag: 'PortfolioCubit',
@@ -104,7 +105,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
           tag: 'PortfolioCubit',
         );
       }
-      
+
       if (status == StompStatus.connected && _portfolioStreamingAllowed) {
         CommonLogger.info(
           '[$_debugId] PortfolioCubit: Connected event received, calling _performSubscription',
@@ -142,8 +143,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     if (_subPortfolioId != null &&
         (forceResubscribe || _lastSentPortfolioId != _subPortfolioId)) {
       final traceId = Uuid().v4();
-      final body =
-          '{"portfolioId": "$_subPortfolioId"}';
+      final body = '{"portfolioId": "$_subPortfolioId"}';
 
       CommonLogger.info(
         'Triggering calculation for portfolio: $_subPortfolioId',
@@ -271,14 +271,20 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       final portfolioList = await _portfolioService.getPortfoliosList();
       if (!isClosed) {
         if (state is PortfolioLoaded) {
-          emit((state as PortfolioLoaded).copyWith(portfolioList: portfolioList));
+          emit(
+            (state as PortfolioLoaded).copyWith(portfolioList: portfolioList),
+          );
         } else {
           emit(PortfolioLoading(portfolioList: portfolioList));
           // If we want to stay in loaded state, we could just load the first one or 'all' here.
         }
       }
     } catch (e) {
-      CommonLogger.error('Failed to refresh portfolio list', tag: 'PortfolioCubit', error: e);
+      CommonLogger.error(
+        'Failed to refresh portfolio list',
+        tag: 'PortfolioCubit',
+        error: e,
+      );
     }
   }
 
@@ -289,13 +295,20 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       await _portfolioService.createPortfolio(request);
       await refreshPortfolioList();
     } catch (e) {
-      CommonLogger.error('Failed to create portfolio', tag: 'PortfolioCubit', error: e);
+      CommonLogger.error(
+        'Failed to create portfolio',
+        tag: 'PortfolioCubit',
+        error: e,
+      );
       if (!isClosed) emit(PortfolioError('Failed to create portfolio'));
     }
   }
 
   /// Update an existing portfolio
-  Future<void> updatePortfolio(String portfolioId, PortfolioUpdateRequestDto request) async {
+  Future<void> updatePortfolio(
+    String portfolioId,
+    PortfolioUpdateRequestDto request,
+  ) async {
     CommonLogger.methodEntry('updatePortfolio', tag: 'PortfolioCubit');
     try {
       await _portfolioService.updatePortfolio(portfolioId, request);
@@ -304,23 +317,37 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         loadPortfolioById(portfolioId);
       }
     } catch (e) {
-      CommonLogger.error('Failed to update portfolio', tag: 'PortfolioCubit', error: e);
+      CommonLogger.error(
+        'Failed to update portfolio',
+        tag: 'PortfolioCubit',
+        error: e,
+      );
       if (!isClosed) emit(PortfolioError('Failed to update portfolio'));
     }
   }
 
   /// Delete a portfolio
-  Future<void> deletePortfolio(String portfolioId, {bool deleteTrades = false}) async {
+  Future<void> deletePortfolio(
+    String portfolioId, {
+    bool deleteTrades = false,
+  }) async {
     CommonLogger.methodEntry('deletePortfolio', tag: 'PortfolioCubit');
     try {
-      await _portfolioService.deletePortfolio(portfolioId, deleteTrades: deleteTrades);
+      await _portfolioService.deletePortfolio(
+        portfolioId,
+        deleteTrades: deleteTrades,
+      );
       await refreshPortfolioList();
       if (_loadedPortfolioId == portfolioId || _loadedPortfolioId == null) {
         // If we deleted the currently loaded portfolio, switch to 'all' or empty state
         loadPortfolioById('all');
       }
     } catch (e) {
-      CommonLogger.error('Failed to delete portfolio', tag: 'PortfolioCubit', error: e);
+      CommonLogger.error(
+        'Failed to delete portfolio',
+        tag: 'PortfolioCubit',
+        error: e,
+      );
       if (!isClosed) emit(PortfolioError('Failed to delete portfolio'));
     }
   }
@@ -436,7 +463,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     try {
       final summary = await _portfolioService.getPortfolioSummary();
       final holdings = await _portfolioService.getPortfolioHoldings();
-      
+
       if (!isClosed) {
         emit(
           PortfolioLoaded(
@@ -448,7 +475,11 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         );
       }
     } catch (e) {
-      CommonLogger.error('loadAllPortfolios Error', error: e, tag: 'PortfolioCubit');
+      CommonLogger.error(
+        'loadAllPortfolios Error',
+        error: e,
+        tag: 'PortfolioCubit',
+      );
       if (!isClosed) {
         emit(PortfolioError(e.toString(), portfolioList: state.portfolioList));
       }
@@ -481,8 +512,10 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     );
 
     try {
-      final cachedHoldings = await _portfolioService.getCachedPortfolioHoldingsById(portfolioId);
-      final cachedSummary = await _portfolioService.getCachedPortfolioSummaryById(portfolioId);
+      final cachedHoldings = await _portfolioService
+          .getCachedPortfolioHoldingsById(portfolioId);
+      final cachedSummary = await _portfolioService
+          .getCachedPortfolioSummaryById(portfolioId);
 
       if (cachedHoldings != null && cachedSummary != null) {
         if (!isClosed) {
@@ -499,7 +532,12 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       } else {
         if (!isClosed) {
           if (state is PortfolioLoaded) {
-            emit((state as PortfolioLoaded).copyWith(isStale: true, isHoldingsLoading: true));
+            emit(
+              (state as PortfolioLoaded).copyWith(
+                isStale: true,
+                isHoldingsLoading: true,
+              ),
+            );
           } else {
             emit(PortfolioLoading(portfolioList: state.portfolioList));
           }
@@ -508,7 +546,12 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     } catch (e) {
       if (!isClosed) {
         if (state is PortfolioLoaded) {
-          emit((state as PortfolioLoaded).copyWith(isStale: true, isHoldingsLoading: true));
+          emit(
+            (state as PortfolioLoaded).copyWith(
+              isStale: true,
+              isHoldingsLoading: true,
+            ),
+          );
         } else {
           emit(PortfolioLoading(portfolioList: state.portfolioList));
         }
@@ -523,7 +566,9 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       );
 
       // Progressive Loading: Fetch Summary first (Fast)
-      final summary = await _portfolioService.getPortfolioSummaryById(portfolioId);
+      final summary = await _portfolioService.getPortfolioSummaryById(
+        portfolioId,
+      );
 
       if (!isClosed) {
         emit(
@@ -538,7 +583,9 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       }
 
       // Then fetch Holdings (Slow)
-      final holdings = await _portfolioService.getPortfolioHoldingsById(portfolioId);
+      final holdings = await _portfolioService.getPortfolioHoldingsById(
+        portfolioId,
+      );
       sw.stop();
       ProductTelemetry.instance.widgetTiming(
         widget: 'portfolio_holdings',
@@ -619,9 +666,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   }
 
   /// Load only portfolio summary (without holdings) for overview page
-  Future<void> loadPortfolioSummaryOnly(
-    String portfolioId,
-  ) async {
+  Future<void> loadPortfolioSummaryOnly(String portfolioId) async {
     CommonLogger.methodEntry(
       'loadPortfolioSummaryOnly',
       tag: 'PortfolioCubit',

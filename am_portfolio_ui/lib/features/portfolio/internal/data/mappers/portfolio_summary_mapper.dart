@@ -7,16 +7,16 @@ import 'package:am_common/am_common.dart';
 /// Aligned with the Java backend PortfolioSummaryV1 + BasePortfolioSummay models.
 class PortfolioSummaryMapper {
   /// Convert API response DTO to domain entity
-  static PortfolioSummary fromApiModel(
-    PortfolioSummaryDto apiModel,
-  ) {
+  static PortfolioSummary fromApiModel(PortfolioSummaryDto apiModel) {
     try {
       // Build sector allocation from sectorialHoldings map
       final sectorAllocations = <SectorAllocation>[];
       apiModel.sectorialHoldings.forEach((sectorName, holdings) {
         // Step A - Name sanitization
         String sanitizedName = sectorName;
-        if (sanitizedName.isEmpty || sanitizedName == '-' || sanitizedName == 'null') {
+        if (sanitizedName.isEmpty ||
+            sanitizedName == '-' ||
+            sanitizedName == 'null') {
           sanitizedName = 'Uncategorized';
         }
 
@@ -72,12 +72,14 @@ class PortfolioSummaryMapper {
       }
 
       if (hasOthers) {
-        finalSectors.add(SectorAllocation(
-          sector: 'Others',
-          value: othersValue,
-          percentage: othersPercentage,
-          holdings: othersHoldings,
-        ));
+        finalSectors.add(
+          SectorAllocation(
+            sector: 'Others',
+            value: othersValue,
+            percentage: othersPercentage,
+            holdings: othersHoldings,
+          ),
+        );
       }
 
       // Sort sectors by value descending
@@ -180,28 +182,26 @@ class PortfolioSummaryMapper {
       );
 
   /// Create empty portfolio summary for error states
-  static PortfolioSummary createEmpty() =>
-      PortfolioSummary.empty();
+  static PortfolioSummary createEmpty() => PortfolioSummary.empty();
 
   /// Create mock portfolio summary with sample data
-  static PortfolioSummary createMock() =>
-      PortfolioSummary(
-        totalValue: 125000.0,
-        totalInvested: 100000.0,
-        investmentValue: 100000.0,
-        totalGainLoss: 25000.0,
-        totalGainLossPercentage: 25.0,
-        todayChange: 1500.0,
-        todayChangePercentage: 1.2,
-        todayGainLossPercentage: 1.2,
-        totalHoldings: 10,
-        totalAssets: 15,
-        todayGainersCount: 8,
-        todayLosersCount: 2,
-        gainersCount: 7,
-        losersCount: 3,
-        lastUpdated: DateTime.now(),
-      );
+  static PortfolioSummary createMock() => PortfolioSummary(
+    totalValue: 125000.0,
+    totalInvested: 100000.0,
+    investmentValue: 100000.0,
+    totalGainLoss: 25000.0,
+    totalGainLossPercentage: 25.0,
+    todayChange: 1500.0,
+    todayChangePercentage: 1.2,
+    todayGainLossPercentage: 1.2,
+    totalHoldings: 10,
+    totalAssets: 15,
+    todayGainersCount: 8,
+    todayLosersCount: 2,
+    gainersCount: 7,
+    losersCount: 3,
+    lastUpdated: DateTime.now(),
+  );
 
   /// Validation helper
   static bool isValidApiResponse(PortfolioSummaryDto? apiModel) =>

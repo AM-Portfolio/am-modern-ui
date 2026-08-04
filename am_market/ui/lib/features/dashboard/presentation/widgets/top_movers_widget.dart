@@ -38,7 +38,9 @@ class TopMoversWidget extends StatelessWidget {
             children: [
               Icon(
                 isGainers ? Icons.trending_up : Icons.trending_down,
-                color: isGainers ? const Color(0xFF00FF88) : const Color(0xFFFF6B6B),
+                color: isGainers
+                    ? const Color(0xFF00FF88)
+                    : const Color(0xFFFF6B6B),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -53,7 +55,7 @@ class TopMoversWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // List of movers
           if (displayMovers.isEmpty)
             Center(
@@ -72,12 +74,12 @@ class TopMoversWidget extends StatelessWidget {
             ...displayMovers.asMap().entries.map((entry) {
               final index = entry.key;
               final stock = entry.value;
-              final accentColor = isGainers 
-                  ? const Color(0xFF00FF88) 
-                  : const Color(0xFFFF6B6B);
+              final accentColor =
+                  isGainers ? const Color(0xFF00FF88) : const Color(0xFFFF6B6B);
 
               return Padding(
-                padding: EdgeInsets.only(bottom: index < displayMovers.length - 1 ? 12 : 0),
+                padding: EdgeInsets.only(
+                    bottom: index < displayMovers.length - 1 ? 12 : 0),
                 child: Row(
                   children: [
                     // Rank
@@ -99,7 +101,7 @@ class TopMoversWidget extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    
+
                     // Symbol and price
                     Expanded(
                       child: Column(
@@ -125,10 +127,11 @@ class TopMoversWidget extends StatelessWidget {
                         ],
                       ),
                     ),
-                    
+
                     // Change percentage
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: accentColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(6),

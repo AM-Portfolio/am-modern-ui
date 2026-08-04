@@ -6,7 +6,8 @@ import '../entities/trade_controller_entities.dart';
 abstract class TradeControllerRepository {
   /// Get trade details by portfolio ID and optional symbols
   /// Returns a list of trade details matching the criteria
-  Future<List<TradeDetails>> getTradeDetailsByPortfolioAndSymbols({required String portfolioId, List<String>? symbols});
+  Future<List<TradeDetails>> getTradeDetailsByPortfolioAndSymbols(
+      {required String portfolioId, List<String>? symbols});
 
   /// Stream of trade details for real-time updates
   /// Emits updates whenever trade data changes
@@ -18,7 +19,8 @@ abstract class TradeControllerRepository {
 
   /// Update an existing trade
   /// Returns the updated trade details
-  Future<TradeDetails> updateTrade({required String tradeId, required TradeDetails tradeDetails});
+  Future<TradeDetails> updateTrade(
+      {required String tradeId, required TradeDetails tradeDetails});
 
   /// Delete a trade by ID
   /// Returns void on successful deletion

@@ -9,10 +9,7 @@ import 'glass_card.dart';
 class DashboardAllocationWidget extends StatelessWidget {
   final AllocationResponse allocation;
 
-  const DashboardAllocationWidget({
-    super.key,
-    required this.allocation,
-  });
+  const DashboardAllocationWidget({super.key, required this.allocation});
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +20,14 @@ class DashboardAllocationWidget extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     // Calculate total assets correctly
-    final totalAssets = allocation.sectors.fold<int>(0, (sum, s) => sum + s.count);
-    final totalValue = allocation.sectors.fold<double>(0.0, (sum, s) => sum + s.value);
+    final totalAssets = allocation.sectors.fold<int>(
+      0,
+      (sum, s) => sum + s.count,
+    );
+    final totalValue = allocation.sectors.fold<double>(
+      0.0,
+      (sum, s) => sum + s.value,
+    );
 
     // Mapping colors for legend matching standard palette
     final colors = [
@@ -39,7 +42,9 @@ class DashboardAllocationWidget extends StatelessWidget {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = isDark ? Colors.white : const Color(0xFF111827);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+    final onSurfaceVariant = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF6B7280);
 
     return AmGlassCard(
       padding: const EdgeInsets.all(20.0),
@@ -56,7 +61,7 @@ class DashboardAllocationWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Donut area using fl_chart directly for perfect alignment
           Center(
             child: SizedBox(
@@ -70,14 +75,16 @@ class DashboardAllocationWidget extends StatelessWidget {
                       sectionsSpace: 0,
                       centerSpaceRadius: 40,
                       startDegreeOffset: -90,
-                      sections: totalValue == 0 
+                      sections: totalValue == 0
                           ? [
                               PieChartSectionData(
-                                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                                color: isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFE2E8F0),
                                 value: 1,
                                 title: '',
                                 radius: 12,
-                              )
+                              ),
                             ]
                           : sortedSectors.asMap().entries.map((entry) {
                               final index = entry.key;
@@ -85,7 +92,7 @@ class DashboardAllocationWidget extends StatelessWidget {
                               final color = colors[index % colors.length];
                               return PieChartSectionData(
                                 color: color,
-                                value: item.value > 0 ? item.value : 0.01, 
+                                value: item.value > 0 ? item.value : 0.01,
                                 title: '', // No title on sections
                                 radius: 12,
                               );

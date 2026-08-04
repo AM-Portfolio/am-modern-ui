@@ -50,7 +50,8 @@ class NotebookMapper {
     }
   }
 
-  static dto.NotebookItemType _mapItemTypeDto(domain.NotebookItemType entityType) {
+  static dto.NotebookItemType _mapItemTypeDto(
+      domain.NotebookItemType entityType) {
     switch (entityType) {
       case domain.NotebookItemType.FOLDER:
         return dto.NotebookItemType.FOLDER;

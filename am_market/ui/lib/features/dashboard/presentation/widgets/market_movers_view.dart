@@ -24,7 +24,10 @@ class MarketMoversView extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -48,9 +51,12 @@ class MarketMoversView extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _buildMoversList('Top Gainers', gainers, Colors.green)),
+              Expanded(
+                  child:
+                      _buildMoversList('Top Gainers', gainers, Colors.green)),
               const SizedBox(width: 16),
-              Expanded(child: _buildMoversList('Top Losers', losers, Colors.red)),
+              Expanded(
+                  child: _buildMoversList('Top Losers', losers, Colors.red)),
             ],
           ),
         ],
@@ -58,7 +64,8 @@ class MarketMoversView extends StatelessWidget {
     );
   }
 
-  Widget _buildMoversList(String title, List<Map<String, dynamic>> data, Color accentColor) {
+  Widget _buildMoversList(
+      String title, List<Map<String, dynamic>> data, Color accentColor) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -91,7 +98,10 @@ class MarketMoversView extends StatelessWidget {
                   Expanded(
                     child: Text(
                       symbol,
-                      style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -100,7 +110,8 @@ class MarketMoversView extends StatelessWidget {
                     children: [
                       Text(
                         ltp.toStringAsFixed(2),
-                        style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                        style: TextStyle(
+                            color: Colors.grey.shade700, fontSize: 12),
                       ),
                       Text(
                         '${pChange >= 0 ? '+' : ''}${pChange.toStringAsFixed(2)}%',

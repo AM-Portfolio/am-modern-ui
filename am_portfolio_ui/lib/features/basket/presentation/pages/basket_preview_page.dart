@@ -22,11 +22,13 @@ class BasketPreviewPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final opportunityAsync = ref.watch(basketPreviewProvider(
-      etfIsin: etfIsin,
-      userId: userId,
-      portfolioId: portfolioId,
-    ));
+    final opportunityAsync = ref.watch(
+      basketPreviewProvider(
+        etfIsin: etfIsin,
+        userId: userId,
+        portfolioId: portfolioId,
+      ),
+    );
 
     final body = opportunityAsync.when(
       data: (opportunity) => _BasketContent(
@@ -52,10 +54,7 @@ class BasketPreviewPage extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Basket Preview'),
-        centerTitle: false,
-      ),
+      appBar: AppBar(title: const Text('Basket Preview'), centerTitle: false),
       body: body,
     );
   }
@@ -88,22 +87,24 @@ class _BasketContent extends StatelessWidget {
         children: [
           _EntryHeroCard(opportunity: opportunity),
           Container(
-             margin: const EdgeInsets.symmetric(horizontal: 16),
-             decoration: BoxDecoration(
-               border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
-             ),
-             child: TabBar(
-               labelColor: AppColors.primary,
-               unselectedLabelColor: Theme.of(context).hintColor,
-               indicatorColor: AppColors.primary,
-               indicatorWeight: 3,
-               labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-               tabs: [
-                 Tab(text: "Your Match (${heldItems.length})"),
-                 Tab(text: "The Gap (${missingItems.length})"),
-               ],
-             ),
-           ),
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Theme.of(context).dividerColor),
+              ),
+            ),
+            child: TabBar(
+              labelColor: AppColors.primary,
+              unselectedLabelColor: Theme.of(context).hintColor,
+              indicatorColor: AppColors.primary,
+              indicatorWeight: 3,
+              labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+              tabs: [
+                Tab(text: "Your Match (${heldItems.length})"),
+                Tab(text: "The Gap (${missingItems.length})"),
+              ],
+            ),
+          ),
           Expanded(
             child: TabBarView(
               children: [
@@ -174,14 +175,22 @@ class _EntryHeroCard extends StatelessWidget {
                   'Based on your holdings, you are ${opportunity.composition.length - opportunity.heldCount} stocks away from replicating this basket.',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
-                 const SizedBox(height: 12),
-                 Row(
-                   children: [
-                     _ScoreBadge(label: "Match Score", score: opportunity.matchScore, color: AppColors.primary),
-                     const SizedBox(width: 12),
-                     _ScoreBadge(label: "Replica Score", score: opportunity.replicaScore, color: AppColors.success),
-                   ],
-                 )
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _ScoreBadge(
+                      label: "Match Score",
+                      score: opportunity.matchScore,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    _ScoreBadge(
+                      label: "Replica Score",
+                      score: opportunity.replicaScore,
+                      color: AppColors.success,
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -196,25 +205,40 @@ class _ScoreBadge extends StatelessWidget {
   final double score;
   final Color color;
 
-  const _ScoreBadge({required this.label, required this.score, required this.color});
+  const _ScoreBadge({
+    required this.label,
+    required this.score,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
-     return Container(
-       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-       decoration: BoxDecoration(
-         color: color.withOpacity(0.1),
-         borderRadius: BorderRadius.circular(8),
-         border: Border.all(color: color.withOpacity(0.3)),
-       ),
-       child: Column(
-         crossAxisAlignment: CrossAxisAlignment.start,
-         children: [
-           Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color)),
-           Text("${score.toStringAsFixed(1)}%", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: color)),
-         ],
-       ),
-     );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: color),
+          ),
+          Text(
+            "${score.toStringAsFixed(1)}%",
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -227,13 +251,44 @@ class _BasketItemHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).canvasColor,
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Row(
         children: [
-          Expanded(flex: 4, child: Text("Instrument", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
-          Expanded(flex: 1, child: Text("ETF %", textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
-          Expanded(flex: 1, child: Text("Your %", textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
+          Expanded(
+            flex: 4,
+            child: Text(
+              "Instrument",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).hintColor,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              "ETF %",
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).hintColor,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              "Your %",
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).hintColor,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -248,10 +303,12 @@ class _HeldItemsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(20.0),
-        child: Text('No held items match this basket.'),
-      ));
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Text('No held items match this basket.'),
+        ),
+      );
     }
     return Column(
       children: [
@@ -263,9 +320,12 @@ class _HeldItemsList extends StatelessWidget {
             itemBuilder: (context, index) {
               final item = items[index];
               final isSubstitute = item.status == ItemStatus.substitute;
-              
+
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 color: isSubstitute ? AppColors.info.withOpacity(0.05) : null,
                 child: Row(
                   children: [
@@ -274,27 +334,48 @@ class _HeldItemsList extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            item.stockSymbol,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           Text(
                             "${item.sector} ${item.marketCapCategory != null ? '• ${item.marketCapCategory}' : ''}",
-                            style: Theme.of(context).textTheme.bodySmall
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                           if (isSubstitute)
-                             Padding(
-                               padding: const EdgeInsets.only(top: 4.0),
-                               child: Text("Using: ${item.userHoldingSymbol} (Sub)", style: TextStyle(fontSize: 11, color: AppColors.info, fontStyle: FontStyle.italic)),
-                             )
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                "Using: ${item.userHoldingSymbol} (Sub)",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.info,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
                         ],
-                      )
+                      ),
                     ),
                     Expanded(
                       flex: 1,
-                      child: Text("${item.etfWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right)
+                      child: Text(
+                        "${item.etfWeight.toStringAsFixed(2)}%",
+                        textAlign: TextAlign.right,
+                      ),
                     ),
-                     Expanded(
+                    Expanded(
                       flex: 1,
-                      child: Text("${item.userWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right, 
-                        style: TextStyle(fontWeight: FontWeight.bold, color: item.userWeight < item.etfWeight ? AppColors.warning : AppColors.success))
+                      child: Text(
+                        "${item.userWeight.toStringAsFixed(2)}%",
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: item.userWeight < item.etfWeight
+                              ? AppColors.warning
+                              : AppColors.success,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -315,10 +396,12 @@ class _MissingItemsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(20.0),
-        child: Text('You have all items!'),
-      ));
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Text('You have all items!'),
+        ),
+      );
     }
     return Column(
       children: [
@@ -330,7 +413,10 @@ class _MissingItemsList extends StatelessWidget {
             itemBuilder: (context, index) {
               final item = items[index];
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -338,21 +424,33 @@ class _MissingItemsList extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
                           Text(
-                             "${item.sector} ${item.marketCapCategory != null ? '• ${item.marketCapCategory}' : ''}",
-                             style: Theme.of(context).textTheme.bodySmall
+                            item.stockSymbol,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            "${item.sector} ${item.marketCapCategory != null ? '• ${item.marketCapCategory}' : ''}",
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
-                      )
-                    ),
-                     Expanded(
-                      flex: 1,
-                      child: Text("${item.etfWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right)
+                      ),
                     ),
                     Expanded(
                       flex: 1,
-                      child: Text("-", textAlign: TextAlign.right, style: TextStyle(color: Theme.of(context).disabledColor))
+                      child: Text(
+                        "${item.etfWeight.toStringAsFixed(2)}%",
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Text(
+                        "-",
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          color: Theme.of(context).disabledColor,
+                        ),
+                      ),
                     ),
                   ],
                 ),

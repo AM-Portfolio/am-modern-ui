@@ -18,7 +18,8 @@ class TradeCalendarDto {
       final tradesJson = entry.value as List<dynamic>;
 
       portfolioTrades[portfolioId] = tradesJson
-          .map((tradeJson) => TradeDetailsDto.fromJson(tradeJson as Map<String, dynamic>))
+          .map((tradeJson) =>
+              TradeDetailsDto.fromJson(tradeJson as Map<String, dynamic>))
           .toList();
     }
 

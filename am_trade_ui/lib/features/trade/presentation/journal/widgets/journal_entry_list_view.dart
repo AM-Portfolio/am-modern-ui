@@ -3,7 +3,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import '../../../internal/domain/entities/journal_entry.dart';
 
-
 class JournalEntryListView extends StatelessWidget {
   const JournalEntryListView({
     super.key,
@@ -25,10 +24,13 @@ class JournalEntryListView extends StatelessWidget {
     return Container(
       width: 300,
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withOpacity(0.9), // Glassmorphism base
+        color:
+            Theme.of(context).cardColor.withOpacity(0.9), // Glassmorphism base
         border: Border(
-          right: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.5)),
-          left: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.5)),
+          right: BorderSide(
+              color: Theme.of(context).dividerColor.withOpacity(0.5)),
+          left: BorderSide(
+              color: Theme.of(context).dividerColor.withOpacity(0.5)),
         ),
       ),
       child: Column(
@@ -41,7 +43,8 @@ class JournalEntryListView extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.note_add_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+                    Icon(Icons.note_add_outlined,
+                        size: 20, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 8),
                     Text(
                       'Log day',
@@ -56,7 +59,8 @@ class JournalEntryListView extends StatelessWidget {
                   onPressed: () {
                     // TODO: Implement delete action
                   },
-                  icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.error),
+                  icon: Icon(Icons.delete_outline,
+                      size: 20, color: Theme.of(context).colorScheme.error),
                   tooltip: 'Delete selected',
                   style: IconButton.styleFrom(
                     padding: EdgeInsets.zero,
@@ -67,9 +71,9 @@ class JournalEntryListView extends StatelessWidget {
             ),
           ),
           const Divider(height: 1),
-          
+
           const Divider(height: 1),
-          
+
           // Log Day Button (Prominent)
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -87,27 +91,31 @@ class JournalEntryListView extends StatelessWidget {
 
           // Select All / Checkbox placeholder
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Row(
               children: [
                 SizedBox(
                   width: 20,
                   height: 20,
                   child: Checkbox(
-                    value: false, 
+                    value: false,
                     onChanged: (v) {},
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'Select All',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                 ),
                 const Spacer(),
-                Icon(Icons.sort, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                Icon(Icons.sort,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
               ],
             ),
           ),
@@ -119,17 +127,26 @@ class JournalEntryListView extends StatelessWidget {
               itemBuilder: (context, index) {
                 final dateKey = groupedEntries.keys.elementAt(index);
                 final dayEntries = groupedEntries[dateKey]!;
-                
+
                 // For this UI, we flatten the list or show headers?
                 // The design shows a list of items, each item seems to be a day summary or an entry.
                 // "Thu, Jul 20, 2023"
                 // Let's assume one entry per day for the "Log day" view, or list all entries.
                 // The design looks like a list of days.
-                
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: dayEntries.map((entry) => _buildEntryItem(context, entry)).toList(),
-                ).animate().slideX(begin: -0.1, end: 0, delay: (index * 50).ms, duration: 300.ms).fadeIn();
+                  children: dayEntries
+                      .map((entry) => _buildEntryItem(context, entry))
+                      .toList(),
+                )
+                    .animate()
+                    .slideX(
+                        begin: -0.1,
+                        end: 0,
+                        delay: (index * 50).ms,
+                        duration: 300.ms)
+                    .fadeIn();
               },
             ),
           ),
@@ -138,7 +155,8 @@ class JournalEntryListView extends StatelessWidget {
     );
   }
 
-  Map<String, List<JournalEntry>> _groupEntriesByDate(List<JournalEntry> entries) {
+  Map<String, List<JournalEntry>> _groupEntriesByDate(
+      List<JournalEntry> entries) {
     final grouped = <String, List<JournalEntry>>{};
     for (final entry in entries) {
       final dateKey = DateFormat('yyyy-MM-dd').format(entry.entryDate);
@@ -165,8 +183,6 @@ class JournalEntryListView extends StatelessWidget {
       onTap: () => onEntrySelected(entry),
     );
   }
-
-
 }
 
 class JournalEntryItem extends StatefulWidget {
@@ -191,7 +207,8 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('EEE, MMM dd, yyyy').format(widget.entry.entryDate);
+    final dateStr =
+        DateFormat('EEE, MMM dd, yyyy').format(widget.entry.entryDate);
     final subDateStr = DateFormat('MM/dd/yyyy').format(widget.entry.entryDate);
 
     return Draggable<JournalEntry>(
@@ -199,13 +216,14 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
       feedback: Material(
         elevation: 12,
         borderRadius: BorderRadius.circular(12),
-
-      
         child: Container(
           width: 260,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.95),
+            color: Theme.of(context)
+                .colorScheme
+                .primaryContainer
+                .withOpacity(0.95),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: Theme.of(context).colorScheme.primary,
@@ -225,8 +243,9 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.drag_indicator, 
-                    color: Theme.of(context).colorScheme.primary, 
+                  Icon(
+                    Icons.drag_indicator,
+                    color: Theme.of(context).colorScheme.primary,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -234,9 +253,11 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                     child: Text(
                       dateStr,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -246,8 +267,11 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
               Text(
                 subDateStr,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
-                ),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimaryContainer
+                          .withOpacity(0.7),
+                    ),
               ),
             ],
           ),
@@ -275,7 +299,8 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
     );
   }
 
-  Widget _buildEntryCard(BuildContext context, String dateStr, String subDateStr) {
+  Widget _buildEntryCard(
+      BuildContext context, String dateStr, String subDateStr) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -302,7 +327,8 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
             ),
         ],
       ),
-      transform: _isHovered ? (Matrix4.identity()..scale(1.02)) : Matrix4.identity(),
+      transform:
+          _isHovered ? (Matrix4.identity()..scale(1.02)) : Matrix4.identity(),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -310,9 +336,12 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
           Icon(
             Icons.drag_indicator,
             size: 20,
-            color: _isHovered 
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+            color: _isHovered
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant
+                    .withOpacity(0.5),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -344,14 +373,16 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                     Text(
                       subDateStr,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                     // Dynamic Trade Stats
                     Row(
                       children: [
                         if (widget.entry.relatedTradeIds.isNotEmpty)
-                          _buildMiniStat(context, '${widget.entry.relatedTradeIds.length} Trades'),
+                          _buildMiniStat(context,
+                              '${widget.entry.relatedTradeIds.length} Trades'),
                       ],
                     ),
                   ],
@@ -374,11 +405,10 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
       child: Text(
         text,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          fontSize: 10,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+              fontSize: 10,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
       ),
     );
   }
 }
-

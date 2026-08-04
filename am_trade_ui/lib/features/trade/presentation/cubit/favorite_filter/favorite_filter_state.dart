@@ -9,7 +9,8 @@ abstract class FavoriteFilterState with _$FavoriteFilterState {
   const factory FavoriteFilterState.loading() = _Loading;
 
   /// Filters loaded successfully
-  const factory FavoriteFilterState.loaded(FavoriteFilterList filterList, {FavoriteFilter? selectedFilter}) = _Loaded;
+  const factory FavoriteFilterState.loaded(FavoriteFilterList filterList,
+      {FavoriteFilter? selectedFilter}) = _Loaded;
 
   /// Error state
   const factory FavoriteFilterState.error(String message) = _Error;

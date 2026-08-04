@@ -48,21 +48,24 @@ class QuotesRequest {
   bool? indexSymbol;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is QuotesRequest &&
-    other.symbols == symbols &&
-    other.timeFrame == timeFrame &&
-    other.forceRefresh == forceRefresh &&
-    other.indexSymbol == indexSymbol;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is QuotesRequest &&
+          other.symbols == symbols &&
+          other.timeFrame == timeFrame &&
+          other.forceRefresh == forceRefresh &&
+          other.indexSymbol == indexSymbol;
 
   @override
   int get hashCode =>
-    (symbols == null ? 0 : symbols!.hashCode) +
-    (timeFrame == null ? 0 : timeFrame!.hashCode) +
-    (forceRefresh == null ? 0 : forceRefresh!.hashCode) +
-    (indexSymbol == null ? 0 : indexSymbol!.hashCode);
+      (symbols == null ? 0 : symbols!.hashCode) +
+      (timeFrame == null ? 0 : timeFrame!.hashCode) +
+      (forceRefresh == null ? 0 : forceRefresh!.hashCode) +
+      (indexSymbol == null ? 0 : indexSymbol!.hashCode);
 
   @override
-  String toString() => 'QuotesRequest[symbols=$symbols, timeFrame=$timeFrame, forceRefresh=$forceRefresh, indexSymbol=$indexSymbol]';
+  String toString() =>
+      'QuotesRequest[symbols=$symbols, timeFrame=$timeFrame, forceRefresh=$forceRefresh, indexSymbol=$indexSymbol]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -100,8 +103,10 @@ class QuotesRequest {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "QuotesRequest[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "QuotesRequest[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "QuotesRequest[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "QuotesRequest[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -116,7 +121,10 @@ class QuotesRequest {
     return null;
   }
 
-  static List<QuotesRequest> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<QuotesRequest> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <QuotesRequest>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -132,7 +140,7 @@ class QuotesRequest {
   static Map<String, QuotesRequest> mapFromJson(dynamic json) {
     final map = <String, QuotesRequest>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = QuotesRequest.fromJson(entry.value);
         if (value != null) {
@@ -144,19 +152,23 @@ class QuotesRequest {
   }
 
   // maps a json object with a list of QuotesRequest-objects as value to a dart map
-  static Map<String, List<QuotesRequest>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<QuotesRequest>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<QuotesRequest>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = QuotesRequest.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = QuotesRequest.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

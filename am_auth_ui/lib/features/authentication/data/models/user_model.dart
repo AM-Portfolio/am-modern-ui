@@ -18,13 +18,13 @@ class UserModel {
       _$UserModelFromJson(json);
 
   factory UserModel.fromEntity(UserEntity entity) => UserModel(
-    id: entity.id,
-    email: entity.email,
-    displayName: entity.displayName,
-    photoUrl: entity.photoUrl,
-    authMethod: entity.authMethod,
-    isDemo: entity.isDemo,
-  );
+        id: entity.id,
+        email: entity.email,
+        displayName: entity.displayName,
+        photoUrl: entity.photoUrl,
+        authMethod: entity.authMethod,
+        isDemo: entity.isDemo,
+      );
   final String id;
   final String email;
   final String? displayName;
@@ -35,11 +35,11 @@ class UserModel {
   Map<String, dynamic> toJson() => _$UserModelToJson(this);
 
   UserEntity toEntity() => UserEntity(
-    id: id,
-    email: email,
-    displayName: displayName,
-    photoUrl: photoUrl,
-    authMethod: authMethod,
-    isDemo: isDemo,
-  );
+        id: id,
+        email: email,
+        displayName: displayName,
+        photoUrl: photoUrl,
+        authMethod: authMethod,
+        isDemo: isDemo,
+      );
 }

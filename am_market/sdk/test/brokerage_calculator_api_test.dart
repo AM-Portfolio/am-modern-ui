@@ -11,7 +11,6 @@
 import 'package:am_market_client/api.dart';
 import 'package:test/test.dart';
 
-
 /// tests for BrokerageCalculatorApi
 void main() {
   // final instance = BrokerageCalculatorApi();
@@ -43,6 +42,5 @@ void main() {
     test('test calculateBrokerageAsync', () async {
       // TODO
     });
-
   });
 }

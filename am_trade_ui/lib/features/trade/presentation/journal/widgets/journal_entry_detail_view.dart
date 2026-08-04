@@ -10,12 +10,12 @@ import 'simple_template_dialog.dart';
 class JournalEntryDetailView extends StatefulWidget {
   const JournalEntryDetailView({
     required this.entry,
-        required this.cubit,
+    required this.cubit,
     super.key,
   });
 
   final JournalEntry? entry;
-    final JournalCubit cubit;
+  final JournalCubit cubit;
 
   @override
   State<JournalEntryDetailView> createState() => _JournalEntryDetailViewState();
@@ -29,12 +29,18 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.touch_app_outlined, size: 64, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+            Icon(Icons.touch_app_outlined,
+                size: 64,
+                color:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
             const SizedBox(height: 16),
             Text(
               'Select an entry to view details',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.4),
                   ),
             ),
           ],
@@ -42,14 +48,18 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
       );
     }
 
-    final dateStr = DateFormat('EEE MMM dd, yyyy').format(widget.entry!.entryDate);
-    final createdStr = DateFormat('MMM dd, yyyy h:mm a').format(widget.entry!.createdAt);
-    final updatedStr = DateFormat('MMM dd, yyyy h:mm a').format(widget.entry!.updatedAt);
+    final dateStr =
+        DateFormat('EEE MMM dd, yyyy').format(widget.entry!.entryDate);
+    final createdStr =
+        DateFormat('MMM dd, yyyy h:mm a').format(widget.entry!.createdAt);
+    final updatedStr =
+        DateFormat('MMM dd, yyyy h:mm a').format(widget.entry!.updatedAt);
 
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor.withOpacity(0.8), // Glassmorphism
-        borderRadius: const BorderRadius.only(topLeft: Radius.circular(16)), // Rounded corner for sheet effect
+        borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(16)), // Rounded corner for sheet effect
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,26 +72,31 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_outlined, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    Icon(Icons.calendar_today_outlined,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 12),
                     Text(
                       dateStr,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 const Divider(),
                 const SizedBox(height: 16),
-                
 
-                
                 // Action Buttons
                 Row(
                   children: [
-                    Text('Recently used:', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    Text('Recently used:',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
                     const SizedBox(width: 12),
                     _HoverButton(
                       onPressed: () => _showTemplateBrowser(context),
@@ -109,7 +124,8 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: JournalEntryForm(
                 cubit: widget.cubit,
-                portfolioId: '8a57024c-05c2-475b-a2c4-0545865efa4a', // TODO: Pass from parent
+                portfolioId:
+                    '8a57024c-05c2-475b-a2c4-0545865efa4a', // TODO: Pass from parent
                 entry: widget.entry,
               ),
             ),
@@ -128,7 +144,8 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
           // TODO: Implement actual insertion into Quill editor
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Template "$templateName" selected! (Content insertion coming soon)'),
+              content: Text(
+                  'Template "$templateName" selected! (Content insertion coming soon)'),
               backgroundColor: const Color(0xFF6C5DD3),
               duration: const Duration(seconds: 3),
             ),

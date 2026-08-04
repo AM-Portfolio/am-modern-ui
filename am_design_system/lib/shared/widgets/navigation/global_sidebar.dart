@@ -53,7 +53,7 @@ class GlobalSidebar extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 48),
-            
+
             // 1. App Logo / Brand Icon
             _buildAppLogo(),
 
@@ -70,13 +70,15 @@ class GlobalSidebar extends StatelessWidget {
                         item: item,
                         isDark: isDarkMode,
                         isActive: activeNavItem == item.title,
-                        accentColor: _getIconColor(item.title) ?? const Color(0xFF6C5DD3),
+                        accentColor: _getIconColor(item.title) ??
+                            const Color(0xFF6C5DD3),
                         onTap: () => onNavigate(item.title),
                         onLongPress: moduleShareUrls?[item.title] == null
                             ? null
                             : () => copyShareLink(
                                   context,
-                                  _fullShareUrl(context, moduleShareUrls![item.title]!),
+                                  _fullShareUrl(
+                                      context, moduleShareUrls![item.title]!),
                                 ),
                         longPressTooltip: 'Copy link to ${item.title}',
                       ),
@@ -94,15 +96,18 @@ class GlobalSidebar extends StatelessWidget {
                   // Theme Toggle
                   if (onThemeToggle != null) ...[
                     _buildActionButton(
-                      icon: isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                      icon: isDarkMode
+                          ? Icons.light_mode_rounded
+                          : Icons.dark_mode_rounded,
                       onTap: onThemeToggle!,
                       isDarkMode: isDarkMode,
                       tooltip: 'Toggle Theme',
-                      color: isDarkMode ? Colors.amber : const Color(0xFF6C5DD3),
+                      color:
+                          isDarkMode ? Colors.amber : const Color(0xFF6C5DD3),
                     ),
                     const SizedBox(height: 24),
                   ],
-                  
+
                   // User Profile Avatar (At the very bottom)
                   _buildUserProfile(),
                 ],
@@ -161,21 +166,24 @@ class GlobalSidebar extends StatelessWidget {
         child: GestureDetector(
           onTap: onTap,
           child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.transparent,
-                border: Border.all(
-                  color: isDarkMode ? Colors.white.withOpacity(0.1) : const Color(0xFF6C5DD3).withOpacity(0.2)
-                ),
-              ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 20,
-              ),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDarkMode
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.transparent,
+              border: Border.all(
+                  color: isDarkMode
+                      ? Colors.white.withOpacity(0.1)
+                      : const Color(0xFF6C5DD3).withOpacity(0.2)),
             ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 20,
+            ),
+          ),
         ),
       ),
     );
@@ -186,96 +194,98 @@ class GlobalSidebar extends StatelessWidget {
       cursor: SystemMouseCursors.click,
       child: PopupMenuButton<String>(
         offset: const Offset(60, -120), // Open to the right/above roughly
-      tooltip: 'Profile Options',
-      color: isDarkMode ? const Color(0xFF1E1E2C) : Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.2),
+        tooltip: 'Profile Options',
+        color: isDarkMode ? const Color(0xFF1E1E2C) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isDarkMode
+                ? Colors.white.withOpacity(0.1)
+                : Colors.grey.withOpacity(0.2),
+          ),
         ),
-      ),
-      onSelected: (value) {
-        if (value == 'profile') {
-          onProfileTap?.call();
-        } else if (value == 'logout') {
-          onLogout?.call();
-        }
-      },
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'profile',
-          child: Row(
-            children: [
-              Icon(
-                Icons.person_outline_rounded,
-                color: isDarkMode ? Colors.white : Colors.black87,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Profile & Settings',
-                style: TextStyle(
+        onSelected: (value) {
+          if (value == 'profile') {
+            onProfileTap?.call();
+          } else if (value == 'logout') {
+            onLogout?.call();
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'profile',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.person_outline_rounded,
                   color: isDarkMode ? Colors.white : Colors.black87,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  size: 20,
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Text(
+                  'Profile & Settings',
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: 'logout',
-          child: Row(
-            children: [
-              const Icon(
-                Icons.logout_rounded,
-                color: Colors.redAccent,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Logout',
-                style: TextStyle(
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: 'logout',
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.logout_rounded,
                   color: Colors.redAccent,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  size: 20,
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                const Text(
+                  'Logout',
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: const Color(0xFF6C5DD3).withOpacity(0.5),
-            width: 2,
-          ),
-          boxShadow: [
-             BoxShadow(
+        ],
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xFF6C5DD3).withOpacity(0.5),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
                 color: const Color(0xFF6C5DD3).withOpacity(0.2),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
-             ),
-          ],
-        ),
-        child: ClipOval(
-          child: userAvatarUrl != null
-              ? Image.network(
-                  userAvatarUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _buildUserInitials(),
-                )
-              : _buildUserInitials(),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: userAvatarUrl != null
+                ? Image.network(
+                    userAvatarUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _buildUserInitials(),
+                  )
+                : _buildUserInitials(),
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildUserInitials() {
     return Container(
@@ -294,12 +304,18 @@ class GlobalSidebar extends StatelessWidget {
 
   Color? _getIconColor(String title) {
     switch (title.toLowerCase()) {
-      case 'dashboard': return AppColors.primary;
-      case 'market': return AppColors.marketAccent;
-      case 'portfolio': return AppColors.portfolioAccent;
-      case 'trade': return AppColors.tradeAccent;
-      case 'analysis': return AppColors.accentPink; // Analysis often uses red/pink
-      default: return null;
+      case 'dashboard':
+        return AppColors.primary;
+      case 'market':
+        return AppColors.marketAccent;
+      case 'portfolio':
+        return AppColors.portfolioAccent;
+      case 'trade':
+        return AppColors.tradeAccent;
+      case 'analysis':
+        return AppColors.accentPink; // Analysis often uses red/pink
+      default:
+        return null;
     }
   }
 
@@ -341,7 +357,7 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
   @override
   Widget build(BuildContext context) {
     final isSelected = widget.isActive;
-    
+
     return Tooltip(
       message: widget.item.title,
       preferBelow: false,
@@ -369,7 +385,7 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
                   widget.item.icon,
                   // Color Logic: If selected OR hovered, use accent color. Else use inactive color.
                   color: (isSelected || _isHovered)
-                      ? widget.accentColor 
+                      ? widget.accentColor
                       : (widget.isDark ? Colors.white54 : Colors.black87),
                   size: 24,
                 ),
@@ -378,10 +394,11 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
                   widget.item.title,
                   style: TextStyle(
                     fontSize: 9,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     color: (isSelected || _isHovered)
-                      ? widget.accentColor 
-                      : (widget.isDark ? Colors.white54 : Colors.black87),
+                        ? widget.accentColor
+                        : (widget.isDark ? Colors.white54 : Colors.black87),
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -395,5 +412,3 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
     );
   }
 }
-
-

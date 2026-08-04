@@ -15,34 +15,40 @@ abstract class TradeRepository {
   Future<TradeSummary> getTradeSummary(String portfolioId);
 
   /// Get calendar analytics by month for a specific trade portfolio
-  Future<TradeCalendar> getTradeCalendarByMonth(String portfolioId, {
+  Future<TradeCalendar> getTradeCalendarByMonth(
+    String portfolioId, {
     required int year,
     required int month,
   });
 
   /// Get calendar analytics by day for a specific trade portfolio
-  Future<TradeCalendar> getTradeCalendarByDay(String portfolioId, {required DateTime date});
+  Future<TradeCalendar> getTradeCalendarByDay(String portfolioId,
+      {required DateTime date});
 
   /// Get calendar analytics by date range for a specific trade portfolio
-  Future<TradeCalendar> getTradeCalendarByDateRange(String portfolioId, {
+  Future<TradeCalendar> getTradeCalendarByDateRange(
+    String portfolioId, {
     required DateTime startDate,
     required DateTime endDate,
   });
 
   /// Get calendar analytics by quarter for a specific trade portfolio
-  Future<TradeCalendar> getTradeCalendarByQuarter(String portfolioId, {
+  Future<TradeCalendar> getTradeCalendarByQuarter(
+    String portfolioId, {
     required int year,
     required int quarter,
   });
 
   /// Get calendar analytics by financial year for a specific trade portfolio
-  Future<TradeCalendar> getTradeCalendarByFinancialYear(String portfolioId, {
+  Future<TradeCalendar> getTradeCalendarByFinancialYear(
+    String portfolioId, {
     required int financialYear,
   });
 
   /// Get calendar analytics for a specific trade portfolio (legacy - delegates to getTradeCalendarByMonth)
   @Deprecated('Use getTradeCalendarByMonth instead')
-  Future<TradeCalendar> getTradeCalendar(String portfolioId, {int? year, int? month});
+  Future<TradeCalendar> getTradeCalendar(String portfolioId,
+      {int? year, int? month});
 
   /// Get portfolios stream for real-time updates
   Stream<TradePortfolioList> watchTradePortfolios();
@@ -60,7 +66,8 @@ abstract class TradeRepository {
   Future<void> deleteTrade(String tradeId);
 
   /// Update cached portfolio name and description locally to bypass backend cache
-  void updateCachedPortfolio(String portfolioId, String name, String? description);
+  void updateCachedPortfolio(
+      String portfolioId, String name, String? description);
 
   /// Remove cached portfolio locally to bypass backend cache
   void removeCachedPortfolio(String portfolioId);

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
 
-
 /// Standardized Primary Action Button for Sidebars (e.g., "Add Trade", "New Portfolio")
 class SidebarPrimaryAction extends StatefulWidget {
   const SidebarPrimaryAction({
@@ -23,7 +22,8 @@ class SidebarPrimaryAction extends StatefulWidget {
   State<SidebarPrimaryAction> createState() => _SidebarPrimaryActionState();
 }
 
-class _SidebarPrimaryActionState extends State<SidebarPrimaryAction> with SingleTickerProviderStateMixin {
+class _SidebarPrimaryActionState extends State<SidebarPrimaryAction>
+    with SingleTickerProviderStateMixin {
   bool _isHovered = false;
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -32,12 +32,9 @@ class _SidebarPrimaryActionState extends State<SidebarPrimaryAction> with Single
   void initState() {
     super.initState();
     _controller = AnimationController(
-       duration: const Duration(milliseconds: 200),
-       vsync: this
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut)
-    );
+        duration: const Duration(milliseconds: 200), vsync: this);
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -66,9 +63,7 @@ class _SidebarPrimaryActionState extends State<SidebarPrimaryAction> with Single
           onTap: widget.onTap,
           child: ScaleTransition(
             scale: _scaleAnimation,
-            child: widget.isCompact 
-                ? _buildCompact(color)
-                : _buildFull(color),
+            child: widget.isCompact ? _buildCompact(color) : _buildFull(color),
           ),
         ),
       ),
@@ -93,7 +88,7 @@ class _SidebarPrimaryActionState extends State<SidebarPrimaryAction> with Single
             offset: const Offset(0, 4),
           ),
           if (_isHovered)
-             BoxShadow(
+            BoxShadow(
               color: color.withOpacity(0.3),
               blurRadius: 20,
               offset: const Offset(0, 8),
@@ -122,7 +117,7 @@ class _SidebarPrimaryActionState extends State<SidebarPrimaryAction> with Single
     return Container(
       height: 48,
       width: 48,
-       decoration: BoxDecoration(
+      decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(12),
         gradient: LinearGradient(

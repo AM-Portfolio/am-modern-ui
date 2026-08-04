@@ -69,22 +69,22 @@ class HeatmapTileData extends HeatmapTileEntity {
   final String? imageUrl;
   final VoidCallback? onTap;
   final Map<String, Widget>? customWidgets;
-  
+
   bool get isPositive => performance > 0;
   bool get isNegative => performance < 0;
   bool get isNeutral => performance == 0;
 
   /// Convert to core entity
   HeatmapTileEntity toEntity() => HeatmapTileEntity(
-    id: id,
-    name: name,
-    displayName: displayName,
-    weightage: weightage,
-    performance: performance,
-    value: value,
-    metadata: metadata,
-    children: children,
-  );
+        id: id,
+        name: name,
+        displayName: displayName,
+        weightage: weightage,
+        performance: performance,
+        value: value,
+        metadata: metadata,
+        children: children,
+      );
 
   /// Get display color based on performance and configuration
   Color getDisplayColor(
@@ -134,19 +134,20 @@ class HeatmapTileData extends HeatmapTileEntity {
     String? imageUrl,
     VoidCallback? onTap,
     Map<String, Widget>? customWidgets,
-  }) => HeatmapTileData(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    displayName: displayName ?? this.displayName,
-    weightage: weightage ?? this.weightage,
-    performance: performance ?? this.performance,
-    value: value ?? this.value,
-    metadata: metadata ?? this.metadata,
-    children: children ?? this.children,
-    customColor: customColor ?? this.customColor,
-    icon: icon ?? this.icon,
-    imageUrl: imageUrl ?? this.imageUrl,
-    onTap: onTap ?? this.onTap,
-    customWidgets: customWidgets ?? this.customWidgets,
-  );
+  }) =>
+      HeatmapTileData(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        displayName: displayName ?? this.displayName,
+        weightage: weightage ?? this.weightage,
+        performance: performance ?? this.performance,
+        value: value ?? this.value,
+        metadata: metadata ?? this.metadata,
+        children: children ?? this.children,
+        customColor: customColor ?? this.customColor,
+        icon: icon ?? this.icon,
+        imageUrl: imageUrl ?? this.imageUrl,
+        onTap: onTap ?? this.onTap,
+        customWidgets: customWidgets ?? this.customWidgets,
+      );
 }

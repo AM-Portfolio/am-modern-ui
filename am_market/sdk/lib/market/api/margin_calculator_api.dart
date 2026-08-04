@@ -6,9 +6,9 @@
 
 part of openapi.api;
 
-
 class MarginCalculatorApi {
-  MarginCalculatorApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  MarginCalculatorApi([ApiClient? apiClient])
+      : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
@@ -21,7 +21,9 @@ class MarginCalculatorApi {
   /// Parameters:
   ///
   /// * [MarginCalculationRequest] marginCalculationRequest (required):
-  Future<Response> calculateMarginWithHttpInfo(MarginCalculationRequest marginCalculationRequest,) async {
+  Future<Response> calculateMarginWithHttpInfo(
+    MarginCalculationRequest marginCalculationRequest,
+  ) async {
     final path = r'/v1/margin/calculate';
     Object? postBody = marginCalculationRequest;
 
@@ -30,7 +32,6 @@ class MarginCalculatorApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>['application/json'];
-
 
     return apiClient.invokeAPI(
       path,
@@ -50,17 +51,24 @@ class MarginCalculatorApi {
   /// Parameters:
   ///
   /// * [MarginCalculationRequest] marginCalculationRequest (required):
-  Future<MarginCalculationResponse?> calculateMargin(MarginCalculationRequest marginCalculationRequest,) async {
-    final response = await calculateMarginWithHttpInfo(marginCalculationRequest,);
+  Future<MarginCalculationResponse?> calculateMargin(
+    MarginCalculationRequest marginCalculationRequest,
+  ) async {
+    final response = await calculateMarginWithHttpInfo(
+      marginCalculationRequest,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'MarginCalculationResponse',) as MarginCalculationResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'MarginCalculationResponse',
+      ) as MarginCalculationResponse;
     }
     return null;
   }
@@ -74,7 +82,9 @@ class MarginCalculatorApi {
   /// Parameters:
   ///
   /// * [MarginCalculationRequest] marginCalculationRequest (required):
-  Future<Response> calculateMarginAsyncWithHttpInfo(MarginCalculationRequest marginCalculationRequest,) async {
+  Future<Response> calculateMarginAsyncWithHttpInfo(
+    MarginCalculationRequest marginCalculationRequest,
+  ) async {
     final path = r'/v1/margin/calculate-async';
     Object? postBody = marginCalculationRequest;
 
@@ -83,7 +93,6 @@ class MarginCalculatorApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>['application/json'];
-
 
     return apiClient.invokeAPI(
       path,
@@ -103,17 +112,24 @@ class MarginCalculatorApi {
   /// Parameters:
   ///
   /// * [MarginCalculationRequest] marginCalculationRequest (required):
-  Future<MarginCalculationResponse?> calculateMarginAsync(MarginCalculationRequest marginCalculationRequest,) async {
-    final response = await calculateMarginAsyncWithHttpInfo(marginCalculationRequest,);
+  Future<MarginCalculationResponse?> calculateMarginAsync(
+    MarginCalculationRequest marginCalculationRequest,
+  ) async {
+    final response = await calculateMarginAsyncWithHttpInfo(
+      marginCalculationRequest,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'MarginCalculationResponse',) as MarginCalculationResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'MarginCalculationResponse',
+      ) as MarginCalculationResponse;
     }
     return null;
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 /// Generic filter widget that can be used across different features
 /// T represents the data type being filtered
 class GenericFilterWidget<T> extends StatefulWidget {
@@ -275,9 +274,9 @@ class _GenericFilterWidgetState<T> extends State<GenericFilterWidget<T>> {
         Text(
           title,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -306,118 +305,120 @@ class _GenericFilterWidgetState<T> extends State<GenericFilterWidget<T>> {
 
   /// Build a text filter widget
   Widget _buildTextFilter(FilterCriteria filter) => SizedBox(
-    width: 250,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          filter.displayName,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        TextField(
-          decoration: InputDecoration(
-            hintText: 'Search by ${filter.displayName.toLowerCase()}...',
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
-            ),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            suffixIcon: filter.textValue != null && filter.textValue!.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, size: 16),
-                    onPressed: () {
-                      setState(() {
-                        filter.textValue = null;
-                        _applyFilters();
-                      });
-                    },
-                  )
-                : null,
-          ),
-          onChanged: (value) {
-            setState(() {
-              filter.textValue = value;
-              _applyFilters();
-            });
-          },
-        ),
-      ],
-    ),
-  );
-
-  /// Build a range filter widget
-  Widget _buildRangeFilter(FilterCriteria filter) => SizedBox(
-    width: 300,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          filter.displayName,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Row(
+        width: 250,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Min',
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                keyboardType: TextInputType.number,
-                onChanged: (value) {
-                  setState(() {
-                    filter.minValue = double.tryParse(value);
-                    _applyFilters();
-                  });
-                },
-              ),
+            Text(
+              filter.displayName,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(width: 8),
-            const Text('-'),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Max',
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+            const SizedBox(height: 4),
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Search by ${filter.displayName.toLowerCase()}...',
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
                 ),
-                keyboardType: TextInputType.number,
-                onChanged: (value) {
-                  setState(() {
-                    filter.maxValue = double.tryParse(value);
-                    _applyFilters();
-                  });
-                },
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                suffixIcon:
+                    filter.textValue != null && filter.textValue!.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 16),
+                            onPressed: () {
+                              setState(() {
+                                filter.textValue = null;
+                                _applyFilters();
+                              });
+                            },
+                          )
+                        : null,
               ),
+              onChanged: (value) {
+                setState(() {
+                  filter.textValue = value;
+                  _applyFilters();
+                });
+              },
             ),
           ],
         ),
-      ],
-    ),
-  );
+      );
+
+  /// Build a range filter widget
+  Widget _buildRangeFilter(FilterCriteria filter) => SizedBox(
+        width: 300,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              filter.displayName,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Min',
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      setState(() {
+                        filter.minValue = double.tryParse(value);
+                        _applyFilters();
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text('-'),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Max',
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      setState(() {
+                        filter.maxValue = double.tryParse(value);
+                        _applyFilters();
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
 
   /// Build a category filter widget
   Widget _buildCategoryFilter(FilterCriteria filter) {
@@ -484,62 +485,62 @@ class _GenericFilterWidgetState<T> extends State<GenericFilterWidget<T>> {
 
   /// Build a performance filter widget
   Widget _buildPerformanceFilter(FilterCriteria filter) => SizedBox(
-    width: 200,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          filter.displayName,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Row(
+        width: 200,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: RadioListTile<bool?>(
-                dense: true,
-                title: const Text('Gains'),
-                value: true,
-                groupValue: filter.isPositive,
-                onChanged: (value) {
-                  setState(() {
-                    filter.isPositive = value;
-                    _applyFilters();
-                  });
-                },
-              ),
+            Text(
+              filter.displayName,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
             ),
-            Expanded(
-              child: RadioListTile<bool?>(
-                dense: true,
-                title: const Text('Losses'),
-                value: false,
-                groupValue: filter.isPositive,
-                onChanged: (value) {
-                  setState(() {
-                    filter.isPositive = value;
-                    _applyFilters();
-                  });
-                },
-              ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: RadioListTile<bool?>(
+                    dense: true,
+                    title: const Text('Gains'),
+                    value: true,
+                    groupValue: filter.isPositive,
+                    onChanged: (value) {
+                      setState(() {
+                        filter.isPositive = value;
+                        _applyFilters();
+                      });
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: RadioListTile<bool?>(
+                    dense: true,
+                    title: const Text('Losses'),
+                    value: false,
+                    groupValue: filter.isPositive,
+                    onChanged: (value) {
+                      setState(() {
+                        filter.isPositive = value;
+                        _applyFilters();
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  filter.isPositive = null;
+                  _applyFilters();
+                });
+              },
+              child: const Text('Clear'),
             ),
           ],
         ),
-        TextButton(
-          onPressed: () {
-            setState(() {
-              filter.isPositive = null;
-              _applyFilters();
-            });
-          },
-          child: const Text('Clear'),
-        ),
-      ],
-    ),
-  );
+      );
 
   /// Get the number of active filters
   int _getActiveFilterCount() =>

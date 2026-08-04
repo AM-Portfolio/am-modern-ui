@@ -23,13 +23,13 @@ import 'hover_input_field.dart';
 
 class JournalEntryForm extends ConsumerStatefulWidget {
   const JournalEntryForm({
-        required this.cubit,
+    required this.cubit,
     required this.portfolioId,
     super.key,
     this.entry,
   });
 
-    final JournalCubit cubit;
+  final JournalCubit cubit;
   final String portfolioId;
   final JournalEntry? entry;
 
@@ -81,7 +81,9 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     _isEditMode = widget.entry == null;
 
     _titleController = TextEditingController();
-    _quillController = quill.QuillController(document: quill.Document(), selection: const TextSelection.collapsed(offset: 0));
+    _quillController = quill.QuillController(
+        document: quill.Document(),
+        selection: const TextSelection.collapsed(offset: 0));
     _tradeIdController = TextEditingController();
     _urlController = TextEditingController();
     _planningBehaviorController = TextEditingController();
@@ -103,16 +105,17 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   void _initFormFields() {
     _titleController.text = widget.entry?.title ?? '';
 
-    final doc = widget.entry?.content != null && widget.entry!.content.isNotEmpty
-        ? quill.Document.fromJson(jsonDecode(widget.entry!.content))
-        : quill.Document();
+    final doc =
+        widget.entry?.content != null && widget.entry!.content.isNotEmpty
+            ? quill.Document.fromJson(jsonDecode(widget.entry!.content))
+            : quill.Document();
     _quillController.document = doc;
 
     _tradeIdController.text = widget.entry?.tradeId ?? '';
     _entryDate = widget.entry?.entryDate ?? DateTime.now();
 
     final customFields = widget.entry?.customFields ?? {};
-    
+
     _planningBehaviorController.text = customFields['planningBehavior'] ?? '';
     _planningMood = customFields['planningMood'];
     _planningSentiment = customFields['planningSentiment'];
@@ -124,19 +127,24 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     _endBehaviorController.text = customFields['endBehavior'] ?? '';
     _endMood = customFields['endMood'] ??
         (widget.entry?.behaviorPatternSummaries.isNotEmpty == true
-            ? JournalHelpers.mapMoodFromEntry(widget.entry!.behaviorPatternSummaries.first.mood)
+            ? JournalHelpers.mapMoodFromEntry(
+                widget.entry!.behaviorPatternSummaries.first.mood)
             : null);
     _endSentiment = customFields['endSentiment'] ??
         (widget.entry?.behaviorPatternSummaries.isNotEmpty == true
-            ? JournalHelpers.mapSentimentFromValue(widget.entry!.behaviorPatternSummaries.first.marketSentiment)
+            ? JournalHelpers.mapSentimentFromValue(
+                widget.entry!.behaviorPatternSummaries.first.marketSentiment)
             : null);
 
     _selectedTags.clear();
     if (widget.entry?.behaviorPatternSummaries.isNotEmpty == true) {
-      _selectedTags.addAll(widget.entry!.behaviorPatternSummaries.expand((pattern) => pattern.tags).toSet());
+      _selectedTags.addAll(widget.entry!.behaviorPatternSummaries
+          .expand((pattern) => pattern.tags)
+          .toSet());
     }
 
-    if (widget.entry?.attachments != null && widget.entry!.attachments.isNotEmpty) {
+    if (widget.entry?.attachments != null &&
+        widget.entry!.attachments.isNotEmpty) {
       _imageUrls = widget.entry!.attachments.map((a) => a.fileUrl).toList();
     } else if (widget.entry?.imageUrls != null) {
       _imageUrls = List.from(widget.entry!.imageUrls!);
@@ -167,22 +175,26 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
   void _onUrlChanged() {
     final text = _urlController.text.trim();
-    if (text.isNotEmpty && (text.startsWith('http://') || text.startsWith('https://'))) {
+    if (text.isNotEmpty &&
+        (text.startsWith('http://') || text.startsWith('https://'))) {
       setState(() => _urlPreview = text);
     } else {
       setState(() => _urlPreview = null);
     }
   }
 
-  Future<void> _loadTradesForPeriod(DateTime date, TradePeriodType period) async {
+  Future<void> _loadTradesForPeriod(
+      DateTime date, TradePeriodType period) async {
     try {
       DateTime startDate;
       DateTime endDate;
 
       switch (period) {
         case TradePeriodType.daily:
-          final getTradeCalendarByDay = await ref.read(getTradeCalendarByDayProvider.future);
-          final calendar = await getTradeCalendarByDay(widget.portfolioId, date: date);
+          final getTradeCalendarByDay =
+              await ref.read(getTradeCalendarByDayProvider.future);
+          final calendar =
+              await getTradeCalendarByDay(widget.portfolioId, date: date);
           final trades = calendar.allTrades;
           if (mounted) {
             setState(() {
@@ -197,8 +209,11 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           break;
 
         case TradePeriodType.monthly:
-          final getTradeCalendarByMonth = await ref.read(getTradeCalendarByMonthProvider.future);
-          final calendar = await getTradeCalendarByMonth(widget.portfolioId, year: date.year,
+          final getTradeCalendarByMonth =
+              await ref.read(getTradeCalendarByMonthProvider.future);
+          final calendar = await getTradeCalendarByMonth(
+            widget.portfolioId,
+            year: date.year,
             month: date.month,
           );
           final trades = calendar.allTrades;
@@ -216,7 +231,8 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       }
 
       // For weekly and yearly, use date range
-      final getTradeCalendarByDateRange = await ref.read(getTradeCalendarByDateRangeProvider.future);
+      final getTradeCalendarByDateRange =
+          await ref.read(getTradeCalendarByDateRangeProvider.future);
       final calendar = await getTradeCalendarByDateRange(
         widget.portfolioId,
         startDate: startDate,
@@ -263,10 +279,12 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
       try {
         // Load trades by their IDs using the trade controller provider
-        final tradeDetails = await ref.read(tradeDetailsByIdsProvider(_relatedTradeIds).future);
+        final tradeDetails =
+            await ref.read(tradeDetailsByIdsProvider(_relatedTradeIds).future);
 
         // Convert TradeDetails to TradeHoldingViewModel
-        final linkedTrades = tradeDetails.map(TradeHoldingViewModel.fromEntity).toList();
+        final linkedTrades =
+            tradeDetails.map(TradeHoldingViewModel.fromEntity).toList();
 
         // Close loading indicator
         if (mounted) {
@@ -338,10 +356,14 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
             title: _titleController.text,
             content: content,
             entryDate: _entryDate,
-            tradeId: _tradeIdController.text.isEmpty ? null : _tradeIdController.text,
+            tradeId: _tradeIdController.text.isEmpty
+                ? null
+                : _tradeIdController.text,
             behaviorPatternSummaries: behaviorPatternSummaries,
             imageUrls: _imageUrls.isEmpty ? null : _imageUrls,
-            attachments: _imageUrls.isEmpty ? null : JournalFormHelpers.convertImageUrlsToAttachments(_imageUrls),
+            attachments: _imageUrls.isEmpty
+                ? null
+                : JournalFormHelpers.convertImageUrlsToAttachments(_imageUrls),
             relatedTradeIds: _relatedTradeIds.isEmpty ? null : _relatedTradeIds,
             customFields: JournalFormHelpers.buildCustomFields(
               planningBehavior: _planningBehaviorController.text,
@@ -358,7 +380,9 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Journal entry created successfully'), backgroundColor: Colors.green),
+              const SnackBar(
+                  content: Text('Journal entry created successfully'),
+                  backgroundColor: Colors.green),
             );
             // Reset form for a new entry
             _titleController.clear();
@@ -387,10 +411,14 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
             title: _titleController.text,
             content: content,
             entryDate: _entryDate,
-            tradeId: _tradeIdController.text.isEmpty ? null : _tradeIdController.text,
+            tradeId: _tradeIdController.text.isEmpty
+                ? null
+                : _tradeIdController.text,
             behaviorPatternSummaries: behaviorPatternSummaries,
             imageUrls: _imageUrls.isEmpty ? null : _imageUrls,
-            attachments: _imageUrls.isEmpty ? null : JournalFormHelpers.convertImageUrlsToAttachments(_imageUrls),
+            attachments: _imageUrls.isEmpty
+                ? null
+                : JournalFormHelpers.convertImageUrlsToAttachments(_imageUrls),
             relatedTradeIds: _relatedTradeIds.isEmpty ? null : _relatedTradeIds,
             customFields: JournalFormHelpers.buildCustomFields(
               planningBehavior: _planningBehaviorController.text,
@@ -404,10 +432,12 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
               endSentiment: _endSentiment,
             ),
           );
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Journal entry updated successfully'), backgroundColor: Colors.green),
+              const SnackBar(
+                  content: Text('Journal entry updated successfully'),
+                  backgroundColor: Colors.green),
             );
             setState(() => _isEditMode = false);
           }
@@ -415,7 +445,9 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to save entry: $e'), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text('Failed to save entry: $e'),
+                backgroundColor: Colors.red),
           );
         }
       } finally {
@@ -430,8 +462,7 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     final summaries = <BehaviorPatternSummary>[];
 
     // Aggregate all behavior data into one summary
-    final hasAnyData =
-        _planningBehaviorController.text.isNotEmpty ||
+    final hasAnyData = _planningBehaviorController.text.isNotEmpty ||
         _midBehaviorController.text.isNotEmpty ||
         _endBehaviorController.text.isNotEmpty ||
         _planningMood != null ||
@@ -461,11 +492,17 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         : 'Behavior tracking for ${_titleController.text}';
 
     // Use the most recent mood/sentiment (end > mid > planning)
-    final mood = JournalHelpers.getMoodString(_endMood ?? _midMood ?? _planningMood);
-    final sentiment = JournalHelpers.getSentimentValue(_endSentiment ?? _midSentiment ?? _planningSentiment);
+    final mood =
+        JournalHelpers.getMoodString(_endMood ?? _midMood ?? _planningMood);
+    final sentiment = JournalHelpers.getSentimentValue(
+        _endSentiment ?? _midSentiment ?? _planningSentiment);
 
     summaries.add(
-      BehaviorPatternSummary(summary: summary, mood: mood, marketSentiment: sentiment, tags: _selectedTags.toList()),
+      BehaviorPatternSummary(
+          summary: summary,
+          mood: mood,
+          marketSentiment: sentiment,
+          tags: _selectedTags.toList()),
     );
 
     return summaries;
@@ -473,64 +510,65 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
   @override
   Widget build(BuildContext context) => Form(
-    key: _formKey,
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 650;
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (isWide)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 2, child: _buildLeftColumn(context)),
-                    const SizedBox(width: 20),
-                    Expanded(child: _buildRightColumn()),
-                  ],
-                )
-              else
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildLeftColumn(context),
-                    const SizedBox(height: 24),
-                    _buildRightColumn(),
-                  ],
-                ),
-              const SizedBox(height: 24),
-              JournalFormActions(
-                isEditMode: _isEditMode,
-                isSubmitting: _isSubmitting,
-                isNewEntry: widget.entry == null,
-                onSubmit: _submit,
-                onToggleEditMode: () => setState(() => _isEditMode = !_isEditMode),
-                onCancel: () {
-                  if (widget.entry != null) {
-                    _initFormFields(); // Revert to original entry values
-                  }
-                  setState(() => _isEditMode = false);
-                },
+        key: _formKey,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth > 650;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isWide)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 2, child: _buildLeftColumn(context)),
+                        const SizedBox(width: 20),
+                        Expanded(child: _buildRightColumn()),
+                      ],
+                    )
+                  else
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildLeftColumn(context),
+                        const SizedBox(height: 24),
+                        _buildRightColumn(),
+                      ],
+                    ),
+                  const SizedBox(height: 24),
+                  JournalFormActions(
+                    isEditMode: _isEditMode,
+                    isSubmitting: _isSubmitting,
+                    isNewEntry: widget.entry == null,
+                    onSubmit: _submit,
+                    onToggleEditMode: () =>
+                        setState(() => _isEditMode = !_isEditMode),
+                    onCancel: () {
+                      if (widget.entry != null) {
+                        _initFormFields(); // Revert to original entry values
+                      }
+                      setState(() => _isEditMode = false);
+                    },
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
-      },
-    ),
-  );
+            );
+          },
+        ),
+      );
 
   Widget _buildLeftColumn(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _buildTitleField(),
-      const SizedBox(height: 12),
-      _buildBehaviorTracking(),
-      const SizedBox(height: 12),
-      RichTextEditor(controller: _quillController, readOnly: !_isEditMode),
-    ],
-  );
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTitleField(),
+          const SizedBox(height: 12),
+          _buildBehaviorTracking(),
+          const SizedBox(height: 12),
+          RichTextEditor(controller: _quillController, readOnly: !_isEditMode),
+        ],
+      );
 
   Widget _buildTitleField() {
     final theme = Theme.of(context);
@@ -540,7 +578,8 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         enabled: _isEditMode,
         style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: _isEditMode ? null : theme.colorScheme.onSurface.withOpacity(0.9),
+          color:
+              _isEditMode ? null : theme.colorScheme.onSurface.withOpacity(0.9),
         ),
         decoration: InputDecoration(
           labelText: 'Title',
@@ -552,7 +591,8 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
           disabledBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         ),
         validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
       ),
@@ -560,84 +600,88 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   }
 
   Widget _buildRightColumn() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _buildOptionalFields(),
-      const SizedBox(height: 12),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildOptionalFields(),
+          const SizedBox(height: 12),
 
-      // Trade Overview Section - enabled in view mode to allow viewing linked trades
-      JournalTradeSection(
-        selectedDate: _tradeOverviewDate,
-        selectedPeriod: _tradePeriod,
-        selectedTradeIds: _relatedTradeIds,
-        availableTrades: _availableTrades,
-        isEditMode: _isEditMode,
-        onDateChanged: (date) {
-          setState(() => _tradeOverviewDate = date);
-          _loadTradesForPeriod(date, _tradePeriod);
-        },
-        onPeriodChanged: (period) {
-          setState(() => _tradePeriod = period);
-          _loadTradesForPeriod(_tradeOverviewDate, period);
-        },
-        onTradesSelected: (ids) => setState(() => _relatedTradeIds = ids),
-        onViewTrades: _showTradePreview,
-      ),
-      const SizedBox(height: 12),
+          // Trade Overview Section - enabled in view mode to allow viewing linked trades
+          JournalTradeSection(
+            selectedDate: _tradeOverviewDate,
+            selectedPeriod: _tradePeriod,
+            selectedTradeIds: _relatedTradeIds,
+            availableTrades: _availableTrades,
+            isEditMode: _isEditMode,
+            onDateChanged: (date) {
+              setState(() => _tradeOverviewDate = date);
+              _loadTradesForPeriod(date, _tradePeriod);
+            },
+            onPeriodChanged: (period) {
+              setState(() => _tradePeriod = period);
+              _loadTradesForPeriod(_tradeOverviewDate, period);
+            },
+            onTradesSelected: (ids) => setState(() => _relatedTradeIds = ids),
+            onViewTrades: _showTradePreview,
+          ),
+          const SizedBox(height: 12),
 
-      // Attachment Section - clickable in view mode for viewing images
-      JournalAttachmentSection(
-        imageUrls: _imageUrls,
-        onAttachmentsChanged: (urls) => setState(() => _imageUrls = urls),
-        featureName: 'journal',
-        isEditMode: _isEditMode,
-      ),
-    ],
-  );
+          // Attachment Section - clickable in view mode for viewing images
+          JournalAttachmentSection(
+            imageUrls: _imageUrls,
+            onAttachmentsChanged: (urls) => setState(() => _imageUrls = urls),
+            featureName: 'journal',
+            isEditMode: _isEditMode,
+          ),
+        ],
+      );
 
   Widget _buildOptionalFields() => OptionalFieldsSection(
-    entryDate: _entryDate,
-    tradeIdController: _tradeIdController,
-    urlController: _urlController,
-    isEditMode: _isEditMode,
-    isUrlExpanded: _isUrlExpanded,
-    urlPreview: _urlPreview,
-    onDateSelect: () async {
-      final date = await showDatePicker(
-        context: context,
-        initialDate: _entryDate,
-        firstDate: DateTime(2000),
-        lastDate: DateTime(2100),
+        entryDate: _entryDate,
+        tradeIdController: _tradeIdController,
+        urlController: _urlController,
+        isEditMode: _isEditMode,
+        isUrlExpanded: _isUrlExpanded,
+        urlPreview: _urlPreview,
+        onDateSelect: () async {
+          final date = await showDatePicker(
+            context: context,
+            initialDate: _entryDate,
+            firstDate: DateTime(2000),
+            lastDate: DateTime(2100),
+          );
+          if (date != null) setState(() => _entryDate = date);
+        },
+        onToggleUrlExpansion: () =>
+            setState(() => _isUrlExpanded = !_isUrlExpanded),
+        onClearUrl: () {
+          _urlController.clear();
+          setState(() => _urlPreview = null);
+        },
       );
-      if (date != null) setState(() => _entryDate = date);
-    },
-    onToggleUrlExpansion: () => setState(() => _isUrlExpanded = !_isUrlExpanded),
-    onClearUrl: () {
-      _urlController.clear();
-      setState(() => _urlPreview = null);
-    },
-  );
 
   Widget _buildBehaviorTracking() => BehaviorTrackingSection(
-    planningBehaviorController: _planningBehaviorController,
-    planningMood: _planningMood,
-    planningSentiment: _planningSentiment,
-    midBehaviorController: _midBehaviorController,
-    midMood: _midMood,
-    midSentiment: _midSentiment,
-    endBehaviorController: _endBehaviorController,
-    endMood: _endMood,
-    endSentiment: _endSentiment,
-    onPlanningMoodChanged: (mood) => setState(() => _planningMood = mood),
-    onPlanningSentimentChanged: (sentiment) => setState(() => _planningSentiment = sentiment),
-    onMidMoodChanged: (mood) => setState(() => _midMood = mood),
-    onMidSentimentChanged: (sentiment) => setState(() => _midSentiment = sentiment),
-    onEndMoodChanged: (mood) => setState(() => _endMood = mood),
-    onEndSentimentChanged: (sentiment) => setState(() => _endSentiment = sentiment),
-    selectedTags: _selectedTags,
-    onTagToggled: _toggleTag,
-    isEditMode: _isEditMode,
-  );
+        planningBehaviorController: _planningBehaviorController,
+        planningMood: _planningMood,
+        planningSentiment: _planningSentiment,
+        midBehaviorController: _midBehaviorController,
+        midMood: _midMood,
+        midSentiment: _midSentiment,
+        endBehaviorController: _endBehaviorController,
+        endMood: _endMood,
+        endSentiment: _endSentiment,
+        onPlanningMoodChanged: (mood) => setState(() => _planningMood = mood),
+        onPlanningSentimentChanged: (sentiment) =>
+            setState(() => _planningSentiment = sentiment),
+        onMidMoodChanged: (mood) => setState(() => _midMood = mood),
+        onMidSentimentChanged: (sentiment) =>
+            setState(() => _midSentiment = sentiment),
+        onEndMoodChanged: (mood) => setState(() => _endMood = mood),
+        onEndSentimentChanged: (sentiment) =>
+            setState(() => _endSentiment = sentiment),
+        selectedTags: _selectedTags,
+        onTagToggled: _toggleTag,
+        isEditMode: _isEditMode,
+      );
 
   void _toggleTag(String tag) {
     setState(() {

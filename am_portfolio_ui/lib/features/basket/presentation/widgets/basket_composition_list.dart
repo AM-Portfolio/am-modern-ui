@@ -1,6 +1,3 @@
-
-
- 
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../../domain/models/basket_item.dart';
@@ -9,10 +6,8 @@ import '../../domain/models/basket_enums.dart';
 class BasketCompositionList extends StatefulWidget {
   final List<BasketItem> items;
 
-  const BasketCompositionList({
-    Key? key,
-    required this.items,
-  }) : super(key: key);
+  const BasketCompositionList({Key? key, required this.items})
+    : super(key: key);
 
   @override
   State<BasketCompositionList> createState() => _BasketCompositionListState();
@@ -35,14 +30,18 @@ class _BasketCompositionListState extends State<BasketCompositionList>
   }
 
   List<BasketItem> get _matchedItems {
-    return widget.items.where((item) => item.status == BasketItemStatus.held).toList();
+    return widget.items
+        .where((item) => item.status == BasketItemStatus.held)
+        .toList();
   }
 
   List<BasketItem> get _gapItems {
     return widget.items
-        .where((item) =>
-            item.status == BasketItemStatus.missing ||
-            item.status == BasketItemStatus.substitute)
+        .where(
+          (item) =>
+              item.status == BasketItemStatus.missing ||
+              item.status == BasketItemStatus.substitute,
+        )
         .toList();
   }
 
@@ -61,7 +60,10 @@ class _BasketCompositionListState extends State<BasketCompositionList>
             controller: _tabController,
             indicator: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.teal.withOpacity(0.6), Colors.green.withOpacity(0.6)],
+                colors: [
+                  Colors.teal.withOpacity(0.6),
+                  Colors.green.withOpacity(0.6),
+                ],
               ),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -92,7 +94,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
             ],
           ),
         ),
-        
+
         // Tab Views
         Expanded(
           child: TabBarView(
@@ -157,10 +159,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.05),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _getBorderColor(item.status),
-                width: 1,
-              ),
+              border: Border.all(color: _getBorderColor(item.status), width: 1),
             ),
             child: Row(
               children: [
@@ -178,7 +177,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                   ),
                 ),
                 const SizedBox(width: 16),
-                
+
                 // Stock Info
                 Expanded(
                   child: Column(
@@ -203,7 +202,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                     ],
                   ),
                 ),
-                
+
                 // Weight
                 Text(
                   '${item.weight.toStringAsFixed(1)}%',
@@ -271,7 +270,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                         ),
                       ),
                     ),
-                    
+
                     // Swap Icon
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -281,7 +280,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                         size: 28,
                       ),
                     ),
-                    
+
                     // Required Stock
                     Expanded(
                       child: Container(
@@ -314,11 +313,14 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                     ),
                   ],
                 ),
-                
+
                 if (item.reason != null) ...[
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.blue.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),

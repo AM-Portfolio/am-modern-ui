@@ -23,6 +23,8 @@ List<MoverItem> moversFromHoldings(
     );
   }).toList();
 
-  movers.sort((a, b) => b.changePercentage.abs().compareTo(a.changePercentage.abs()));
+  movers.sort(
+    (a, b) => b.changePercentage.abs().compareTo(a.changePercentage.abs()),
+  );
   return movers.take(limit * 2).toList();
 }

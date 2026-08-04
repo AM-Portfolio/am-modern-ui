@@ -3,7 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('Sanity widget test', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: Text('Sanity Check'))));
+    await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: Text('Sanity Check'))));
     expect(find.text('Sanity Check'), findsOneWidget);
   });
 }

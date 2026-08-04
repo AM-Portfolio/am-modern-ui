@@ -81,8 +81,8 @@ class Validators {
 
   /// Check if email is valid
   static bool isValidEmail(String email) => RegExp(
-    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-  ).hasMatch(email);
+        r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+      ).hasMatch(email);
 
   /// Check if phone is valid (with country code)
   static bool isValidPhone(String phone) {

@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Repository for persisting theme preferences
 class ThemeRepository {
   static const String _themeKey = 'app_theme_mode';
-  
+
   /// Get the saved theme mode
   /// Returns null if no theme has been saved
   Future<String?> getThemeMode() async {
@@ -14,7 +14,7 @@ class ThemeRepository {
       return null;
     }
   }
-  
+
   /// Save the theme mode
   Future<bool> saveThemeMode(String mode) async {
     try {
@@ -24,7 +24,7 @@ class ThemeRepository {
       return false;
     }
   }
-  
+
   /// Clear the saved theme mode
   Future<bool> clearThemeMode() async {
     try {

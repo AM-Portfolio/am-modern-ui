@@ -7,28 +7,31 @@ import 'portfolio_metrics_mapper.dart';
 class TradePortfolioMapper {
   /// Convert TradePortfolioDto to TradePortfolio domain entity
   static TradePortfolio fromDto(TradePortfolioDto dto) => TradePortfolio(
-    id: dto.portfolioId,
-    name: dto.name ?? 'Unnamed Portfolio',
-    ownerId: dto.ownerId,
-    totalValue: dto.totalValue,
-    totalGainLoss: dto.totalGainLoss,
-    totalGainLossPercentage: dto.totalGainLossPercentage,
-    holdingsCount: dto.holdingsCount ?? 0,
-    description: dto.description,
-    lastUpdated: dto.lastUpdated != null ? DateTime.tryParse(dto.lastUpdated!) : null,
-    // Trade metrics
-    totalTrades: dto.totalTrades ?? 0,
-    netProfitLoss: dto.netProfitLoss,
-    netProfitLossPercentage: dto.netProfitLossPercentage,
-    winRate: dto.winRate,
-    winningTrades: dto.winningTrades ?? 0,
-    losingTrades: dto.losingTrades ?? 0,
-    openPositions: dto.openPositions ?? 0,
-  );
+        id: dto.portfolioId,
+        name: dto.name ?? 'Unnamed Portfolio',
+        ownerId: dto.ownerId,
+        totalValue: dto.totalValue,
+        totalGainLoss: dto.totalGainLoss,
+        totalGainLossPercentage: dto.totalGainLossPercentage,
+        holdingsCount: dto.holdingsCount ?? 0,
+        description: dto.description,
+        lastUpdated: dto.lastUpdated != null
+            ? DateTime.tryParse(dto.lastUpdated!)
+            : null,
+        // Trade metrics
+        totalTrades: dto.totalTrades ?? 0,
+        netProfitLoss: dto.netProfitLoss,
+        netProfitLossPercentage: dto.netProfitLossPercentage,
+        winRate: dto.winRate,
+        winningTrades: dto.winningTrades ?? 0,
+        losingTrades: dto.losingTrades ?? 0,
+        openPositions: dto.openPositions ?? 0,
+      );
 
   /// Convert TradePortfolioListDto to TradePortfolioList domain entity
   static TradePortfolioList fromListDto(TradePortfolioListDto dto) {
-    final resolvedUserId = dto.portfolios.isNotEmpty ? (dto.portfolios.first.ownerId ?? '') : '';
+    final resolvedUserId =
+        dto.portfolios.isNotEmpty ? (dto.portfolios.first.ownerId ?? '') : '';
     return TradePortfolioList(
       userId: resolvedUserId,
       portfolios: dto.portfolios.map(fromDto).toList(),
@@ -39,25 +42,33 @@ class TradePortfolioMapper {
   /// Convert array response to TradePortfolioList (API returns array directly)
   static TradePortfolioList fromArrayDto(List<TradePortfolioDto> dtos) {
     final resolvedUserId = dtos.isNotEmpty ? (dtos.first.ownerId ?? '') : '';
-    return TradePortfolioList(userId: resolvedUserId, portfolios: dtos.map(fromDto).toList(), totalCount: dtos.length);
+    return TradePortfolioList(
+        userId: resolvedUserId,
+        portfolios: dtos.map(fromDto).toList(),
+        totalCount: dtos.length);
   }
 
   /// Convert TradePortfolioSummaryDto to TradePortfolioSummary entity
-  static TradePortfolioSummary fromSummaryDto(TradePortfolioSummaryDto dto) => TradePortfolioSummary(
-    portfolioId: dto.portfolioId,
-    name: dto.name ?? 'Unnamed Portfolio',
-    description: dto.description,
-    ownerId: dto.ownerId,
-    active: dto.active,
-    currency: dto.currency,
-    initialCapital: dto.initialCapital,
-    currentCapital: dto.currentCapital,
-    createdDate: dto.createdDate != null ? DateTime.tryParse(dto.createdDate!) : null,
-    lastUpdatedDate: dto.lastUpdatedDate != null ? DateTime.tryParse(dto.lastUpdatedDate!) : null,
-    metrics: PortfolioMetricsMapper.fromDto(dto.metrics),
-    tradeIds: dto.tradeIds,
-    winningTradeIds: dto.winningTradeIds,
-    losingTradeIds: dto.losingTradeIds,
-    assetAllocations: dto.assetAllocations,
-  );
+  static TradePortfolioSummary fromSummaryDto(TradePortfolioSummaryDto dto) =>
+      TradePortfolioSummary(
+        portfolioId: dto.portfolioId,
+        name: dto.name ?? 'Unnamed Portfolio',
+        description: dto.description,
+        ownerId: dto.ownerId,
+        active: dto.active,
+        currency: dto.currency,
+        initialCapital: dto.initialCapital,
+        currentCapital: dto.currentCapital,
+        createdDate: dto.createdDate != null
+            ? DateTime.tryParse(dto.createdDate!)
+            : null,
+        lastUpdatedDate: dto.lastUpdatedDate != null
+            ? DateTime.tryParse(dto.lastUpdatedDate!)
+            : null,
+        metrics: PortfolioMetricsMapper.fromDto(dto.metrics),
+        tradeIds: dto.tradeIds,
+        winningTradeIds: dto.winningTradeIds,
+        losingTradeIds: dto.losingTradeIds,
+        assetAllocations: dto.assetAllocations,
+      );
 }

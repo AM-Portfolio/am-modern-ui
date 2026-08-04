@@ -95,19 +95,19 @@ class AuthProviders {
   static RegisterUseCase get registerUseCase => RegisterUseCase(authRepository);
 
   static AuthCubit createAuthCubit() => AuthCubit(
-    emailLoginUseCase: emailLoginUseCase,
-    googleLoginUseCase: googleLoginUseCase,
-    demoLoginUseCase: demoLoginUseCase,
-    logoutUseCase: logoutUseCase,
-    checkAuthStatusUseCase: checkAuthStatusUseCase,
-    getCurrentUserUseCase: getCurrentUserUseCase,
-    registerUseCase: registerUseCase,
-    authRepository: authRepository,
-  );
+        emailLoginUseCase: emailLoginUseCase,
+        googleLoginUseCase: googleLoginUseCase,
+        demoLoginUseCase: demoLoginUseCase,
+        logoutUseCase: logoutUseCase,
+        checkAuthStatusUseCase: checkAuthStatusUseCase,
+        getCurrentUserUseCase: getCurrentUserUseCase,
+        registerUseCase: registerUseCase,
+        authRepository: authRepository,
+      );
 
   static List<BlocProvider> get providers => [
-    BlocProvider<AuthCubit>(
-      create: (context) => createAuthCubit()..checkAuthStatus(),
-    ),
-  ];
+        BlocProvider<AuthCubit>(
+          create: (context) => createAuthCubit()..checkAuthStatus(),
+        ),
+      ];
 }

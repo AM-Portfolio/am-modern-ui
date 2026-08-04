@@ -4,7 +4,10 @@ import '../../../internal/domain/enums/trade_directions.dart';
 
 /// Visual selector for trade direction (Long/Short)
 class DirectionSelector extends StatelessWidget {
-  const DirectionSelector({required this.selectedDirection, required this.onDirectionSelected, super.key});
+  const DirectionSelector(
+      {required this.selectedDirection,
+      required this.onDirectionSelected,
+      super.key});
   final TradeDirections? selectedDirection;
   final ValueChanged<TradeDirections> onDirectionSelected;
 
@@ -24,7 +27,8 @@ class DirectionSelector extends StatelessWidget {
                 color: theme.colorScheme.tertiaryContainer,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Icon(Icons.swap_horiz, size: 16, color: theme.colorScheme.onTertiaryContainer),
+              child: Icon(Icons.swap_horiz,
+                  size: 16, color: theme.colorScheme.onTertiaryContainer),
             ),
             const SizedBox(width: 8),
             Text(
@@ -42,7 +46,8 @@ class DirectionSelector extends StatelessWidget {
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+            border:
+                Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
           ),
           child: Row(
             children: [
@@ -109,12 +114,17 @@ class _ModernDirectionButton extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.horizontal(
-          left: position == _ButtonPosition.left ? const Radius.circular(10) : Radius.zero,
-          right: position == _ButtonPosition.right ? const Radius.circular(10) : Radius.zero,
+          left: position == _ButtonPosition.left
+              ? const Radius.circular(10)
+              : Radius.zero,
+          right: position == _ButtonPosition.right
+              ? const Radius.circular(10)
+              : Radius.zero,
         ),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 16, vertical: isMobile ? 12 : 14),
+          padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 12 : 16, vertical: isMobile ? 12 : 14),
           decoration: BoxDecoration(
             gradient: isSelected
                 ? LinearGradient(
@@ -124,14 +134,20 @@ class _ModernDirectionButton extends StatelessWidget {
                   )
                 : null,
             borderRadius: BorderRadius.horizontal(
-              left: position == _ButtonPosition.left ? const Radius.circular(10) : Radius.zero,
-              right: position == _ButtonPosition.right ? const Radius.circular(10) : Radius.zero,
+              left: position == _ButtonPosition.left
+                  ? const Radius.circular(10)
+                  : Radius.zero,
+              right: position == _ButtonPosition.right
+                  ? const Radius.circular(10)
+                  : Radius.zero,
             ),
             border: isSelected
                 ? Border.all(color: color.withOpacity(0.5), width: 1.5)
                 : position == _ButtonPosition.left
-                ? Border(right: BorderSide(color: theme.colorScheme.outline.withOpacity(0.2)))
-                : null,
+                    ? Border(
+                        right: BorderSide(
+                            color: theme.colorScheme.outline.withOpacity(0.2)))
+                    : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -139,20 +155,25 @@ class _ModernDirectionButton extends StatelessWidget {
               Icon(
                 icon,
                 size: isMobile ? 18 : 20,
-                color: isSelected ? color : theme.colorScheme.onSurface.withOpacity(0.6),
+                color: isSelected
+                    ? color
+                    : theme.colorScheme.onSurface.withOpacity(0.6),
               ),
               SizedBox(width: isMobile ? 6 : 8),
               Text(
                 label,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? color : theme.colorScheme.onSurface.withOpacity(0.8),
+                  color: isSelected
+                      ? color
+                      : theme.colorScheme.onSurface.withOpacity(0.8),
                   fontSize: isMobile ? 13 : 14,
                 ),
               ),
               if (isSelected) ...[
                 SizedBox(width: isMobile ? 4 : 6),
-                Icon(Icons.check_circle, color: color, size: isMobile ? 14 : 16),
+                Icon(Icons.check_circle,
+                    color: color, size: isMobile ? 14 : 16),
               ],
             ],
           ),

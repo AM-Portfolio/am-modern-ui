@@ -11,7 +11,7 @@ class AnalysisPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     return Scaffold(
       body: Container(
         // Applied custom linear gradient using the exact requested base shade #151524
@@ -20,7 +20,8 @@ class AnalysisPage extends ConsumerWidget {
             colors: [
               Color(0xFF0F0F1A), // Deep backdrop
               Color(0xFF151524), // Base theme shade (rgba(21, 21, 36, 1))
-              Color(0xFF1F1F35), // Subtle lighter endpoint for structural gradient
+              Color(
+                  0xFF1F1F35), // Subtle lighter endpoint for structural gradient
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,

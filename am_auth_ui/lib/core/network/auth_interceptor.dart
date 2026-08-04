@@ -12,18 +12,18 @@ class AuthInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     final token = await _storageService.getAccessToken();
-    
+
     // Add token to header if available
     if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
-    
+
     return handler.next(options);
   }
 
   @override
   Future<void> onError(
-    DioException err, 
+    DioException err,
     ErrorInterceptorHandler handler,
   ) async {
     // Determine if the error is 401 Unauthorized
@@ -32,7 +32,7 @@ class AuthInterceptor extends Interceptor {
       // For now, we just pass the error through
       // But we might want to clear local storage if the session is definitely invalid
     }
-    
+
     return handler.next(err);
   }
 }

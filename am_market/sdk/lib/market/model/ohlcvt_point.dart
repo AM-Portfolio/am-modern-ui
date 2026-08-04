@@ -66,25 +66,28 @@ class OHLCVTPoint {
   int? volume;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is OHLCVTPoint &&
-    other.time == time &&
-    other.open == open &&
-    other.high == high &&
-    other.low == low &&
-    other.close == close &&
-    other.volume == volume;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is OHLCVTPoint &&
+          other.time == time &&
+          other.open == open &&
+          other.high == high &&
+          other.low == low &&
+          other.close == close &&
+          other.volume == volume;
 
   @override
   int get hashCode =>
-    (time == null ? 0 : time!.hashCode) +
-    (open == null ? 0 : open!.hashCode) +
-    (high == null ? 0 : high!.hashCode) +
-    (low == null ? 0 : low!.hashCode) +
-    (close == null ? 0 : close!.hashCode) +
-    (volume == null ? 0 : volume!.hashCode);
+      (time == null ? 0 : time!.hashCode) +
+      (open == null ? 0 : open!.hashCode) +
+      (high == null ? 0 : high!.hashCode) +
+      (low == null ? 0 : low!.hashCode) +
+      (close == null ? 0 : close!.hashCode) +
+      (volume == null ? 0 : volume!.hashCode);
 
   @override
-  String toString() => 'OHLCVTPoint[time=$time, open=$open, high=$high, low=$low, close=$close, volume=$volume]';
+  String toString() =>
+      'OHLCVTPoint[time=$time, open=$open, high=$high, low=$low, close=$close, volume=$volume]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -132,8 +135,10 @@ class OHLCVTPoint {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "OHLCVTPoint[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "OHLCVTPoint[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "OHLCVTPoint[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "OHLCVTPoint[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -150,7 +155,10 @@ class OHLCVTPoint {
     return null;
   }
 
-  static List<OHLCVTPoint> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<OHLCVTPoint> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <OHLCVTPoint>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -166,7 +174,7 @@ class OHLCVTPoint {
   static Map<String, OHLCVTPoint> mapFromJson(dynamic json) {
     final map = <String, OHLCVTPoint>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = OHLCVTPoint.fromJson(entry.value);
         if (value != null) {
@@ -178,19 +186,23 @@ class OHLCVTPoint {
   }
 
   // maps a json object with a list of OHLCVTPoint-objects as value to a dart map
-  static Map<String, List<OHLCVTPoint>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<OHLCVTPoint>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<OHLCVTPoint>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = OHLCVTPoint.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = OHLCVTPoint.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

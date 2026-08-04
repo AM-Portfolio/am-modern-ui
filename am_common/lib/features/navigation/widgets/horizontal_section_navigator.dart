@@ -37,7 +37,8 @@ class HorizontalSectionNavigator extends StatefulWidget {
       _HorizontalSectionNavigatorState();
 }
 
-class _HorizontalSectionNavigatorState extends State<HorizontalSectionNavigator> {
+class _HorizontalSectionNavigatorState
+    extends State<HorizontalSectionNavigator> {
   bool _isNavigating = false;
   double _dragDx = 0;
   double _dragDy = 0;
@@ -45,8 +46,8 @@ class _HorizontalSectionNavigatorState extends State<HorizontalSectionNavigator>
   bool _isSwipeAllowed(BuildContext context) {
     if (!widget.enabled) return false;
     // Disable horizontal tab swiping on tablet and desktop (width >= 600px)
-    final isTabletOrDesktop =
-        AmBreakpoints.isTabletContext(context) || AmBreakpoints.isDesktopContext(context);
+    final isTabletOrDesktop = AmBreakpoints.isTabletContext(context) ||
+        AmBreakpoints.isDesktopContext(context);
     return !isTabletOrDesktop;
   }
 
@@ -85,7 +86,8 @@ class _HorizontalSectionNavigatorState extends State<HorizontalSectionNavigator>
     // Must be predominantly horizontal
     if (vx.abs() < vy.abs()) return;
 
-    if (vx.abs() >= widget.flingVelocity || _dragDx.abs() >= widget.dragDistance) {
+    if (vx.abs() >= widget.flingVelocity ||
+        _dragDx.abs() >= widget.dragDistance) {
       if (vx < 0 || _dragDx < 0) {
         _handleNavigation(isNext: true);
       } else if (vx > 0 || _dragDx > 0) {

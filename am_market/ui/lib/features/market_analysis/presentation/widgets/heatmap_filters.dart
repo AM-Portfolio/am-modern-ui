@@ -5,7 +5,7 @@ class HeatmapFilters extends StatelessWidget {
   final ValueChanged<String?> onTimeFrameChanged;
   final String? percentFilter;
   final ValueChanged<String?> onPercentFilterChanged;
-  
+
   final List<String> timeFrames;
   final List<String> filters;
 
@@ -16,7 +16,14 @@ class HeatmapFilters extends StatelessWidget {
     required this.percentFilter,
     required this.onPercentFilterChanged,
     this.timeFrames = const ['5M', '10M', '15M', '30M', '1H', '1D'],
-    this.filters = const ['Above +5%', '+2 to +5%', '0 to +2%', '0 to -2%', '-2 to -5%', 'Below -5%'],
+    this.filters = const [
+      'Above +5%',
+      '+2 to +5%',
+      '0 to +2%',
+      '0 to -2%',
+      '-2 to -5%',
+      'Below -5%'
+    ],
   });
 
   @override
@@ -28,7 +35,10 @@ class HeatmapFilters extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
         ],
       ),
       child: Wrap(
@@ -48,13 +58,16 @@ class HeatmapFilters extends StatelessWidget {
             child: DropdownButton<String>(
               value: timeFrame,
               dropdownColor: Colors.white,
-              style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  color: Colors.black87, fontWeight: FontWeight.bold),
               underline: const SizedBox(),
-              items: timeFrames.map((tf) => DropdownMenuItem(value: tf, child: Text(tf))).toList(),
+              items: timeFrames
+                  .map((tf) => DropdownMenuItem(value: tf, child: Text(tf)))
+                  .toList(),
               onChanged: onTimeFrameChanged,
             ),
           ),
-          
+
           // Percent Filters
           Wrap(
             spacing: 8,
@@ -62,13 +75,19 @@ class HeatmapFilters extends StatelessWidget {
               final isSelected = percentFilter == f;
               Color color;
               Color textColor = isSelected ? Colors.white : Colors.black87;
-              
-                if (f.contains('Above')) color = Colors.green[700]!;
-                else if (f.contains('+2')) color = Colors.green[500]!;
-                else if (f.contains('0 to +2')) color = Colors.green[300]!;
-                else if (f.contains('0 to -2')) color = Colors.red[300]!;
-                else if (f.contains('-2 to')) color = Colors.red[500]!;
-                else color = Colors.red[900]!;
+
+              if (f.contains('Above'))
+                color = Colors.green[700]!;
+              else if (f.contains('+2'))
+                color = Colors.green[500]!;
+              else if (f.contains('0 to +2'))
+                color = Colors.green[300]!;
+              else if (f.contains('0 to -2'))
+                color = Colors.red[300]!;
+              else if (f.contains('-2 to'))
+                color = Colors.red[500]!;
+              else
+                color = Colors.red[900]!;
 
               return FilterChip(
                 label: Text(f, style: const TextStyle(fontSize: 12)),
@@ -81,7 +100,8 @@ class HeatmapFilters extends StatelessWidget {
                 checkmarkColor: Colors.white,
                 labelStyle: TextStyle(color: textColor),
                 side: BorderSide.none,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
               );
             }).toList(),
           ),

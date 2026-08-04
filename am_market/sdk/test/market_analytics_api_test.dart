@@ -11,7 +11,6 @@
 import 'package:am_market_client/api.dart';
 import 'package:test/test.dart';
 
-
 /// tests for MarketAnalyticsApi
 void main() {
   // final instance = MarketAnalyticsApi();
@@ -43,6 +42,5 @@ void main() {
     test('test getSectorPerformance', () async {
       // TODO
     });
-
   });
 }

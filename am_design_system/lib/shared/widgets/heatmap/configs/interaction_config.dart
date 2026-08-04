@@ -13,8 +13,8 @@ class InteractionConfig {
 
   /// Mobile-optimized interaction configuration
   factory InteractionConfig.mobile() => const InteractionConfig(
-    enableHoverEffects: false, // No hover on mobile
-  );
+        enableHoverEffects: false, // No hover on mobile
+      );
 
   /// Web-optimized interaction configuration
   factory InteractionConfig.web() =>
@@ -22,12 +22,12 @@ class InteractionConfig {
 
   /// Minimal interaction configuration (for widgets, previews)
   factory InteractionConfig.minimal() => const InteractionConfig(
-    enableTileInteraction: false,
-    enableSelectorInteraction: false,
-    showLoadingStates: false,
-    showErrorStates: false,
-    enableHoverEffects: false,
-  );
+        enableTileInteraction: false,
+        enableSelectorInteraction: false,
+        showLoadingStates: false,
+        showErrorStates: false,
+        enableHoverEffects: false,
+      );
 
   /// Dashboard interaction configuration
   factory InteractionConfig.dashboard({bool interactive = true}) =>
@@ -39,12 +39,12 @@ class InteractionConfig {
 
   /// Read-only interaction configuration (for reports, exports)
   factory InteractionConfig.readOnly() => const InteractionConfig(
-    enableTileInteraction: false,
-    enableSelectorInteraction: false,
-    showLoadingStates: false,
-    showErrorStates: false,
-    enableHoverEffects: false,
-  );
+        enableTileInteraction: false,
+        enableSelectorInteraction: false,
+        showLoadingStates: false,
+        showErrorStates: false,
+        enableHoverEffects: false,
+      );
 
   /// Full-featured interaction configuration
   factory InteractionConfig.fullFeatured() =>
@@ -58,8 +58,8 @@ class InteractionConfig {
 
   /// Mutual funds interaction configuration
   factory InteractionConfig.mutualFunds() => const InteractionConfig(
-    enableMultiSelect: true, // Allow comparing multiple funds
-  );
+        enableMultiSelect: true, // Allow comparing multiple funds
+      );
 
   /// ETF interaction configuration
   factory InteractionConfig.etf() => const InteractionConfig();
@@ -82,16 +82,18 @@ class InteractionConfig {
     bool? enableHoverEffects,
     bool? enableMultiSelect,
     bool? enableDragAndDrop,
-  }) => InteractionConfig(
-    enableTileInteraction: enableTileInteraction ?? this.enableTileInteraction,
-    enableSelectorInteraction:
-        enableSelectorInteraction ?? this.enableSelectorInteraction,
-    showLoadingStates: showLoadingStates ?? this.showLoadingStates,
-    showErrorStates: showErrorStates ?? this.showErrorStates,
-    enableHoverEffects: enableHoverEffects ?? this.enableHoverEffects,
-    enableMultiSelect: enableMultiSelect ?? this.enableMultiSelect,
-    enableDragAndDrop: enableDragAndDrop ?? this.enableDragAndDrop,
-  );
+  }) =>
+      InteractionConfig(
+        enableTileInteraction:
+            enableTileInteraction ?? this.enableTileInteraction,
+        enableSelectorInteraction:
+            enableSelectorInteraction ?? this.enableSelectorInteraction,
+        showLoadingStates: showLoadingStates ?? this.showLoadingStates,
+        showErrorStates: showErrorStates ?? this.showErrorStates,
+        enableHoverEffects: enableHoverEffects ?? this.enableHoverEffects,
+        enableMultiSelect: enableMultiSelect ?? this.enableMultiSelect,
+        enableDragAndDrop: enableDragAndDrop ?? this.enableDragAndDrop,
+      );
 
   /// Check if any interactions are enabled
   bool get hasInteractions =>

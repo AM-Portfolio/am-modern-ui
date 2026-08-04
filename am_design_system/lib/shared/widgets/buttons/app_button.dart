@@ -4,7 +4,6 @@ import '../platform_widget.dart';
 import '../../../core/config/design_system_provider.dart';
 import '../../../core/utils/common_logger.dart';
 
-
 /// Button types for different visual styles
 enum AppButtonType { primary, secondary, text }
 
@@ -75,8 +74,8 @@ class AppButton extends PlatformWidget<Widget, Widget> {
       return SizedBox(
         width: width,
         child: CupertinoButton(
-          padding:
-              padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: padding ??
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           onPressed: isLoading ? null : onPressed,
           child: _buildChild(context, textColor ?? CupertinoColors.activeBlue),
         ),
@@ -111,8 +110,7 @@ class AppButton extends PlatformWidget<Widget, Widget> {
   Widget buildMaterialWidget(BuildContext context) {
     final config = DesignSystemProvider.of(context);
     final effectiveType = _effectiveType;
-    final txtColor =
-        textColor ??
+    final txtColor = textColor ??
         (effectiveType == AppButtonType.primary
             ? Colors.white
             : config.primaryColor);

@@ -73,8 +73,5 @@ void main() {
     test('to test the property `isIndexSymbol`', () async {
       // TODO
     });
-
-
   });
-
 }

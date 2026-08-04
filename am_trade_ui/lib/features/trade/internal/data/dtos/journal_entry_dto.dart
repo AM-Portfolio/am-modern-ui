@@ -5,9 +5,11 @@ part 'journal_entry_dto.g.dart';
 /// DTO for behavior pattern summary within a journal entry
 @JsonSerializable(explicitToJson: true)
 class BehaviorPatternSummaryDto {
-  const BehaviorPatternSummaryDto({required this.summary, this.mood, this.marketSentiment, this.tags});
+  const BehaviorPatternSummaryDto(
+      {required this.summary, this.mood, this.marketSentiment, this.tags});
 
-  factory BehaviorPatternSummaryDto.fromJson(Map<String, dynamic> json) => _$BehaviorPatternSummaryDtoFromJson(json);
+  factory BehaviorPatternSummaryDto.fromJson(Map<String, dynamic> json) =>
+      _$BehaviorPatternSummaryDtoFromJson(json);
 
   final String summary;
   final String? mood;
@@ -28,7 +30,8 @@ class JournalAttachmentDto {
     this.description,
   });
 
-  factory JournalAttachmentDto.fromJson(Map<String, dynamic> json) => _$JournalAttachmentDtoFromJson(json);
+  factory JournalAttachmentDto.fromJson(Map<String, dynamic> json) =>
+      _$JournalAttachmentDtoFromJson(json);
 
   final String fileName;
   final String fileUrl;

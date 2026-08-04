@@ -8,7 +8,8 @@ class GetTradeCalendarByFinancialYear {
   final TradeRepository _repository;
 
   /// Execute the use case to get trade calendar for a specific portfolio by financial year
-  Future<TradeCalendar> call(String portfolioId, {required int financialYear}) async {
+  Future<TradeCalendar> call(String portfolioId,
+      {required int financialYear}) async {
     AppLogger.methodEntry(
       'GetTradeCalendarByFinancialYear.call',
       tag: 'GetTradeCalendarByFinancialYear',
@@ -16,14 +17,17 @@ class GetTradeCalendarByFinancialYear {
     );
 
     if (portfolioId.isEmpty) {
-      AppLogger.error('Validation failed - empty userId or portfolioId', tag: 'GetTradeCalendarByFinancialYear');
+      AppLogger.error('Validation failed - empty userId or portfolioId',
+          tag: 'GetTradeCalendarByFinancialYear');
       throw ArgumentError('Portfolio ID cannot be empty');
     }
 
     try {
-      AppLogger.info('Executing get trade calendar by financial year use case', tag: 'GetTradeCalendarByFinancialYear');
+      AppLogger.info('Executing get trade calendar by financial year use case',
+          tag: 'GetTradeCalendarByFinancialYear');
 
-      final result = await _repository.getTradeCalendarByFinancialYear(portfolioId,
+      final result = await _repository.getTradeCalendarByFinancialYear(
+        portfolioId,
         financialYear: financialYear,
       );
 
@@ -54,4 +58,3 @@ class GetTradeCalendarByFinancialYear {
     }
   }
 }
-

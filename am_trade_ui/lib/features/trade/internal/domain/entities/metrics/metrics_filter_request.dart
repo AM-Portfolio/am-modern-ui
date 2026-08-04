@@ -11,10 +11,10 @@ class MetricsFilterRequest {
   final bool includeTradeDetails;
   final Map<String, dynamic>? customFilters;
 
-  // We could add nested filter objects here (InstrumentFilterCriteria, etc.) 
+  // We could add nested filter objects here (InstrumentFilterCriteria, etc.)
   // but for now keeping it simple or dynamic as per schema usage complexity.
   // Accessing specialized filters might be better done via customFilters map or dedicated objects if critical.
-  
+
   MetricsFilterRequest({
     required this.portfolioIds,
     required this.endDate,

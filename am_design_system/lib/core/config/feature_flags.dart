@@ -47,21 +47,21 @@ class FeatureFlags {
 
   /// Export current configuration as a map
   Map<String, dynamic> toJson() => {
-    'useRealGoogleAuth': useRealGoogleAuth,
-    'useRealBackendAPI': useRealBackendAPI,
-    'useRealEmailService': useRealEmailService,
-    'useIdentityAuth': useIdentityAuth,
-    'enableMockDelays': enableMockDelays,
-    'enableErrorSimulation': enableErrorSimulation,
-    'enableDebugLogging': enableDebugLogging,
-    'showDeveloperPanel': showDeveloperPanel,
-    'mockApiDelayMs': mockApiDelayMs,
-    'tokenRefreshIntervalMin': tokenRefreshIntervalMin,
-    'sessionTimeoutMin': sessionTimeoutMin,
-    'networkErrorRate': networkErrorRate,
-    'serverErrorRate': serverErrorRate,
-    'authErrorRate': authErrorRate,
-  };
+        'useRealGoogleAuth': useRealGoogleAuth,
+        'useRealBackendAPI': useRealBackendAPI,
+        'useRealEmailService': useRealEmailService,
+        'useIdentityAuth': useIdentityAuth,
+        'enableMockDelays': enableMockDelays,
+        'enableErrorSimulation': enableErrorSimulation,
+        'enableDebugLogging': enableDebugLogging,
+        'showDeveloperPanel': showDeveloperPanel,
+        'mockApiDelayMs': mockApiDelayMs,
+        'tokenRefreshIntervalMin': tokenRefreshIntervalMin,
+        'sessionTimeoutMin': sessionTimeoutMin,
+        'networkErrorRate': networkErrorRate,
+        'serverErrorRate': serverErrorRate,
+        'authErrorRate': authErrorRate,
+      };
 
   /// Import configuration from a map
   void fromJson(Map<String, dynamic> json) {

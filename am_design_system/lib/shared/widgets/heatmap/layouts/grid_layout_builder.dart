@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:am_common/am_common.dart';
 
@@ -96,8 +95,7 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
   Color getTileColor(HeatmapTileData tile, HeatmapData data) {
     if (!data.configuration.showPerformance) {
       return Colors
-          .blue
-          .shade400; // Default color when performance is not shown
+          .blue.shade400; // Default color when performance is not shown
     }
 
     final performance = tile.performance;

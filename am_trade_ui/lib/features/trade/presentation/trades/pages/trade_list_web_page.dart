@@ -10,9 +10,10 @@ import '../widgets/mobile_trade_list_view.dart';
 
 /// Web page for displaying all trades in a list view
 class TradeListWebPage extends ConsumerStatefulWidget {
-  const TradeListWebPage({ required this.portfolioId, this.onNavigateToChart, super.key});
+  const TradeListWebPage(
+      {required this.portfolioId, this.onNavigateToChart, super.key});
 
-    final String portfolioId;
+  final String portfolioId;
   final Function(String symbol)? onNavigateToChart;
 
   @override
@@ -39,11 +40,18 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.receipt_long, size: 64, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
+                  Icon(Icons.receipt_long,
+                      size: 64,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.5)),
                   const SizedBox(height: 16),
-                  Text('No Trades Found', style: Theme.of(context).textTheme.titleLarge),
+                  Text('No Trades Found',
+                      style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 8),
-                  Text('Add your first trade to get started', style: Theme.of(context).textTheme.bodyMedium),
+                  Text('Add your first trade to get started',
+                      style: Theme.of(context).textTheme.bodyMedium),
                 ],
               ),
             ).animate().fadeIn(duration: 600.ms).scale();
@@ -63,7 +71,8 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
 
           return LayoutBuilder(
             builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 800; // Mobile breakpoint at 800px
+              final isMobile =
+                  constraints.maxWidth < 800; // Mobile breakpoint at 800px
 
               if (isMobile) {
                 return MobileTradeListView(
@@ -82,7 +91,10 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                   _buildTradeSidebar(holdings),
 
                   // Right side - Trade detail or placeholder
-                  Expanded(child: _selectedTrade != null ? _buildTradeDetailView() : _buildEmptyState()),
+                  Expanded(
+                      child: _selectedTrade != null
+                          ? _buildTradeDetailView()
+                          : _buildEmptyState()),
                 ],
               );
             },
@@ -93,11 +105,14 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
+              Icon(Icons.error_outline,
+                  size: 64, color: Theme.of(context).colorScheme.error),
               const SizedBox(height: 16),
-              Text('Error loading trades', style: Theme.of(context).textTheme.titleLarge),
+              Text('Error loading trades',
+                  style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
-              Text(error.toString(), style: Theme.of(context).textTheme.bodyMedium),
+              Text(error.toString(),
+                  style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () {
@@ -121,7 +136,8 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
         width: 56,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          border: Border(right: BorderSide(color: Theme.of(context).dividerColor)),
+          border:
+              Border(right: BorderSide(color: Theme.of(context).dividerColor)),
         ),
         child: Column(
           children: [
@@ -141,9 +157,9 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
               child: Text(
                 'All Trades (${holdings.length})',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
               ),
             ),
           ],
@@ -156,8 +172,14 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
       width: 350,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border(right: BorderSide(color: Theme.of(context).dividerColor)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(2, 0))],
+        border:
+            Border(right: BorderSide(color: Theme.of(context).dividerColor)),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(2, 0))
+        ],
       ),
       child: Column(
         children: [
@@ -170,14 +192,19 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                 end: Alignment.bottomRight,
                 colors: [
                   Theme.of(context).colorScheme.primaryContainer,
-                  Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7),
+                  Theme.of(context)
+                      .colorScheme
+                      .primaryContainer
+                      .withOpacity(0.7),
                 ],
               ),
-              border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+              border: Border(
+                  bottom: BorderSide(color: Theme.of(context).dividerColor)),
             ),
             child: Row(
               children: [
-                Icon(Icons.receipt_long, color: Theme.of(context).colorScheme.primary),
+                Icon(Icons.receipt_long,
+                    color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -185,16 +212,22 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                     children: [
                       Text(
                         'All Trades',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer,
+                                ),
                       ),
                       Text(
                         '${holdings.length} trades',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer
+                                  .withOpacity(0.7),
+                            ),
                       ),
                     ],
                   ),
@@ -222,7 +255,9 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                 final isSelected = _selectedTrade?.tradeId == holding.tradeId;
 
                 return _buildTradeSidebarItem(holding, isSelected)
-                    .animate().fadeIn(delay: (30 * index).ms).slideX(begin: -0.1, end: 0);
+                    .animate()
+                    .fadeIn(delay: (30 * index).ms)
+                    .slideX(begin: -0.1, end: 0);
               },
             ),
           ),
@@ -231,16 +266,24 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
     ).animate().slideX(begin: -0.1, end: 0, duration: 300.ms);
   }
 
-  Widget _buildTradeSidebarItem(TradeHoldingViewModel holding, bool isSelected) {
+  Widget _buildTradeSidebarItem(
+      TradeHoldingViewModel holding, bool isSelected) {
     final isProfit = holding.isProfit;
     final statusColor = _getStatusColor(holding.status);
 
     return Container(
       decoration: BoxDecoration(
-        color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3) : Colors.transparent,
+        color: isSelected
+            ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+            : Colors.transparent,
         border: Border(
-          left: BorderSide(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent, width: 4),
-          bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.3)),
+          left: BorderSide(
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.transparent,
+              width: 4),
+          bottom: BorderSide(
+              color: Theme.of(context).dividerColor.withOpacity(0.3)),
         ),
       ),
       child: Material(
@@ -260,7 +303,8 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: statusColor.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
@@ -269,11 +313,15 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(_getStatusIcon(holding.status), size: 12, color: statusColor),
+                          Icon(_getStatusIcon(holding.status),
+                              size: 12, color: statusColor),
                           const SizedBox(width: 4),
                           Text(
                             holding.displaySymbol,
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: statusColor),
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: statusColor),
                           ),
                         ],
                       ),
@@ -282,7 +330,10 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                     Expanded(
                       child: Text(
                         holding.displayStatus.toUpperCase(),
-                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusColor.withOpacity(0.7)),
+                        style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor.withOpacity(0.7)),
                       ),
                     ),
                     if (widget.onNavigateToChart != null) ...[
@@ -295,7 +346,8 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                           icon: const Icon(Icons.show_chart, size: 16),
                           tooltip: 'View Chart',
                           color: statusColor.withOpacity(0.7),
-                          onPressed: () => widget.onNavigateToChart!(holding.displaySymbol),
+                          onPressed: () =>
+                              widget.onNavigateToChart!(holding.displaySymbol),
                         ),
                       ),
                     ],
@@ -306,7 +358,10 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                 // Company Name
                 Text(
                   holding.displayCompanyName,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w500),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -317,7 +372,11 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                   'Qty: ${holding.displayQuantity}',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                  ).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.6)),
                 ),
                 const SizedBox(height: 8),
 
@@ -358,22 +417,30 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
   }
 
   Widget _buildEmptyState() => Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.touch_app, size: 64, color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
-        const SizedBox(height: 16),
-        Text('Select a Trade', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Text(
-          'Choose a trade from the sidebar to view details',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.touch_app,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            Text('Select a Trade',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(
+              'Choose a trade from the sidebar to view details',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+            ),
+          ],
         ),
-      ],
-    ),
-  ).animate().fadeIn(duration: 600.ms);
+      ).animate().fadeIn(duration: 600.ms);
 
   Widget _buildTradeDetailView() {
     if (_selectedTrade == null) return const SizedBox();

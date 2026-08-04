@@ -14,7 +14,7 @@ import 'journal_navigation_sidebar.dart';
 class JournalThreeColumnLayout extends StatefulWidget {
   const JournalThreeColumnLayout({
     required this.entries,
-        required this.journalCubit,
+    required this.journalCubit,
     required this.notebookCubit,
     this.onAddFolder,
     this.onNewTradeTap,
@@ -23,14 +23,15 @@ class JournalThreeColumnLayout extends StatefulWidget {
   });
 
   final List<JournalEntry> entries;
-    final JournalCubit journalCubit;
+  final JournalCubit journalCubit;
   final NotebookCubit notebookCubit;
   final VoidCallback? onAddFolder;
   final VoidCallback? onNewTradeTap;
   final Function(JournalEntry entry, String folderId)? onEntryDropped;
 
   @override
-  State<JournalThreeColumnLayout> createState() => _JournalThreeColumnLayoutState();
+  State<JournalThreeColumnLayout> createState() =>
+      _JournalThreeColumnLayoutState();
 }
 
 class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
@@ -59,7 +60,8 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedEntry = widget.entries.where((e) => e.id == _selectedEntryId).firstOrNull;
+    final selectedEntry =
+        widget.entries.where((e) => e.id == _selectedEntryId).firstOrNull;
 
     return Container(
       decoration: BoxDecoration(
@@ -68,7 +70,10 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
           end: Alignment.bottomRight,
           colors: [
             Theme.of(context).colorScheme.surface,
-            Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.5),
             Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
           ],
         ),
@@ -79,14 +84,19 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
           BlocBuilder<NotebookCubit, NotebookState>(
             bloc: widget.notebookCubit,
             builder: (context, state) {
-              final folders = state is NotebookLoaded ? state.items : <NotebookItem>[]; // Assuming items are folders for now, or filter by type
-              final tags = state is NotebookLoaded ? state.tags : <NotebookTag>[];
-              
+              final folders = state is NotebookLoaded
+                  ? state.items
+                  : <NotebookItem>[]; // Assuming items are folders for now, or filter by type
+              final tags =
+                  state is NotebookLoaded ? state.tags : <NotebookTag>[];
+
               return JournalNavigationSidebar(
                 selectedFolder: _selectedFolder,
-                onFolderSelected: (folder) => setState(() => _selectedFolder = folder),
+                onFolderSelected: (folder) =>
+                    setState(() => _selectedFolder = folder),
                 isCollapsed: _isLeftSidebarCollapsed,
-                onToggleCollapse: () => setState(() => _isLeftSidebarCollapsed = !_isLeftSidebarCollapsed),
+                onToggleCollapse: () => setState(
+                    () => _isLeftSidebarCollapsed = !_isLeftSidebarCollapsed),
                 folders: folders,
                 tags: tags,
                 onAddFolder: widget.onAddFolder,
@@ -95,8 +105,9 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
               );
             },
           ),
-          
-          VerticalDivider(width: 1, color: Theme.of(context).dividerColor.withOpacity(0.2)),
+
+          VerticalDivider(
+              width: 1, color: Theme.of(context).dividerColor.withOpacity(0.2)),
 
           // Middle Column: Entry List
           JournalEntryListView(
@@ -112,44 +123,51 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
             }),
           ),
 
-          VerticalDivider(width: 1, color: Theme.of(context).dividerColor.withOpacity(0.2)),
+          VerticalDivider(
+              width: 1, color: Theme.of(context).dividerColor.withOpacity(0.2)),
 
           // Right Column: Detail View
           Expanded(
-            child: _isCreatingNew 
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(32, 32, 32, 16),
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit_document, size: 24, color: Theme.of(context).colorScheme.primary),
-                            const SizedBox(width: 12),
-                            Text(
-                              'New Journal Entry',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                          ],
+            child: _isCreatingNew
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(32, 32, 32, 16),
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_document,
+                                  size: 24,
+                                  color: Theme.of(context).colorScheme.primary),
+                              const SizedBox(width: 12),
+                              Text(
+                                'New Journal Entry',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const Divider(),
-                      Expanded(
-                        child: JournalEntryForm(
-                          cubit: widget.journalCubit,
-                          portfolioId: '8a57024c-05c2-475b-a2c4-0545865efa4a', // TODO: Get from context or provider
+                        const Divider(),
+                        Expanded(
+                          child: JournalEntryForm(
+                            cubit: widget.journalCubit,
+                            portfolioId:
+                                '8a57024c-05c2-475b-a2c4-0545865efa4a', // TODO: Get from context or provider
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  )
+                : JournalEntryDetailView(
+                    entry: selectedEntry,
+                    cubit: widget.journalCubit,
                   ),
-                )
-              : JournalEntryDetailView(
-                  entry: selectedEntry,
-                  cubit: widget.journalCubit,
-                ),
           ),
         ],
       ),

@@ -8,7 +8,8 @@ class GoogleLoginButtonWidget extends StatefulWidget {
   const GoogleLoginButtonWidget({super.key});
 
   @override
-  State<GoogleLoginButtonWidget> createState() => _GoogleLoginButtonWidgetState();
+  State<GoogleLoginButtonWidget> createState() =>
+      _GoogleLoginButtonWidgetState();
 }
 
 class _GoogleLoginButtonWidgetState extends State<GoogleLoginButtonWidget> {
@@ -17,7 +18,7 @@ class _GoogleLoginButtonWidgetState extends State<GoogleLoginButtonWidget> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     final baseBgColor = isDark
         ? Colors.white.withValues(alpha: _isHovering ? 0.15 : 0.10)
         : Colors.white.withValues(alpha: _isHovering ? 0.15 : 0.05);
@@ -124,7 +125,8 @@ class _GoogleGLogoPainter extends CustomPainter {
       ..color = const Color(0xFF4285F4)
       ..style = PaintingStyle.fill;
     canvas.drawRect(
-      Rect.fromLTRB(center.dx, center.dy - (strokeW / 2), center.dx + (radius * 0.8), center.dy + (strokeW / 2)),
+      Rect.fromLTRB(center.dx, center.dy - (strokeW / 2),
+          center.dx + (radius * 0.8), center.dy + (strokeW / 2)),
       barPaint,
     );
   }

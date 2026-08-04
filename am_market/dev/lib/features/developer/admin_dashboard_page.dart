@@ -60,15 +60,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (_isLoading)
-              const LinearProgressIndicator(),
+            if (_isLoading) const LinearProgressIndicator(),
             if (_lastResult != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Text(
                   _lastResult!,
                   style: TextStyle(
-                    color: _lastResult!.startsWith("Error") ? Colors.red : Colors.green,
+                    color: _lastResult!.startsWith("Error")
+                        ? Colors.red
+                        : Colors.green,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -143,17 +144,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             const SizedBox(height: 16),
             Row(
               children: [
-                 Switch(
-                   value: _forceRefresh, 
-                   onChanged: (v) => setState(() => _forceRefresh = v)
-                 ),
-                 const Text("Force Refresh from Provider"),
-                 const Spacer(),
-                 ElevatedButton.icon(
-                   onPressed: _isLoading ? null : _triggerHistoricalSync,
-                   icon: const Icon(Icons.sync),
-                   label: const Text("Run Sync"),
-                 ),
+                Switch(
+                    value: _forceRefresh,
+                    onChanged: (v) => setState(() => _forceRefresh = v)),
+                const Text("Force Refresh from Provider"),
+                const Spacer(),
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _triggerHistoricalSync,
+                  icon: const Icon(Icons.sync),
+                  label: const Text("Run Sync"),
+                ),
               ],
             )
           ],
@@ -164,10 +164,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Future<void> _triggerHistoricalSync() async {
     if (_symbolController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a symbol')));
-        return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Please enter a symbol')));
+      return;
     }
-    
+
     setState(() {
       _isLoading = true;
       _lastResult = null;
@@ -182,12 +183,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       );
       if (mounted) {
         setState(() {
-          _lastResult = "Success: Historical sync triggered for ${_symbolController.text}";
+          _lastResult =
+              "Success: Historical sync triggered for ${_symbolController.text}";
         });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Triggered successfully')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Triggered successfully')));
       }
     } catch (e) {
-       if (mounted) {
+      if (mounted) {
         setState(() => _lastResult = "Error: $e");
       }
     } finally {

@@ -8,11 +8,11 @@ import '../pages/template_browser_page.dart';
 /// Example: Add this button to your journal entry creation UI
 class UseTemplateButton extends ConsumerWidget {
   const UseTemplateButton({
-        this.onTemplateSelected,
+    this.onTemplateSelected,
     super.key,
   });
 
-    final Function(dynamic template)? onTemplateSelected;
+  final Function(dynamic template)? onTemplateSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,7 +40,7 @@ class UseTemplateButton extends ConsumerWidget {
 }
 
 /// Example usage in journal entry form:
-/// 
+///
 /// ```dart
 /// // In your journal entry creation widget
 /// UseTemplateButton(

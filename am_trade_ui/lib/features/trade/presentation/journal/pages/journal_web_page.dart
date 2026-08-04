@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-
 import '../../../journal_providers.dart';
 import '../../../notebook_providers.dart';
 import '../../../internal/domain/enums/notebook_item_type.dart';
@@ -19,9 +18,9 @@ import '../widgets/add_folder_dialog.dart';
 import '../../trade_navigation.dart';
 
 class JournalWebPage extends ConsumerStatefulWidget {
-  const JournalWebPage({ this.portfolioId, super.key});
+  const JournalWebPage({this.portfolioId, super.key});
 
-    final String? portfolioId;
+  final String? portfolioId;
 
   @override
   ConsumerState<JournalWebPage> createState() => _JournalWebPageState();
@@ -33,21 +32,15 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   @override
   void initState() {
     super.initState();
-    
+
     // Mode Logger
+    AppLogger.info('Initializing Journal Web Page', tag: 'JournalWebPage');
+    AppLogger.info('Current Mode: ${EnvironmentConfig.environment.name}',
+        tag: 'JournalWebPage');
     AppLogger.info(
-      'Initializing Journal Web Page', 
-      tag: 'JournalWebPage'
-    );
-    AppLogger.info(
-      'Current Mode: ${EnvironmentConfig.environment.name}', 
-      tag: 'JournalWebPage'
-    );
-    AppLogger.info(
-      'Mock Data Enabled: ${EnvironmentConfig.settings['useMockData']}', 
-      tag: 'JournalWebPage'
-    );
-    
+        'Mock Data Enabled: ${EnvironmentConfig.settings['useMockData']}',
+        tag: 'JournalWebPage');
+
     // Load data after cubits are initialized
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final journalCubit = await ref.read(journalCubitProvider.future);
@@ -100,14 +93,17 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
     }
   }
 
-  Future<void> _handleEntryDropped(JournalEntry entry, String folderId, NotebookCubit notebookCubit) async {
+  Future<void> _handleEntryDropped(
+      JournalEntry entry, String folderId, NotebookCubit notebookCubit) async {
     // Create a NOTE item in the folder that references the journal entry
     final note = NotebookItem(
-      type: NotebookItemType.FOLDER, // Should this be folder or note? The original was NOTE but uses type FOLDER? 
+      type: NotebookItemType
+          .FOLDER, // Should this be folder or note? The original was NOTE but uses type FOLDER?
       // Wait, original line 79 said type: NotebookItemType.FOLDER for _handleAddFolder
       // Line 105 said type: NotebookItemType.NOTE.
       // Re-checking...
-      title: 'Journal Entry - ${DateFormat('MMM dd, yyyy').format(entry.entryDate)}',
+      title:
+          'Journal Entry - ${DateFormat('MMM dd, yyyy').format(entry.entryDate)}',
       parentId: folderId,
       content: entry.content ?? '',
       metadata: {
@@ -122,7 +118,7 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
 
     // Call cubit to create note
     await notebookCubit.createItem(noteCorrected);
-    
+
     // Refresh notebook to show updated folder structure
     await notebookCubit.loadNotebook();
 
@@ -153,7 +149,6 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -188,22 +183,28 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                     builder: (context, notebookState) {
                       // Combine states or handle loading separately?
                       // For now, let's show layout if journal is loaded, notebook can load in background or show loading in sidebar
-                      
+
                       return journalState.when(
                         initial: () => const SizedBox.shrink(),
-                        loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (message) => Center(child: Text('Error: $message')),
-                        success: (message) => const Center(child: CircularProgressIndicator()),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (message) =>
+                            Center(child: Text('Error: $message')),
+                        success: (message) =>
+                            const Center(child: CircularProgressIndicator()),
                         loaded: (entries) => JournalThreeColumnLayout(
-                            entries: entries,
-                            journalCubit: journalCubit,
-                            notebookCubit: notebookCubit,
-                            onAddFolder: _handleAddFolder,
-                            onNewTradeTap: widget.portfolioId != null 
-                                ? () => openAddTradeWebPage(context, portfolioId: widget.portfolioId!)
-                                : null,
-                            onEntryDropped: (entry, folderId) => _handleEntryDropped(entry, folderId, notebookCubit),
-                          ),
+                          entries: entries,
+                          journalCubit: journalCubit,
+                          notebookCubit: notebookCubit,
+                          onAddFolder: _handleAddFolder,
+                          onNewTradeTap: widget.portfolioId != null
+                              ? () => openAddTradeWebPage(context,
+                                  portfolioId: widget.portfolioId!)
+                              : null,
+                          onEntryDropped: (entry, folderId) =>
+                              _handleEntryDropped(
+                                  entry, folderId, notebookCubit),
+                        ),
                       );
                     },
                   );
@@ -213,11 +214,12 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
           ),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error initializing notebook: $error')),
+        error: (error, stack) =>
+            Center(child: Text('Error initializing notebook: $error')),
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error initializing journal: $error')),
+      error: (error, stack) =>
+          Center(child: Text('Error initializing journal: $error')),
     );
   }
 }
-

@@ -1,9 +1,7 @@
-
 import 'package:flutter/material.dart';
 
 import '../../../core/module/i_module.dart';
 import '../../../core/module/module_context.dart';
-
 
 /// Container widget that wraps a module and handles lifecycle
 /// Provides consistent error handling, loading states, and context passing

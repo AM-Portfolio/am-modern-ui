@@ -8,7 +8,7 @@ import 'feature_flag_panel_widget.dart';
 /// Hidden by default to keep production UI clean
 class DevSectionWidget extends StatefulWidget {
   final bool isCompact;
-  
+
   const DevSectionWidget({
     super.key,
     this.isCompact = false,
@@ -21,7 +21,7 @@ class DevSectionWidget extends StatefulWidget {
 class _DevSectionWidgetState extends State<DevSectionWidget> {
   bool _isExpanded = false;
   bool _isHovering = false;
-  
+
   @override
   Widget build(BuildContext context) {
     if (ConfigService.resolvedEnv != 'dev') {
@@ -63,7 +63,7 @@ class _DevSectionWidgetState extends State<DevSectionWidget> {
             ),
           ),
         ),
-        
+
         // Collapsible content with animation
         AnimatedSize(
           duration: const Duration(milliseconds: 300),
@@ -78,7 +78,7 @@ class _DevSectionWidgetState extends State<DevSectionWidget> {
                       child: Container(
                         padding: EdgeInsets.all(widget.isCompact ? 16 : 24),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).brightness == Brightness.dark 
+                          color: Theme.of(context).brightness == Brightness.dark
                               ? const Color(0xFF141C2D).withValues(alpha: 0.18)
                               : Colors.white.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(18),
@@ -88,9 +88,12 @@ class _DevSectionWidgetState extends State<DevSectionWidget> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? const Color(0xFF5078FF).withValues(alpha: 0.05)
-                                  : const Color(0xFF7896FF).withValues(alpha: 0.05),
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? const Color(0xFF5078FF)
+                                      .withValues(alpha: 0.05)
+                                  : const Color(0xFF7896FF)
+                                      .withValues(alpha: 0.05),
                               blurRadius: 30,
                             ),
                           ],
@@ -99,9 +102,9 @@ class _DevSectionWidgetState extends State<DevSectionWidget> {
                           children: [
                             // Demo Login Button
                             const DemoLoginButtonWidget(),
-                            
+
                             SizedBox(height: widget.isCompact ? 16 : 24),
-                            
+
                             // Developer Controls Panel
                             const FeatureFlagPanelWidget(),
                           ],

@@ -9,11 +9,7 @@ class TermsOfServicePage extends StatelessWidget {
   final VoidCallback? onBack;
   final VoidCallback? onOpenPrivacy;
 
-  const TermsOfServicePage({
-    this.onBack,
-    this.onOpenPrivacy,
-    super.key,
-  });
+  const TermsOfServicePage({this.onBack, this.onOpenPrivacy, super.key});
 
   Future<void> _mail() async {
     final uri = Uri.parse('mailto:admin@asrax.in');

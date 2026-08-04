@@ -54,8 +54,6 @@ class PortfolioOverviewConfig {
       );
 }
 
-
-
 enum AllocationType {
   sector,
   marketCap,

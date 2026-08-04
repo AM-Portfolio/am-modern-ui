@@ -29,7 +29,8 @@ class SectorPieChart extends StatelessWidget {
         pieTouchData: PieTouchData(
           touchCallback: (FlTouchEvent event, pieTouchResponse) {
             if (event is FlTapUpEvent && pieTouchResponse != null) {
-              final touchedIndex = pieTouchResponse.touchedSection?.touchedSectionIndex;
+              final touchedIndex =
+                  pieTouchResponse.touchedSection?.touchedSectionIndex;
               if (touchedIndex != null && touchedIndex < allocations.length) {
                 onSectionTapped?.call(allocations[touchedIndex].label);
               }

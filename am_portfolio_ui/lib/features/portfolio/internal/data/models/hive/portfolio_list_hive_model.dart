@@ -65,10 +65,7 @@ class PortfolioListHiveModel extends HiveObject {
   @HiveField(2)
   final List<PortfolioItemHiveModel> portfolios;
 
-  PortfolioListHiveModel({
-    required this.lastUpdated,
-    required this.portfolios,
-  });
+  PortfolioListHiveModel({required this.lastUpdated, required this.portfolios});
 
   factory PortfolioListHiveModel.fromDomain(PortfolioList entity) {
     return PortfolioListHiveModel(
@@ -109,7 +106,6 @@ class PortfolioListHiveModelAdapter
     writer
       ..writeByte(3)
       ..writeByte(0)
-      
       ..writeByte(1)
       ..write(obj.lastUpdated)
       ..writeByte(2)

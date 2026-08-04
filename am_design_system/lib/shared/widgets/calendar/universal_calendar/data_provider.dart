@@ -4,9 +4,7 @@ library;
 import 'dart:async';
 import 'package:am_design_system/core/utils/common_logger.dart';
 
-
 import 'card_types.dart';
-
 
 /// Abstract data provider for calendar cards
 abstract class CalendarDataProvider {
@@ -43,7 +41,8 @@ class TradeCalendarDataProvider extends CalendarDataProvider {
     Map<String, dynamic>? filters,
   }) async {
     CommonLogger.methodEntry('getCardData', tag: 'TradeCalendarDataProvider');
-    CommonLogger.info('Fetching calendar data from $startDate to $endDate', tag: 'TradeCalendarDataProvider');
+    CommonLogger.info('Fetching calendar data from $startDate to $endDate',
+        tag: 'TradeCalendarDataProvider');
     // Simulate API call delay
     await Future.delayed(const Duration(milliseconds: 300));
 
@@ -51,8 +50,8 @@ class TradeCalendarDataProvider extends CalendarDataProvider {
 
     // Process mock data or make API call
     final tradeData = mockData ?? await _fetchTradeData(startDate, endDate);
-    CommonLogger.debug('Trade data received: ${tradeData.length} entries', tag: 'TradeCalendarDataProvider');
-
+    CommonLogger.debug('Trade data received: ${tradeData.length} entries',
+        tag: 'TradeCalendarDataProvider');
 
     // Group trades by date
     final tradesByDate = _groupTradesByDate(tradeData);
@@ -80,34 +79,34 @@ class TradeCalendarDataProvider extends CalendarDataProvider {
 
   @override
   List<CalendarCardType> getSupportedCardTypes() => [
-    CalendarCardType.pnlSummary,
-    CalendarCardType.tradeMetrics,
-    CalendarCardType.winLossRatio,
-    CalendarCardType.riskReward,
-    CalendarCardType.tradeVolume,
-    CalendarCardType.summary,
-  ];
+        CalendarCardType.pnlSummary,
+        CalendarCardType.tradeMetrics,
+        CalendarCardType.winLossRatio,
+        CalendarCardType.riskReward,
+        CalendarCardType.tradeVolume,
+        CalendarCardType.summary,
+      ];
 
   @override
   List<CalendarCardConfig> getDefaultCardConfigs() => [
-    const CalendarCardConfig(
-      type: CalendarCardType.pnlSummary,
-      title: 'P&L Summary',
-    ),
-    const CalendarCardConfig(
-      type: CalendarCardType.tradeMetrics,
-      title: 'Trade Metrics',
-      size: CardSizeType.large,
-      layout: CardLayoutStyle.grid,
-      theme: CardTheme.info,
-    ),
-    const CalendarCardConfig(
-      type: CalendarCardType.winLossRatio,
-      title: 'Win/Loss Ratio',
-      size: CardSizeType.small,
-      layout: CardLayoutStyle.chart,
-    ),
-  ];
+        const CalendarCardConfig(
+          type: CalendarCardType.pnlSummary,
+          title: 'P&L Summary',
+        ),
+        const CalendarCardConfig(
+          type: CalendarCardType.tradeMetrics,
+          title: 'Trade Metrics',
+          size: CardSizeType.large,
+          layout: CardLayoutStyle.grid,
+          theme: CardTheme.info,
+        ),
+        const CalendarCardConfig(
+          type: CalendarCardType.winLossRatio,
+          title: 'Win/Loss Ratio',
+          size: CardSizeType.small,
+          layout: CardLayoutStyle.chart,
+        ),
+      ];
 
   Future<Map<String, dynamic>> _fetchTradeData(
     DateTime start,
@@ -122,7 +121,6 @@ class TradeCalendarDataProvider extends CalendarDataProvider {
     // For now, return empty data
     return {};
   }
-
 
   Map<String, List<Map<String, dynamic>>> _groupTradesByDate(
     Map<String, dynamic> data,
@@ -225,7 +223,8 @@ class TradeCalendarDataProvider extends CalendarDataProvider {
   TradeCardData _generateWinLossCardData(
     String dateKey,
     List<Map<String, dynamic>> trades,
-  ) => _generatePnLCardData(dateKey, trades);
+  ) =>
+      _generatePnLCardData(dateKey, trades);
 }
 
 /// Portfolio data provider
@@ -271,26 +270,26 @@ class PortfolioCalendarDataProvider extends CalendarDataProvider {
 
   @override
   List<CalendarCardType> getSupportedCardTypes() => [
-    CalendarCardType.portfolioValue,
-    CalendarCardType.assetAllocation,
-    CalendarCardType.portfolioPerformance,
-    CalendarCardType.diversification,
-  ];
+        CalendarCardType.portfolioValue,
+        CalendarCardType.assetAllocation,
+        CalendarCardType.portfolioPerformance,
+        CalendarCardType.diversification,
+      ];
 
   @override
   List<CalendarCardConfig> getDefaultCardConfigs() => [
-    const CalendarCardConfig(
-      type: CalendarCardType.portfolioValue,
-      title: 'Portfolio Value',
-      theme: CardTheme.info,
-    ),
-    const CalendarCardConfig(
-      type: CalendarCardType.assetAllocation,
-      title: 'Asset Allocation',
-      size: CardSizeType.large,
-      layout: CardLayoutStyle.chart,
-    ),
-  ];
+        const CalendarCardConfig(
+          type: CalendarCardType.portfolioValue,
+          title: 'Portfolio Value',
+          theme: CardTheme.info,
+        ),
+        const CalendarCardConfig(
+          type: CalendarCardType.assetAllocation,
+          title: 'Asset Allocation',
+          size: CardSizeType.large,
+          layout: CardLayoutStyle.chart,
+        ),
+      ];
 
   CardData? _generatePortfolioCardData(
     String dateKey,
@@ -351,17 +350,18 @@ extension TradeCardDataExtension on TradeCardData {
     double? winRate,
     List<Map<String, dynamic>>? trades,
     Map<String, dynamic>? metadata,
-  }) => TradeCardData(
-    dateKey: dateKey ?? this.dateKey,
-    pnl: pnl ?? this.pnl,
-    tradeCount: tradeCount ?? this.tradeCount,
-    winCount: winCount ?? this.winCount,
-    lossCount: lossCount ?? this.lossCount,
-    totalVolume: totalVolume ?? this.totalVolume,
-    avgHoldingTime: avgHoldingTime ?? this.avgHoldingTime,
-    maxDrawdown: maxDrawdown ?? this.maxDrawdown,
-    winRate: winRate ?? this.winRate,
-    trades: trades ?? this.trades,
-    metadata: metadata ?? this.metadata,
-  );
+  }) =>
+      TradeCardData(
+        dateKey: dateKey ?? this.dateKey,
+        pnl: pnl ?? this.pnl,
+        tradeCount: tradeCount ?? this.tradeCount,
+        winCount: winCount ?? this.winCount,
+        lossCount: lossCount ?? this.lossCount,
+        totalVolume: totalVolume ?? this.totalVolume,
+        avgHoldingTime: avgHoldingTime ?? this.avgHoldingTime,
+        maxDrawdown: maxDrawdown ?? this.maxDrawdown,
+        winRate: winRate ?? this.winRate,
+        trades: trades ?? this.trades,
+        metadata: metadata ?? this.metadata,
+      );
 }

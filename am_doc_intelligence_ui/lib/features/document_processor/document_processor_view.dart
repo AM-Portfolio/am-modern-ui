@@ -11,6 +11,7 @@ import 'package:am_doc_intelligence_ui/services/api_service.dart';
 import 'package:am_doc_intelligence_ui/utils/file_downloader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:am_design_system/core/utils/responsive_helper.dart';
+
 class DocumentProcessorView extends StatefulWidget {
   const DocumentProcessorView({super.key});
 
@@ -28,14 +29,15 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   bool _processing = false;
   bool _dragHover = false;
   DropzoneViewController? _dropzoneController;
-  
+
   // Health check
   bool? _isServiceConnected;
   bool _checkingHealth = true;
   bool _showRawJson = false;
 
-  final currencyFormatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
-  
+  final currencyFormatter =
+      NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+
   @override
   void initState() {
     super.initState();
@@ -45,7 +47,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   Future<void> _checkHealthAndLoad() async {
     setState(() => _checkingHealth = true);
     final isConnected = await apiProvider.checkDocProcessorHealth();
-    
+
     setState(() {
       _isServiceConnected = isConnected;
       _checkingHealth = false;
@@ -76,7 +78,9 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       case 'TRADE_FNO':
         return 'F&O Tradebook';
       case 'TRADE_EQ':
-        return _selectedBrokerType == 'ANGEL_ONE' ? 'Trading History' : 'Stock Trading History';
+        return _selectedBrokerType == 'ANGEL_ONE'
+            ? 'Trading History'
+            : 'Stock Trading History';
       case 'TRADE_MF':
         return 'Mutual Fund Transaction History';
       case 'NSE_INDICES':
@@ -95,16 +99,29 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     }
     switch (_selectedBrokerType) {
       case 'ZERODHA':
-        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ' || t == 'TRADE_FNO').toList();
+        return _docTypes
+            .where((t) =>
+                t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ' || t == 'TRADE_FNO')
+            .toList();
       case 'GROWW':
-        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'MUTUAL_FUND' || t == 'TRADE_EQ' || t == 'TRADE_MF').toList();
+        return _docTypes
+            .where((t) =>
+                t == 'STOCK_PORTFOLIO' ||
+                t == 'MUTUAL_FUND' ||
+                t == 'TRADE_EQ' ||
+                t == 'TRADE_MF')
+            .toList();
       case 'DHAN':
         return ['PORTFOLIO_EQUITY', 'PORTFOLIO_ETF'];
 
       case 'ANGEL_ONE':
-        return _docTypes.where((t) => t == 'COMBINE_PORTFOLIO' || t == 'TRADE_EQ').toList();
+        return _docTypes
+            .where((t) => t == 'COMBINE_PORTFOLIO' || t == 'TRADE_EQ')
+            .toList();
       case 'MSTOCK':
-        return _docTypes.where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ').toList();
+        return _docTypes
+            .where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ')
+            .toList();
       case 'OTHER':
       default:
         return _docTypes;
@@ -131,7 +148,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   void _downloadSample() {
-    FileDownloader.downloadCSV(FileDownloader.getDummyPortfolioCSV(), 'sample_portfolio.csv');
+    FileDownloader.downloadCSV(
+        FileDownloader.getDummyPortfolioCSV(), 'sample_portfolio.csv');
     setState(() => _status = 'Sample file downloaded!');
   }
 
@@ -217,7 +235,9 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   Future<void> _onDropFile(DropzoneFileInterface ev) async {
-    if (_processing || _selectedDocType == null || _dropzoneController == null) {
+    if (_processing ||
+        _selectedDocType == null ||
+        _dropzoneController == null) {
       return;
     }
     try {
@@ -234,7 +254,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     final bool isMobile = ResponsiveHelper.isMobile(context);
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16.0 : 32.0, 
+        horizontal: isMobile ? 16.0 : 32.0,
         vertical: 24.0,
       ),
       child: Column(
@@ -242,7 +262,6 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         children: [
           _buildHeader(),
           const SizedBox(height: 28),
-          
           if (_checkingHealth)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 40),
@@ -251,13 +270,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 16),
-                    Text('Checking service connectivity...', style: TextStyle(color: Colors.grey)),
+                    Text('Checking service connectivity...',
+                        style: TextStyle(color: Colors.grey)),
                   ],
                 ),
               ),
             )
           else if (_isServiceConnected == false)
-             _buildConnectionError()
+            _buildConnectionError()
           else ...[
             if (isMobile) ...[
               _buildConfigurationSection(),
@@ -300,8 +320,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   Widget _buildHeader() {
-    Color statusColor = _isServiceConnected == true ? Colors.green : (_isServiceConnected == false ? Colors.red : Colors.grey);
-    String statusText = _isServiceConnected == true ? 'Online' : (_isServiceConnected == false ? 'Offline' : 'Checking...');
+    Color statusColor = _isServiceConnected == true
+        ? Colors.green
+        : (_isServiceConnected == false ? Colors.red : Colors.grey);
+    String statusText = _isServiceConnected == true
+        ? 'Online'
+        : (_isServiceConnected == false ? 'Offline' : 'Checking...');
     final bool isMobile = ResponsiveHelper.isMobile(context);
 
     final headerContent = Column(
@@ -310,17 +334,17 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         Text(
           'Document Intelligence',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-            fontSize: isMobile ? 22 : null,
-          ),
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+                fontSize: isMobile ? 22 : null,
+              ),
         ),
         const SizedBox(height: 4),
         Text(
           'Automated parser for financial statements',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
         ),
       ],
     );
@@ -393,17 +417,22 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off_outlined, size: 64, color: Theme.of(context).colorScheme.error),
+            Icon(Icons.cloud_off_outlined,
+                size: 64, color: Theme.of(context).colorScheme.error),
             const SizedBox(height: 20),
             Text(
               'Backend service is unreachable',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'The Document Processor service in the "${apiProvider.environment == AppEnvironment.local ? "Local" : "Dev"}" cluster is currently offline.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 32),
             AppButton(
@@ -433,11 +462,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               ),
             ),
             const SizedBox(height: 16),
-            _buildCapabilityTile(Icons.assignment_outlined, 'Equity Portfolios', 'Extract direct stock holdings from Zerodha, Angel One, and others.'),
+            _buildCapabilityTile(Icons.assignment_outlined, 'Equity Portfolios',
+                'Extract direct stock holdings from Zerodha, Angel One, and others.'),
             const SizedBox(height: 16),
-            _buildCapabilityTile(Icons.pie_chart_outline, 'Mutual Funds', 'Parse CAS statements, AMFI scheme holdings, and asset breakdowns.'),
+            _buildCapabilityTile(Icons.pie_chart_outline, 'Mutual Funds',
+                'Parse CAS statements, AMFI scheme holdings, and asset breakdowns.'),
             const SizedBox(height: 16),
-            _buildCapabilityTile(Icons.trending_up_outlined, 'F&O Trade Books', 'Track derivative trades, profit distributions, and executions.'),
+            _buildCapabilityTile(Icons.trending_up_outlined, 'F&O Trade Books',
+                'Track derivative trades, profit distributions, and executions.'),
           ],
         ),
       ),
@@ -454,16 +486,22 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
+          child: Icon(icon,
+              color: Theme.of(context).colorScheme.primary, size: 20),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 13)),
               const SizedBox(height: 2),
-              Text(desc, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(desc,
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ],
           ),
         )
@@ -477,11 +515,18 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     final brokerSelect = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('BROKER / INSTITUTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.grey)),
+        const Text('BROKER / INSTITUTION',
+            style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+                color: Colors.grey)),
         const SizedBox(height: 8),
         CustomDropdown<String>(
           value: _selectedBrokerType,
-          items: apiProvider.brokerTypes.map((e) => e.toSimpleDropdownItem(text: e)).toList(),
+          items: apiProvider.brokerTypes
+              .map((e) => e.toSimpleDropdownItem(text: e))
+              .toList(),
           hint: 'Select Broker',
           onChanged: (v) {
             setState(() {
@@ -503,16 +548,25 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     final docTypeSelect = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('DOCUMENT TYPE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.grey)),
+        const Text('DOCUMENT TYPE',
+            style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+                color: Colors.grey)),
         const SizedBox(height: 8),
-        _loadingTypes 
-          ? const ShimmerLoading(child: SkeletonBox(height: 42, width: double.infinity))
-          : CustomDropdown<String>(
-              value: _selectedDocType,
-              items: _getFilteredDocTypes().map((e) => e.toSimpleDropdownItem(text: _getDocTypeDisplayName(e))).toList(),
-              hint: 'Select Doc Type',
-              onChanged: (v) => setState(() => _selectedDocType = v),
-            ),
+        _loadingTypes
+            ? const ShimmerLoading(
+                child: SkeletonBox(height: 42, width: double.infinity))
+            : CustomDropdown<String>(
+                value: _selectedDocType,
+                items: _getFilteredDocTypes()
+                    .map((e) =>
+                        e.toSimpleDropdownItem(text: _getDocTypeDisplayName(e)))
+                    .toList(),
+                hint: 'Select Doc Type',
+                onChanged: (v) => setState(() => _selectedDocType = v),
+              ),
       ],
     );
 
@@ -524,12 +578,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           children: [
             Row(
               children: [
-                Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+                Icon(Icons.settings_outlined,
+                    color: Theme.of(context).colorScheme.primary, size: 20),
                 const SizedBox(width: 12),
-                const Text(
-                  'Parser Configuration', 
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)
-                ),
+                const Text('Parser Configuration',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               ],
             ),
             const SizedBox(height: 20),
@@ -555,8 +609,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   Widget _buildUploadSection() {
     final bool isInteractable = !_processing && _selectedDocType != null;
     final primary = Theme.of(context).colorScheme.primary;
-    final showBrokerDownload =
-        (_selectedBrokerType == 'ZERODHA' &&
+    final showBrokerDownload = (_selectedBrokerType == 'ZERODHA' &&
             (_selectedDocType == 'STOCK_PORTFOLIO' ||
                 _selectedDocType == 'TRADE_FNO' ||
                 _selectedDocType == 'TRADE_EQ')) ||
@@ -715,7 +768,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
   Widget _buildStatusLog() {
     bool isError = _status.toLowerCase().contains('error');
-    Color statusColor = isError ? Colors.red : Theme.of(context).colorScheme.primary;
+    Color statusColor =
+        isError ? Colors.red : Theme.of(context).colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -727,12 +781,16 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       ),
       child: Row(
         children: [
-          Icon(isError ? Icons.error_outline : Icons.info_outline, color: statusColor, size: 20),
+          Icon(isError ? Icons.error_outline : Icons.info_outline,
+              color: statusColor, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               _status.isEmpty ? 'Ready' : _status,
-              style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 13),
+              style: TextStyle(
+                  color: statusColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13),
             ),
           ),
           if (_processing)
@@ -744,22 +802,31 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         ],
       ),
     );
-  }  Widget _buildResultSection() {
+  }
+
+  Widget _buildResultSection() {
     if (_lastResult == null) return const SizedBox.shrink();
 
     final List<dynamic> parsedDataList = _lastResult!['data'] ?? [];
-    
-    final bool isTrade = (_selectedDocType != null && _selectedDocType!.startsWith('TRADE_')) ||
-        (parsedDataList.isNotEmpty && parsedDataList.first is Map && (parsedDataList.first as Map).containsKey('basicInfo'));
+
+    final bool isTrade =
+        (_selectedDocType != null && _selectedDocType!.startsWith('TRADE_')) ||
+            (parsedDataList.isNotEmpty &&
+                parsedDataList.first is Map &&
+                (parsedDataList.first as Map).containsKey('basicInfo'));
 
     double totalValuation = 0.0;
-    
+
     if (isTrade) {
       for (var item in parsedDataList) {
         if (item is Map) {
-          final exec = item['executionInfo'] is Map ? item['executionInfo'] : {};
-          final double quantity = (exec['quantity'] ?? exec['qty'] ?? item['quantity'] ?? 0.0).toDouble();
-          final double price = (exec['price'] ?? item['price'] ?? 0.0).toDouble();
+          final exec =
+              item['executionInfo'] is Map ? item['executionInfo'] : {};
+          final double quantity =
+              (exec['quantity'] ?? exec['qty'] ?? item['quantity'] ?? 0.0)
+                  .toDouble();
+          final double price =
+              (exec['price'] ?? item['price'] ?? 0.0).toDouble();
           totalValuation += quantity * price;
         }
       }
@@ -767,17 +834,25 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       // Sum total assets dynamically using same fallback logic as datatable rows
       for (var item in parsedDataList) {
         if (item is Map) {
-          final double quantity = (item['quantity'] ?? item['qty'] ?? 0.0).toDouble();
-          final double currentPrice = (item['currentPrice'] ?? 
-                                       (item['marketData'] != null ? item['marketData']['marketPrice'] : null) ?? 
-                                       (item['currentValue'] != null && quantity > 0 ? (item['currentValue'] / quantity) : null) ?? 
-                                       item['avgBuyingPrice'] ?? 
-                                       item['averagePrice'] ??
-                                       item['buyPrice'] ??
-                                       item['nav'] ?? 
-                                       item['price'] ?? 
-                                       0.0).toDouble();
-          final double totalValue = item['currentValue'] != null ? (item['currentValue'] as num).toDouble() : quantity * currentPrice;
+          final double quantity =
+              (item['quantity'] ?? item['qty'] ?? 0.0).toDouble();
+          final double currentPrice = (item['currentPrice'] ??
+                  (item['marketData'] != null
+                      ? item['marketData']['marketPrice']
+                      : null) ??
+                  (item['currentValue'] != null && quantity > 0
+                      ? (item['currentValue'] / quantity)
+                      : null) ??
+                  item['avgBuyingPrice'] ??
+                  item['averagePrice'] ??
+                  item['buyPrice'] ??
+                  item['nav'] ??
+                  item['price'] ??
+                  0.0)
+              .toDouble();
+          final double totalValue = item['currentValue'] != null
+              ? (item['currentValue'] as num).toDouble()
+              : quantity * currentPrice;
           totalValuation += totalValue;
         }
       }
@@ -791,18 +866,25 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           children: [
             Row(
               children: [
-                Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary, size: 22),
+                Icon(Icons.analytics_outlined,
+                    color: Theme.of(context).colorScheme.primary, size: 22),
                 const SizedBox(width: 12),
                 Text(
-                  isTrade ? 'Extracted Trade Log Details' : 'Extracted Holdings Details', 
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)
-                ),
+                    isTrade
+                        ? 'Extracted Trade Log Details'
+                        : 'Extracted Holdings Details',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold)),
               ],
             ),
             Row(
               children: [
                 IconButton(
-                  icon: Icon(_showRawJson ? Icons.visibility_off_outlined : Icons.code_outlined),
+                  icon: Icon(_showRawJson
+                      ? Icons.visibility_off_outlined
+                      : Icons.code_outlined),
                   onPressed: () => setState(() => _showRawJson = !_showRawJson),
                   tooltip: 'View Raw JSON Data',
                 ),
@@ -811,21 +893,41 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           ],
         ),
         const SizedBox(height: 16),
-        
+
         Row(
           children: [
-            _buildResultStatCard(isTrade ? 'TOTAL VOLUME' : 'TOTAL VALUATION', currencyFormatter.format(totalValuation), Icons.account_balance_wallet_outlined, Colors.green),
+            _buildResultStatCard(
+                isTrade ? 'TOTAL VOLUME' : 'TOTAL VALUATION',
+                currencyFormatter.format(totalValuation),
+                Icons.account_balance_wallet_outlined,
+                Colors.green),
             const SizedBox(width: 16),
-            _buildResultStatCard('PARSED RECORDS', '${parsedDataList.length} Items', Icons.format_list_bulleted_outlined, Colors.blue),
+            _buildResultStatCard(
+                'PARSED RECORDS',
+                '${parsedDataList.length} Items',
+                Icons.format_list_bulleted_outlined,
+                Colors.blue),
             const SizedBox(width: 16),
-            _buildResultStatCard('PROCESS CODE', _lastResult!['processId']?.toString().substring(0, 8).toUpperCase() ?? 'N/A', Icons.vpn_key_outlined, Colors.purple),
+            _buildResultStatCard(
+                'PROCESS CODE',
+                _lastResult!['processId']
+                        ?.toString()
+                        .substring(0, 8)
+                        .toUpperCase() ??
+                    'N/A',
+                Icons.vpn_key_outlined,
+                Colors.purple),
           ],
         ),
-        
+
         const SizedBox(height: 24),
-        
+
         if (_showRawJson) ...[
-          const Text('Raw JSON Payload', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5)),
+          const Text('Raw JSON Payload',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  letterSpacing: 0.5)),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(16),
@@ -840,7 +942,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               child: Text(
                 JsonEncoder.withIndent('  ').convert(_lastResult),
                 style: const TextStyle(
-                  color: Colors.greenAccent, 
+                  color: Colors.greenAccent,
                   fontFamily: 'monospace',
                   fontSize: 12,
                 ),
@@ -858,7 +960,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             child: parsedDataList.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: 40),
-                    child: Center(child: Text(isTrade ? 'No trade records found in this file.' : 'No holding assets found in this statement file.')),
+                    child: Center(
+                        child: Text(isTrade
+                            ? 'No trade records found in this file.'
+                            : 'No holding assets found in this statement file.')),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -866,10 +971,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       Padding(
                         padding: const EdgeInsets.only(left: 8.0, bottom: 12.0),
                         child: Text(
-                          isTrade ? 'TRADE LOG BREAKDOWN' : 'HOLDING ASSETS BREAKDOWN',
+                          isTrade
+                              ? 'TRADE LOG BREAKDOWN'
+                              : 'HOLDING ASSETS BREAKDOWN',
                           style: TextStyle(
-                            fontSize: 11, 
-                            fontWeight: FontWeight.bold, 
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
                             letterSpacing: 0.8,
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -886,60 +993,162 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                               horizontalMargin: 8.0,
                               columns: isTrade
                                   ? const [
-                                      DataColumn(label: Text('DATE', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      DataColumn(label: Text('TRADE ID', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      DataColumn(label: Text('TYPE', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      DataColumn(numeric: true, label: Text('PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      DataColumn(numeric: true, label: Text('TOTAL AMOUNT', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(
+                                          label: Text('DATE',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
+                                      DataColumn(
+                                          label: Text('ASSET / SYMBOL',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
+                                      DataColumn(
+                                          label: Text('TRADE ID',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
+                                      DataColumn(
+                                          label: Text('TYPE',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
+                                      DataColumn(
+                                          numeric: true,
+                                          label: Text('QTY',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
+                                      DataColumn(
+                                          numeric: true,
+                                          label: Text('PRICE',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
+                                      DataColumn(
+                                          numeric: true,
+                                          label: Text('TOTAL AMOUNT',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
                                     ]
                                   : const [
-                                      DataColumn(label: Text('ASSET / SYMBOL', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      DataColumn(label: Text('IDENTIFIER', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      DataColumn(numeric: true, label: Text('QTY', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      DataColumn(numeric: true, label: Text('BUY PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      DataColumn(numeric: true, label: Text('CURRENT PRICE', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      DataColumn(numeric: true, label: Text('TOTAL VALUATION', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      DataColumn(
+                                          label: Text('ASSET / SYMBOL',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
+                                      DataColumn(
+                                          label: Text('IDENTIFIER',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
+                                      DataColumn(
+                                          numeric: true,
+                                          label: Text('QTY',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
+                                      DataColumn(
+                                          numeric: true,
+                                          label: Text('BUY PRICE',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
+                                      DataColumn(
+                                          numeric: true,
+                                          label: Text('CURRENT PRICE',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
+                                      DataColumn(
+                                          numeric: true,
+                                          label: Text('TOTAL VALUATION',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold))),
                                     ],
                               rows: parsedDataList.map((item) {
                                 final map = item is Map ? item : {};
-                                
+
                                 if (isTrade) {
-                                  final basic = map['basicInfo'] is Map ? map['basicInfo'] : {};
-                                  final instrument = map['instrumentInfo'] is Map ? map['instrumentInfo'] : {};
-                                  final exec = map['executionInfo'] is Map ? map['executionInfo'] : {};
-                                  
-                                  final String tradeDate = basic['tradeDate'] ?? basic['orderExecutionTime']?.toString().split('T').first ?? 'N/A';
-                                  final String assetName = instrument['symbol'] ?? instrument['name'] ?? map['symbol'] ?? 'Unknown Asset';
-                                  final String tradeId = basic['tradeId'] ?? map['tradeId'] ?? 'N/A';
-                                  final String tradeType = (exec['tradeType'] ?? basic['tradeType'] ?? map['type'] ?? 'BUY').toString().toUpperCase();
-                                  final double quantity = (exec['quantity'] ?? exec['qty'] ?? map['quantity'] ?? 0.0).toDouble();
-                                  final double price = (exec['price'] ?? map['price'] ?? 0.0).toDouble();
+                                  final basic = map['basicInfo'] is Map
+                                      ? map['basicInfo']
+                                      : {};
+                                  final instrument =
+                                      map['instrumentInfo'] is Map
+                                          ? map['instrumentInfo']
+                                          : {};
+                                  final exec = map['executionInfo'] is Map
+                                      ? map['executionInfo']
+                                      : {};
+
+                                  final String tradeDate = basic['tradeDate'] ??
+                                      basic['orderExecutionTime']
+                                          ?.toString()
+                                          .split('T')
+                                          .first ??
+                                      'N/A';
+                                  final String assetName =
+                                      instrument['symbol'] ??
+                                          instrument['name'] ??
+                                          map['symbol'] ??
+                                          'Unknown Asset';
+                                  final String tradeId = basic['tradeId'] ??
+                                      map['tradeId'] ??
+                                      'N/A';
+                                  final String tradeType = (exec['tradeType'] ??
+                                          basic['tradeType'] ??
+                                          map['type'] ??
+                                          'BUY')
+                                      .toString()
+                                      .toUpperCase();
+                                  final double quantity = (exec['quantity'] ??
+                                          exec['qty'] ??
+                                          map['quantity'] ??
+                                          0.0)
+                                      .toDouble();
+                                  final double price =
+                                      (exec['price'] ?? map['price'] ?? 0.0)
+                                          .toDouble();
                                   final double totalValue = quantity * price;
 
-                                  final Color typeColor = tradeType.contains('BUY') ? Colors.green : Colors.red;
+                                  final Color typeColor =
+                                      tradeType.contains('BUY')
+                                          ? Colors.green
+                                          : Colors.red;
 
                                   return DataRow(
                                     cells: [
-                                      DataCell(Text(tradeDate, style: const TextStyle(fontSize: 13))),
+                                      DataCell(Text(tradeDate,
+                                          style:
+                                              const TextStyle(fontSize: 13))),
                                       DataCell(
                                         Container(
-                                          constraints: const BoxConstraints(maxWidth: 220),
+                                          constraints: const BoxConstraints(
+                                              maxWidth: 220),
                                           child: Text(
-                                            assetName, 
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                            assetName,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                       ),
-                                      DataCell(Text(tradeId, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
+                                      DataCell(Text(tradeId,
+                                          style: const TextStyle(
+                                              fontFamily: 'monospace',
+                                              fontSize: 12,
+                                              color: Colors.grey))),
                                       DataCell(
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 4),
                                           decoration: BoxDecoration(
                                             color: typeColor.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
                                           ),
                                           child: Text(
                                             tradeType,
@@ -951,55 +1160,102 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                                           ),
                                         ),
                                       ),
-                                      DataCell(Text(quantity.toStringAsFixed(0))),
-                                      DataCell(Text(currencyFormatter.format(price))),
+                                      DataCell(
+                                          Text(quantity.toStringAsFixed(0))),
+                                      DataCell(Text(
+                                          currencyFormatter.format(price))),
                                       DataCell(
                                         Text(
                                           currencyFormatter.format(totalValue),
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            color: Theme.of(context).colorScheme.primary,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
                                           ),
                                         ),
                                       ),
                                     ],
                                   );
                                 } else {
-                                  final String assetName = map['name'] ?? map['securityName'] ?? map['schemeName'] ?? map['symbol'] ?? 'Unknown Asset';
-                                  final String identifier = map['isin'] ?? map['amfiCode'] ?? map['symbol'] ?? 'N/A';
-                                  final double quantity = (map['quantity'] ?? map['qty'] ?? 0.0).toDouble();
-                                  final double buyPrice = (map['avgBuyingPrice'] ?? map['averagePrice'] ?? map['buyPrice'] ?? map['price'] ?? 0.0).toDouble();
-                                  final double currentPrice = (map['currentPrice'] ?? 
-                                                              (map['marketData'] != null ? map['marketData']['marketPrice'] : null) ?? 
-                                                              (map['currentValue'] != null && quantity > 0 ? (map['currentValue'] / quantity) : null) ?? 
-                                                              map['avgBuyingPrice'] ?? 
-                                                              map['nav'] ?? 
-                                                              map['price'] ?? 
-                                                              0.0).toDouble();
-                                  final double totalValue = map['currentValue'] != null ? (map['currentValue'] as num).toDouble() : quantity * currentPrice;
+                                  final String assetName = map['name'] ??
+                                      map['securityName'] ??
+                                      map['schemeName'] ??
+                                      map['symbol'] ??
+                                      'Unknown Asset';
+                                  final String identifier = map['isin'] ??
+                                      map['amfiCode'] ??
+                                      map['symbol'] ??
+                                      'N/A';
+                                  final double quantity =
+                                      (map['quantity'] ?? map['qty'] ?? 0.0)
+                                          .toDouble();
+                                  final double buyPrice =
+                                      (map['avgBuyingPrice'] ??
+                                              map['averagePrice'] ??
+                                              map['buyPrice'] ??
+                                              map['price'] ??
+                                              0.0)
+                                          .toDouble();
+                                  final double currentPrice =
+                                      (map['currentPrice'] ??
+                                              (map['marketData'] != null
+                                                  ? map['marketData']
+                                                      ['marketPrice']
+                                                  : null) ??
+                                              (map['currentValue'] != null &&
+                                                      quantity > 0
+                                                  ? (map['currentValue'] /
+                                                      quantity)
+                                                  : null) ??
+                                              map['avgBuyingPrice'] ??
+                                              map['nav'] ??
+                                              map['price'] ??
+                                              0.0)
+                                          .toDouble();
+                                  final double totalValue =
+                                      map['currentValue'] != null
+                                          ? (map['currentValue'] as num)
+                                              .toDouble()
+                                          : quantity * currentPrice;
 
                                   return DataRow(
                                     cells: [
                                       DataCell(
                                         Container(
-                                          constraints: const BoxConstraints(maxWidth: 220),
+                                          constraints: const BoxConstraints(
+                                              maxWidth: 220),
                                           child: Text(
-                                            assetName, 
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                            assetName,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                       ),
-                                      DataCell(Text(identifier, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey))),
-                                      DataCell(Text(quantity.toStringAsFixed(2))),
-                                      DataCell(Text(currencyFormatter.format(buyPrice))),
-                                      DataCell(Text(currencyFormatter.format(currentPrice), style: const TextStyle(fontWeight: FontWeight.bold))),
+                                      DataCell(Text(identifier,
+                                          style: const TextStyle(
+                                              fontFamily: 'monospace',
+                                              fontSize: 12,
+                                              color: Colors.grey))),
+                                      DataCell(
+                                          Text(quantity.toStringAsFixed(2))),
+                                      DataCell(Text(
+                                          currencyFormatter.format(buyPrice))),
+                                      DataCell(Text(
+                                          currencyFormatter
+                                              .format(currentPrice),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold))),
                                       DataCell(
                                         Text(
                                           currencyFormatter.format(totalValue),
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            color: Theme.of(context).colorScheme.primary,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
                                           ),
                                         ),
                                       ),
@@ -1019,7 +1275,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     );
   }
 
-  Widget _buildResultStatCard(String label, String value, IconData icon, Color color) {
+  Widget _buildResultStatCard(
+      String label, String value, IconData icon, Color color) {
     return Expanded(
       child: GlassCard(
         child: Padding(
@@ -1039,14 +1296,17 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      label, 
-                      style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 0.5)
-                    ),
+                    Text(label,
+                        style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5)),
                     const SizedBox(height: 4),
                     Text(
                       value,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -1058,7 +1318,9 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       ),
     );
   }
-  void _showDownloadStepsDialog(BuildContext context, String broker, String docType) {
+
+  void _showDownloadStepsDialog(
+      BuildContext context, String broker, String docType) {
     String title = 'How to Download Document';
     String url = '';
     List<Widget> steps = [];
@@ -1068,19 +1330,29 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         url = 'https://console.zerodha.com/portfolio/holdings';
         title = 'Download Zerodha Portfolio';
         steps = [
-          _buildStep(1, 'Log in to Zerodha Console and go to Portfolio > Holdings', imagePath: 'assets/images/holdings_step1.png'),
-          _buildStep(2, 'Scroll down to the bottom of the page and click "Download: XLSX"', imagePath: 'assets/images/holdings_step2.png'),
+          _buildStep(
+              1, 'Log in to Zerodha Console and go to Portfolio > Holdings',
+              imagePath: 'assets/images/holdings_step1.png'),
+          _buildStep(2,
+              'Scroll down to the bottom of the page and click "Download: XLSX"',
+              imagePath: 'assets/images/holdings_step2.png'),
           _buildStep(3, 'Upload the downloaded file here'),
         ];
       } else if (docType == 'TRADE_FNO' || docType == 'TRADE_EQ') {
         url = 'https://console.zerodha.com/reports/tradebook';
         title = 'Download Zerodha Tradebook';
-        String segment = docType == 'TRADE_FNO' ? 'Futures & Options' : 'Equity';
+        String segment =
+            docType == 'TRADE_FNO' ? 'Futures & Options' : 'Equity';
         steps = [
-          _buildStep(1, 'Go to Zerodha Console > Reports > Tradebook', imagePath: 'assets/images/step1.png'),
-          _buildStep(2, 'Under the Segment dropdown, select "$segment"', imagePath: 'assets/images/step2.png'),
-          _buildStep(3, 'Select your desired Date Range (e.g. current FY) and click the blue arrow (→) button', imagePath: 'assets/images/step3.png'),
-          _buildStep(4, 'Scroll down to the results and click "Download: XLSX"', imagePath: 'assets/images/step4.png'),
+          _buildStep(1, 'Go to Zerodha Console > Reports > Tradebook',
+              imagePath: 'assets/images/step1.png'),
+          _buildStep(2, 'Under the Segment dropdown, select "$segment"',
+              imagePath: 'assets/images/step2.png'),
+          _buildStep(3,
+              'Select your desired Date Range (e.g. current FY) and click the blue arrow (→) button',
+              imagePath: 'assets/images/step3.png'),
+          _buildStep(4, 'Scroll down to the results and click "Download: XLSX"',
+              imagePath: 'assets/images/step4.png'),
           _buildStep(5, 'Upload the downloaded file here'),
         ];
       }
@@ -1089,9 +1361,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         url = 'https://groww.in/user/profile/report';
         title = 'Download Groww Stock Holdings';
         steps = [
-          _buildStep(1, 'Log in to Groww and click on your Profile picture at the top right', imagePath: 'assets/images/groww_step1.png'),
-          _buildStep(2, 'Navigate to the "Holdings" section and select "Stocks - Holdings statement"'),
-          _buildStep(3, 'Select the current date and click the "Download" button', imagePath: 'assets/images/groww_step2.png'),
+          _buildStep(1,
+              'Log in to Groww and click on your Profile picture at the top right',
+              imagePath: 'assets/images/groww_step1.png'),
+          _buildStep(2,
+              'Navigate to the "Holdings" section and select "Stocks - Holdings statement"'),
+          _buildStep(
+              3, 'Select the current date and click the "Download" button',
+              imagePath: 'assets/images/groww_step2.png'),
           _buildStep(4, 'Upload the downloaded file here'),
         ];
       } else {
@@ -1108,20 +1385,32 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         url = 'https://www.angelone.in/trade/reports/download-reports';
         title = 'Download Angel One Portfolio';
         steps = [
-          _buildStep(1, 'Log in to Angel One and go to your Profile section', imagePath: 'assets/images/angel_step1.png'),
-          _buildStep(2, 'Under Reports, select Statements (or any option) to open the reports page', imagePath: 'assets/images/angel_step2.png'),
-          _buildStep(3, 'Navigate to the "Download Reports" tab', imagePath: 'assets/images/angel_step3.png'),
-          _buildStep(4, 'In the Others section, click "DOWNLOAD REPORT" for "Combined Holding Statement"', imagePath: 'assets/images/angel_step4.png'),
+          _buildStep(1, 'Log in to Angel One and go to your Profile section',
+              imagePath: 'assets/images/angel_step1.png'),
+          _buildStep(2,
+              'Under Reports, select Statements (or any option) to open the reports page',
+              imagePath: 'assets/images/angel_step2.png'),
+          _buildStep(3, 'Navigate to the "Download Reports" tab',
+              imagePath: 'assets/images/angel_step3.png'),
+          _buildStep(4,
+              'In the Others section, click "DOWNLOAD REPORT" for "Combined Holding Statement"',
+              imagePath: 'assets/images/angel_step4.png'),
           _buildStep(5, 'Upload the downloaded file here'),
         ];
       } else if (docType == 'TRADE_EQ') {
         url = 'https://www.angelone.in/trade/reports/download-reports';
         title = 'Download Angel One Trading History';
         steps = [
-          _buildStep(1, 'Log in to Angel One and go to your Profile section', imagePath: 'assets/images/angel_step1.png'),
-          _buildStep(2, 'Under Reports, select Statements (or any option) to open the reports page', imagePath: 'assets/images/angel_step2.png'),
-          _buildStep(3, 'Navigate to the "Download Reports" tab', imagePath: 'assets/images/angel_step3.png'),
-          _buildStep(4, 'In the Stocks, SGBs, Bonds and FnO section, click "DOWNLOAD REPORT" for "DP Transaction and Holding Statement"', imagePath: 'assets/images/angel_trade_step4.png'),
+          _buildStep(1, 'Log in to Angel One and go to your Profile section',
+              imagePath: 'assets/images/angel_step1.png'),
+          _buildStep(2,
+              'Under Reports, select Statements (or any option) to open the reports page',
+              imagePath: 'assets/images/angel_step2.png'),
+          _buildStep(3, 'Navigate to the "Download Reports" tab',
+              imagePath: 'assets/images/angel_step3.png'),
+          _buildStep(4,
+              'In the Stocks, SGBs, Bonds and FnO section, click "DOWNLOAD REPORT" for "DP Transaction and Holding Statement"',
+              imagePath: 'assets/images/angel_trade_step4.png'),
           _buildStep(5, 'Upload the downloaded file here'),
         ];
       } else {
@@ -1138,7 +1427,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Text(title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         content: SizedBox(
           width: 700,
           child: SingleChildScrollView(
@@ -1157,9 +1447,11 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       }
                     },
                     icon: const Icon(Icons.open_in_new, size: 18),
-                    label: Text('Open ${broker == 'ZERODHA' ? 'Zerodha Console' : broker == 'ANGEL_ONE' ? 'Angel One' : 'Groww'}'),
+                    label: Text(
+                        'Open ${broker == 'ZERODHA' ? 'Zerodha Console' : broker == 'ANGEL_ONE' ? 'Angel One' : 'Groww'}'),
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
                     ),
                   ),
                 )
@@ -1216,7 +1508,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       child: Container(
                         constraints: const BoxConstraints(maxHeight: 280),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                          border:
+                              Border.all(color: Colors.grey.withOpacity(0.3)),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Image.asset(

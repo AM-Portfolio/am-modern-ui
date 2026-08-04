@@ -15,13 +15,14 @@ class LayoutConfig {
   factory LayoutConfig.mobile({
     String? title,
     bool showLayoutSelector = false,
-  }) => LayoutConfig(
-    layoutType: HeatmapLayoutType.grid,
-    compactView: true,
-    showTitle: title != null,
-    customTitle: title,
-    showLayoutSelector: showLayoutSelector,
-  );
+  }) =>
+      LayoutConfig(
+        layoutType: HeatmapLayoutType.grid,
+        compactView: true,
+        showTitle: title != null,
+        customTitle: title,
+        showLayoutSelector: showLayoutSelector,
+      );
 
   /// Web-optimized layout configuration
   factory LayoutConfig.web({String? title, bool showLayoutSelector = true}) =>
@@ -33,21 +34,22 @@ class LayoutConfig {
 
   /// Minimal layout configuration (for widgets, previews)
   factory LayoutConfig.minimal({String? title}) => LayoutConfig(
-    layoutType: HeatmapLayoutType.grid,
-    compactView: true,
-    showTitle: title != null,
-    customTitle: title,
-  );
+        layoutType: HeatmapLayoutType.grid,
+        compactView: true,
+        showTitle: title != null,
+        customTitle: title,
+      );
 
   /// Dashboard layout configuration
   factory LayoutConfig.dashboard({
     String? title,
     bool showLayoutSelector = true,
-  }) => LayoutConfig(
-    showTitle: title != null,
-    customTitle: title,
-    showLayoutSelector: showLayoutSelector,
-  );
+  }) =>
+      LayoutConfig(
+        showTitle: title != null,
+        customTitle: title,
+        showLayoutSelector: showLayoutSelector,
+      );
 
   /// Portfolio-specific layout configuration
   factory LayoutConfig.portfolio({String? title}) =>
@@ -59,9 +61,9 @@ class LayoutConfig {
 
   /// Mutual funds layout configuration
   factory LayoutConfig.mutualFunds({String? title}) => LayoutConfig(
-    layoutType: HeatmapLayoutType.grid,
-    customTitle: title ?? 'Mutual Funds Heatmap',
-  );
+        layoutType: HeatmapLayoutType.grid,
+        customTitle: title ?? 'Mutual Funds Heatmap',
+      );
 
   /// ETF layout configuration
   factory LayoutConfig.etf({String? title}) =>
@@ -81,13 +83,14 @@ class LayoutConfig {
     bool? showTitle,
     String? customTitle,
     bool? showLayoutSelector,
-  }) => LayoutConfig(
-    layoutType: layoutType ?? this.layoutType,
-    compactView: compactView ?? this.compactView,
-    showTitle: showTitle ?? this.showTitle,
-    customTitle: customTitle ?? this.customTitle,
-    showLayoutSelector: showLayoutSelector ?? this.showLayoutSelector,
-  );
+  }) =>
+      LayoutConfig(
+        layoutType: layoutType ?? this.layoutType,
+        compactView: compactView ?? this.compactView,
+        showTitle: showTitle ?? this.showTitle,
+        customTitle: customTitle ?? this.customTitle,
+        showLayoutSelector: showLayoutSelector ?? this.showLayoutSelector,
+      );
 
   /// Get effective title (custom or default)
   String? get effectiveTitle => showTitle ? customTitle : null;

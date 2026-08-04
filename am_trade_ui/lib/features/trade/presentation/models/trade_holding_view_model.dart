@@ -78,7 +78,8 @@ class TradeHoldingViewModel {
     if (entity.tradeExecutions != null && entity.tradeExecutions!.isNotEmpty) {
       try {
         broker = entity.tradeExecutions!.first.basicInfo?.brokerType?.name;
-        orderType = entity.tradeExecutions!.first.executionInfo?.orderType?.name;
+        orderType =
+            entity.tradeExecutions!.first.executionInfo?.orderType?.name;
       } catch (e) {
         // Ignore extraction errors
         broker = null;
@@ -90,7 +91,10 @@ class TradeHoldingViewModel {
       tradeId: entity.tradeId,
       portfolioId: entity.portfolioId,
       symbol: instrumentInfo.symbol ?? entity.symbol ?? 'UNKNOWN',
-      companyName: instrumentInfo.description ?? instrumentInfo.symbol ?? entity.symbol ?? 'Unknown Company',
+      companyName: instrumentInfo.description ??
+          instrumentInfo.symbol ??
+          entity.symbol ??
+          'Unknown Company',
       sector: instrumentInfo.segment?.name,
       industry: instrumentInfo.series?.name,
       exchange: instrumentInfo.exchange?.name,
@@ -99,10 +103,14 @@ class TradeHoldingViewModel {
       quantity: entity.entryInfo.quantity ?? exitInfo?.quantity,
       entryPrice: entity.entryInfo.price,
       exitPrice: exitInfo?.price,
-      currentPrice: entity.currentPrice ?? exitInfo?.price ?? entity.entryInfo.price,
+      currentPrice:
+          entity.currentPrice ?? exitInfo?.price ?? entity.entryInfo.price,
       avgPrice: entity.entryInfo.price,
-      currentValue:
-          (exitInfo?.quantity ?? entity.entryInfo.quantity ?? 0) * (entity.currentPrice ?? exitInfo?.price ?? entity.entryInfo.price ?? 0),
+      currentValue: (exitInfo?.quantity ?? entity.entryInfo.quantity ?? 0) *
+          (entity.currentPrice ??
+              exitInfo?.price ??
+              entity.entryInfo.price ??
+              0),
       profitLoss: metrics?.profitLoss,
       profitLossPercentage: metrics?.profitLossPercentage,
       riskAmount: metrics?.riskAmount,
@@ -215,12 +223,18 @@ class TradeHoldingViewModel {
   String get displayExchange => exchange ?? 'Unknown';
   String get displayStatus => status ?? 'Unknown';
 
-  String get displayQuantity => quantity != null ? quantity!.toStringAsFixed(0) : '0';
-  String get displayEntryPrice => entryPrice != null ? '₹${entryPrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayExitPrice => exitPrice != null ? '₹${exitPrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayCurrentPrice => currentPrice != null ? '₹${currentPrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayAvgPrice => avgPrice != null ? '₹${avgPrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayCurrentValue => currentValue != null ? '₹${currentValue!.toStringAsFixed(2)}' : 'N/A';
+  String get displayQuantity =>
+      quantity != null ? quantity!.toStringAsFixed(0) : '0';
+  String get displayEntryPrice =>
+      entryPrice != null ? '₹${entryPrice!.toStringAsFixed(2)}' : 'N/A';
+  String get displayExitPrice =>
+      exitPrice != null ? '₹${exitPrice!.toStringAsFixed(2)}' : 'N/A';
+  String get displayCurrentPrice =>
+      currentPrice != null ? '₹${currentPrice!.toStringAsFixed(2)}' : 'N/A';
+  String get displayAvgPrice =>
+      avgPrice != null ? '₹${avgPrice!.toStringAsFixed(2)}' : 'N/A';
+  String get displayCurrentValue =>
+      currentValue != null ? '₹${currentValue!.toStringAsFixed(2)}' : 'N/A';
 
   // Computed values
   double get totalGainLoss => profitLoss ?? 0.0;
@@ -228,15 +242,22 @@ class TradeHoldingViewModel {
   double get todayChange => 0.0; // Not available in new structure
   double get todayChangePercentage => 0.0; // Not available in new structure
 
-  String get displayProfitLoss => profitLoss != null ? '₹${profitLoss!.toStringAsFixed(2)}' : r'₹0.00';
-  String get displayProfitLossPercentage =>
-      profitLossPercentage != null ? '${profitLossPercentage!.toStringAsFixed(2)}%' : '0.00%';
+  String get displayProfitLoss =>
+      profitLoss != null ? '₹${profitLoss!.toStringAsFixed(2)}' : r'₹0.00';
+  String get displayProfitLossPercentage => profitLossPercentage != null
+      ? '${profitLossPercentage!.toStringAsFixed(2)}%'
+      : '0.00%';
 
-  String get displayRiskAmount => riskAmount != null ? '₹${riskAmount!.toStringAsFixed(2)}' : 'N/A';
-  String get displayRewardAmount => rewardAmount != null ? '₹${rewardAmount!.toStringAsFixed(2)}' : 'N/A';
-  String get displayRiskRewardRatio => riskRewardRatio != null ? '${riskRewardRatio!.toStringAsFixed(2)}:1' : 'N/A';
+  String get displayRiskAmount =>
+      riskAmount != null ? '₹${riskAmount!.toStringAsFixed(2)}' : 'N/A';
+  String get displayRewardAmount =>
+      rewardAmount != null ? '₹${rewardAmount!.toStringAsFixed(2)}' : 'N/A';
+  String get displayRiskRewardRatio => riskRewardRatio != null
+      ? '${riskRewardRatio!.toStringAsFixed(2)}:1'
+      : 'N/A';
 
-  String get displayHoldingPeriod => holdingDays != null ? '$holdingDays days' : 'N/A';
+  String get displayHoldingPeriod =>
+      holdingDays != null ? '$holdingDays days' : 'N/A';
 
   bool get isProfit => (profitLoss ?? 0) >= 0;
   bool get isLoss => (profitLoss ?? 0) < 0;
@@ -247,27 +268,35 @@ class TradeHoldingViewModel {
   bool get hasTags => tags != null && tags!.isNotEmpty;
   String get displayTags => tags?.join(', ') ?? 'No tags';
 
-  String get displayReturnOnEquity => returnOnEquity != null ? '${returnOnEquity!.toStringAsFixed(2)}%' : 'N/A';
-  String get displayMaxAdverseExcursion =>
-      maxAdverseExcursion != null ? '\$${maxAdverseExcursion!.toStringAsFixed(2)}' : 'N/A';
-  String get displayMaxFavorableExcursion =>
-      maxFavorableExcursion != null ? '\$${maxFavorableExcursion!.toStringAsFixed(2)}' : 'N/A';
+  String get displayReturnOnEquity =>
+      returnOnEquity != null ? '${returnOnEquity!.toStringAsFixed(2)}%' : 'N/A';
+  String get displayMaxAdverseExcursion => maxAdverseExcursion != null
+      ? '\$${maxAdverseExcursion!.toStringAsFixed(2)}'
+      : 'N/A';
+  String get displayMaxFavorableExcursion => maxFavorableExcursion != null
+      ? '\$${maxFavorableExcursion!.toStringAsFixed(2)}'
+      : 'N/A';
 
   String get displayCurrency => currency ?? 'USD';
   String get displayLotSize => lotSize ?? 'N/A';
 
   bool get isDerivative => derivativeType != null;
   String get displayDerivativeType => derivativeType ?? 'N/A';
-  String get displayStrikePrice => strikePrice != null ? '\$${strikePrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayExpiryDate =>
-      expiryDate != null ? '${expiryDate!.day}/${expiryDate!.month}/${expiryDate!.year}' : 'N/A';
+  String get displayStrikePrice =>
+      strikePrice != null ? '\$${strikePrice!.toStringAsFixed(2)}' : 'N/A';
+  String get displayExpiryDate => expiryDate != null
+      ? '${expiryDate!.day}/${expiryDate!.month}/${expiryDate!.year}'
+      : 'N/A';
   String get displayOptionType => optionType ?? 'N/A';
   String get displayUnderlyingSymbol => underlyingSymbol ?? 'N/A';
 
-  String get displayEntryFees => entryFees != null ? '\$${entryFees!.toStringAsFixed(2)}' : 'N/A';
-  String get displayExitFees => exitFees != null ? '\$${exitFees!.toStringAsFixed(2)}' : 'N/A';
-  String get displayTotalFees =>
-      (entryFees != null || exitFees != null) ? '\$${((entryFees ?? 0) + (exitFees ?? 0)).toStringAsFixed(2)}' : 'N/A';
+  String get displayEntryFees =>
+      entryFees != null ? '\$${entryFees!.toStringAsFixed(2)}' : 'N/A';
+  String get displayExitFees =>
+      exitFees != null ? '\$${exitFees!.toStringAsFixed(2)}' : 'N/A';
+  String get displayTotalFees => (entryFees != null || exitFees != null)
+      ? '\$${((entryFees ?? 0) + (exitFees ?? 0)).toStringAsFixed(2)}'
+      : 'N/A';
 
   String get displayEntryReason => entryReason ?? 'Not specified';
   String get displayExitReason => exitReason ?? 'Not specified';
@@ -280,7 +309,8 @@ class TradeHoldingViewModel {
 
   /// Convert list of entities to view models
   /// Gracefully handles conversion errors to prevent one bad trade from breaking the entire list
-  static List<TradeHoldingViewModel> fromEntityList(List<TradeDetails> entities) {
+  static List<TradeHoldingViewModel> fromEntityList(
+      List<TradeDetails> entities) {
     final viewModels = <TradeHoldingViewModel>[];
 
     for (final entity in entities) {
@@ -300,7 +330,7 @@ class TradeHoldingViewModel {
 /// View model for holdings collection
 class TradeHoldingsViewModel {
   const TradeHoldingsViewModel({
-        required this.portfolioId,
+    required this.portfolioId,
     required this.holdings,
     required this.totalElements,
     this.totalPages = 0,
@@ -309,18 +339,20 @@ class TradeHoldingsViewModel {
   });
 
   /// Factory from domain entity
-  factory TradeHoldingsViewModel.fromEntity(TradeHoldings entity) => TradeHoldingsViewModel(
-    portfolioId: entity.portfolioId,
-    holdings: TradeHoldingViewModel.fromEntityList(entity.content),
-    totalElements: entity.totalElements,
-    totalPages: entity.totalPages,
-    currentPage: entity.number,
-    hasMore: !entity.last,
-  );
+  factory TradeHoldingsViewModel.fromEntity(TradeHoldings entity) =>
+      TradeHoldingsViewModel(
+        portfolioId: entity.portfolioId,
+        holdings: TradeHoldingViewModel.fromEntityList(entity.content),
+        totalElements: entity.totalElements,
+        totalPages: entity.totalPages,
+        currentPage: entity.number,
+        hasMore: !entity.last,
+      );
 
   /// Empty state
   factory TradeHoldingsViewModel.empty(String portfolioId) =>
-      TradeHoldingsViewModel(portfolioId: portfolioId, holdings: [], totalElements: 0);
+      TradeHoldingsViewModel(
+          portfolioId: portfolioId, holdings: [], totalElements: 0);
 
   final String portfolioId;
   final List<TradeHoldingViewModel> holdings;

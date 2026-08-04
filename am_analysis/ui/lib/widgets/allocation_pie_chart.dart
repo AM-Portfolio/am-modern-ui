@@ -27,7 +27,8 @@ class _AllocationPieChartState extends State<AllocationPieChart> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
+            child: Text(widget.title,
+                style: Theme.of(context).textTheme.titleLarge),
           ),
           SizedBox(
             height: 300,
@@ -73,7 +74,8 @@ class _AllocationPieChartState extends State<AllocationPieChart> {
                               color: _getColor(index),
                             ),
                             const SizedBox(width: 8),
-                            Text('${item.name}: ${item.percentage.toStringAsFixed(1)}%'),
+                            Text(
+                                '${item.name}: ${item.percentage.toStringAsFixed(1)}%'),
                           ],
                         ),
                       );
@@ -94,7 +96,7 @@ class _AllocationPieChartState extends State<AllocationPieChart> {
       final fontSize = isTouched ? 25.0 : 16.0;
       final radius = isTouched ? 60.0 : 50.0;
       final item = widget.items[i];
-      
+
       return PieChartSectionData(
         color: _getColor(i),
         value: item.percentage,
@@ -121,5 +123,3 @@ class _AllocationPieChartState extends State<AllocationPieChart> {
     return colors[index % colors.length];
   }
 }
-
-

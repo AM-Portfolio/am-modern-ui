@@ -60,29 +60,32 @@ class SecuritySearchRequest {
   String? query;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is SecuritySearchRequest &&
-    _deepEquality.equals(other.symbols, symbols) &&
-    other.isin == isin &&
-    other.sector == sector &&
-    other.industry == industry &&
-    other.index == index &&
-    other.query == query;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SecuritySearchRequest &&
+          _deepEquality.equals(other.symbols, symbols) &&
+          other.isin == isin &&
+          other.sector == sector &&
+          other.industry == industry &&
+          other.index == index &&
+          other.query == query;
 
   @override
   int get hashCode =>
-    (symbols.hashCode) +
-    (isin == null ? 0 : isin!.hashCode) +
-    (sector == null ? 0 : sector!.hashCode) +
-    (industry == null ? 0 : industry!.hashCode) +
-    (index == null ? 0 : index!.hashCode) +
-    (query == null ? 0 : query!.hashCode);
+      (symbols.hashCode) +
+      (isin == null ? 0 : isin!.hashCode) +
+      (sector == null ? 0 : sector!.hashCode) +
+      (industry == null ? 0 : industry!.hashCode) +
+      (index == null ? 0 : index!.hashCode) +
+      (query == null ? 0 : query!.hashCode);
 
   @override
-  String toString() => 'SecuritySearchRequest[symbols=$symbols, isin=$isin, sector=$sector, industry=$industry, index=$index, query=$query]';
+  String toString() =>
+      'SecuritySearchRequest[symbols=$symbols, isin=$isin, sector=$sector, industry=$industry, index=$index, query=$query]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'symbols'] = this.symbols;
+    json[r'symbols'] = this.symbols;
     if (this.isin != null) {
       json[r'isin'] = this.isin;
     } else {
@@ -122,15 +125,19 @@ class SecuritySearchRequest {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "SecuritySearchRequest[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "SecuritySearchRequest[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "SecuritySearchRequest[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "SecuritySearchRequest[$key]" has a null value in JSON.');
         });
         return true;
       }());
 
       return SecuritySearchRequest(
         symbols: json[r'symbols'] is Iterable
-            ? (json[r'symbols'] as Iterable).cast<String>().toList(growable: false)
+            ? (json[r'symbols'] as Iterable)
+                .cast<String>()
+                .toList(growable: false)
             : const [],
         isin: mapValueOfType<String>(json, r'isin'),
         sector: mapValueOfType<String>(json, r'sector'),
@@ -142,7 +149,10 @@ class SecuritySearchRequest {
     return null;
   }
 
-  static List<SecuritySearchRequest> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<SecuritySearchRequest> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <SecuritySearchRequest>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -158,7 +168,7 @@ class SecuritySearchRequest {
   static Map<String, SecuritySearchRequest> mapFromJson(dynamic json) {
     final map = <String, SecuritySearchRequest>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = SecuritySearchRequest.fromJson(entry.value);
         if (value != null) {
@@ -170,19 +180,23 @@ class SecuritySearchRequest {
   }
 
   // maps a json object with a list of SecuritySearchRequest-objects as value to a dart map
-  static Map<String, List<SecuritySearchRequest>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<SecuritySearchRequest>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<SecuritySearchRequest>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = SecuritySearchRequest.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = SecuritySearchRequest.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

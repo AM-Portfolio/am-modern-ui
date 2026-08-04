@@ -3,7 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart';
 
 class PortfolioVerificationPage extends StatefulWidget {
-  const PortfolioVerificationPage({super.key, });
+  const PortfolioVerificationPage({super.key});
 
   @override
   State<PortfolioVerificationPage> createState() =>

@@ -1,11 +1,11 @@
-import 'package:am_market_ui/core/providers/view_mode_provider.dart' as view_mode;
+import 'package:am_market_ui/core/providers/view_mode_provider.dart'
+    as view_mode;
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/pages/analysis_page.dart';
 import 'package:am_market_common/providers/market_provider.dart';
-
 
 import 'package:am_market_ui/features/etf/etf_explorer_page.dart';
 import 'package:am_market_ui/features/instrument/instrument_explorer_page.dart';
@@ -241,7 +241,8 @@ class _MarketContentState extends ConsumerState<MarketContent> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<PriceService>>(priceServiceProvider, (previous, next) {
+    ref.listen<AsyncValue<PriceService>>(priceServiceProvider,
+        (previous, next) {
       next.whenData((service) {
         if (!context.mounted) return;
         context.read<MarketProvider>().setPriceService(service);
@@ -249,74 +250,74 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     });
 
     return Consumer2<MarketProvider, view_mode.ViewModeProvider>(
-    builder: (context, provider, viewModeProvider, _) {
-      // Update controller items when provider updates (e.g. indices loaded)
-      final newItems = _buildNavigationItems(provider, viewModeProvider);
-      if (_hasItemsChanged(newItems)) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _swipeController.updateItems(newItems);
-            _syncTabFromUrl();
-          }
-        });
-      }
-
-      final isMobile = MediaQuery.sizeOf(context).width < 900;
-
-      void openAllIndices() {
-        final dash = _dashboardKey.currentState;
-        if (dash != null) {
-          dash.openAllIndicesPanel();
-          return;
-        }
-        if (_swipeController.currentIndex != 0) {
-          _swipeController.navigateTo(0);
+      builder: (context, provider, viewModeProvider, _) {
+        // Update controller items when provider updates (e.g. indices loaded)
+        final newItems = _buildNavigationItems(provider, viewModeProvider);
+        if (_hasItemsChanged(newItems)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _dashboardKey.currentState?.openAllIndicesPanel();
+            if (mounted) {
+              _swipeController.updateItems(newItems);
+              _syncTabFromUrl();
+            }
           });
         }
-      }
 
-      return UnifiedSidebarScaffold(
-        module: ModuleType.market,
-        onBackToGlobal: widget.onBack,
-        showModuleBottomNavigation: false,
-        // Keep Dashboard / Market Analysis pills always visible so users can
-        // switch back from Analysis without relying on hidden scroll chrome.
-        autoHideMobileTabsOnScroll: false,
-        showMobileMenuButton: false,
-        // Compact grid icon left of "Market Data".
-        mobileLeading: isMobile
-            ? Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: Center(
-                  child: AllIndicesChip(
-                    iconOnly: true,
-                    onPressed: openAllIndices,
+        final isMobile = MediaQuery.sizeOf(context).width < 900;
+
+        void openAllIndices() {
+          final dash = _dashboardKey.currentState;
+          if (dash != null) {
+            dash.openAllIndicesPanel();
+            return;
+          }
+          if (_swipeController.currentIndex != 0) {
+            _swipeController.navigateTo(0);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _dashboardKey.currentState?.openAllIndicesPanel();
+            });
+          }
+        }
+
+        return UnifiedSidebarScaffold(
+          module: ModuleType.market,
+          onBackToGlobal: widget.onBack,
+          showModuleBottomNavigation: false,
+          // Keep Dashboard / Market Analysis pills always visible so users can
+          // switch back from Analysis without relying on hidden scroll chrome.
+          autoHideMobileTabsOnScroll: false,
+          showMobileMenuButton: false,
+          // Compact grid icon left of "Market Data".
+          mobileLeading: isMobile
+              ? Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Center(
+                    child: AllIndicesChip(
+                      iconOnly: true,
+                      onPressed: openAllIndices,
+                    ),
                   ),
-                ),
-              )
-            : null,
-        mobileLeadingWidth: isMobile ? 44 : null,
-        headerActions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: GlobalTimeFrameBar(
-              variant: GlobalTimeFrameVariant.dropdown,
-              dropdownWidth: 72,
+                )
+              : null,
+          mobileLeadingWidth: isMobile ? 44 : null,
+          headerActions: const [
+            Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: GlobalTimeFrameBar(
+                variant: GlobalTimeFrameVariant.dropdown,
+                dropdownWidth: 72,
+              ),
             ),
+          ],
+          // Dashboard / Market Analysis pills for switching sections.
+          sections: _buildSidebarSections(provider, viewModeProvider),
+          body: SwipeablePageView(
+            key: const PageStorageKey('market_page_info'),
+            scrollDirection: Axis.vertical,
+            controller: _swipeController,
+            showIndicator: false,
           ),
-        ],
-        // Dashboard / Market Analysis pills for switching sections.
-        sections: _buildSidebarSections(provider, viewModeProvider),
-        body: SwipeablePageView(
-          key: const PageStorageKey('market_page_info'),
-          scrollDirection: Axis.vertical,
-          controller: _swipeController,
-          showIndicator: false,
-        ),
-      );
-    },
+        );
+      },
     );
   }
 
@@ -337,7 +338,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     if (viewModeProvider.isUserMode) {
       return _buildUserModeSections(provider);
     }
-    
+
     // Developer mode - show all sections (existing behavior)
     // Map controller items back to sections
     // Indices:
@@ -457,20 +458,23 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       SecondarySidebarSection(title: 'Data', items: mainItems),
       if (indexItems.isNotEmpty)
         SecondarySidebarSection(title: 'Major Indices', items: indexItems),
-      SecondarySidebarSection(title: 'System Tools', items: [adminItem, developerItem]),
+      SecondarySidebarSection(
+          title: 'System Tools', items: [adminItem, developerItem]),
     ];
 
     return sections;
   }
 
   // User Mode - Simplified Navigation (Dashboard, Overview, Heatmap)
-  List<SecondarySidebarSection> _buildUserModeSections(MarketProvider provider) {
+  List<SecondarySidebarSection> _buildUserModeSections(
+      MarketProvider provider) {
     const accentColor = ModuleColors.market;
     final currentIndex = _swipeController.currentIndex;
 
     final userItems = [
       _createSidebarItem(0, 'Dashboard', Icons.home_rounded, 'Overview'),
-      _createSidebarItem(1, 'Market Analysis', Icons.analytics_rounded, 'Detailed charts'),
+      _createSidebarItem(
+          1, 'Market Analysis', Icons.analytics_rounded, 'Detailed charts'),
     ];
 
     return [
@@ -489,18 +493,19 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     String title,
     IconData icon,
     String subtitle,
-  ) => SecondarySidebarItem(
-    title: title,
-    icon: icon,
-    subtitle: subtitle,
-    isSelected: _swipeController.currentIndex == index,
-    accentColor: ModuleColors.market,
-    onTap: () {
-      _swipeController.navigateTo(index);
-      context.read<MarketProvider>().selectIndex(title);
-      widget.onTabChanged?.call(_slugForTitle(title));
-    },
-  );
+  ) =>
+      SecondarySidebarItem(
+        title: title,
+        icon: icon,
+        subtitle: subtitle,
+        isSelected: _swipeController.currentIndex == index,
+        accentColor: ModuleColors.market,
+        onTap: () {
+          _swipeController.navigateTo(index);
+          context.read<MarketProvider>().selectIndex(title);
+          widget.onTabChanged?.call(_slugForTitle(title));
+        },
+      );
 
   List<NavigationItem> _buildNavigationItems(
     MarketProvider provider,
@@ -510,7 +515,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     if (viewModeProvider.isUserMode) {
       return _buildUserModeNavigationItems(provider);
     }
-    
+
     // Developer mode - show all items
     const accentColor = ModuleColors.market;
 
@@ -616,19 +621,19 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Dashboard',
         subtitle: 'Overview',
         icon: Icons.home_rounded,
-        page: _wrapPage(UserDashboardPage(key: _dashboardKey)), // User Dashboard with cards + chart
+        page: _wrapPage(UserDashboardPage(
+            key: _dashboardKey)), // User Dashboard with cards + chart
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'Market Analysis',
         subtitle: 'Heatmap & Details',
         icon: Icons.analytics_rounded,
-        page: _wrapPage(const HeatmapExplorerView()), // Was AnalysisPage(), now consolidated
+        page: _wrapPage(
+            const HeatmapExplorerView()), // Was AnalysisPage(), now consolidated
         accentColor: accentColor,
       ),
       // Heatmap Explorer removed as it's now Market Analysis
     ];
   }
 }
-
-

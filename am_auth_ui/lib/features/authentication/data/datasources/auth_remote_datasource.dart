@@ -21,7 +21,10 @@ class AuthRemoteDataSource implements AuthDataSource {
       AppLogger.info('🔵 [AuthRemoteDataSource] User Mgmt Login URL: $fullUrl');
       final response = await _dio.post(
         fullUrl,
-        data: {'username': email, 'password': password}, // Centralized auth service (am-auth-tokens) uses 'username'
+        data: {
+          'username': email,
+          'password': password
+        }, // Centralized auth service (am-auth-tokens) uses 'username'
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
@@ -31,10 +34,15 @@ class AuthRemoteDataSource implements AuthDataSource {
         final data = response.data;
 
         // robust ID parsing
-        final userId = data['user_id'] ?? data['id'] ?? data['_id'] ?? data['userId'] ?? '';
+        final userId = data['user_id'] ??
+            data['id'] ??
+            data['_id'] ??
+            data['userId'] ??
+            '';
 
         if (userId.toString().isEmpty) {
-          AppLogger.error('🚨 CRITICAL: Login response has empty User ID! Data keys: ${data.keys.toList()}');
+          AppLogger.error(
+              '🚨 CRITICAL: Login response has empty User ID! Data keys: ${data.keys.toList()}');
         }
 
         final user = UserModel(
@@ -73,18 +81,18 @@ class AuthRemoteDataSource implements AuthDataSource {
       if (e.response?.data != null && e.response!.data is Map) {
         final data = e.response!.data;
         final detail = data['detail'];
-        
+
         if (detail is Map) {
-          errorMessage = detail['error_description']?.toString() ?? 
-                         detail['message']?.toString() ?? 
-                         detail['error']?.toString() ?? 
-                         errorMessage;
+          errorMessage = detail['error_description']?.toString() ??
+              detail['message']?.toString() ??
+              detail['error']?.toString() ??
+              errorMessage;
         } else if (detail != null) {
           errorMessage = detail.toString();
         } else {
-          errorMessage = data['message']?.toString() ?? 
-                         data['error']?.toString() ?? 
-                         errorMessage;
+          errorMessage = data['message']?.toString() ??
+              data['error']?.toString() ??
+              errorMessage;
         }
       }
 
@@ -94,7 +102,6 @@ class AuthRemoteDataSource implements AuthDataSource {
       );
     }
   }
-
 
   @override
   Future<AuthResultModel> googleLogin(String idToken) async {
@@ -117,10 +124,10 @@ class AuthRemoteDataSource implements AuthDataSource {
 
       if (response.statusCode == 200) {
         AppLogger.info('🔵 [BACKEND] ✅ Success! Parsing response...');
-        
+
         // Backend returns flat structure, need to parse manually
         final data = response.data as Map<String, dynamic>;
-        
+
         final user = UserModel(
           id: data['user']['id'] as String,
           email: data['user']['email'] as String,
@@ -128,18 +135,19 @@ class AuthRemoteDataSource implements AuthDataSource {
           photoUrl: data['user']['picture'] as String?,
           authMethod: 'google',
         );
-        
+
         final tokens = AuthTokensModel(
           accessToken: data['access_token'] as String,
-          refreshToken: data['refresh_token']  as String?,
+          refreshToken: data['refresh_token'] as String?,
           expiresAt: DateTime.now().add(
             Duration(seconds: data['expires_in'] as int? ?? 3600),
           ),
         );
-        
+
         final model = AuthResultModel(user: user, tokens: tokens);
-        
-        print('✅ [BACKEND] Parsed user: ${model.user.email}, ID: ${model.user.id}');
+
+        print(
+            '✅ [BACKEND] Parsed user: ${model.user.email}, ID: ${model.user.id}');
         AppLogger.info('🔵 [BACKEND] Parsed user: ${model.user.email}');
         return model;
       } else {
@@ -157,7 +165,7 @@ class AuthRemoteDataSource implements AuthDataSource {
       print('🔴 [BACKEND] Message: ${e.message}');
       print('🔴 [BACKEND] Response: ${e.response?.data}');
       print('🔴 [BACKEND] Status Code: ${e.response?.statusCode}');
-      
+
       AppLogger.error('🔴 [BACKEND] DioException occurred');
       AppLogger.error('🔴 [BACKEND] Type: ${e.type}');
       AppLogger.error('🔴 [BACKEND] Message: ${e.message}');
@@ -173,18 +181,18 @@ class AuthRemoteDataSource implements AuthDataSource {
       if (e.response?.data != null && e.response!.data is Map) {
         final data = e.response!.data;
         final detail = data['detail'];
-        
+
         if (detail is Map) {
-          errorMessage = detail['error_description']?.toString() ?? 
-                         detail['message']?.toString() ?? 
-                         detail['error']?.toString() ?? 
-                         errorMessage;
+          errorMessage = detail['error_description']?.toString() ??
+              detail['message']?.toString() ??
+              detail['error']?.toString() ??
+              errorMessage;
         } else if (detail != null) {
           errorMessage = detail.toString();
         } else {
-          errorMessage = data['message']?.toString() ?? 
-                         data['error']?.toString() ?? 
-                         errorMessage;
+          errorMessage = data['message']?.toString() ??
+              data['error']?.toString() ??
+              errorMessage;
         }
         AppLogger.error('🔴 [BACKEND] Error detail: $errorMessage');
       }
@@ -200,7 +208,8 @@ class AuthRemoteDataSource implements AuthDataSource {
   Future<AuthResultModel> demoLogin() async {
     const devUserId = String.fromEnvironment('AM_DEV_USER_ID');
     if (devUserId.isNotEmpty) {
-      AppLogger.info('🔵 [AuthRemoteDataSource] Bypassing remote login for local dev');
+      AppLogger.info(
+          '🔵 [AuthRemoteDataSource] Bypassing remote login for local dev');
       return AuthResultModel(
         user: UserModel(
           id: devUserId,
@@ -209,12 +218,13 @@ class AuthRemoteDataSource implements AuthDataSource {
           authMethod: 'demo',
         ),
         tokens: AuthTokensModel(
-          accessToken: const String.fromEnvironment('AM_DEV_AUTH_TOKEN', defaultValue: 'mock_token'),
+          accessToken: const String.fromEnvironment('AM_DEV_AUTH_TOKEN',
+              defaultValue: 'mock_token'),
           expiresAt: DateTime.now().add(const Duration(days: 1)),
         ),
       );
     }
-    
+
     // Fallback to real remote login if not running in local dev mode
     return emailLogin(AuthConstants.demoEmail, AuthConstants.demoPassword);
   }
@@ -306,7 +316,11 @@ class AuthRemoteDataSource implements AuthDataSource {
         }
 
         // robust ID parsing for registration
-        final userId = data['user_id'] ?? data['id'] ?? data['_id'] ?? data['userId'] ?? '';
+        final userId = data['user_id'] ??
+            data['id'] ??
+            data['_id'] ??
+            data['userId'] ??
+            '';
 
         final user = UserModel(
           id: userId.toString(),
@@ -358,18 +372,18 @@ class AuthRemoteDataSource implements AuthDataSource {
       if (e.response?.data != null && e.response!.data is Map) {
         final data = e.response!.data;
         final detail = data['detail'];
-        
+
         if (detail is Map) {
-          errorMessage = detail['error_description']?.toString() ?? 
-                         detail['message']?.toString() ?? 
-                         detail['error']?.toString() ?? 
-                         errorMessage;
+          errorMessage = detail['error_description']?.toString() ??
+              detail['message']?.toString() ??
+              detail['error']?.toString() ??
+              errorMessage;
         } else if (detail != null) {
           errorMessage = detail.toString();
         } else {
-          errorMessage = data['message']?.toString() ?? 
-                         data['error']?.toString() ?? 
-                         errorMessage;
+          errorMessage = data['message']?.toString() ??
+              data['error']?.toString() ??
+              errorMessage;
         }
       }
 
@@ -391,4 +405,3 @@ class AuthRemoteDataSource implements AuthDataSource {
     }
   }
 }
-

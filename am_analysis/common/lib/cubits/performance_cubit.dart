@@ -7,16 +7,16 @@ import 'allocation_cubit.dart'; // For AnalysisService interface
 class PerformanceCubit extends Cubit<PerformanceState> {
   final String portfolioId;
   final AnalysisService analysisService;
-  
+
   PerformanceCubit({
     required this.portfolioId,
     required this.analysisService,
   }) : super(const PerformanceInitial());
-  
+
   /// Load performance data for a given timeFrame
   Future<void> loadPerformance(TimeFrame timeFrame) async {
     emit(const PerformanceLoading());
-    
+
     try {
       final dataPoints = await analysisService.getPerformance(
         portfolioId: portfolioId,
@@ -27,7 +27,7 @@ class PerformanceCubit extends Cubit<PerformanceState> {
       emit(PerformanceError(e.toString(), stackTrace));
     }
   }
-  
+
   /// Refresh current data
   Future<void> refresh() async {
     final currentState = state;
@@ -35,7 +35,7 @@ class PerformanceCubit extends Cubit<PerformanceState> {
       await loadPerformance(currentState.timeFrame);
     }
   }
-  
+
   /// Change time frame and reload data
   Future<void> changeTimeFrame(TimeFrame timeFrame) async {
     await loadPerformance(timeFrame);

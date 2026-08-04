@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 /// Service for aggregating trade calendar data into view models
 class CalendarAggregationService {
   /// Aggregate trade calendar into yearly view data
-  YearlyCalendarData aggregateYearlyData({required Map<String, List<TradeDetails>> calendarData, required int year}) {
+  YearlyCalendarData aggregateYearlyData(
+      {required Map<String, List<TradeDetails>> calendarData,
+      required int year}) {
     AppLogger.info(
       '[AggregationService] Aggregating yearly data for $year with ${calendarData.length} date entries',
       tag: 'CalendarAggregationService',
@@ -66,7 +68,9 @@ class CalendarAggregationService {
       tag: 'CalendarAggregationService',
     );
 
-    final avgMonthlyPnL = monthlyPnLs.isNotEmpty ? monthlyPnLs.reduce((a, b) => a + b) / monthlyPnLs.length : 0.0;
+    final avgMonthlyPnL = monthlyPnLs.isNotEmpty
+        ? monthlyPnLs.reduce((a, b) => a + b) / monthlyPnLs.length
+        : 0.0;
 
     // Find best and worst months
     var bestMonth = 1;
@@ -211,7 +215,8 @@ class CalendarAggregationService {
 
       // Track symbol distribution
       final symbol = trade.instrumentInfo.symbol;
-      symbolDistribution[symbol ?? "UNKNOWN"] = (symbolDistribution[symbol ?? "UNKNOWN"] ?? 0) + 1;
+      symbolDistribution[symbol ?? "UNKNOWN"] =
+          (symbolDistribution[symbol ?? "UNKNOWN"] ?? 0) + 1;
 
       // Track holding time
       final holdingTime = Duration(
@@ -224,7 +229,10 @@ class CalendarAggregationService {
 
     final avgHoldingTime = holdingTimes.isNotEmpty
         ? Duration(
-            microseconds: holdingTimes.map((d) => d.inMicroseconds).reduce((a, b) => a + b) ~/ holdingTimes.length,
+            microseconds: holdingTimes
+                    .map((d) => d.inMicroseconds)
+                    .reduce((a, b) => a + b) ~/
+                holdingTimes.length,
           )
         : Duration.zero;
 
@@ -243,7 +251,8 @@ class CalendarAggregationService {
 
   // Helper methods
 
-  List<TradeDetails> _getMonthData(Map<String, List<TradeDetails>> calendarData, int year, int month) {
+  List<TradeDetails> _getMonthData(
+      Map<String, List<TradeDetails>> calendarData, int year, int month) {
     final allTrades = <TradeDetails>[];
     final daysInMonth = DateUtils.getDaysInMonth(year, month);
 
@@ -256,7 +265,8 @@ class CalendarAggregationService {
     return allTrades;
   }
 
-  MonthSummary _createMonthSummary(List<TradeDetails> trades, int year, int month) {
+  MonthSummary _createMonthSummary(
+      List<TradeDetails> trades, int year, int month) {
     final totalTrades = trades.length;
     var totalPnL = 0.0;
     var winningTrades = 0;
@@ -286,7 +296,8 @@ class CalendarAggregationService {
     );
   }
 
-  DaySummary _createDaySummary(List<TradeDetails> trades, int year, int month, int day) {
+  DaySummary _createDaySummary(
+      List<TradeDetails> trades, int year, int month, int day) {
     final totalTrades = trades.length;
     var totalPnL = 0.0;
     var winningTrades = 0;
@@ -316,4 +327,3 @@ class CalendarAggregationService {
   String _formatDateKey(int year, int month, int day) =>
       '${year.toString().padLeft(4, '0')}-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
 }
-

@@ -36,7 +36,8 @@ class YearCalendarHeader extends StatelessWidget {
   }
 
   /// Build mobile header — compact controls, then a slim stats strip.
-  Widget _buildMobileHeader(BuildContext context, Map<String, dynamic> yearStats) {
+  Widget _buildMobileHeader(
+      BuildContext context, Map<String, dynamic> yearStats) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       child: Column(
@@ -56,7 +57,8 @@ class YearCalendarHeader extends StatelessWidget {
   }
 
   /// Build desktop/tablet header layout
-  Widget _buildDesktopHeader(BuildContext context, Map<String, dynamic> yearStats) =>
+  Widget _buildDesktopHeader(
+          BuildContext context, Map<String, dynamic> yearStats) =>
       LayoutBuilder(
         builder: (context, constraints) {
           final isNarrow = constraints.maxWidth < 900;
@@ -309,13 +311,11 @@ class YearCalendarYearPicker extends StatelessWidget {
           Future<void> openYearMenu() async {
             final box = buttonContext.findRenderObject() as RenderBox?;
             if (box == null || !buttonContext.mounted) return;
-            final overlay = Overlay.of(buttonContext)
-                .context
-                .findRenderObject() as RenderBox?;
+            final overlay = Overlay.of(buttonContext).context.findRenderObject()
+                as RenderBox?;
             if (overlay == null) return;
 
-            final offset =
-                box.localToGlobal(Offset.zero, ancestor: overlay);
+            final offset = box.localToGlobal(Offset.zero, ancestor: overlay);
             final size = box.size;
             final theme = Theme.of(buttonContext);
             final isDark = theme.brightness == Brightness.dark;
@@ -471,7 +471,8 @@ class YearCalendarLegend extends StatelessWidget {
 }
 
 /// Shared year stats calculation.
-Map<String, dynamic> calculateYearStats(Map<int, CalendarMonthData> monthsData) {
+Map<String, dynamic> calculateYearStats(
+    Map<int, CalendarMonthData> monthsData) {
   var totalTrades = 0;
   var winningTrades = 0;
   var totalPnL = 0.0;

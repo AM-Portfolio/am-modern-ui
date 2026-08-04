@@ -42,25 +42,28 @@ class HistoricalDataResponseV1 {
   String? message;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is HistoricalDataResponseV1 &&
-    _deepEquality.equals(other.data, data) &&
-    other.metadata == metadata &&
-    other.error == error &&
-    other.message == message;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HistoricalDataResponseV1 &&
+          _deepEquality.equals(other.data, data) &&
+          other.metadata == metadata &&
+          other.error == error &&
+          other.message == message;
 
   @override
   int get hashCode =>
-    (data.hashCode) +
-    (metadata == null ? 0 : metadata!.hashCode) +
-    (error == null ? 0 : error!.hashCode) +
-    (message == null ? 0 : message!.hashCode);
+      (data.hashCode) +
+      (metadata == null ? 0 : metadata!.hashCode) +
+      (error == null ? 0 : error!.hashCode) +
+      (message == null ? 0 : message!.hashCode);
 
   @override
-  String toString() => 'HistoricalDataResponseV1[data=$data, metadata=$metadata, error=$error, message=$message]';
+  String toString() =>
+      'HistoricalDataResponseV1[data=$data, metadata=$metadata, error=$error, message=$message]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'data'] = this.data;
+    json[r'data'] = this.data;
     if (this.metadata != null) {
       json[r'metadata'] = this.metadata;
     } else {
@@ -90,8 +93,10 @@ class HistoricalDataResponseV1 {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "HistoricalDataResponseV1[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "HistoricalDataResponseV1[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "HistoricalDataResponseV1[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "HistoricalDataResponseV1[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -106,7 +111,10 @@ class HistoricalDataResponseV1 {
     return null;
   }
 
-  static List<HistoricalDataResponseV1> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<HistoricalDataResponseV1> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <HistoricalDataResponseV1>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -122,7 +130,7 @@ class HistoricalDataResponseV1 {
   static Map<String, HistoricalDataResponseV1> mapFromJson(dynamic json) {
     final map = <String, HistoricalDataResponseV1>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = HistoricalDataResponseV1.fromJson(entry.value);
         if (value != null) {
@@ -134,19 +142,23 @@ class HistoricalDataResponseV1 {
   }
 
   // maps a json object with a list of HistoricalDataResponseV1-objects as value to a dart map
-  static Map<String, List<HistoricalDataResponseV1>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<HistoricalDataResponseV1>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<HistoricalDataResponseV1>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = HistoricalDataResponseV1.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = HistoricalDataResponseV1.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

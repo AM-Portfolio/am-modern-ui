@@ -66,27 +66,28 @@ class PerformanceMetricsDto {
     this.worstDayLoss,
   });
 
-  factory PerformanceMetricsDto.fromJson(Map<String, dynamic> json) => _$PerformanceMetricsDtoFromJson(json);
+  factory PerformanceMetricsDto.fromJson(Map<String, dynamic> json) =>
+      _$PerformanceMetricsDtoFromJson(json);
   Map<String, dynamic> toJson() => _$PerformanceMetricsDtoToJson(this);
 
   PerformanceMetrics toEntity() => PerformanceMetrics(
-    totalProfitLoss: totalProfitLoss ?? 0.0,
-    totalProfitLossPercentage: totalProfitLossPercentage ?? 0.0,
-    winRate: winRate ?? 0.0,
-    profitFactor: profitFactor ?? 0.0,
-    expectancy: expectancy ?? 0.0,
-    annualizedReturn: annualizedReturn ?? 0.0,
-    averageWinningTrade: averageWinningTrade ?? 0.0,
-    averageLosingTrade: averageLosingTrade ?? 0.0,
-    largestWinningTrade: largestWinningTrade ?? 0.0,
-    largestLosingTrade: largestLosingTrade ?? 0.0,
-    winLossRatio: winLossRatio ?? 0.0,
-    maxDrawdown: maxDrawdown ?? 0.0,
-    longestWinningStreak: longestWinningStreak ?? 0,
-    longestLosingStreak: longestLosingStreak ?? 0,
-    returnOnCapital: returnOnCapital ?? 0.0,
-    tradesPerDay: tradesPerDay ?? 0.0,
-  );
+        totalProfitLoss: totalProfitLoss ?? 0.0,
+        totalProfitLossPercentage: totalProfitLossPercentage ?? 0.0,
+        winRate: winRate ?? 0.0,
+        profitFactor: profitFactor ?? 0.0,
+        expectancy: expectancy ?? 0.0,
+        annualizedReturn: annualizedReturn ?? 0.0,
+        averageWinningTrade: averageWinningTrade ?? 0.0,
+        averageLosingTrade: averageLosingTrade ?? 0.0,
+        largestWinningTrade: largestWinningTrade ?? 0.0,
+        largestLosingTrade: largestLosingTrade ?? 0.0,
+        winLossRatio: winLossRatio ?? 0.0,
+        maxDrawdown: maxDrawdown ?? 0.0,
+        longestWinningStreak: longestWinningStreak ?? 0,
+        longestLosingStreak: longestLosingStreak ?? 0,
+        returnOnCapital: returnOnCapital ?? 0.0,
+        tradesPerDay: tradesPerDay ?? 0.0,
+      );
 }
 
 @JsonSerializable()
@@ -113,16 +114,17 @@ class RiskMetricsDto {
     this.consecutiveLossesToRuin,
   });
 
-  factory RiskMetricsDto.fromJson(Map<String, dynamic> json) => _$RiskMetricsDtoFromJson(json);
+  factory RiskMetricsDto.fromJson(Map<String, dynamic> json) =>
+      _$RiskMetricsDtoFromJson(json);
   Map<String, dynamic> toJson() => _$RiskMetricsDtoToJson(this);
 
   RiskMetrics toEntity() => RiskMetrics(
-    maxDrawdown: maxDrawdown ?? 0.0,
-    sharpeRatio: sharpeRatio ?? 0.0,
-    sortinoRatio: sortinoRatio ?? 0.0,
-    valueAtRisk: valueAtRisk ?? 0.0,
-    probabilityOfRuin: probabilityOfRuin ?? 0.0,
-  );
+        maxDrawdown: maxDrawdown ?? 0.0,
+        sharpeRatio: sharpeRatio ?? 0.0,
+        sortinoRatio: sortinoRatio ?? 0.0,
+        valueAtRisk: valueAtRisk ?? 0.0,
+        probabilityOfRuin: probabilityOfRuin ?? 0.0,
+      );
 }
 
 @JsonSerializable()
@@ -167,17 +169,18 @@ class TradeDistributionMetricsDto {
     this.winRateByPositionSize,
   });
 
-  factory TradeDistributionMetricsDto.fromJson(Map<String, dynamic> json) => _$TradeDistributionMetricsDtoFromJson(json);
+  factory TradeDistributionMetricsDto.fromJson(Map<String, dynamic> json) =>
+      _$TradeDistributionMetricsDtoFromJson(json);
   Map<String, dynamic> toJson() => _$TradeDistributionMetricsDtoToJson(this);
 
   TradeDistributionMetrics toEntity() => TradeDistributionMetrics(
-    tradesByDay: tradesByDay ?? {},
-    profitByDay: profitByDay ?? {},
-    tradesByHour: tradesByHour ?? {},
-    profitByHour: profitByHour ?? {},
-    tradeCountByAssetClass: tradeCountByAssetClass ?? {},
-    tradeCountByStrategy: tradeCountByStrategy ?? {},
-  );
+        tradesByDay: tradesByDay ?? {},
+        profitByDay: profitByDay ?? {},
+        tradesByHour: tradesByHour ?? {},
+        profitByHour: profitByHour ?? {},
+        tradeCountByAssetClass: tradeCountByAssetClass ?? {},
+        tradeCountByStrategy: tradeCountByStrategy ?? {},
+      );
 }
 
 @JsonSerializable()
@@ -194,15 +197,16 @@ class TradeTimingMetricsDto {
     this.optimalEntries,
   });
 
-  factory TradeTimingMetricsDto.fromJson(Map<String, dynamic> json) => _$TradeTimingMetricsDtoFromJson(json);
+  factory TradeTimingMetricsDto.fromJson(Map<String, dynamic> json) =>
+      _$TradeTimingMetricsDtoFromJson(json);
   Map<String, dynamic> toJson() => _$TradeTimingMetricsDtoToJson(this);
 
   TradeTimingMetrics toEntity() => TradeTimingMetrics(
-    entryTimingScore: entryTimingScore ?? 0.0,
-    exitTimingScore: exitTimingScore ?? 0.0,
-    earlyEntries: earlyEntries ?? {},
-    optimalEntries: optimalEntries ?? {},
-  );
+        entryTimingScore: entryTimingScore ?? 0.0,
+        exitTimingScore: exitTimingScore ?? 0.0,
+        earlyEntries: earlyEntries ?? {},
+        optimalEntries: optimalEntries ?? {},
+      );
 }
 
 @JsonSerializable()
@@ -219,15 +223,16 @@ class TradePatternMetricsDto {
     this.patternFrequency,
   });
 
-  factory TradePatternMetricsDto.fromJson(Map<String, dynamic> json) => _$TradePatternMetricsDtoFromJson(json);
+  factory TradePatternMetricsDto.fromJson(Map<String, dynamic> json) =>
+      _$TradePatternMetricsDtoFromJson(json);
   Map<String, dynamic> toJson() => _$TradePatternMetricsDtoToJson(this);
 
   TradePatternMetrics toEntity() => TradePatternMetrics(
-    emotionalControlScore: emotionalControlScore ?? 0.0,
-    disciplineScore: disciplineScore ?? 0.0,
-    patternConsistencyScore: patternConsistencyScore ?? 0.0,
-    patternFrequency: patternFrequency ?? {},
-  );
+        emotionalControlScore: emotionalControlScore ?? 0.0,
+        disciplineScore: disciplineScore ?? 0.0,
+        patternConsistencyScore: patternConsistencyScore ?? 0.0,
+        patternFrequency: patternFrequency ?? {},
+      );
 }
 
 @JsonSerializable()
@@ -244,15 +249,16 @@ class StrategyPerformanceMetricsDto {
     required this.sharpeRatio,
   });
 
-  factory StrategyPerformanceMetricsDto.fromJson(Map<String, dynamic> json) => _$StrategyPerformanceMetricsDtoFromJson(json);
+  factory StrategyPerformanceMetricsDto.fromJson(Map<String, dynamic> json) =>
+      _$StrategyPerformanceMetricsDtoFromJson(json);
   Map<String, dynamic> toJson() => _$StrategyPerformanceMetricsDtoToJson(this);
 
   StrategyPerformanceMetrics toEntity() => StrategyPerformanceMetrics(
-    strategyName: strategyName,
-    totalProfitLoss: totalProfitLoss,
-    winRate: winRate,
-    sharpeRatio: sharpeRatio,
-  );
+        strategyName: strategyName,
+        totalProfitLoss: totalProfitLoss,
+        winRate: winRate,
+        sharpeRatio: sharpeRatio,
+      );
 }
 
 @JsonSerializable()
@@ -275,18 +281,19 @@ class TradeDetailsDto {
     this.tags,
   });
 
-  factory TradeDetailsDto.fromJson(Map<String, dynamic> json) => _$TradeDetailsDtoFromJson(json);
+  factory TradeDetailsDto.fromJson(Map<String, dynamic> json) =>
+      _$TradeDetailsDtoFromJson(json);
   Map<String, dynamic> toJson() => _$TradeDetailsDtoToJson(this);
 
   TradeDetails toEntity() => TradeDetails(
-    tradeId: tradeId,
-    symbol: symbol,
-    strategy: strategy,
-    status: status,
-    tradePositionType: tradePositionType,
-    notes: notes,
-    tags: tags,
-  );
+        tradeId: tradeId,
+        symbol: symbol,
+        strategy: strategy,
+        status: status,
+        tradePositionType: tradePositionType,
+        notes: notes,
+        tags: tags,
+      );
 }
 
 @JsonSerializable()
@@ -321,64 +328,71 @@ class TradeMetricsResponseDto {
     this.metadata,
   });
 
-  factory TradeMetricsResponseDto.fromJson(Map<String, dynamic> json) => _$TradeMetricsResponseDtoFromJson(json);
+  factory TradeMetricsResponseDto.fromJson(Map<String, dynamic> json) =>
+      _$TradeMetricsResponseDtoFromJson(json);
   Map<String, dynamic> toJson() => _$TradeMetricsResponseDtoToJson(this);
 
   TradeMetricsResponse toEntity() => TradeMetricsResponse(
-    portfolioIds: portfolioIds,
-    startDate: startDate,
-    endDate: endDate,
-    totalTradesCount: totalTradesCount,
-    tradeDetails: tradeDetails?.map((e) => e.toEntity()).toList(),
-    performanceMetrics: performanceMetrics?.toEntity() ?? PerformanceMetrics(
-      totalProfitLoss: 0.0,
-      totalProfitLossPercentage: 0.0,
-      winRate: 0.0,
-      profitFactor: 0.0,
-      expectancy: 0.0,
-      annualizedReturn: 0.0,
-      averageWinningTrade: 0.0,
-      averageLosingTrade: 0.0,
-      largestWinningTrade: 0.0,
-      largestLosingTrade: 0.0,
-      winLossRatio: 0.0,
-      maxDrawdown: 0.0,
-      longestWinningStreak: 0,
-      longestLosingStreak: 0,
-      returnOnCapital: 0.0,
-      tradesPerDay: 0.0,
-    ),
-    riskMetrics: riskMetrics?.toEntity() ?? RiskMetrics(
-      maxDrawdown: 0.0,
-      sharpeRatio: 0.0,
-      sortinoRatio: 0.0,
-      valueAtRisk: 0.0,
-      probabilityOfRuin: 0.0,
-    ),
-    distributionMetrics: distributionMetrics?.toEntity() ?? TradeDistributionMetrics(
-      tradesByDay: {},
-      profitByDay: {},
-      tradesByHour: {},
-      profitByHour: {},
-      tradeCountByAssetClass: {},
-      tradeCountByStrategy: {},
-    ),
-    timingMetrics: timingMetrics?.toEntity() ?? TradeTimingMetrics(
-      entryTimingScore: 0.0,
-      exitTimingScore: 0.0,
-      earlyEntries: {},
-      optimalEntries: {},
-    ),
-    patternMetrics: patternMetrics?.toEntity() ?? TradePatternMetrics(
-      emotionalControlScore: 0.0,
-      disciplineScore: 0.0,
-      patternConsistencyScore: 0.0,
-      patternFrequency: {},
-    ),
-    strategyMetrics: strategyMetrics?.map((k, v) => MapEntry(k, v.toEntity())) ?? {},
-    groupedMetrics: groupedMetrics ?? {},
-    metadata: metadata ?? {},
-  );
+        portfolioIds: portfolioIds,
+        startDate: startDate,
+        endDate: endDate,
+        totalTradesCount: totalTradesCount,
+        tradeDetails: tradeDetails?.map((e) => e.toEntity()).toList(),
+        performanceMetrics: performanceMetrics?.toEntity() ??
+            PerformanceMetrics(
+              totalProfitLoss: 0.0,
+              totalProfitLossPercentage: 0.0,
+              winRate: 0.0,
+              profitFactor: 0.0,
+              expectancy: 0.0,
+              annualizedReturn: 0.0,
+              averageWinningTrade: 0.0,
+              averageLosingTrade: 0.0,
+              largestWinningTrade: 0.0,
+              largestLosingTrade: 0.0,
+              winLossRatio: 0.0,
+              maxDrawdown: 0.0,
+              longestWinningStreak: 0,
+              longestLosingStreak: 0,
+              returnOnCapital: 0.0,
+              tradesPerDay: 0.0,
+            ),
+        riskMetrics: riskMetrics?.toEntity() ??
+            RiskMetrics(
+              maxDrawdown: 0.0,
+              sharpeRatio: 0.0,
+              sortinoRatio: 0.0,
+              valueAtRisk: 0.0,
+              probabilityOfRuin: 0.0,
+            ),
+        distributionMetrics: distributionMetrics?.toEntity() ??
+            TradeDistributionMetrics(
+              tradesByDay: {},
+              profitByDay: {},
+              tradesByHour: {},
+              profitByHour: {},
+              tradeCountByAssetClass: {},
+              tradeCountByStrategy: {},
+            ),
+        timingMetrics: timingMetrics?.toEntity() ??
+            TradeTimingMetrics(
+              entryTimingScore: 0.0,
+              exitTimingScore: 0.0,
+              earlyEntries: {},
+              optimalEntries: {},
+            ),
+        patternMetrics: patternMetrics?.toEntity() ??
+            TradePatternMetrics(
+              emotionalControlScore: 0.0,
+              disciplineScore: 0.0,
+              patternConsistencyScore: 0.0,
+              patternFrequency: {},
+            ),
+        strategyMetrics:
+            strategyMetrics?.map((k, v) => MapEntry(k, v.toEntity())) ?? {},
+        groupedMetrics: groupedMetrics ?? {},
+        metadata: metadata ?? {},
+      );
 }
 
 @JsonSerializable()
@@ -388,11 +402,10 @@ class DateRangeDto {
 
   DateRangeDto({required this.startDate, required this.endDate});
 
-  factory DateRangeDto.fromJson(Map<String, dynamic> json) => _$DateRangeDtoFromJson(json);
+  factory DateRangeDto.fromJson(Map<String, dynamic> json) =>
+      _$DateRangeDtoFromJson(json);
   Map<String, dynamic> toJson() => _$DateRangeDtoToJson(this);
 }
-
-
 
 @JsonSerializable()
 class MetricsFilterRequestDto {
@@ -416,20 +429,22 @@ class MetricsFilterRequestDto {
     this.customFilters,
   });
 
-  factory MetricsFilterRequestDto.fromJson(Map<String, dynamic> json) => _$MetricsFilterRequestDtoFromJson(json);
+  factory MetricsFilterRequestDto.fromJson(Map<String, dynamic> json) =>
+      _$MetricsFilterRequestDtoFromJson(json);
   Map<String, dynamic> toJson() => _$MetricsFilterRequestDtoToJson(this);
 
-  factory MetricsFilterRequestDto.fromEntity(MetricsFilterRequest entity) => MetricsFilterRequestDto(
-    portfolioIds: entity.portfolioIds,
-    dateRange: DateRangeDto(
-      startDate: entity.startDate,
-      endDate: entity.endDate,
-    ),
-    timePeriod: entity.timePeriod,
-    metricTypes: entity.metricTypes,
-    instruments: entity.instruments,
-    groupBy: entity.groupBy,
-    includeTradeDetails: entity.includeTradeDetails,
-    customFilters: entity.customFilters,
-  );
+  factory MetricsFilterRequestDto.fromEntity(MetricsFilterRequest entity) =>
+      MetricsFilterRequestDto(
+        portfolioIds: entity.portfolioIds,
+        dateRange: DateRangeDto(
+          startDate: entity.startDate,
+          endDate: entity.endDate,
+        ),
+        timePeriod: entity.timePeriod,
+        metricTypes: entity.metricTypes,
+        instruments: entity.instruments,
+        groupBy: entity.groupBy,
+        includeTradeDetails: entity.includeTradeDetails,
+        customFilters: entity.customFilters,
+      );
 }

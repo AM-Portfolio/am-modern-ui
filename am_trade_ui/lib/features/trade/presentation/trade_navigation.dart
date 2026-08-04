@@ -20,7 +20,8 @@ Future<void> openAddTradeWebPage(
 }) {
   if (portfolioId == null || portfolioId.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Select a portfolio before adding a trade.')),
+      const SnackBar(
+          content: Text('Select a portfolio before adding a trade.')),
     );
     return Future.value();
   }
@@ -30,9 +31,9 @@ Future<void> openAddTradeWebPage(
     portfolioName: portfolioName,
     onTradeAdded: onTradeAdded,
   );
-  
+
   notification.dispatch(context);
-  
+
   if (notification.handled) {
     return Future.value();
   }

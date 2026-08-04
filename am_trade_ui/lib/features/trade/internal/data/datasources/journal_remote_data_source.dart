@@ -9,13 +9,15 @@ import 'trade_api_request_util.dart';
 /// Abstract data source for journal operations
 abstract class JournalRemoteDataSource {
   /// Create a new journal entry
-  Future<TradeJournalEntryResponseDto> createJournalEntry(TradeJournalEntryRequestDto request);
+  Future<TradeJournalEntryResponseDto> createJournalEntry(
+      TradeJournalEntryRequestDto request);
 
   /// Get a journal entry by ID
   Future<TradeJournalEntryResponseDto> getJournalEntry(String entryId);
 
   /// Update a journal entry
-  Future<TradeJournalEntryResponseDto> updateJournalEntry(String entryId, TradeJournalEntryRequestDto request);
+  Future<TradeJournalEntryResponseDto> updateJournalEntry(
+      String entryId, TradeJournalEntryRequestDto request);
 
   /// Delete a journal entry
   Future<void> deleteJournalEntry(String entryId);
@@ -24,10 +26,12 @@ abstract class JournalRemoteDataSource {
   Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByUser();
 
   /// Get journal entries for a specific trade
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByTrade(String tradeId);
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByTrade(
+      String tradeId);
 
   /// Get journal entries by date range
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByDateRange(String startDate, String endDate);
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByDateRange(
+      String startDate, String endDate);
 }
 
 /// Concrete implementation of journal remote data source
@@ -35,8 +39,8 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   const JournalRemoteDataSourceImpl({
     required ApiClient apiClient,
     required TradeApiConfig tradeConfig,
-  }) : _apiClient = apiClient,
-       _tradeConfig = tradeConfig;
+  })  : _apiClient = apiClient,
+        _tradeConfig = tradeConfig;
 
   final ApiClient _apiClient;
   final TradeApiConfig _tradeConfig;
@@ -54,14 +58,13 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
     final cleanBase = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
         : baseUrl;
-    final cleanResource = resource.startsWith('/')
-        ? resource
-        : '/$resource';
+    final cleanResource = resource.startsWith('/') ? resource : '/$resource';
     return '$cleanBase$cleanResource';
   }
 
   @override
-  Future<TradeJournalEntryResponseDto> createJournalEntry(TradeJournalEntryRequestDto request) async {
+  Future<TradeJournalEntryResponseDto> createJournalEntry(
+      TradeJournalEntryRequestDto request) async {
     AppLogger.methodEntry(
       'createJournalEntry',
       tag: 'JournalRemoteDataSource',
@@ -75,11 +78,14 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
       final response = await _apiClient.post<TradeJournalEntryResponseDto>(
         fullUri,
         body: tradeRequestBodyWithoutUserId(request.toJson()),
-        parser: (data) => TradeJournalEntryResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) => TradeJournalEntryResponseDto.fromJson(
+            data! as Map<String, dynamic>),
       );
 
-      AppLogger.info('Journal entry created successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('createJournalEntry', tag: 'JournalRemoteDataSource', result: 'success');
+      AppLogger.info('Journal entry created successfully',
+          tag: 'JournalRemoteDataSource');
+      AppLogger.methodExit('createJournalEntry',
+          tag: 'JournalRemoteDataSource', result: 'success');
 
       return response;
     } catch (e) {
@@ -95,7 +101,8 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
   @override
   Future<TradeJournalEntryResponseDto> getJournalEntry(String entryId) async {
-    AppLogger.methodEntry('getJournalEntry', tag: 'JournalRemoteDataSource', params: {'entryId': entryId});
+    AppLogger.methodEntry('getJournalEntry',
+        tag: 'JournalRemoteDataSource', params: {'entryId': entryId});
 
     try {
       // API Spec: GET /v1/journal/{entryId}
@@ -104,11 +111,14 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
       final response = await _apiClient.get<TradeJournalEntryResponseDto>(
         fullUri,
-        parser: (data) => TradeJournalEntryResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) => TradeJournalEntryResponseDto.fromJson(
+            data! as Map<String, dynamic>),
       );
 
-      AppLogger.info('Journal entry fetched successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('getJournalEntry', tag: 'JournalRemoteDataSource', result: 'success');
+      AppLogger.info('Journal entry fetched successfully',
+          tag: 'JournalRemoteDataSource');
+      AppLogger.methodExit('getJournalEntry',
+          tag: 'JournalRemoteDataSource', result: 'success');
 
       return response;
     } catch (e) {
@@ -127,7 +137,8 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
     String entryId,
     TradeJournalEntryRequestDto request,
   ) async {
-    AppLogger.methodEntry('updateJournalEntry', tag: 'JournalRemoteDataSource', params: {'entryId': entryId});
+    AppLogger.methodEntry('updateJournalEntry',
+        tag: 'JournalRemoteDataSource', params: {'entryId': entryId});
 
     try {
       // API Spec: PUT /v1/journal/{entryId}
@@ -137,11 +148,14 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
       final response = await _apiClient.put<TradeJournalEntryResponseDto>(
         fullUri,
         body: tradeRequestBodyWithoutUserId(request.toJson()),
-        parser: (data) => TradeJournalEntryResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) => TradeJournalEntryResponseDto.fromJson(
+            data! as Map<String, dynamic>),
       );
 
-      AppLogger.info('Journal entry updated successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('updateJournalEntry', tag: 'JournalRemoteDataSource', result: 'success');
+      AppLogger.info('Journal entry updated successfully',
+          tag: 'JournalRemoteDataSource');
+      AppLogger.methodExit('updateJournalEntry',
+          tag: 'JournalRemoteDataSource', result: 'success');
 
       return response;
     } catch (e) {
@@ -157,7 +171,8 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
   @override
   Future<void> deleteJournalEntry(String entryId) async {
-    AppLogger.methodEntry('deleteJournalEntry', tag: 'JournalRemoteDataSource', params: {'entryId': entryId});
+    AppLogger.methodEntry('deleteJournalEntry',
+        tag: 'JournalRemoteDataSource', params: {'entryId': entryId});
 
     try {
       // API Spec: DELETE /v1/journal/{entryId}
@@ -166,8 +181,10 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
       await _apiClient.delete<void>(fullUri, parser: (_) {});
 
-      AppLogger.info('Journal entry deleted successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('deleteJournalEntry', tag: 'JournalRemoteDataSource', result: 'success');
+      AppLogger.info('Journal entry deleted successfully',
+          tag: 'JournalRemoteDataSource');
+      AppLogger.methodExit('deleteJournalEntry',
+          tag: 'JournalRemoteDataSource', result: 'success');
     } catch (e) {
       AppLogger.error(
         'Failed to delete journal entry',
@@ -181,7 +198,8 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
   @override
   Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByUser() async {
-    AppLogger.methodEntry('getJournalEntriesByUser', tag: 'JournalRemoteDataSource', params: {});
+    AppLogger.methodEntry('getJournalEntriesByUser',
+        tag: 'JournalRemoteDataSource', params: {});
 
     try {
       // API Spec: GET /v1/journal/user (user from JWT)
@@ -190,17 +208,22 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
       final response = await _apiClient.get<List<TradeJournalEntryResponseDto>>(
         fullUri,
         parser: (data) {
-          if (data is Map<String, dynamic> && data.containsKey('content') && data['content'] is List) {
-             return (data['content'] as List)
-                .map((item) => TradeJournalEntryResponseDto.fromJson(item as Map<String, dynamic>))
+          if (data is Map<String, dynamic> &&
+              data.containsKey('content') &&
+              data['content'] is List) {
+            return (data['content'] as List)
+                .map((item) => TradeJournalEntryResponseDto.fromJson(
+                    item as Map<String, dynamic>))
                 .toList();
           }
           return [];
         },
       );
 
-      AppLogger.info('Journal entries fetched successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('getJournalEntriesByUser', tag: 'JournalRemoteDataSource', result: 'success');
+      AppLogger.info('Journal entries fetched successfully',
+          tag: 'JournalRemoteDataSource');
+      AppLogger.methodExit('getJournalEntriesByUser',
+          tag: 'JournalRemoteDataSource', result: 'success');
 
       return response;
     } catch (e) {
@@ -215,8 +238,10 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   }
 
   @override
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByTrade(String tradeId) async {
-    AppLogger.methodEntry('getJournalEntriesByTrade', tag: 'JournalRemoteDataSource', params: {'tradeId': tradeId});
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByTrade(
+      String tradeId) async {
+    AppLogger.methodEntry('getJournalEntriesByTrade',
+        tag: 'JournalRemoteDataSource', params: {'tradeId': tradeId});
 
     try {
       // API Spec: GET /v1/journal/trade/{tradeId}
@@ -226,17 +251,20 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
       final response = await _apiClient.get<List<TradeJournalEntryResponseDto>>(
         fullUri,
         parser: (data) {
-           if (data is List) {
+          if (data is List) {
             return data
-                .map((item) => TradeJournalEntryResponseDto.fromJson(item as Map<String, dynamic>))
+                .map((item) => TradeJournalEntryResponseDto.fromJson(
+                    item as Map<String, dynamic>))
                 .toList();
           }
           return [];
         },
       );
 
-      AppLogger.info('Journal entries fetched successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('getJournalEntriesByTrade', tag: 'JournalRemoteDataSource', result: 'success');
+      AppLogger.info('Journal entries fetched successfully',
+          tag: 'JournalRemoteDataSource');
+      AppLogger.methodExit('getJournalEntriesByTrade',
+          tag: 'JournalRemoteDataSource', result: 'success');
 
       return response;
     } catch (e) {
@@ -251,7 +279,8 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   }
 
   @override
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByDateRange(startDate, endDate) async {
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByDateRange(
+      startDate, endDate) async {
     AppLogger.methodEntry(
       'getJournalEntriesByDateRange',
       tag: 'JournalRemoteDataSource',
@@ -266,17 +295,22 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
       final response = await _apiClient.get<List<TradeJournalEntryResponseDto>>(
         fullUri,
         parser: (data) {
-          if (data is Map<String, dynamic> && data.containsKey('content') && data['content'] is List) {
-             return (data['content'] as List)
-                .map((item) => TradeJournalEntryResponseDto.fromJson(item as Map<String, dynamic>))
+          if (data is Map<String, dynamic> &&
+              data.containsKey('content') &&
+              data['content'] is List) {
+            return (data['content'] as List)
+                .map((item) => TradeJournalEntryResponseDto.fromJson(
+                    item as Map<String, dynamic>))
                 .toList();
           }
           return [];
         },
       );
 
-      AppLogger.info('Journal entries fetched successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('getJournalEntriesByDateRange', tag: 'JournalRemoteDataSource', result: 'success');
+      AppLogger.info('Journal entries fetched successfully',
+          tag: 'JournalRemoteDataSource');
+      AppLogger.methodExit('getJournalEntriesByDateRange',
+          tag: 'JournalRemoteDataSource', result: 'success');
 
       return response;
     } catch (e) {
@@ -290,4 +324,3 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
     }
   }
 }
-

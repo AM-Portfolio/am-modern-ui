@@ -13,10 +13,11 @@ import 'package:am_common/core/di/network_providers.dart';
 // Infrastructure Providers
 
 /// Provider for NotebookRemoteDataSource
-final _notebookRemoteDataSourceProvider = FutureProvider<NotebookRemoteDataSource>((ref) async {
+final _notebookRemoteDataSourceProvider =
+    FutureProvider<NotebookRemoteDataSource>((ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
   final apiConfig = await ref.watch(appConfigProvider.future);
-  
+
   TradeApiConfig tradeConfig = apiConfig.api.trade;
 
   // Local environment override for the Trade API
@@ -40,61 +41,72 @@ final _notebookRemoteDataSourceProvider = FutureProvider<NotebookRemoteDataSourc
     );
   }
 
-  return NotebookRemoteDataSourceImpl(apiClient: apiClient, tradeConfig: tradeConfig);
+  return NotebookRemoteDataSourceImpl(
+      apiClient: apiClient, tradeConfig: tradeConfig);
 });
 
 /// Provider for NotebookRepository
-final _notebookRepositoryProvider = FutureProvider<NotebookRepository>((ref) async {
-  final remoteDataSource = await ref.watch(_notebookRemoteDataSourceProvider.future);
+final _notebookRepositoryProvider =
+    FutureProvider<NotebookRepository>((ref) async {
+  final remoteDataSource =
+      await ref.watch(_notebookRemoteDataSourceProvider.future);
   return NotebookRepositoryImpl(remoteDataSource);
 });
 
 // Use Case Providers
 
 /// Provider for GetNotebookItemsUseCase
-final _getNotebookItemsUseCaseProvider = FutureProvider<GetNotebookItemsUseCase>((ref) async {
+final _getNotebookItemsUseCaseProvider =
+    FutureProvider<GetNotebookItemsUseCase>((ref) async {
   final repository = await ref.watch(_notebookRepositoryProvider.future);
   return GetNotebookItemsUseCase(repository);
 });
 
 /// Provider for CreateNotebookItemUseCase
-final _createNotebookItemUseCaseProvider = FutureProvider<CreateNotebookItemUseCase>((ref) async {
+final _createNotebookItemUseCaseProvider =
+    FutureProvider<CreateNotebookItemUseCase>((ref) async {
   final repository = await ref.watch(_notebookRepositoryProvider.future);
   return CreateNotebookItemUseCase(repository);
 });
 
 /// Provider for UpdateNotebookItemUseCase
-final _updateNotebookItemUseCaseProvider = FutureProvider<UpdateNotebookItemUseCase>((ref) async {
+final _updateNotebookItemUseCaseProvider =
+    FutureProvider<UpdateNotebookItemUseCase>((ref) async {
   final repository = await ref.watch(_notebookRepositoryProvider.future);
   return UpdateNotebookItemUseCase(repository);
 });
 
 /// Provider for DeleteNotebookItemUseCase
-final _deleteNotebookItemUseCaseProvider = FutureProvider<DeleteNotebookItemUseCase>((ref) async {
+final _deleteNotebookItemUseCaseProvider =
+    FutureProvider<DeleteNotebookItemUseCase>((ref) async {
   final repository = await ref.watch(_notebookRepositoryProvider.future);
   return DeleteNotebookItemUseCase(repository);
 });
 
 /// Provider for GetNotebookTagsUseCase
-final _getNotebookTagsUseCaseProvider = FutureProvider<GetNotebookTagsUseCase>((ref) async {
+final _getNotebookTagsUseCaseProvider =
+    FutureProvider<GetNotebookTagsUseCase>((ref) async {
   final repository = await ref.watch(_notebookRepositoryProvider.future);
   return GetNotebookTagsUseCase(repository);
 });
 
 /// Provider for CreateNotebookTagUseCase
-final _createNotebookTagUseCaseProvider = FutureProvider<CreateNotebookTagUseCase>((ref) async {
+final _createNotebookTagUseCaseProvider =
+    FutureProvider<CreateNotebookTagUseCase>((ref) async {
   final repository = await ref.watch(_notebookRepositoryProvider.future);
   return CreateNotebookTagUseCase(repository);
 });
 
 /// Provider for UpdateNotebookTagUseCase
-final _updateNotebookTagUseCaseProvider = FutureProvider<UpdateNotebookTagUseCase>((ref) async {
+final _updateNotebookTagUseCaseProvider =
+    FutureProvider<UpdateNotebookTagUseCase>((ref) async {
   final repository = await ref.watch(_notebookRepositoryProvider.future);
   return UpdateNotebookTagUseCase(repository);
 });
 
 /// Provider for DeleteNotebookTagUseCase
-final _deleteNotebookTagUseCaseProvider = FutureProvider<DeleteNotebookTagUseCase>((ref) async {
+final _deleteNotebookTagUseCaseProvider =
+    FutureProvider<DeleteNotebookTagUseCase>((ref) async {
   final repository = await ref.watch(_notebookRepositoryProvider.future);
   return DeleteNotebookTagUseCase(repository);
 });
@@ -104,13 +116,21 @@ final _deleteNotebookTagUseCaseProvider = FutureProvider<DeleteNotebookTagUseCas
 /// Provider for NotebookCubit
 final notebookCubitProvider = FutureProvider<NotebookCubit>(
   (ref) async => NotebookCubit(
-    getNotebookItemsUseCase: await ref.watch(_getNotebookItemsUseCaseProvider.future),
-    createNotebookItemUseCase: await ref.watch(_createNotebookItemUseCaseProvider.future),
-    updateNotebookItemUseCase: await ref.watch(_updateNotebookItemUseCaseProvider.future),
-    deleteNotebookItemUseCase: await ref.watch(_deleteNotebookItemUseCaseProvider.future),
-    getNotebookTagsUseCase: await ref.watch(_getNotebookTagsUseCaseProvider.future),
-    createNotebookTagUseCase: await ref.watch(_createNotebookTagUseCaseProvider.future),
-    updateNotebookTagUseCase: await ref.watch(_updateNotebookTagUseCaseProvider.future),
-    deleteNotebookTagUseCase: await ref.watch(_deleteNotebookTagUseCaseProvider.future),
+    getNotebookItemsUseCase:
+        await ref.watch(_getNotebookItemsUseCaseProvider.future),
+    createNotebookItemUseCase:
+        await ref.watch(_createNotebookItemUseCaseProvider.future),
+    updateNotebookItemUseCase:
+        await ref.watch(_updateNotebookItemUseCaseProvider.future),
+    deleteNotebookItemUseCase:
+        await ref.watch(_deleteNotebookItemUseCaseProvider.future),
+    getNotebookTagsUseCase:
+        await ref.watch(_getNotebookTagsUseCaseProvider.future),
+    createNotebookTagUseCase:
+        await ref.watch(_createNotebookTagUseCaseProvider.future),
+    updateNotebookTagUseCase:
+        await ref.watch(_updateNotebookTagUseCaseProvider.future),
+    deleteNotebookTagUseCase:
+        await ref.watch(_deleteNotebookTagUseCaseProvider.future),
   ),
 );

@@ -12,11 +12,7 @@ class AppShell extends StatelessWidget {
   final Widget child;
   final VoidCallback onLogout;
 
-  const AppShell({
-    required this.child,
-    required this.onLogout,
-    super.key,
-  });
+  const AppShell({required this.child, required this.onLogout, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +79,7 @@ class AppShell extends StatelessWidget {
                       nameExtractor: (p) => p.portfolioName,
                       accentColor: ModuleColors.portfolio,
                     );
-                  }
+                  },
                 ),
               ),
 

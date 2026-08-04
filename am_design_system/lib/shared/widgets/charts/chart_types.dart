@@ -41,7 +41,7 @@ class CommonChartConfig {
   final Color? axisColor;
   final double axisWidth;
   final double? xInterval;
-  
+
   final double pieCenterRadius;
   final MainAxisAlignment? barAlignment;
 
@@ -61,7 +61,8 @@ class CommonChartConfig {
   final bool lockTooltipToTop;
 
   /// Callback when zoom scale changes, used to build external zoom controls.
-  final void Function(double zoomScale, void Function(double delta) adjustZoom)? onZoomChanged;
+  final void Function(double zoomScale, void Function(double delta) adjustZoom)?
+      onZoomChanged;
 
   /// Optional custom formatter for Y-axis labels.
   final String Function(double)? formatYLabel;

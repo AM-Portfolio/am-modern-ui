@@ -67,10 +67,16 @@ class _TradeMarketPageState extends ConsumerState<TradeMarketPage> {
                     height: 50,
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surface
+                          .withOpacity(0.2),
                       borderRadius: BorderRadius.circular(30),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.1),
                         width: 1,
                       ),
                       boxShadow: [
@@ -83,7 +89,11 @@ class _TradeMarketPageState extends ConsumerState<TradeMarketPage> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.search, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+                        Icon(Icons.search,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.7)),
                         const SizedBox(width: 12),
                         Expanded(
                           child: TextField(
@@ -95,7 +105,10 @@ class _TradeMarketPageState extends ConsumerState<TradeMarketPage> {
                             decoration: InputDecoration(
                               hintText: 'Search Symbol (e.g. NASDAQ:AAPL)',
                               hintStyle: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.5),
                               ),
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.zero,
@@ -103,7 +116,9 @@ class _TradeMarketPageState extends ConsumerState<TradeMarketPage> {
                             onSubmitted: (value) {
                               if (value.isNotEmpty) {
                                 setState(() => _isLoading = true);
-                                ref.read(marketAnalysisSymbolProvider.notifier).updateSymbol(value);
+                                ref
+                                    .read(marketAnalysisSymbolProvider.notifier)
+                                    .updateSymbol(value);
                               }
                             },
                           ),
@@ -111,7 +126,10 @@ class _TradeMarketPageState extends ConsumerState<TradeMarketPage> {
                         Container(
                           height: 24,
                           width: 1,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.2),
                         ),
                         const SizedBox(width: 8),
                         IconButton(
@@ -122,7 +140,9 @@ class _TradeMarketPageState extends ConsumerState<TradeMarketPage> {
                           color: Theme.of(context).colorScheme.primary,
                           onPressed: () {
                             setState(() => _isLoading = true);
-                            ref.read(marketAnalysisSymbolProvider.notifier).updateSymbol(_symbolController.text);
+                            ref
+                                .read(marketAnalysisSymbolProvider.notifier)
+                                .updateSymbol(_symbolController.text);
                           },
                         ),
                       ],
@@ -130,7 +150,14 @@ class _TradeMarketPageState extends ConsumerState<TradeMarketPage> {
                   ),
                 ),
               ),
-            ).animate().slideY(begin: -1, end: 0, duration: 600.ms, curve: Curves.easeOutBack).fadeIn(),
+            )
+                .animate()
+                .slideY(
+                    begin: -1,
+                    end: 0,
+                    duration: 600.ms,
+                    curve: Curves.easeOutBack)
+                .fadeIn(),
           ),
 
           // 3. Loading Layer
@@ -151,9 +178,16 @@ class _TradeMarketPageState extends ConsumerState<TradeMarketPage> {
                       Text(
                         'Loading Chart data for ${config.symbol}...',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                      ).animate(onPlay: (c) => c.repeat(reverse: true)).fadeIn(duration: 500.ms).then().fadeOut(duration: 500.ms),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.7),
+                            ),
+                      )
+                          .animate(onPlay: (c) => c.repeat(reverse: true))
+                          .fadeIn(duration: 500.ms)
+                          .then()
+                          .fadeOut(duration: 500.ms),
                     ],
                   ),
                 ),

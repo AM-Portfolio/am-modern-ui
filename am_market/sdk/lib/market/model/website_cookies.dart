@@ -42,21 +42,24 @@ class WebsiteCookies {
   String? cookiesString;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is WebsiteCookies &&
-    other.websiteUrl == websiteUrl &&
-    other.websiteName == websiteName &&
-    _deepEquality.equals(other.cookies, cookies) &&
-    other.cookiesString == cookiesString;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WebsiteCookies &&
+          other.websiteUrl == websiteUrl &&
+          other.websiteName == websiteName &&
+          _deepEquality.equals(other.cookies, cookies) &&
+          other.cookiesString == cookiesString;
 
   @override
   int get hashCode =>
-    (websiteUrl == null ? 0 : websiteUrl!.hashCode) +
-    (websiteName == null ? 0 : websiteName!.hashCode) +
-    (cookies.hashCode) +
-    (cookiesString == null ? 0 : cookiesString!.hashCode);
+      (websiteUrl == null ? 0 : websiteUrl!.hashCode) +
+      (websiteName == null ? 0 : websiteName!.hashCode) +
+      (cookies.hashCode) +
+      (cookiesString == null ? 0 : cookiesString!.hashCode);
 
   @override
-  String toString() => 'WebsiteCookies[websiteUrl=$websiteUrl, websiteName=$websiteName, cookies=$cookies, cookiesString=$cookiesString]';
+  String toString() =>
+      'WebsiteCookies[websiteUrl=$websiteUrl, websiteName=$websiteName, cookies=$cookies, cookiesString=$cookiesString]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -70,7 +73,7 @@ class WebsiteCookies {
     } else {
       json[r'websiteName'] = null;
     }
-      json[r'cookies'] = this.cookies;
+    json[r'cookies'] = this.cookies;
     if (this.cookiesString != null) {
       json[r'cookiesString'] = this.cookiesString;
     } else {
@@ -90,8 +93,10 @@ class WebsiteCookies {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "WebsiteCookies[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "WebsiteCookies[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "WebsiteCookies[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "WebsiteCookies[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -106,7 +111,10 @@ class WebsiteCookies {
     return null;
   }
 
-  static List<WebsiteCookies> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<WebsiteCookies> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <WebsiteCookies>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -122,7 +130,7 @@ class WebsiteCookies {
   static Map<String, WebsiteCookies> mapFromJson(dynamic json) {
     final map = <String, WebsiteCookies>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = WebsiteCookies.fromJson(entry.value);
         if (value != null) {
@@ -134,19 +142,23 @@ class WebsiteCookies {
   }
 
   // maps a json object with a list of WebsiteCookies-objects as value to a dart map
-  static Map<String, List<WebsiteCookies>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<WebsiteCookies>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<WebsiteCookies>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = WebsiteCookies.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = WebsiteCookies.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

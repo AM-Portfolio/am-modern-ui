@@ -66,9 +66,9 @@ class _MoversWidgetState extends State<MoversWidget> {
                   Container(
                     padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .primaryColor
-                          .withValues(alpha: 0.12),
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -81,21 +81,31 @@ class _MoversWidgetState extends State<MoversWidget> {
                   Text(
                     'Top Movers',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          letterSpacing: -0.3,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      letterSpacing: -0.3,
+                    ),
                   ),
                   const Spacer(),
-                  if (widget.onViewAll != null && widget.movers != null && (widget.movers!.topGainers.length > 5 || widget.movers!.topLosers.length > 5))
+                  if (widget.onViewAll != null &&
+                      widget.movers != null &&
+                      (widget.movers!.topGainers.length > 5 ||
+                          widget.movers!.topLosers.length > 5))
                     TextButton(
                       onPressed: () => widget.onViewAll!(widget.movers!),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                       ),
                       child: Text(
                         'See Top 10',
@@ -132,19 +142,28 @@ class _MoversWidgetState extends State<MoversWidget> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline,
-                  color: Theme.of(context).colorScheme.error, size: 48),
+              Icon(
+                Icons.error_outline,
+                color: Theme.of(context).colorScheme.error,
+                size: 48,
+              ),
               const SizedBox(height: 8),
-              Text('Failed to load movers data',
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontSize: 14)),
+              Text(
+                'Failed to load movers data',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 14,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(widget.error!,
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 12),
-                  textAlign: TextAlign.center),
+              Text(
+                widget.error!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -158,16 +177,19 @@ class _MoversWidgetState extends State<MoversWidget> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.data_usage_outlined,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant,
-                  size: 48),
+              Icon(
+                Icons.data_usage_outlined,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                size: 48,
+              ),
               const SizedBox(height: 8),
-              Text('No movers data available',
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 14)),
+              Text(
+                'No movers data available',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 14,
+                ),
+              ),
             ],
           ),
         ),
@@ -185,7 +207,9 @@ class _MoversWidgetState extends State<MoversWidget> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.06),
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -197,7 +221,9 @@ class _MoversWidgetState extends State<MoversWidget> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: _showGainers ? ds.AppColors.profit.withValues(alpha: 0.15) : Colors.transparent,
+                        color: _showGainers
+                            ? ds.AppColors.profit.withValues(alpha: 0.15)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
@@ -205,8 +231,13 @@ class _MoversWidgetState extends State<MoversWidget> {
                           'Gainers',
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight: _showGainers ? FontWeight.bold : FontWeight.w500,
-                            color: _showGainers ? ds.AppColors.profit : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                            fontWeight: _showGainers
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            color: _showGainers
+                                ? ds.AppColors.profit
+                                : Theme.of(context).textTheme.bodyMedium?.color
+                                      ?.withValues(alpha: 0.5),
                           ),
                         ),
                       ),
@@ -220,7 +251,9 @@ class _MoversWidgetState extends State<MoversWidget> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: !_showGainers ? ds.AppColors.loss.withValues(alpha: 0.15) : Colors.transparent,
+                        color: !_showGainers
+                            ? ds.AppColors.loss.withValues(alpha: 0.15)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
@@ -228,8 +261,13 @@ class _MoversWidgetState extends State<MoversWidget> {
                           'Losers',
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight: !_showGainers ? FontWeight.bold : FontWeight.w500,
-                            color: !_showGainers ? ds.AppColors.loss : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                            fontWeight: !_showGainers
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            color: !_showGainers
+                                ? ds.AppColors.loss
+                                : Theme.of(context).textTheme.bodyMedium?.color
+                                      ?.withValues(alpha: 0.5),
                           ),
                         ),
                       ),
@@ -244,8 +282,18 @@ class _MoversWidgetState extends State<MoversWidget> {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: _showGainers
-                ? _buildColumn(context, 'Gainers', widget.movers!.topGainers, true)
-                : _buildColumn(context, 'Losers', widget.movers!.topLosers, false),
+                ? _buildColumn(
+                    context,
+                    'Gainers',
+                    widget.movers!.topGainers,
+                    true,
+                  )
+                : _buildColumn(
+                    context,
+                    'Losers',
+                    widget.movers!.topLosers,
+                    false,
+                  ),
           ),
         ],
       );
@@ -255,13 +303,21 @@ class _MoversWidgetState extends State<MoversWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child:
-              _buildColumn(context, 'Gainers', widget.movers!.topGainers, true),
+          child: _buildColumn(
+            context,
+            'Gainers',
+            widget.movers!.topGainers,
+            true,
+          ),
         ),
         const SizedBox(width: 20),
         Expanded(
-          child:
-              _buildColumn(context, 'Losers', widget.movers!.topLosers, false),
+          child: _buildColumn(
+            context,
+            'Losers',
+            widget.movers!.topLosers,
+            false,
+          ),
         ),
       ],
     );
@@ -290,10 +346,10 @@ class _MoversWidgetState extends State<MoversWidget> {
             Text(
               '$title (${stocks.length})',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: color,
-                  ),
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: color,
+              ),
             ),
           ],
         ),
@@ -305,19 +361,18 @@ class _MoversWidgetState extends State<MoversWidget> {
               child: Text(
                 'No ${isGainers ? 'gainers' : 'losers'} found',
                 style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.6),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   fontSize: 13,
                 ),
               ),
             ),
           )
         else
-          ...stocks.take(5).map(
-            (stock) => MoverTile(stock: stock, isGainer: isGainers),
-          ),
+          ...stocks
+              .take(5)
+              .map((stock) => MoverTile(stock: stock, isGainer: isGainers)),
       ],
     );
   }
@@ -342,8 +397,8 @@ class _MoverTileState extends State<MoverTile> {
     final isPositive = stock.changeAmount != 0
         ? stock.changeAmount > 0
         : (stock.changePercent != 0
-            ? stock.changePercent > 0
-            : widget.isGainer);
+              ? stock.changePercent > 0
+              : widget.isGainer);
     final color = isPositive ? ds.AppColors.profit : ds.AppColors.loss;
 
     return MouseRegion(
@@ -353,8 +408,7 @@ class _MoverTileState extends State<MoverTile> {
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
         margin: const EdgeInsets.only(bottom: 8),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         transform: _hovered
             ? (Matrix4.diagonal3Values(1.015, 1.015, 1.0))
             : Matrix4.identity(),
@@ -362,8 +416,8 @@ class _MoverTileState extends State<MoverTile> {
           color: _hovered
               ? color.withValues(alpha: isDark ? 0.08 : 0.05)
               : (isDark
-                  ? Colors.white.withValues(alpha: 0.04)
-                  : Colors.black.withValues(alpha: 0.04)),
+                    ? Colors.white.withValues(alpha: 0.04)
+                    : Colors.black.withValues(alpha: 0.04)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _hovered
@@ -406,9 +460,9 @@ class _MoverTileState extends State<MoverTile> {
               child: Text(
                 stock.symbol,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -422,10 +476,10 @@ class _MoverTileState extends State<MoverTile> {
                 Text(
                   '₹${stock.lastPrice.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 Text(
                   stock.formattedChangeAmount,
@@ -441,8 +495,7 @@ class _MoverTileState extends State<MoverTile> {
 
             // ── Percentage pill with glow ──
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 7, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: isDark ? 0.16 : 0.1),
                 borderRadius: BorderRadius.circular(20),

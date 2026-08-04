@@ -48,9 +48,8 @@ class PortfolioHeatmapWebPage extends ConsumerWidget {
 
     return BlocProvider(
       key: ValueKey(activePortfolioId), // Force recreation of heatmap cubit
-      create: (context) => PortfolioHeatmapCubit(
-        context.read<PortfolioAnalyticsCubit>(),
-      ),
+      create: (context) =>
+          PortfolioHeatmapCubit(context.read<PortfolioAnalyticsCubit>()),
       child: _PortfolioHeatmapView(
         portfolioId: activePortfolioId,
         portfolioName: activePortfolioName,
@@ -60,10 +59,7 @@ class PortfolioHeatmapWebPage extends ConsumerWidget {
 }
 
 class _PortfolioHeatmapView extends StatelessWidget {
-  const _PortfolioHeatmapView({
-    required this.portfolioId,
-    this.portfolioName,
-  });
+  const _PortfolioHeatmapView({required this.portfolioId, this.portfolioName});
 
   final String portfolioId;
   final String? portfolioName;

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/utils/common_logger.dart';
 
-
 import 'package:am_common/am_common.dart';
 import '../inputs/app_segmented_control.dart';
 
@@ -81,15 +80,16 @@ class TimeFrameSelector extends StatefulWidget {
     bool compact = false,
     Color? primaryColor,
     String? title,
-  }) => TimeFrameSelector(
-    key: key,
-    selectedTimeFrame: selectedTimeFrame,
-    onTimeFrameChanged: onTimeFrameChanged,
-    availableTimeFrames: TimeFrame.portfolioTimeFrames,
-    compact: compact,
-    primaryColor: primaryColor,
-    title: title,
-  );
+  }) =>
+      TimeFrameSelector(
+        key: key,
+        selectedTimeFrame: selectedTimeFrame,
+        onTimeFrameChanged: onTimeFrameChanged,
+        availableTimeFrames: TimeFrame.portfolioTimeFrames,
+        compact: compact,
+        primaryColor: primaryColor,
+        title: title,
+      );
 
   /// Factory constructor for heatmap context
   factory TimeFrameSelector.heatmap({
@@ -99,15 +99,16 @@ class TimeFrameSelector extends StatefulWidget {
     bool compact = true,
     Color? primaryColor,
     String? title,
-  }) => TimeFrameSelector(
-    key: key,
-    selectedTimeFrame: selectedTimeFrame,
-    onTimeFrameChanged: onTimeFrameChanged,
-    availableTimeFrames: TimeFrame.heatmapTimeFrames,
-    compact: compact,
-    primaryColor: primaryColor,
-    title: title,
-  );
+  }) =>
+      TimeFrameSelector(
+        key: key,
+        selectedTimeFrame: selectedTimeFrame,
+        onTimeFrameChanged: onTimeFrameChanged,
+        availableTimeFrames: TimeFrame.heatmapTimeFrames,
+        compact: compact,
+        primaryColor: primaryColor,
+        title: title,
+      );
 
   /// Factory constructor for trading context
   factory TimeFrameSelector.trading({
@@ -117,15 +118,16 @@ class TimeFrameSelector extends StatefulWidget {
     bool compact = true,
     Color? primaryColor,
     String? title,
-  }) => TimeFrameSelector(
-    key: key,
-    selectedTimeFrame: selectedTimeFrame,
-    onTimeFrameChanged: onTimeFrameChanged,
-    availableTimeFrames: TimeFrame.tradingTimeFrames,
-    compact: compact,
-    primaryColor: primaryColor,
-    title: title,
-  );
+  }) =>
+      TimeFrameSelector(
+        key: key,
+        selectedTimeFrame: selectedTimeFrame,
+        onTimeFrameChanged: onTimeFrameChanged,
+        availableTimeFrames: TimeFrame.tradingTimeFrames,
+        compact: compact,
+        primaryColor: primaryColor,
+        title: title,
+      );
 
   /// Currently selected time frame
   final TimeFrame selectedTimeFrame;
@@ -181,7 +183,8 @@ class _TimeFrameSelectorState extends State<TimeFrameSelector> {
   void _scrollToSelected({required bool animated}) {
     if (!_scrollController.hasClients) return;
 
-    final timeFrames = widget.availableTimeFrames ?? TimeFrame.portfolioTimeFrames;
+    final timeFrames =
+        widget.availableTimeFrames ?? TimeFrame.portfolioTimeFrames;
     final index = timeFrames.indexOf(widget.selectedTimeFrame);
     if (index == -1) return;
 
@@ -191,7 +194,8 @@ class _TimeFrameSelectorState extends State<TimeFrameSelector> {
     const double itemWidth = 44.0;
     const double viewportWidth = 132.0; // Fits exactly 3 items at a time
 
-    final double targetOffset = (index * itemWidth) - (viewportWidth / 2) + (itemWidth / 2);
+    final double targetOffset =
+        (index * itemWidth) - (viewportWidth / 2) + (itemWidth / 2);
     final double maxScroll = _scrollController.position.maxScrollExtent;
     final double clampedOffset = targetOffset.clamp(0.0, maxScroll);
 
@@ -208,7 +212,8 @@ class _TimeFrameSelectorState extends State<TimeFrameSelector> {
 
   @override
   Widget build(BuildContext context) {
-    final timeFrames = widget.availableTimeFrames ?? TimeFrame.portfolioTimeFrames;
+    final timeFrames =
+        widget.availableTimeFrames ?? TimeFrame.portfolioTimeFrames;
 
     CommonLogger.debug(
       'TimeFrameSelector: building with ${timeFrames.length} options, selected=${widget.selectedTimeFrame.code}',
@@ -311,18 +316,23 @@ class _TimeFrameSelectorState extends State<TimeFrameSelector> {
                   borderRadius: BorderRadius.circular(7),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    constraints: const BoxConstraints(minHeight: 32, minWidth: 40),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    constraints:
+                        const BoxConstraints(minHeight: 32, minWidth: 40),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: isSelected ? accent : Colors.transparent,
                       borderRadius: BorderRadius.circular(7),
                     ),
                     child: Center(
                       child: Text(
-                        widget.showDisplayNames ? timeFrame.displayName : timeFrame.code,
+                        widget.showDisplayNames
+                            ? timeFrame.displayName
+                            : timeFrame.code,
                         style: TextStyle(
                           color: isSelected ? Colors.white : idleText,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w500,
                           fontSize: 12,
                         ),
                       ),

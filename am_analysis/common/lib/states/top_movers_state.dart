@@ -4,7 +4,7 @@ import '../models/models.dart';
 /// Base class for all top movers states
 abstract class TopMoversState extends Equatable {
   const TopMoversState();
-  
+
   @override
   List<Object?> get props => [];
 }
@@ -24,13 +24,13 @@ class TopMoversLoaded extends TopMoversState {
   final List<MoverItem> movers;
   final TimeFrame timeFrame;
   final MoverFilter currentFilter;
-  
+
   const TopMoversLoaded(
     this.movers,
     this.timeFrame, {
     this.currentFilter = MoverFilter.all,
   });
-  
+
   /// Get filtered movers based on current filter
   List<MoverItem> get filteredMovers {
     switch (currentFilter) {
@@ -42,7 +42,7 @@ class TopMoversLoaded extends TopMoversState {
         return movers;
     }
   }
-  
+
   @override
   List<Object?> get props => [movers, timeFrame, currentFilter];
 }
@@ -51,9 +51,9 @@ class TopMoversLoaded extends TopMoversState {
 class TopMoversError extends TopMoversState {
   final String message;
   final StackTrace? stackTrace;
-  
+
   const TopMoversError(this.message, [this.stackTrace]);
-  
+
   @override
   List<Object?> get props => [message, stackTrace];
 }

@@ -142,7 +142,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             heatmapData = heatmapData.copyWith(
               tiles: heatmapData.uiTiles.where((tile) {
                 return _matchesSector(tile.name, sector) ||
-                       _matchesSector(tile.displayName, sector);
+                    _matchesSector(tile.displayName, sector);
               }).toList(),
             );
           }
@@ -154,38 +154,41 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             // Try to find the matching segment in marketCapAllocation
             final segments = analyticsState.marketCapAllocation?.segments ?? [];
             final targetSegment = segments.cast<MarketCapSegment?>().firstWhere(
-              (s) => s != null && _matchesStrictly(s.segmentName, targetCapName),
+              (s) =>
+                  s != null && _matchesStrictly(s.segmentName, targetCapName),
               orElse: () => null,
             );
 
             if (targetSegment != null && targetSegment.topStocks.isNotEmpty) {
               // Filter the children of each tile to only include stocks in the target segment
               final List<HeatmapTileData> filteredTiles = [];
-              
+
               for (final tile in heatmapData.uiTiles) {
                 if (tile.children == null || tile.children!.isEmpty) {
                   filteredTiles.add(tile);
                   continue;
                 }
-                
+
                 final filteredChildren = tile.children!.where((child) {
                   return targetSegment.topStocks.contains(child.id);
                 }).toList();
-                
+
                 if (filteredChildren.isNotEmpty) {
                   // Recalculate sector value based on remaining children to prevent layout errors
                   final newSectorValue = filteredChildren.fold<double>(
-                    0.0, 
-                    (sum, child) => sum + (child.value ?? 0.0)
+                    0.0,
+                    (sum, child) => sum + (child.value ?? 0.0),
                   );
-                  
-                  filteredTiles.add(tile.copyWith(
-                    children: filteredChildren,
-                    value: newSectorValue,
-                  ));
+
+                  filteredTiles.add(
+                    tile.copyWith(
+                      children: filteredChildren,
+                      value: newSectorValue,
+                    ),
+                  );
                 }
               }
-              
+
               heatmapData = heatmapData.copyWith(tiles: filteredTiles);
             } else {
               // No stocks match this segment — emit Loaded with empty tiles
@@ -200,7 +203,11 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             tag: 'PortfolioHeatmapCubit',
           );
           if (isClosed) return;
-          emit(const PortfolioHeatmapError(message: 'Failed to load portfolio data. Please retry.'));
+          emit(
+            const PortfolioHeatmapError(
+              message: 'Failed to load portfolio data. Please retry.',
+            ),
+          );
           return;
         } else {
           CommonLogger.warning(
@@ -359,5 +366,4 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
       );
     }
   }
-
 }

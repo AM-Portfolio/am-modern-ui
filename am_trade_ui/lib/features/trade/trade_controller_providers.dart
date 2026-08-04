@@ -15,15 +15,18 @@ import 'package:am_common/core/di/network_providers.dart';
 // ============================================================================
 
 /// Provider for TradeControllerRemoteDataSource
-final _tradeControllerRemoteDataSourceProvider = FutureProvider<TradeControllerRemoteDataSource>((ref) async {
+final _tradeControllerRemoteDataSourceProvider =
+    FutureProvider<TradeControllerRemoteDataSource>((ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
 
   return TradeControllerRemoteDataSourceImpl(apiClient: apiClient);
 });
 
 /// Provider for TradeControllerRepository
-final _tradeControllerRepositoryProvider = FutureProvider<TradeControllerRepository>((ref) async {
-  final remoteDataSource = await ref.watch(_tradeControllerRemoteDataSourceProvider.future);
+final _tradeControllerRepositoryProvider =
+    FutureProvider<TradeControllerRepository>((ref) async {
+  final remoteDataSource =
+      await ref.watch(_tradeControllerRemoteDataSourceProvider.future);
 
   return TradeControllerRepositoryImpl(remoteDataSource: remoteDataSource);
 });
@@ -34,15 +37,19 @@ final _tradeControllerRepositoryProvider = FutureProvider<TradeControllerReposit
 
 /// Provider to get trade details by portfolio ID and optional symbols
 /// Returns a FutureProvider with the list of trade details
-final tradeDetailsByPortfolioProvider =
-    FutureProvider.family<List<TradeDetails>, ({String portfolioId, List<String>? symbols})>((ref, params) async {
-      final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
-      return repository.getTradeDetailsByPortfolioAndSymbols(portfolioId: params.portfolioId, symbols: params.symbols);
-    });
+final tradeDetailsByPortfolioProvider = FutureProvider.family<
+    List<TradeDetails>,
+    ({String portfolioId, List<String>? symbols})>((ref, params) async {
+  final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
+  return repository.getTradeDetailsByPortfolioAndSymbols(
+      portfolioId: params.portfolioId, symbols: params.symbols);
+});
 
 /// Provider to watch trade details for a portfolio with real-time updates
 /// Returns a StreamProvider with trade details that update automatically
-final watchTradesByPortfolioProvider = StreamProvider.family<List<TradeDetails>, String>((ref, portfolioId) async* {
+final watchTradesByPortfolioProvider =
+    StreamProvider.family<List<TradeDetails>, String>(
+        (ref, portfolioId) async* {
   if (portfolioId.isEmpty) return;
   final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
   yield* repository.watchTradeDetailsByPortfolio(portfolioId);
@@ -50,64 +57,62 @@ final watchTradesByPortfolioProvider = StreamProvider.family<List<TradeDetails>,
 
 /// Provider to get trades by various filter criteria with pagination
 /// Returns a FutureProvider with paginated trade response
-final tradesByFiltersProvider =
-    FutureProvider.family<
-      PaginatedTradeResponse,
-      ({
-        List<String>? portfolioIds,
-        List<String>? symbols,
-        List<String>? statuses,
-        DateTime? startDate,
-        DateTime? endDate,
-        List<String>? strategies,
-        int page,
-        int size,
-        String? sort,
-      })
-    >((ref, params) async {
-      final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
-      return repository.getTradesByFilters(
-        portfolioIds: params.portfolioIds,
-        symbols: params.symbols,
-        statuses: params.statuses,
-        startDate: params.startDate,
-        endDate: params.endDate,
-        strategies: params.strategies,
-        page: params.page,
-        size: params.size,
-        sort: params.sort,
-      );
-    });
+final tradesByFiltersProvider = FutureProvider.family<
+    PaginatedTradeResponse,
+    ({
+      List<String>? portfolioIds,
+      List<String>? symbols,
+      List<String>? statuses,
+      DateTime? startDate,
+      DateTime? endDate,
+      List<String>? strategies,
+      int page,
+      int size,
+      String? sort,
+    })>((ref, params) async {
+  final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
+  return repository.getTradesByFilters(
+    portfolioIds: params.portfolioIds,
+    symbols: params.symbols,
+    statuses: params.statuses,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    strategies: params.strategies,
+    page: params.page,
+    size: params.size,
+    sort: params.sort,
+  );
+});
 
 /// Provider to get trade details by trade IDs
 /// Returns a FutureProvider with the list of trade details
-final tradeDetailsByIdsProvider = FutureProvider.family<List<TradeDetails>, List<String>>((ref, tradeIds) async {
+final tradeDetailsByIdsProvider =
+    FutureProvider.family<List<TradeDetails>, List<String>>(
+        (ref, tradeIds) async {
   final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
   return repository.getTradeDetailsByTradeIds(tradeIds);
 });
 
 /// Provider to filter trade details using favorite filter or metrics config
 /// Returns a FutureProvider with filtered trade details response
-final filterTradeDetailsProvider =
-    FutureProvider.family<
-      FilterTradeDetailsResponse,
-      ({
-        String? favoriteFilterId,
-        MetricsFilterConfigDto? metricsConfig,
-        int page,
-        int size,
-        String? sort,
-      })
-    >((ref, params) async {
-      final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
-      return repository.filterTradeDetails(
-        favoriteFilterId: params.favoriteFilterId,
-        metricsConfig: params.metricsConfig,
-        page: params.page,
-        size: params.size,
-        sort: params.sort,
-      );
-    });
+final filterTradeDetailsProvider = FutureProvider.family<
+    FilterTradeDetailsResponse,
+    ({
+      String? favoriteFilterId,
+      MetricsFilterConfigDto? metricsConfig,
+      int page,
+      int size,
+      String? sort,
+    })>((ref, params) async {
+  final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
+  return repository.filterTradeDetails(
+    favoriteFilterId: params.favoriteFilterId,
+    metricsConfig: params.metricsConfig,
+    page: params.page,
+    size: params.size,
+    sort: params.sort,
+  );
+});
 
 // ============================================================================
 // Action Providers (For mutation operations)
@@ -115,7 +120,8 @@ final filterTradeDetailsProvider =
 
 /// Provider to add a new trade
 /// Usage: ref.read(addTradeProvider)(tradeDetails)
-final addTradeProvider = FutureProvider<Future<TradeDetails> Function(TradeDetails)>((ref) async {
+final addTradeProvider =
+    FutureProvider<Future<TradeDetails> Function(TradeDetails)>((ref) async {
   final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
   return (tradeDetails) async {
     final result = await repository.addTrade(tradeDetails);
@@ -128,12 +134,15 @@ final addTradeProvider = FutureProvider<Future<TradeDetails> Function(TradeDetai
 
 /// Provider to update an existing trade
 /// Usage: ref.read(updateTradeProvider)((tradeId: '...', tradeDetails: ...))
-final updateTradeProvider = FutureProvider<Future<TradeDetails> Function(({String tradeId, TradeDetails tradeDetails}))>((
+final updateTradeProvider = FutureProvider<
+    Future<TradeDetails> Function(
+        ({String tradeId, TradeDetails tradeDetails}))>((
   ref,
 ) async {
   final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
   return (params) async {
-    final result = await repository.updateTrade(tradeId: params.tradeId, tradeDetails: params.tradeDetails);
+    final result = await repository.updateTrade(
+        tradeId: params.tradeId, tradeDetails: params.tradeDetails);
     // Invalidate related providers to trigger refresh
     ref.invalidate(tradeDetailsByPortfolioProvider);
     ref.invalidate(watchTradesByPortfolioProvider);
@@ -143,7 +152,9 @@ final updateTradeProvider = FutureProvider<Future<TradeDetails> Function(({Strin
 
 /// Provider to add or update multiple trades in batch
 /// Usage: ref.read(batchUpdateTradesProvider)(tradesList)
-final batchUpdateTradesProvider = FutureProvider<Future<List<TradeDetails>> Function(List<TradeDetails>)>((ref) async {
+final batchUpdateTradesProvider =
+    FutureProvider<Future<List<TradeDetails>> Function(List<TradeDetails>)>(
+        (ref) async {
   final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
   return (trades) async {
     final result = await repository.addOrUpdateTrades(trades);
@@ -156,7 +167,8 @@ final batchUpdateTradesProvider = FutureProvider<Future<List<TradeDetails>> Func
 
 /// Provider to clear repository cache
 /// Usage: await ref.read(clearTradeCacheProvider)()
-final clearTradeCacheProvider = FutureProvider<Future<void> Function()>((ref) async {
+final clearTradeCacheProvider =
+    FutureProvider<Future<void> Function()>((ref) async {
   final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
   return () async {
     await repository.clearCache();
@@ -171,7 +183,8 @@ final clearTradeCacheProvider = FutureProvider<Future<void> Function()>((ref) as
 
 /// Provider to refresh trades for a specific portfolio
 /// Usage: await ref.read(refreshPortfolioTradesProvider)(portfolioId)
-final refreshPortfolioTradesProvider = FutureProvider<Future<void> Function(String)>((ref) async {
+final refreshPortfolioTradesProvider =
+    FutureProvider<Future<void> Function(String)>((ref) async {
   final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
   return (portfolioId) async {
     await repository.refreshPortfolioTrades(portfolioId);

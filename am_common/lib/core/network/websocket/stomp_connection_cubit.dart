@@ -11,9 +11,13 @@ abstract class StompConnectionState extends Equatable {
 }
 
 class StompInitial extends StompConnectionState {}
+
 class StompConnecting extends StompConnectionState {}
+
 class StompConnected extends StompConnectionState {}
+
 class StompDisconnected extends StompConnectionState {}
+
 class StompError extends StompConnectionState {
   final String message;
   const StompError(this.message);
@@ -22,8 +26,8 @@ class StompError extends StompConnectionState {
 }
 
 /// A Cubit that manages the lifecycle of the STOMP WebSocket connection.
-/// 
-/// It should be initialized at the application level and synchronized 
+///
+/// It should be initialized at the application level and synchronized
 /// with the authentication state.
 class StompConnectionCubit extends Cubit<StompConnectionState> {
   final AmStompClient _stompClient;
@@ -34,13 +38,13 @@ class StompConnectionCubit extends Cubit<StompConnectionState> {
     required AmStompClient stompClient,
   })  : _stompClient = stompClient,
         super(StompInitial()) {
-    
     // Listen to internal STOMP status changes to update UI state
-    _stompStatusSubscription = _stompClient.status.listen(_handleStompStatusChange);
+    _stompStatusSubscription =
+        _stompClient.status.listen(_handleStompStatusChange);
   }
 
   /// Synchronizes the STOMP connection with an authentication token stream.
-  /// 
+  ///
   /// When a non-null token is received, it connects.
   /// When null is received, it disconnects.
   String? _currentUserId;
@@ -54,10 +58,11 @@ class StompConnectionCubit extends Cubit<StompConnectionState> {
       // Prevent connecting to remote STOMP servers with a local mock token
       // which results in repeated authentication STOMP Errors.
       if (token == 'mock_dev_token') {
-        AppLogger.info('StompConnectionCubit: Skipping STOMP connection for mock_dev_token (Local Dev Mode)');
+        AppLogger.info(
+            'StompConnectionCubit: Skipping STOMP connection for mock_dev_token (Local Dev Mode)');
         return;
       }
-      
+
       if (!_stompClient.isConnected) {
         _stompClient.connect(headers: {'Authorization': 'Bearer $token'});
       }
@@ -94,7 +99,8 @@ class StompConnectionCubit extends Cubit<StompConnectionState> {
     if (token == null || token.isEmpty || token == 'mock_dev_token') return;
     Future<void>.delayed(const Duration(seconds: 5), () {
       if (!_stompClient.isConnected && _lastToken == token) {
-        AppLogger.info('StompConnectionCubit: Reconnecting after disconnect/error...');
+        AppLogger.info(
+            'StompConnectionCubit: Reconnecting after disconnect/error...');
         _stompClient.connect(headers: {'Authorization': 'Bearer $token'});
       }
     });

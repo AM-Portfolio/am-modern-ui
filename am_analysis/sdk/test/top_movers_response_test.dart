@@ -25,8 +25,5 @@ void main() {
     test('to test the property `losers`', () async {
       // TODO
     });
-
-
   });
-
 }

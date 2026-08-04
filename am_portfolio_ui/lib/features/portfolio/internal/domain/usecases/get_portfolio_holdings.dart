@@ -19,9 +19,8 @@ class GetPortfolioHoldings {
   }
 
   /// Get portfolio holdings for specific portfolio
-  Future<PortfolioHoldings> callForPortfolio(
-    String portfolioId,
-  ) async => call(portfolioId);
+  Future<PortfolioHoldings> callForPortfolio(String portfolioId) async =>
+      call(portfolioId);
 
   /// Gets cached portfolio holdings directly (synchronous return via future)
   Future<PortfolioHoldings?> getCached(String portfolioId) async {
@@ -35,8 +34,6 @@ class GetPortfolioHoldings {
       tag: 'GetPortfolioHoldings',
       metadata: {},
     );
-
-    
 
     CommonLogger.info(
       'Starting portfolio holdings stream',

@@ -9,11 +9,7 @@ class PrivacyPolicyPage extends StatelessWidget {
   final VoidCallback? onBack;
   final VoidCallback? onOpenTerms;
 
-  const PrivacyPolicyPage({
-    this.onBack,
-    this.onOpenTerms,
-    super.key,
-  });
+  const PrivacyPolicyPage({this.onBack, this.onOpenTerms, super.key});
 
   Future<void> _mail() async {
     final uri = Uri.parse('mailto:admin@asrax.in');
@@ -47,10 +43,7 @@ class PrivacyPolicyPage extends StatelessWidget {
           child: Text.rich(
             TextSpan(
               children: [
-                const TextSpan(
-                  text:
-                      'When you visit our website at ',
-                ),
+                const TextSpan(text: 'When you visit our website at '),
                 TextSpan(
                   text: 'https://am.asrax.in',
                   style: linkStyle,
@@ -93,19 +86,19 @@ class PrivacyPolicyPage extends StatelessWidget {
           LegalBoldItem(
             'Account information: ',
             'email address, user ID, display name, profile photo, and '
-            'authentication credentials. Passwords are processed by our identity '
-            'systems; we do not store plain-text passwords in the app.',
+                'authentication credentials. Passwords are processed by our identity '
+                'systems; we do not store plain-text passwords in the app.',
           ),
           LegalBoldItem(
             'Financial and investment information: ',
             'portfolio names, holdings, transactions, trade journal entries, '
-            'metrics, templates, analytics, and documents you upload or import.',
+                'metrics, templates, analytics, and documents you upload or import.',
           ),
           LegalBoldItem(
             'Subscription information: ',
             'plan, billing interval, and payment status. Payment card details '
-            'are processed by payment providers; we do not store full card '
-            'numbers on our servers.',
+                'are processed by payment providers; we do not store full card '
+                'numbers on our servers.',
           ),
           LegalBoldItem(
             'Communications: ',
@@ -160,18 +153,18 @@ class PrivacyPolicyPage extends StatelessWidget {
           LegalBoldItem(
             'To facilitate account creation and logon process ',
             'with your Consent. If you link your account to a third-party account '
-            '(such as Google), we use the information you allow us to collect to '
-            'facilitate account creation and logon.',
+                '(such as Google), we use the information you allow us to collect to '
+                'facilitate account creation and logon.',
           ),
           LegalBoldItem(
             'To provide our Services ',
             'for Contractual reasons, including portfolio tracking, trade '
-            'journaling, market data, dashboards, document intelligence, and subscriptions.',
+                'journaling, market data, dashboards, document intelligence, and subscriptions.',
           ),
           LegalBoldItem(
             'To send administrative information to you ',
             'for Business Purposes, Legal Reasons and/or Contractual reasons, '
-            'including changes to our terms, conditions, and policies.',
+                'including changes to our terms, conditions, and policies.',
           ),
           LegalBoldItem(
             'To fulfill and manage subscriptions ',
@@ -192,7 +185,7 @@ class PrivacyPolicyPage extends StatelessWidget {
           LegalBoldItem(
             'For other Business Purposes, ',
             'such as data analysis, identifying usage trends, and evaluating and '
-            'improving our Sites, products, services, and your experience.',
+                'improving our Sites, products, services, and your experience.',
           ),
         ]),
         const LegalHeading('3. Will your information be shared with anyone?'),
@@ -208,39 +201,41 @@ class PrivacyPolicyPage extends StatelessWidget {
           LegalBoldItem(
             'Compliance with Laws. ',
             'We may disclose your information where we are legally required to do '
-            'so to comply with applicable law, governmental requests, court orders, '
-            'or legal process.',
+                'so to comply with applicable law, governmental requests, court orders, '
+                'or legal process.',
           ),
           LegalBoldItem(
             'Vital Interests and Legal Rights. ',
             'We may disclose your information where we believe it is necessary to '
-            'investigate, prevent, or take action regarding potential violations '
-            'of our policies, suspected fraud, or illegal activities.',
+                'investigate, prevent, or take action regarding potential violations '
+                'of our policies, suspected fraud, or illegal activities.',
           ),
           LegalBoldItem(
             'Vendors and Service Providers. ',
             'We may share your data with third-party vendors, service providers, '
-            'contractors, or agents who perform services for us, such as hosting, '
-            'authentication, payment processing, email delivery, analytics, and '
-            'customer support.',
+                'contractors, or agents who perform services for us, such as hosting, '
+                'authentication, payment processing, email delivery, analytics, and '
+                'customer support.',
           ),
           LegalBoldItem(
             'Integrations you authorize. ',
             'When you connect Google, Gmail, or broker-related services, '
-            'information is shared as required to provide those features.',
+                'information is shared as required to provide those features.',
           ),
           LegalBoldItem(
             'Business Transfers. ',
             'We may share or transfer your information in connection with any '
-            'merger, sale of company assets, financing, or acquisition of all or '
-            'a portion of our business.',
+                'merger, sale of company assets, financing, or acquisition of all or '
+                'a portion of our business.',
           ),
           LegalBoldItem(
             'With your Consent. ',
             'We may disclose your personal information for any other purpose with your consent.',
           ),
         ]),
-        const LegalHeading('4. Do we use cookies and other tracking technologies?'),
+        const LegalHeading(
+          '4. Do we use cookies and other tracking technologies?',
+        ),
         const LegalShort(
           'We may use cookies and similar technologies to collect and store information.',
         ),
@@ -303,9 +298,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: linkStyle,
                   recognizer: TapGestureRecognizer()..onTap = _mail,
                 ),
-                const TextSpan(
-                  text: ' if you become aware of any such data.',
-                ),
+                const TextSpan(text: ' if you become aware of any such data.'),
               ],
             ),
           ),

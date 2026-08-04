@@ -21,7 +21,8 @@ final gmailApiConfigProvider = FutureProvider<GmailApiConfig>((ref) async {
   return config.api.gmail!;
 });
 
-final portfolioApiConfigProvider = FutureProvider<PortfolioApiConfig>((ref) async {
+final portfolioApiConfigProvider =
+    FutureProvider<PortfolioApiConfig>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
   if (config.api.portfolio == null) {
     throw Exception('Portfolio API configuration is not available');

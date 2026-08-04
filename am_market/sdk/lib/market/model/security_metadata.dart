@@ -48,21 +48,24 @@ class SecurityMetadata {
   String? marketCapType;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is SecurityMetadata &&
-    other.sector == sector &&
-    other.industry == industry &&
-    other.marketCapValue == marketCapValue &&
-    other.marketCapType == marketCapType;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SecurityMetadata &&
+          other.sector == sector &&
+          other.industry == industry &&
+          other.marketCapValue == marketCapValue &&
+          other.marketCapType == marketCapType;
 
   @override
   int get hashCode =>
-    (sector == null ? 0 : sector!.hashCode) +
-    (industry == null ? 0 : industry!.hashCode) +
-    (marketCapValue == null ? 0 : marketCapValue!.hashCode) +
-    (marketCapType == null ? 0 : marketCapType!.hashCode);
+      (sector == null ? 0 : sector!.hashCode) +
+      (industry == null ? 0 : industry!.hashCode) +
+      (marketCapValue == null ? 0 : marketCapValue!.hashCode) +
+      (marketCapType == null ? 0 : marketCapType!.hashCode);
 
   @override
-  String toString() => 'SecurityMetadata[sector=$sector, industry=$industry, marketCapValue=$marketCapValue, marketCapType=$marketCapType]';
+  String toString() =>
+      'SecurityMetadata[sector=$sector, industry=$industry, marketCapValue=$marketCapValue, marketCapType=$marketCapType]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -100,8 +103,10 @@ class SecurityMetadata {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "SecurityMetadata[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "SecurityMetadata[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "SecurityMetadata[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "SecurityMetadata[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -116,7 +121,10 @@ class SecurityMetadata {
     return null;
   }
 
-  static List<SecurityMetadata> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<SecurityMetadata> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <SecurityMetadata>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -132,7 +140,7 @@ class SecurityMetadata {
   static Map<String, SecurityMetadata> mapFromJson(dynamic json) {
     final map = <String, SecurityMetadata>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = SecurityMetadata.fromJson(entry.value);
         if (value != null) {
@@ -144,19 +152,23 @@ class SecurityMetadata {
   }
 
   // maps a json object with a list of SecurityMetadata-objects as value to a dart map
-  static Map<String, List<SecurityMetadata>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<SecurityMetadata>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<SecurityMetadata>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = SecurityMetadata.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = SecurityMetadata.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

@@ -43,7 +43,8 @@ class TradeCacheRepository {
   // Trade Metrics
   // ============================================================================
 
-  Future<Map<String, dynamic>?> getMetrics(String userId, String portfolioId) async {
+  Future<Map<String, dynamic>?> getMetrics(
+      String userId, String portfolioId) async {
     final key = TradeCacheKeys.metrics(userId, portfolioId);
     return await _cacheService.get<Map<String, dynamic>>(key);
   }
@@ -61,7 +62,8 @@ class TradeCacheRepository {
   // Trade Calendar
   // ============================================================================
 
-  Future<Map<String, dynamic>?> getCalendar(String userId, String portfolioId) async {
+  Future<Map<String, dynamic>?> getCalendar(
+      String userId, String portfolioId) async {
     final key = TradeCacheKeys.calendar(userId, portfolioId);
     return await _cacheService.get<Map<String, dynamic>>(key);
   }

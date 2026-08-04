@@ -28,9 +28,27 @@ class PortfolioSummaryWidget extends StatelessWidget {
           // Market Data Cards Row
           Row(
             children: [
-              Expanded(child: _buildMetricCard(context, "Today's Return", summary.formattedTodayChange, summary.todayChangePercentage, summary.isTodayPositive, Icons.today)),
+              Expanded(
+                child: _buildMetricCard(
+                  context,
+                  "Today's Return",
+                  summary.formattedTodayChange,
+                  summary.todayChangePercentage,
+                  summary.isTodayPositive,
+                  Icons.today,
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _buildMetricCard(context, "Total Return", summary.formattedGainLoss, summary.totalGainLossPercentage, summary.isProfitable, Icons.trending_up)),
+              Expanded(
+                child: _buildMetricCard(
+                  context,
+                  "Total Return",
+                  summary.formattedGainLoss,
+                  summary.totalGainLossPercentage,
+                  summary.isProfitable,
+                  Icons.trending_up,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -38,9 +56,23 @@ class PortfolioSummaryWidget extends StatelessWidget {
           // Quick Actions Row
           Row(
             children: [
-              Expanded(child: _buildPremiumActionCard(context, 'View Holdings', Icons.list_alt, onViewHoldings)),
+              Expanded(
+                child: _buildPremiumActionCard(
+                  context,
+                  'View Holdings',
+                  Icons.list_alt,
+                  onViewHoldings,
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _buildPremiumActionCard(context, 'Refresh Data', Icons.refresh, () {})), // Placeholder to maintain layout
+              Expanded(
+                child: _buildPremiumActionCard(
+                  context,
+                  'Refresh Data',
+                  Icons.refresh,
+                  () {},
+                ),
+              ), // Placeholder to maintain layout
             ],
           ),
         ],
@@ -50,7 +82,9 @@ class PortfolioSummaryWidget extends StatelessWidget {
 
   Widget _buildPremiumValueCard(BuildContext context) {
     final isPositive = summary.totalGainLoss >= 0;
-    final color = isPositive ? const Color(0xFF00B894) : const Color(0xFFFF7675);
+    final color = isPositive
+        ? const Color(0xFF00B894)
+        : const Color(0xFFFF7675);
 
     return Container(
       decoration: BoxDecoration(
@@ -104,14 +138,21 @@ class PortfolioSummaryWidget extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.sync, size: 12, color: Colors.white.withValues(alpha: 0.9)),
+                          Icon(
+                            Icons.sync,
+                            size: 12,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             _formatDateTime(summary.lastUpdated),
@@ -141,7 +182,10 @@ class PortfolioSummaryWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
@@ -150,7 +194,9 @@ class PortfolioSummaryWidget extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isPositive ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                        isPositive
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
                         color: color,
                         size: 16,
                       ),
@@ -177,11 +223,28 @@ class PortfolioSummaryWidget extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildValueLabel('Invested', '₹${summary.totalInvested.toStringAsFixed(0)}'),
-                    Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.2)),
-                    _buildValueLabel('Holdings', summary.totalHoldings.toString()),
-                    Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.2)),
-                    _buildValueLabel('Gainers/Losers', '${summary.gainersCount}/${summary.losersCount}'),
+                    _buildValueLabel(
+                      'Invested',
+                      '₹${summary.totalInvested.toStringAsFixed(0)}',
+                    ),
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
+                    _buildValueLabel(
+                      'Holdings',
+                      summary.totalHoldings.toString(),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
+                    _buildValueLabel(
+                      'Gainers/Losers',
+                      '${summary.gainersCount}/${summary.losersCount}',
+                    ),
                   ],
                 ),
               ],
@@ -217,8 +280,17 @@ class PortfolioSummaryWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildMetricCard(BuildContext context, String title, String value, double percentage, bool isPositive, IconData icon) {
-    final color = isPositive ? const Color(0xFF00B894) : const Color(0xFFFF7675);
+  Widget _buildMetricCard(
+    BuildContext context,
+    String title,
+    String value,
+    double percentage,
+    bool isPositive,
+    IconData icon,
+  ) {
+    final color = isPositive
+        ? const Color(0xFF00B894)
+        : const Color(0xFFFF7675);
     final cardColor = Theme.of(context).cardColor;
 
     return Container(
@@ -256,7 +328,9 @@ class PortfolioSummaryWidget extends StatelessWidget {
                   title,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -267,9 +341,9 @@ class PortfolioSummaryWidget extends StatelessWidget {
             fit: BoxFit.scaleDown,
             child: Text(
               value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 4),
@@ -296,7 +370,12 @@ class PortfolioSummaryWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildPremiumActionCard(BuildContext context, String title, IconData icon, VoidCallback? onTap) {
+  Widget _buildPremiumActionCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    VoidCallback? onTap,
+  ) {
     final cardColor = Theme.of(context).cardColor;
     final primaryColor = Theme.of(context).primaryColor;
 
@@ -310,9 +389,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: primaryColor.withValues(alpha: 0.1),
-            ),
+            border: Border.all(color: primaryColor.withValues(alpha: 0.1)),
             boxShadow: [
               BoxShadow(
                 color: primaryColor.withValues(alpha: 0.05),

@@ -4,20 +4,20 @@ class PriceTestState {
   final bool useIndexDropdown;
   final Set<String> selectedIndices;
   final String symbolText;
-  
+
   // Filters
   final String selectedInterval;
   final DateTime? fromDate;
   final DateTime? toDate;
   final bool showDateRange;
   final bool showFilters;
-  
+
   // Advanced filters
   final bool isIndexSymbol;
   final bool forceRefresh;
   final bool continuous;
   final String instrumentType;
-  
+
   // UI state
   final bool isLoading;
   final String? error;

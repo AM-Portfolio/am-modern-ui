@@ -41,10 +41,12 @@ class _FeatureFlagPanelWidgetState extends State<FeatureFlagPanelWidget> {
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     children: [
-                      const Icon(Icons.handyman_outlined, color: Colors.white, size: 20),
+                      const Icon(Icons.handyman_outlined,
+                          color: Colors.white, size: 20),
                       const SizedBox(width: 10),
                       const Text(
                         'Developer Tools',
@@ -56,7 +58,9 @@ class _FeatureFlagPanelWidgetState extends State<FeatureFlagPanelWidget> {
                       ),
                       const Spacer(),
                       Icon(
-                        _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                        _isExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
                         color: Colors.white,
                       ),
                     ],
@@ -141,20 +145,20 @@ class _FeatureFlagPanelWidgetState extends State<FeatureFlagPanelWidget> {
       );
 
   Widget _buildSection(String title, List<Widget> children) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        title,
-        style: const TextStyle(
-          color: Colors.amber,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      const SizedBox(height: 8),
-      ...children,
-    ],
-  );
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.amber,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...children,
+        ],
+      );
 
   Widget _buildSwitch(String label, bool value, Function(bool) onChanged) =>
       Padding(

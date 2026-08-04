@@ -8,12 +8,12 @@ abstract class AnalysisService {
     required String portfolioId,
     required GroupBy groupBy,
   });
-  
+
   Future<List<MoverItem>> getTopMovers({
     required String portfolioId,
     required TimeFrame timeFrame,
   });
-  
+
   Future<List<PerformanceDataPoint>> getPerformance({
     required String portfolioId,
     required TimeFrame timeFrame,
@@ -24,16 +24,16 @@ abstract class AnalysisService {
 class AllocationCubit extends Cubit<AllocationState> {
   final String portfolioId;
   final AnalysisService analysisService;
-  
+
   AllocationCubit({
     required this.portfolioId,
     required this.analysisService,
   }) : super(const AllocationInitial());
-  
+
   /// Load allocation data for a given groupBy
   Future<void> loadAllocation(GroupBy groupBy) async {
     emit(const AllocationLoading());
-    
+
     try {
       final allocations = await analysisService.getAllocation(
         portfolioId: portfolioId,
@@ -44,7 +44,7 @@ class AllocationCubit extends Cubit<AllocationState> {
       emit(AllocationError(e.toString(), stackTrace));
     }
   }
-  
+
   /// Refresh current allocation data
   Future<void> refresh() async {
     final currentState = state;
@@ -52,7 +52,7 @@ class AllocationCubit extends Cubit<AllocationState> {
       await loadAllocation(currentState.groupBy);
     }
   }
-  
+
   /// Change groupBy and reload data
   Future<void> changeGroupBy(GroupBy groupBy) async {
     await loadAllocation(groupBy);

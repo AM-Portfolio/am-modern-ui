@@ -7,7 +7,8 @@ import '../mappers/journal_entry_mapper.dart';
 
 /// Repository implementation for journal operations
 class JournalRepositoryImpl implements JournalRepository {
-  JournalRepositoryImpl({required JournalRemoteDataSource remoteDataSource}) : _remoteDataSource = remoteDataSource;
+  JournalRepositoryImpl({required JournalRemoteDataSource remoteDataSource})
+      : _remoteDataSource = remoteDataSource;
 
   final JournalRemoteDataSource _remoteDataSource;
 
@@ -24,7 +25,8 @@ class JournalRepositoryImpl implements JournalRepository {
     List<String>? relatedTradeIds,
     List<String>? tagIds,
   }) async {
-    AppLogger.methodEntry('createJournalEntry', tag: 'JournalRepository', params: {});
+    AppLogger.methodEntry('createJournalEntry',
+        tag: 'JournalRepository', params: {});
 
     try {
       final request = TradeJournalEntryRequestDto(
@@ -32,10 +34,13 @@ class JournalRepositoryImpl implements JournalRepository {
         content: content,
         entryDate: entryDate.toIso8601String(),
         tradeId: tradeId,
-        behaviorPatternSummaries: behaviorPatternSummaries?.map(JournalEntryMapper.toBehaviorPatternDto).toList(),
+        behaviorPatternSummaries: behaviorPatternSummaries
+            ?.map(JournalEntryMapper.toBehaviorPatternDto)
+            .toList(),
         customFields: customFields,
         imageUrls: imageUrls,
-        attachments: attachments?.map(JournalEntryMapper.toAttachmentDto).toList(),
+        attachments:
+            attachments?.map(JournalEntryMapper.toAttachmentDto).toList(),
         relatedTradeIds: relatedTradeIds,
         tagIds: tagIds,
       );
@@ -43,8 +48,10 @@ class JournalRepositoryImpl implements JournalRepository {
       final dto = await _remoteDataSource.createJournalEntry(request);
       final entry = JournalEntryMapper.fromResponseDto(dto);
 
-      AppLogger.info('Journal entry created successfully', tag: 'JournalRepository');
-      AppLogger.methodExit('createJournalEntry', tag: 'JournalRepository', result: 'success');
+      AppLogger.info('Journal entry created successfully',
+          tag: 'JournalRepository');
+      AppLogger.methodExit('createJournalEntry',
+          tag: 'JournalRepository', result: 'success');
 
       return entry;
     } catch (e) {
@@ -60,14 +67,17 @@ class JournalRepositoryImpl implements JournalRepository {
 
   @override
   Future<JournalEntry> getJournalEntry(String entryId) async {
-    AppLogger.methodEntry('getJournalEntry', tag: 'JournalRepository', params: {'entryId': entryId});
+    AppLogger.methodEntry('getJournalEntry',
+        tag: 'JournalRepository', params: {'entryId': entryId});
 
     try {
       final dto = await _remoteDataSource.getJournalEntry(entryId);
       final entry = JournalEntryMapper.fromResponseDto(dto);
 
-      AppLogger.info('Journal entry fetched successfully', tag: 'JournalRepository');
-      AppLogger.methodExit('getJournalEntry', tag: 'JournalRepository', result: 'success');
+      AppLogger.info('Journal entry fetched successfully',
+          tag: 'JournalRepository');
+      AppLogger.methodExit('getJournalEntry',
+          tag: 'JournalRepository', result: 'success');
 
       return entry;
     } catch (e) {
@@ -95,7 +105,8 @@ class JournalRepositoryImpl implements JournalRepository {
     List<String>? relatedTradeIds,
     List<String>? tagIds,
   }) async {
-    AppLogger.methodEntry('updateJournalEntry', tag: 'JournalRepository', params: {'entryId': entryId});
+    AppLogger.methodEntry('updateJournalEntry',
+        tag: 'JournalRepository', params: {'entryId': entryId});
 
     try {
       final request = TradeJournalEntryRequestDto(
@@ -103,10 +114,13 @@ class JournalRepositoryImpl implements JournalRepository {
         content: content,
         entryDate: entryDate.toIso8601String(),
         tradeId: tradeId,
-        behaviorPatternSummaries: behaviorPatternSummaries?.map(JournalEntryMapper.toBehaviorPatternDto).toList(),
+        behaviorPatternSummaries: behaviorPatternSummaries
+            ?.map(JournalEntryMapper.toBehaviorPatternDto)
+            .toList(),
         customFields: customFields,
         imageUrls: imageUrls,
-        attachments: attachments?.map(JournalEntryMapper.toAttachmentDto).toList(),
+        attachments:
+            attachments?.map(JournalEntryMapper.toAttachmentDto).toList(),
         relatedTradeIds: relatedTradeIds,
         tagIds: tagIds,
       );
@@ -114,8 +128,10 @@ class JournalRepositoryImpl implements JournalRepository {
       final dto = await _remoteDataSource.updateJournalEntry(entryId, request);
       final entry = JournalEntryMapper.fromResponseDto(dto);
 
-      AppLogger.info('Journal entry updated successfully', tag: 'JournalRepository');
-      AppLogger.methodExit('updateJournalEntry', tag: 'JournalRepository', result: 'success');
+      AppLogger.info('Journal entry updated successfully',
+          tag: 'JournalRepository');
+      AppLogger.methodExit('updateJournalEntry',
+          tag: 'JournalRepository', result: 'success');
 
       return entry;
     } catch (e) {
@@ -131,13 +147,16 @@ class JournalRepositoryImpl implements JournalRepository {
 
   @override
   Future<void> deleteJournalEntry(String entryId) async {
-    AppLogger.methodEntry('deleteJournalEntry', tag: 'JournalRepository', params: {'entryId': entryId});
+    AppLogger.methodEntry('deleteJournalEntry',
+        tag: 'JournalRepository', params: {'entryId': entryId});
 
     try {
       await _remoteDataSource.deleteJournalEntry(entryId);
 
-      AppLogger.info('Journal entry deleted successfully', tag: 'JournalRepository');
-      AppLogger.methodExit('deleteJournalEntry', tag: 'JournalRepository', result: 'success');
+      AppLogger.info('Journal entry deleted successfully',
+          tag: 'JournalRepository');
+      AppLogger.methodExit('deleteJournalEntry',
+          tag: 'JournalRepository', result: 'success');
     } catch (e) {
       AppLogger.error(
         'Failed to delete journal entry',
@@ -151,14 +170,17 @@ class JournalRepositoryImpl implements JournalRepository {
 
   @override
   Future<List<JournalEntry>> getJournalEntriesByUser() async {
-    AppLogger.methodEntry('getJournalEntriesByUser', tag: 'JournalRepository', params: {});
+    AppLogger.methodEntry('getJournalEntriesByUser',
+        tag: 'JournalRepository', params: {});
 
     try {
       final dtos = await _remoteDataSource.getJournalEntriesByUser();
       final entries = dtos.map(JournalEntryMapper.fromResponseDto).toList();
 
-      AppLogger.info('Journal entries fetched successfully', tag: 'JournalRepository');
-      AppLogger.methodExit('getJournalEntriesByUser', tag: 'JournalRepository', result: 'success');
+      AppLogger.info('Journal entries fetched successfully',
+          tag: 'JournalRepository');
+      AppLogger.methodExit('getJournalEntriesByUser',
+          tag: 'JournalRepository', result: 'success');
 
       return entries;
     } catch (e) {
@@ -174,14 +196,17 @@ class JournalRepositoryImpl implements JournalRepository {
 
   @override
   Future<List<JournalEntry>> getJournalEntriesByTrade(String tradeId) async {
-    AppLogger.methodEntry('getJournalEntriesByTrade', tag: 'JournalRepository', params: {'tradeId': tradeId});
+    AppLogger.methodEntry('getJournalEntriesByTrade',
+        tag: 'JournalRepository', params: {'tradeId': tradeId});
 
     try {
       final dtos = await _remoteDataSource.getJournalEntriesByTrade(tradeId);
       final entries = dtos.map(JournalEntryMapper.fromResponseDto).toList();
 
-      AppLogger.info('Journal entries fetched successfully', tag: 'JournalRepository');
-      AppLogger.methodExit('getJournalEntriesByTrade', tag: 'JournalRepository', result: 'success');
+      AppLogger.info('Journal entries fetched successfully',
+          tag: 'JournalRepository');
+      AppLogger.methodExit('getJournalEntriesByTrade',
+          tag: 'JournalRepository', result: 'success');
 
       return entries;
     } catch (e) {
@@ -196,8 +221,10 @@ class JournalRepositoryImpl implements JournalRepository {
   }
 
   @override
-  Future<List<JournalEntry>> getJournalEntriesByDateRange(DateTime startDate, DateTime endDate) async {
-    AppLogger.methodEntry('getJournalEntriesByDateRange', tag: 'JournalRepository', params: {});
+  Future<List<JournalEntry>> getJournalEntriesByDateRange(
+      DateTime startDate, DateTime endDate) async {
+    AppLogger.methodEntry('getJournalEntriesByDateRange',
+        tag: 'JournalRepository', params: {});
 
     try {
       final dtos = await _remoteDataSource.getJournalEntriesByDateRange(
@@ -206,8 +233,10 @@ class JournalRepositoryImpl implements JournalRepository {
       );
       final entries = dtos.map(JournalEntryMapper.fromResponseDto).toList();
 
-      AppLogger.info('Journal entries fetched successfully', tag: 'JournalRepository');
-      AppLogger.methodExit('getJournalEntriesByDateRange', tag: 'JournalRepository', result: 'success');
+      AppLogger.info('Journal entries fetched successfully',
+          tag: 'JournalRepository');
+      AppLogger.methodExit('getJournalEntriesByDateRange',
+          tag: 'JournalRepository', result: 'success');
 
       return entries;
     } catch (e) {
@@ -221,4 +250,3 @@ class JournalRepositoryImpl implements JournalRepository {
     }
   }
 }
-

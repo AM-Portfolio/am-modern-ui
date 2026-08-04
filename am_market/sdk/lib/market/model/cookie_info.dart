@@ -84,29 +84,32 @@ class CookieInfo {
   int? expiry;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is CookieInfo &&
-    other.name == name &&
-    other.value == value &&
-    other.domain == domain &&
-    other.path == path &&
-    other.secure == secure &&
-    other.httpOnly == httpOnly &&
-    other.sameSite == sameSite &&
-    other.expiry == expiry;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CookieInfo &&
+          other.name == name &&
+          other.value == value &&
+          other.domain == domain &&
+          other.path == path &&
+          other.secure == secure &&
+          other.httpOnly == httpOnly &&
+          other.sameSite == sameSite &&
+          other.expiry == expiry;
 
   @override
   int get hashCode =>
-    (name == null ? 0 : name!.hashCode) +
-    (value == null ? 0 : value!.hashCode) +
-    (domain == null ? 0 : domain!.hashCode) +
-    (path == null ? 0 : path!.hashCode) +
-    (secure == null ? 0 : secure!.hashCode) +
-    (httpOnly == null ? 0 : httpOnly!.hashCode) +
-    (sameSite == null ? 0 : sameSite!.hashCode) +
-    (expiry == null ? 0 : expiry!.hashCode);
+      (name == null ? 0 : name!.hashCode) +
+      (value == null ? 0 : value!.hashCode) +
+      (domain == null ? 0 : domain!.hashCode) +
+      (path == null ? 0 : path!.hashCode) +
+      (secure == null ? 0 : secure!.hashCode) +
+      (httpOnly == null ? 0 : httpOnly!.hashCode) +
+      (sameSite == null ? 0 : sameSite!.hashCode) +
+      (expiry == null ? 0 : expiry!.hashCode);
 
   @override
-  String toString() => 'CookieInfo[name=$name, value=$value, domain=$domain, path=$path, secure=$secure, httpOnly=$httpOnly, sameSite=$sameSite, expiry=$expiry]';
+  String toString() =>
+      'CookieInfo[name=$name, value=$value, domain=$domain, path=$path, secure=$secure, httpOnly=$httpOnly, sameSite=$sameSite, expiry=$expiry]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -164,8 +167,10 @@ class CookieInfo {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "CookieInfo[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "CookieInfo[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "CookieInfo[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "CookieInfo[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -184,7 +189,10 @@ class CookieInfo {
     return null;
   }
 
-  static List<CookieInfo> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<CookieInfo> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <CookieInfo>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -200,7 +208,7 @@ class CookieInfo {
   static Map<String, CookieInfo> mapFromJson(dynamic json) {
     final map = <String, CookieInfo>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = CookieInfo.fromJson(entry.value);
         if (value != null) {
@@ -212,19 +220,23 @@ class CookieInfo {
   }
 
   // maps a json object with a list of CookieInfo-objects as value to a dart map
-  static Map<String, List<CookieInfo>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<CookieInfo>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<CookieInfo>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = CookieInfo.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = CookieInfo.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

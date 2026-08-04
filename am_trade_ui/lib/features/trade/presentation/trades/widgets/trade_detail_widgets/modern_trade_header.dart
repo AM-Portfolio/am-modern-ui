@@ -7,7 +7,13 @@ import '../../../../providers/trade_controller_providers.dart';
 import '../../../../providers/trade_internal_providers.dart';
 
 class ModernTradeHeader extends ConsumerStatefulWidget {
-  const ModernTradeHeader({required this.trade, required this.portfolioId, required this.onClose, required this.onFilterChanged, this.onSymbolTap, super.key});
+  const ModernTradeHeader(
+      {required this.trade,
+      required this.portfolioId,
+      required this.onClose,
+      required this.onFilterChanged,
+      this.onSymbolTap,
+      super.key});
 
   final TradeHoldingViewModel trade;
   final String portfolioId;
@@ -19,7 +25,8 @@ class ModernTradeHeader extends ConsumerStatefulWidget {
   ConsumerState<ModernTradeHeader> createState() => _ModernTradeHeaderState();
 }
 
-class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with SingleTickerProviderStateMixin {
+class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader>
+    with SingleTickerProviderStateMixin {
   late AnimationController _shineController;
   late Animation<double> _shineAnimation;
   bool _showDetails = true;
@@ -27,12 +34,15 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
   @override
   void initState() {
     super.initState();
-    _shineController = AnimationController(duration: const Duration(milliseconds: 2000), vsync: this)..repeat();
+    _shineController = AnimationController(
+        duration: const Duration(milliseconds: 2000), vsync: this)
+      ..repeat();
 
     _shineAnimation = Tween<double>(
       begin: -1.0,
       end: 2.0,
-    ).animate(CurvedAnimation(parent: _shineController, curve: Curves.easeInOut));
+    ).animate(
+        CurvedAnimation(parent: _shineController, curve: Curves.easeInOut));
   }
 
   @override
@@ -49,55 +59,64 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 800;
-        return isMobile ? _buildMobileLayout(context, statusColor, isProfit) : _buildDesktopLayout(context, statusColor, isProfit);
+        return isMobile
+            ? _buildMobileLayout(context, statusColor, isProfit)
+            : _buildDesktopLayout(context, statusColor, isProfit);
       },
     );
   }
 
-  Widget _buildDesktopLayout(BuildContext context, Color statusColor, bool isProfit) {
+  Widget _buildDesktopLayout(
+      BuildContext context, Color statusColor, bool isProfit) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface, // Clean background for the header section
+        color: Theme.of(context)
+            .colorScheme
+            .surface, // Clean background for the header section
         borderRadius: BorderRadius.circular(16), // Rounded corners
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+        border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
         boxShadow: [
-           BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
         ],
       ),
       child: Padding(
-           padding: const EdgeInsets.all(24),
-           child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                 Expanded(
-                    child: Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                          _buildBackButton(context),
-                          if (_showDetails) ...[
-                            const SizedBox(height: 24),
-                            _buildDesktopInfoCard(context, statusColor, isProfit),
-                          ],
-                       ],
-                    ),
-                 ),
-                 Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                       if (_showDetails) ...[
-                         _buildDesktopPnLCard(context, isProfit),
-                         const SizedBox(height: 24),
-                       ],
-                       _buildDetailsToggle(context),
+          padding: const EdgeInsets.all(24),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildBackButton(context),
+                    if (_showDetails) ...[
+                      const SizedBox(height: 24),
+                      _buildDesktopInfoCard(context, statusColor, isProfit),
                     ],
-                 )
-              ],
-           )
-      ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (_showDetails) ...[
+                    _buildDesktopPnLCard(context, isProfit),
+                    const SizedBox(height: 24),
+                  ],
+                  _buildDetailsToggle(context),
+                ],
+              )
+            ],
+          )),
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context, Color statusColor, bool isProfit) {
+  Widget _buildMobileLayout(
+      BuildContext context, Color statusColor, bool isProfit) {
     return Container(
       color: Colors.transparent, // Background color match
       child: Padding(
@@ -131,7 +150,8 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
                           color: Colors.red.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                        child: Icon(Icons.delete_outline,
+                            size: 20, color: Colors.red),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -139,10 +159,15 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.nightlight_round, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      child: Icon(Icons.nightlight_round,
+                          size: 20,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -155,7 +180,9 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+                border: Border.all(
+                    color:
+                        Theme.of(context).colorScheme.outline.withOpacity(0.1)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -171,12 +198,13 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
                     top: 16,
                     right: 16,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                           colors: [
-                               const Color(0xFF00C853), // Material Green A700
-                               const Color(0xFF00E676), // Material Green A400
+                          colors: [
+                            const Color(0xFF00C853), // Material Green A700
+                            const Color(0xFF00E676), // Material Green A400
                           ],
                         ),
                         borderRadius: BorderRadius.circular(12),
@@ -195,7 +223,9 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                isProfit ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                                isProfit
+                                    ? Icons.trending_up_rounded
+                                    : Icons.trending_down_rounded,
                                 color: Colors.white,
                                 size: 14,
                               ),
@@ -262,15 +292,26 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
                           runSpacing: 8,
                           children: [
                             // Mobile Tags (Reusing specific tag builder if possible, or recreating styles)
-                             if (widget.trade.tradePositionType != null)
+                            if (widget.trade.tradePositionType != null)
                               _buildSpecificTag(
-                                context, 
-                                widget.trade.tradePositionType == 'LONG' ? Icons.trending_up : Icons.trending_down, 
-                                widget.trade.tradePositionType!, 
-                                widget.trade.tradePositionType == 'LONG' ? const Color(0xFFFFEBEE) : const Color(0xFFE8F5E9), 
-                                widget.trade.tradePositionType == 'LONG' ? const Color(0xFFD32F2F) : const Color(0xFF388E3C),
+                                context,
+                                widget.trade.tradePositionType == 'LONG'
+                                    ? Icons.trending_up
+                                    : Icons.trending_down,
+                                widget.trade.tradePositionType!,
+                                widget.trade.tradePositionType == 'LONG'
+                                    ? const Color(0xFFFFEBEE)
+                                    : const Color(0xFFE8F5E9),
+                                widget.trade.tradePositionType == 'LONG'
+                                    ? const Color(0xFFD32F2F)
+                                    : const Color(0xFF388E3C),
                               ),
-                             _buildSpecificTag(context, Icons.pie_chart, "Equity", const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
+                            _buildSpecificTag(
+                                context,
+                                Icons.pie_chart,
+                                "Equity",
+                                const Color(0xFFE3F2FD),
+                                const Color(0xFF1976D2)),
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -278,7 +319,8 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
                         // Date
                         Row(
                           children: [
-                            Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey.shade500),
+                            Icon(Icons.calendar_today_outlined,
+                                size: 14, color: Colors.grey.shade500),
                             const SizedBox(width: 6),
                             Text(
                               widget.trade.entryTimestamp != null
@@ -305,22 +347,35 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
             Container(
               height: 44,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest
+                    .withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+                border: Border.all(
+                    color:
+                        Theme.of(context).colorScheme.outline.withOpacity(0.1)),
               ),
               child: TextField(
                 decoration: InputDecoration(
-                  hintText: 'Filter trade logs...',
-                  prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                  hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade400),
-                  suffixIcon: widget.onFilterChanged != null ? TextButton(
-                       onPressed: () => widget.onFilterChanged(null),
-                       child: const Text("HIDE", style: TextStyle(fontSize: 12, color: Color(0xFF7C4DFF), fontWeight: FontWeight.bold)),
-                  ) : null
-                ),
+                    hintText: 'Filter trade logs...',
+                    prefixIcon:
+                        const Icon(Icons.search, size: 20, color: Colors.grey),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 11),
+                    hintStyle:
+                        TextStyle(fontSize: 14, color: Colors.grey.shade400),
+                    suffixIcon: widget.onFilterChanged != null
+                        ? TextButton(
+                            onPressed: () => widget.onFilterChanged(null),
+                            child: const Text("HIDE",
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF7C4DFF),
+                                    fontWeight: FontWeight.bold)),
+                          )
+                        : null),
                 style: const TextStyle(fontSize: 14),
                 onChanged: widget.onFilterChanged,
               ),
@@ -331,190 +386,229 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
     );
   }
 
-  Widget _buildCompactTag(String label, Color bgColor, Color textColor, IconData icon) {
-     // Replaced by _buildSpecificTag but keeping for interface if needed or removing
-     return _buildSpecificTag(context, icon, label, bgColor, textColor); 
+  Widget _buildCompactTag(
+      String label, Color bgColor, Color textColor, IconData icon) {
+    // Replaced by _buildSpecificTag but keeping for interface if needed or removing
+    return _buildSpecificTag(context, icon, label, bgColor, textColor);
   }
 
   Widget _buildBackButton(BuildContext context, {bool isCompact = false}) {
-     return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onClose,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.arrow_back_rounded, size: 16, color: Theme.of(context).colorScheme.onSurface),
-                const SizedBox(width: 6),
-                Text(
-                  'Back',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: widget.onClose,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.5),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+                color: Theme.of(context).dividerColor.withOpacity(0.1)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.arrow_back_rounded,
+                  size: 16, color: Theme.of(context).colorScheme.onSurface),
+              const SizedBox(width: 6),
+              Text(
+                'Back',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      ).animate().fadeIn(duration: const Duration(milliseconds: 300)).scale(begin: const Offset(0.8, 0.8));
+      ),
+    )
+        .animate()
+        .fadeIn(duration: const Duration(milliseconds: 300))
+        .scale(begin: const Offset(0.8, 0.8));
   }
 
-  Widget _buildDesktopInfoCard(BuildContext context, Color statusColor, bool isProfit) {
-     return Container(
-        padding: const EdgeInsets.all(0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Symbol Row with Status Badge
-            Row(
-              children: [
-                // Symbol
-                widget.onSymbolTap != null ?
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () => widget.onSymbolTap!(widget.trade.displaySymbol),
-                    child: Text(
+  Widget _buildDesktopInfoCard(
+      BuildContext context, Color statusColor, bool isProfit) {
+    return Container(
+      padding: const EdgeInsets.all(0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Symbol Row with Status Badge
+          Row(
+            children: [
+              // Symbol
+              widget.onSymbolTap != null
+                  ? MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () =>
+                            widget.onSymbolTap!(widget.trade.displaySymbol),
+                        child: Text(
+                          widget.trade.displaySymbol,
+                          style: TextStyle(
+                            fontSize: 32, // Larger font like screenshot
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Text(
                       widget.trade.displaySymbol,
                       style: TextStyle(
-                        fontSize: 32, // Larger font like screenshot
+                        fontSize: 32,
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.onSurface,
                         letterSpacing: 0.5,
                       ),
                     ),
-                  ),
-                ) : 
-                Text(
-                  widget.trade.displaySymbol,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    letterSpacing: 0.5,
-                  ),
+              const SizedBox(width: 16),
+
+              // Status Badge
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isProfit
+                      ? Colors.green.withOpacity(0.15)
+                      : Colors.red.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                      color: isProfit
+                          ? Colors.green.withOpacity(0.3)
+                          : Colors.red.withOpacity(0.3)),
                 ),
-                const SizedBox(width: 16),
-                
-                // Status Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isProfit ? Colors.green.withOpacity(0.15) : Colors.red.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: isProfit ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(width: 6, height: 6, decoration: BoxDecoration(color: isProfit ? Colors.greenAccent : Colors.redAccent, shape: BoxShape.circle)),
-                      const SizedBox(width: 6),
-                      Text(
-                        widget.trade.displayStatus.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: isProfit ? Colors.greenAccent : Colors.redAccent,
-                        ),
+                child: Row(
+                  children: [
+                    Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                            color: isProfit
+                                ? Colors.greenAccent
+                                : Colors.redAccent,
+                            shape: BoxShape.circle)),
+                    const SizedBox(width: 6),
+                    Text(
+                      widget.trade.displayStatus.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isProfit ? Colors.greenAccent : Colors.redAccent,
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            
-            // Company Name
-            Text(
-              "${widget.trade.displaySymbol} - ${widget.trade.displayCompanyName} Corp.",
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w400,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Tags Row (Long, Equity, etc)
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                // Position Type
-                 if (widget.trade.tradePositionType != null)
-                  _buildSpecificTag(
-                    context, 
-                    widget.trade.tradePositionType == 'LONG' ? Icons.trending_up : Icons.trending_down, 
-                    widget.trade.tradePositionType!, 
-                    widget.trade.tradePositionType == 'LONG' ? Colors.green.withOpacity(0.15) : Colors.red.withOpacity(0.15), 
-                    widget.trade.tradePositionType == 'LONG' ? Colors.greenAccent : Colors.redAccent, 
-                  ),
-
-                // Asset Class 
-                _buildSpecificTag(context, Icons.pie_chart, "Equity", Colors.blue.withOpacity(0.15), Colors.lightBlueAccent),
-
-                // Market / Exchange
-                if (widget.trade.exchange != null)
-                   _buildSpecificTag(context, Icons.account_balance, widget.trade.exchange!, Colors.brown.withOpacity(0.2), Colors.orangeAccent),
-              ],
-            ),
-            const SizedBox(height: 24),
-            
-            // Entry Date
-            Row(
-              children: [
-                Icon(Icons.calendar_month_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                const SizedBox(width: 6),
-                Text(
-                  widget.trade.entryTimestamp != null
-                      ? 'Entered: ${_formatDate(widget.trade.entryTimestamp!)}'
-                      : 'Entry date unavailable',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-  }
-
-  Widget _buildSpecificTag(BuildContext context, IconData icon, String label, Color bgColor, Color textColor) {
-      return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: textColor.withOpacity(0.3)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 14, color: textColor),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-      );
+          const SizedBox(height: 12),
+
+          // Company Name
+          Text(
+            "${widget.trade.displaySymbol} - ${widget.trade.displayCompanyName} Corp.",
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Tags Row (Long, Equity, etc)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              // Position Type
+              if (widget.trade.tradePositionType != null)
+                _buildSpecificTag(
+                  context,
+                  widget.trade.tradePositionType == 'LONG'
+                      ? Icons.trending_up
+                      : Icons.trending_down,
+                  widget.trade.tradePositionType!,
+                  widget.trade.tradePositionType == 'LONG'
+                      ? Colors.green.withOpacity(0.15)
+                      : Colors.red.withOpacity(0.15),
+                  widget.trade.tradePositionType == 'LONG'
+                      ? Colors.greenAccent
+                      : Colors.redAccent,
+                ),
+
+              // Asset Class
+              _buildSpecificTag(context, Icons.pie_chart, "Equity",
+                  Colors.blue.withOpacity(0.15), Colors.lightBlueAccent),
+
+              // Market / Exchange
+              if (widget.trade.exchange != null)
+                _buildSpecificTag(
+                    context,
+                    Icons.account_balance,
+                    widget.trade.exchange!,
+                    Colors.brown.withOpacity(0.2),
+                    Colors.orangeAccent),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Entry Date
+          Row(
+            children: [
+              Icon(Icons.calendar_month_outlined,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text(
+                widget.trade.entryTimestamp != null
+                    ? 'Entered: ${_formatDate(widget.trade.entryTimestamp!)}'
+                    : 'Entry date unavailable',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpecificTag(BuildContext context, IconData icon, String label,
+      Color bgColor, Color textColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: textColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: textColor),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildDesktopPnLCard(BuildContext context, bool isProfit) {
@@ -526,13 +620,17 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: isProfit ? [
-                   const Color(0xFF00C853).withOpacity(0.9), // Material Green A700
-                   const Color(0xFF00E676).withOpacity(0.8), // Material Green A400
-              ] : [
-                   Colors.redAccent.shade700.withOpacity(0.9),
-                   Colors.redAccent.shade400.withOpacity(0.8),
-              ],
+              colors: isProfit
+                  ? [
+                      const Color(0xFF00C853)
+                          .withOpacity(0.9), // Material Green A700
+                      const Color(0xFF00E676)
+                          .withOpacity(0.8), // Material Green A400
+                    ]
+                  : [
+                      Colors.redAccent.shade700.withOpacity(0.9),
+                      Colors.redAccent.shade400.withOpacity(0.8),
+                    ],
             ),
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
@@ -551,7 +649,9 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    isProfit ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                    isProfit
+                        ? Icons.trending_up_rounded
+                        : Icons.trending_down_rounded,
                     color: Colors.black87,
                     size: 20,
                   ),
@@ -577,7 +677,7 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
                 ),
               ),
               const SizedBox(height: 4),
-               const Text(
+              const Text(
                 "UNREALIZED P/L",
                 style: TextStyle(
                   fontSize: 11,
@@ -611,87 +711,92 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
           ),
         ),
       ],
-    ).animate().fadeIn(duration: const Duration(milliseconds: 500)).scale(begin: const Offset(0.9, 0.9));
+    )
+        .animate()
+        .fadeIn(duration: const Duration(milliseconds: 500))
+        .scale(begin: const Offset(0.9, 0.9));
   }
 
   Widget _buildSearchBar(BuildContext context) {
-      return SizedBox(
-        height: 44,
-        child: TextField(
-          decoration: InputDecoration(
-            hintText: 'Filter similar trades by symbol...',
-            prefixIcon: const Icon(Icons.search, size: 18),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.clear, size: 18),
-              onPressed: () => widget.onFilterChanged(null),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Theme.of(context).dividerColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.3)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Theme.of(context).primaryColor),
-            ),
-            isDense: true,
+    return SizedBox(
+      height: 44,
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: 'Filter similar trades by symbol...',
+          prefixIcon: const Icon(Icons.search, size: 18),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.clear, size: 18),
+            onPressed: () => widget.onFilterChanged(null),
           ),
-          style: const TextStyle(fontSize: 13),
-          onChanged: widget.onFilterChanged,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Theme.of(context).dividerColor),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+                color: Theme.of(context).dividerColor.withOpacity(0.3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Theme.of(context).primaryColor),
+          ),
+          isDense: true,
         ),
-      );
+        style: const TextStyle(fontSize: 13),
+        onChanged: widget.onFilterChanged,
+      ),
+    );
   }
 
   Widget _buildDetailsToggle(BuildContext context) {
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => setState(() => _showDetails = !_showDetails),
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => setState(() => _showDetails = !_showDetails),
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: _showDetails
+                ? Theme.of(context).primaryColor.withOpacity(0.15)
+                : Theme.of(context).colorScheme.surface.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
               color: _showDetails
-                  ? Theme.of(context).primaryColor.withOpacity(0.15)
-                  : Theme.of(context).colorScheme.surface.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: _showDetails
-                    ? Theme.of(context).primaryColor.withOpacity(0.4)
-                    : Theme.of(context).dividerColor.withOpacity(0.2),
-                width: 1.5,
-              ),
+                  ? Theme.of(context).primaryColor.withOpacity(0.4)
+                  : Theme.of(context).dividerColor.withOpacity(0.2),
+              width: 1.5,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _showDetails ? Icons.expand_less : Icons.expand_more,
-                  size: 18,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _showDetails ? Icons.expand_less : Icons.expand_more,
+                size: 18,
+                color: _showDetails
+                    ? Theme.of(context).primaryColor
+                    : Theme.of(context).colorScheme.onSurface,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _showDetails ? 'Hide' : 'Show',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                   color: _showDetails
                       ? Theme.of(context).primaryColor
                       : Theme.of(context).colorScheme.onSurface,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  _showDetails ? 'Hide' : 'Show',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _showDetails
-                        ? Theme.of(context).primaryColor
-                        : Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
   }
 
   Color _getStatusColor(String? status) {
@@ -709,49 +814,57 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
     }
   }
 
-  Widget _buildTagPill(BuildContext context, IconData icon, String label) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: Theme.of(context).primaryColor.withOpacity(0.12),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.25)),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: Theme.of(context).primaryColor),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Theme.of(context).primaryColor),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+  Widget _buildTagPill(BuildContext context, IconData icon, String label) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(context).primaryColor.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: Theme.of(context).primaryColor.withOpacity(0.25)),
         ),
-      ],
-    ),
-  );
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: Theme.of(context).primaryColor),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).primaryColor),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      );
 
-  Widget _buildInfoTag(BuildContext context, IconData icon, String label, Color color) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.12),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: color.withOpacity(0.25)),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: color),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+  Widget _buildInfoTag(
+          BuildContext context, IconData icon, String label, Color color) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.25)),
         ),
-      ],
-    ),
-  );
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w600, color: color),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      );
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
@@ -772,7 +885,8 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Trade'),
-        content: Text('Are you sure you want to delete the trade for ${widget.trade.displaySymbol}?'),
+        content: Text(
+            'Are you sure you want to delete the trade for ${widget.trade.displaySymbol}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -790,7 +904,7 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with Sing
     if (confirm == true && mounted) {
       final cubit = await ref.read(tradeControllerCubitProvider.future);
       await cubit.removeTradeById(widget.trade.tradeId, widget.portfolioId);
-      
+
       // Refresh trade list so it reflects the deletion
       ref.invalidate(tradeHoldingsStreamProvider(widget.portfolioId));
 

@@ -9,13 +9,14 @@ class StubFileUploadService {
   }) async {
     return 'https://via.placeholder.com/150';
   }
-  
+
   Future<void> deleteFile(String url) async {
     return;
   }
 }
 
-final fileUploadServiceProvider = FutureProvider<StubFileUploadService>((ref) async {
+final fileUploadServiceProvider =
+    FutureProvider<StubFileUploadService>((ref) async {
   return StubFileUploadService();
 });
 

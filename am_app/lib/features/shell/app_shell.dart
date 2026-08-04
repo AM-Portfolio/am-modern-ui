@@ -28,7 +28,8 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin {
+class _AppShellState extends State<AppShell>
+    with SingleTickerProviderStateMixin {
   bool _sessionRestored = false;
   bool _shellMarked = false;
   bool _portfolioSeeded = false;
@@ -56,14 +57,15 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       curve: Curves.elasticOut,
       reverseCurve: Curves.easeInBack,
     );
-    _bottomNavFactor = Tween<double>(begin: 0.0, end: 1.0).animate(bottomNavCurve);
+    _bottomNavFactor =
+        Tween<double>(begin: 0.0, end: 1.0).animate(bottomNavCurve);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialAuthAndConnect();
       _restoreSessionNav();
       _seedPortfolioSelectionFromSession();
     });
-    
+
     _showBottomNavWithIdleHide();
   }
 
@@ -139,19 +141,15 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   }
 
   List<SidebarItem> _sidebarItemsFor({required bool isAdmin}) => [
+        const SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
         const SidebarItem(
-            title: 'Dashboard', icon: Icons.dashboard_rounded),
-        const SidebarItem(
-            title: 'Portfolio',
-            icon: Icons.account_balance_wallet_rounded),
+            title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
         const SidebarItem(title: 'Trade', icon: Icons.swap_horiz_rounded),
         const SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
         if (isAdmin)
-          const SidebarItem(
-              title: 'AI Chat', icon: Icons.auto_awesome_rounded),
+          const SidebarItem(title: 'AI Chat', icon: Icons.auto_awesome_rounded),
         if (isAdmin)
-          const SidebarItem(
-              title: 'Analysis', icon: Icons.analytics_outlined),
+          const SidebarItem(title: 'Analysis', icon: Icons.analytics_outlined),
       ];
 
   Future<void> _seedPortfolioSelectionFromSession() async {
@@ -281,13 +279,11 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   }
 
   String? _resolveSwipePortfolioId() {
-    final fromUrl =
-        ShareUrlBuilder.portfolioIdFromLocation(_currentLocation);
+    final fromUrl = ShareUrlBuilder.portfolioIdFromLocation(_currentLocation);
     if (fromUrl != null && fromUrl.isNotEmpty) return fromUrl;
-    final cached = common.SessionPersistenceService.instance.cached?.portfolioId;
-    if (cached != null &&
-        cached.isNotEmpty &&
-        !_isDevMockPortfolioId(cached)) {
+    final cached =
+        common.SessionPersistenceService.instance.cached?.portfolioId;
+    if (cached != null && cached.isNotEmpty && !_isDevMockPortfolioId(cached)) {
       return cached;
     }
     return null;
@@ -338,7 +334,8 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       final stompCubit = context.read<common.StompConnectionCubit>();
 
       stompCubit.onConnected = (userId) {
-        common.AppLogger.info('AppShell (Initial): STOMP Connected for $userId');
+        common.AppLogger.info(
+            'AppShell (Initial): STOMP Connected for $userId');
         if (mounted) _applyStreamingTabCoordinator(_activeNavItem);
       };
 
@@ -386,7 +383,8 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                 }
               };
 
-              final secureStorage = GetIt.instance<common.SecureStorageService>();
+              final secureStorage =
+                  GetIt.instance<common.SecureStorageService>();
               final token = await secureStorage.getAccessToken();
               if (token == null || token.isEmpty) {
                 if (context.mounted) {
@@ -428,10 +426,8 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
             _shellMarked = true;
             common.BootTrace.instance.mark('shell_visible');
           }
-final userId =
-              authState is Authenticated ? authState.user.id : '';
-          final isAdmin =
-              authState is Authenticated && authState.user.isAdmin;
+          final userId = authState is Authenticated ? authState.user.id : '';
+          final isAdmin = authState is Authenticated && authState.user.isAdmin;
           final isDark = Theme.of(context).brightness == Brightness.dark;
 
           final currentLocation = GoRouterState.of(context).matchedLocation;
@@ -448,16 +444,18 @@ final userId =
                   if (_history.length > 1) {
                     _history.removeLast(); // Remove current location
                     final previousLocation = _history.last;
-                    
-                    final previousTitle = AppRoutes.activeNavTitleForLocation(previousLocation);
+
+                    final previousTitle =
+                        AppRoutes.activeNavTitleForLocation(previousLocation);
                     _applyStreamingTabCoordinator(previousTitle);
-                    
+
                     context.go(previousLocation);
-                    
+
                     common.SessionPersistenceService.instance.patch(
                       userId,
                       (s) => s.copyWith(
-                        globalNav: previousTitle.isEmpty ? 'Dashboard' : previousTitle,
+                        globalNav:
+                            previousTitle.isEmpty ? 'Dashboard' : previousTitle,
                       ),
                     );
                   }
@@ -486,8 +484,7 @@ final userId =
                               },
                               onLogout: () =>
                                   context.read<AuthCubit>().logout(),
-                              onProfileTap: () =>
-                                  context.go(AppRoutes.profile),
+                              onProfileTap: () => context.go(AppRoutes.profile),
                               onNavigate: (title) =>
                                   _onGlobalNavigate(title, userId),
                               items: _sidebarItemsFor(isAdmin: isAdmin),
@@ -511,8 +508,7 @@ final userId =
                                             ? widget.child
                                             : CrossSectionSwipeHost(
                                                 onNext: () =>
-                                                    _onCrossSectionNext(
-                                                        userId),
+                                                    _onCrossSectionNext(userId),
                                                 onPrevious: () =>
                                                     _onCrossSectionPrevious(
                                                         userId),
@@ -533,8 +529,7 @@ final userId =
                           child: AnimatedBuilder(
                             animation: _bottomNavController,
                             builder: (context, child) {
-                              final visible =
-                                  _bottomNavController.value > 0.01;
+                              final visible = _bottomNavController.value > 0.01;
                               return IgnorePointer(
                                 ignoring: !visible,
                                 child: child,
@@ -561,8 +556,8 @@ final userId =
                                     ),
                                     const SidebarItem(
                                       title: 'Portfolio',
-                                      icon: Icons
-                                          .account_balance_wallet_rounded,
+                                      icon:
+                                          Icons.account_balance_wallet_rounded,
                                     ),
                                     const SidebarItem(
                                       title: 'Trade',

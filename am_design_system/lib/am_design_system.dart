@@ -147,7 +147,7 @@ export 'shared/widgets/feedback/animated_login_elements.dart';
 // --- Global Models ---
 export 'shared/models/user.dart';
 export 'shared/models/holding.dart';
-export 'shared/models/am_mover_item.dart';  // Generic mover tile data model
+export 'shared/models/am_mover_item.dart'; // Generic mover tile data model
 // export 'shared/models/file_upload_models.dart';\n// export 'models/investment_card/investment_data.dart'; // Missing model
 
 // --- Movers Panel ---
@@ -155,4 +155,3 @@ export 'shared/models/am_mover_item.dart';  // Generic mover tile data model
 // in any module. Map your domain model to AmMoverItem, pass the lists, done.
 // See am_top_movers_panel.dart for full API docs and usage examples.
 export 'shared/widgets/movers/am_top_movers_panel.dart';
-

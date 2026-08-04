@@ -47,7 +47,8 @@ void main() {
     });
 
     test('trade discovery is not a deep trade link', () {
-      expect(ShareUrlBuilder.isDeepTradeLink(AppRoutes.tradeDiscovery), isFalse);
+      expect(
+          ShareUrlBuilder.isDeepTradeLink(AppRoutes.tradeDiscovery), isFalse);
       expect(
         ShareUrlBuilder.tradeTabFromLocation(AppRoutes.tradeDiscovery),
         'portfolios',

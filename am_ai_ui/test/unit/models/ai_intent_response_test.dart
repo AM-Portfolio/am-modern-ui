@@ -3,34 +3,34 @@ import 'package:am_ai_ui/data/ai_intent_response.dart';
 
 void main() {
   group('AiIntentResponse.fromJson', () {
-    test('all fields present maps to correct values including widgetParams data', () {
-      final json = {
-        'message': 'Here is your portfolio summary.',
-        'widgetId': 'PORTFOLIO_SUMMARY',
-        'widgetParams': {
-          'userId': 'user-42',
-          'data': {
-            'totalValue': 150000,
-            'totalInvested': 120000,
+    test(
+      'all fields present maps to correct values including widgetParams data',
+      () {
+        final json = {
+          'message': 'Here is your portfolio summary.',
+          'widgetId': 'PORTFOLIO_SUMMARY',
+          'widgetParams': {
+            'userId': 'user-42',
+            'data': {'totalValue': 150000, 'totalInvested': 120000},
           },
-        },
-        'sessionId': 'session-abc',
-        'toolsUsed': ['get_portfolio_summary'],
-        'traceId': 'trace-xyz',
-      };
+          'sessionId': 'session-abc',
+          'toolsUsed': ['get_portfolio_summary'],
+          'traceId': 'trace-xyz',
+        };
 
-      final response = AiIntentResponse.fromJson(json);
+        final response = AiIntentResponse.fromJson(json);
 
-      expect(response.message, 'Here is your portfolio summary.');
-      expect(response.widgetId, 'PORTFOLIO_SUMMARY');
-      expect(response.sessionId, 'session-abc');
-      expect(response.traceId, 'trace-xyz');
-      expect(response.toolsUsed, ['get_portfolio_summary']);
-      expect(response.widgetParams['userId'], 'user-42');
-      final data = response.widgetParams['data'] as Map<String, dynamic>;
-      expect(data['totalValue'], 150000);
-      expect(data['totalInvested'], 120000);
-    });
+        expect(response.message, 'Here is your portfolio summary.');
+        expect(response.widgetId, 'PORTFOLIO_SUMMARY');
+        expect(response.sessionId, 'session-abc');
+        expect(response.traceId, 'trace-xyz');
+        expect(response.toolsUsed, ['get_portfolio_summary']);
+        expect(response.widgetParams['userId'], 'user-42');
+        final data = response.widgetParams['data'] as Map<String, dynamic>;
+        expect(data['totalValue'], 150000);
+        expect(data['totalInvested'], 120000);
+      },
+    );
 
     test('missing widgetParams defaults to empty map', () {
       final json = {
@@ -74,20 +74,23 @@ void main() {
       expect(response.widgetId, 'TEXT_RESPONSE');
     });
 
-    test('toolsUsed list with multiple entries maps all entries as strings', () {
-      final json = {
-        'message': 'Multi-tool reply',
-        'widgetId': 'PORTFOLIO_SUMMARY',
-        'widgetParams': <String, dynamic>{},
-        'sessionId': 's2',
-        'toolsUsed': ['tool_a', 'tool_b', 'tool_c'],
-        'traceId': 't2',
-      };
+    test(
+      'toolsUsed list with multiple entries maps all entries as strings',
+      () {
+        final json = {
+          'message': 'Multi-tool reply',
+          'widgetId': 'PORTFOLIO_SUMMARY',
+          'widgetParams': <String, dynamic>{},
+          'sessionId': 's2',
+          'toolsUsed': ['tool_a', 'tool_b', 'tool_c'],
+          'traceId': 't2',
+        };
 
-      final response = AiIntentResponse.fromJson(json);
+        final response = AiIntentResponse.fromJson(json);
 
-      expect(response.toolsUsed, ['tool_a', 'tool_b', 'tool_c']);
-    });
+        expect(response.toolsUsed, ['tool_a', 'tool_b', 'tool_c']);
+      },
+    );
   });
 
   group('AiIntentResponse.error factory', () {

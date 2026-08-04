@@ -27,6 +27,7 @@ class TradeReportDto {
     required this.generatedAt,
   });
 
-  factory TradeReportDto.fromJson(Map<String, dynamic> json) => _$TradeReportDtoFromJson(json);
+  factory TradeReportDto.fromJson(Map<String, dynamic> json) =>
+      _$TradeReportDtoFromJson(json);
   Map<String, dynamic> toJson() => _$TradeReportDtoToJson(this);
 }

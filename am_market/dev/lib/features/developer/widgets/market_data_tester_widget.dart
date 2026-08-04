@@ -11,7 +11,8 @@ class MarketDataTesterWidget extends StatefulWidget {
 
 class _MarketDataTesterWidgetState extends State<MarketDataTesterWidget> {
   final DeveloperMarketDataService _service = DeveloperMarketDataService();
-  final TextEditingController _symbolController = TextEditingController(text: 'NSE:RELIANCE');
+  final TextEditingController _symbolController =
+      TextEditingController(text: 'NSE:RELIANCE');
   bool _forceRefresh = false;
   String _result = '';
   bool _isLoading = false;
@@ -75,25 +76,32 @@ class _MarketDataTesterWidgetState extends State<MarketDataTesterWidget> {
                 ElevatedButton(
                   onPressed: _isLoading
                       ? null
-                      : () => _fetch(() => _service.getQuotes(_symbolController.text, refresh: _forceRefresh)),
+                      : () => _fetch(() => _service.getQuotes(
+                          _symbolController.text,
+                          refresh: _forceRefresh)),
                   child: const Text('Quotes'),
                 ),
                 ElevatedButton(
                   onPressed: _isLoading
                       ? null
-                      : () => _fetch(() => _service.getOHLC(_symbolController.text, refresh: _forceRefresh)),
+                      : () => _fetch(() => _service.getOHLC(
+                          _symbolController.text,
+                          refresh: _forceRefresh)),
                   child: const Text('OHLC'),
                 ),
                 ElevatedButton(
                   onPressed: _isLoading
                       ? null
-                      : () => _fetch(() => _service.getHistorical(_symbolController.text, refresh: _forceRefresh)),
+                      : () => _fetch(() => _service.getHistorical(
+                          _symbolController.text,
+                          refresh: _forceRefresh)),
                   child: const Text('Historical (7D)'),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            const Text('Result:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Result:',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             Container(
               height: 200,
               width: double.infinity,
@@ -105,7 +113,10 @@ class _MarketDataTesterWidgetState extends State<MarketDataTesterWidget> {
               child: SingleChildScrollView(
                 child: Text(
                   _result,
-                  style: const TextStyle(fontFamily: 'Courier', fontSize: 12, color: Colors.black87),
+                  style: const TextStyle(
+                      fontFamily: 'Courier',
+                      fontSize: 12,
+                      color: Colors.black87),
                 ),
               ),
             ),

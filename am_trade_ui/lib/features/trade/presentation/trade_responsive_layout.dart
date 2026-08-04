@@ -39,7 +39,8 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
   final String? initialPortfolioId;
   final String initialTab;
   final ValueChanged<String>? onTabChanged;
-  final void Function(String portfolioId, String portfolioName)? onPortfolioChanged;
+  final void Function(String portfolioId, String portfolioName)?
+      onPortfolioChanged;
 
   /// Must match UnifiedSidebarScaffold.tabletBreakpoint so we don't render
   /// TradeWebScreen inside a width where the sidebar already collapses to mobile.
@@ -98,12 +99,14 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
 class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
   /// Raw SwipeNavigationController index from the active screen.
   late int _currentTabIndex;
-  final GlobalKey<TradeWebScreenState> _webScreenKey = GlobalKey<TradeWebScreenState>();
+  final GlobalKey<TradeWebScreenState> _webScreenKey =
+      GlobalKey<TradeWebScreenState>();
 
   @override
   void initState() {
     super.initState();
-    _currentTabIndex = TradeResponsiveLayout.tabIndexFromSlug(widget.initialTab);
+    _currentTabIndex =
+        TradeResponsiveLayout.tabIndexFromSlug(widget.initialTab);
     _currentPortfolioId = widget.initialPortfolioId;
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrapTradeData());
   }
@@ -121,7 +124,8 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
       final next = TradeResponsiveLayout.tabIndexFromSlug(widget.initialTab);
       // Prefer mobile-only slug indices when present in URL.
       if (widget.initialTab == 'metrics' || widget.initialTab == 'templates') {
-        final mobile = TradeResponsiveLayout._mobileViewFromSlug(widget.initialTab);
+        final mobile =
+            TradeResponsiveLayout._mobileViewFromSlug(widget.initialTab);
         if (_currentTabIndex != mobile.index) {
           setState(() => _currentTabIndex = mobile.index);
         }
@@ -178,14 +182,17 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isMobile = constraints.maxWidth < TradeResponsiveLayout._mobileBreakpoint;
+        final isMobile =
+            constraints.maxWidth < TradeResponsiveLayout._mobileBreakpoint;
 
         if (isMobile) {
           return TradeMobileScreen(
             initialTabIndex: _currentTabIndex,
-            initialView: TradeResponsiveLayout._mobileViewFromSlug(widget.initialTab),
+            initialView:
+                TradeResponsiveLayout._mobileViewFromSlug(widget.initialTab),
             selectedPortfolioId: effectivePortfolioId,
-            selectedPortfolioName: _currentPortfolioName ?? context.selectedPortfolioName,
+            selectedPortfolioName:
+                _currentPortfolioName ?? context.selectedPortfolioName,
             onTabChanged: (index) {
               // Map mobile view indices to web/controller indices / URL slugs.
               if (index == MobileTradeViewType.addTrade.index) {
@@ -230,7 +237,8 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
           initialView: webView,
           initialTabIndex: _currentTabIndex,
           selectedPortfolioId: effectivePortfolioId,
-          selectedPortfolioName: _currentPortfolioName ?? context.selectedPortfolioName,
+          selectedPortfolioName:
+              _currentPortfolioName ?? context.selectedPortfolioName,
           onTabChanged: _onTabChanged,
           onPortfolioChanged: _onPortfolioChanged,
         );

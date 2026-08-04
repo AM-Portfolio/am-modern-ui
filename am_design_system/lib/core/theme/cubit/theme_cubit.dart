@@ -7,13 +7,13 @@ enum AppThemeMode { system, light, dark, white }
 
 class ThemeState {
   final AppThemeMode mode;
-  
+
   const ThemeState(this.mode);
 
   ThemeMode get themeMode {
     switch (mode) {
       case AppThemeMode.dark:
-        return ThemeMode.dark; 
+        return ThemeMode.dark;
       case AppThemeMode.light:
       case AppThemeMode.white:
         return ThemeMode.light;
@@ -28,17 +28,18 @@ class ThemeState {
     }
     return AppTheme.lightTheme;
   }
-  
+
   ThemeData get darkTheme {
     return AppTheme.darkTheme;
   }
-  
+
   /// Helper to check if current theme is dark
   bool get isDarkMode => mode == AppThemeMode.dark;
-  
+
   /// Helper to check if current theme is light
-  bool get isLightMode => mode == AppThemeMode.light || mode == AppThemeMode.white;
-  
+  bool get isLightMode =>
+      mode == AppThemeMode.light || mode == AppThemeMode.white;
+
   ThemeState copyWith({AppThemeMode? mode}) {
     return ThemeState(mode ?? this.mode);
   }
@@ -46,7 +47,7 @@ class ThemeState {
 
 class ThemeCubit extends Cubit<ThemeState> {
   final ThemeRepository _repository;
-  
+
   ThemeCubit(this._repository) : super(const ThemeState(AppThemeMode.system)) {
     _loadSavedTheme();
   }
@@ -65,13 +66,13 @@ class ThemeCubit extends Cubit<ThemeState> {
     emit(ThemeState(mode));
     await _repository.saveThemeMode(_themeModeToString(mode));
   }
-  
+
   /// Toggle between light and dark themes
   Future<void> toggleTheme() async {
     final newMode = state.isDarkMode ? AppThemeMode.light : AppThemeMode.dark;
     await setTheme(newMode);
   }
-  
+
   /// Convert AppThemeMode to string for storage
   String _themeModeToString(AppThemeMode mode) {
     switch (mode) {
@@ -85,7 +86,7 @@ class ThemeCubit extends Cubit<ThemeState> {
         return 'white';
     }
   }
-  
+
   /// Convert string to AppThemeMode
   AppThemeMode _stringToThemeMode(String mode) {
     switch (mode) {

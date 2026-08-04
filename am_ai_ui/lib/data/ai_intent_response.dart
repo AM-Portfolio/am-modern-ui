@@ -22,7 +22,8 @@ class AiIntentResponse {
       widgetId: json['widgetId'] as String? ?? 'TEXT_RESPONSE',
       widgetParams: (json['widgetParams'] as Map<String, dynamic>?) ?? {},
       sessionId: json['sessionId'] as String? ?? '',
-      toolsUsed: (json['toolsUsed'] as List<dynamic>?)
+      toolsUsed:
+          (json['toolsUsed'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
@@ -32,13 +33,13 @@ class AiIntentResponse {
 
   // Fallback for error states
   factory AiIntentResponse.error(String message) => AiIntentResponse(
-        message: message,
-        widgetId: 'ERROR',
-        widgetParams: {},
-        sessionId: '',
-        toolsUsed: [],
-        traceId: '',
-      );
+    message: message,
+    widgetId: 'ERROR',
+    widgetParams: {},
+    sessionId: '',
+    toolsUsed: [],
+    traceId: '',
+  );
 }
 
 // Chat message bubble — local conversation model

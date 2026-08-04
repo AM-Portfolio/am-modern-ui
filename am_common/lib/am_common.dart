@@ -32,7 +32,6 @@ export 'features/attachment/internal/domain/entities/cloudinary_resource.dart';
 export 'features/attachment/internal/domain/usecases/upload_file_usecase.dart';
 export 'features/attachment/internal/domain/usecases/upload_batch_files_usecase.dart';
 
-
 export 'features/attachment/internal/domain/usecases/delete_file_usecase.dart';
 export 'features/attachment/internal/domain/usecases/get_resource_usecase.dart';
 export 'features/attachment/internal/domain/usecases/list_resources_usecase.dart';

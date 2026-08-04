@@ -25,12 +25,19 @@ class PortfolioScreen extends StatelessWidget {
   final String? initialPortfolioId;
   final String initialTab;
   final ValueChanged<String>? onTabChanged;
-  final void Function(String portfolioId, String portfolioName)? onPortfolioChanged;
+  final void Function(String portfolioId, String portfolioName)?
+  onPortfolioChanged;
 
   final bool isSidebarVisible;
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onComplete,
+  )?
+  addTradeBuilder;
   final VoidCallback? onOpenDocIntel;
 
   @override

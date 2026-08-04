@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 import '../../../../core/utils/common_logger.dart';
 import '../../models/heatmap.dart';
 
@@ -127,8 +126,8 @@ class HeatmapLayoutTemplate extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
           ),
         ],
       ],
@@ -212,14 +211,15 @@ extension HeatmapLayoutTemplateFactory on HeatmapLayoutTemplate {
     required Widget displayWidget,
     String? title,
     IconData? icon,
-  }) => HeatmapLayoutTemplate(
-    data: data,
-    displayWidget: displayWidget,
-    title: title,
-    icon: icon,
-    showSelectors: false,
-    showLegend: false,
-  );
+  }) =>
+      HeatmapLayoutTemplate(
+        data: data,
+        displayWidget: displayWidget,
+        title: title,
+        icon: icon,
+        showSelectors: false,
+        showLegend: false,
+      );
 
   /// Create a compact layout (compact selectors, minimal header)
   static HeatmapLayoutTemplate compact({
@@ -228,15 +228,16 @@ extension HeatmapLayoutTemplateFactory on HeatmapLayoutTemplate {
     Widget? selectorWidget,
     String? title,
     IconData? icon,
-  }) => HeatmapLayoutTemplate(
-    data: data,
-    displayWidget: displayWidget,
-    selectorWidget: selectorWidget,
-    title: title,
-    icon: icon,
-    showSelectors: selectorWidget != null,
-    padding: const EdgeInsets.all(4),
-  );
+  }) =>
+      HeatmapLayoutTemplate(
+        data: data,
+        displayWidget: displayWidget,
+        selectorWidget: selectorWidget,
+        title: title,
+        icon: icon,
+        showSelectors: selectorWidget != null,
+        padding: const EdgeInsets.all(4),
+      );
 
   /// Create a full layout (all features enabled)
   static HeatmapLayoutTemplate full({
@@ -247,17 +248,18 @@ extension HeatmapLayoutTemplateFactory on HeatmapLayoutTemplate {
     String? subtitle,
     IconData? icon,
     List<Widget>? headerActions,
-  }) => HeatmapLayoutTemplate(
-    data: data,
-    displayWidget: displayWidget,
-    selectorWidget: selectorWidget,
-    title: title,
-    subtitle: subtitle,
-    icon: icon,
-    showSelectors: selectorWidget != null,
-    headerActions: headerActions,
-    padding: const EdgeInsets.all(8),
-  );
+  }) =>
+      HeatmapLayoutTemplate(
+        data: data,
+        displayWidget: displayWidget,
+        selectorWidget: selectorWidget,
+        title: title,
+        subtitle: subtitle,
+        icon: icon,
+        showSelectors: selectorWidget != null,
+        headerActions: headerActions,
+        padding: const EdgeInsets.all(8),
+      );
 
   /// Create a dashboard layout (optimized for dashboard widgets)
   static HeatmapLayoutTemplate dashboard({
@@ -266,14 +268,15 @@ extension HeatmapLayoutTemplateFactory on HeatmapLayoutTemplate {
     Widget? selectorWidget,
     String? title,
     IconData? icon,
-  }) => HeatmapLayoutTemplate(
-    data: data,
-    displayWidget: displayWidget,
-    selectorWidget: selectorWidget,
-    title: title,
-    icon: icon,
-    showSelectors: selectorWidget != null,
-    showLegend: false,
-    padding: const EdgeInsets.all(6),
-  );
+  }) =>
+      HeatmapLayoutTemplate(
+        data: data,
+        displayWidget: displayWidget,
+        selectorWidget: selectorWidget,
+        title: title,
+        icon: icon,
+        showSelectors: selectorWidget != null,
+        showLegend: false,
+        padding: const EdgeInsets.all(6),
+      );
 }

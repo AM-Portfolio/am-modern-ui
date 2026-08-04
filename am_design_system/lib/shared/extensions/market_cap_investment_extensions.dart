@@ -7,18 +7,18 @@ extension MarketCapTypeInvestmentTypes on MarketCapType {
 
   /// Market caps suitable for fund analysis
   static List<MarketCapType> get fundMarketCaps => [
-    MarketCapType.all,
-    MarketCapType.largeCap,
-    MarketCapType.midCap,
-    MarketCapType.smallCap,
-  ];
+        MarketCapType.all,
+        MarketCapType.largeCap,
+        MarketCapType.midCap,
+        MarketCapType.smallCap,
+      ];
 
   /// Market caps suitable for ETF analysis
   static List<MarketCapType> get etfMarketCaps => [
-    MarketCapType.all,
-    MarketCapType.largeCap,
-    MarketCapType.midCap,
-    MarketCapType.smallCap,
-    MarketCapType.microCap,
-  ];
+        MarketCapType.all,
+        MarketCapType.largeCap,
+        MarketCapType.midCap,
+        MarketCapType.smallCap,
+        MarketCapType.microCap,
+      ];
 }

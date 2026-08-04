@@ -4,14 +4,17 @@ import 'app_colors.dart';
 
 /// Centralized text styles using Google Fonts (Inter)
 class AppTypography {
-  static const String fontFamily = 'Inter'; // Ensure GoogleFonts.inter() is used or pubspec.yaml updated
-  
-  // Use GoogleFonts for easy integration if package is available, 
+  static const String fontFamily =
+      'Inter'; // Ensure GoogleFonts.inter() is used or pubspec.yaml updated
+
+  // Use GoogleFonts for easy integration if package is available,
   // otherwise fallback to standard TextStyle
-  
+
   static TextTheme getTextTheme({required bool isDark}) {
-    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final secondaryColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final textColor =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final secondaryColor =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
     // Using GoogleFonts.inter if available, else standard
     // Ideally we assume google_fonts is in pubspec
@@ -34,7 +37,7 @@ class AppTypography {
         fontWeight: FontWeight.bold,
         color: textColor,
       ),
-      
+
       // Headlines: Section headers
       headlineMedium: TextStyle(
         fontSize: 20,
@@ -46,7 +49,7 @@ class AppTypography {
         fontWeight: FontWeight.w600,
         color: textColor,
       ),
-      
+
       // Body: Standard text
       bodyLarge: TextStyle(
         fontSize: 16,
@@ -63,7 +66,7 @@ class AppTypography {
         fontWeight: FontWeight.normal,
         color: secondaryColor,
       ),
-      
+
       // Labels: Buttons, Tags
       labelLarge: TextStyle(
         fontSize: 14,

@@ -14,22 +14,27 @@ import 'package:am_common/core/di/network_providers.dart';
 // Infrastructure
 
 /// Provider for TradeMetricsRemoteDataSource
-final _tradeMetricsRemoteDataSourceProvider = FutureProvider<TradeMetricsRemoteDataSource>((ref) async {
+final _tradeMetricsRemoteDataSourceProvider =
+    FutureProvider<TradeMetricsRemoteDataSource>((ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
   final apiConfig = await ref.watch(appConfigProvider.future);
-  return TradeMetricsRemoteDataSourceImpl(apiClient: apiClient, tradeConfig: apiConfig.api.trade);
+  return TradeMetricsRemoteDataSourceImpl(
+      apiClient: apiClient, tradeConfig: apiConfig.api.trade);
 });
 
 /// Provider for TradeMetricsRepository
-final _tradeMetricsRepositoryProvider = FutureProvider<TradeMetricsRepository>((ref) async {
-  final remoteDataSource = await ref.watch(_tradeMetricsRemoteDataSourceProvider.future);
+final _tradeMetricsRepositoryProvider =
+    FutureProvider<TradeMetricsRepository>((ref) async {
+  final remoteDataSource =
+      await ref.watch(_tradeMetricsRemoteDataSourceProvider.future);
   return TradeMetricsRepositoryImpl(remoteDataSource);
 });
 
 // Use Cases
 
 /// Provider for GetTradeMetrics UseCase
-final getTradeMetricsUseCaseProvider = FutureProvider<GetTradeMetrics>((ref) async {
+final getTradeMetricsUseCaseProvider =
+    FutureProvider<GetTradeMetrics>((ref) async {
   final repository = await ref.watch(_tradeMetricsRepositoryProvider.future);
   return GetTradeMetrics(repository);
 });
@@ -37,14 +42,18 @@ final getTradeMetricsUseCaseProvider = FutureProvider<GetTradeMetrics>((ref) asy
 // Presentation
 
 /// Provider for GetMetricTypes UseCase
-final getMetricTypesUseCaseProvider = FutureProvider<GetMetricTypes>((ref) async {
+final getMetricTypesUseCaseProvider =
+    FutureProvider<GetMetricTypes>((ref) async {
   final repository = await ref.watch(_tradeMetricsRepositoryProvider.future);
   return GetMetricTypes(repository);
 });
 
 /// Provider for TradeMetricsCubit
-final tradeMetricsCubitProvider = FutureProvider<TradeMetricsCubit>((ref) async {
-  final getTradeMetrics = await ref.watch(getTradeMetricsUseCaseProvider.future);
+final tradeMetricsCubitProvider =
+    FutureProvider<TradeMetricsCubit>((ref) async {
+  final getTradeMetrics =
+      await ref.watch(getTradeMetricsUseCaseProvider.future);
   final getMetricTypes = await ref.watch(getMetricTypesUseCaseProvider.future);
-  return TradeMetricsCubit(getTradeMetrics: getTradeMetrics, getMetricTypes: getMetricTypes);
+  return TradeMetricsCubit(
+      getTradeMetrics: getTradeMetrics, getMetricTypes: getMetricTypes);
 });

@@ -29,16 +29,20 @@ class PerformanceLineChart extends StatelessWidget {
                   gridData: FlGridData(show: true),
                   titlesData: FlTitlesData(
                     bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
-                        // TODO: Format date properly based on value (index or timestamp)
-                        return Text('D${value.toInt()}');
-                      }),
+                      sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            // TODO: Format date properly based on value (index or timestamp)
+                            return Text('D${value.toInt()}');
+                          }),
                     ),
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(showTitles: true),
                     ),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles:
+                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles:
+                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
                   borderData: FlBorderData(show: true),
                   lineBarsData: [
@@ -61,5 +65,3 @@ class PerformanceLineChart extends StatelessWidget {
     );
   }
 }
-
-

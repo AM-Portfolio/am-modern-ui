@@ -52,26 +52,27 @@ class TradeCalendarLoaded extends TradeCalendarState {
     DateTime? lastUpdated,
     bool clearDateRange = false,
     bool clearError = false,
-  }) => TradeCalendarLoaded(
-    viewModel: viewModel ?? this.viewModel,
-    entityData: entityData ?? this.entityData,
-    selectedDateRange: clearDateRange
-        ? null
-        : (selectedDateRange ?? this.selectedDateRange),
-    isFiltered: isFiltered ?? this.isFiltered,
-    errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-    lastUpdated: lastUpdated ?? this.lastUpdated,
-  );
+  }) =>
+      TradeCalendarLoaded(
+        viewModel: viewModel ?? this.viewModel,
+        entityData: entityData ?? this.entityData,
+        selectedDateRange: clearDateRange
+            ? null
+            : (selectedDateRange ?? this.selectedDateRange),
+        isFiltered: isFiltered ?? this.isFiltered,
+        errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+        lastUpdated: lastUpdated ?? this.lastUpdated,
+      );
 
   @override
   List<Object?> get props => [
-    viewModel,
-    entityData,
-    selectedDateRange,
-    isFiltered,
-    errorMessage,
-    lastUpdated,
-  ];
+        viewModel,
+        entityData,
+        selectedDateRange,
+        isFiltered,
+        errorMessage,
+        lastUpdated,
+      ];
 }
 
 /// Error state when trade calendar loading fails

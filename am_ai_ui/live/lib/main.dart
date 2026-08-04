@@ -19,9 +19,7 @@ void main() {
           create: (context) => ThemeCubit(ThemeRepository()),
         ),
       ],
-      child: const ProviderScope(
-        child: AIChatExampleApp(),
-      ),
+      child: const ProviderScope(child: AIChatExampleApp()),
     ),
   );
 }
@@ -42,9 +40,7 @@ class AIChatExampleApp extends StatelessWidget {
               userId = state.user.id;
             }
             // Using AIChatScreen as the home
-            return AiChatScreen(
-              userId: userId,
-            );
+            return AiChatScreen(userId: userId);
           },
         ),
       ),

@@ -17,16 +17,17 @@ class CreateJournalEntryUseCase {
     List<JournalAttachment>? attachments,
     List<String>? relatedTradeIds,
     List<String>? tagIds,
-  }) => _repository.createJournalEntry(
-    title: title,
-    content: content,
-    entryDate: entryDate,
-    tradeId: tradeId,
-    behaviorPatternSummaries: behaviorPatternSummaries,
-    customFields: customFields,
-    imageUrls: imageUrls,
-    attachments: attachments,
-    relatedTradeIds: relatedTradeIds,
-    tagIds: tagIds,
-  );
+  }) =>
+      _repository.createJournalEntry(
+        title: title,
+        content: content,
+        entryDate: entryDate,
+        tradeId: tradeId,
+        behaviorPatternSummaries: behaviorPatternSummaries,
+        customFields: customFields,
+        imageUrls: imageUrls,
+        attachments: attachments,
+        relatedTradeIds: relatedTradeIds,
+        tagIds: tagIds,
+      );
 }

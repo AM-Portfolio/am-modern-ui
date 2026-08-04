@@ -29,80 +29,82 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      border: Border.all(
-        color: _state.isDragOver
-            ? const Color(0xFFFF9800)
-            : Colors.grey.withOpacity(0.3),
-        width: _state.isDragOver ? 2 : 1,
-      ),
-      borderRadius: BorderRadius.circular(12),
-      color: _state.isDragOver
-          ? const Color(0xFFFF9800).withOpacity(0.05)
-          : Colors.grey.withOpacity(0.02),
-    ),
-    child: Column(
-      children: [
-        if (!_state.hasFiles) ...[
-          DragDropArea(
-            state: _state,
-            callbacks: FileUploadCallbacks(
-              onPickFiles: _pickFiles,
-              onDropFiles: _handleDroppedFiles,
-              onShowError: widget.onShowError,
-              onShowSuccess: widget.onShowSuccess,
-            ),
-            allowedExtensions: widget.allowedExtensions,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: _state.isDragOver
+                ? const Color(0xFFFF9800)
+                : Colors.grey.withOpacity(0.3),
+            width: _state.isDragOver ? 2 : 1,
           ),
-        ] else ...[
-          FileList(files: _state.selectedFiles!, onRemoveFile: _removeFile),
-          const SizedBox(height: 16),
-          _buildUploadActions(),
-        ],
-      ],
-    ),
-  );
+          borderRadius: BorderRadius.circular(12),
+          color: _state.isDragOver
+              ? const Color(0xFFFF9800).withOpacity(0.05)
+              : Colors.grey.withOpacity(0.02),
+        ),
+        child: Column(
+          children: [
+            if (!_state.hasFiles) ...[
+              DragDropArea(
+                state: _state,
+                callbacks: FileUploadCallbacks(
+                  onPickFiles: _pickFiles,
+                  onDropFiles: _handleDroppedFiles,
+                  onShowError: widget.onShowError,
+                  onShowSuccess: widget.onShowSuccess,
+                ),
+                allowedExtensions: widget.allowedExtensions,
+              ),
+            ] else ...[
+              FileList(files: _state.selectedFiles!, onRemoveFile: _removeFile),
+              const SizedBox(height: 16),
+              _buildUploadActions(),
+            ],
+          ],
+        ),
+      );
 
   Widget _buildUploadActions() => Row(
-    children: [
-      TextButton.icon(
-        onPressed: _pickFiles,
-        icon: const Icon(Icons.add),
-        label: const Text('Add More Files'),
-        style: TextButton.styleFrom(foregroundColor: const Color(0xFFFF9800)),
-      ),
-      const Spacer(),
-      if (_state.isUploading)
-        const Row(
-          children: [
-            SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF9800)),
+        children: [
+          TextButton.icon(
+            onPressed: _pickFiles,
+            icon: const Icon(Icons.add),
+            label: const Text('Add More Files'),
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFFFF9800)),
+          ),
+          const Spacer(),
+          if (_state.isUploading)
+            const Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFFFF9800)),
+                  ),
+                ),
+                SizedBox(width: 8),
+                Text('Uploading...'),
+              ],
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: _uploadFiles,
+              icon: const Icon(Icons.upload),
+              label: const Text('Upload Files'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF9800),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
-            SizedBox(width: 8),
-            Text('Uploading...'),
-          ],
-        )
-      else
-        ElevatedButton.icon(
-          onPressed: _uploadFiles,
-          icon: const Icon(Icons.upload),
-          label: const Text('Upload Files'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFF9800),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-    ],
-  );
+        ],
+      );
 
   Future<void> _pickFiles() async {
     try {

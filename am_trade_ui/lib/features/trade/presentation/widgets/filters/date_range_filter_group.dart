@@ -28,32 +28,32 @@ class DateRangeFilterGroup extends FilterGroup {
 
   @override
   Widget buildContent(BuildContext context) => Row(
-    children: [
-      Expanded(
-        child: _buildModernDateSelector(
-          context,
-          label: 'Start Date',
-          value: startDate,
-          onChanged: (date) {
-            startDate = date;
-            onChanged(startDate, endDate);
-          },
-        ),
-      ),
-      const SizedBox(width: 6),
-      Expanded(
-        child: _buildModernDateSelector(
-          context,
-          label: 'End Date',
-          value: endDate,
-          onChanged: (date) {
-            endDate = date;
-            onChanged(startDate, endDate);
-          },
-        ),
-      ),
-    ],
-  );
+        children: [
+          Expanded(
+            child: _buildModernDateSelector(
+              context,
+              label: 'Start Date',
+              value: startDate,
+              onChanged: (date) {
+                startDate = date;
+                onChanged(startDate, endDate);
+              },
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: _buildModernDateSelector(
+              context,
+              label: 'End Date',
+              value: endDate,
+              onChanged: (date) {
+                endDate = date;
+                onChanged(startDate, endDate);
+              },
+            ),
+          ),
+        ],
+      );
 
   Widget _buildModernDateSelector(
     BuildContext context, {
@@ -96,7 +96,9 @@ class DateRangeFilterGroup extends FilterGroup {
                 : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: hasValue ? theme.colorScheme.primary.withOpacity(0.3) : theme.colorScheme.outline.withOpacity(0.2),
+              color: hasValue
+                  ? theme.colorScheme.primary.withOpacity(0.3)
+                  : theme.colorScheme.outline.withOpacity(0.2),
             ),
           ),
           child: Row(
@@ -104,7 +106,9 @@ class DateRangeFilterGroup extends FilterGroup {
               Icon(
                 Icons.calendar_month_rounded,
                 size: 14,
-                color: hasValue ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.5),
+                color: hasValue
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface.withOpacity(0.5),
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -112,7 +116,9 @@ class DateRangeFilterGroup extends FilterGroup {
                   hasValue ? _formatDate(value) : label,
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontSize: 11,
-                    color: hasValue ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withOpacity(0.5),
+                    color: hasValue
+                        ? theme.colorScheme.onSurface
+                        : theme.colorScheme.onSurface.withOpacity(0.5),
                     fontWeight: hasValue ? FontWeight.w500 : FontWeight.normal,
                   ),
                 ),
@@ -126,7 +132,8 @@ class DateRangeFilterGroup extends FilterGroup {
                       color: theme.colorScheme.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.close_rounded, size: 12, color: theme.colorScheme.primary),
+                    child: Icon(Icons.close_rounded,
+                        size: 12, color: theme.colorScheme.primary),
                   ),
                 ),
             ],
@@ -137,7 +144,20 @@ class DateRangeFilterGroup extends FilterGroup {
   }
 
   String _formatDate(DateTime date) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 

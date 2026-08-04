@@ -42,9 +42,11 @@ class _PricingCardState extends State<PricingCard> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
-    final currentPrice = widget.isAnnual ? (widget.annualPrice / 12).round() : widget.monthlyPrice;
+    final currentPrice = widget.isAnnual
+        ? (widget.annualPrice / 12).round()
+        : widget.monthlyPrice;
     final isMobile = MediaQuery.of(context).size.width < 768;
-    
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -59,20 +61,30 @@ class _PricingCardState extends State<PricingCard> {
           vertical: isMobile ? 10 : 20,
         ),
         decoration: BoxDecoration(
-          color: theme.cardTheme.color ?? (isDark ? const Color(0xFF2C2C3E) : Colors.white),
+          color:
+              theme.cardTheme.color ??
+              (isDark ? const Color(0xFF2C2C3E) : Colors.white),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: widget.isCurrentPlan
                 ? const Color(0xFF10B981) // Green for active plan
-                : (_isHovered 
-                    ? widget.primaryColor 
-                    : (widget.isPopular ? widget.primaryColor : (isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade200))),
-            width: (widget.isCurrentPlan || widget.isPopular || _isHovered) ? 2 : 1,
+                : (_isHovered
+                      ? widget.primaryColor
+                      : (widget.isPopular
+                            ? widget.primaryColor
+                            : (isDark
+                                  ? Colors.white.withOpacity(0.1)
+                                  : Colors.grey.shade200))),
+            width: (widget.isCurrentPlan || widget.isPopular || _isHovered)
+                ? 2
+                : 1,
           ),
           boxShadow: [
             if (widget.isCurrentPlan)
               BoxShadow(
-                color: const Color(0xFF10B981).withOpacity(_isHovered ? 0.25 : 0.15),
+                color: const Color(
+                  0xFF10B981,
+                ).withOpacity(_isHovered ? 0.25 : 0.15),
                 blurRadius: _isHovered ? 25 : 20,
                 offset: Offset(0, _isHovered ? 12 : 10),
               )
@@ -87,7 +99,7 @@ class _PricingCardState extends State<PricingCard> {
                 color: widget.primaryColor.withOpacity(isDark ? 0.15 : 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
-              )
+              ),
           ],
         ),
         child: Stack(
@@ -134,7 +146,9 @@ class _PricingCardState extends State<PricingCard> {
                           '/mo',
                           style: TextStyle(
                             fontSize: 14,
-                            color: isDark ? Colors.white54 : Colors.grey.shade500,
+                            color: isDark
+                                ? Colors.white54
+                                : Colors.grey.shade500,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -160,7 +174,7 @@ class _PricingCardState extends State<PricingCard> {
                       ),
                     ] else ...[
                       const SizedBox(height: 18), // Spacer to match height
-                    ]
+                    ],
                   ] else ...[
                     Text(
                       'Custom',
@@ -185,18 +199,38 @@ class _PricingCardState extends State<PricingCard> {
                     child: ElevatedButton(
                       onPressed: widget.onCtaPressed,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: widget.onCtaPressed == null 
-                            ? (widget.isCurrentPlan ? (isDark ? const Color(0xFF064E3B) : const Color(0xFFE8F5E9)) : (isDark ? const Color(0xFF1E293B) : Colors.grey.shade200)) 
+                        backgroundColor: widget.onCtaPressed == null
+                            ? (widget.isCurrentPlan
+                                  ? (isDark
+                                        ? const Color(0xFF064E3B)
+                                        : const Color(0xFFE8F5E9))
+                                  : (isDark
+                                        ? const Color(0xFF1E293B)
+                                        : Colors.grey.shade200))
                             : widget.primaryColor,
-                        foregroundColor: widget.onCtaPressed == null 
-                            ? (widget.isCurrentPlan ? (isDark ? const Color(0xFF34D399) : const Color(0xFF2E7D32)) : (isDark ? Colors.white38 : Colors.grey.shade500)) 
-                            : (widget.title == 'Free' ? (isDark ? Colors.white : Colors.black87) : Colors.white),
+                        foregroundColor: widget.onCtaPressed == null
+                            ? (widget.isCurrentPlan
+                                  ? (isDark
+                                        ? const Color(0xFF34D399)
+                                        : const Color(0xFF2E7D32))
+                                  : (isDark
+                                        ? Colors.white38
+                                        : Colors.grey.shade500))
+                            : (widget.title == 'Free'
+                                  ? (isDark ? Colors.white : Colors.black87)
+                                  : Colors.white),
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
-                          side: widget.title == 'Free' && widget.onCtaPressed != null
-                              ? BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300) 
+                          side:
+                              widget.title == 'Free' &&
+                                  widget.onCtaPressed != null
+                              ? BorderSide(
+                                  color: isDark
+                                      ? Colors.white24
+                                      : Colors.grey.shade300,
+                                )
                               : BorderSide.none,
                         ),
                       ),
@@ -210,32 +244,40 @@ class _PricingCardState extends State<PricingCard> {
                     ),
                   ),
                   SizedBox(height: isMobile ? 24 : 32),
-                  ...widget.features.map((feature) => Padding(
-                    padding: EdgeInsets.only(bottom: isMobile ? 8.0 : 12.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.check,
-                          size: 18,
-                          color: widget.isCurrentPlan 
-                              ? const Color(0xFF10B981) 
-                              : (widget.isCustom ? const Color(0xFFE87C00) : (widget.title == 'Premium' ? const Color(0xFFA824EE) : widget.primaryColor)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            feature,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: isDark ? Colors.white70 : Colors.grey.shade700,
-                              height: 1.4,
+                  ...widget.features.map(
+                    (feature) => Padding(
+                      padding: EdgeInsets.only(bottom: isMobile ? 8.0 : 12.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.check,
+                            size: 18,
+                            color: widget.isCurrentPlan
+                                ? const Color(0xFF10B981)
+                                : (widget.isCustom
+                                      ? const Color(0xFFE87C00)
+                                      : (widget.title == 'Premium'
+                                            ? const Color(0xFFA824EE)
+                                            : widget.primaryColor)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              feature,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.grey.shade700,
+                                height: 1.4,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  )),
+                  ),
                 ],
               ),
             ),
@@ -246,7 +288,10 @@ class _PricingCardState extends State<PricingCard> {
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF10B981),
                       borderRadius: BorderRadius.circular(12),
@@ -270,7 +315,10 @@ class _PricingCardState extends State<PricingCard> {
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: widget.primaryColor,
                       borderRadius: BorderRadius.circular(12),

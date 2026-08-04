@@ -78,7 +78,10 @@ class DashboardWebScreen extends ConsumerWidget {
       recentActivityProvider(userId, page: 0, size: 10),
       (_, next) => markIfReady(next),
     );
-    ref.listen(portfolioOverviewsProvider(userId), (_, next) => markIfReady(next));
+    ref.listen(
+      portfolioOverviewsProvider(userId),
+      (_, next) => markIfReady(next),
+    );
     ref.listen(
       historyStreamProvider(userId, timeFrame: tfCode),
       (_, next) => markIfReady(next),
@@ -140,8 +143,9 @@ class DashboardWebScreen extends ConsumerWidget {
   Widget _buildPerformanceChart(WidgetRef ref, String tfCode) {
     return Consumer(
       builder: (context, ref, child) {
-        final performanceAsync =
-            ref.watch(historyStreamProvider(userId, timeFrame: tfCode));
+        final performanceAsync = ref.watch(
+          historyStreamProvider(userId, timeFrame: tfCode),
+        );
         return performanceAsync.when(
           data: (performance) => DashboardChartWidget(performance: performance),
           loading: () => _buildLoadingCard(280, label: 'Loading chart…'),
@@ -159,8 +163,9 @@ class DashboardWebScreen extends ConsumerWidget {
   Widget _buildMoversPanel(WidgetRef ref, String tfCode) {
     return Consumer(
       builder: (context, ref, child) {
-        final topMoversAsync =
-            ref.watch(moversStreamProvider(userId, timeFrame: tfCode));
+        final topMoversAsync = ref.watch(
+          moversStreamProvider(userId, timeFrame: tfCode),
+        );
         return topMoversAsync.when(
           data: (topMovers) => DashboardRankingWidget(
             gainers: topMovers.gainers,
@@ -196,12 +201,20 @@ class DashboardWebScreen extends ConsumerWidget {
 
     final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
 
-    final marketOpenBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
-    final marketOpenText = isDark ? const Color(0xFF60A5FA) : const Color(0xFF0F172A);
-    final marketOpenDot = isDark ? const Color(0xFF3B82F6) : const Color(0xFF10B981);
+    final marketOpenBg = isDark
+        ? const Color(0xFF1E293B)
+        : const Color(0xFFF1F5F9);
+    final marketOpenText = isDark
+        ? const Color(0xFF60A5FA)
+        : const Color(0xFF0F172A);
+    final marketOpenDot = isDark
+        ? const Color(0xFF3B82F6)
+        : const Color(0xFF10B981);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0B1120) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark
+          ? const Color(0xFF0B1120)
+          : const Color(0xFFF8FAFC),
       body: Stack(
         children: [
           if (isDark) ...[
@@ -253,7 +266,7 @@ class DashboardWebScreen extends ConsumerWidget {
                 width: double.infinity,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                  children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -278,7 +291,10 @@ class DashboardWebScreen extends ConsumerWidget {
                             label: const Text('Add Portfolio'),
                             style: TextButton.styleFrom(
                               foregroundColor: onSurface,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
                             ),
                           ),
                         const SizedBox(width: 16),
@@ -287,11 +303,13 @@ class DashboardWebScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
                     dashboardAsync.when(
-                      data: (summary) => DashboardSummaryWidget(summary: summary),
+                      data: (summary) =>
+                          DashboardSummaryWidget(summary: summary),
                       loading: () => _buildSummaryLoading(context),
                       error: (err, stack) => AmErrorWidget(
                         message: 'Failed to load summary',
-                        onRetry: () => ref.invalidate(dashboardStreamProvider(userId)),
+                        onRetry: () =>
+                            ref.invalidate(dashboardStreamProvider(userId)),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -311,9 +329,15 @@ class DashboardWebScreen extends ConsumerWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(flex: 70, child: _buildPerformanceChart(ref, tfCode)),
+                            Expanded(
+                              flex: 70,
+                              child: _buildPerformanceChart(ref, tfCode),
+                            ),
                             const SizedBox(width: 24),
-                            Expanded(flex: 30, child: _buildMoversPanel(ref, tfCode)),
+                            Expanded(
+                              flex: 30,
+                              child: _buildMoversPanel(ref, tfCode),
+                            ),
                           ],
                         ),
                       ),
@@ -341,7 +365,9 @@ class DashboardWebScreen extends ConsumerWidget {
                               children: overviews
                                   .map(
                                     (overview) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 16.0),
+                                      padding: const EdgeInsets.only(
+                                        bottom: 16.0,
+                                      ),
                                       child: DashboardPortfolioOverviewCard(
                                         overview: overview,
                                         onTap: () {},
@@ -353,7 +379,9 @@ class DashboardWebScreen extends ConsumerWidget {
                             loading: () => _buildLoadingCard(100),
                             error: (err, stack) => AmErrorWidget(
                               message: 'Failed to load portfolios',
-                              onRetry: () => ref.invalidate(portfolioOverviewsProvider(userId)),
+                              onRetry: () => ref.invalidate(
+                                portfolioOverviewsProvider(userId),
+                              ),
                             ),
                           ),
                         ],
@@ -364,7 +392,9 @@ class DashboardWebScreen extends ConsumerWidget {
                         children: [
                           Expanded(
                             flex: 70,
-                            child: DashboardRecentActivitySection(userId: userId),
+                            child: DashboardRecentActivitySection(
+                              userId: userId,
+                            ),
                           ),
                           const SizedBox(width: 24),
                           Expanded(
@@ -384,15 +414,19 @@ class DashboardWebScreen extends ConsumerWidget {
                                 const SizedBox(height: 16),
                                 overviewsAsync.when(
                                   data: (overviews) => Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: overviews
                                         .map(
                                           (overview) => Padding(
-                                            padding: const EdgeInsets.only(bottom: 16.0),
-                                            child: DashboardPortfolioOverviewCard(
-                                              overview: overview,
-                                              onTap: () {},
+                                            padding: const EdgeInsets.only(
+                                              bottom: 16.0,
                                             ),
+                                            child:
+                                                DashboardPortfolioOverviewCard(
+                                                  overview: overview,
+                                                  onTap: () {},
+                                                ),
                                           ),
                                         )
                                         .toList(),
@@ -400,7 +434,9 @@ class DashboardWebScreen extends ConsumerWidget {
                                   loading: () => _buildLoadingCard(100),
                                   error: (err, stack) => AmErrorWidget(
                                     message: 'Failed to load portfolios',
-                                    onRetry: () => ref.invalidate(portfolioOverviewsProvider(userId)),
+                                    onRetry: () => ref.invalidate(
+                                      portfolioOverviewsProvider(userId),
+                                    ),
                                   ),
                                 ),
                               ],

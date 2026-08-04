@@ -13,10 +13,14 @@ class AvailableIndices {
 
   factory AvailableIndices.fromJson(Map<String, dynamic> json) {
     return AvailableIndices(
-      broadMarketIndices: List<String>.from(json['broad'] ?? json['broadMarketIndices'] ?? []),
-      sectoralIndices: List<String>.from(json['sector'] ?? json['sectoralIndices'] ?? []),
-      thematicIndices: List<String>.from(json['thematic'] ?? json['thematicIndices'] ?? []),
-      strategyIndices: List<String>.from(json['strategy'] ?? json['strategyIndices'] ?? []),
+      broadMarketIndices:
+          List<String>.from(json['broad'] ?? json['broadMarketIndices'] ?? []),
+      sectoralIndices:
+          List<String>.from(json['sector'] ?? json['sectoralIndices'] ?? []),
+      thematicIndices:
+          List<String>.from(json['thematic'] ?? json['thematicIndices'] ?? []),
+      strategyIndices:
+          List<String>.from(json['strategy'] ?? json['strategyIndices'] ?? []),
     );
   }
 

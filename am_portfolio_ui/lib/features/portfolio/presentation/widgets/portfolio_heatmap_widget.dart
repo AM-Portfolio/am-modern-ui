@@ -11,9 +11,9 @@ import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_heatmap_cubit.dart';
 import '../cubit/portfolio_heatmap_state.dart';
 import '../cubit/portfolio_state.dart';
-import '../../internal/domain/entities/portfolio_analytics.dart' as analytics_entities;
+import '../../internal/domain/entities/portfolio_analytics.dart'
+    as analytics_entities;
 import 'portfolio_metric_card.dart';
-
 
 /// Configuration class for platform-specific heatmap settings
 class PortfolioHeatmapConfig {
@@ -142,7 +142,9 @@ class _PortfolioHeatmapWidgetState
               'Analytics failed, skipping heatmap data load',
               tag: '${widget.config.logTag}.Data',
             );
-            portfolioHeatmapCubit.showError('Failed to load portfolio data. Please retry.');
+            portfolioHeatmapCubit.showError(
+              'Failed to load portfolio data. Please retry.',
+            );
             return;
           }
 
@@ -224,15 +226,19 @@ class _PortfolioHeatmapWidgetState
         listenWhen: (previous, current) {
           if (previous is PortfolioLoaded && current is PortfolioLoaded) {
             // Only trigger if live data is active and todayChange has updated
-            return current.isLiveDataActive && 
-                   previous.summary.todayChangePercentage != current.summary.todayChangePercentage;
+            return current.isLiveDataActive &&
+                previous.summary.todayChangePercentage !=
+                    current.summary.todayChangePercentage;
           }
           return false;
         },
         listener: (context, state) {
           if (state is PortfolioLoaded && state.isLiveDataActive) {
             // Live data updated, refresh the heatmap UI
-            CommonLogger.info('Live data update detected, refreshing heatmap', tag: widget.config.logTag);
+            CommonLogger.info(
+              'Live data update detected, refreshing heatmap',
+              tag: widget.config.logTag,
+            );
             // Re-trigger the heatmap load. We don't need to fetch new analytics,
             // we just need the cubit to emit a new state so the UI updates.
             final portfolioHeatmapCubit = context.read<PortfolioHeatmapCubit>();
@@ -334,10 +340,10 @@ class _PortfolioHeatmapWidgetState
     final convertedHeatmapData = state.heatmapData;
 
     // Create configuration with selected layout
-    final baseSelectors = convertedHeatmapData.configuration.selectors ??
-        const SelectorConfig();
-    final baseLayout = convertedHeatmapData.configuration.layout ??
-        const LayoutConfig();
+    final baseSelectors =
+        convertedHeatmapData.configuration.selectors ?? const SelectorConfig();
+    final baseLayout =
+        convertedHeatmapData.configuration.layout ?? const LayoutConfig();
     final customConfig = convertedHeatmapData.configuration.copyWith(
       display: convertedHeatmapData.configuration.display?.copyWith(
         showPerformance: false, // Hides old default legend
@@ -347,8 +353,9 @@ class _PortfolioHeatmapWidgetState
         showLayoutSelector: widget.config.compactMode ? true : null,
       ),
       selectors: baseSelectors.copyWith(
-        selectorLayout:
-            widget.config.compactMode ? SelectorLayoutType.compact : null,
+        selectorLayout: widget.config.compactMode
+            ? SelectorLayoutType.compact
+            : null,
         showSectorSelector: widget.config.compactMode ? true : null,
         showMarketCapSelector: widget.config.compactMode ? true : null,
         showTimeFrameSelector: widget.config.compactMode ? false : null,
@@ -390,7 +397,10 @@ class _PortfolioHeatmapWidgetState
                   const SizedBox(width: 4),
                   Text(
                     'Portfolio > ${_drillDownTile!.displayName}',
-                    style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -419,15 +429,16 @@ class _PortfolioHeatmapWidgetState
                   tag: '${widget.config.logTag}.Action',
                 );
               },
-              onFiltersChanged: ({timeFrame, metric, sector, marketCap, layout}) {
-                _onFiltersChanged(
-                  timeFrame: timeFrame,
-                  metric: metric,
-                  sector: sector,
-                  marketCap: marketCap,
-                  layout: layout,
-                );
-              },
+              onFiltersChanged:
+                  ({timeFrame, metric, sector, marketCap, layout}) {
+                    _onFiltersChanged(
+                      timeFrame: timeFrame,
+                      metric: metric,
+                      sector: sector,
+                      marketCap: marketCap,
+                      layout: layout,
+                    );
+                  },
               templateType: widget.config.templateType,
             ),
           )
@@ -458,24 +469,24 @@ class _PortfolioHeatmapWidgetState
                         tag: '${widget.config.logTag}.Action',
                       );
                     },
-                    onFiltersChanged: ({timeFrame, metric, sector, marketCap, layout}) {
-                      _onFiltersChanged(
-                        timeFrame: timeFrame,
-                        metric: metric,
-                        sector: sector,
-                        marketCap: marketCap,
-                        layout: layout,
-                      );
-                    },
+                    onFiltersChanged:
+                        ({timeFrame, metric, sector, marketCap, layout}) {
+                          _onFiltersChanged(
+                            timeFrame: timeFrame,
+                            metric: metric,
+                            sector: sector,
+                            marketCap: marketCap,
+                            layout: layout,
+                          );
+                        },
                     templateType: widget.config.templateType,
                   ),
                 );
-                
+
                 return heatmapContent;
               },
             ),
           ),
-
       ],
     );
   }
@@ -509,14 +520,19 @@ class _PortfolioHeatmapWidgetState
             if (analyticsState is PortfolioAnalyticsLoaded &&
                 analyticsState.heatmap != null &&
                 analyticsState.heatmap!.sectors.isNotEmpty) {
-              final sectors = List<analytics_entities.Sector>.from(
-                analyticsState.heatmap!.sectors,
-              )
-                ..removeWhere((s) {
-                  final name = s.sectorName.trim();
-                  return name.isEmpty || name == '-' || name.toLowerCase() == 'unknown';
-                })
-                ..sort((a, b) => b.changePercent.compareTo(a.changePercent));
+              final sectors =
+                  List<analytics_entities.Sector>.from(
+                      analyticsState.heatmap!.sectors,
+                    )
+                    ..removeWhere((s) {
+                      final name = s.sectorName.trim();
+                      return name.isEmpty ||
+                          name == '-' ||
+                          name.toLowerCase() == 'unknown';
+                    })
+                    ..sort(
+                      (a, b) => b.changePercent.compareTo(a.changePercent),
+                    );
               topSector = sectors.first.sectorName;
               topSectorChange = sectors.first.formattedChangePercent;
               worstSector = sectors.last.sectorName;
@@ -539,7 +555,8 @@ class _PortfolioHeatmapWidgetState
                   PortfolioMetricCard(
                     title: '24H CHANGE',
                     value: todayChange,
-                    subtitle: '${isTodayPositive ? '+' : ''}${todayChangePct.toStringAsFixed(2)}%',
+                    subtitle:
+                        '${isTodayPositive ? '+' : ''}${todayChangePct.toStringAsFixed(2)}%',
                     accentColor: isTodayPositive
                         ? const Color(0xFF0BA95B)
                         : const Color(0xFFB22222),
@@ -569,12 +586,13 @@ class _PortfolioHeatmapWidgetState
 
                 if (isWide) {
                   return Row(
-                    children: cards
-                        .map((c) => Expanded(child: c))
-                        .toList()
-                        .expand((w) => [w, const SizedBox(width: 12)])
-                        .toList()
-                      ..removeLast(),
+                    children:
+                        cards
+                            .map((c) => Expanded(child: c))
+                            .toList()
+                            .expand((w) => [w, const SizedBox(width: 12)])
+                            .toList()
+                          ..removeLast(),
                   );
                 } else {
                   return Wrap(
@@ -636,11 +654,7 @@ class _PortfolioHeatmapWidgetState
             runSpacing: 10,
             crossAxisAlignment: WrapCrossAlignment.center,
             alignment: WrapAlignment.spaceBetween,
-            children: [
-              titleWidget,
-              filterRow,
-              timeframeBar,
-            ],
+            children: [titleWidget, filterRow, timeframeBar],
           );
         }
 
@@ -649,14 +663,14 @@ class _PortfolioHeatmapWidgetState
           children: [
             // Left: Title
             titleWidget,
-            
+
             const SizedBox(width: 20),
-            
+
             // Center-left: Filters grouped beside title
             filterRow,
-            
+
             const Spacer(),
-            
+
             // Right: Timeframe Pills
             timeframeBar,
           ],
@@ -677,8 +691,12 @@ class _PortfolioHeatmapWidgetState
           child: CustomDropdown<SectorType>(
             value: _selectedSector ?? SectorType.all,
             items: SectorType.values
-                .map((item) => item.toDropdownItem(
-                    text: item.displayName, icon: Icons.category_outlined))
+                .map(
+                  (item) => item.toDropdownItem(
+                    text: item.displayName,
+                    icon: Icons.category_outlined,
+                  ),
+                )
                 .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(sector: val);
@@ -693,8 +711,12 @@ class _PortfolioHeatmapWidgetState
           child: CustomDropdown<MarketCapType>(
             value: _selectedMarketCap ?? MarketCapType.all,
             items: MarketCapType.values
-                .map((item) => item.toDropdownItem(
-                    text: item.displayName, icon: Icons.pie_chart_outline))
+                .map(
+                  (item) => item.toDropdownItem(
+                    text: item.displayName,
+                    icon: Icons.pie_chart_outline,
+                  ),
+                )
                 .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(marketCap: val);
@@ -709,8 +731,12 @@ class _PortfolioHeatmapWidgetState
           child: CustomDropdown<HeatmapLayoutType>(
             value: _selectedLayout,
             items: HeatmapLayoutType.values
-                .map((item) => item.toDropdownItem(
-                    text: item.displayName, icon: Icons.grid_view_outlined))
+                .map(
+                  (item) => item.toDropdownItem(
+                    text: item.displayName,
+                    icon: Icons.grid_view_outlined,
+                  ),
+                )
                 .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(layout: val);
@@ -722,27 +748,27 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  Widget _buildLegendDot(BuildContext context, Color color, String label) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-        ),
-      ),
-      const SizedBox(width: 5),
-      Text(
-        label,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
-          fontSize: 11,
-        ),
-      ),
-    ],
-  );
+  Widget _buildLegendDot(BuildContext context, Color color, String label) =>
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.55),
+              fontSize: 11,
+            ),
+          ),
+        ],
+      );
 
   Widget _buildInlineStatusBar(BuildContext context) {
     return BlocBuilder<PortfolioCubit, PortfolioState>(
@@ -757,43 +783,57 @@ class _PortfolioHeatmapWidgetState
         Color statusColor = state is! PortfolioLoaded
             ? const Color(0xFFF39C12)
             : isConnected
-                ? const Color(0xFF0BA95B)
-                : const Color(0xFFF39C12);
+            ? const Color(0xFF0BA95B)
+            : const Color(0xFFF39C12);
         String statusText = state is! PortfolioLoaded
             ? 'LOADING...'
             : isConnected
-                ? 'LIVE FEED ACTIVE'
-                : 'SYNCING...';
+            ? 'LIVE FEED ACTIVE'
+            : 'SYNCING...';
 
         final isPositive = todayChangePct >= 0;
-        final sentimentColor =
-            isPositive ? const Color(0xFF0BA95B) : const Color(0xFFB22222);
-        final sentimentText =
-            isPositive ? 'BULLISH' : 'BEARISH';
+        final sentimentColor = isPositive
+            ? const Color(0xFF0BA95B)
+            : const Color(0xFFB22222);
+        final sentimentText = isPositive ? 'BULLISH' : 'BEARISH';
 
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 7, height: 7,
-              decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: statusColor,
+                shape: BoxShape.circle,
+              ),
             ),
             const SizedBox(width: 6),
             Text(
               statusText,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.5,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
               ),
             ),
             const SizedBox(width: 12),
-            Icon(Icons.access_time, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7), size: 12),
+            Icon(
+              Icons.access_time,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              size: 12,
+            ),
             const SizedBox(width: 4),
             BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
               builder: (context, heatmapState) {
                 String timeText = 'Just now';
                 if (heatmapState is PortfolioHeatmapLoaded) {
-                  final diff = DateTime.now().difference(heatmapState.lastUpdated);
+                  final diff = DateTime.now().difference(
+                    heatmapState.lastUpdated,
+                  );
                   if (diff.inMinutes > 0) {
                     timeText = '${diff.inMinutes}m ago';
                   } else if (diff.inSeconds > 0) {
@@ -802,7 +842,10 @@ class _PortfolioHeatmapWidgetState
                 }
                 return Text(
                   'Updated: $timeText',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 10,
+                  ),
                 );
               },
             ),
@@ -812,12 +855,17 @@ class _PortfolioHeatmapWidgetState
               decoration: BoxDecoration(
                 color: sentimentColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: sentimentColor.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: sentimentColor.withValues(alpha: 0.3),
+                ),
               ),
               child: Text(
                 sentimentText,
                 style: TextStyle(
-                  color: sentimentColor, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5,
+                  color: sentimentColor,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
@@ -826,8 +874,6 @@ class _PortfolioHeatmapWidgetState
       },
     );
   }
-
-
 
   /// Builds empty state UI
   Widget _buildEmptyWidget(PortfolioHeatmapEmpty state) {
@@ -940,7 +986,10 @@ class _PortfolioHeatmapWidgetState
     // Reload heatmap data with new selections (timeframe reloads via provider listen)
     if (timeFrame == null) {
       _loadHeatmapData();
-    } else if (metric != null || sector != null || marketCap != null || layout != null) {
+    } else if (metric != null ||
+        sector != null ||
+        marketCap != null ||
+        layout != null) {
       _loadHeatmapData();
     }
   }

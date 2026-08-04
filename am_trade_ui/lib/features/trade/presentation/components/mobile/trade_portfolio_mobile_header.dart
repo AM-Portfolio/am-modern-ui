@@ -27,8 +27,9 @@ class TradePortfolioMobileHeader extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final muted = isDark ? Colors.white54 : Colors.black45;
     final primary = Theme.of(context).colorScheme.primary;
-    final pnlColor =
-        totalNetProfitLoss >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final pnlColor = totalNetProfitLoss >= 0
+        ? const Color(0xFF10B981)
+        : const Color(0xFFEF4444);
 
     // Keep unused discovery stats available for API compatibility.
     assert(profitableCount >= 0 && totalTrades >= 0 && avgWinRate >= 0);

@@ -6,50 +6,56 @@ import 'package:am_ai_ui/data/ai_intent_response.dart';
 import 'package:am_ai_ui/presentation/widgets/ai_widget_factory.dart';
 
 Widget _wrap(Widget child) => ProviderScope(
-      child: MaterialApp(
-        theme: AppTheme.darkTheme,
-        home: Scaffold(body: child),
-      ),
-    );
+  child: MaterialApp(
+    theme: AppTheme.darkTheme,
+    home: Scaffold(body: child),
+  ),
+);
 
 void main() {
   group('AiWidgetFactory.build', () {
     group('PORTFOLIO_SUMMARY widget id', () {
-      testWidgets('with data key renders currency symbol and no fallback text',
-          (WidgetTester tester) async {
-        final response = AiIntentResponse(
-          message: '',
-          widgetId: 'PORTFOLIO_SUMMARY',
-          widgetParams: {
-            'userId': 'u1',
-            'data': {
-              'totalValue': 150000,
-              'totalInvested': 120000,
-              'totalGainLoss': 30000,
-              'totalGainLossPercentage': 25.0,
-              'dayChange': 1200,
-              'dayChangePercentage': 0.8,
-              'totalPortfolios': 2,
-              'totalHoldings': 10,
+      testWidgets(
+        'with data key renders currency symbol and no fallback text',
+        (WidgetTester tester) async {
+          final response = AiIntentResponse(
+            message: '',
+            widgetId: 'PORTFOLIO_SUMMARY',
+            widgetParams: {
+              'userId': 'u1',
+              'data': {
+                'totalValue': 150000,
+                'totalInvested': 120000,
+                'totalGainLoss': 30000,
+                'totalGainLossPercentage': 25.0,
+                'dayChange': 1200,
+                'dayChangePercentage': 0.8,
+                'totalPortfolios': 2,
+                'totalHoldings': 10,
+              },
             },
-          },
-          sessionId: 's',
-          toolsUsed: const [],
-          traceId: 't',
-        );
+            sessionId: 's',
+            toolsUsed: const [],
+            traceId: 't',
+          );
 
-        await tester.pumpWidget(
-          _wrap(SingleChildScrollView(child: AiWidgetFactory.build(response))),
-        );
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(
+            _wrap(
+              SingleChildScrollView(child: AiWidgetFactory.build(response)),
+            ),
+          );
+          await tester.pumpAndSettle();
 
-        // At least one widget containing ₹ must be present
-        expect(find.textContaining('₹'), findsWidgets);
-        // The fallback "Tap to view portfolio" text must not be present
-        expect(find.text('Tap to view portfolio'), findsNothing);
-      });
+          // At least one widget containing ₹ must be present
+          expect(find.textContaining('₹'), findsWidgets);
+          // The fallback "Tap to view portfolio" text must not be present
+          expect(find.text('Tap to view portfolio'), findsNothing);
+        },
+      );
 
-      testWidgets('without data key shows fallback text', (WidgetTester tester) async {
+      testWidgets('without data key shows fallback text', (
+        WidgetTester tester,
+      ) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'PORTFOLIO_SUMMARY',
@@ -67,18 +73,27 @@ void main() {
     });
 
     group('ERROR widget id', () {
-      testWidgets('renders the error message text', (WidgetTester tester) async {
-        final response = AiIntentResponse.error('Something went wrong, please retry.');
+      testWidgets('renders the error message text', (
+        WidgetTester tester,
+      ) async {
+        final response = AiIntentResponse.error(
+          'Something went wrong, please retry.',
+        );
 
         await tester.pumpWidget(_wrap(AiWidgetFactory.build(response)));
         await tester.pumpAndSettle();
 
-        expect(find.text('Something went wrong, please retry.'), findsOneWidget);
+        expect(
+          find.text('Something went wrong, please retry.'),
+          findsOneWidget,
+        );
       });
     });
 
     group('Unknown widget id', () {
-      testWidgets('returns a SizedBox.shrink (zero-size widget)', (WidgetTester tester) async {
+      testWidgets('returns a SizedBox.shrink (zero-size widget)', (
+        WidgetTester tester,
+      ) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'TOTALLY_UNKNOWN_WIDGET',
@@ -96,7 +111,9 @@ void main() {
     });
 
     group('HOLDINGS_TABLE widget id', () {
-      testWidgets('renders Holdings Table title text', (WidgetTester tester) async {
+      testWidgets('renders Holdings Table title text', (
+        WidgetTester tester,
+      ) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'HOLDINGS_TABLE',

@@ -52,22 +52,25 @@ class PerformerItem {
   double? profitLossPercent;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is PerformerItem &&
-    other.symbol == symbol &&
-    other.companyName == companyName &&
-    other.changePercent == changePercent &&
-    other.profitLossPercent == profitLossPercent;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PerformerItem &&
+          other.symbol == symbol &&
+          other.companyName == companyName &&
+          other.changePercent == changePercent &&
+          other.profitLossPercent == profitLossPercent;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (symbol == null ? 0 : symbol!.hashCode) +
-    (companyName == null ? 0 : companyName!.hashCode) +
-    (changePercent == null ? 0 : changePercent!.hashCode) +
-    (profitLossPercent == null ? 0 : profitLossPercent!.hashCode);
+      // ignore: unnecessary_parenthesis
+      (symbol == null ? 0 : symbol!.hashCode) +
+      (companyName == null ? 0 : companyName!.hashCode) +
+      (changePercent == null ? 0 : changePercent!.hashCode) +
+      (profitLossPercent == null ? 0 : profitLossPercent!.hashCode);
 
   @override
-  String toString() => 'PerformerItem[symbol=$symbol, companyName=$companyName, changePercent=$changePercent, profitLossPercent=$profitLossPercent]';
+  String toString() =>
+      'PerformerItem[symbol=$symbol, companyName=$companyName, changePercent=$changePercent, profitLossPercent=$profitLossPercent]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -106,8 +109,10 @@ class PerformerItem {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "PerformerItem[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "PerformerItem[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "PerformerItem[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "PerformerItem[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -122,7 +127,10 @@ class PerformerItem {
     return null;
   }
 
-  static List<PerformerItem> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<PerformerItem> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <PerformerItem>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -150,20 +158,24 @@ class PerformerItem {
   }
 
   // maps a json object with a list of PerformerItem-objects as value to a dart map
-  static Map<String, List<PerformerItem>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<PerformerItem>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<PerformerItem>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = PerformerItem.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = PerformerItem.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

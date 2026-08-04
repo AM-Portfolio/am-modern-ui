@@ -22,15 +22,18 @@ class ThemeSelector extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildOption(context, BackgroundTheme.nebula, Icons.bubble_chart, 'Nebula'),
+          _buildOption(
+              context, BackgroundTheme.nebula, Icons.bubble_chart, 'Nebula'),
           Container(width: 1, height: 20, color: Colors.white24),
-          _buildOption(context, BackgroundTheme.market, Icons.candlestick_chart, 'Market'),
+          _buildOption(context, BackgroundTheme.market, Icons.candlestick_chart,
+              'Market'),
         ],
       ),
     );
   }
 
-  Widget _buildOption(BuildContext context, BackgroundTheme theme, IconData icon, String label) {
+  Widget _buildOption(BuildContext context, BackgroundTheme theme,
+      IconData icon, String label) {
     final isSelected = currentTheme == theme;
     return _HoverableOption(
       isSelected: isSelected,
@@ -68,22 +71,27 @@ class _HoverableOptionState extends State<_HoverableOption> {
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        transform: Matrix4.identity()..scale(_isHovered || widget.isSelected ? 1.1 : 1.0),
+        transform: Matrix4.identity()
+          ..scale(_isHovered || widget.isSelected ? 1.1 : 1.0),
         child: InkWell(
           onTap: widget.onTap,
           borderRadius: BorderRadius.circular(30),
           child: Container(
-             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-             decoration: BoxDecoration(
-               color: _isHovered ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
-               borderRadius: BorderRadius.circular(30),
-             ),
-             child: Row(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: _isHovered
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Row(
               children: [
                 Icon(
                   widget.icon,
                   size: 16,
-                  color: widget.isSelected ? Theme.of(context).primaryColor : Colors.white70,
+                  color: widget.isSelected
+                      ? Theme.of(context).primaryColor
+                      : Colors.white70,
                 ),
                 if (widget.isSelected) ...[
                   const SizedBox(width: 8),
@@ -103,5 +111,4 @@ class _HoverableOptionState extends State<_HoverableOption> {
       ),
     );
   }
-
 }

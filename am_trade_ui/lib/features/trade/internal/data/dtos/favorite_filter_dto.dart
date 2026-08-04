@@ -7,9 +7,14 @@ part 'favorite_filter_dto.g.dart';
 /// DTO for favorite filter request (create/update)
 @JsonSerializable()
 class FavoriteFilterRequestDto {
-  const FavoriteFilterRequestDto({required this.name, required this.filterConfig, this.description, this.isDefault});
+  const FavoriteFilterRequestDto(
+      {required this.name,
+      required this.filterConfig,
+      this.description,
+      this.isDefault});
 
-  factory FavoriteFilterRequestDto.fromJson(Map<String, dynamic> json) => _$FavoriteFilterRequestDtoFromJson(json);
+  factory FavoriteFilterRequestDto.fromJson(Map<String, dynamic> json) =>
+      _$FavoriteFilterRequestDtoFromJson(json);
 
   final String name;
   final String? description;
@@ -32,7 +37,8 @@ class FavoriteFilterResponseDto {
     this.isDefault,
   });
 
-  factory FavoriteFilterResponseDto.fromJson(Map<String, dynamic> json) => _$FavoriteFilterResponseDtoFromJson(json);
+  factory FavoriteFilterResponseDto.fromJson(Map<String, dynamic> json) =>
+      _$FavoriteFilterResponseDtoFromJson(json);
 
   final String id;
   final String name;
@@ -50,7 +56,8 @@ class FavoriteFilterResponseDto {
 class BulkDeleteRequestDto {
   const BulkDeleteRequestDto({required this.userId, required this.filterIds});
 
-  factory BulkDeleteRequestDto.fromJson(Map<String, dynamic> json) => _$BulkDeleteRequestDtoFromJson(json);
+  factory BulkDeleteRequestDto.fromJson(Map<String, dynamic> json) =>
+      _$BulkDeleteRequestDtoFromJson(json);
 
   final String userId;
   final List<String> filterIds;
@@ -61,9 +68,11 @@ class BulkDeleteRequestDto {
 /// DTO for bulk delete response
 @JsonSerializable()
 class BulkDeleteResponseDto {
-  const BulkDeleteResponseDto({required this.deletedCount, required this.totalRequested, this.message});
+  const BulkDeleteResponseDto(
+      {required this.deletedCount, required this.totalRequested, this.message});
 
-  factory BulkDeleteResponseDto.fromJson(Map<String, dynamic> json) => _$BulkDeleteResponseDtoFromJson(json);
+  factory BulkDeleteResponseDto.fromJson(Map<String, dynamic> json) =>
+      _$BulkDeleteResponseDtoFromJson(json);
 
   final int deletedCount;
   final int totalRequested;

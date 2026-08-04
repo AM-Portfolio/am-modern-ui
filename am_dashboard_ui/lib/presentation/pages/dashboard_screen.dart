@@ -7,22 +7,12 @@ class DashboardScreen extends StatelessWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
 
-  const DashboardScreen({
-    super.key,
-    required this.userId,
-    this.onOpenDocIntel,
-  });
+  const DashboardScreen({super.key, required this.userId, this.onOpenDocIntel});
 
   @override
   Widget build(BuildContext context) {
     return AmBreakpoints.isMobileContext(context)
-        ? DashboardMobileScreen(
-            userId: userId,
-            onOpenDocIntel: onOpenDocIntel,
-          )
-        : DashboardWebScreen(
-            userId: userId,
-            onOpenDocIntel: onOpenDocIntel,
-          );
+        ? DashboardMobileScreen(userId: userId, onOpenDocIntel: onOpenDocIntel)
+        : DashboardWebScreen(userId: userId, onOpenDocIntel: onOpenDocIntel);
   }
 }

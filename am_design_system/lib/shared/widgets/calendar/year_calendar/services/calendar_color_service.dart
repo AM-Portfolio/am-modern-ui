@@ -12,24 +12,29 @@ class CalendarColorService {
   final CalendarColorMode colorMode;
 
   /// Get color for a day based on the current color mode
-  Color getDayColor(CalendarDayData dayData, {double opacity = 1.0, bool isDark = true}) {
+  Color getDayColor(CalendarDayData dayData,
+      {double opacity = 1.0, bool isDark = true}) {
     switch (colorMode) {
       case CalendarColorMode.winLoss:
         return _getWinLossColor(dayData, opacity: opacity, isDark: isDark);
       case CalendarColorMode.profitIntensity:
-        return _getProfitIntensityColor(dayData, opacity: opacity, isDark: isDark);
+        return _getProfitIntensityColor(dayData,
+            opacity: opacity, isDark: isDark);
     }
   }
 
   /// Get background color for a month card based on total P&L
-  Color getMonthBackgroundColor(Map<String, dynamic> stats, {double opacity = 0.03}) {
+  Color getMonthBackgroundColor(Map<String, dynamic> stats,
+      {double opacity = 0.03}) {
     if (colorMode == CalendarColorMode.winLoss) {
       // For win/loss mode, use prominent color based on total P&L
       final totalPnL = stats['totalPnL'] as double;
       if (totalPnL > 0) {
-        return Colors.green.withOpacity(0.15); // More visible green for profitable months
+        return Colors.green
+            .withOpacity(0.15); // More visible green for profitable months
       } else if (totalPnL < 0) {
-        return Colors.red.withOpacity(0.15); // More visible red for losing months
+        return Colors.red
+            .withOpacity(0.15); // More visible red for losing months
       }
       return Colors.grey.withOpacity(0.05); // Subtle gray for breakeven
     } else {
@@ -43,7 +48,8 @@ class CalendarColorService {
   }
 
   /// Get border color for month card
-  Color getMonthBorderColor(Map<String, dynamic> stats, {double opacity = 0.1}) {
+  Color getMonthBorderColor(Map<String, dynamic> stats,
+      {double opacity = 0.1}) {
     if (colorMode == CalendarColorMode.winLoss) {
       // For win/loss mode, use prominent border based on total P&L
       final totalPnL = stats['totalPnL'] as double;
@@ -63,10 +69,12 @@ class CalendarColorService {
   }
 
   /// Win/Loss color mode - simple green/red/gray
-  Color _getWinLossColor(CalendarDayData dayData, {double opacity = 1.0, bool isDark = true}) {
+  Color _getWinLossColor(CalendarDayData dayData,
+      {double opacity = 1.0, bool isDark = true}) {
     switch (dayData.status) {
       case TradeDayStatus.win:
-        return (isDark ? Colors.greenAccent : Colors.green).withOpacity(opacity);
+        return (isDark ? Colors.greenAccent : Colors.green)
+            .withOpacity(opacity);
       case TradeDayStatus.loss:
         return (isDark ? Colors.redAccent : Colors.red).withOpacity(opacity);
       case TradeDayStatus.breakeven:
@@ -77,7 +85,8 @@ class CalendarColorService {
   }
 
   /// Profit intensity color mode - color darkness based on P&L amount
-  Color _getProfitIntensityColor(CalendarDayData dayData, {double opacity = 1.0, bool isDark = true}) {
+  Color _getProfitIntensityColor(CalendarDayData dayData,
+      {double opacity = 1.0, bool isDark = true}) {
     if (!dayData.hasTrades || dayData.pnl == 0) {
       return Colors.grey.withOpacity(opacity * (isDark ? 0.3 : 0.2));
     }
@@ -91,12 +100,13 @@ class CalendarColorService {
     final intensity = _calculateIntensity(absAmount);
 
     // Base colors
-    final baseColor = isProfit 
-        ? (isDark ? Colors.greenAccent : Colors.green) 
+    final baseColor = isProfit
+        ? (isDark ? Colors.greenAccent : Colors.green)
         : (isDark ? Colors.redAccent : Colors.red);
 
     // Create color with varying intensity
-    return _adjustColorIntensity(baseColor, intensity, opacity: opacity, isDark: isDark);
+    return _adjustColorIntensity(baseColor, intensity,
+        opacity: opacity, isDark: isDark);
   }
 
   /// Calculate intensity based on amount (logarithmic scale)
@@ -114,7 +124,8 @@ class CalendarColorService {
   }
 
   /// Adjust color intensity
-  Color _adjustColorIntensity(Color baseColor, double intensity, {double opacity = 1.0, bool isDark = true}) {
+  Color _adjustColorIntensity(Color baseColor, double intensity,
+      {double opacity = 1.0, bool isDark = true}) {
     // For higher intensity, use darker/more saturated color
     // For lower intensity, use lighter/less saturated color
 
@@ -122,12 +133,16 @@ class CalendarColorService {
 
     // Adjust lightness based on theme
     final baseLightness = isDark ? 0.5 : 0.4;
-    final adjustedLightness = baseLightness - (intensity * (isDark ? 0.2 : 0.15));
+    final adjustedLightness =
+        baseLightness - (intensity * (isDark ? 0.2 : 0.15));
 
     // Adjust saturation: higher intensity = more saturated
     final adjustedSaturation = 0.4 + (intensity * 0.4); // Range: 0.4 to 0.8
 
-    final adjustedColor = hsl.withLightness(adjustedLightness).withSaturation(adjustedSaturation).toColor();
+    final adjustedColor = hsl
+        .withLightness(adjustedLightness)
+        .withSaturation(adjustedSaturation)
+        .toColor();
 
     return adjustedColor.withOpacity(opacity);
   }
@@ -158,7 +173,8 @@ class CalendarColorService {
   }
 
   /// Get border color for day cell
-  Color getBorderColor(CalendarDayData dayData, {double opacity = 0.8, bool isDark = true}) {
+  Color getBorderColor(CalendarDayData dayData,
+      {double opacity = 0.8, bool isDark = true}) {
     if (!dayData.hasTrades) {
       return Colors.grey.withOpacity(isDark ? 0.2 : 0.3);
     }

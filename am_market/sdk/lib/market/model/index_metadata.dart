@@ -147,43 +147,46 @@ class IndexMetadata {
   double? ffmcSum;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is IndexMetadata &&
-    other.indexName == indexName &&
-    other.open == open &&
-    other.high == high &&
-    other.low == low &&
-    other.previousClose == previousClose &&
-    other.last == last &&
-    other.percChange == percChange &&
-    other.change == change &&
-    other.timeVal == timeVal &&
-    other.yearHigh == yearHigh &&
-    other.yearLow == yearLow &&
-    other.indicativeClose == indicativeClose &&
-    other.totalTradedVolume == totalTradedVolume &&
-    other.totalTradedValue == totalTradedValue &&
-    other.ffmcSum == ffmcSum;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is IndexMetadata &&
+          other.indexName == indexName &&
+          other.open == open &&
+          other.high == high &&
+          other.low == low &&
+          other.previousClose == previousClose &&
+          other.last == last &&
+          other.percChange == percChange &&
+          other.change == change &&
+          other.timeVal == timeVal &&
+          other.yearHigh == yearHigh &&
+          other.yearLow == yearLow &&
+          other.indicativeClose == indicativeClose &&
+          other.totalTradedVolume == totalTradedVolume &&
+          other.totalTradedValue == totalTradedValue &&
+          other.ffmcSum == ffmcSum;
 
   @override
   int get hashCode =>
-    (indexName == null ? 0 : indexName!.hashCode) +
-    (open == null ? 0 : open!.hashCode) +
-    (high == null ? 0 : high!.hashCode) +
-    (low == null ? 0 : low!.hashCode) +
-    (previousClose == null ? 0 : previousClose!.hashCode) +
-    (last == null ? 0 : last!.hashCode) +
-    (percChange == null ? 0 : percChange!.hashCode) +
-    (change == null ? 0 : change!.hashCode) +
-    (timeVal == null ? 0 : timeVal!.hashCode) +
-    (yearHigh == null ? 0 : yearHigh!.hashCode) +
-    (yearLow == null ? 0 : yearLow!.hashCode) +
-    (indicativeClose == null ? 0 : indicativeClose!.hashCode) +
-    (totalTradedVolume == null ? 0 : totalTradedVolume!.hashCode) +
-    (totalTradedValue == null ? 0 : totalTradedValue!.hashCode) +
-    (ffmcSum == null ? 0 : ffmcSum!.hashCode);
+      (indexName == null ? 0 : indexName!.hashCode) +
+      (open == null ? 0 : open!.hashCode) +
+      (high == null ? 0 : high!.hashCode) +
+      (low == null ? 0 : low!.hashCode) +
+      (previousClose == null ? 0 : previousClose!.hashCode) +
+      (last == null ? 0 : last!.hashCode) +
+      (percChange == null ? 0 : percChange!.hashCode) +
+      (change == null ? 0 : change!.hashCode) +
+      (timeVal == null ? 0 : timeVal!.hashCode) +
+      (yearHigh == null ? 0 : yearHigh!.hashCode) +
+      (yearLow == null ? 0 : yearLow!.hashCode) +
+      (indicativeClose == null ? 0 : indicativeClose!.hashCode) +
+      (totalTradedVolume == null ? 0 : totalTradedVolume!.hashCode) +
+      (totalTradedValue == null ? 0 : totalTradedValue!.hashCode) +
+      (ffmcSum == null ? 0 : ffmcSum!.hashCode);
 
   @override
-  String toString() => 'IndexMetadata[indexName=$indexName, open=$open, high=$high, low=$low, previousClose=$previousClose, last=$last, percChange=$percChange, change=$change, timeVal=$timeVal, yearHigh=$yearHigh, yearLow=$yearLow, indicativeClose=$indicativeClose, totalTradedVolume=$totalTradedVolume, totalTradedValue=$totalTradedValue, ffmcSum=$ffmcSum]';
+  String toString() =>
+      'IndexMetadata[indexName=$indexName, open=$open, high=$high, low=$low, previousClose=$previousClose, last=$last, percChange=$percChange, change=$change, timeVal=$timeVal, yearHigh=$yearHigh, yearLow=$yearLow, indicativeClose=$indicativeClose, totalTradedVolume=$totalTradedVolume, totalTradedValue=$totalTradedValue, ffmcSum=$ffmcSum]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -276,8 +279,10 @@ class IndexMetadata {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "IndexMetadata[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "IndexMetadata[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "IndexMetadata[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "IndexMetadata[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -303,7 +308,10 @@ class IndexMetadata {
     return null;
   }
 
-  static List<IndexMetadata> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<IndexMetadata> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <IndexMetadata>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -319,7 +327,7 @@ class IndexMetadata {
   static Map<String, IndexMetadata> mapFromJson(dynamic json) {
     final map = <String, IndexMetadata>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = IndexMetadata.fromJson(entry.value);
         if (value != null) {
@@ -331,19 +339,23 @@ class IndexMetadata {
   }
 
   // maps a json object with a list of IndexMetadata-objects as value to a dart map
-  static Map<String, List<IndexMetadata>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<IndexMetadata>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<IndexMetadata>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = IndexMetadata.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = IndexMetadata.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

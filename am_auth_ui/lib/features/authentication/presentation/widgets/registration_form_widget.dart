@@ -35,119 +35,124 @@ class _RegistrationFormWidgetState extends State<RegistrationFormWidget> {
   void _handleRegister() {
     if (_formKey.currentState!.validate()) {
       context.read<AuthCubit>().register(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        confirmPassword: _confirmPasswordController.text,
-        phone: _phoneController.text.trim().isNotEmpty 
-            ? _phoneController.text.trim() 
-            : null,
-      );
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+            confirmPassword: _confirmPasswordController.text,
+            phone: _phoneController.text.trim().isNotEmpty
+                ? _phoneController.text.trim()
+                : null,
+          );
     }
   }
 
   @override
   Widget build(BuildContext context) => Form(
-    key: _formKey,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Full Name
-        GlassTextField(
-          controller: _nameController,
-          hintText: 'Full Name',
-          prefixIcon: Icons.person_outline,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Please enter your full name';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-
-        // Email
-        GlassTextField(
-          controller: _emailController,
-          hintText: 'Email',
-          prefixIcon: Icons.email_outlined,
-          keyboardType: TextInputType.emailAddress,
-          validator: Validators.validateEmail,
-        ),
-        const SizedBox(height: 16),
-
-        // Phone Number (Optional)
-        GlassTextField(
-          controller: _phoneController,
-          hintText: 'Phone Number (Optional)',
-          prefixIcon: Icons.phone_outlined,
-          keyboardType: TextInputType.phone,
-          validator: Validators.validatePhone,
-        ),
-        const SizedBox(height: 16),
-
-        // Password
-        GlassTextField(
-          controller: _passwordController,
-          hintText: 'Password',
-          prefixIcon: Icons.lock_outline,
-          obscureText: _obscurePassword,
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-              color: Colors.black54,
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Full Name
+            GlassTextField(
+              controller: _nameController,
+              hintText: 'Full Name',
+              prefixIcon: Icons.person_outline,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your full name';
+                }
+                return null;
+              },
             ),
-            onPressed: () {
-              setState(() {
-                _obscurePassword = !_obscurePassword;
-              });
-            },
-          ),
-          validator: Validators.validatePassword,
-        ),
-        const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-        // Confirm Password
-        GlassTextField(
-          controller: _confirmPasswordController,
-          hintText: 'Confirm Password',
-          prefixIcon: Icons.lock_outline,
-          obscureText: _obscureConfirmPassword,
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-              color: Colors.black54,
+            // Email
+            GlassTextField(
+              controller: _emailController,
+              hintText: 'Email',
+              prefixIcon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+              validator: Validators.validateEmail,
             ),
-            onPressed: () {
-              setState(() {
-                _obscureConfirmPassword = !_obscureConfirmPassword;
-              });
-            },
-          ),
-          validator: (value) =>
-              Validators.validatePasswordMatch(value, _passwordController.text),
-        ),
-        const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-        // Register Button
-        ElevatedButton(
-          onPressed: _handleRegister,
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.all(16),
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Colors.white,
-            elevation: 5,
-            shadowColor: Theme.of(context).primaryColor.withValues(alpha: 0.4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+            // Phone Number (Optional)
+            GlassTextField(
+              controller: _phoneController,
+              hintText: 'Phone Number (Optional)',
+              prefixIcon: Icons.phone_outlined,
+              keyboardType: TextInputType.phone,
+              validator: Validators.validatePhone,
             ),
-          ),
-          child: const Text(
-            'Create Account',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+            const SizedBox(height: 16),
+
+            // Password
+            GlassTextField(
+              controller: _passwordController,
+              hintText: 'Password',
+              prefixIcon: Icons.lock_outline,
+              obscureText: _obscurePassword,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: Colors.black54,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              ),
+              validator: Validators.validatePassword,
+            ),
+            const SizedBox(height: 16),
+
+            // Confirm Password
+            GlassTextField(
+              controller: _confirmPasswordController,
+              hintText: 'Confirm Password',
+              prefixIcon: Icons.lock_outline,
+              obscureText: _obscureConfirmPassword,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureConfirmPassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: Colors.black54,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscureConfirmPassword = !_obscureConfirmPassword;
+                  });
+                },
+              ),
+              validator: (value) => Validators.validatePasswordMatch(
+                  value, _passwordController.text),
+            ),
+            const SizedBox(height: 24),
+
+            // Register Button
+            ElevatedButton(
+              onPressed: _handleRegister,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.all(16),
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                elevation: 5,
+                shadowColor:
+                    Theme.of(context).primaryColor.withValues(alpha: 0.4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text(
+                'Create Account',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }

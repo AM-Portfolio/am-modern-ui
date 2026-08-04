@@ -33,23 +33,26 @@ class MarginCalculationRequest {
   String? exchange;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is MarginCalculationRequest &&
-    _deepEquality.equals(other.positions, positions) &&
-    other.orderType == orderType &&
-    other.exchange == exchange;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MarginCalculationRequest &&
+          _deepEquality.equals(other.positions, positions) &&
+          other.orderType == orderType &&
+          other.exchange == exchange;
 
   @override
   int get hashCode =>
-    (positions.hashCode) +
-    (orderType == null ? 0 : orderType!.hashCode) +
-    (exchange == null ? 0 : exchange!.hashCode);
+      (positions.hashCode) +
+      (orderType == null ? 0 : orderType!.hashCode) +
+      (exchange == null ? 0 : exchange!.hashCode);
 
   @override
-  String toString() => 'MarginCalculationRequest[positions=$positions, orderType=$orderType, exchange=$exchange]';
+  String toString() =>
+      'MarginCalculationRequest[positions=$positions, orderType=$orderType, exchange=$exchange]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'positions'] = this.positions;
+    json[r'positions'] = this.positions;
     if (this.orderType != null) {
       json[r'orderType'] = this.orderType;
     } else {
@@ -74,8 +77,10 @@ class MarginCalculationRequest {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "MarginCalculationRequest[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "MarginCalculationRequest[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "MarginCalculationRequest[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "MarginCalculationRequest[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -89,7 +94,10 @@ class MarginCalculationRequest {
     return null;
   }
 
-  static List<MarginCalculationRequest> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<MarginCalculationRequest> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <MarginCalculationRequest>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -105,7 +113,7 @@ class MarginCalculationRequest {
   static Map<String, MarginCalculationRequest> mapFromJson(dynamic json) {
     final map = <String, MarginCalculationRequest>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = MarginCalculationRequest.fromJson(entry.value);
         if (value != null) {
@@ -117,19 +125,23 @@ class MarginCalculationRequest {
   }
 
   // maps a json object with a list of MarginCalculationRequest-objects as value to a dart map
-  static Map<String, List<MarginCalculationRequest>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<MarginCalculationRequest>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<MarginCalculationRequest>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = MarginCalculationRequest.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = MarginCalculationRequest.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

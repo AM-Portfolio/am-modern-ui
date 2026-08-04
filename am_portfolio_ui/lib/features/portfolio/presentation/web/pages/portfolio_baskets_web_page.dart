@@ -3,10 +3,7 @@ import '../../../../basket/presentation/basket_navigation.dart';
 
 /// Web-specific baskets page
 class PortfolioBasketsWebPage extends StatelessWidget {
-  const PortfolioBasketsWebPage({
-    super.key,
-    this.portfolioId,
-  });
+  const PortfolioBasketsWebPage({super.key, this.portfolioId});
 
   final String? portfolioId;
 
@@ -21,7 +18,6 @@ class PortfolioBasketsWebPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Expanded(
             child: BasketSectionNavigator(
               userId: 'default_user',

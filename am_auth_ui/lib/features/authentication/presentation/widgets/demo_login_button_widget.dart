@@ -23,7 +23,9 @@ class DemoLoginButtonWidget extends StatelessWidget {
               : Colors.white.withValues(alpha: 0.14),
           foregroundColor: isDark ? Colors.white : const Color(0xFF475569),
           side: BorderSide(
-            color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.35),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.4)
+                : Colors.white.withValues(alpha: 0.35),
             width: 1.0,
           ),
           shape: RoundedRectangleBorder(

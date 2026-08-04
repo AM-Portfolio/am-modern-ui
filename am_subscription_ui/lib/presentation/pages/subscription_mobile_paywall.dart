@@ -27,6 +27,7 @@ class SubscriptionMobilePaywall extends StatefulWidget {
 
 class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
   bool _isAnnual = true;
+
   /// `pro` | `premium`
   String _selectedTier = 'pro';
 
@@ -98,9 +99,11 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
     }
 
     if (subscription != null) {
-      context
-          .read<SubscriptionCubit>()
-          .upgrade(subscription.id, plan.code, plan.interval);
+      context.read<SubscriptionCubit>().upgrade(
+        subscription.id,
+        plan.code,
+        plan.interval,
+      );
     } else {
       context.read<SubscriptionCubit>().subscribe(plan.code, plan.interval);
     }
@@ -187,7 +190,8 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                 backgroundColor: Colors.red,
               ),
             );
-          } else if (state is SubscriptionLoaded && state.subscription != null) {
+          } else if (state is SubscriptionLoaded &&
+              state.subscription != null) {
             final code = state.subscription!.planCode;
             if (code.contains('premium')) {
               setState(() => _selectedTier = 'premium');
@@ -252,15 +256,16 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
 
           final proPlan = _findPlan(plans, 'pro', _isAnnual);
           final premiumPlan = _findPlan(plans, 'premium', _isAnnual);
-          final selectedPlan =
-              _selectedTier == 'premium' ? premiumPlan : proPlan;
+          final selectedPlan = _selectedTier == 'premium'
+              ? premiumPlan
+              : proPlan;
 
           final isBusy = state is SubscriptionActionInProgress;
-          final isCurrent = current != null &&
+          final isCurrent =
+              current != null &&
               selectedPlan != null &&
               current.planCode == selectedPlan.code;
-          final hasPaid =
-              current != null && !current.planCode.contains('free');
+          final hasPaid = current != null && !current.planCode.contains('free');
 
           final benefits = <String>[
             ...(selectedPlan?.features ?? const <String>[]).take(5),
@@ -312,7 +317,9 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        hasPaid ? 'Your Premium Access' : 'Unlock more with Premium',
+                        hasPaid
+                            ? 'Your Premium Access'
+                            : 'Unlock more with Premium',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: onSurface,
@@ -409,10 +416,7 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                       Text(
                         'Cancel anytime. Secure checkout via Stripe.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: muted,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: muted, fontSize: 12),
                       ),
                     ],
                   ),
@@ -440,10 +444,7 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
 }
 
 class _CurrentPlanBanner extends StatelessWidget {
-  const _CurrentPlanBanner({
-    required this.subscription,
-    required this.isDark,
-  });
+  const _CurrentPlanBanner({required this.subscription, required this.isDark});
 
   final Subscription subscription;
   final bool isDark;
@@ -458,9 +459,7 @@ class _CurrentPlanBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : Colors.white,
+        color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark
@@ -470,7 +469,11 @@ class _CurrentPlanBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.verified_rounded, color: Color(0xFFFF4458), size: 22),
+          const Icon(
+            Icons.verified_rounded,
+            color: Color(0xFFFF4458),
+            size: 22,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -634,8 +637,7 @@ class _PlanPicker extends StatelessWidget {
           _PlanOption(
             title: 'Pro',
             subtitle: proPlan!.description,
-            priceLabel:
-                '₹${formatInr(displayMonthly(proPlan!))}/mo',
+            priceLabel: '₹${formatInr(displayMonthly(proPlan!))}/mo',
             selected: selectedTier == 'pro',
             isDark: isDark,
             popular: true,
@@ -646,8 +648,7 @@ class _PlanPicker extends StatelessWidget {
           _PlanOption(
             title: 'Premium',
             subtitle: premiumPlan!.description,
-            priceLabel:
-                '₹${formatInr(displayMonthly(premiumPlan!))}/mo',
+            priceLabel: '₹${formatInr(displayMonthly(premiumPlan!))}/mo',
             selected: selectedTier == 'premium',
             isDark: isDark,
             popular: false,
@@ -687,18 +688,16 @@ class _PlanOption extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? (isDark
-                  ? const Color(0xFFFF4458).withValues(alpha: 0.12)
-                  : const Color(0xFFFFE8EB))
-              : (isDark
-                  ? Colors.white.withValues(alpha: 0.04)
-                  : Colors.white),
+                    ? const Color(0xFFFF4458).withValues(alpha: 0.12)
+                    : const Color(0xFFFFE8EB))
+              : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: selected
                 ? const Color(0xFFFF4458)
                 : (isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.black.withValues(alpha: 0.06)),
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.06)),
             width: selected ? 1.8 : 1,
           ),
         ),
@@ -818,8 +817,8 @@ class _BottomCtaBar extends StatelessWidget {
     final priceLine = plan == null
         ? ''
         : isAnnual
-            ? '₹${formatInr(displayTotal(plan))} billed yearly'
-            : '₹${formatInr(displayMonthly(plan))} per month';
+        ? '₹${formatInr(displayTotal(plan))} billed yearly'
+        : '₹${formatInr(displayMonthly(plan))} per month';
 
     return Material(
       elevation: 12,
@@ -867,8 +866,8 @@ class _BottomCtaBar extends StatelessWidget {
                     isBusy
                         ? 'Processing…'
                         : isCurrent
-                            ? 'Current plan'
-                            : 'Continue',
+                        ? 'Current plan'
+                        : 'Continue',
                   ),
                 ),
               ),

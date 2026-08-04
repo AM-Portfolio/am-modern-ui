@@ -39,19 +39,20 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
   final bool isSidebarVisible;
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onComplete,
+  )?
+  addTradeBuilder;
 
   @override
   ConsumerState<PortfolioWebScreen> createState() => _PortfolioWebScreenState();
 }
 
 class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
-  static const _tabSlugs = [
-    'overview',
-    'holdings',
-    'heatmap',
-    'baskets',
-  ];
+  static const _tabSlugs = ['overview', 'holdings', 'heatmap', 'baskets'];
 
   String? _currentPortfolioId;
   String? _currentPortfolioName;
@@ -64,9 +65,11 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   }
 
   void _syncPortfolioSelection() {
-    _currentPortfolioId = widget.selectedPortfolioId ??
+    _currentPortfolioId =
+        widget.selectedPortfolioId ??
         widget.portfolios?.firstOrNull?.portfolioId;
-    _currentPortfolioName = widget.selectedPortfolioName ??
+    _currentPortfolioName =
+        widget.selectedPortfolioName ??
         widget.portfolios?.firstOrNull?.portfolioName;
   }
 
@@ -144,9 +147,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         subtitle: 'Assets',
         icon: Icons.account_balance_wallet_outlined,
         accentColor: ModuleColors.portfolio,
-        page: PortfolioHoldingsWebPage(
-          portfolioId: portfolioId,
-        ),
+        page: PortfolioHoldingsWebPage(portfolioId: portfolioId),
       ),
       NavigationItem(
         title: 'Heatmap',
@@ -163,9 +164,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         subtitle: 'Basket replication',
         icon: Icons.shopping_basket_outlined,
         accentColor: ModuleColors.portfolio,
-        page: PortfolioBasketsWebPage(
-          portfolioId: portfolioId,
-        ),
+        page: PortfolioBasketsWebPage(portfolioId: portfolioId),
       ),
     ];
   }
@@ -174,7 +173,9 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   Widget build(BuildContext context) {
     final items = _buildNavigationItems();
     final currentIndex = _currentIndex;
-    final activePage = currentIndex < items.length ? items[currentIndex].page : items.first.page;
+    final activePage = currentIndex < items.length
+        ? items[currentIndex].page
+        : items.first.page;
 
     return NotificationListener<OpenAddTradeNotification>(
       onNotification: (notification) {
@@ -233,16 +234,20 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                       builder: (context, ref, _) {
                         final selected = ref.watch(appTimeFrameProvider);
                         final screenWidth = MediaQuery.of(context).size.width;
-                        
+
                         // Limit width to 40% of screen on large screens, up to a max of 400 pixels
                         return ConstrainedBox(
                           constraints: BoxConstraints(
-                            maxWidth: screenWidth > 800 ? 400 : screenWidth * 0.45,
+                            maxWidth: screenWidth > 800
+                                ? 400
+                                : screenWidth * 0.45,
                           ),
                           child: TimeFrameSelector(
                             compact: true,
                             selectedTimeFrame: selected,
-                            onTimeFrameChanged: (tf) => ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf),
+                            onTimeFrameChanged: (tf) => ref
+                                .read(appTimeFrameProvider.notifier)
+                                .setTimeFrame(tf),
                             availableTimeFrames: const [
                               TimeFrame.oneDay,
                               TimeFrame.oneWeek,
@@ -260,7 +265,10 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                 ),
               ),
             Expanded(
-              child: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
+              child:
+                  (_isAddingTrade &&
+                      widget.addTradeBuilder != null &&
+                      _currentPortfolioId != null)
                   ? widget.addTradeBuilder!(
                       context,
                       _currentPortfolioId!,
@@ -269,7 +277,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                         setState(() {
                           _isAddingTrade = false;
                         });
-                      }
+                      },
                     )
                   : activePage,
             ),

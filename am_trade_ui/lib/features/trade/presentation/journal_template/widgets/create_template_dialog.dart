@@ -7,10 +7,10 @@ import '../../../journal_template_providers.dart';
 /// Dialog for creating custom templates
 class CreateTemplateDialog extends ConsumerStatefulWidget {
   const CreateTemplateDialog({
-        super.key,
+    super.key,
   });
 
-    @override
+  @override
   ConsumerState<CreateTemplateDialog> createState() =>
       _CreateTemplateDialogState();
 }
@@ -45,7 +45,10 @@ class _CreateTemplateDialogState extends ConsumerState<CreateTemplateDialog> {
                   end: Alignment.bottomRight,
                   colors: [
                     Theme.of(context).colorScheme.surface.withOpacity(0.9),
-                    Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.8),
+                    Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withOpacity(0.8),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(24),
@@ -111,7 +114,10 @@ class _CreateTemplateDialogState extends ConsumerState<CreateTemplateDialog> {
                 Text(
                   'Design your own journal template',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
                       ),
                 ),
               ],
@@ -145,7 +151,10 @@ class _CreateTemplateDialogState extends ConsumerState<CreateTemplateDialog> {
               borderRadius: BorderRadius.circular(12),
             ),
             filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            fillColor: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.3),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -178,7 +187,10 @@ class _CreateTemplateDialogState extends ConsumerState<CreateTemplateDialog> {
               borderRadius: BorderRadius.circular(12),
             ),
             filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            fillColor: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.3),
           ),
         ),
       ],
@@ -203,7 +215,10 @@ class _CreateTemplateDialogState extends ConsumerState<CreateTemplateDialog> {
               borderRadius: BorderRadius.circular(12),
             ),
             filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            fillColor: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.3),
           ),
           items: JournalTemplateCategory.values.map((category) {
             return DropdownMenuItem(
@@ -255,7 +270,10 @@ class _CreateTemplateDialogState extends ConsumerState<CreateTemplateDialog> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withOpacity(0.3),
         border: Border(
           top: BorderSide(
             color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
@@ -290,7 +308,7 @@ class _CreateTemplateDialogState extends ConsumerState<CreateTemplateDialog> {
             ? null
             : _descriptionController.text,
       );
-      
+
       Navigator.of(context).pop();
     }
   }

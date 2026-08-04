@@ -123,13 +123,13 @@ class _AttachmentPickerWidgetState
   }
 
   Widget _buildPreviewGrid() => Wrap(
-    spacing: 12,
-    runSpacing: 12,
-    children: List.generate(
-      widget.attachmentUrls.length,
-      (index) => _buildThumbnail(widget.attachmentUrls[index], index),
-    ),
-  );
+        spacing: 12,
+        runSpacing: 12,
+        children: List.generate(
+          widget.attachmentUrls.length,
+          (index) => _buildThumbnail(widget.attachmentUrls[index], index),
+        ),
+      );
 
   Widget _buildThumbnail(String url, int index) {
     final isImage = _isImageUrl(url);
@@ -202,13 +202,13 @@ class _AttachmentPickerWidgetState
   }
 
   Widget _buildUploadButton() => OutlinedButton.icon(
-    onPressed: _isUploading ? null : _pickAndUploadFile,
-    icon: Icon(_getPickerIcon()),
-    label: Text(_getPickerLabel()),
-    style: OutlinedButton.styleFrom(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    ),
-  );
+        onPressed: _isUploading ? null : _pickAndUploadFile,
+        icon: Icon(_getPickerIcon()),
+        label: Text(_getPickerLabel()),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      );
 
   Future<void> _pickAndUploadFile() async {
     try {

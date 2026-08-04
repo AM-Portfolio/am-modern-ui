@@ -132,7 +132,9 @@ class DashboardRecentActivityWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final onSurfaceVariant = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
     final dateFormat = DateFormat('MMM d, yyyy');
     final headerStyle = TextStyle(
@@ -173,7 +175,9 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2E3192),
+                      color: isDark
+                          ? const Color(0xFF60A5FA)
+                          : const Color(0xFF2E3192),
                       fontFamily: 'Inter',
                     ),
                   ),
@@ -186,109 +190,117 @@ class DashboardRecentActivityWidget extends StatelessWidget {
               builder: (context, constraints) {
                 final isMobile = MediaQuery.of(context).size.width < 600;
                 if (isMobile) {
-                  return _buildMobileList(activities, isDark, currencyFormat, dateFormat, onSurface, onSurfaceVariant);
+                  return _buildMobileList(
+                    activities,
+                    isDark,
+                    currencyFormat,
+                    dateFormat,
+                    onSurface,
+                    onSurfaceVariant,
+                  );
                 }
-                
+
                 final table = SizedBox(
                   height: 300,
                   child: PaginatedSortableTable<ActivityItem>(
-                  items: activities,
-                  pageSize: pageSize,
-                  pageSizeOptions: const [10, 25, 50],
-                  initialSortColumnIndex: sortColumnIndex,
-                  initialSortDirection: sortDirection,
-                  serverPagination: true,
-                  serverTotalItems: response.totalItems,
-                  serverTotalPages: response.totalPages,
-                  serverCurrentPage: response.page,
-                  onServerPageChanged: onPageChanged,
-                  onServerPageSizeChanged: onPageSizeChanged,
-                  onServerSort: onSort,
-                  headerTextStyle: headerStyle,
-                  rowTextStyle: rowStyle,
-                  headerBackgroundColor:
-                      isDark ? Colors.transparent : const Color(0xFFF8FAFC),
-                  rowHoverColor: isDark
-                      ? Colors.white.withValues(alpha: 0.04)
-                      : const Color(0xFFF8FAFC),
-                  emptyMessage: 'No recent activity',
-                  columns: [
-                    SortableColumn<ActivityItem>(
-                      title: 'Symbol',
-                      flex: 2,
-                      sortBy: (item) => item.symbol ?? item.title,
-                      builder: (item) => Text(
-                        (item.symbol ?? item.title).toUpperCase(),
-                        style: rowStyle.copyWith(fontWeight: FontWeight.w700),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    SortableColumn<ActivityItem>(
-                      title: 'Units',
-                      flex: 2,
-                      sortBy: (item) => item.quantity ?? 0,
-                      builder: (item) => Text(
-                        item.quantity != null
-                            ? item.quantity!.toStringAsFixed(0)
-                            : item.description,
-                        style: rowStyle.copyWith(color: onSurfaceVariant),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    SortableColumn<ActivityItem>(
-                      title: 'Date',
-                      flex: 2,
-                      sortBy: (item) => item.timestamp,
-                      builder: (item) => Text(
-                        dateFormat.format(item.timestamp),
-                        style: rowStyle.copyWith(
-                          fontSize: 11,
-                          color: onSurfaceVariant,
+                    items: activities,
+                    pageSize: pageSize,
+                    pageSizeOptions: const [10, 25, 50],
+                    initialSortColumnIndex: sortColumnIndex,
+                    initialSortDirection: sortDirection,
+                    serverPagination: true,
+                    serverTotalItems: response.totalItems,
+                    serverTotalPages: response.totalPages,
+                    serverCurrentPage: response.page,
+                    onServerPageChanged: onPageChanged,
+                    onServerPageSizeChanged: onPageSizeChanged,
+                    onServerSort: onSort,
+                    headerTextStyle: headerStyle,
+                    rowTextStyle: rowStyle,
+                    headerBackgroundColor: isDark
+                        ? Colors.transparent
+                        : const Color(0xFFF8FAFC),
+                    rowHoverColor: isDark
+                        ? Colors.white.withValues(alpha: 0.04)
+                        : const Color(0xFFF8FAFC),
+                    emptyMessage: 'No recent activity',
+                    columns: [
+                      SortableColumn<ActivityItem>(
+                        title: 'Symbol',
+                        flex: 2,
+                        sortBy: (item) => item.symbol ?? item.title,
+                        builder: (item) => Text(
+                          (item.symbol ?? item.title).toUpperCase(),
+                          style: rowStyle.copyWith(fontWeight: FontWeight.w700),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    ),
-                    SortableColumn<ActivityItem>(
-                      title: 'Amount',
-                      flex: 2,
-                      textAlign: TextAlign.end,
-                      sortBy: (item) => item.currentValue ?? 0,
-                      builder: (item) => Text(
-                        item.amount ??
-                            (item.currentValue != null
-                                ? currencyFormat.format(item.currentValue)
-                                : '—'),
-                        textAlign: TextAlign.right,
-                        style: rowStyle.copyWith(fontWeight: FontWeight.w600),
+                      SortableColumn<ActivityItem>(
+                        title: 'Units',
+                        flex: 2,
+                        sortBy: (item) => item.quantity ?? 0,
+                        builder: (item) => Text(
+                          item.quantity != null
+                              ? item.quantity!.toStringAsFixed(0)
+                              : item.description,
+                          style: rowStyle.copyWith(color: onSurfaceVariant),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    SortableColumn<ActivityItem>(
-                      title: 'P&L %',
-                      flex: 2,
-                      textAlign: TextAlign.end,
-                      sortBy: (item) => item.profitLossPercent ?? 0,
-                      builder: (item) {
-                        final pct = item.profitLossPercent;
-                        if (pct == null) {
-                          return const Text('—', textAlign: TextAlign.right);
-                        }
-                        final positive = pct >= 0;
-                        return Text(
-                          '${positive ? '+' : ''}${pct.toStringAsFixed(2)}%',
-                          textAlign: TextAlign.right,
+                      SortableColumn<ActivityItem>(
+                        title: 'Date',
+                        flex: 2,
+                        sortBy: (item) => item.timestamp,
+                        builder: (item) => Text(
+                          dateFormat.format(item.timestamp),
                           style: rowStyle.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: positive
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFFEF4444),
+                            fontSize: 11,
+                            color: onSurfaceVariant,
                           ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              );
+                        ),
+                      ),
+                      SortableColumn<ActivityItem>(
+                        title: 'Amount',
+                        flex: 2,
+                        textAlign: TextAlign.end,
+                        sortBy: (item) => item.currentValue ?? 0,
+                        builder: (item) => Text(
+                          item.amount ??
+                              (item.currentValue != null
+                                  ? currencyFormat.format(item.currentValue)
+                                  : '—'),
+                          textAlign: TextAlign.right,
+                          style: rowStyle.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      SortableColumn<ActivityItem>(
+                        title: 'P&L %',
+                        flex: 2,
+                        textAlign: TextAlign.end,
+                        sortBy: (item) => item.profitLossPercent ?? 0,
+                        builder: (item) {
+                          final pct = item.profitLossPercent;
+                          if (pct == null) {
+                            return const Text('—', textAlign: TextAlign.right);
+                          }
+                          final positive = pct >= 0;
+                          return Text(
+                            '${positive ? '+' : ''}${pct.toStringAsFixed(2)}%',
+                            textAlign: TextAlign.right,
+                            style: rowStyle.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: positive
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFEF4444),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                );
 
                 if (constraints.maxWidth < 520) {
                   return SingleChildScrollView(
@@ -317,44 +329,53 @@ class DashboardRecentActivityWidget extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Center(
-          child: Text('No recent activity', style: TextStyle(color: onSurfaceVariant)),
+          child: Text(
+            'No recent activity',
+            style: TextStyle(color: onSurfaceVariant),
+          ),
         ),
       );
     }
-    
+
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: items.length,
       separatorBuilder: (context, index) => Divider(
-        color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.1)
+            : const Color(0xFFE2E8F0),
         height: 1,
       ),
       itemBuilder: (context, index) {
         final item = items[index];
-        final isBuy = item.description.toLowerCase().contains('buy') || 
-                      item.description.toLowerCase().contains('deposit') ||
-                      (item.quantity != null && item.quantity! > 0);
-        final isSell = item.description.toLowerCase().contains('sell') || 
-                       item.description.toLowerCase().contains('withdraw') ||
-                       (item.quantity != null && item.quantity! < 0);
-        
-        final iconColor = isBuy 
-            ? const Color(0xFF10B981) // Green
-            : isSell 
-                ? const Color(0xFFEF4444) // Red
-                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)); // Gray
+        final isBuy =
+            item.description.toLowerCase().contains('buy') ||
+            item.description.toLowerCase().contains('deposit') ||
+            (item.quantity != null && item.quantity! > 0);
+        final isSell =
+            item.description.toLowerCase().contains('sell') ||
+            item.description.toLowerCase().contains('withdraw') ||
+            (item.quantity != null && item.quantity! < 0);
 
-        final iconData = isBuy 
-            ? Icons.arrow_downward_rounded 
-            : isSell 
-                ? Icons.arrow_upward_rounded 
-                : Icons.swap_horiz_rounded;
+        final iconColor = isBuy
+            ? const Color(0xFF10B981) // Green
+            : isSell
+            ? const Color(0xFFEF4444) // Red
+            : (isDark
+                  ? const Color(0xFF94A3B8)
+                  : const Color(0xFF64748B)); // Gray
+
+        final iconData = isBuy
+            ? Icons.arrow_downward_rounded
+            : isSell
+            ? Icons.arrow_upward_rounded
+            : Icons.swap_horiz_rounded;
 
         final symbol = (item.symbol ?? item.title).toUpperCase();
-        
-        final subtitleDesc = item.description.contains('@') 
-            ? item.description.split('@').last.trim() 
+
+        final subtitleDesc = item.description.contains('@')
+            ? item.description.split('@').last.trim()
             : item.description;
 
         return Padding(
@@ -371,11 +392,7 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
-                child: Icon(
-                  iconData,
-                  color: iconColor,
-                  size: 20,
-                ),
+                child: Icon(iconData, color: iconColor, size: 20),
               ),
               const SizedBox(width: 12),
               // Body (Title and Date)
@@ -414,9 +431,11 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    item.currentValue != null 
-                        ? currencyFormat.format(item.currentValue) 
-                        : (item.quantity != null ? '${item.quantity} units' : ''),
+                    item.currentValue != null
+                        ? currencyFormat.format(item.currentValue)
+                        : (item.quantity != null
+                              ? '${item.quantity} units'
+                              : ''),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -427,9 +446,14 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                   if (item.status != null) ...[
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
-                        color: (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                        color: (isDark
+                            ? const Color(0xFF1E293B)
+                            : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(

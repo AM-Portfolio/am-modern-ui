@@ -64,11 +64,14 @@ class DashboardSummaryWidget extends StatelessWidget {
   }
 
   Widget _buildPortfolioCard(BuildContext context, bool isMobile) {
-    final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      symbol: '₹ ',
+      decimalDigits: 0,
+    );
     final isPositiveDay = summary.dayChangePercentage >= 0;
-    
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    const onSurface = Colors.white; 
+    const onSurface = Colors.white;
     final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : Colors.white70;
 
     final content = Column(
@@ -105,7 +108,9 @@ class DashboardSummaryWidget extends StatelessWidget {
             Text(
               '${isPositiveDay ? "+" : ""}${summary.dayChangePercentage}% Today',
               style: TextStyle(
-                color: isPositiveDay ? const Color(0xFF00C853) : const Color(0xFFEF4444),
+                color: isPositiveDay
+                    ? const Color(0xFF00C853)
+                    : const Color(0xFFEF4444),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Inter',
@@ -138,17 +143,19 @@ class DashboardSummaryWidget extends StatelessWidget {
       );
     }
 
-    return AmGlassCard(
-      padding: const EdgeInsets.all(16),
-      child: content,
-    );
+    return AmGlassCard(padding: const EdgeInsets.all(16), child: content);
   }
 
   Widget _buildInvestedCard(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      symbol: '₹ ',
+      decimalDigits: 0,
+    );
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final onSurfaceVariant = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
 
     return AmGlassCard(
       padding: const EdgeInsets.all(16),
@@ -195,12 +202,15 @@ class DashboardSummaryWidget extends StatelessWidget {
   }
 
   Widget _buildReturnCard(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      symbol: '₹ ',
+      decimalDigits: 0,
+    );
     final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);
     final isPositiveReturn = summary.totalGainLoss >= 0;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final valueColor = isPositiveReturn 
+    final valueColor = isPositiveReturn
         ? (isDark ? const Color(0xFF10B981) : const Color(0xFF00C853))
         : (isDark ? const Color(0xFFEF4444) : const Color(0xFFD50000));
 
@@ -251,7 +261,9 @@ class DashboardSummaryWidget extends StatelessWidget {
   Widget _buildPortfoliosCard(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final onSurfaceVariant = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
 
     return AmGlassCard(
       padding: const EdgeInsets.all(16),

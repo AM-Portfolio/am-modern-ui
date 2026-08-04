@@ -22,14 +22,15 @@ class AppGlassmorphismV2 {
     bool isDark = true,
   }) {
     final colors = colorSchemes[colorScheme] ?? colorSchemes['primary']!;
-    
+
     // Google Labs Style (White Mode) - Pastel Fills
     if (!isDark) {
       return BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
         gradient: LinearGradient(
           colors: [
-            colors[0].withOpacity(0.15), // Very light pastel version of the color
+            colors[0]
+                .withOpacity(0.15), // Very light pastel version of the color
             colors[1].withOpacity(0.05),
           ],
           begin: Alignment.topLeft,
@@ -65,7 +66,8 @@ class AppGlassmorphismV2 {
       borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(
         width: borderWidth,
-        color: Colors.transparent, // Painted by GradientBorderPainter usually, or we can leave transparent here
+        color: Colors
+            .transparent, // Painted by GradientBorderPainter usually, or we can leave transparent here
       ),
       boxShadow: [
         if (isGlowing)
@@ -140,7 +142,7 @@ class AppGlassmorphismV2 {
         color: Colors.white, // Pure white for "Labs" feel
       );
     }
-    
+
     return const BoxDecoration(
       color: AppColors.darkBackground,
     );
@@ -304,8 +306,6 @@ class AppGlassmorphismV2 {
     }
     return glassPill(color: color, isDark: true);
   }
-
-
 
   /// Glass Prism Container for Global Sidebar
   static Widget glassPrism({

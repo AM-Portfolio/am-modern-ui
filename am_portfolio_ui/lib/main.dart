@@ -32,10 +32,7 @@ void main() async {
   final analysisUrl = common.ConfigService.config.api.analysis?.baseUrl ?? '';
   final wsUrl = common.ConfigService.config.api.marketData?.wsUrl ?? '';
 
-  common.ServiceRegistry.initialize(
-    analysisBaseUrl: analysisUrl,
-    wsUrl: wsUrl,
-  );
+  common.ServiceRegistry.initialize(analysisBaseUrl: analysisUrl, wsUrl: wsUrl);
 
   // Also register am_common-namespaced types that are used directly via
   // GetIt.instance<common.X>() elsewhere in the codebase.
@@ -124,7 +121,7 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                         final token = ''; // TODO: get real token if needed
                         context.read<common.StompConnectionCubit>().updateToken(
                           token,
-                          );
+                        );
 
                         return GlobalPortfolioWrapper(
                           child: AppShell(
@@ -154,9 +151,9 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                     builder: (context, state) {
                       final authState = context.read<AuthCubit>().state;
                       // We can assume authState is Authenticated because of Shell logic, but safe to check or cast if needed.
-                      
+
                       // ShellRoute builder verifies auth.
-                      
+
                       return PortfolioOverviewWebPage(
                         portfolioId: context.selectedPortfolioId,
                       );
@@ -165,7 +162,6 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                   GoRoute(
                     path: '/portfolio/holdings',
                     builder: (context, state) {
-                      
                       return PortfolioHoldingsWebPage(
                         portfolioId: context.selectedPortfolioId ?? '',
                       );
@@ -174,7 +170,6 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                   GoRoute(
                     path: '/portfolio/analysis',
                     builder: (context, state) {
-                      
                       return PortfolioAnalysisWebPage(
                         portfolioId: context.selectedPortfolioId ?? '',
                       );
@@ -183,7 +178,6 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                   GoRoute(
                     path: '/portfolio/heatmap',
                     builder: (context, state) {
-                      
                       return PortfolioHeatmapWebPage(
                         portfolioId: context.selectedPortfolioId ?? '',
                       );
@@ -193,7 +187,6 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
                   GoRoute(
                     path: '/portfolio/baskets',
                     builder: (context, state) {
-                      
                       return PortfolioBasketsWebPage(
                         portfolioId: context.selectedPortfolioId,
                       );

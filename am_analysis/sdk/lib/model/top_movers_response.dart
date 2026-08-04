@@ -22,23 +22,24 @@ class TopMoversResponse {
   List<MoverItem> losers;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is TopMoversResponse &&
-    _deepEquality.equals(other.gainers, gainers) &&
-    _deepEquality.equals(other.losers, losers);
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TopMoversResponse &&
+          _deepEquality.equals(other.gainers, gainers) &&
+          _deepEquality.equals(other.losers, losers);
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (gainers.hashCode) +
-    (losers.hashCode);
+      // ignore: unnecessary_parenthesis
+      (gainers.hashCode) + (losers.hashCode);
 
   @override
   String toString() => 'TopMoversResponse[gainers=$gainers, losers=$losers]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'gainers'] = this.gainers;
-      json[r'losers'] = this.losers;
+    json[r'gainers'] = this.gainers;
+    json[r'losers'] = this.losers;
     return json;
   }
 
@@ -54,8 +55,10 @@ class TopMoversResponse {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "TopMoversResponse[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "TopMoversResponse[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "TopMoversResponse[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "TopMoversResponse[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -68,7 +71,10 @@ class TopMoversResponse {
     return null;
   }
 
-  static List<TopMoversResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<TopMoversResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <TopMoversResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -96,20 +102,24 @@ class TopMoversResponse {
   }
 
   // maps a json object with a list of TopMoversResponse-objects as value to a dart map
-  static Map<String, List<TopMoversResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<TopMoversResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<TopMoversResponse>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = TopMoversResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = TopMoversResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

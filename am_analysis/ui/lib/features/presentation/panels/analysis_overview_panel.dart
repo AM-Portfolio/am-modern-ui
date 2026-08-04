@@ -12,7 +12,8 @@ class AnalysisOverviewPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
-            Text('Quantitative Portfolio Analysis', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Quantitative Portfolio Analysis',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             Divider(),
             SizedBox(height: 12),
             Text('Sharpe Ratio: 1.84'),

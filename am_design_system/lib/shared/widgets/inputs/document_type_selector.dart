@@ -13,16 +13,16 @@ class DocumentTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Select document type:',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
-      const SizedBox(height: 16),
-      ...DocumentType.values.map(_buildDocumentTypeOption),
-    ],
-  );
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Select document type:',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 16),
+          ...DocumentType.values.map(_buildDocumentTypeOption),
+        ],
+      );
 
   Widget _buildDocumentTypeOption(DocumentType docType) {
     final isSelected = selectedDocumentType == docType;
@@ -72,9 +72,8 @@ class DocumentTypeSelector extends StatelessWidget {
                         docType.label,
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w500,
                           color: isSelected
                               ? const Color(0xFFFF9800)
                               : Colors.grey[800],

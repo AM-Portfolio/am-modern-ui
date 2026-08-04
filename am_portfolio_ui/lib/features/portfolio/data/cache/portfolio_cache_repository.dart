@@ -11,9 +11,7 @@ class PortfolioCacheRepository {
   // Portfolio Summary
   // ============================================================================
 
-  Future<Map<String, dynamic>?> getSummary(
-    String portfolioId,
-  ) async {
+  Future<Map<String, dynamic>?> getSummary(String portfolioId) async {
     final key = PortfolioCacheKeys.summary(portfolioId);
     return await _cacheService.get<Map<String, dynamic>>(key);
   }
@@ -35,10 +33,7 @@ class PortfolioCacheRepository {
     return await _cacheService.get<List<dynamic>>(key);
   }
 
-  Future<void> cacheHoldings(
-    String portfolioId,
-    List<dynamic> holdings,
-  ) async {
+  Future<void> cacheHoldings(String portfolioId, List<dynamic> holdings) async {
     final key = PortfolioCacheKeys.holdings(portfolioId);
     await _cacheService.set(key, holdings, ttl: CacheTTL.medium);
   }
@@ -47,9 +42,7 @@ class PortfolioCacheRepository {
   // Portfolio Heatmap
   // ============================================================================
 
-  Future<Map<String, dynamic>?> getHeatmap(
-    String portfolioId,
-  ) async {
+  Future<Map<String, dynamic>?> getHeatmap(String portfolioId) async {
     final key = PortfolioCacheKeys.heatmap(portfolioId);
     return await _cacheService.get<Map<String, dynamic>>(key);
   }
@@ -66,9 +59,7 @@ class PortfolioCacheRepository {
   // Portfolio Analytics
   // ============================================================================
 
-  Future<Map<String, dynamic>?> getAnalytics(
-    String portfolioId,
-  ) async {
+  Future<Map<String, dynamic>?> getAnalytics(String portfolioId) async {
     final key = PortfolioCacheKeys.analytics(portfolioId);
     return await _cacheService.get<Map<String, dynamic>>(key);
   }
@@ -89,9 +80,7 @@ class PortfolioCacheRepository {
     await _cacheService.clear(PortfolioCacheKeys.summary(portfolioId));
     await _cacheService.clear(PortfolioCacheKeys.holdings(portfolioId));
     await _cacheService.clear(PortfolioCacheKeys.heatmap(portfolioId));
-    await _cacheService.clear(
-      PortfolioCacheKeys.analytics(portfolioId),
-    );
+    await _cacheService.clear(PortfolioCacheKeys.analytics(portfolioId));
   }
 
   Future<void> clearAllPortfolios() async {

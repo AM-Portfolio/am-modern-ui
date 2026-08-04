@@ -73,9 +73,7 @@ class PortfolioService {
 
   /// Retrieves portfolio holdings for the specified user and portfolio
   /// Returns holdings data or throws an exception if retrieval fails
-  Future<PortfolioHoldings> getPortfolioHoldingsById(
-    String portfolioId,
-  ) async {
+  Future<PortfolioHoldings> getPortfolioHoldingsById(String portfolioId) async {
     CommonLogger.methodEntry(
       'getPortfolioHoldingsById',
       tag: 'PortfolioService',
@@ -117,7 +115,9 @@ class PortfolioService {
   }
 
   /// Gets cached portfolio holdings for the specified user and portfolio
-  Future<PortfolioHoldings?> getCachedPortfolioHoldingsById(String portfolioId) async {
+  Future<PortfolioHoldings?> getCachedPortfolioHoldingsById(
+    String portfolioId,
+  ) async {
     return _getPortfolioHoldings.getCached(portfolioId);
   }
 
@@ -163,9 +163,7 @@ class PortfolioService {
 
   /// Retrieves portfolio summary for the specified user and portfolio
   /// Returns summary data or throws an exception if retrieval fails
-  Future<PortfolioSummary> getPortfolioSummaryById(
-    String portfolioId,
-  ) async {
+  Future<PortfolioSummary> getPortfolioSummaryById(String portfolioId) async {
     CommonLogger.methodEntry(
       'getPortfolioSummaryById',
       tag: 'PortfolioService',
@@ -207,7 +205,9 @@ class PortfolioService {
   }
 
   /// Gets cached portfolio summary for the specified user and portfolio
-  Future<PortfolioSummary?> getCachedPortfolioSummaryById(String portfolioId) async {
+  Future<PortfolioSummary?> getCachedPortfolioSummaryById(
+    String portfolioId,
+  ) async {
     return _getPortfolioSummary.getCached(portfolioId);
   }
 
@@ -269,36 +269,62 @@ class PortfolioService {
   }
 
   /// Create a new portfolio
-  Future<PortfolioItem> createPortfolio(PortfolioCreateRequestDto request) async {
+  Future<PortfolioItem> createPortfolio(
+    PortfolioCreateRequestDto request,
+  ) async {
     CommonLogger.methodEntry('createPortfolio', tag: 'PortfolioService');
     try {
       final item = await _portfolioRepository.createPortfolio(request);
       return item;
     } catch (e) {
-      CommonLogger.error('Failed to create portfolio in service', tag: 'PortfolioService', error: e);
+      CommonLogger.error(
+        'Failed to create portfolio in service',
+        tag: 'PortfolioService',
+        error: e,
+      );
       rethrow;
     }
   }
 
   /// Update an existing portfolio
-  Future<PortfolioItem> updatePortfolio(String portfolioId, PortfolioUpdateRequestDto request) async {
+  Future<PortfolioItem> updatePortfolio(
+    String portfolioId,
+    PortfolioUpdateRequestDto request,
+  ) async {
     CommonLogger.methodEntry('updatePortfolio', tag: 'PortfolioService');
     try {
-      final item = await _portfolioRepository.updatePortfolio(portfolioId, request);
+      final item = await _portfolioRepository.updatePortfolio(
+        portfolioId,
+        request,
+      );
       return item;
     } catch (e) {
-      CommonLogger.error('Failed to update portfolio in service', tag: 'PortfolioService', error: e);
+      CommonLogger.error(
+        'Failed to update portfolio in service',
+        tag: 'PortfolioService',
+        error: e,
+      );
       rethrow;
     }
   }
 
   /// Delete a portfolio
-  Future<void> deletePortfolio(String portfolioId, {bool deleteTrades = false}) async {
+  Future<void> deletePortfolio(
+    String portfolioId, {
+    bool deleteTrades = false,
+  }) async {
     CommonLogger.methodEntry('deletePortfolio', tag: 'PortfolioService');
     try {
-      await _portfolioRepository.deletePortfolio(portfolioId, deleteTrades: deleteTrades);
+      await _portfolioRepository.deletePortfolio(
+        portfolioId,
+        deleteTrades: deleteTrades,
+      );
     } catch (e) {
-      CommonLogger.error('Failed to delete portfolio in service', tag: 'PortfolioService', error: e);
+      CommonLogger.error(
+        'Failed to delete portfolio in service',
+        tag: 'PortfolioService',
+        error: e,
+      );
       rethrow;
     }
   }

@@ -67,4 +67,3 @@ class _DeferredModuleLoaderState extends State<DeferredModuleLoader> {
     );
   }
 }
-

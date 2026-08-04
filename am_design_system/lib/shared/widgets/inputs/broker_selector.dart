@@ -13,54 +13,55 @@ class BrokerSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Select your broker:',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
-      const SizedBox(height: 16),
-      LayoutBuilder(
-        builder: (context, constraints) {
-          final screenWidth = MediaQuery.of(context).size.width;
-          final screenHeight = MediaQuery.of(context).size.height;
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Select your broker:',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final screenHeight = MediaQuery.of(context).size.height;
 
-          var crossAxisCount = 2;
-          if (screenWidth > 600) {
-            crossAxisCount = 3;
-          } else if (screenWidth < 400) {
-            crossAxisCount = 1;
-          }
+              var crossAxisCount = 2;
+              if (screenWidth > 600) {
+                crossAxisCount = 3;
+              } else if (screenWidth < 400) {
+                crossAxisCount = 1;
+              }
 
-          final spacing = (screenWidth * 0.02).clamp(8.0, 16.0);
-          final itemHeight = (screenHeight * 0.08).clamp(60.0, 100.0);
+              final spacing = (screenWidth * 0.02).clamp(8.0, 16.0);
+              final itemHeight = (screenHeight * 0.08).clamp(60.0, 100.0);
 
-          final itemsPerRow = crossAxisCount;
-          final numberOfRows = (BrokerType.values.length / itemsPerRow).ceil();
-          final gridHeight =
-              (numberOfRows * itemHeight) + ((numberOfRows - 1) * spacing);
+              final itemsPerRow = crossAxisCount;
+              final numberOfRows =
+                  (BrokerType.values.length / itemsPerRow).ceil();
+              final gridHeight =
+                  (numberOfRows * itemHeight) + ((numberOfRows - 1) * spacing);
 
-          return SizedBox(
-            height: gridHeight.clamp(200.0, screenHeight * 0.4),
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                childAspectRatio: screenWidth > 400 ? 2.2 : 3.0,
-                crossAxisSpacing: spacing,
-                mainAxisSpacing: spacing,
-              ),
-              itemCount: BrokerType.values.length,
-              itemBuilder: (context, index) {
-                final broker = BrokerType.values[index];
-                return _buildBrokerOption(broker);
-              },
-            ),
-          );
-        },
-      ),
-    ],
-  );
+              return SizedBox(
+                height: gridHeight.clamp(200.0, screenHeight * 0.4),
+                child: GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: screenWidth > 400 ? 2.2 : 3.0,
+                    crossAxisSpacing: spacing,
+                    mainAxisSpacing: spacing,
+                  ),
+                  itemCount: BrokerType.values.length,
+                  itemBuilder: (context, index) {
+                    final broker = BrokerType.values[index];
+                    return _buildBrokerOption(broker);
+                  },
+                ),
+              );
+            },
+          ),
+        ],
+      );
 
   Widget _buildBrokerOption(BrokerType broker) {
     final isSelected = selectedBroker == broker;
@@ -119,9 +120,8 @@ class BrokerSelector extends StatelessWidget {
                     broker.label,
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected ? broker.color : Colors.grey[800],
                     ),
                     textAlign: TextAlign.center,
@@ -153,10 +153,10 @@ class BrokerSelector extends StatelessWidget {
   }
 
   Widget _buildBrokerFallbackIcon(BrokerType broker) => Container(
-    decoration: BoxDecoration(
-      color: broker.color.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Icon(broker.fallbackIcon, size: 18, color: broker.color),
-  );
+        decoration: BoxDecoration(
+          color: broker.color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(broker.fallbackIcon, size: 18, color: broker.color),
+      );
 }

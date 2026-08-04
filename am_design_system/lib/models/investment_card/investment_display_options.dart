@@ -66,16 +66,18 @@ class InvestmentDisplayOptions {
     bool? showPerformanceSection,
     bool? showDefaultValue,
     bool? showAdditionalInfo,
-  }) => InvestmentDisplayOptions(
-    showInvestmentDetails: showInvestmentDetails ?? this.showInvestmentDetails,
-    showCurrentPrice: showCurrentPrice ?? this.showCurrentPrice,
-    showQuantity: showQuantity ?? this.showQuantity,
-    showAveragePrice: showAveragePrice ?? this.showAveragePrice,
-    showChangeValue: showChangeValue ?? this.showChangeValue,
-    showChangePercent: showChangePercent ?? this.showChangePercent,
-    showPerformanceSection:
-        showPerformanceSection ?? this.showPerformanceSection,
-    showDefaultValue: showDefaultValue ?? this.showDefaultValue,
-    showAdditionalInfo: showAdditionalInfo ?? this.showAdditionalInfo,
-  );
+  }) =>
+      InvestmentDisplayOptions(
+        showInvestmentDetails:
+            showInvestmentDetails ?? this.showInvestmentDetails,
+        showCurrentPrice: showCurrentPrice ?? this.showCurrentPrice,
+        showQuantity: showQuantity ?? this.showQuantity,
+        showAveragePrice: showAveragePrice ?? this.showAveragePrice,
+        showChangeValue: showChangeValue ?? this.showChangeValue,
+        showChangePercent: showChangePercent ?? this.showChangePercent,
+        showPerformanceSection:
+            showPerformanceSection ?? this.showPerformanceSection,
+        showDefaultValue: showDefaultValue ?? this.showDefaultValue,
+        showAdditionalInfo: showAdditionalInfo ?? this.showAdditionalInfo,
+      );
 }

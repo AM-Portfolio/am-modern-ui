@@ -5,11 +5,7 @@ import '../../../internal/data/dtos/portfolio_update_request_dto.dart';
 import '../../../internal/domain/entities/portfolio_list.dart';
 
 class PortfolioFormModal extends StatefulWidget {
-  const PortfolioFormModal({
-    super.key,
-    this.portfolio,
-    required this.onSubmit,
-  });
+  const PortfolioFormModal({super.key, this.portfolio, required this.onSubmit});
 
   final PortfolioItem? portfolio;
   final Future<void> Function(String name, String? description) onSubmit;
@@ -23,10 +19,8 @@ class PortfolioFormModal extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => PortfolioFormModal(
-        portfolio: portfolio,
-        onSubmit: onSubmit,
-      ),
+      builder: (context) =>
+          PortfolioFormModal(portfolio: portfolio, onSubmit: onSubmit),
     );
   }
 
@@ -43,8 +37,11 @@ class _PortfolioFormModalState extends State<PortfolioFormModal> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.portfolio?.portfolioName ?? '');
-    _descController = TextEditingController(); // Our backend takes description, though we don't display it yet
+    _nameController = TextEditingController(
+      text: widget.portfolio?.portfolioName ?? '',
+    );
+    _descController =
+        TextEditingController(); // Our backend takes description, though we don't display it yet
   }
 
   @override
@@ -155,7 +152,10 @@ class _PortfolioFormModalState extends State<PortfolioFormModal> {
                       ? const SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
                         )
                       : Text(
                           isEdit ? 'Save Changes' : 'Create',

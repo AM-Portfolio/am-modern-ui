@@ -127,40 +127,45 @@ class DashboardSummary {
   bool? complete;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is DashboardSummary &&
-    other.totalValue == totalValue &&
-    other.totalInvested == totalInvested &&
-    other.totalGainLoss == totalGainLoss &&
-    other.totalGainLossPercentage == totalGainLossPercentage &&
-    other.dayChange == dayChange &&
-    other.dayChangePercentage == dayChangePercentage &&
-    other.totalPortfolios == totalPortfolios &&
-    other.totalHoldings == totalHoldings &&
-    _deepEquality.equals(other.portfolioBreakdown, portfolioBreakdown) &&
-    other.bestPerformer == bestPerformer &&
-    other.worstPerformer == worstPerformer &&
-    other.currency == currency &&
-    other.complete == complete;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DashboardSummary &&
+          other.totalValue == totalValue &&
+          other.totalInvested == totalInvested &&
+          other.totalGainLoss == totalGainLoss &&
+          other.totalGainLossPercentage == totalGainLossPercentage &&
+          other.dayChange == dayChange &&
+          other.dayChangePercentage == dayChangePercentage &&
+          other.totalPortfolios == totalPortfolios &&
+          other.totalHoldings == totalHoldings &&
+          _deepEquality.equals(other.portfolioBreakdown, portfolioBreakdown) &&
+          other.bestPerformer == bestPerformer &&
+          other.worstPerformer == worstPerformer &&
+          other.currency == currency &&
+          other.complete == complete;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (totalValue == null ? 0 : totalValue!.hashCode) +
-    (totalInvested == null ? 0 : totalInvested!.hashCode) +
-    (totalGainLoss == null ? 0 : totalGainLoss!.hashCode) +
-    (totalGainLossPercentage == null ? 0 : totalGainLossPercentage!.hashCode) +
-    (dayChange == null ? 0 : dayChange!.hashCode) +
-    (dayChangePercentage == null ? 0 : dayChangePercentage!.hashCode) +
-    (totalPortfolios == null ? 0 : totalPortfolios!.hashCode) +
-    (totalHoldings == null ? 0 : totalHoldings!.hashCode) +
-    (portfolioBreakdown.hashCode) +
-    (bestPerformer == null ? 0 : bestPerformer!.hashCode) +
-    (worstPerformer == null ? 0 : worstPerformer!.hashCode) +
-    (currency == null ? 0 : currency!.hashCode) +
-    (complete == null ? 0 : complete!.hashCode);
+      // ignore: unnecessary_parenthesis
+      (totalValue == null ? 0 : totalValue!.hashCode) +
+      (totalInvested == null ? 0 : totalInvested!.hashCode) +
+      (totalGainLoss == null ? 0 : totalGainLoss!.hashCode) +
+      (totalGainLossPercentage == null
+          ? 0
+          : totalGainLossPercentage!.hashCode) +
+      (dayChange == null ? 0 : dayChange!.hashCode) +
+      (dayChangePercentage == null ? 0 : dayChangePercentage!.hashCode) +
+      (totalPortfolios == null ? 0 : totalPortfolios!.hashCode) +
+      (totalHoldings == null ? 0 : totalHoldings!.hashCode) +
+      (portfolioBreakdown.hashCode) +
+      (bestPerformer == null ? 0 : bestPerformer!.hashCode) +
+      (worstPerformer == null ? 0 : worstPerformer!.hashCode) +
+      (currency == null ? 0 : currency!.hashCode) +
+      (complete == null ? 0 : complete!.hashCode);
 
   @override
-  String toString() => 'DashboardSummary[totalValue=$totalValue, totalInvested=$totalInvested, totalGainLoss=$totalGainLoss, totalGainLossPercentage=$totalGainLossPercentage, dayChange=$dayChange, dayChangePercentage=$dayChangePercentage, totalPortfolios=$totalPortfolios, totalHoldings=$totalHoldings, portfolioBreakdown=$portfolioBreakdown, bestPerformer=$bestPerformer, worstPerformer=$worstPerformer, currency=$currency, complete=$complete]';
+  String toString() =>
+      'DashboardSummary[totalValue=$totalValue, totalInvested=$totalInvested, totalGainLoss=$totalGainLoss, totalGainLossPercentage=$totalGainLossPercentage, dayChange=$dayChange, dayChangePercentage=$dayChangePercentage, totalPortfolios=$totalPortfolios, totalHoldings=$totalHoldings, portfolioBreakdown=$portfolioBreakdown, bestPerformer=$bestPerformer, worstPerformer=$worstPerformer, currency=$currency, complete=$complete]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -204,7 +209,7 @@ class DashboardSummary {
     } else {
       json[r'totalHoldings'] = null;
     }
-      json[r'portfolioBreakdown'] = this.portfolioBreakdown;
+    json[r'portfolioBreakdown'] = this.portfolioBreakdown;
     if (this.bestPerformer != null) {
       json[r'bestPerformer'] = this.bestPerformer;
     } else {
@@ -240,22 +245,43 @@ class DashboardSummary {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "DashboardSummary[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "DashboardSummary[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "DashboardSummary[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "DashboardSummary[$key]" has a null value in JSON.');
         });
         return true;
       }());
 
       return DashboardSummary(
-        totalValue: json[r'totalValue'] == null ? null : (json[r'totalValue'] is num ? json[r'totalValue'] : num.tryParse('${json[r'totalValue']}')),
-        totalInvested: json[r'totalInvested'] == null ? null : (json[r'totalInvested'] is num ? json[r'totalInvested'] : num.tryParse('${json[r'totalInvested']}')),
-        totalGainLoss: json[r'totalGainLoss'] == null ? null : (json[r'totalGainLoss'] is num ? json[r'totalGainLoss'] : num.tryParse('${json[r'totalGainLoss']}')),
-        totalGainLossPercentage: mapValueOfType<double>(json, r'totalGainLossPercentage'),
-        dayChange: json[r'dayChange'] == null ? null : (json[r'dayChange'] is num ? json[r'dayChange'] : num.tryParse('${json[r'dayChange']}')),
-        dayChangePercentage: mapValueOfType<double>(json, r'dayChangePercentage'),
+        totalValue: json[r'totalValue'] == null
+            ? null
+            : (json[r'totalValue'] is num
+                ? json[r'totalValue']
+                : num.tryParse('${json[r'totalValue']}')),
+        totalInvested: json[r'totalInvested'] == null
+            ? null
+            : (json[r'totalInvested'] is num
+                ? json[r'totalInvested']
+                : num.tryParse('${json[r'totalInvested']}')),
+        totalGainLoss: json[r'totalGainLoss'] == null
+            ? null
+            : (json[r'totalGainLoss'] is num
+                ? json[r'totalGainLoss']
+                : num.tryParse('${json[r'totalGainLoss']}')),
+        totalGainLossPercentage:
+            mapValueOfType<double>(json, r'totalGainLossPercentage'),
+        dayChange: json[r'dayChange'] == null
+            ? null
+            : (json[r'dayChange'] is num
+                ? json[r'dayChange']
+                : num.tryParse('${json[r'dayChange']}')),
+        dayChangePercentage:
+            mapValueOfType<double>(json, r'dayChangePercentage'),
         totalPortfolios: mapValueOfType<int>(json, r'totalPortfolios'),
         totalHoldings: mapValueOfType<int>(json, r'totalHoldings'),
-        portfolioBreakdown: PortfolioBreakdown.listFromJson(json[r'portfolioBreakdown']),
+        portfolioBreakdown:
+            PortfolioBreakdown.listFromJson(json[r'portfolioBreakdown']),
         bestPerformer: PerformerItem.fromJson(json[r'bestPerformer']),
         worstPerformer: PerformerItem.fromJson(json[r'worstPerformer']),
         currency: mapValueOfType<String>(json, r'currency'),
@@ -265,7 +291,10 @@ class DashboardSummary {
     return null;
   }
 
-  static List<DashboardSummary> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<DashboardSummary> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <DashboardSummary>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -293,20 +322,24 @@ class DashboardSummary {
   }
 
   // maps a json object with a list of DashboardSummary-objects as value to a dart map
-  static Map<String, List<DashboardSummary>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<DashboardSummary>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<DashboardSummary>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = DashboardSummary.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = DashboardSummary.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

@@ -6,8 +6,15 @@ import '../../domain/entities/subscription.dart';
 abstract class SubscriptionRemoteDataSource {
   Future<List<Plan>> getPlans();
   Future<Subscription> getCurrentSubscription();
-  Future<Subscription> createSubscription(String planCode, String billingInterval);
-  Future<Subscription> upgradeSubscription(String subscriptionId, String planCode, String billingInterval);
+  Future<Subscription> createSubscription(
+    String planCode,
+    String billingInterval,
+  );
+  Future<Subscription> upgradeSubscription(
+    String subscriptionId,
+    String planCode,
+    String billingInterval,
+  );
 }
 
 @LazySingleton(as: SubscriptionRemoteDataSource)
@@ -30,25 +37,26 @@ class SubscriptionRemoteDataSourceImpl implements SubscriptionRemoteDataSource {
   }
 
   @override
-  Future<Subscription> createSubscription(String planCode, String billingInterval) async {
+  Future<Subscription> createSubscription(
+    String planCode,
+    String billingInterval,
+  ) async {
     final response = await _dio.post(
       '/subscriptions',
-      data: {
-        'plan_code': planCode,
-        'billing_interval': billingInterval,
-      },
+      data: {'plan_code': planCode, 'billing_interval': billingInterval},
     );
     return Subscription.fromJson(response.data['data'] as Map<String, dynamic>);
   }
 
   @override
-  Future<Subscription> upgradeSubscription(String subscriptionId, String planCode, String billingInterval) async {
+  Future<Subscription> upgradeSubscription(
+    String subscriptionId,
+    String planCode,
+    String billingInterval,
+  ) async {
     final response = await _dio.patch(
       '/subscriptions/$subscriptionId/upgrade',
-      data: {
-        'plan_code': planCode,
-        'billing_interval': billingInterval,
-      },
+      data: {'plan_code': planCode, 'billing_interval': billingInterval},
     );
     return Subscription.fromJson(response.data['data'] as Map<String, dynamic>);
   }

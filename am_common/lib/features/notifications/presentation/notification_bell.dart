@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../am_common.dart'; // Assuming export exists, or import relative
@@ -92,7 +91,9 @@ class NotificationBell extends ConsumerWidget {
                     if (unreadCount > 0)
                       TextButton(
                         onPressed: () {
-                          ref.read(notificationProvider.notifier).markAllAsRead();
+                          ref
+                              .read(notificationProvider.notifier)
+                              .markAllAsRead();
                           Navigator.pop(context);
                         },
                         child: const Text('Mark all read'),
@@ -106,15 +107,17 @@ class NotificationBell extends ConsumerWidget {
               return PopupMenuItem<String>(
                 value: notification.id,
                 onTap: () {
-                   ref.read(notificationProvider.notifier).markAsRead(notification.id);
-                   
-                   // Handle navigation if actionUrl is present
-                   if (notification.actionUrl != null) {
-                     // Use WidgetsBinding to navigate after the popup closes
-                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                       Navigator.of(context).pushNamed(notification.actionUrl!);
-                     });
-                   }
+                  ref
+                      .read(notificationProvider.notifier)
+                      .markAsRead(notification.id);
+
+                  // Handle navigation if actionUrl is present
+                  if (notification.actionUrl != null) {
+                    // Use WidgetsBinding to navigate after the popup closes
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      Navigator.of(context).pushNamed(notification.actionUrl!);
+                    });
+                  }
                 },
                 child: _NotificationItem(notification: notification),
               );
@@ -139,11 +142,13 @@ class _NotificationItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMM d, h:mm a');
-    
+
     return Container(
       width: 300,
       padding: const EdgeInsets.symmetric(vertical: 4),
-      color: notification.isRead ? null : Theme.of(context).primaryColor.withOpacity(0.05),
+      color: notification.isRead
+          ? null
+          : Theme.of(context).primaryColor.withOpacity(0.05),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -162,7 +167,9 @@ class _NotificationItem extends StatelessWidget {
                 Text(
                   notification.title,
                   style: TextStyle(
-                    fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
+                    fontWeight: notification.isRead
+                        ? FontWeight.normal
+                        : FontWeight.bold,
                     fontSize: 14,
                   ),
                   maxLines: 1,
@@ -179,9 +186,9 @@ class _NotificationItem extends StatelessWidget {
                 Text(
                   dateFormat.format(notification.timestamp),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).hintColor,
-                    fontSize: 10,
-                  ),
+                        color: Theme.of(context).hintColor,
+                        fontSize: 10,
+                      ),
                 ),
               ],
             ),

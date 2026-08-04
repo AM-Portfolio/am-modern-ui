@@ -16,11 +16,11 @@ class PortfolioUpdateRequestDto extends Equatable {
 
   /// Convert to JSON
   Map<String, dynamic> toJson() => {
-        'name': name,
-        if (description != null) 'description': description,
-        'currency': currency,
-        if (initialCapital != null) 'initialCapital': initialCapital,
-      };
+    'name': name,
+    if (description != null) 'description': description,
+    'currency': currency,
+    if (initialCapital != null) 'initialCapital': initialCapital,
+  };
 
   @override
   List<Object?> get props => [name, description, currency, initialCapital];

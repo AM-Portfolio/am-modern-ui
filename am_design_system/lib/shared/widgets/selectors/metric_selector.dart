@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/utils/common_logger.dart';
 
-
 import 'package:am_common/am_common.dart';
 import '../inputs/app_segmented_control.dart';
 
@@ -10,23 +9,40 @@ extension MetricTypeUIExtension on MetricType {
   /// Representative icon
   IconData get icon {
     switch (this) {
-      case MetricType.returns: return Icons.trending_up;
-      case MetricType.dailyReturns: return Icons.today;
-      case MetricType.weeklyReturns: return Icons.date_range;
-      case MetricType.monthlyReturns: return Icons.calendar_month;
-      case MetricType.marketValue: return Icons.account_balance_wallet;
-      case MetricType.investedValue: return Icons.payment;
-      case MetricType.profitLoss: return Icons.account_balance;
-      case MetricType.changePercent: return Icons.percent;
-      case MetricType.allocationPercent: return Icons.pie_chart;
-      case MetricType.sharpeRatio: return Icons.analytics;
-      case MetricType.beta: return Icons.show_chart;
-      case MetricType.volatility: return Icons.waves;
-      case MetricType.drawdown: return Icons.trending_down;
-      case MetricType.valueAtRisk: return Icons.warning;
-      case MetricType.volume: return Icons.bar_chart;
-      case MetricType.averageVolume: return Icons.timeline;
-      default: return Icons.insights;
+      case MetricType.returns:
+        return Icons.trending_up;
+      case MetricType.dailyReturns:
+        return Icons.today;
+      case MetricType.weeklyReturns:
+        return Icons.date_range;
+      case MetricType.monthlyReturns:
+        return Icons.calendar_month;
+      case MetricType.marketValue:
+        return Icons.account_balance_wallet;
+      case MetricType.investedValue:
+        return Icons.payment;
+      case MetricType.profitLoss:
+        return Icons.account_balance;
+      case MetricType.changePercent:
+        return Icons.percent;
+      case MetricType.allocationPercent:
+        return Icons.pie_chart;
+      case MetricType.sharpeRatio:
+        return Icons.analytics;
+      case MetricType.beta:
+        return Icons.show_chart;
+      case MetricType.volatility:
+        return Icons.waves;
+      case MetricType.drawdown:
+        return Icons.trending_down;
+      case MetricType.valueAtRisk:
+        return Icons.warning;
+      case MetricType.volume:
+        return Icons.bar_chart;
+      case MetricType.averageVolume:
+        return Icons.timeline;
+      default:
+        return Icons.insights;
     }
   }
 }
@@ -124,16 +140,17 @@ class MetricSelector extends StatelessWidget {
     Color? primaryColor,
     bool showIcons = true,
     String? title,
-  }) => MetricSelector(
-    key: key,
-    selectedMetric: selectedMetric,
-    onMetricChanged: onMetricChanged,
-    availableMetrics: MetricType.portfolioMetrics,
-    compact: compact,
-    primaryColor: primaryColor,
-    showIcons: showIcons,
-    title: title,
-  );
+  }) =>
+      MetricSelector(
+        key: key,
+        selectedMetric: selectedMetric,
+        onMetricChanged: onMetricChanged,
+        availableMetrics: MetricType.portfolioMetrics,
+        compact: compact,
+        primaryColor: primaryColor,
+        showIcons: showIcons,
+        title: title,
+      );
 
   /// Factory constructor for performance analysis context
   factory MetricSelector.performance({
@@ -143,15 +160,16 @@ class MetricSelector extends StatelessWidget {
     bool compact = true,
     Color? primaryColor,
     String? title,
-  }) => MetricSelector(
-    key: key,
-    selectedMetric: selectedMetric,
-    onMetricChanged: onMetricChanged,
-    availableMetrics: MetricType.performanceMetrics,
-    compact: compact,
-    primaryColor: primaryColor,
-    title: title,
-  );
+  }) =>
+      MetricSelector(
+        key: key,
+        selectedMetric: selectedMetric,
+        onMetricChanged: onMetricChanged,
+        availableMetrics: MetricType.performanceMetrics,
+        compact: compact,
+        primaryColor: primaryColor,
+        title: title,
+      );
 
   /// Factory constructor for risk analysis context
   factory MetricSelector.risk({
@@ -161,16 +179,17 @@ class MetricSelector extends StatelessWidget {
     bool asDropdown = true,
     Color? primaryColor,
     String? title,
-  }) => MetricSelector(
-    key: key,
-    selectedMetric: selectedMetric,
-    onMetricChanged: onMetricChanged,
-    availableMetrics: MetricType.riskMetrics,
-    asDropdown: asDropdown,
-    primaryColor: primaryColor,
-    useDisplayNames: true,
-    title: title,
-  );
+  }) =>
+      MetricSelector(
+        key: key,
+        selectedMetric: selectedMetric,
+        onMetricChanged: onMetricChanged,
+        availableMetrics: MetricType.riskMetrics,
+        asDropdown: asDropdown,
+        primaryColor: primaryColor,
+        useDisplayNames: true,
+        title: title,
+      );
 
   /// Factory constructor for heatmap context
   factory MetricSelector.heatmap({
@@ -180,15 +199,16 @@ class MetricSelector extends StatelessWidget {
     bool compact = true,
     Color? primaryColor,
     String? title,
-  }) => MetricSelector(
-    key: key,
-    selectedMetric: selectedMetric,
-    onMetricChanged: onMetricChanged,
-    availableMetrics: MetricType.heatmapMetrics,
-    compact: compact,
-    primaryColor: primaryColor,
-    title: title,
-  );
+  }) =>
+      MetricSelector(
+        key: key,
+        selectedMetric: selectedMetric,
+        onMetricChanged: onMetricChanged,
+        availableMetrics: MetricType.heatmapMetrics,
+        compact: compact,
+        primaryColor: primaryColor,
+        title: title,
+      );
 
   /// Factory constructor for trading context
   factory MetricSelector.trading({
@@ -198,15 +218,16 @@ class MetricSelector extends StatelessWidget {
     bool compact = true,
     Color? primaryColor,
     String? title,
-  }) => MetricSelector(
-    key: key,
-    selectedMetric: selectedMetric,
-    onMetricChanged: onMetricChanged,
-    availableMetrics: MetricType.tradingMetrics,
-    compact: compact,
-    primaryColor: primaryColor,
-    title: title,
-  );
+  }) =>
+      MetricSelector(
+        key: key,
+        selectedMetric: selectedMetric,
+        onMetricChanged: onMetricChanged,
+        availableMetrics: MetricType.tradingMetrics,
+        compact: compact,
+        primaryColor: primaryColor,
+        title: title,
+      );
 
   /// Currently selected metric
   final MetricType selectedMetric;
@@ -303,120 +324,129 @@ class MetricSelector extends StatelessWidget {
   Widget _buildCompactSelector(
     BuildContext context,
     List<MetricType> metrics,
-  ) => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    children: metrics.map((metric) {
-      final isSelected = metric == selectedMetric;
+  ) =>
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: metrics.map((metric) {
+          final isSelected = metric == selectedMetric;
 
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                CommonLogger.debug(
+                  'Metric changed: ${selectedMetric.shortName} → ${metric.shortName}',
+                  tag: 'Heatmap.Filter',
+                );
+                onMetricChanged(metric);
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                constraints: const BoxConstraints(
+                  minHeight: 40,
+                ), // Better touch target
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? (primaryColor ?? Theme.of(context).primaryColor)
+                      : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? (primaryColor ?? Theme.of(context).primaryColor)
+                        : Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color:
+                                (primaryColor ?? Theme.of(context).primaryColor)
+                                    .withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showIcons) ...[
+                      Icon(
+                        metric.icon,
+                        size: 16,
+                        color: isSelected
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      useDisplayNames ? metric.displayName : metric.shortName,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.onSurface,
+                        fontSize: 14,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      );
+
+  Widget _buildDropdownSelector(
+    BuildContext context,
+    List<MetricType> metrics,
+  ) =>
+      DropdownButtonFormField<MetricType>(
+        value: selectedMetric,
+        decoration: InputDecoration(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          isDense: true,
+        ),
+        items: metrics
+            .map(
+              (metric) => DropdownMenuItem<MetricType>(
+                value: metric,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showIcons) ...[
+                      Icon(metric.icon, size: 16),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      useDisplayNames ? metric.displayName : metric.shortName,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+        onChanged: (metric) {
+          if (metric != null) {
             CommonLogger.debug(
               'Metric changed: ${selectedMetric.shortName} → ${metric.shortName}',
               tag: 'Heatmap.Filter',
             );
             onMetricChanged(metric);
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            constraints: const BoxConstraints(
-              minHeight: 40,
-            ), // Better touch target
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? (primaryColor ?? Theme.of(context).primaryColor)
-                  : Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isSelected
-                    ? (primaryColor ?? Theme.of(context).primaryColor)
-                    : Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                width: 1.5,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: (primaryColor ?? Theme.of(context).primaryColor)
-                            .withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (showIcons) ...[
-                  Icon(
-                    metric.icon,
-                    size: 16,
-                    color: isSelected
-                        ? Colors.white
-                        : Theme.of(context).colorScheme.onSurface,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Text(
-                  useDisplayNames ? metric.displayName : metric.shortName,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : Theme.of(context).colorScheme.onSurface,
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+          }
+        },
       );
-    }).toList(),
-  );
-
-  Widget _buildDropdownSelector(
-    BuildContext context,
-    List<MetricType> metrics,
-  ) => DropdownButtonFormField<MetricType>(
-    value: selectedMetric,
-    decoration: InputDecoration(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      isDense: true,
-    ),
-    items: metrics
-        .map(
-          (metric) => DropdownMenuItem<MetricType>(
-            value: metric,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (showIcons) ...[
-                  Icon(metric.icon, size: 16),
-                  const SizedBox(width: 8),
-                ],
-                Text(
-                  useDisplayNames ? metric.displayName : metric.shortName,
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-        )
-        .toList(),
-    onChanged: (metric) {
-      if (metric != null) {
-        CommonLogger.debug(
-          'Metric changed: ${selectedMetric.shortName} → ${metric.shortName}',
-          tag: 'Heatmap.Filter',
-        );
-        onMetricChanged(metric);
-      }
-    },
-  );
 }

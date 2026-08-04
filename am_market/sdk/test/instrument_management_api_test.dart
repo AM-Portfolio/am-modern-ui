@@ -11,7 +11,6 @@
 import 'package:am_market_client/api.dart';
 import 'package:test/test.dart';
 
-
 /// tests for InstrumentManagementApi
 void main() {
   // final instance = InstrumentManagementApi();
@@ -34,6 +33,5 @@ void main() {
     test('test updateInstruments', () async {
       // TODO
     });
-
   });
 }

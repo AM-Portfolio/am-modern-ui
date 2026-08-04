@@ -9,10 +9,7 @@ import 'glass_card.dart';
 class DashboardChartWidget extends StatefulWidget {
   final PerformanceResponse performance;
 
-  const DashboardChartWidget({
-    super.key,
-    required this.performance,
-  });
+  const DashboardChartWidget({super.key, required this.performance});
 
   @override
   State<DashboardChartWidget> createState() => _DashboardChartWidgetState();
@@ -37,12 +34,20 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final onSurface = isDark ? Colors.white : const Color(0xFF111827);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
-    final toggleBgColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFF4F6F8);
-    final emptyStateBg =
-        isDark ? const Color(0xFF1E293B).withValues(alpha: 0.5) : const Color(0xFFFAFAFA);
+    final onSurfaceVariant = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF6B7280);
+    final toggleBgColor = isDark
+        ? const Color(0xFF1E293B)
+        : const Color(0xFFF4F6F8);
+    final emptyStateBg = isDark
+        ? const Color(0xFF1E293B).withValues(alpha: 0.5)
+        : const Color(0xFFFAFAFA);
 
-    final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      symbol: '₹ ',
+      decimalDigits: 0,
+    );
     final returnPct = widget.performance.totalReturnPercentage;
     final returnVal = widget.performance.totalReturnValue;
     final isPositive = returnPct >= 0;
@@ -56,23 +61,17 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
               constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
           final chartArea = _showGraph
               ? (_hasPlottableData
-                  ? _buildGraphView(isDark)
-                  : _buildEmptyState(
-                      emptyStateBg,
-                      onSurfaceVariant,
-                      isDark,
-                    ))
+                    ? _buildGraphView(isDark)
+                    : _buildEmptyState(emptyStateBg, onSurfaceVariant, isDark))
               : (_chartData.isNotEmpty
-                  ? _buildTableView(onSurface, onSurfaceVariant, isDark)
-                  : _buildEmptyState(
-                      emptyStateBg,
-                      onSurfaceVariant,
-                      isDark,
-                    ));
+                    ? _buildTableView(onSurface, onSurfaceVariant, isDark)
+                    : _buildEmptyState(emptyStateBg, onSurfaceVariant, isDark));
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: hasBoundedHeight ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisSize: hasBoundedHeight
+                ? MainAxisSize.max
+                : MainAxisSize.min,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -197,7 +196,9 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? (isDark ? Colors.white : Colors.white) : Colors.transparent,
+          color: isSelected
+              ? (isDark ? Colors.white : Colors.white)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           boxShadow: isSelected
               ? [
@@ -205,7 +206,7 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
                     color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ]
               : [],
         ),
@@ -229,7 +230,9 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
     final rawMin = values.reduce((a, b) => a < b ? a : b);
     final rawMax = values.reduce((a, b) => a > b ? a : b);
     final span = (rawMax - rawMin).abs();
-    final padding = span > 0 ? span * 0.1 : (rawMax.abs() * 0.1).clamp(1.0, double.infinity);
+    final padding = span > 0
+        ? span * 0.1
+        : (rawMax.abs() * 0.1).clamp(1.0, double.infinity);
     final minY = rawMin - padding;
     final maxY = rawMax + padding;
     final gridColor = isDark
@@ -260,10 +263,8 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: (maxY - minY) / 4,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: gridColor,
-            strokeWidth: 1,
-          ),
+          getDrawingHorizontalLine: (_) =>
+              FlLine(color: gridColor, strokeWidth: 1),
         ),
         borderData: FlBorderData(show: false),
         lineTouchData: const LineTouchData(enabled: true),
@@ -272,14 +273,19 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
   }
 
   Widget _buildTableView(Color onSurface, Color onSurfaceVariant, bool isDark) {
-    final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(
+      symbol: '₹ ',
+      decimalDigits: 2,
+    );
     final reversedData = List<DataPoint>.from(_chartData.reversed);
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : const Color(0xFFF1F5F9),
         ),
       ),
       child: ClipRRect(
@@ -288,12 +294,17 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
           itemCount: reversedData.length,
           separatorBuilder: (context, index) => Divider(
             height: 1,
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : const Color(0xFFF1F5F9),
           ),
           itemBuilder: (context, index) {
             final dp = reversedData[index];
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

@@ -47,7 +47,10 @@ class OptionalDetailsStep extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Colors.purple.shade50, Colors.purple.shade50.withOpacity(0.3)]),
+              gradient: LinearGradient(colors: [
+                Colors.purple.shade50,
+                Colors.purple.shade50.withOpacity(0.3)
+              ]),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -60,11 +63,14 @@ class OptionalDetailsStep extends StatelessWidget {
                     children: [
                       Text(
                         'Optional Details',
-                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
                         'Add psychology, reasoning & notes (Skip if not needed)',
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color:
+                                theme.colorScheme.onSurface.withOpacity(0.6)),
                       ),
                     ],
                   ),
@@ -80,7 +86,8 @@ class OptionalDetailsStep extends StatelessWidget {
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+              border:
+                  Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
             ),
             child: TextField(
               controller: strategyController,
@@ -102,7 +109,8 @@ class OptionalDetailsStep extends StatelessWidget {
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+              border:
+                  Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
             ),
             child: Column(
               children: [
@@ -110,18 +118,25 @@ class OptionalDetailsStep extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withOpacity(0.5),
+                    borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.psychology_outlined, size: 18, color: theme.colorScheme.primary),
+                      Icon(Icons.psychology_outlined,
+                          size: 18, color: theme.colorScheme.primary),
                       const SizedBox(width: 8),
-                      Text('Psychology', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                      Text('Psychology',
+                          style: theme.textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold)),
                       const Spacer(),
                       Text(
                         '${selectedEntryPsychology.length + selectedExitPsychology.length} selected',
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary),
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: theme.colorScheme.primary),
                       ),
                     ],
                   ),
@@ -138,7 +153,11 @@ class OptionalDetailsStep extends StatelessWidget {
                         availableOptions: EntryPsychologyFactors.values,
                         selectedOptions: selectedEntryPsychology,
                         onSelectionChanged: onEntryPsychologyChanged,
-                        labelBuilder: (factor) => factor.toString().split('.').last.replaceAll('_', ' '),
+                        labelBuilder: (factor) => factor
+                            .toString()
+                            .split('.')
+                            .last
+                            .replaceAll('_', ' '),
                       ),
                       const SizedBox(height: 12),
                       // Exit Psychology
@@ -148,7 +167,11 @@ class OptionalDetailsStep extends StatelessWidget {
                         availableOptions: ExitPsychologyFactors.values,
                         selectedOptions: selectedExitPsychology,
                         onSelectionChanged: onExitPsychologyChanged,
-                        labelBuilder: (factor) => factor.toString().split('.').last.replaceAll('_', ' '),
+                        labelBuilder: (factor) => factor
+                            .toString()
+                            .split('.')
+                            .last
+                            .replaceAll('_', ' '),
                       ),
                     ],
                   ),
@@ -164,7 +187,8 @@ class OptionalDetailsStep extends StatelessWidget {
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+              border:
+                  Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
             ),
             child: Column(
               children: [
@@ -172,18 +196,25 @@ class OptionalDetailsStep extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withOpacity(0.5),
+                    borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.analytics_outlined, size: 18, color: theme.colorScheme.primary),
+                      Icon(Icons.analytics_outlined,
+                          size: 18, color: theme.colorScheme.primary),
                       const SizedBox(width: 8),
-                      Text('Reasoning', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                      Text('Reasoning',
+                          style: theme.textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold)),
                       const Spacer(),
                       Text(
                         '${selectedTechnicalReasons.length + selectedFundamentalReasons.length} selected',
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary),
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: theme.colorScheme.primary),
                       ),
                     ],
                   ),
@@ -200,7 +231,11 @@ class OptionalDetailsStep extends StatelessWidget {
                         availableOptions: TechnicalReasons.values,
                         selectedOptions: selectedTechnicalReasons,
                         onSelectionChanged: onTechnicalReasonsChanged,
-                        labelBuilder: (reason) => reason.toString().split('.').last.replaceAll('_', ' '),
+                        labelBuilder: (reason) => reason
+                            .toString()
+                            .split('.')
+                            .last
+                            .replaceAll('_', ' '),
                       ),
                       const SizedBox(height: 12),
                       // Fundamental
@@ -210,7 +245,11 @@ class OptionalDetailsStep extends StatelessWidget {
                         availableOptions: FundamentalReasons.values,
                         selectedOptions: selectedFundamentalReasons,
                         onSelectionChanged: onFundamentalReasonsChanged,
-                        labelBuilder: (reason) => reason.toString().split('.').last.replaceAll('_', ' '),
+                        labelBuilder: (reason) => reason
+                            .toString()
+                            .split('.')
+                            .last
+                            .replaceAll('_', ' '),
                       ),
                     ],
                   ),
@@ -227,7 +266,8 @@ class OptionalDetailsStep extends StatelessWidget {
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+              border:
+                  Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
             ),
             child: TextField(
               controller: notesController,

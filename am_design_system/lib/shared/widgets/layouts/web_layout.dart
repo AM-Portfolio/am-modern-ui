@@ -5,7 +5,8 @@ import '../navigation/sidebar_item.dart';
 
 /// A layout component specifically designed for web interfaces
 /// Includes header navigation and footer
-@Deprecated('Use AmAdaptiveLayout or UnifiedSidebarScaffold instead. Will be removed in v2.1.0.')
+@Deprecated(
+    'Use AmAdaptiveLayout or UnifiedSidebarScaffold instead. Will be removed in v2.1.0.')
 class WebLayout extends StatelessWidget {
   /// Constructor
   const WebLayout({
@@ -50,28 +51,28 @@ class WebLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: Row(
-      children: [
-        // Global Sidebar (Far Left)
-        GlobalSidebar(
-          items: sidebarItems,
-          activeNavItem: activeNavItem,
-          userName: userName,
-          userEmail: userEmail,
-          userAvatarUrl: userAvatarUrl,
-          onNavigate: (navItem) {
-            if (onNavigate != null) {
-              onNavigate!(navItem);
-            } else {
-              Navigator.of(context).pushNamed('/${navItem.toLowerCase()}');
-            }
-          },
-          onLogout: onLogout,
-        ),
+        body: Row(
+          children: [
+            // Global Sidebar (Far Left)
+            GlobalSidebar(
+              items: sidebarItems,
+              activeNavItem: activeNavItem,
+              userName: userName,
+              userEmail: userEmail,
+              userAvatarUrl: userAvatarUrl,
+              onNavigate: (navItem) {
+                if (onNavigate != null) {
+                  onNavigate!(navItem);
+                } else {
+                  Navigator.of(context).pushNamed('/${navItem.toLowerCase()}');
+                }
+              },
+              onLogout: onLogout,
+            ),
 
-        // Main Content Area (Includes Sub-sidebar if present in child)
-        Expanded(child: child),
-      ],
-    ),
-  );
+            // Main Content Area (Includes Sub-sidebar if present in child)
+            Expanded(child: child),
+          ],
+        ),
+      );
 }

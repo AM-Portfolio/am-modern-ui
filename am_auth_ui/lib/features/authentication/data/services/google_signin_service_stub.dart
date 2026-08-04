@@ -33,7 +33,8 @@ class GoogleSignInAuthentication {
 class GoogleSignInService {
   /// Sign in with Google
   Future<GoogleSignInAccount?> signIn() async {
-    CommonLogger.warning('Google Sign-In not implemented for mobile in this Service stub.');
+    CommonLogger.warning(
+        'Google Sign-In not implemented for mobile in this Service stub.');
     throw AuthException('Google Sign-In not supported on mobile (Stub)');
   }
 
@@ -48,4 +49,3 @@ class GoogleSignInService {
   /// Get currently signed in account
   GoogleSignInAccount? getCurrentAccount() => null;
 }
-

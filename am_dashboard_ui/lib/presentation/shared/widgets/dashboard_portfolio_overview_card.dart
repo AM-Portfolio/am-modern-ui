@@ -19,18 +19,26 @@ class DashboardPortfolioOverviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
     final isPositive = overview.totalReturn >= 0;
-    
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Dynamic Colors
     final onSurface = isDark ? Colors.white : const Color(0xFF111827);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+    final onSurfaceVariant = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF6B7280);
     final primary = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2E3192);
-    
-    final positiveBg = isDark ? const Color(0xFF064E3B) : const Color(0xFFE8F5E9);
-    final negativeBg = isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFFEBEE);
+
+    final positiveBg = isDark
+        ? const Color(0xFF064E3B)
+        : const Color(0xFFE8F5E9);
+    final negativeBg = isDark
+        ? const Color(0xFF7F1D1D)
+        : const Color(0xFFFFEBEE);
     final trendBg = isPositive ? positiveBg : negativeBg;
-    final trendColor = isPositive ? const Color(0xFF00C853) : const Color(0xFFD50000);
+    final trendColor = isPositive
+        ? const Color(0xFF00C853)
+        : const Color(0xFFD50000);
 
     return InkWell(
       onTap: onTap,
@@ -52,11 +60,7 @@ class DashboardPortfolioOverviewCard extends StatelessWidget {
                     fontFamily: 'Inter',
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right,
-                  color: onSurfaceVariant,
-                  size: 16,
-                ),
+                Icon(Icons.chevron_right, color: onSurfaceVariant, size: 16),
               ],
             ),
             const SizedBox(height: 12),
@@ -77,7 +81,9 @@ class DashboardPortfolioOverviewCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      currencyFormat.format(overview.totalValue - overview.totalReturn),
+                      currencyFormat.format(
+                        overview.totalValue - overview.totalReturn,
+                      ),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,

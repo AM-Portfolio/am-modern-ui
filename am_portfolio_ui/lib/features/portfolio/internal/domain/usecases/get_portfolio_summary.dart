@@ -19,9 +19,8 @@ class GetPortfolioSummary {
   }
 
   /// Get portfolio summary for specific portfolio
-  Future<PortfolioSummary> callForPortfolio(
-    String portfolioId,
-  ) async => call(portfolioId);
+  Future<PortfolioSummary> callForPortfolio(String portfolioId) async =>
+      call(portfolioId);
 
   /// Gets cached portfolio summary directly (synchronous return via future)
   Future<PortfolioSummary?> getCached(String portfolioId) async {
@@ -30,8 +29,6 @@ class GetPortfolioSummary {
 
   /// Execute with stream for real-time updates
   Stream<PortfolioSummary> watchSummary() {
-    
-
     return _repository.watchPortfolioSummary();
   }
 }

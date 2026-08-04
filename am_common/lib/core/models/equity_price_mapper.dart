@@ -7,8 +7,8 @@ String stockTopicDestination(String symbol) => '/topic/stock/$symbol';
 QuoteChange quoteChangeFromEquityPriceJson(Map<String, dynamic> json) {
   final ohlcv = json['ohlcv'] as Map<String, dynamic>?;
   final lastPrice = _toDouble(json['lastPrice']);
-  final previousClose = _toDouble(json['previousClose']) ??
-      _toDouble(ohlcv?['close']);
+  final previousClose =
+      _toDouble(json['previousClose']) ?? _toDouble(ohlcv?['close']);
 
   var change = _toDouble(json['change']);
   var changePercent = _toDouble(json['changePercent']);

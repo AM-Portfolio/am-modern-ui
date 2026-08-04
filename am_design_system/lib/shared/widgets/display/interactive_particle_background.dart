@@ -20,10 +20,12 @@ class InteractiveParticleBackground extends StatefulWidget {
   final double particleSize;
 
   @override
-  State<InteractiveParticleBackground> createState() => _InteractiveParticleBackgroundState();
+  State<InteractiveParticleBackground> createState() =>
+      _InteractiveParticleBackgroundState();
 }
 
-class _InteractiveParticleBackgroundState extends State<InteractiveParticleBackground>
+class _InteractiveParticleBackgroundState
+    extends State<InteractiveParticleBackground>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final List<Particle> _particles = [];
@@ -33,7 +35,9 @@ class _InteractiveParticleBackgroundState extends State<InteractiveParticleBackg
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 1))..repeat();
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 1))
+          ..repeat();
 
     _controller.addListener(() {
       setState(_updateParticles);
@@ -52,8 +56,10 @@ class _InteractiveParticleBackgroundState extends State<InteractiveParticleBackg
       for (var i = 0; i < widget.particleCount; i++) {
         _particles.add(
           Particle(
-            position: Offset(random.nextDouble() * size.width, random.nextDouble() * size.height),
-            velocity: Offset((random.nextDouble() - 0.5) * 0.5, (random.nextDouble() - 0.5) * 0.5),
+            position: Offset(random.nextDouble() * size.width,
+                random.nextDouble() * size.height),
+            velocity: Offset((random.nextDouble() - 0.5) * 0.5,
+                (random.nextDouble() - 0.5) * 0.5),
             baseSize: widget.particleSize,
           ),
         );
@@ -63,52 +69,54 @@ class _InteractiveParticleBackgroundState extends State<InteractiveParticleBackg
 
   void _updateParticles() {
     for (final particle in _particles) {
-      particle.update(_cursorPosition, _isCursorOnScreen, widget.highlightRadius);
+      particle.update(
+          _cursorPosition, _isCursorOnScreen, widget.highlightRadius);
     }
   }
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final size = Size(constraints.maxWidth, constraints.maxHeight);
-      _initializeParticles(size);
+        builder: (context, constraints) {
+          final size = Size(constraints.maxWidth, constraints.maxHeight);
+          _initializeParticles(size);
 
-      return MouseRegion(
-        onEnter: (_) => setState(() => _isCursorOnScreen = true),
-        onExit: (_) => setState(() => _isCursorOnScreen = false),
-        onHover: (event) {
-          setState(() {
-            _cursorPosition = event.localPosition;
-          });
-        },
-        child: Stack(
-          children: [
-            // Particle layer
-            CustomPaint(
-              size: size,
-              painter: ParticlePainter(
-                particles: _particles,
-                cursorPosition: _cursorPosition,
-                particleColor: widget.particleColor,
-                highlightRadius: widget.highlightRadius,
-                isCursorOnScreen: _isCursorOnScreen,
-              ),
+          return MouseRegion(
+            onEnter: (_) => setState(() => _isCursorOnScreen = true),
+            onExit: (_) => setState(() => _isCursorOnScreen = false),
+            onHover: (event) {
+              setState(() {
+                _cursorPosition = event.localPosition;
+              });
+            },
+            child: Stack(
+              children: [
+                // Particle layer
+                CustomPaint(
+                  size: size,
+                  painter: ParticlePainter(
+                    particles: _particles,
+                    cursorPosition: _cursorPosition,
+                    particleColor: widget.particleColor,
+                    highlightRadius: widget.highlightRadius,
+                    isCursorOnScreen: _isCursorOnScreen,
+                  ),
+                ),
+                // Content layer
+                widget.child,
+              ],
             ),
-            // Content layer
-            widget.child,
-          ],
-        ),
+          );
+        },
       );
-    },
-  );
 }
 
 /// Individual particle data
 class Particle {
-  Particle({required this.position, required this.velocity, required this.baseSize})
-    : currentSize = baseSize,
-      opacity = 0.3,
-      basePosition = position;
+  Particle(
+      {required this.position, required this.velocity, required this.baseSize})
+      : currentSize = baseSize,
+        opacity = 0.3,
+        basePosition = position;
   Offset position;
   Offset velocity;
   final double baseSize;
@@ -184,9 +192,11 @@ class ParticlePainter extends CustomPainter {
       if (isCursorOnScreen && particle.currentSize > particle.baseSize) {
         final glowPaint = Paint()
           ..color = particleColor.withOpacity(particle.opacity * 0.3)
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, particle.currentSize);
+          ..maskFilter =
+              MaskFilter.blur(BlurStyle.normal, particle.currentSize);
 
-        canvas.drawCircle(particle.position, particle.currentSize * 1.5, glowPaint);
+        canvas.drawCircle(
+            particle.position, particle.currentSize * 1.5, glowPaint);
       }
     }
 
@@ -206,7 +216,8 @@ class ParticlePainter extends CustomPainter {
 
     for (var i = 0; i < particles.length; i++) {
       for (var j = i + 1; j < particles.length; j++) {
-        final distance = (particles[i].position - particles[j].position).distance;
+        final distance =
+            (particles[i].position - particles[j].position).distance;
 
         if (distance < maxConnectionDistance) {
           final opacity = (1 - distance / maxConnectionDistance) * 0.2;

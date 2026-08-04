@@ -44,7 +44,8 @@ class CacheService {
     await _box!.put(key, value);
 
     if (ttl != null) {
-      await _box!.put('${key}_timestamp', DateTime.now().millisecondsSinceEpoch);
+      await _box!
+          .put('${key}_timestamp', DateTime.now().millisecondsSinceEpoch);
       await _box!.put('${key}_ttl', ttl.inMilliseconds);
     }
   }
@@ -73,7 +74,9 @@ class CacheService {
   /// Get all keys in cache
   Iterable<String> get keys {
     if (_box == null) throw StateError('CacheService not initialized');
-    return _box!.keys.cast<String>().where((key) => !key.endsWith('_timestamp') && !key.endsWith('_ttl'));
+    return _box!.keys
+        .cast<String>()
+        .where((key) => !key.endsWith('_timestamp') && !key.endsWith('_ttl'));
   }
 
   /// Close the cache box

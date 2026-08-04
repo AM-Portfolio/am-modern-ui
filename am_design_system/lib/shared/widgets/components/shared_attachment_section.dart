@@ -61,10 +61,10 @@ class SharedAttachmentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AttachmentPicker(
-    initialUrls: imageUrls,
-    onAttachmentsChanged: onAttachmentsChanged,
-    featureName: featureName,
-    userId: userId,
-    readOnly: readOnly || !isEditMode,
-  );
+        initialUrls: imageUrls,
+        onAttachmentsChanged: onAttachmentsChanged,
+        featureName: featureName,
+        userId: userId,
+        readOnly: readOnly || !isEditMode,
+      );
 }

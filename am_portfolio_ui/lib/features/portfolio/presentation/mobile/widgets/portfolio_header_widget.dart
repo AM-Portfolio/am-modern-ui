@@ -213,7 +213,10 @@ class PortfolioHeaderWidget extends StatelessWidget {
       Tab(icon: Icon(Icons.dashboard_outlined, size: 20), text: 'Overview'),
       Tab(icon: Icon(Icons.wallet, size: 20), text: 'Holdings'),
       Tab(icon: Icon(Icons.grid_view, size: 20), text: 'Heatmap'),
-      Tab(icon: Icon(Icons.shopping_basket_outlined, size: 20), text: 'Baskets'),
+      Tab(
+        icon: Icon(Icons.shopping_basket_outlined, size: 20),
+        text: 'Baskets',
+      ),
     ],
   );
 

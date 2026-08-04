@@ -43,7 +43,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
       );
       return;
     }
-    
+
     final authCubit = context.read<AuthCubit>();
     try {
       final feedback = isOtherSelected
@@ -86,9 +86,11 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0f0c29) : const Color(0xFFF8F9FA),
+      backgroundColor: isDark
+          ? const Color(0xFF0f0c29)
+          : const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text('Delete Account'),
         backgroundColor: Colors.transparent,
@@ -104,7 +106,9 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
               color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+                color: isDark
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.black.withOpacity(0.05),
               ),
               boxShadow: [
                 BoxShadow(
@@ -126,10 +130,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                 const Text(
                   'Request Account Deletion',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -184,7 +185,10 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               'Submit Request',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                     );
                   },

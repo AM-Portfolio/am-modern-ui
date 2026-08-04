@@ -292,7 +292,8 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
               decoration: BoxDecoration(
                 color: isHovering
                     ? theme.colorScheme.primaryContainer.withOpacity(0.3)
-                    : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    : theme.colorScheme.surfaceContainerHighest
+                        .withOpacity(0.3),
                 border: Border.all(
                   color: isHovering
                       ? theme.colorScheme.primary
@@ -320,14 +321,16 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
                   Text(
                     'or click to browse',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      color:
+                          theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     _getAllowedTypesText(),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                      color:
+                          theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
                     ),
                   ),
                 ],
@@ -340,18 +343,18 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
   }
 
   Widget _buildMaxReachedMessage(ThemeData theme) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    decoration: BoxDecoration(
-      color: theme.colorScheme.errorContainer.withOpacity(0.3),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Text(
-      'Maximum ${widget.maxAttachments} attachments reached',
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.error,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.errorContainer.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          'Maximum ${widget.maxAttachments} attachments reached',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.error,
+          ),
+        ),
+      );
 
   Future<void> _pickFile() async {
     try {
@@ -713,4 +716,3 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
     );
   }
 }
-

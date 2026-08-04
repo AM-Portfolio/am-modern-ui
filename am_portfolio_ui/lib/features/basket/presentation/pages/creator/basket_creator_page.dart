@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
@@ -17,7 +16,9 @@ class BasketCreatorPage extends ConsumerStatefulWidget {
 
 class _BasketCreatorPageState extends ConsumerState<BasketCreatorPage> {
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController(text: '100000');
+  final TextEditingController _amountController = TextEditingController(
+    text: '100000',
+  );
 
   @override
   void dispose() {
@@ -151,8 +152,13 @@ class _BasketCreatorPageState extends ConsumerState<BasketCreatorPage> {
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'Search stocks...',
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                          prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                          hintStyle: TextStyle(
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Colors.white70,
+                          ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -177,8 +183,8 @@ class _BasketCreatorPageState extends ConsumerState<BasketCreatorPage> {
                   _searchController.text.isEmpty
                       ? searchResults
                       : ref
-                          .read(stockSearchNotifierProvider.notifier)
-                          .search(_searchController.text),
+                            .read(stockSearchNotifierProvider.notifier)
+                            .search(_searchController.text),
                   basket,
                 ),
               ),
@@ -291,7 +297,10 @@ class _BasketCreatorPageState extends ConsumerState<BasketCreatorPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.swap_horiz, color: Colors.blueAccent),
+                    icon: const Icon(
+                      Icons.swap_horiz,
+                      color: Colors.blueAccent,
+                    ),
                     tooltip: 'Replace',
                     onPressed: () => _replaceStock(stock),
                   ),
@@ -327,26 +336,36 @@ class _BasketCreatorPageState extends ConsumerState<BasketCreatorPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: SubstituteSelector(
           originalSymbol: original.symbol,
           requiredMarketCap: '', // Auto-detect
           onSelected: (StockSearchResult newStock) {
-             final stockToAdd = CustomBasketStock(
-               symbol: newStock.symbol,
-               name: newStock.name,
-               weight: original.weight,
-               sector: newStock.sector,
-             );
-             
-             // Remove then add to perform substitution
-             // Note: This trigger weight recalculation based on current notifier logic
-             ref.read(customBasketNotifierProvider.notifier).removeStock(original.symbol);
-             ref.read(customBasketNotifierProvider.notifier).addStock(stockToAdd);
-             
-             ScaffoldMessenger.of(context).showSnackBar(
-               SnackBar(content: Text('Replaced ${original.symbol} with ${newStock.symbol}')),
-             );
+            final stockToAdd = CustomBasketStock(
+              symbol: newStock.symbol,
+              name: newStock.name,
+              weight: original.weight,
+              sector: newStock.sector,
+            );
+
+            // Remove then add to perform substitution
+            // Note: This trigger weight recalculation based on current notifier logic
+            ref
+                .read(customBasketNotifierProvider.notifier)
+                .removeStock(original.symbol);
+            ref
+                .read(customBasketNotifierProvider.notifier)
+                .addStock(stockToAdd);
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Replaced ${original.symbol} with ${newStock.symbol}',
+                ),
+              ),
+            );
           },
         ),
       ),

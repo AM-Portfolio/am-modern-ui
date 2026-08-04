@@ -31,8 +31,12 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
     final items = _showGainers ? widget.gainers : widget.losers;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final toggleBgColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+    final onSurfaceVariant = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
+    final toggleBgColor = isDark
+        ? const Color(0xFF1E293B)
+        : const Color(0xFFF1F5F9);
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
     final headerStyle = TextStyle(
       fontSize: 11,
@@ -80,113 +84,125 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
             builder: (context, constraints) {
               final isMobile = MediaQuery.of(context).size.width < 600;
               if (isMobile) {
-                return _buildMobileList(items, isDark, currencyFormat, onSurface, onSurfaceVariant);
+                return _buildMobileList(
+                  items,
+                  isDark,
+                  currencyFormat,
+                  onSurface,
+                  onSurfaceVariant,
+                );
               }
               return SizedBox(
                 height: 280,
-            child: PaginatedSortableTable<MoverItem>(
-              items: items,
-              pageSize: 10,
-              pageSizeOptions: const [5, 10, 25],
-              initialSortColumnIndex: 2,
-              initialSortDirection: _showGainers
-                  ? SortDirection.descending
-                  : SortDirection.ascending,
-              headerTextStyle: headerStyle,
-              rowTextStyle: rowStyle,
-              headerBackgroundColor:
-                  isDark ? Colors.transparent : const Color(0xFFF8FAFC),
-              rowHoverColor:
-                  isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFF8FAFC),
-              emptyMessage: 'No data available',
-              columns: [
-                SortableColumn<MoverItem>(
-                  title: 'Ticker',
-                  flex: 3,
-                  sortBy: (item) => item.symbol,
-                  builder: (item) {
-                    final showName =
-                        item.name.isNotEmpty && item.name != item.symbol;
-                    return Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            item.symbol,
-                            style: rowStyle.copyWith(fontWeight: FontWeight.w700),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (showName) ...[
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              item.name,
-                              style: rowStyle.copyWith(color: onSurfaceVariant),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                child: PaginatedSortableTable<MoverItem>(
+                  items: items,
+                  pageSize: 10,
+                  pageSizeOptions: const [5, 10, 25],
+                  initialSortColumnIndex: 2,
+                  initialSortDirection: _showGainers
+                      ? SortDirection.descending
+                      : SortDirection.ascending,
+                  headerTextStyle: headerStyle,
+                  rowTextStyle: rowStyle,
+                  headerBackgroundColor: isDark
+                      ? Colors.transparent
+                      : const Color(0xFFF8FAFC),
+                  rowHoverColor: isDark
+                      ? Colors.white.withOpacity(0.04)
+                      : const Color(0xFFF8FAFC),
+                  emptyMessage: 'No data available',
+                  columns: [
+                    SortableColumn<MoverItem>(
+                      title: 'Ticker',
+                      flex: 3,
+                      sortBy: (item) => item.symbol,
+                      builder: (item) {
+                        final showName =
+                            item.name.isNotEmpty && item.name != item.symbol;
+                        return Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                item.symbol,
+                                style: rowStyle.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
+                            if (showName) ...[
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  item.name,
+                                  style: rowStyle.copyWith(
+                                    color: onSurfaceVariant,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      },
+                    ),
+                    SortableColumn<MoverItem>(
+                      title: 'Price',
+                      flex: 2,
+                      textAlign: TextAlign.end,
+                      sortBy: (item) => item.price,
+                      builder: (item) => Text(
+                        currencyFormat.format(item.price),
+                        textAlign: TextAlign.right,
+                        style: rowStyle.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    SortableColumn<MoverItem>(
+                      title: 'Change %',
+                      flex: 2,
+                      textAlign: TextAlign.end,
+                      sortBy: (item) => item.changePercentage,
+                      builder: (item) {
+                        final positive = item.changePercentage >= 0;
+                        return Text(
+                          '${positive ? '+' : ''}${item.changePercentage.toStringAsFixed(2)}%',
+                          textAlign: TextAlign.right,
+                          style: rowStyle.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: positive
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFEF4444),
                           ),
-                        ],
-                      ],
-                    );
-                  },
+                        );
+                      },
+                    ),
+                    SortableColumn<MoverItem>(
+                      title: 'Change ₹',
+                      flex: 2,
+                      textAlign: TextAlign.end,
+                      sortBy: (item) => item.changeAmount,
+                      builder: (item) {
+                        final positive = item.changeAmount >= 0;
+                        return Text(
+                          currencyFormat.format(item.changeAmount),
+                          textAlign: TextAlign.right,
+                          style: rowStyle.copyWith(
+                            color: positive
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFEF4444),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                SortableColumn<MoverItem>(
-                  title: 'Price',
-                  flex: 2,
-                  textAlign: TextAlign.end,
-                  sortBy: (item) => item.price,
-                  builder: (item) => Text(
-                    currencyFormat.format(item.price),
-                    textAlign: TextAlign.right,
-                    style: rowStyle.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                ),
-                SortableColumn<MoverItem>(
-                  title: 'Change %',
-                  flex: 2,
-                  textAlign: TextAlign.end,
-                  sortBy: (item) => item.changePercentage,
-                  builder: (item) {
-                    final positive = item.changePercentage >= 0;
-                    return Text(
-                      '${positive ? '+' : ''}${item.changePercentage.toStringAsFixed(2)}%',
-                      textAlign: TextAlign.right,
-                      style: rowStyle.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: positive
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
-                      ),
-                    );
-                  },
-                ),
-                SortableColumn<MoverItem>(
-                  title: 'Change ₹',
-                  flex: 2,
-                  textAlign: TextAlign.end,
-                  sortBy: (item) => item.changeAmount,
-                  builder: (item) {
-                    final positive = item.changeAmount >= 0;
-                    return Text(
-                      currencyFormat.format(item.changeAmount),
-                      textAlign: TextAlign.right,
-                      style: rowStyle.copyWith(
-                        color: positive
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ],
       ),
-    ],
-  ),
     );
   }
 
@@ -201,11 +217,14 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Center(
-          child: Text('No data available', style: TextStyle(color: onSurfaceVariant)),
+          child: Text(
+            'No data available',
+            style: TextStyle(color: onSurfaceVariant),
+          ),
         ),
       );
     }
-    
+
     // Show only up to 5 items on mobile to save vertical space
     final displayItems = items.take(5).toList();
 
@@ -214,13 +233,17 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: displayItems.length,
       separatorBuilder: (context, index) => Divider(
-        color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.1)
+            : const Color(0xFFE2E8F0),
         height: 1,
       ),
       itemBuilder: (context, index) {
         final item = displayItems[index];
         final positive = item.changePercentage >= 0;
-        final changeColor = positive ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+        final changeColor = positive
+            ? const Color(0xFF10B981)
+            : const Color(0xFFEF4444);
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -231,7 +254,9 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                  color: isDark
+                      ? const Color(0xFF1E293B)
+                      : const Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
@@ -288,7 +313,10 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: changeColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
@@ -313,7 +341,9 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
 
   Widget _buildToggleButton(String label, bool isGainers, bool isDark) {
     final isSelected = _showGainers == isGainers;
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+    final onSurfaceVariant = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF6B7280);
     return GestureDetector(
       onTap: () => setState(() => _showGainers = isGainers),
       child: Container(

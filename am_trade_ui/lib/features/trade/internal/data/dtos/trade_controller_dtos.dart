@@ -30,7 +30,8 @@ class DerivativeInfoDto {
     this.isCashSettled,
   });
 
-  factory DerivativeInfoDto.fromJson(Map<String, dynamic> json) => _$DerivativeInfoDtoFromJson(json);
+  factory DerivativeInfoDto.fromJson(Map<String, dynamic> json) =>
+      _$DerivativeInfoDtoFromJson(json);
 
   final DerivativeTypes? derivativeType;
   final String? futureType; // API sends this as string like "MONTHLY"
@@ -65,7 +66,8 @@ class InstrumentInfoDto {
     this.index,
   });
 
-  factory InstrumentInfoDto.fromJson(Map<String, dynamic> json) => _$InstrumentInfoDtoFromJson(json);
+  factory InstrumentInfoDto.fromJson(Map<String, dynamic> json) =>
+      _$InstrumentInfoDtoFromJson(json);
 
   final String? symbol;
   final String? isin;
@@ -91,9 +93,16 @@ class InstrumentInfoDto {
 /// DTO for entry/exit information
 @JsonSerializable(explicitToJson: true)
 class EntryExitInfoDto {
-  const EntryExitInfoDto({this.timestamp, this.price, this.quantity, this.totalValue, this.fees, this.reason});
+  const EntryExitInfoDto(
+      {this.timestamp,
+      this.price,
+      this.quantity,
+      this.totalValue,
+      this.fees,
+      this.reason});
 
-  factory EntryExitInfoDto.fromJson(Map<String, dynamic> json) => _$EntryExitInfoDtoFromJson(json);
+  factory EntryExitInfoDto.fromJson(Map<String, dynamic> json) =>
+      _$EntryExitInfoDtoFromJson(json);
 
   final String? timestamp; // format: "yyyy-MM-dd'T'HH:mm:ss'Z'"
   final double? price;
@@ -122,7 +131,8 @@ class TradeMetricsDto {
     this.maxFavorableExcursion,
   });
 
-  factory TradeMetricsDto.fromJson(Map<String, dynamic> json) => _$TradeMetricsDtoFromJson(json);
+  factory TradeMetricsDto.fromJson(Map<String, dynamic> json) =>
+      _$TradeMetricsDtoFromJson(json);
 
   final double? profitLoss;
   final double? profitLossPercentage;
@@ -142,9 +152,15 @@ class TradeMetricsDto {
 /// DTO for file attachments
 @JsonSerializable()
 class AttachmentDto {
-  const AttachmentDto({this.fileName, this.fileUrl, this.fileType, this.uploadedAt, this.description});
+  const AttachmentDto(
+      {this.fileName,
+      this.fileUrl,
+      this.fileType,
+      this.uploadedAt,
+      this.description});
 
-  factory AttachmentDto.fromJson(Map<String, dynamic> json) => _$AttachmentDtoFromJson(json);
+  factory AttachmentDto.fromJson(Map<String, dynamic> json) =>
+      _$AttachmentDtoFromJson(json);
 
   final String? fileName;
   final String? fileUrl;
@@ -166,7 +182,8 @@ class TradePsychologyDataDto {
     this.psychologyNotes,
   });
 
-  factory TradePsychologyDataDto.fromJson(Map<String, dynamic> json) => _$TradePsychologyDataDtoFromJson(json);
+  factory TradePsychologyDataDto.fromJson(Map<String, dynamic> json) =>
+      _$TradePsychologyDataDtoFromJson(json);
 
   @EntryPsychologyFactorsListConverter()
   final List<EntryPsychologyFactors>? entryPsychologyFactors;
@@ -200,7 +217,8 @@ class TradeEntryExitReasoningDto {
     this.streategy, // Note: This is misspelled in the API schema
   });
 
-  factory TradeEntryExitReasoningDto.fromJson(Map<String, dynamic> json) => _$TradeEntryExitReasoningDtoFromJson(json);
+  factory TradeEntryExitReasoningDto.fromJson(Map<String, dynamic> json) =>
+      _$TradeEntryExitReasoningDtoFromJson(json);
 
   @TechnicalReasonsListConverter()
   final List<TechnicalReasons>? technicalReasons;
@@ -234,7 +252,8 @@ class BasicInfoDto {
     this.tradeType,
   });
 
-  factory BasicInfoDto.fromJson(Map<String, dynamic> json) => _$BasicInfoDtoFromJson(json);
+  factory BasicInfoDto.fromJson(Map<String, dynamic> json) =>
+      _$BasicInfoDtoFromJson(json);
 
   final String? tradeId;
   final String? orderId;
@@ -252,7 +271,8 @@ class BasicInfoDto {
 class ExecutionInfoDto {
   const ExecutionInfoDto({this.quantity, this.price, this.orderType});
 
-  factory ExecutionInfoDto.fromJson(Map<String, dynamic> json) => _$ExecutionInfoDtoFromJson(json);
+  factory ExecutionInfoDto.fromJson(Map<String, dynamic> json) =>
+      _$ExecutionInfoDtoFromJson(json);
 
   final int? quantity;
   final double? price;
@@ -273,7 +293,8 @@ class FnOInfoDto {
     this.premiumValue,
   });
 
-  factory FnOInfoDto.fromJson(Map<String, dynamic> json) => _$FnOInfoDtoFromJson(json);
+  factory FnOInfoDto.fromJson(Map<String, dynamic> json) =>
+      _$FnOInfoDtoFromJson(json);
 
   final String? instrumentType;
   final String? expiryDate; // format: "yyyy-MM-dd"
@@ -299,7 +320,8 @@ class ChargesDto {
     this.totalTaxes,
   });
 
-  factory ChargesDto.fromJson(Map<String, dynamic> json) => _$ChargesDtoFromJson(json);
+  factory ChargesDto.fromJson(Map<String, dynamic> json) =>
+      _$ChargesDtoFromJson(json);
 
   final double? brokerage;
   final double? stt;
@@ -317,7 +339,8 @@ class ChargesDto {
 class FinancialsDto {
   const FinancialsDto({this.turnover, this.netAmount});
 
-  factory FinancialsDto.fromJson(Map<String, dynamic> json) => _$FinancialsDtoFromJson(json);
+  factory FinancialsDto.fromJson(Map<String, dynamic> json) =>
+      _$FinancialsDtoFromJson(json);
 
   final double? turnover;
   final double? netAmount;
@@ -337,7 +360,8 @@ class TradeModelDto {
     this.financials,
   });
 
-  factory TradeModelDto.fromJson(Map<String, dynamic> json) => _$TradeModelDtoFromJson(json);
+  factory TradeModelDto.fromJson(Map<String, dynamic> json) =>
+      _$TradeModelDtoFromJson(json);
 
   final BasicInfoDto? basicInfo;
   final InstrumentInfoDto? instrumentInfo;
@@ -376,7 +400,8 @@ class TradeDetailsDto {
     this.tradeEndDate,
   });
 
-  factory TradeDetailsDto.fromJson(Map<String, dynamic> json) => _$TradeDetailsDtoFromJson(json);
+  factory TradeDetailsDto.fromJson(Map<String, dynamic> json) =>
+      _$TradeDetailsDtoFromJson(json);
 
   final String tradeId;
   final String portfolioId;
@@ -418,7 +443,8 @@ class FilterSummaryDto {
     this.holdingTimeRange,
   });
 
-  factory FilterSummaryDto.fromJson(Map<String, dynamic> json) => _$FilterSummaryDtoFromJson(json);
+  factory FilterSummaryDto.fromJson(Map<String, dynamic> json) =>
+      _$FilterSummaryDtoFromJson(json);
 
   final List<String>? portfolioIds;
   final List<String>? symbols;
@@ -434,7 +460,8 @@ class FilterSummaryDto {
 /// DTO for filter trade details request
 @JsonSerializable(explicitToJson: true)
 class FilterTradeDetailsRequestDto {
-  const FilterTradeDetailsRequestDto({this.favoriteFilterId, this.metricsConfig});
+  const FilterTradeDetailsRequestDto(
+      {this.favoriteFilterId, this.metricsConfig});
 
   factory FilterTradeDetailsRequestDto.fromJson(Map<String, dynamic> json) =>
       _$FilterTradeDetailsRequestDtoFromJson(json);
@@ -479,9 +506,15 @@ class FilterTradeDetailsResponseDto {
 /// DTO for paginated trade response (GET /v1/trades/filter)
 @JsonSerializable(explicitToJson: true)
 class PaginatedTradeResponseDto {
-  const PaginatedTradeResponseDto({this.content, this.totalElements, this.totalPages, this.size, this.number});
+  const PaginatedTradeResponseDto(
+      {this.content,
+      this.totalElements,
+      this.totalPages,
+      this.size,
+      this.number});
 
-  factory PaginatedTradeResponseDto.fromJson(Map<String, dynamic> json) => _$PaginatedTradeResponseDtoFromJson(json);
+  factory PaginatedTradeResponseDto.fromJson(Map<String, dynamic> json) =>
+      _$PaginatedTradeResponseDtoFromJson(json);
 
   final List<TradeDetailsDto>? content;
   final int? totalElements;
@@ -495,9 +528,16 @@ class PaginatedTradeResponseDto {
 /// DTO for error response
 @JsonSerializable()
 class ErrorResponseDto {
-  const ErrorResponseDto({this.timestamp, this.status, this.error, this.message, this.path, this.details});
+  const ErrorResponseDto(
+      {this.timestamp,
+      this.status,
+      this.error,
+      this.message,
+      this.path,
+      this.details});
 
-  factory ErrorResponseDto.fromJson(Map<String, dynamic> json) => _$ErrorResponseDtoFromJson(json);
+  factory ErrorResponseDto.fromJson(Map<String, dynamic> json) =>
+      _$ErrorResponseDtoFromJson(json);
 
   final String? timestamp;
   final int? status;

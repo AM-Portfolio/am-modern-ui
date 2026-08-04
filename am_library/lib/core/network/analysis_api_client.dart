@@ -23,8 +23,9 @@ class AnalysisApiClient {
   Future<String?> _getAuthToken() async {
     final secureStorage = SecureStorageService();
     final token = await secureStorage.getAccessToken();
-    if (token != null && token.isNotEmpty && !token.startsWith('mock_')) return token;
-    
+    if (token != null && token.isNotEmpty && !token.startsWith('mock_'))
+      return token;
+
     // Fallback debug token
     return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Njc2MzU0MDUsImlhdCI6MTc2NzU0OTAwNSwic3ViIjoiZTFmZDI5MTgtNDg0Zi00NzE2LWFkNWItZDQ2MDkwODkxZTAxIiwidXNlcm5hbWUiOiJzc2QyNjU4QGdtYWlsLmNvbSIsImVtYWlsIjoic3NkMjY1OEBnbWFpbC5jb20iLCJzY29wZXMiOlsicmVhZCIsIndyaXRlIl19.RwnyRwlF_DMx4U28gTwhyEK-kW-OxTiqbe3MnQPI0-w';
   }
@@ -46,49 +47,65 @@ class _AuthClient extends http.BaseClient {
       try {
         // We must clone the request because BaseRequest.send() finalizes it.
         final currentRequest = _copyRequest(request);
-        
+
         final token = await getToken();
         if (token != null) {
           currentRequest.headers['Authorization'] = 'Bearer $token';
         }
-        
-        AppLogger.debug('🚀 [AnalysisClient] ${currentRequest.method} ${currentRequest.url} (Attempt $attempt)', tag: 'AnalysisApiClient');
-        
+
+        AppLogger.debug(
+            '🚀 [AnalysisClient] ${currentRequest.method} ${currentRequest.url} (Attempt $attempt)',
+            tag: 'AnalysisApiClient');
+
         final stopwatch = Stopwatch()..start();
         final response = await _inner.send(currentRequest);
         stopwatch.stop();
 
         // Record Telemetry
         ServiceRegistry.telemetry.recordApi(
-          'Analysis', 
-          currentRequest.method, 
-          currentRequest.url.path, 
-          response.statusCode, 
+          'Analysis',
+          currentRequest.method,
+          currentRequest.url.path,
+          response.statusCode,
           duration: stopwatch.elapsed,
-          extra: {'full_url': currentRequest.url.toString(), 'attempt': attempt},
+          extra: {
+            'full_url': currentRequest.url.toString(),
+            'attempt': attempt
+          },
         );
-        
+
         // Retry on server errors (5xx) or timeout-like scenarios
         if (response.statusCode >= 500 && attempt < maxRetries) {
-          AppLogger.warning('⚠️ [AnalysisClient] Status ${response.statusCode}, retrying...', tag: 'AnalysisApiClient');
+          AppLogger.warning(
+              '⚠️ [AnalysisClient] Status ${response.statusCode}, retrying...',
+              tag: 'AnalysisApiClient');
           await Future.delayed(Duration(seconds: attempt));
           continue;
         }
-        
+
         // Return 4xx directly to the caller (SDK) which will throw
         if (response.statusCode >= 400 && response.statusCode < 500) {
-           AppLogger.error('❌ [AnalysisClient] Client Error ${response.statusCode}', tag: 'AnalysisApiClient');
-           return response; 
+          AppLogger.error(
+              '❌ [AnalysisClient] Client Error ${response.statusCode}',
+              tag: 'AnalysisApiClient');
+          return response;
         }
 
-        AppLogger.debug('✅ [AnalysisClient] ${response.statusCode} ${currentRequest.url}', tag: 'AnalysisApiClient');
+        AppLogger.debug(
+            '✅ [AnalysisClient] ${response.statusCode} ${currentRequest.url}',
+            tag: 'AnalysisApiClient');
         return response;
       } catch (e) {
         if (attempt >= maxRetries) {
-          AppLogger.error('❌ [AnalysisClient] Failed after $maxRetries attempts', tag: 'AnalysisApiClient', error: e);
+          AppLogger.error(
+              '❌ [AnalysisClient] Failed after $maxRetries attempts',
+              tag: 'AnalysisApiClient',
+              error: e);
           rethrow;
         }
-        AppLogger.warning('⚠️ [AnalysisClient] Attempt $attempt failed, retrying...', tag: 'AnalysisApiClient');
+        AppLogger.warning(
+            '⚠️ [AnalysisClient] Attempt $attempt failed, retrying...',
+            tag: 'AnalysisApiClient');
         await Future.delayed(Duration(seconds: attempt));
       }
     }

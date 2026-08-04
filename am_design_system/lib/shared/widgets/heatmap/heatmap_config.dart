@@ -118,13 +118,14 @@ class HeatmapConfig {
     LayoutConfig? layout,
     InteractionConfig? interactions,
     VisualConfig? visual,
-  }) => HeatmapConfig(
-    selectors: selectors ?? this.selectors,
-    display: display ?? this.display,
-    layout: layout ?? this.layout,
-    interactions: interactions ?? this.interactions,
-    visual: visual ?? this.visual,
-  );
+  }) =>
+      HeatmapConfig(
+        selectors: selectors ?? this.selectors,
+        display: display ?? this.display,
+        layout: layout ?? this.layout,
+        interactions: interactions ?? this.interactions,
+        visual: visual ?? this.visual,
+      );
 
   /// Create configuration with modified selectors
   HeatmapConfig withSelectors({
@@ -132,14 +133,15 @@ class HeatmapConfig {
     bool metric = true,
     bool sector = false,
     bool marketCap = false,
-  }) => copyWith(
-    selectors: effectiveSelectors.copyWith(
-      showTimeFrameSelector: timeFrame,
-      showMetricSelector: metric,
-      showSectorSelector: sector,
-      showMarketCapSelector: marketCap,
-    ),
-  );
+  }) =>
+      copyWith(
+        selectors: effectiveSelectors.copyWith(
+          showTimeFrameSelector: timeFrame,
+          showMetricSelector: metric,
+          showSectorSelector: sector,
+          showMarketCapSelector: marketCap,
+        ),
+      );
 
   /// Create configuration with specific display features
   HeatmapConfig withDisplay({
@@ -149,30 +151,32 @@ class HeatmapConfig {
     bool? value,
     bool? legend,
     bool? header,
-  }) => copyWith(
-    display: effectiveDisplay.copyWith(
-      showSubCards: subCards,
-      showPerformance: performance,
-      showWeightage: weightage,
-      showValue: value,
-      showLegend: legend,
-      showHeader: header,
-    ),
-  );
+  }) =>
+      copyWith(
+        display: effectiveDisplay.copyWith(
+          showSubCards: subCards,
+          showPerformance: performance,
+          showWeightage: weightage,
+          showValue: value,
+          showLegend: legend,
+          showHeader: header,
+        ),
+      );
 
   /// Create configuration with specific layout settings
   HeatmapConfig withLayout({
     HeatmapLayoutType? type,
     bool? compact,
     String? title,
-  }) => copyWith(
-    layout: effectiveLayout.copyWith(
-      layoutType: type,
-      compactView: compact,
-      customTitle: title,
-      showTitle: title != null,
-    ),
-  );
+  }) =>
+      copyWith(
+        layout: effectiveLayout.copyWith(
+          layoutType: type,
+          compactView: compact,
+          customTitle: title,
+          showTitle: title != null,
+        ),
+      );
 
   /// Create configuration with specific interaction settings
   HeatmapConfig withInteractions({
@@ -183,17 +187,18 @@ class HeatmapConfig {
     bool? hoverEffects,
     bool? multiSelect,
     bool? dragAndDrop,
-  }) => copyWith(
-    interactions: effectiveInteractions.copyWith(
-      enableTileInteraction: tileInteraction,
-      enableSelectorInteraction: selectorInteraction,
-      showLoadingStates: loadingStates,
-      showErrorStates: errorStates,
-      enableHoverEffects: hoverEffects,
-      enableMultiSelect: multiSelect,
-      enableDragAndDrop: dragAndDrop,
-    ),
-  );
+  }) =>
+      copyWith(
+        interactions: effectiveInteractions.copyWith(
+          enableTileInteraction: tileInteraction,
+          enableSelectorInteraction: selectorInteraction,
+          showLoadingStates: loadingStates,
+          showErrorStates: errorStates,
+          enableHoverEffects: hoverEffects,
+          enableMultiSelect: multiSelect,
+          enableDragAndDrop: dragAndDrop,
+        ),
+      );
 
   /// Create configuration with specific visual settings
   HeatmapConfig withVisual({
@@ -205,18 +210,19 @@ class HeatmapConfig {
     double? elevation,
     Duration? animationDuration,
     double? tileSpacing,
-  }) => copyWith(
-    visual: effectiveVisual.copyWith(
-      selectorPadding: selectorPadding,
-      cardPadding: cardPadding,
-      selectorSpacing: selectorSpacing,
-      accentColor: accentColor,
-      borderRadius: borderRadius,
-      elevation: elevation,
-      animationDuration: animationDuration,
-      tileSpacing: tileSpacing,
-    ),
-  );
+  }) =>
+      copyWith(
+        visual: effectiveVisual.copyWith(
+          selectorPadding: selectorPadding,
+          cardPadding: cardPadding,
+          selectorSpacing: selectorSpacing,
+          accentColor: accentColor,
+          borderRadius: borderRadius,
+          elevation: elevation,
+          animationDuration: animationDuration,
+          tileSpacing: tileSpacing,
+        ),
+      );
 
   /// Check if any selectors should be shown
   bool get hasSelectors =>

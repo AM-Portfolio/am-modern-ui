@@ -84,29 +84,32 @@ class QuoteChange {
   double? changePercent;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is QuoteChange &&
-    other.lastPrice == lastPrice &&
-    other.open == open &&
-    other.high == high &&
-    other.low == low &&
-    other.close == close &&
-    other.previousClose == previousClose &&
-    other.change == change &&
-    other.changePercent == changePercent;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is QuoteChange &&
+          other.lastPrice == lastPrice &&
+          other.open == open &&
+          other.high == high &&
+          other.low == low &&
+          other.close == close &&
+          other.previousClose == previousClose &&
+          other.change == change &&
+          other.changePercent == changePercent;
 
   @override
   int get hashCode =>
-    (lastPrice == null ? 0 : lastPrice!.hashCode) +
-    (open == null ? 0 : open!.hashCode) +
-    (high == null ? 0 : high!.hashCode) +
-    (low == null ? 0 : low!.hashCode) +
-    (close == null ? 0 : close!.hashCode) +
-    (previousClose == null ? 0 : previousClose!.hashCode) +
-    (change == null ? 0 : change!.hashCode) +
-    (changePercent == null ? 0 : changePercent!.hashCode);
+      (lastPrice == null ? 0 : lastPrice!.hashCode) +
+      (open == null ? 0 : open!.hashCode) +
+      (high == null ? 0 : high!.hashCode) +
+      (low == null ? 0 : low!.hashCode) +
+      (close == null ? 0 : close!.hashCode) +
+      (previousClose == null ? 0 : previousClose!.hashCode) +
+      (change == null ? 0 : change!.hashCode) +
+      (changePercent == null ? 0 : changePercent!.hashCode);
 
   @override
-  String toString() => 'QuoteChange[lastPrice=$lastPrice, open=$open, high=$high, low=$low, close=$close, previousClose=$previousClose, change=$change, changePercent=$changePercent]';
+  String toString() =>
+      'QuoteChange[lastPrice=$lastPrice, open=$open, high=$high, low=$low, close=$close, previousClose=$previousClose, change=$change, changePercent=$changePercent]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -164,8 +167,10 @@ class QuoteChange {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "QuoteChange[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "QuoteChange[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "QuoteChange[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "QuoteChange[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -184,7 +189,10 @@ class QuoteChange {
     return null;
   }
 
-  static List<QuoteChange> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<QuoteChange> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <QuoteChange>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -200,7 +208,7 @@ class QuoteChange {
   static Map<String, QuoteChange> mapFromJson(dynamic json) {
     final map = <String, QuoteChange>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = QuoteChange.fromJson(entry.value);
         if (value != null) {
@@ -212,19 +220,23 @@ class QuoteChange {
   }
 
   // maps a json object with a list of QuoteChange-objects as value to a dart map
-  static Map<String, List<QuoteChange>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<QuoteChange>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<QuoteChange>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = QuoteChange.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = QuoteChange.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

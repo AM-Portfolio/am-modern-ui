@@ -39,8 +39,7 @@ class MobileTimeFrameDropdown extends ConsumerWidget {
         borderRadius: 10,
         menuMaxHeight: menuMaxHeightForThreeItems,
         primaryColor: AppColors.primary,
-        backgroundColor:
-            isDark ? Colors.white.withValues(alpha: 0.06) : null,
+        backgroundColor: isDark ? Colors.white.withValues(alpha: 0.06) : null,
         borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
         contentPadding: const EdgeInsets.symmetric(horizontal: 8),
         items: options

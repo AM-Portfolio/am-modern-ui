@@ -7,12 +7,13 @@ export 'time_frame_selector.dart';
 export 'global_time_frame_bar.dart';
 export 'mobile_time_frame_dropdown.dart';
 // Re-export am_common enum types so all files importing this barrel get the types
-export 'package:am_common/am_common.dart' show
-    TimeFrame,
-    TimeFrameExtension,
-    MetricType,
-    MetricTypeExtension,
-    SectorType,
-    SectorTypeExtension,
-    MarketCapType,
-    MarketCapTypeExtension;
+export 'package:am_common/am_common.dart'
+    show
+        TimeFrame,
+        TimeFrameExtension,
+        MetricType,
+        MetricTypeExtension,
+        SectorType,
+        SectorTypeExtension,
+        MarketCapType,
+        MarketCapTypeExtension;

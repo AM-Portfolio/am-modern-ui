@@ -29,11 +29,11 @@ void main() async {
       final data = decoded['data'] as Map;
       print('Keys in data: ${data.keys.toList()}');
       for (var key in data.keys) {
-         final points = data[key]['dataPoints'] as List?;
-         print('Symbol: $key, points count: ${points?.length}');
-         if (points != null && points.isNotEmpty) {
-           print('First point for $key: ${points.first}');
-         }
+        final points = data[key]['dataPoints'] as List?;
+        print('Symbol: $key, points count: ${points?.length}');
+        if (points != null && points.isNotEmpty) {
+          print('First point for $key: ${points.first}');
+        }
       }
     } else {
       print('No data key. Body: ${response.body}');

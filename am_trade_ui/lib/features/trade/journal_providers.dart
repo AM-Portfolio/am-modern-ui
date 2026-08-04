@@ -16,10 +16,11 @@ import 'package:am_common/core/di/network_providers.dart';
 // Infrastructure Providers
 
 /// Provider for JournalRemoteDataSource
-final _journalRemoteDataSourceProvider = FutureProvider<JournalRemoteDataSource>((ref) async {
+final _journalRemoteDataSourceProvider =
+    FutureProvider<JournalRemoteDataSource>((ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
   final apiConfig = await ref.watch(appConfigProvider.future);
-  
+
   TradeApiConfig tradeConfig = apiConfig.api.trade;
 
   // Local environment override for the Trade API
@@ -43,37 +44,44 @@ final _journalRemoteDataSourceProvider = FutureProvider<JournalRemoteDataSource>
     );
   }
 
-  return JournalRemoteDataSourceImpl(apiClient: apiClient, tradeConfig: tradeConfig);
+  return JournalRemoteDataSourceImpl(
+      apiClient: apiClient, tradeConfig: tradeConfig);
 });
 
 /// Provider for JournalRepository
-final _journalRepositoryProvider = FutureProvider<JournalRepository>((ref) async {
-  final remoteDataSource = await ref.watch(_journalRemoteDataSourceProvider.future);
+final _journalRepositoryProvider =
+    FutureProvider<JournalRepository>((ref) async {
+  final remoteDataSource =
+      await ref.watch(_journalRemoteDataSourceProvider.future);
   return JournalRepositoryImpl(remoteDataSource: remoteDataSource);
 });
 
 // Use Case Providers
 
 /// Provider for GetJournalEntriesUseCase
-final _getJournalEntriesUseCaseProvider = FutureProvider<GetJournalEntriesUseCase>((ref) async {
+final _getJournalEntriesUseCaseProvider =
+    FutureProvider<GetJournalEntriesUseCase>((ref) async {
   final repository = await ref.watch(_journalRepositoryProvider.future);
   return GetJournalEntriesUseCase(repository);
 });
 
 /// Provider for CreateJournalEntryUseCase
-final _createJournalEntryUseCaseProvider = FutureProvider<CreateJournalEntryUseCase>((ref) async {
+final _createJournalEntryUseCaseProvider =
+    FutureProvider<CreateJournalEntryUseCase>((ref) async {
   final repository = await ref.watch(_journalRepositoryProvider.future);
   return CreateJournalEntryUseCase(repository);
 });
 
 /// Provider for UpdateJournalEntryUseCase
-final _updateJournalEntryUseCaseProvider = FutureProvider<UpdateJournalEntryUseCase>((ref) async {
+final _updateJournalEntryUseCaseProvider =
+    FutureProvider<UpdateJournalEntryUseCase>((ref) async {
   final repository = await ref.watch(_journalRepositoryProvider.future);
   return UpdateJournalEntryUseCase(repository);
 });
 
 /// Provider for DeleteJournalEntryUseCase
-final _deleteJournalEntryUseCaseProvider = FutureProvider<DeleteJournalEntryUseCase>((ref) async {
+final _deleteJournalEntryUseCaseProvider =
+    FutureProvider<DeleteJournalEntryUseCase>((ref) async {
   final repository = await ref.watch(_journalRepositoryProvider.future);
   return DeleteJournalEntryUseCase(repository);
 });
@@ -83,9 +91,13 @@ final _deleteJournalEntryUseCaseProvider = FutureProvider<DeleteJournalEntryUseC
 /// Provider for JournalCubit
 final journalCubitProvider = FutureProvider<JournalCubit>(
   (ref) async => JournalCubit(
-    getJournalEntries: await ref.watch(_getJournalEntriesUseCaseProvider.future),
-    createJournalEntry: await ref.watch(_createJournalEntryUseCaseProvider.future),
-    updateJournalEntry: await ref.watch(_updateJournalEntryUseCaseProvider.future),
-    deleteJournalEntry: await ref.watch(_deleteJournalEntryUseCaseProvider.future),
+    getJournalEntries:
+        await ref.watch(_getJournalEntriesUseCaseProvider.future),
+    createJournalEntry:
+        await ref.watch(_createJournalEntryUseCaseProvider.future),
+    updateJournalEntry:
+        await ref.watch(_updateJournalEntryUseCaseProvider.future),
+    deleteJournalEntry:
+        await ref.watch(_deleteJournalEntryUseCaseProvider.future),
   ),
 );

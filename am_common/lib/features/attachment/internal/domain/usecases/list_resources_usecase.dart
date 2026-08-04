@@ -11,9 +11,10 @@ class ListResourcesUseCase {
     String? folder,
     int? limit,
     String? nextCursor,
-  }) => _repository.listResources(
-    folder: folder,
-    maxResults: limit ?? 100,
-    nextCursor: nextCursor,
-  );
+  }) =>
+      _repository.listResources(
+        folder: folder,
+        maxResults: limit ?? 100,
+        nextCursor: nextCursor,
+      );
 }

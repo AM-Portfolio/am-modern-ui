@@ -65,7 +65,8 @@ GoRouter createAppRouter({
       }
 
       // Lab is disabled in navigation — block direct URL access.
-      if (location == AppRoutes.lab || location.startsWith('${AppRoutes.lab}/')) {
+      if (location == AppRoutes.lab ||
+          location.startsWith('${AppRoutes.lab}/')) {
         return AppRoutes.dashboard;
       }
 
@@ -74,8 +75,7 @@ GoRouter createAppRouter({
           location.startsWith('${AppRoutes.analysis}/') ||
           location == AppRoutes.aiChat ||
           location.startsWith('${AppRoutes.aiChat}/')) {
-        final isAdmin =
-            authState is Authenticated && authState.user.isAdmin;
+        final isAdmin = authState is Authenticated && authState.user.isAdmin;
         if (!isAdmin) return AppRoutes.dashboard;
       }
 
@@ -184,11 +184,10 @@ GoRouter createAppRouter({
                 ),
                 onPortfolioChanged: (id, name) {
                   _patchPortfolioSession(context, id, name);
-                  final currentTab =
-                      ShareUrlBuilder.portfolioTabFromLocation(
-                            GoRouterState.of(context).matchedLocation,
-                          ) ??
-                          tab;
+                  final currentTab = ShareUrlBuilder.portfolioTabFromLocation(
+                        GoRouterState.of(context).matchedLocation,
+                      ) ??
+                      tab;
                   context.go(AppRoutes.portfolioPath(id, currentTab));
                 },
                 onOpenDocIntel: () =>
@@ -339,19 +338,16 @@ GoRouter createAppRouter({
                       context.go(AppRoutes.privacyPolicy),
                   onOpenTermsOfService: () =>
                       context.go(AppRoutes.termsOfService),
-                  onOpenSubscription: () =>
-                      context.go(AppRoutes.subscription),
+                  onOpenSubscription: () => context.go(AppRoutes.subscription),
                 );
               }
               return buildProfileRoute(
                 userId: _userId(context),
                 highlightSubscription: highlightSubscription,
-                onOpenPrivacyPolicy: () =>
-                    context.go(AppRoutes.privacyPolicy),
+                onOpenPrivacyPolicy: () => context.go(AppRoutes.privacyPolicy),
                 onOpenTermsOfService: () =>
                     context.go(AppRoutes.termsOfService),
-                onOpenSubscription: () =>
-                    context.go(AppRoutes.subscription),
+                onOpenSubscription: () => context.go(AppRoutes.subscription),
               );
             },
           ),
@@ -389,7 +385,9 @@ GoRouter createAppRouter({
 String? _legacyPortfolioTabRedirect(String location) {
   if (!location.startsWith('${AppRoutes.portfolio}/')) return null;
   final segments = location.split('/').where((s) => s.isNotEmpty).toList();
-  if (segments.length != 3 || segments[0] != 'app' || segments[1] != 'portfolio') {
+  if (segments.length != 3 ||
+      segments[0] != 'app' ||
+      segments[1] != 'portfolio') {
     return null;
   }
   final segment = segments[2];
@@ -433,4 +431,3 @@ void _patchPortfolioSession(BuildContext context, String id, String name) {
     );
   }
 }
-

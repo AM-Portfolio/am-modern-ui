@@ -19,7 +19,8 @@ enum MarketSegments {
 }
 
 /// Converter to handle market segment values
-class MarketSegmentsConverter implements JsonConverter<MarketSegments?, String?> {
+class MarketSegmentsConverter
+    implements JsonConverter<MarketSegments?, String?> {
   const MarketSegmentsConverter();
 
   @override

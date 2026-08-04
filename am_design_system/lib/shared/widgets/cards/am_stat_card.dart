@@ -1,11 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:am_design_system/core/contracts/design_contract.dart';
 import 'package:am_design_system/core/config/design_system_provider.dart';
-
-
 
 /// Semantic types for Stat Cards.
 /// Dictates the visual style without exposing raw colors.
@@ -17,7 +14,7 @@ enum StatType {
 }
 
 /// A standardized Statistical Card component.
-/// 
+///
 /// Follows the "Design Contract" architecture:
 /// - Visuals are controlled by [type].
 /// - Overrides are only allowed via [overrideContract].
@@ -50,10 +47,10 @@ class AmStatCard extends StatelessWidget {
     // 1. Resolve Semantic Colors based on Type & Theme
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     // Get Design Config
     final config = DesignSystemProvider.of(context);
-    
+
     Color valueColor;
     Color iconBgColor;
     Color progressColor;
@@ -84,18 +81,23 @@ class AmStatCard extends StatelessWidget {
 
     // 2. Apply Standard Styles (or Overrides)
     final decoration = BoxDecoration(
-      color: overrideContract?.backgroundColor ?? theme.cardTheme.color ?? theme.cardColor,
-      borderRadius: overrideContract?.borderRadius ?? BorderRadius.circular(config.defaultRadius), // Use config radius
-      boxShadow: overrideContract?.boxShadow ?? [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.03),
-          blurRadius: 16,
-          offset: const Offset(0, 4),
-        ),
-      ],
-      border: overrideContract?.border ?? Border.all(
-        color: theme.dividerColor.withOpacity(0.1),
-      ),
+      color: overrideContract?.backgroundColor ??
+          theme.cardTheme.color ??
+          theme.cardColor,
+      borderRadius: overrideContract?.borderRadius ??
+          BorderRadius.circular(config.defaultRadius), // Use config radius
+      boxShadow: overrideContract?.boxShadow ??
+          [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+      border: overrideContract?.border ??
+          Border.all(
+            color: theme.dividerColor.withOpacity(0.1),
+          ),
     );
 
     Widget cardContent = Container(
@@ -120,13 +122,15 @@ class AmStatCard extends StatelessWidget {
                             title,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontSize: 13,
-                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                              color: theme.textTheme.bodyMedium?.color
+                                  ?.withOpacity(0.7),
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.5,
                             ),
                           ),
                           const SizedBox(width: 6),
-                          Icon(Icons.info_outline, size: 14, color: theme.disabledColor),
+                          Icon(Icons.info_outline,
+                              size: 14, color: theme.disabledColor),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -152,7 +156,9 @@ class AmStatCard extends StatelessWidget {
                     child: Icon(
                       icon,
                       size: 20,
-                      color: type == StatType.neutral ? config.primaryColor : valueColor,
+                      color: type == StatType.neutral
+                          ? config.primaryColor
+                          : valueColor,
                     ),
                   ),
               ],
@@ -197,11 +203,15 @@ class AmStatCard extends StatelessWidget {
     if (onTap != null) {
       cardContent = InkWell(
         onTap: onTap,
-        borderRadius: overrideContract?.borderRadius as BorderRadius? ?? BorderRadius.circular(config.defaultRadius),
+        borderRadius: overrideContract?.borderRadius as BorderRadius? ??
+            BorderRadius.circular(config.defaultRadius),
         child: cardContent,
       );
     }
 
-    return cardContent.animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0, curve: Curves.easeOutQuad);
+    return cardContent
+        .animate()
+        .fadeIn(duration: 600.ms)
+        .slideY(begin: 0.2, end: 0, curve: Curves.easeOutQuad);
   }
 }

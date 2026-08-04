@@ -18,13 +18,13 @@ enum FilterGroupType { dateRange, instrument, tradeCharacteristics, profitLoss }
 /// Clean filter panel for trade holdings - without favorite filter logic
 class FilterPanel extends ConsumerStatefulWidget {
   const FilterPanel({
-        required this.initialConfig,
+    required this.initialConfig,
     required this.onApplyFilter,
     super.key,
     this.onReset,
   });
 
-    final MetricsFilterConfig initialConfig;
+  final MetricsFilterConfig initialConfig;
   final Function(MetricsFilterConfig) onApplyFilter;
   final VoidCallback? onReset;
 
@@ -32,7 +32,8 @@ class FilterPanel extends ConsumerStatefulWidget {
   ConsumerState<FilterPanel> createState() => _FilterPanelState();
 }
 
-class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProviderStateMixin {
+class _FilterPanelState extends ConsumerState<FilterPanel>
+    with SingleTickerProviderStateMixin {
   final List<FilterGroup> _activeGroups = [];
   bool _isExpanded = false;
   late AnimationController _animationController;
@@ -41,11 +42,13 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(duration: const Duration(milliseconds: 200), vsync: this);
+    _animationController = AnimationController(
+        duration: const Duration(milliseconds: 200), vsync: this);
     _rotationAnimation = Tween<double>(
       begin: 0,
       end: 0.5,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+    ).animate(
+        CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
     _initializeFromConfig();
 
     if (_activeGroups.isNotEmpty) {
@@ -102,22 +105,26 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
       switch (type) {
         case FilterGroupType.dateRange:
           if (!_activeGroups.any((g) => g is DateRangeFilterGroup)) {
-            _activeGroups.add(DateRangeFilterGroup(onChanged: (start, end) => setState(() {})));
+            _activeGroups.add(DateRangeFilterGroup(
+                onChanged: (start, end) => setState(() {})));
           }
           break;
         case FilterGroupType.instrument:
           if (!_activeGroups.any((g) => g is InstrumentFilterGroup)) {
-            _activeGroups.add(InstrumentFilterGroup(onChanged: () => setState(() {})));
+            _activeGroups
+                .add(InstrumentFilterGroup(onChanged: () => setState(() {})));
           }
           break;
         case FilterGroupType.tradeCharacteristics:
           if (!_activeGroups.any((g) => g is TradeCharacteristicsFilterGroup)) {
-            _activeGroups.add(TradeCharacteristicsFilterGroup(onChanged: () => setState(() {})));
+            _activeGroups.add(TradeCharacteristicsFilterGroup(
+                onChanged: () => setState(() {})));
           }
           break;
         case FilterGroupType.profitLoss:
           if (!_activeGroups.any((g) => g is ProfitLossFilterGroup)) {
-            _activeGroups.add(ProfitLossFilterGroup(onChanged: () => setState(() {})));
+            _activeGroups
+                .add(ProfitLossFilterGroup(onChanged: () => setState(() {})));
           }
           break;
       }
@@ -145,10 +152,22 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
 
   void _applyFilters() {
     final config = MetricsFilterConfig(
-      dateRange: _activeGroups.whereType<DateRangeFilterGroup>().firstOrNull?.toFilterCriteria(),
-      instrumentFilters: _activeGroups.whereType<InstrumentFilterGroup>().firstOrNull?.toFilterCriteria(),
-      tradeCharacteristics: _activeGroups.whereType<TradeCharacteristicsFilterGroup>().firstOrNull?.toFilterCriteria(),
-      profitLossFilters: _activeGroups.whereType<ProfitLossFilterGroup>().firstOrNull?.toFilterCriteria(),
+      dateRange: _activeGroups
+          .whereType<DateRangeFilterGroup>()
+          .firstOrNull
+          ?.toFilterCriteria(),
+      instrumentFilters: _activeGroups
+          .whereType<InstrumentFilterGroup>()
+          .firstOrNull
+          ?.toFilterCriteria(),
+      tradeCharacteristics: _activeGroups
+          .whereType<TradeCharacteristicsFilterGroup>()
+          .firstOrNull
+          ?.toFilterCriteria(),
+      profitLossFilters: _activeGroups
+          .whereType<ProfitLossFilterGroup>()
+          .firstOrNull
+          ?.toFilterCriteria(),
     );
 
     widget.onApplyFilter(config);
@@ -177,47 +196,63 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
   }
 
   void _loadInstrumentFilter(MetricsFilterConfig config) {
-    if (config.instrumentFilters != null && _hasInstrumentFilters(config.instrumentFilters)) {
+    if (config.instrumentFilters != null &&
+        _hasInstrumentFilters(config.instrumentFilters)) {
       final group = InstrumentFilterGroup(onChanged: () => setState(() {}));
-      group.selectedSegments = List.from(config.instrumentFilters!.marketSegments);
-      group.selectedIndexTypes = List.from(config.instrumentFilters!.indexTypes);
-      group.selectedDerivativeTypes = List.from(config.instrumentFilters!.derivativeTypes);
-      group.symbolsController.text = config.instrumentFilters!.baseSymbols.join(', ');
+      group.selectedSegments =
+          List.from(config.instrumentFilters!.marketSegments);
+      group.selectedIndexTypes =
+          List.from(config.instrumentFilters!.indexTypes);
+      group.selectedDerivativeTypes =
+          List.from(config.instrumentFilters!.derivativeTypes);
+      group.symbolsController.text =
+          config.instrumentFilters!.baseSymbols.join(', ');
       _activeGroups.add(group);
     }
   }
 
   void _loadTradeCharacteristicsFilter(MetricsFilterConfig config) {
-    if (config.tradeCharacteristics != null && _hasTradeCharacteristics(config.tradeCharacteristics)) {
-      final group = TradeCharacteristicsFilterGroup(onChanged: () => setState(() {}));
-      group.selectedDirections = List.from(config.tradeCharacteristics!.directions);
+    if (config.tradeCharacteristics != null &&
+        _hasTradeCharacteristics(config.tradeCharacteristics)) {
+      final group =
+          TradeCharacteristicsFilterGroup(onChanged: () => setState(() {}));
+      group.selectedDirections =
+          List.from(config.tradeCharacteristics!.directions);
       group.selectedStatuses = List.from(config.tradeCharacteristics!.statuses);
-      group.strategiesController.text = config.tradeCharacteristics!.strategies.join(', ');
+      group.strategiesController.text =
+          config.tradeCharacteristics!.strategies.join(', ');
       group.tagsController.text = config.tradeCharacteristics!.tags.join(', ');
       if (config.tradeCharacteristics!.minHoldingTimeHours != null) {
-        group.minHoldingHoursController.text = config.tradeCharacteristics!.minHoldingTimeHours.toString();
+        group.minHoldingHoursController.text =
+            config.tradeCharacteristics!.minHoldingTimeHours.toString();
       }
       if (config.tradeCharacteristics!.maxHoldingTimeHours != null) {
-        group.maxHoldingHoursController.text = config.tradeCharacteristics!.maxHoldingTimeHours.toString();
+        group.maxHoldingHoursController.text =
+            config.tradeCharacteristics!.maxHoldingTimeHours.toString();
       }
       _activeGroups.add(group);
     }
   }
 
   void _loadProfitLossFilter(MetricsFilterConfig config) {
-    if (config.profitLossFilters != null && _hasProfitLossFilters(config.profitLossFilters)) {
+    if (config.profitLossFilters != null &&
+        _hasProfitLossFilters(config.profitLossFilters)) {
       final group = ProfitLossFilterGroup(onChanged: () => setState(() {}));
       if (config.profitLossFilters!.minProfitLoss != null) {
-        group.minPnLController.text = config.profitLossFilters!.minProfitLoss.toString();
+        group.minPnLController.text =
+            config.profitLossFilters!.minProfitLoss.toString();
       }
       if (config.profitLossFilters!.maxProfitLoss != null) {
-        group.maxPnLController.text = config.profitLossFilters!.maxProfitLoss.toString();
+        group.maxPnLController.text =
+            config.profitLossFilters!.maxProfitLoss.toString();
       }
       if (config.profitLossFilters!.minPositionSize != null) {
-        group.minPositionSizeController.text = config.profitLossFilters!.minPositionSize.toString();
+        group.minPositionSizeController.text =
+            config.profitLossFilters!.minPositionSize.toString();
       }
       if (config.profitLossFilters!.maxPositionSize != null) {
-        group.maxPositionSizeController.text = config.profitLossFilters!.maxPositionSize.toString();
+        group.maxPositionSizeController.text =
+            config.profitLossFilters!.maxPositionSize.toString();
       }
       _activeGroups.add(group);
     }
@@ -279,37 +314,52 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel')),
+            TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancel')),
             FilledButton(
               onPressed: () {
                 final name = nameController.text.trim();
                 if (name.isEmpty) {
                   ScaffoldMessenger.of(
                     context,
-                  ).showSnackBar(const SnackBar(content: Text('Please enter a filter name')));
+                  ).showSnackBar(const SnackBar(
+                      content: Text('Please enter a filter name')));
                   return;
                 }
 
                 final config = MetricsFilterConfig(
-                  dateRange: _activeGroups.whereType<DateRangeFilterGroup>().firstOrNull?.toFilterCriteria(),
-                  instrumentFilters: _activeGroups.whereType<InstrumentFilterGroup>().firstOrNull?.toFilterCriteria(),
+                  dateRange: _activeGroups
+                      .whereType<DateRangeFilterGroup>()
+                      .firstOrNull
+                      ?.toFilterCriteria(),
+                  instrumentFilters: _activeGroups
+                      .whereType<InstrumentFilterGroup>()
+                      .firstOrNull
+                      ?.toFilterCriteria(),
                   tradeCharacteristics: _activeGroups
                       .whereType<TradeCharacteristicsFilterGroup>()
                       .firstOrNull
                       ?.toFilterCriteria(),
-                  profitLossFilters: _activeGroups.whereType<ProfitLossFilterGroup>().firstOrNull?.toFilterCriteria(),
+                  profitLossFilters: _activeGroups
+                      .whereType<ProfitLossFilterGroup>()
+                      .firstOrNull
+                      ?.toFilterCriteria(),
                 );
 
                 cubit.createFilter(
                   name: name,
                   filterConfig: config,
-                  description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
+                  description: descriptionController.text.trim().isEmpty
+                      ? null
+                      : descriptionController.text.trim(),
                 );
 
                 Navigator.of(dialogContext).pop();
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(SnackBar(content: Text('Filter "$name" saved successfully')));
+                ).showSnackBar(SnackBar(
+                    content: Text('Filter "$name" saved successfully')));
               },
               child: const Text('Save'),
             ),
@@ -319,7 +369,8 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
     );
   }
 
-  int get _activeFilterCount => _activeGroups.where((g) => g.hasActiveFilters).length;
+  int get _activeFilterCount =>
+      _activeGroups.where((g) => g.hasActiveFilters).length;
 
   @override
   @override
@@ -332,42 +383,50 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
       isExpanded: _isExpanded,
       onExpandToggle: () {
         setState(() => _isExpanded = !_isExpanded);
-        _isExpanded ? _animationController.forward() : _animationController.reverse();
+        _isExpanded
+            ? _animationController.forward()
+            : _animationController.reverse();
       },
       headerActions: [
         // Favorite Filter Dropdown
         FavoriteFilterPanel(
-          onFilterSelected: (filter) => _applyFavoriteFilter(filter.filterConfig),
+          onFilterSelected: (filter) =>
+              _applyFavoriteFilter(filter.filterConfig),
         ),
         const SizedBox(width: 12),
-        
+
         // Add Filter Button
         PopupMenuButton<FilterGroupType>(
           itemBuilder: (context) => [
             if (!_activeGroups.any((g) => g is DateRangeFilterGroup))
               PopupMenuItem(
                 value: FilterGroupType.dateRange,
-                child: _buildMenuTile(Icons.date_range_rounded, 'Date Range', theme),
+                child: _buildMenuTile(
+                    Icons.date_range_rounded, 'Date Range', theme),
               ),
             if (!_activeGroups.any((g) => g is InstrumentFilterGroup))
               PopupMenuItem(
                 value: FilterGroupType.instrument,
-                child: _buildMenuTile(Icons.candlestick_chart_rounded, 'Instruments', theme),
+                child: _buildMenuTile(
+                    Icons.candlestick_chart_rounded, 'Instruments', theme),
               ),
             if (!_activeGroups.any((g) => g is TradeCharacteristicsFilterGroup))
               PopupMenuItem(
                 value: FilterGroupType.tradeCharacteristics,
-                child: _buildMenuTile(Icons.insights_rounded, 'Trade Characteristics', theme),
+                child: _buildMenuTile(
+                    Icons.insights_rounded, 'Trade Characteristics', theme),
               ),
             if (!_activeGroups.any((g) => g is ProfitLossFilterGroup))
               PopupMenuItem(
                 value: FilterGroupType.profitLoss,
-                child: _buildMenuTile(Icons.account_balance_wallet_rounded, 'Profit & Loss', theme),
+                child: _buildMenuTile(Icons.account_balance_wallet_rounded,
+                    'Profit & Loss', theme),
               ),
           ],
           onSelected: _addFilterGroup,
           offset: const Offset(0, 40),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           tooltip: 'Add Filter Group',
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -379,7 +438,8 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.add_circle_outline_rounded, size: 16, color: theme.primaryColor),
+                Icon(Icons.add_circle_outline_rounded,
+                    size: 16, color: theme.primaryColor),
                 const SizedBox(width: 6),
                 Text(
                   'Add',
@@ -409,7 +469,8 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.amber.withOpacity(0.3)),
                 ),
-                child: Icon(Icons.bookmark_add_rounded, size: 18, color: Colors.amber[700]),
+                child: Icon(Icons.bookmark_add_rounded,
+                    size: 18, color: Colors.amber[700]),
               ),
             ),
           ),
@@ -425,9 +486,11 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
                 decoration: BoxDecoration(
                   color: theme.colorScheme.error.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.colorScheme.error.withOpacity(0.3)),
+                  border: Border.all(
+                      color: theme.colorScheme.error.withOpacity(0.3)),
                 ),
-                child: Icon(Icons.refresh_rounded, size: 18, color: theme.colorScheme.error),
+                child: Icon(Icons.refresh_rounded,
+                    size: 18, color: theme.colorScheme.error),
               ),
             ),
           ),
@@ -441,8 +504,10 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               minimumSize: const Size(0, 32),
               visualDensity: VisualDensity.compact,
-              textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              textStyle:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
           ),
         ],
@@ -452,45 +517,54 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
   }
 
   Widget _buildMenuTile(IconData icon, String title, ThemeData theme) => Row(
-    children: [
-      Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(color: theme.primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-        child: Icon(icon, size: 16, color: theme.primaryColor),
-      ),
-      const SizedBox(width: 12),
-      Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-    ],
-  );
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+                color: theme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6)),
+            child: Icon(icon, size: 16, color: theme.primaryColor),
+          ),
+          const SizedBox(width: 12),
+          Text(title,
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        ],
+      );
 
-  Widget _buildFilterGroupCard(int index, FilterGroup group) => AnimatedSwitcher(
-    duration: const Duration(milliseconds: 200),
-    child: FilterGroupCard(key: ValueKey(group), filterGroup: group, onRemove: () => _removeFilterGroup(index)),
-  );
+  Widget _buildFilterGroupCard(int index, FilterGroup group) =>
+      AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: FilterGroupCard(
+            key: ValueKey(group),
+            filterGroup: group,
+            onRemove: () => _removeFilterGroup(index)),
+      );
 
   Widget _buildMobileLayout(double maxWidth) => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    children: _activeGroups.asMap().entries.map((entry) {
-      final index = entry.key;
-      final group = entry.value;
-      return SizedBox(width: maxWidth, child: _buildFilterGroupCard(index, group));
-    }).toList(),
-  );
+        spacing: 8,
+        runSpacing: 8,
+        children: _activeGroups.asMap().entries.map((entry) {
+          final index = entry.key;
+          final group = entry.value;
+          return SizedBox(
+              width: maxWidth, child: _buildFilterGroupCard(index, group));
+        }).toList(),
+      );
 
   Widget _buildDesktopLayout() => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: _activeGroups.asMap().entries.map((entry) {
-      final index = entry.key;
-      final group = entry.value;
-      return Expanded(
-        child: Padding(
-          padding: EdgeInsets.only(left: index > 0 ? 6 : 0),
-          child: _buildFilterGroupCard(index, group),
-        ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _activeGroups.asMap().entries.map((entry) {
+          final index = entry.key;
+          final group = entry.value;
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: index > 0 ? 6 : 0),
+              child: _buildFilterGroupCard(index, group),
+            ),
+          );
+        }).toList(),
       );
-    }).toList(),
-  );
 
   Widget _buildFilterGroupsContent(ThemeData theme) {
     if (_activeGroups.isEmpty) {
@@ -500,39 +574,46 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 800;
-        return isMobile ? _buildMobileLayout(constraints.maxWidth) : _buildDesktopLayout();
+        return isMobile
+            ? _buildMobileLayout(constraints.maxWidth)
+            : _buildDesktopLayout();
       },
     );
   }
 
   Widget _buildEmptyState(ThemeData theme) => Container(
-    margin: const EdgeInsets.only(top: 12),
-    padding: const EdgeInsets.all(24),
-    decoration: BoxDecoration(
-      color: theme.primaryColor.withOpacity(0.03),
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: theme.primaryColor.withOpacity(0.1)),
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: theme.primaryColor.withOpacity(0.1), shape: BoxShape.circle),
-          child: Icon(Icons.filter_alt_off_rounded, size: 32, color: theme.primaryColor.withOpacity(0.6)),
+        margin: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.primaryColor.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: theme.primaryColor.withOpacity(0.1)),
         ),
-        const SizedBox(height: 12),
-        Text(
-          'No filter groups active',
-          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: theme.hintColor),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                  color: theme.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle),
+              child: Icon(Icons.filter_alt_off_rounded,
+                  size: 32, color: theme.primaryColor.withOpacity(0.6)),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No filter groups active',
+              style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600, color: theme.hintColor),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Add filter groups to refine your holdings',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.hintColor, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Add filter groups to refine your holdings',
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor, fontSize: 12),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ),
-  );
+      );
 }

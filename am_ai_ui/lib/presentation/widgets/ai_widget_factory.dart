@@ -70,11 +70,17 @@ class _PortfolioSummaryCard extends StatelessWidget {
   const _PortfolioSummaryCard({required this.widgetParams});
 
   // Currency formatter — INR locale with ₹ symbol, no decimal places for large values
-  static final _currencyFmt =
-      NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+  static final _currencyFmt = NumberFormat.currency(
+    locale: 'en_IN',
+    symbol: '₹',
+    decimalDigits: 0,
+  );
 
-  static final _currencyFmt2 =
-      NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+  static final _currencyFmt2 = NumberFormat.currency(
+    locale: 'en_IN',
+    symbol: '₹',
+    decimalDigits: 2,
+  );
 
   String _formatCurrency(dynamic raw) {
     if (raw == null) return '₹—';
@@ -128,7 +134,8 @@ class _PortfolioSummaryCard extends StatelessWidget {
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-            color: AppColors.portfolioAccent.withValues(alpha: 0.35)),
+          color: AppColors.portfolioAccent.withValues(alpha: 0.35),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,8 +153,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
 
           // ── Key Metrics Row ───────────────────────────────────────────────
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
                 Expanded(
@@ -191,26 +197,29 @@ class _PortfolioSummaryCard extends StatelessWidget {
 
           // ── Portfolio / Holdings Stats ─────────────────────────────────
           Padding(
-            padding:
-                const EdgeInsets.only(left: 12, right: 12, bottom: 10),
+            padding: const EdgeInsets.only(left: 12, right: 12, bottom: 10),
             child: Row(
               children: [
-                Icon(Icons.folder_outlined,
-                    size: 13, color: context.textSecondary),
+                Icon(
+                  Icons.folder_outlined,
+                  size: 13,
+                  color: context.textSecondary,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '$totalPortfolios ${totalPortfolios == 1 ? 'Portfolio' : 'Portfolios'}',
-                  style: TextStyle(
-                      fontSize: 11, color: context.textSecondary),
+                  style: TextStyle(fontSize: 11, color: context.textSecondary),
                 ),
                 const SizedBox(width: 12),
-                Icon(Icons.show_chart_rounded,
-                    size: 13, color: context.textSecondary),
+                Icon(
+                  Icons.show_chart_rounded,
+                  size: 13,
+                  color: context.textSecondary,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '$totalHoldings ${totalHoldings == 1 ? 'Holding' : 'Holdings'}',
-                  style: TextStyle(
-                      fontSize: 11, color: context.textSecondary),
+                  style: TextStyle(fontSize: 11, color: context.textSecondary),
                 ),
               ],
             ),
@@ -220,31 +229,33 @@ class _PortfolioSummaryCard extends StatelessWidget {
           if (breakdown.isNotEmpty) ...[
             Divider(height: 1, color: context.dividerColor),
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Text(
                 'Breakdown',
                 style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: context.textSecondary,
-                    letterSpacing: 0.4),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: context.textSecondary,
+                  letterSpacing: 0.4,
+                ),
               ),
             ),
             ...breakdown
                 .take(4) // cap at 4 rows to stay compact inside chat bubble
-                .map((item) => _buildBreakdownRow(
-                    context, item as Map<String, dynamic>)),
+                .map(
+                  (item) =>
+                      _buildBreakdownRow(context, item as Map<String, dynamic>),
+                ),
             if (breakdown.length > 4)
               Padding(
-                padding: const EdgeInsets.only(
-                    left: 12, right: 12, bottom: 8),
+                padding: const EdgeInsets.only(left: 12, right: 12, bottom: 8),
                 child: Text(
                   '+${breakdown.length - 4} more portfolios',
                   style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w500),
+                    fontSize: 11,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
           ],
@@ -299,8 +310,11 @@ class _PortfolioSummaryCard extends StatelessWidget {
               color: AppColors.portfolioAccent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.account_balance_wallet_rounded,
-                color: AppColors.portfolioAccent, size: 16),
+            child: Icon(
+              Icons.account_balance_wallet_rounded,
+              color: AppColors.portfolioAccent,
+              size: 16,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -317,9 +331,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  totalValue != null
-                      ? _formatCurrency(totalValue)
-                      : '₹—',
+                  totalValue != null ? _formatCurrency(totalValue) : '₹—',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -333,8 +345,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
           // Day change badge
           if (dayChange != null)
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
               decoration: BoxDecoration(
                 color: dayColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(6),
@@ -343,9 +354,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    dayIsPositive
-                        ? Icons.arrow_drop_up
-                        : Icons.arrow_drop_down,
+                    dayIsPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
                     color: dayColor,
                     size: 16,
                   ),
@@ -367,8 +376,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildBreakdownRow(
-      BuildContext context, Map<String, dynamic> item) {
+  Widget _buildBreakdownRow(BuildContext context, Map<String, dynamic> item) {
     final name = item['portfolioName'] as String? ?? '—';
     final value = item['currentValue'] as num?;
     final gainPct = item['gainLossPercent'] as num?;
@@ -383,9 +391,10 @@ class _PortfolioSummaryCard extends StatelessWidget {
             child: Text(
               name,
               style: TextStyle(
-                  fontSize: 12,
-                  color: context.textPrimary,
-                  fontWeight: FontWeight.w500),
+                fontSize: 12,
+                color: context.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -393,15 +402,15 @@ class _PortfolioSummaryCard extends StatelessWidget {
           Text(
             value != null ? _formatCurrency(value) : '₹—',
             style: TextStyle(
-                fontSize: 12,
-                color: context.textPrimary,
-                fontWeight: FontWeight.w600),
+              fontSize: 12,
+              color: context.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(width: 6),
           if (gainPct != null)
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               decoration: BoxDecoration(
                 color: gainColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(4),
@@ -409,9 +418,10 @@ class _PortfolioSummaryCard extends StatelessWidget {
               child: Text(
                 _formatPct(gainPct),
                 style: TextStyle(
-                    fontSize: 10,
-                    color: gainColor,
-                    fontWeight: FontWeight.w600),
+                  fontSize: 10,
+                  color: gainColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
         ],
@@ -427,7 +437,8 @@ class _PortfolioSummaryCard extends StatelessWidget {
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-            color: AppColors.portfolioAccent.withValues(alpha: 0.35)),
+          color: AppColors.portfolioAccent.withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         children: [
@@ -437,8 +448,11 @@ class _PortfolioSummaryCard extends StatelessWidget {
               color: AppColors.portfolioAccent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.account_balance_wallet_rounded,
-                color: AppColors.portfolioAccent, size: 20),
+            child: Icon(
+              Icons.account_balance_wallet_rounded,
+              color: AppColors.portfolioAccent,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -448,22 +462,24 @@ class _PortfolioSummaryCard extends StatelessWidget {
                 Text(
                   'Portfolio Summary',
                   style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.portfolioAccent,
-                      fontSize: 13),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.portfolioAccent,
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'Tap to view portfolio',
-                  style: TextStyle(
-                      color: context.textSecondary, fontSize: 11),
+                  style: TextStyle(color: context.textSecondary, fontSize: 11),
                 ),
               ],
             ),
           ),
-          Icon(Icons.arrow_forward_ios,
-              size: 14,
-              color: AppColors.portfolioAccent.withValues(alpha: 0.6)),
+          Icon(
+            Icons.arrow_forward_ios,
+            size: 14,
+            color: AppColors.portfolioAccent.withValues(alpha: 0.6),
+          ),
         ],
       ),
     );
@@ -495,25 +511,26 @@ class _MetricCell extends StatelessWidget {
       children: [
         Text(
           label,
-          style:
-              TextStyle(fontSize: 10, color: context.textSecondary),
+          style: TextStyle(fontSize: 10, color: context.textSecondary),
         ),
         const SizedBox(height: 3),
         Text(
           value,
           style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: valueColor),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: valueColor,
+          ),
           overflow: TextOverflow.ellipsis,
         ),
         if (badge != null)
           Text(
             badge!,
             style: TextStyle(
-                fontSize: 10,
-                color: badgeColor,
-                fontWeight: FontWeight.w600),
+              fontSize: 10,
+              color: badgeColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
       ],
     );
@@ -551,8 +568,9 @@ class _PerformerChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = isPositive ? AppColors.profit : AppColors.loss;
     final label = isPositive ? 'Best' : 'Worst';
-    final icon =
-        isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded;
+    final icon = isPositive
+        ? Icons.trending_up_rounded
+        : Icons.trending_down_rounded;
     final pctText = pct != null
         ? '${isPositive ? '+' : ''}${pct!.toStringAsFixed(2)}%'
         : '';
@@ -572,18 +590,20 @@ class _PerformerChip extends StatelessWidget {
           Text(
             '$label: $symbol',
             style: TextStyle(
-                fontSize: 11,
-                color: color,
-                fontWeight: FontWeight.w600),
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           if (pctText.isNotEmpty) ...[
             const SizedBox(width: 4),
             Text(
               pctText,
               style: TextStyle(
-                  fontSize: 10,
-                  color: color,
-                  fontWeight: FontWeight.w500),
+                fontSize: 10,
+                color: color,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ],
@@ -632,20 +652,27 @@ class _IntentCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: color,
-                        fontSize: 13)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                    fontSize: 13,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(subtitle,
-                    style: TextStyle(
-                        color: context.textSecondary, fontSize: 11)),
+                Text(
+                  subtitle,
+                  style: TextStyle(color: context.textSecondary, fontSize: 11),
+                ),
               ],
             ),
           ),
-          Icon(Icons.arrow_forward_ios,
-              size: 14, color: color.withValues(alpha: 0.6)),
+          Icon(
+            Icons.arrow_forward_ios,
+            size: 14,
+            color: color.withValues(alpha: 0.6),
+          ),
         ],
       ),
     );
@@ -673,8 +700,10 @@ class _ErrorBanner extends StatelessWidget {
           Icon(Icons.error_outline, color: AppColors.error, size: 18),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(message,
-                style: TextStyle(color: AppColors.error, fontSize: 12)),
+            child: Text(
+              message,
+              style: TextStyle(color: AppColors.error, fontSize: 12),
+            ),
           ),
         ],
       ),

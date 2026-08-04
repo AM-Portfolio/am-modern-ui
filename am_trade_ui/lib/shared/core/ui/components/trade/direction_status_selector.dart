@@ -37,140 +37,152 @@ class DirectionStatusSelector extends StatelessWidget {
         border: Border.all(color: theme.colorScheme.outline.withOpacity(0.15)),
       ),
       padding: EdgeInsets.all(isMobile ? 6 : 10),
-      child: isMobile ? _buildMobileLayout(theme) : _buildWebLayout(theme, isTablet, isDesktop),
+      child: isMobile
+          ? _buildMobileLayout(theme)
+          : _buildWebLayout(theme, isTablet, isDesktop),
     );
   }
 
   // Mobile layout: Direction and Status in same row, compact
   Widget _buildMobileLayout(ThemeData theme) => Row(
-    children: [
-      Expanded(
-        flex: 3,
-        child: _buildDirectionButtons(true, isFullWidth: true, showLabel: false),
-      ),
-      const SizedBox(width: 6),
-      Expanded(
-        flex: 2,
-        child: _buildStatusDropdown(theme, true),
-      ),
-    ],
-  );
+        children: [
+          Expanded(
+            flex: 3,
+            child: _buildDirectionButtons(true,
+                isFullWidth: true, showLabel: false),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            flex: 2,
+            child: _buildStatusDropdown(theme, true),
+          ),
+        ],
+      );
 
   // Web layout: Side-by-side with labels
   Widget _buildWebLayout(ThemeData theme, bool isTablet, bool isDesktop) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      _buildDirectionSection(theme, false),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-      ),
-      _buildStatusSection(theme, false),
-    ],
-  );
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildDirectionSection(theme, false),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+          ),
+          _buildStatusSection(theme, false),
+        ],
+      );
 
   // Direction section with label (for web/tablet/desktop)
   Widget _buildDirectionSection(ThemeData theme, bool isMobile) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(color: theme.colorScheme.tertiaryContainer, borderRadius: BorderRadius.circular(6)),
-        child: Icon(Icons.swap_horiz, size: 16, color: theme.colorScheme.onTertiaryContainer),
-      ),
-      const SizedBox(width: 8),
-      const SizedBox(width: 10),
-      _buildDirectionButtons(isMobile, isFullWidth: false, showLabel: true),
-    ],
-  );
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+                color: theme.colorScheme.tertiaryContainer,
+                borderRadius: BorderRadius.circular(6)),
+            child: Icon(Icons.swap_horiz,
+                size: 16, color: theme.colorScheme.onTertiaryContainer),
+          ),
+          const SizedBox(width: 8),
+          const SizedBox(width: 10),
+          _buildDirectionButtons(isMobile, isFullWidth: false, showLabel: true),
+        ],
+      );
 
   // Status section with label (for web/tablet/desktop)
   Widget _buildStatusSection(ThemeData theme, bool isMobile) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(color: theme.colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(6)),
-        child: Icon(Icons.info_outline, size: 16, color: theme.colorScheme.onSecondaryContainer),
-      ),
-      const SizedBox(width: 8),
-      const SizedBox(width: 10),
-      _buildStatusDropdown(theme, isMobile),
-    ],
-  );
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+                color: theme.colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(6)),
+            child: Icon(Icons.info_outline,
+                size: 16, color: theme.colorScheme.onSecondaryContainer),
+          ),
+          const SizedBox(width: 8),
+          const SizedBox(width: 10),
+          _buildStatusDropdown(theme, isMobile),
+        ],
+      );
 
-  Widget _buildDirectionButtons(bool isMobile, {required bool isFullWidth, required bool showLabel}) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      if (isFullWidth)
-        Expanded(
-          child: _ModernButton(
-            isSelected: selectedDirection == TradeDirections.long,
-            label: 'LONG',
-            icon: Icons.arrow_upward_rounded,
-            color: Colors.green,
-            onTap: () => onDirectionChanged(TradeDirections.long),
-            isMobile: isMobile,
-          ),
-        )
-      else
-        _ModernButton(
-          isSelected: selectedDirection == TradeDirections.long,
-          label: 'LONG',
-          icon: Icons.arrow_upward_rounded,
-          color: Colors.green,
-          onTap: () => onDirectionChanged(TradeDirections.long),
-          isMobile: isMobile,
-        ),
-      const SizedBox(width: 6),
-      if (isFullWidth)
-        Expanded(
-          child: _ModernButton(
-            isSelected: selectedDirection == TradeDirections.short,
-            label: 'SHORT',
-            icon: Icons.arrow_downward_rounded,
-            color: Colors.red,
-            onTap: () => onDirectionChanged(TradeDirections.short),
-            isMobile: isMobile,
-          ),
-        )
-      else
-        _ModernButton(
-          isSelected: selectedDirection == TradeDirections.short,
-          label: 'SHORT',
-          icon: Icons.arrow_downward_rounded,
-          color: Colors.red,
-          onTap: () => onDirectionChanged(TradeDirections.short),
-          isMobile: isMobile,
-        ),
-    ],
-  );
+  Widget _buildDirectionButtons(bool isMobile,
+          {required bool isFullWidth, required bool showLabel}) =>
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isFullWidth)
+            Expanded(
+              child: _ModernButton(
+                isSelected: selectedDirection == TradeDirections.long,
+                label: 'LONG',
+                icon: Icons.arrow_upward_rounded,
+                color: Colors.green,
+                onTap: () => onDirectionChanged(TradeDirections.long),
+                isMobile: isMobile,
+              ),
+            )
+          else
+            _ModernButton(
+              isSelected: selectedDirection == TradeDirections.long,
+              label: 'LONG',
+              icon: Icons.arrow_upward_rounded,
+              color: Colors.green,
+              onTap: () => onDirectionChanged(TradeDirections.long),
+              isMobile: isMobile,
+            ),
+          const SizedBox(width: 6),
+          if (isFullWidth)
+            Expanded(
+              child: _ModernButton(
+                isSelected: selectedDirection == TradeDirections.short,
+                label: 'SHORT',
+                icon: Icons.arrow_downward_rounded,
+                color: Colors.red,
+                onTap: () => onDirectionChanged(TradeDirections.short),
+                isMobile: isMobile,
+              ),
+            )
+          else
+            _ModernButton(
+              isSelected: selectedDirection == TradeDirections.short,
+              label: 'SHORT',
+              icon: Icons.arrow_downward_rounded,
+              color: Colors.red,
+              onTap: () => onDirectionChanged(TradeDirections.short),
+              isMobile: isMobile,
+            ),
+        ],
+      );
 
-  Widget _buildStatusDropdown(ThemeData theme, bool isMobile) => CustomDropdown<TradeStatuses>(
-    value: selectedStatus,
-    isExpanded: isMobile,
-    height: isMobile ? 32 : 44,
-    borderRadius: 8,
-    backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.6),
-    borderColor: theme.colorScheme.outline.withValues(alpha: 0.25),
-    contentPadding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12),
-    iconSize: isMobile ? 20 : 24,
-    onChanged: (newValue) {
-      if (newValue != null) {
-        onStatusChanged(newValue);
-      }
-    },
-    items: TradeStatuses.values
-        .map(
-          (status) => status.toDropdownItem(
-            text: status.displayName,
-            icon: _getStatusIcon(status),
-            iconColor: _getStatusColor(status),
-            iconSize: isMobile ? 16 : 18,
-            expandText: isMobile,
-          ),
-        )
-        .toList(),
-  );
+  Widget _buildStatusDropdown(ThemeData theme, bool isMobile) =>
+      CustomDropdown<TradeStatuses>(
+        value: selectedStatus,
+        isExpanded: isMobile,
+        height: isMobile ? 32 : 44,
+        borderRadius: 8,
+        backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.6),
+        borderColor: theme.colorScheme.outline.withValues(alpha: 0.25),
+        contentPadding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12),
+        iconSize: isMobile ? 20 : 24,
+        onChanged: (newValue) {
+          if (newValue != null) {
+            onStatusChanged(newValue);
+          }
+        },
+        items: TradeStatuses.values
+            .map(
+              (status) => status.toDropdownItem(
+                text: status.displayName,
+                icon: _getStatusIcon(status),
+                iconColor: _getStatusColor(status),
+                iconSize: isMobile ? 16 : 18,
+                expandText: isMobile,
+              ),
+            )
+            .toList(),
+      );
 
   IconData _getStatusIcon(TradeStatuses status) {
     switch (status) {
@@ -227,8 +239,10 @@ class _ModernButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          constraints: BoxConstraints(minWidth: isMobile ? 60 : 95, maxWidth: isMobile ? 100 : 150),
-          padding: EdgeInsets.symmetric(vertical: isMobile ? 6 : 12, horizontal: isMobile ? 6 : 14),
+          constraints: BoxConstraints(
+              minWidth: isMobile ? 60 : 95, maxWidth: isMobile ? 100 : 150),
+          padding: EdgeInsets.symmetric(
+              vertical: isMobile ? 6 : 12, horizontal: isMobile ? 6 : 14),
           decoration: BoxDecoration(
             gradient: isSelected
                 ? LinearGradient(
@@ -237,14 +251,22 @@ class _ModernButton extends StatelessWidget {
                     end: Alignment.bottomRight,
                   )
                 : null,
-            color: isSelected ? null : theme.colorScheme.surface.withOpacity(0.6),
+            color:
+                isSelected ? null : theme.colorScheme.surface.withOpacity(0.6),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isSelected ? color : theme.colorScheme.outline.withOpacity(0.25),
+              color: isSelected
+                  ? color
+                  : theme.colorScheme.outline.withOpacity(0.25),
               width: isSelected ? 2 : 1,
             ),
             boxShadow: isSelected
-                ? [BoxShadow(color: color.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2))]
+                ? [
+                    BoxShadow(
+                        color: color.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2))
+                  ]
                 : null,
           ),
           child: Row(
@@ -253,7 +275,9 @@ class _ModernButton extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: isSelected ? color : theme.colorScheme.onSurface.withOpacity(0.65),
+                color: isSelected
+                    ? color
+                    : theme.colorScheme.onSurface.withOpacity(0.65),
                 size: isMobile ? 18 : 21,
               ),
               SizedBox(width: isMobile ? 5 : 7),
@@ -262,7 +286,9 @@ class _ModernButton extends StatelessWidget {
                   label,
                   style: theme.textTheme.labelMedium?.copyWith(
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? color : theme.colorScheme.onSurface.withOpacity(0.85),
+                    color: isSelected
+                        ? color
+                        : theme.colorScheme.onSurface.withOpacity(0.85),
                     letterSpacing: isMobile ? 0.1 : 0.2,
                   ),
                   overflow: TextOverflow.ellipsis,

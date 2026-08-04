@@ -3,15 +3,14 @@ import '../entities/portfolio_list.dart';
 import '../entities/portfolio_summary.dart';
 import '../../data/dtos/portfolio_create_request_dto.dart';
 import '../../data/dtos/portfolio_update_request_dto.dart';
+
 /// Repository interface for portfolio data operations
 abstract class PortfolioRepository {
   /// Get portfolio holdings for a user
   Future<PortfolioHoldings> getPortfolioHoldings();
 
   /// Get portfolio holdings for a user and specific portfolio
-  Future<PortfolioHoldings> getPortfolioHoldingsById(
-    String portfolioId,
-  );
+  Future<PortfolioHoldings> getPortfolioHoldingsById(String portfolioId);
 
   /// Gets cached portfolio holdings for the specified user and portfolio
   Future<PortfolioHoldings?> getCachedPortfolioHoldingsById(String portfolioId);
@@ -20,9 +19,7 @@ abstract class PortfolioRepository {
   Future<PortfolioSummary> getPortfolioSummary();
 
   /// Get portfolio summary for a user and specific portfolio
-  Future<PortfolioSummary> getPortfolioSummaryById(
-    String portfolioId,
-  );
+  Future<PortfolioSummary> getPortfolioSummaryById(String portfolioId);
 
   /// Gets cached portfolio summary for the specified user and portfolio
   Future<PortfolioSummary?> getCachedPortfolioSummaryById(String portfolioId);
@@ -52,7 +49,10 @@ abstract class PortfolioRepository {
   Future<PortfolioItem> createPortfolio(PortfolioCreateRequestDto request);
 
   /// Update an existing portfolio
-  Future<PortfolioItem> updatePortfolio(String portfolioId, PortfolioUpdateRequestDto request);
+  Future<PortfolioItem> updatePortfolio(
+    String portfolioId,
+    PortfolioUpdateRequestDto request,
+  );
 
   /// Delete a portfolio
   Future<void> deletePortfolio(String portfolioId, {bool deleteTrades = false});

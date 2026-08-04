@@ -94,7 +94,8 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
               itemCount: widget.indices.length,
               itemBuilder: (context, index) {
                 final data = widget.indices[index];
-                final isSelected = data.indexSymbol == widget.selectedIndexSymbol;
+                final isSelected =
+                    data.indexSymbol == widget.selectedIndexSymbol;
                 final basePrice = basePricesForTf[data.indexSymbol];
                 return DrawerIndexCard(
                   data: data,

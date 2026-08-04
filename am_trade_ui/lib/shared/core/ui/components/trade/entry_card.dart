@@ -24,7 +24,12 @@ class EntryCard extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -34,7 +39,9 @@ class EntryCard extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6)),
                 child: const Icon(Icons.login, size: 16, color: Colors.green),
               ),
               const SizedBox(width: 10),
@@ -56,21 +63,28 @@ class EntryCard extends StatelessWidget {
                 prefixIcon: const Icon(Icons.calendar_today, size: 18),
                 isDense: true,
                 filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                fillColor:
+                    theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1)),
+                  borderSide: BorderSide(
+                      color: theme.colorScheme.outline.withOpacity(0.1)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                  borderSide:
+                      BorderSide(color: theme.colorScheme.primary, width: 1.5),
                 ),
               ),
               child: Text(
                 entryDate?.toLocal().toString().split(' ')[0] ?? 'Not selected',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: entryDate != null ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withOpacity(0.5),
+                  color: entryDate != null
+                      ? theme.colorScheme.onSurface
+                      : theme.colorScheme.onSurface.withOpacity(0.5),
                 ),
               ),
             ),
@@ -85,15 +99,20 @@ class EntryCard extends StatelessWidget {
                     prefixIcon: const Icon(Icons.currency_rupee, size: 18),
                     isDense: true,
                     filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    fillColor: theme.colorScheme.surfaceContainerHighest
+                        .withOpacity(0.3),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1)),
+                      borderSide: BorderSide(
+                          color: theme.colorScheme.outline.withOpacity(0.1)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                      borderSide: BorderSide(
+                          color: theme.colorScheme.primary, width: 1.5),
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -108,15 +127,20 @@ class EntryCard extends StatelessWidget {
                     prefixIcon: const Icon(Icons.numbers, size: 18),
                     isDense: true,
                     filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    fillColor: theme.colorScheme.surfaceContainerHighest
+                        .withOpacity(0.3),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1)),
+                      borderSide: BorderSide(
+                          color: theme.colorScheme.outline.withOpacity(0.1)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                      borderSide: BorderSide(
+                          color: theme.colorScheme.primary, width: 1.5),
                     ),
                   ),
                   keyboardType: TextInputType.number,

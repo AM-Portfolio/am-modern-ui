@@ -12,7 +12,8 @@ class DeleteTrade {
   /// [tradeId] - The ID of the trade to delete
   /// Returns true if deletion was successful
   Future<bool> call(String tradeId) async {
-    AppLogger.methodEntry('DeleteTrade.call', tag: 'DeleteTrade', params: {'tradeId': tradeId});
+    AppLogger.methodEntry('DeleteTrade.call',
+        tag: 'DeleteTrade', params: {'tradeId': tradeId});
 
     if (tradeId.isEmpty) {
       AppLogger.error('Validation failed - empty tradeId', tag: 'DeleteTrade');
@@ -24,15 +25,18 @@ class DeleteTrade {
 
       await _repository.deleteTrade(tradeId);
 
-      AppLogger.info('Trade deleted successfully - tradeId: $tradeId', tag: 'DeleteTrade');
-      AppLogger.methodExit('DeleteTrade.call', tag: 'DeleteTrade', result: 'success');
+      AppLogger.info('Trade deleted successfully - tradeId: $tradeId',
+          tag: 'DeleteTrade');
+      AppLogger.methodExit('DeleteTrade.call',
+          tag: 'DeleteTrade', result: 'success');
 
       return true;
     } catch (e) {
-      AppLogger.error('Delete trade use case failed', tag: 'DeleteTrade', error: e, stackTrace: StackTrace.current);
-      AppLogger.methodExit('DeleteTrade.call', tag: 'DeleteTrade', result: 'error');
+      AppLogger.error('Delete trade use case failed',
+          tag: 'DeleteTrade', error: e, stackTrace: StackTrace.current);
+      AppLogger.methodExit('DeleteTrade.call',
+          tag: 'DeleteTrade', result: 'error');
       rethrow;
     }
   }
 }
-

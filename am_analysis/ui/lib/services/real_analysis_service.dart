@@ -23,7 +23,6 @@ class RealAnalysisService implements UiAnalysisService {
   /// Throws [UnauthenticatedException] if no session exists.
   Future<String> get _auth => UserContext.instance.bearerToken;
 
-
   @override
   Future<List<AllocationItem>> getAllocation(
     String? id,
@@ -32,23 +31,24 @@ class RealAnalysisService implements UiAnalysisService {
   }) async {
     try {
       _logger.i('Fetching allocation for $type:$id with groupBy=$groupBy');
-      
+
       final authHeader = await _auth;
       final entityId = (id == null || id == 'GLOBAL') ? 'ALL' : id;
-      
+
       // Call SDK method - send groupBy only as header, not as query param
       final response = await _api.getAllocation(
         authHeader,
-        type.name.toLowerCase(),  // Convert to lowercase for API
+        type.name.toLowerCase(), // Convert to lowercase for API
         entityId,
-        groupBy: groupBy?.name,  // Sent as header by SDK
+        groupBy: groupBy?.name, // Sent as header by SDK
         // Don't send groupBy2 to avoid duplication
       );
 
       _logger.d('Allocation response: ${response?.sectors?.length ?? 0} items');
-      
+
       // Map response to UI models based on groupBy
-      return AnalysisMapper.toAllocationItems(response, groupBy ?? GroupBy.sector);
+      return AnalysisMapper.toAllocationItems(
+          response, groupBy ?? GroupBy.sector);
     } catch (e, stackTrace) {
       _logger.e('Error fetching allocation', error: e, stackTrace: stackTrace);
       rethrow;
@@ -63,23 +63,24 @@ class RealAnalysisService implements UiAnalysisService {
   ) async {
     try {
       _logger.i('Fetching performance for $type:$id with timeFrame=$timeFrame');
-      
+
       final authHeader = await _auth;
-      
+
       final response = (id == null || id == 'GLOBAL')
           ? await _api.getDashboardPerformance(
-              '',  // Do not pass user id in API
+              '', // Do not pass user id in API
               timeFrame: timeFrame,
             )
           : await _api.getPerformance(
               authHeader,
-              type.name.toLowerCase(),  // Convert to lowercase for API
+              type.name.toLowerCase(), // Convert to lowercase for API
               id,
               timeFrame: timeFrame,
             );
 
-      _logger.d('Performance response: ${response?.chartData?.length ?? 0} data points');
-      
+      _logger.d(
+          'Performance response: ${response?.chartData?.length ?? 0} data points');
+
       return AnalysisMapper.toPerformanceDataPoints(response);
     } catch (e, stackTrace) {
       _logger.e('Error fetching performance', error: e, stackTrace: stackTrace);
@@ -95,26 +96,28 @@ class RealAnalysisService implements UiAnalysisService {
     GroupBy? groupBy,
   }) async {
     try {
-      _logger.i('Fetching top movers for ${type?.name}:$id with timeFrame=$timeFrame, groupBy=$groupBy');
-      
+      _logger.i(
+          'Fetching top movers for ${type?.name}:$id with timeFrame=$timeFrame, groupBy=$groupBy');
+
       final authHeader = await _auth;
       final entityId = (id == null || id == 'GLOBAL') ? '' : id;
-      
+
       final response = entityId.isNotEmpty
           ? await _api.getTopMoversByEntity(
               authHeader,
-              type!.name.toLowerCase(),  // Convert to lowercase for API
+              type!.name.toLowerCase(), // Convert to lowercase for API
               entityId,
               timeFrame: timeFrame,
-              groupBy: groupBy?.name,  // Sent as header by SDK
+              groupBy: groupBy?.name, // Sent as header by SDK
             )
           : await _api.getDashboardTopMovers(
-              '',  // Do not pass user id in API
+              '', // Do not pass user id in API
               arg1: timeFrame,
             );
 
-      _logger.d('Top movers response: ${response?.gainers?.length ?? 0} gainers, ${response?.losers?.length ?? 0} losers');
-      
+      _logger.d(
+          'Top movers response: ${response?.gainers?.length ?? 0} gainers, ${response?.losers?.length ?? 0} losers');
+
       return AnalysisMapper.toMoverItems(response);
     } catch (e, stackTrace) {
       _logger.e('Error fetching top movers', error: e, stackTrace: stackTrace);

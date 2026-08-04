@@ -19,7 +19,8 @@ class AnimatedSectorDonutChart extends StatefulWidget {
   final bool showAnimation;
 
   @override
-  State<AnimatedSectorDonutChart> createState() => _AnimatedSectorDonutChartState();
+  State<AnimatedSectorDonutChart> createState() =>
+      _AnimatedSectorDonutChartState();
 }
 
 class _AnimatedSectorDonutChartState extends State<AnimatedSectorDonutChart>
@@ -82,12 +83,12 @@ class _AnimatedSectorDonutChartState extends State<AnimatedSectorDonutChart>
                               _touchedIndex = -1;
                               return;
                             }
-                            _touchedIndex =
-                                pieTouchResponse.touchedSection!.touchedSectionIndex;
+                            _touchedIndex = pieTouchResponse
+                                .touchedSection!.touchedSectionIndex;
 
                             if (event is FlTapUpEvent && _touchedIndex >= 0) {
-                              widget.onSectionTapped
-                                  ?.call(widget.allocations[_touchedIndex].label);
+                              widget.onSectionTapped?.call(
+                                  widget.allocations[_touchedIndex].label);
                             }
                           });
                         },
@@ -113,10 +114,10 @@ class _AnimatedSectorDonutChartState extends State<AnimatedSectorDonutChart>
       final item = entry.value;
       final isTouched = index == _touchedIndex;
       final color = ChartColors.getColorForIndex(index);
-      
+
       // Animate from 0 to actual value
       final animatedValue = item.value * _animation.value;
-      
+
       // Highlight touched section
       final radius = isTouched ? 70.0 : 60.0;
       final fontSize = isTouched ? 16.0 : 14.0;
@@ -137,9 +138,7 @@ class _AnimatedSectorDonutChartState extends State<AnimatedSectorDonutChart>
             ),
           ],
         ),
-        badgeWidget: isTouched
-            ? _buildBadge(item.label, color)
-            : null,
+        badgeWidget: isTouched ? _buildBadge(item.label, color) : null,
         badgePositionPercentageOffset: 1.5,
       );
     }).toList();
@@ -179,8 +178,8 @@ class _AnimatedSectorDonutChartState extends State<AnimatedSectorDonutChart>
           Text(
             'Allocation (${widget.allocations.length})',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           const SizedBox(height: 8),
           Expanded(
@@ -203,7 +202,9 @@ class _AnimatedSectorDonutChartState extends State<AnimatedSectorDonutChart>
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isTouched ? color.withOpacity(0.1) : Colors.transparent,
+                      color: isTouched
+                          ? color.withOpacity(0.1)
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isTouched ? color : Colors.transparent,
@@ -239,7 +240,9 @@ class _AnimatedSectorDonutChartState extends State<AnimatedSectorDonutChart>
                                 item.label,
                                 style: TextStyle(
                                   fontSize: isTouched ? 13 : 12,
-                                  fontWeight: isTouched ? FontWeight.bold : FontWeight.w500,
+                                  fontWeight: isTouched
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

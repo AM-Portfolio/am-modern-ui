@@ -19,10 +19,7 @@ class SubscriptionLoaded extends SubscriptionState {
   final List<Plan> plans;
   final Subscription? subscription;
 
-  const SubscriptionLoaded({
-    required this.plans,
-    this.subscription,
-  });
+  const SubscriptionLoaded({required this.plans, this.subscription});
 
   @override
   List<Object?> get props => [plans, subscription];
@@ -41,10 +38,7 @@ class SubscriptionActionInProgress extends SubscriptionState {
   final List<Plan> plans;
   final Subscription? subscription;
 
-  const SubscriptionActionInProgress({
-    required this.plans,
-    this.subscription,
-  });
+  const SubscriptionActionInProgress({required this.plans, this.subscription});
 
   @override
   List<Object?> get props => [plans, subscription];
@@ -91,45 +85,74 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     final currentState = state;
     if (currentState is! SubscriptionLoaded) return;
 
-    emit(SubscriptionActionInProgress(
-      plans: currentState.plans,
-      subscription: currentState.subscription,
-    ));
+    emit(
+      SubscriptionActionInProgress(
+        plans: currentState.plans,
+        subscription: currentState.subscription,
+      ),
+    );
 
     try {
-      final sub = await _dataSource.createSubscription(planCode, billingInterval);
-      emit(SubscriptionActionSuccess(
-        plans: currentState.plans,
-        subscription: sub,
-        message: 'Successfully subscribed to ${sub.planName}!',
-      ));
+      final sub = await _dataSource.createSubscription(
+        planCode,
+        billingInterval,
+      );
+      emit(
+        SubscriptionActionSuccess(
+          plans: currentState.plans,
+          subscription: sub,
+          message: 'Successfully subscribed to ${sub.planName}!',
+        ),
+      );
       emit(SubscriptionLoaded(plans: currentState.plans, subscription: sub));
     } catch (e) {
       emit(SubscriptionError(e.toString()));
-      emit(SubscriptionLoaded(plans: currentState.plans, subscription: currentState.subscription));
+      emit(
+        SubscriptionLoaded(
+          plans: currentState.plans,
+          subscription: currentState.subscription,
+        ),
+      );
     }
   }
 
-  Future<void> upgrade(String subscriptionId, String planCode, String billingInterval) async {
+  Future<void> upgrade(
+    String subscriptionId,
+    String planCode,
+    String billingInterval,
+  ) async {
     final currentState = state;
     if (currentState is! SubscriptionLoaded) return;
 
-    emit(SubscriptionActionInProgress(
-      plans: currentState.plans,
-      subscription: currentState.subscription,
-    ));
+    emit(
+      SubscriptionActionInProgress(
+        plans: currentState.plans,
+        subscription: currentState.subscription,
+      ),
+    );
 
     try {
-      final sub = await _dataSource.upgradeSubscription(subscriptionId, planCode, billingInterval);
-      emit(SubscriptionActionSuccess(
-        plans: currentState.plans,
-        subscription: sub,
-        message: 'Successfully upgraded to ${sub.planName}!',
-      ));
+      final sub = await _dataSource.upgradeSubscription(
+        subscriptionId,
+        planCode,
+        billingInterval,
+      );
+      emit(
+        SubscriptionActionSuccess(
+          plans: currentState.plans,
+          subscription: sub,
+          message: 'Successfully upgraded to ${sub.planName}!',
+        ),
+      );
       emit(SubscriptionLoaded(plans: currentState.plans, subscription: sub));
     } catch (e) {
       emit(SubscriptionError(e.toString()));
-      emit(SubscriptionLoaded(plans: currentState.plans, subscription: currentState.subscription));
+      emit(
+        SubscriptionLoaded(
+          plans: currentState.plans,
+          subscription: currentState.subscription,
+        ),
+      );
     }
   }
 }

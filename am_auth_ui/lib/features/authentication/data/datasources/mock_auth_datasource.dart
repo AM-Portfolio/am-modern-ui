@@ -14,7 +14,8 @@ class MockAuthDataSource implements AuthDataSource {
   @override
   Future<AuthResultModel> emailLogin(String email, String password) async {
     try {
-      final result = await _mockDataService.authenticateEmailPassword(email, password);
+      final result =
+          await _mockDataService.authenticateEmailPassword(email, password);
       if (result == null) {
         throw AuthException(AuthConstants.invalidCredentials, code: '401');
       }
@@ -24,7 +25,6 @@ class MockAuthDataSource implements AuthDataSource {
       throw AuthException('Login failed: ${e.toString()}');
     }
   }
-
 
   @override
   Future<AuthResultModel> googleLogin(String idToken) async {

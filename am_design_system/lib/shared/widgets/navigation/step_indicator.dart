@@ -16,13 +16,13 @@ class StepIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-    children: [
-      for (int i = 0; i < stepLabels.length; i++) ...[
-        Expanded(child: _buildStepDot(i, stepLabels[i])),
-        if (i < stepLabels.length - 1) _buildStepLine(i),
-      ],
-    ],
-  );
+        children: [
+          for (int i = 0; i < stepLabels.length; i++) ...[
+            Expanded(child: _buildStepDot(i, stepLabels[i])),
+            if (i < stepLabels.length - 1) _buildStepLine(i),
+          ],
+        ],
+      );
 
   Widget _buildStepDot(int step, String label) {
     final isActive = step <= currentStep;
@@ -43,9 +43,8 @@ class StepIndicator extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isActive ? activeColor : inactiveColor.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(dotSize / 2),
-                border: isCurrent
-                    ? Border.all(color: activeColor, width: 2)
-                    : null,
+                border:
+                    isCurrent ? Border.all(color: activeColor, width: 2) : null,
               ),
               child: Center(
                 child: isActive && step < currentStep

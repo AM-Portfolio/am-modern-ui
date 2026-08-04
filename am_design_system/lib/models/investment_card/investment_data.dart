@@ -38,19 +38,20 @@ class InvestmentData {
     double? changePercent,
     bool? isPositive,
     String? additionalInfo,
-  }) => InvestmentData(
-    symbol: symbol ?? this.symbol,
-    name: name ?? this.name,
-    currentValue: currentValue ?? this.currentValue,
-    investedAmount: investedAmount ?? this.investedAmount,
-    avgPrice: avgPrice ?? this.avgPrice,
-    quantity: quantity ?? this.quantity,
-    currentPrice: currentPrice ?? this.currentPrice,
-    changeValue: changeValue ?? this.changeValue,
-    changePercent: changePercent ?? this.changePercent,
-    isPositive: isPositive ?? this.isPositive,
-    additionalInfo: additionalInfo ?? this.additionalInfo,
-  );
+  }) =>
+      InvestmentData(
+        symbol: symbol ?? this.symbol,
+        name: name ?? this.name,
+        currentValue: currentValue ?? this.currentValue,
+        investedAmount: investedAmount ?? this.investedAmount,
+        avgPrice: avgPrice ?? this.avgPrice,
+        quantity: quantity ?? this.quantity,
+        currentPrice: currentPrice ?? this.currentPrice,
+        changeValue: changeValue ?? this.changeValue,
+        changePercent: changePercent ?? this.changePercent,
+        isPositive: isPositive ?? this.isPositive,
+        additionalInfo: additionalInfo ?? this.additionalInfo,
+      );
 
   @override
   String toString() =>
@@ -75,16 +76,16 @@ class InvestmentData {
 
   @override
   int get hashCode => Object.hash(
-    symbol,
-    name,
-    currentValue,
-    investedAmount,
-    avgPrice,
-    quantity,
-    currentPrice,
-    changeValue,
-    changePercent,
-    isPositive,
-    additionalInfo,
-  );
+        symbol,
+        name,
+        currentValue,
+        investedAmount,
+        avgPrice,
+        quantity,
+        currentPrice,
+        changeValue,
+        changePercent,
+        isPositive,
+        additionalInfo,
+      );
 }

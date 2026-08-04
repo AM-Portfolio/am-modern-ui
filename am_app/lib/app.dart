@@ -42,9 +42,7 @@ class _AMAppState extends ConsumerState<AMApp> {
     // Verify/reset deep links own session setup. Running restore in parallel
     // can emit Unauthenticated after confirm and bounce the user to login.
     final launchPath = AppRoutes.normalizePath(
-      widget.launchUri?.path.isEmpty == false
-          ? widget.launchUri!.path
-          : '/',
+      widget.launchUri?.path.isEmpty == false ? widget.launchUri!.path : '/',
     );
     final skipSessionRestore = launchPath == AppRoutes.verifyEmail ||
         launchPath == AppRoutes.resetPassword;

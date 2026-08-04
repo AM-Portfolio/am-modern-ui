@@ -400,7 +400,10 @@ Notes: _____
                   end: Alignment.bottomRight,
                   colors: [
                     Theme.of(context).colorScheme.surface.withOpacity(0.95),
-                    Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.9),
+                    Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withOpacity(0.9),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(24),
@@ -415,10 +418,16 @@ Notes: _____
                   Container(
                     width: 320,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withOpacity(0.3),
                       border: Border(
                         right: BorderSide(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .outline
+                              .withOpacity(0.2),
                         ),
                       ),
                     ),
@@ -429,7 +438,8 @@ Notes: _____
                           child: ListView(
                             padding: const EdgeInsets.all(16),
                             children: _templates.entries.map((entry) {
-                              return _buildTemplateCard(context, entry.key, entry.value);
+                              return _buildTemplateCard(
+                                  context, entry.key, entry.value);
                             }).toList(),
                           ),
                         ),
@@ -489,7 +499,10 @@ Notes: _____
                     Text(
                       'Select a pre-filled template',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.6),
                           ),
                     ),
                   ],
@@ -502,9 +515,10 @@ Notes: _____
     );
   }
 
-  Widget _buildTemplateCard(BuildContext context, String name, Map<String, dynamic> template) {
+  Widget _buildTemplateCard(
+      BuildContext context, String name, Map<String, dynamic> template) {
     final isSelected = _selectedTemplate == name;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
@@ -526,9 +540,8 @@ Notes: _____
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected
-                    ? const Color(0xFF6C5DD3)
-                    : Colors.transparent,
+                color:
+                    isSelected ? const Color(0xFF6C5DD3) : Colors.transparent,
                 width: 2,
               ),
             ),
@@ -561,7 +574,10 @@ Notes: _____
                       Text(
                         template['description'] as String,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
                               fontSize: 11,
                             ),
                         maxLines: 2,
@@ -629,7 +645,10 @@ Notes: _____
             Text(
               'Select a template to preview',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.5),
                   ),
             ),
           ],
@@ -665,7 +684,10 @@ Notes: _____
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withOpacity(0.3),
         border: Border(
           top: BorderSide(
             color: Theme.of(context).colorScheme.outline.withOpacity(0.1),

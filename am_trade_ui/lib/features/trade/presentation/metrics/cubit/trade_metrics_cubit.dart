@@ -23,7 +23,7 @@ class TradeMetricsCubit extends Cubit<TradeMetricsState> {
       if (_cachedMetricTypes.isEmpty) {
         _cachedMetricTypes = await getMetricTypes();
       }
-      
+
       final metrics = await getTradeMetrics(filter);
       sw.stop();
       ProductTelemetry.instance.widgetTiming(
@@ -58,8 +58,8 @@ class TradeMetricsCubit extends Cubit<TradeMetricsState> {
         emit(TradeMetricsLoaded(
           metrics: metrics,
           filter: currentState.filter,
-          availableMetricTypes: currentState.availableMetricTypes.isNotEmpty 
-              ? currentState.availableMetricTypes 
+          availableMetricTypes: currentState.availableMetricTypes.isNotEmpty
+              ? currentState.availableMetricTypes
               : _cachedMetricTypes,
         ));
       } catch (e) {

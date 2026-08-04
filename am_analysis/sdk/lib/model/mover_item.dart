@@ -133,40 +133,43 @@ class MoverItem {
   double? pnlPercentage;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is MoverItem &&
-    other.symbol == symbol &&
-    other.name == name &&
-    other.price == price &&
-    other.changePercentage == changePercentage &&
-    other.changeAmount == changeAmount &&
-    other.sector == sector &&
-    other.assetClass == assetClass &&
-    other.marketCapType == marketCapType &&
-    other.quantity == quantity &&
-    other.currentValue == currentValue &&
-    other.investedValue == investedValue &&
-    other.allocationPercentage == allocationPercentage &&
-    other.pnlPercentage == pnlPercentage;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MoverItem &&
+          other.symbol == symbol &&
+          other.name == name &&
+          other.price == price &&
+          other.changePercentage == changePercentage &&
+          other.changeAmount == changeAmount &&
+          other.sector == sector &&
+          other.assetClass == assetClass &&
+          other.marketCapType == marketCapType &&
+          other.quantity == quantity &&
+          other.currentValue == currentValue &&
+          other.investedValue == investedValue &&
+          other.allocationPercentage == allocationPercentage &&
+          other.pnlPercentage == pnlPercentage;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (symbol == null ? 0 : symbol!.hashCode) +
-    (name == null ? 0 : name!.hashCode) +
-    (price == null ? 0 : price!.hashCode) +
-    (changePercentage == null ? 0 : changePercentage!.hashCode) +
-    (changeAmount == null ? 0 : changeAmount!.hashCode) +
-    (sector == null ? 0 : sector!.hashCode) +
-    (assetClass == null ? 0 : assetClass!.hashCode) +
-    (marketCapType == null ? 0 : marketCapType!.hashCode) +
-    (quantity == null ? 0 : quantity!.hashCode) +
-    (currentValue == null ? 0 : currentValue!.hashCode) +
-    (investedValue == null ? 0 : investedValue!.hashCode) +
-    (allocationPercentage == null ? 0 : allocationPercentage!.hashCode) +
-    (pnlPercentage == null ? 0 : pnlPercentage!.hashCode);
+      // ignore: unnecessary_parenthesis
+      (symbol == null ? 0 : symbol!.hashCode) +
+      (name == null ? 0 : name!.hashCode) +
+      (price == null ? 0 : price!.hashCode) +
+      (changePercentage == null ? 0 : changePercentage!.hashCode) +
+      (changeAmount == null ? 0 : changeAmount!.hashCode) +
+      (sector == null ? 0 : sector!.hashCode) +
+      (assetClass == null ? 0 : assetClass!.hashCode) +
+      (marketCapType == null ? 0 : marketCapType!.hashCode) +
+      (quantity == null ? 0 : quantity!.hashCode) +
+      (currentValue == null ? 0 : currentValue!.hashCode) +
+      (investedValue == null ? 0 : investedValue!.hashCode) +
+      (allocationPercentage == null ? 0 : allocationPercentage!.hashCode) +
+      (pnlPercentage == null ? 0 : pnlPercentage!.hashCode);
 
   @override
-  String toString() => 'MoverItem[symbol=$symbol, name=$name, price=$price, changePercentage=$changePercentage, changeAmount=$changeAmount, sector=$sector, assetClass=$assetClass, marketCapType=$marketCapType, quantity=$quantity, currentValue=$currentValue, investedValue=$investedValue, allocationPercentage=$allocationPercentage, pnlPercentage=$pnlPercentage]';
+  String toString() =>
+      'MoverItem[symbol=$symbol, name=$name, price=$price, changePercentage=$changePercentage, changeAmount=$changeAmount, sector=$sector, assetClass=$assetClass, marketCapType=$marketCapType, quantity=$quantity, currentValue=$currentValue, investedValue=$investedValue, allocationPercentage=$allocationPercentage, pnlPercentage=$pnlPercentage]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -250,8 +253,10 @@ class MoverItem {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "MoverItem[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "MoverItem[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "MoverItem[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "MoverItem[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -259,23 +264,43 @@ class MoverItem {
       return MoverItem(
         symbol: mapValueOfType<String>(json, r'symbol'),
         name: mapValueOfType<String>(json, r'name'),
-        price: json[r'price'] == null ? null : (json[r'price'] is num ? json[r'price'] : num.tryParse('${json[r'price']}')),
+        price: json[r'price'] == null
+            ? null
+            : (json[r'price'] is num
+                ? json[r'price']
+                : num.tryParse('${json[r'price']}')),
         changePercentage: mapValueOfType<double>(json, r'changePercentage'),
-        changeAmount: json[r'changeAmount'] == null ? null : (json[r'changeAmount'] is num ? json[r'changeAmount'] : num.tryParse('${json[r'changeAmount']}')),
+        changeAmount: json[r'changeAmount'] == null
+            ? null
+            : (json[r'changeAmount'] is num
+                ? json[r'changeAmount']
+                : num.tryParse('${json[r'changeAmount']}')),
         sector: mapValueOfType<String>(json, r'sector'),
         assetClass: mapValueOfType<String>(json, r'assetClass'),
         marketCapType: mapValueOfType<String>(json, r'marketCapType'),
         quantity: mapValueOfType<double>(json, r'quantity'),
-        currentValue: json[r'currentValue'] == null ? null : (json[r'currentValue'] is num ? json[r'currentValue'] : num.tryParse('${json[r'currentValue']}')),
-        investedValue: json[r'investedValue'] == null ? null : (json[r'investedValue'] is num ? json[r'investedValue'] : num.tryParse('${json[r'investedValue']}')),
-        allocationPercentage: mapValueOfType<double>(json, r'allocationPercentage'),
+        currentValue: json[r'currentValue'] == null
+            ? null
+            : (json[r'currentValue'] is num
+                ? json[r'currentValue']
+                : num.tryParse('${json[r'currentValue']}')),
+        investedValue: json[r'investedValue'] == null
+            ? null
+            : (json[r'investedValue'] is num
+                ? json[r'investedValue']
+                : num.tryParse('${json[r'investedValue']}')),
+        allocationPercentage:
+            mapValueOfType<double>(json, r'allocationPercentage'),
         pnlPercentage: mapValueOfType<double>(json, r'pnlPercentage'),
       );
     }
     return null;
   }
 
-  static List<MoverItem> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<MoverItem> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <MoverItem>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -303,20 +328,24 @@ class MoverItem {
   }
 
   // maps a json object with a list of MoverItem-objects as value to a dart map
-  static Map<String, List<MoverItem>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<MoverItem>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<MoverItem>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = MoverItem.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = MoverItem.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

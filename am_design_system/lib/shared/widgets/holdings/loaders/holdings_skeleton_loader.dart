@@ -8,7 +8,9 @@ class HoldingsSkeletonLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return isCardView ? _buildCardSkeleton(context) : _buildTableSkeleton(context);
+    return isCardView
+        ? _buildCardSkeleton(context)
+        : _buildTableSkeleton(context);
   }
 
   Widget _buildTableSkeleton(BuildContext context) {
@@ -19,11 +21,19 @@ class HoldingsSkeletonLoader extends StatelessWidget {
           height: 48,
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.3),
             borderRadius: BorderRadius.circular(8),
           ),
-        ).animate(onPlay: (controller) => controller.repeat()).shimmer(duration: 1200.ms, color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5)),
-        
+        ).animate(onPlay: (controller) => controller.repeat()).shimmer(
+            duration: 1200.ms,
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.5)),
+
         // Rows
         Expanded(
           child: ListView.builder(
@@ -33,7 +43,10 @@ class HoldingsSkeletonLoader extends StatelessWidget {
                 height: 56,
                 margin: const EdgeInsets.symmetric(vertical: 4),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -44,7 +57,10 @@ class HoldingsSkeletonLoader extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withOpacity(0.3),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -54,7 +70,10 @@ class HoldingsSkeletonLoader extends StatelessWidget {
                       width: 120,
                       height: 16,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withOpacity(0.3),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -64,15 +83,23 @@ class HoldingsSkeletonLoader extends StatelessWidget {
                       width: 80,
                       height: 16,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withOpacity(0.3),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                     const SizedBox(width: 16),
                   ],
                 ),
-              ).animate(onPlay: (controller) => controller.repeat())
-               .shimmer(duration: 1200.ms, delay: (100 * index).ms, color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5));
+              ).animate(onPlay: (controller) => controller.repeat()).shimmer(
+                  duration: 1200.ms,
+                  delay: (100 * index).ms,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withOpacity(0.5));
             },
           ),
         ),
@@ -89,9 +116,13 @@ class HoldingsSkeletonLoader extends StatelessWidget {
           height: 140,
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.1),
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+            border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -103,7 +134,10 @@ class HoldingsSkeletonLoader extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withOpacity(0.3),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -115,7 +149,10 @@ class HoldingsSkeletonLoader extends StatelessWidget {
                         width: 100,
                         height: 14,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withOpacity(0.3),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -124,7 +161,10 @@ class HoldingsSkeletonLoader extends StatelessWidget {
                         width: 60,
                         height: 12,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withOpacity(0.3),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -140,7 +180,10 @@ class HoldingsSkeletonLoader extends StatelessWidget {
                     width: 80,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withOpacity(0.3),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -148,7 +191,10 @@ class HoldingsSkeletonLoader extends StatelessWidget {
                     width: 60,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withOpacity(0.3),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -156,8 +202,13 @@ class HoldingsSkeletonLoader extends StatelessWidget {
               ),
             ],
           ),
-        ).animate(onPlay: (controller) => controller.repeat())
-         .shimmer(duration: 1200.ms, delay: (100 * index).ms, color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5));
+        ).animate(onPlay: (controller) => controller.repeat()).shimmer(
+            duration: 1200.ms,
+            delay: (100 * index).ms,
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.5));
       },
     );
   }

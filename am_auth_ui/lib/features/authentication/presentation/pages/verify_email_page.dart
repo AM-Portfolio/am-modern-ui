@@ -192,8 +192,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                                           !_hasCredential) ...[
                                         const SizedBox(height: 24),
                                         FilledButton(
-                                          onPressed: () =>
-                                              context.go('/login'),
+                                          onPressed: () => context.go('/login'),
                                           child: const Text(
                                             'Continue to sign in',
                                           ),

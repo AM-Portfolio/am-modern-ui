@@ -45,9 +45,18 @@ import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/port
 import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
 import '../../internal/domain/entities/trade_portfolio.dart';
 
-
 /// Trade view types for navigation
-enum TradeViewType { portfolios, holdings, calendar, analysis, report, trades, journal, marketAnalysis, unified }
+enum TradeViewType {
+  portfolios,
+  holdings,
+  calendar,
+  analysis,
+  report,
+  trades,
+  journal,
+  marketAnalysis,
+  unified
+}
 
 /// Web-specific trade screen implementation with sidebar navigation
 class TradeWebScreen extends ConsumerStatefulWidget {
@@ -128,7 +137,8 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   }
 
   void openAddTrade() {
-    final addTradeIndex = _swipeController.items.indexWhere((item) => item.title == addTradeTitle);
+    final addTradeIndex = _swipeController.items
+        .indexWhere((item) => item.title == addTradeTitle);
     if (addTradeIndex != -1) {
       _swipeController.navigateTo(addTradeIndex);
     }
@@ -137,15 +147,24 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   int _getInitialIndex() {
     if (widget.initialTabIndex != null) return widget.initialTabIndex!;
     switch (widget.initialView) {
-      case TradeViewType.portfolios: return 0;
-      case TradeViewType.holdings: return 1;
-      case TradeViewType.calendar: return 2;
-      case TradeViewType.trades: return 3;
-      case TradeViewType.journal: return 4;
-      case TradeViewType.analysis: return 5;
-      case TradeViewType.marketAnalysis: return 6;
-      case TradeViewType.report: return 7;
-      case TradeViewType.unified: return 8;
+      case TradeViewType.portfolios:
+        return 0;
+      case TradeViewType.holdings:
+        return 1;
+      case TradeViewType.calendar:
+        return 2;
+      case TradeViewType.trades:
+        return 3;
+      case TradeViewType.journal:
+        return 4;
+      case TradeViewType.analysis:
+        return 5;
+      case TradeViewType.marketAnalysis:
+        return 6;
+      case TradeViewType.report:
+        return 7;
+      case TradeViewType.unified:
+        return 8;
     }
   }
 
@@ -162,7 +181,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         title: 'Holdings',
         subtitle: 'Asset breakdown',
         icon: Icons.dashboard_outlined,
-        page: _currentPortfolioId == null 
+        page: _currentPortfolioId == null
             ? PortfolioSelectionPrompt(
                 title: 'Holdings',
                 icon: Icons.dashboard_outlined,
@@ -172,7 +191,9 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 key: ValueKey('holdings_$_currentPortfolioId'),
                 portfolioId: _currentPortfolioId!,
                 onNavigateToChart: (symbol) {
-                  ref.read(marketAnalysisSymbolProvider.notifier).updateSymbol(symbol);
+                  ref
+                      .read(marketAnalysisSymbolProvider.notifier)
+                      .updateSymbol(symbol);
                   _swipeController.navigateTo(6); // Market Analysis index
                 },
               ),
@@ -208,7 +229,9 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 key: ValueKey('trades_$_currentPortfolioId'),
                 portfolioId: _currentPortfolioId!,
                 onNavigateToChart: (symbol) {
-                  ref.read(marketAnalysisSymbolProvider.notifier).updateSymbol(symbol);
+                  ref
+                      .read(marketAnalysisSymbolProvider.notifier)
+                      .updateSymbol(symbol);
                   _swipeController.navigateTo(6); // Market Analysis index
                 },
               ),
@@ -218,7 +241,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         title: 'Journal',
         subtitle: 'Trade journal',
         icon: Icons.book_outlined,
-        page: JournalWebPage( portfolioId: _currentPortfolioId),
+        page: JournalWebPage(portfolioId: _currentPortfolioId),
         accentColor: ModuleColors.trade,
       ),
       NavigationItem(
@@ -289,30 +312,38 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                         portfolioName: _currentPortfolioName,
                         existingTrade: _existingTradeToEdit,
                         onTradeAdded: () {
-                           setState(() => _existingTradeToEdit = null);
-                           
-                           // Refresh calendar data so it reflects the new trade
-                           if (_currentPortfolioId != null) {
-                             ref.read(tradeCalendarCubitProvider(_currentPortfolioId!).future)
-                               .then((cubit) => cubit.loadTradeCalendar(
-                                  portfolioId: _currentPortfolioId!, 
-                                  forceReload: true,
-                               ));
-                             
-                             // Refresh trade list so it reflects the new trade
-                             ref.invalidate(tradeHoldingsStreamProvider(_currentPortfolioId!));
-                           }
-                           
-                           _swipeController.navigateTo(3); // Navigate to trades on success
+                          setState(() => _existingTradeToEdit = null);
+
+                          // Refresh calendar data so it reflects the new trade
+                          if (_currentPortfolioId != null) {
+                            ref
+                                .read(tradeCalendarCubitProvider(
+                                        _currentPortfolioId!)
+                                    .future)
+                                .then((cubit) => cubit.loadTradeCalendar(
+                                      portfolioId: _currentPortfolioId!,
+                                      forceReload: true,
+                                    ));
+
+                            // Refresh trade list so it reflects the new trade
+                            ref.invalidate(tradeHoldingsStreamProvider(
+                                _currentPortfolioId!));
+                          }
+
+                          _swipeController
+                              .navigateTo(3); // Navigate to trades on success
                         },
                         onCancel: () {
-                           setState(() => _existingTradeToEdit = null);
-                           _swipeController.navigateTo(3); // Navigate to trades on cancel
+                          setState(() => _existingTradeToEdit = null);
+                          _swipeController
+                              .navigateTo(3); // Navigate to trades on cancel
                         },
                       ),
                     ),
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (error, _) => Center(child: Text('Error loading trade service: $error')),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (error, _) => Center(
+                        child: Text('Error loading trade service: $error')),
                   );
                 },
               ),
@@ -321,13 +352,14 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     ];
   }
 
-  void _onPortfolioSelected(String portfolioId, String portfolioName, {bool autoSelect = false}) {
+  void _onPortfolioSelected(String portfolioId, String portfolioName,
+      {bool autoSelect = false}) {
     final currentIndex = _swipeController.currentIndex;
 
     setState(() {
       _currentPortfolioId = portfolioId;
       _currentPortfolioName = portfolioName;
-      
+
       // Update items to inject new portfolio ID
       _swipeController.updateItems(_buildNavigationItems());
 
@@ -342,9 +374,9 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     // Notify parent for cross-layout state sync
     widget.onPortfolioChanged?.call(portfolioId, portfolioName);
 
-    AppLogger.info('Portfolio selected: $portfolioName ($portfolioId)', tag: 'TradeWebScreen');
+    AppLogger.info('Portfolio selected: $portfolioName ($portfolioId)',
+        tag: 'TradeWebScreen');
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -357,7 +389,8 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
       final defaultPortfolio = portfolios.first;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _onPortfolioSelected(defaultPortfolio.id, defaultPortfolio.name, autoSelect: true);
+          _onPortfolioSelected(defaultPortfolio.id, defaultPortfolio.name,
+              autoSelect: true);
         }
       });
     }
@@ -365,13 +398,13 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     return NotificationListener<OpenAddTradeNotification>(
       onNotification: (notification) {
         notification.handled = true;
-        
+
         TradeDetails? tradeToEdit;
         if (notification.existingTrade is TradeDetails) {
           tradeToEdit = notification.existingTrade as TradeDetails;
         } else if (notification.existingTrade is TradeHoldingViewModel) {
           final holding = notification.existingTrade as TradeHoldingViewModel;
-          
+
           T? parseEnum<T extends Enum>(Iterable<T> values, String? str) {
             if (str == null) return null;
             final normalized = str.toLowerCase().replaceAll('_', '');
@@ -391,20 +424,27 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               segment: parseEnum(MarketSegments.values, holding.marketSegment),
               series: parseEnum(SeriesTypes.values, holding.series),
               indexType: parseEnum(IndexTypes.values, holding.indexType),
-              derivativeInfo: holding.strikePrice != null ? DerivativeInfo(
-                strikePrice: holding.strikePrice,
-                expiryDate: holding.expiryDate,
-                optionType: parseEnum(OptionTypes.values, holding.optionType),
-                underlyingSymbol: holding.underlyingSymbol,
-                derivativeType: parseEnum(DerivativeTypes.values, holding.derivativeType),
-              ) : null,
+              derivativeInfo: holding.strikePrice != null
+                  ? DerivativeInfo(
+                      strikePrice: holding.strikePrice,
+                      expiryDate: holding.expiryDate,
+                      optionType:
+                          parseEnum(OptionTypes.values, holding.optionType),
+                      underlyingSymbol: holding.underlyingSymbol,
+                      derivativeType: parseEnum(
+                          DerivativeTypes.values, holding.derivativeType),
+                    )
+                  : null,
               description: holding.description,
               currency: holding.currency,
               lotSize: holding.lotSize,
               isin: holding.isin,
             ),
-            status: parseEnum(TradeStatuses.values, holding.status) ?? TradeStatuses.open,
-            tradePositionType: parseEnum(TradeDirections.values, holding.tradePositionType) ?? TradeDirections.long,
+            status: parseEnum(TradeStatuses.values, holding.status) ??
+                TradeStatuses.open,
+            tradePositionType:
+                parseEnum(TradeDirections.values, holding.tradePositionType) ??
+                    TradeDirections.long,
             entryInfo: EntryExitInfo(
               timestamp: holding.entryTimestamp,
               price: holding.entryPrice,
@@ -415,16 +455,17 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             ),
             symbol: holding.symbol,
             strategy: holding.strategy,
-            exitInfo: (holding.exitTimestamp != null || holding.exitPrice != null)
-              ? EntryExitInfo(
-                  timestamp: holding.exitTimestamp,
-                  price: holding.exitPrice,
-                  quantity: holding.quantity,
-                  totalValue: holding.exitTotalValue,
-                  fees: holding.exitFees,
-                  reason: holding.exitReason,
-                )
-              : null,
+            exitInfo:
+                (holding.exitTimestamp != null || holding.exitPrice != null)
+                    ? EntryExitInfo(
+                        timestamp: holding.exitTimestamp,
+                        price: holding.exitPrice,
+                        quantity: holding.quantity,
+                        totalValue: holding.exitTotalValue,
+                        fees: holding.exitFees,
+                        reason: holding.exitReason,
+                      )
+                    : null,
             metrics: TradeMetrics(
               profitLoss: holding.profitLoss,
               profitLossPercentage: holding.profitLossPercentage,
@@ -436,16 +477,25 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               maxAdverseExcursion: holding.maxAdverseExcursion,
               maxFavorableExcursion: holding.maxFavorableExcursion,
             ),
-            tradeExecutions: (holding.broker != null || holding.orderType != null) ? [
-              TradeModel(
-                basicInfo: holding.broker != null ? BasicInfo(
-                  brokerType: parseEnum(BrokerTypes.values, holding.broker),
-                ) : null,
-                executionInfo: holding.orderType != null ? ExecutionInfo(
-                  orderType: parseEnum(OrderTypes.values, holding.orderType),
-                ) : null,
-              )
-            ] : null,
+            tradeExecutions: (holding.broker != null ||
+                    holding.orderType != null)
+                ? [
+                    TradeModel(
+                      basicInfo: holding.broker != null
+                          ? BasicInfo(
+                              brokerType:
+                                  parseEnum(BrokerTypes.values, holding.broker),
+                            )
+                          : null,
+                      executionInfo: holding.orderType != null
+                          ? ExecutionInfo(
+                              orderType: parseEnum(
+                                  OrderTypes.values, holding.orderType),
+                            )
+                          : null,
+                    )
+                  ]
+                : null,
             notes: holding.notes,
             tags: holding.tags,
             userId: holding.userId,
@@ -459,9 +509,11 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             cubit.state.mapOrNull(
               loaded: (state) {
                 try {
-                  tradeToEdit = state.trades.firstWhere((t) => t.tradeId == tradeId);
+                  tradeToEdit =
+                      state.trades.firstWhere((t) => t.tradeId == tradeId);
                 } catch (e) {
-                  AppLogger.warning('Trade $tradeId not found for edit', tag: 'TradeWebScreen');
+                  AppLogger.warning('Trade $tradeId not found for edit',
+                      tag: 'TradeWebScreen');
                 }
               },
             );
@@ -473,7 +525,8 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
           _existingTradeToEdit = tradeToEdit;
         });
 
-        final addTradeIndex = _swipeController.items.indexWhere((item) => item.title == addTradeTitle);
+        final addTradeIndex = _swipeController.items
+            .indexWhere((item) => item.title == addTradeTitle);
         if (addTradeIndex != -1) {
           _swipeController.navigateTo(addTradeIndex);
         }
@@ -499,7 +552,8 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             accentColor: ModuleColors.trade,
             onTap: () {
               // Dispatch directly via _swipeController since NotificationListener is below this context
-              final addTradeIndex = _swipeController.items.indexWhere((item) => item.title == addTradeTitle);
+              final addTradeIndex = _swipeController.items
+                  .indexWhere((item) => item.title == addTradeTitle);
               if (addTradeIndex != -1) {
                 _swipeController.navigateTo(addTradeIndex);
               }
@@ -526,19 +580,17 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 accentColor: ModuleColors.trade,
               ),
             ),
-          
+
           // Navigation Section (No Title)
           SecondarySidebarSection(
             title: '',
-            items: _swipeController.items.asMap().entries
-              .where((entry) {
-                final title = entry.value.title;
-                return title != addTradeTitle && 
-                       title != 'Market' && 
-                       title != 'Report' && 
-                       title != 'Unified';
-              })
-              .map((entry) {
+            items: _swipeController.items.asMap().entries.where((entry) {
+              final title = entry.value.title;
+              return title != addTradeTitle &&
+                  title != 'Market' &&
+                  title != 'Report' &&
+                  title != 'Unified';
+            }).map((entry) {
               final index = entry.key;
               final item = entry.value;
               return SecondarySidebarItem(
@@ -596,7 +648,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                       ),
                     );
                   }
-                  // We explicitly DO NOT call ref.invalidate here, because that would 
+                  // We explicitly DO NOT call ref.invalidate here, because that would
                   // trigger a network request that returns the stale backend cache.
                 },
               );
@@ -623,7 +675,8 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                   await service.updatePortfolio(portfolio.id, request);
                   // Optimistically update local cache to bypass backend cache
                   final repository = ref.read(tradeRepositoryProvider).value;
-                  repository?.updateCachedPortfolio(portfolio.id, request.name, request.description);
+                  repository?.updateCachedPortfolio(
+                      portfolio.id, request.name, request.description);
                   // We explicitly DO NOT call ref.invalidate here
                 },
               );
@@ -737,4 +790,3 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     );
   }
 }
-

@@ -6,10 +6,7 @@ import 'package:intl/intl.dart';
 class RecentActivityWidget extends StatelessWidget {
   final List<ActivityItem> activities;
 
-  const RecentActivityWidget({
-    super.key,
-    required this.activities,
-  });
+  const RecentActivityWidget({super.key, required this.activities});
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +77,10 @@ class RecentActivityWidget extends StatelessWidget {
         backgroundColor: color.withOpacity(0.1),
         child: Icon(icon, color: color, size: 20),
       ),
-      title: Text(activity.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(
+        activity.title,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
       subtitle: Text(
         '${activity.description}\n${timeFormat.format(activity.timestamp)}',
         style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 12),

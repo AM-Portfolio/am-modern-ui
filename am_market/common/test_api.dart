@@ -6,15 +6,14 @@ void main() async {
   GetIt.I.registerSingleton<SecureStorageService>(SecureStorageService());
   final api = ApiService();
   try {
-     final response = await api.fetchHistoricalData(
-       symbols: ['NIFTY 50'],
-       from: '2025-06-05',
-       to: '2026-06-05',
-       interval: '1d',
-       isIndexSymbol: true
-     );
-     print('Data: $response');
+    final response = await api.fetchHistoricalData(
+        symbols: ['NIFTY 50'],
+        from: '2025-06-05',
+        to: '2026-06-05',
+        interval: '1d',
+        isIndexSymbol: true);
+    print('Data: $response');
   } catch (e) {
-     print('Error: $e');
+    print('Error: $e');
   }
 }

@@ -32,7 +32,7 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
 
   /// Load all templates for a user
   Future<void> loadTemplates({
-        JournalTemplateCategory? category,
+    JournalTemplateCategory? category,
     String? search,
   }) async {
     AppLogger.methodEntry(
@@ -138,7 +138,7 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
   /// Toggle favorite status of a template
   Future<void> toggleFavorite({
     required String templateId,
-      }) async {
+  }) async {
     AppLogger.methodEntry(
       'toggleFavorite',
       tag: 'JournalTemplateCubit',
@@ -179,7 +179,7 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
   /// Delete a template
   Future<void> deleteTemplate({
     required String templateId,
-      }) async {
+  }) async {
     AppLogger.methodEntry(
       'deleteTemplate',
       tag: 'JournalTemplateCubit',
@@ -213,7 +213,7 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
 
   /// Use a template to create a journal entry
   Future<void> useTemplate({
-        required String templateId,
+    required String templateId,
     required Map<String, dynamic> fieldValues,
     String? tradeId,
     String? customTitle,
@@ -252,4 +252,3 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
     }
   }
 }
-

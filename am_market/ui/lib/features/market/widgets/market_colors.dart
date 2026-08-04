@@ -63,33 +63,30 @@ class MarketColors {
   static Color negative(BuildContext context) =>
       _isDark(context) ? const Color(0xFFF87171) : const Color(0xFFDC2626);
 
-  static Color positiveBg(BuildContext context) =>
-      _isDark(context)
-          ? const Color(0xFF00C896).withOpacity(0.15)
-          : const Color(0xFF00956B).withOpacity(0.12);
+  static Color positiveBg(BuildContext context) => _isDark(context)
+      ? const Color(0xFF00C896).withOpacity(0.15)
+      : const Color(0xFF00956B).withOpacity(0.12);
 
-  static Color negativeBg(BuildContext context) =>
-      _isDark(context)
-          ? const Color(0xFFF87171).withOpacity(0.14)
-          : const Color(0xFFDC2626).withOpacity(0.10);
+  static Color negativeBg(BuildContext context) => _isDark(context)
+      ? const Color(0xFFF87171).withOpacity(0.14)
+      : const Color(0xFFDC2626).withOpacity(0.10);
 
   // ── Selected card glow ────────────────────────────────────
-  static List<BoxShadow> selectedGlow(BuildContext context) =>
-      _isDark(context)
-          ? [
-              BoxShadow(
-                color: const Color(0xFF00C896).withOpacity(0.12),
-                blurRadius: 12,
-                spreadRadius: 0,
-              )
-            ]
-          : [
-              BoxShadow(
-                color: const Color(0xFF00C896).withOpacity(0.12),
-                blurRadius: 0,
-                spreadRadius: 3,
-              )
-            ];
+  static List<BoxShadow> selectedGlow(BuildContext context) => _isDark(context)
+      ? [
+          BoxShadow(
+            color: const Color(0xFF00C896).withOpacity(0.12),
+            blurRadius: 12,
+            spreadRadius: 0,
+          )
+        ]
+      : [
+          BoxShadow(
+            color: const Color(0xFF00C896).withOpacity(0.12),
+            blurRadius: 0,
+            spreadRadius: 3,
+          )
+        ];
 
   // ── Positive/negative badge (drawer cards) ────────────────
   static Color posBadgeBg(BuildContext context) =>

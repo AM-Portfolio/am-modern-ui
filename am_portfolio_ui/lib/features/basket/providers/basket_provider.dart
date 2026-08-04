@@ -1,4 +1,3 @@
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/models/basket_opportunity.dart';
 import '../domain/models/basket_item.dart';
@@ -18,7 +17,7 @@ class BasketNotifier extends _$BasketNotifier {
   Future<BasketOpportunity> _fetchBasketDetails(String id) async {
     // Simulate network delay
     await Future.delayed(const Duration(milliseconds: 800));
-    
+
     // Mock Data matching doc/SmartBasketPreview.png
     return BasketOpportunity(
       id: id,
@@ -26,19 +25,19 @@ class BasketNotifier extends _$BasketNotifier {
       matchScore: 85.0,
       missingStockCount: 2,
       items: [
-         const BasketItem(
+        const BasketItem(
           symbol: "HDFCBANK",
           name: "HDFC Bank Ltd",
           weight: 12.5,
           status: BasketItemStatus.held,
         ),
-         const BasketItem(
+        const BasketItem(
           symbol: "RELIANCE",
           name: "Reliance Industries",
           weight: 10.2,
           status: BasketItemStatus.held,
         ),
-         const BasketItem(
+        const BasketItem(
           symbol: "ICICIBANK",
           name: "ICICI Bank Ltd",
           weight: 8.4,
@@ -52,13 +51,13 @@ class BasketNotifier extends _$BasketNotifier {
           reason: "IT Sector Proxy",
           userHoldingSymbol: "TCS",
         ),
-         const BasketItem(
+        const BasketItem(
           symbol: "LT",
           name: "Larsen & Toubro",
           weight: 4.5,
           status: BasketItemStatus.missing,
         ),
-         const BasketItem(
+        const BasketItem(
           symbol: "ITC",
           name: "ITC Ltd",
           weight: 3.8,
@@ -72,7 +71,7 @@ class BasketNotifier extends _$BasketNotifier {
           reason: "PSU Bank Match",
           userHoldingSymbol: "PNB",
         ),
-         const BasketItem(
+        const BasketItem(
           symbol: "BHARTIARTL",
           name: "Bharti Airtel",
           weight: 2.9,

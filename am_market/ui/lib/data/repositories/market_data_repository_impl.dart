@@ -7,7 +7,7 @@ import '../mappers/available_indices_mapper.dart';
 import 'market_data_repository.dart';
 
 /// Implementation of MarketDataRepository using the Market Data SDK
-/// 
+///
 /// This implementation:
 /// - Uses the generated SDK for API calls
 /// - Maps SDK models to app-specific models via mappers
@@ -21,7 +21,7 @@ class MarketDataRepositoryImpl implements MarketDataRepository {
   Future<AvailableIndices> getAvailableIndices() async {
     try {
       final response = await _sdkService.indexDataApi.getAllAvailableIndices();
-      
+
       if (response == null) {
         throw Exception('No data received from API');
       }
