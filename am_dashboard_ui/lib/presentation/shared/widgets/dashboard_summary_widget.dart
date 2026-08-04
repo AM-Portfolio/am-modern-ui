@@ -1,4 +1,5 @@
 import 'package:am_dashboard_ui/domain/models/dashboard_summary.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'glass_card.dart';
@@ -66,10 +67,10 @@ class DashboardSummaryWidget extends StatelessWidget {
   Widget _buildPortfolioCard(BuildContext context, bool isMobile) {
     final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
     final isPositiveDay = summary.dayChangePercentage >= 0;
-    
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    const onSurface = Colors.white; 
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : Colors.white70;
+    final isDark = context.isDark;
+    final onSurface = isDark ? context.textPrimary : AppColors.textPrimaryDark;
+    final onSurfaceVariant =
+        isDark ? context.textSecondary : AppColors.textSecondaryDark;
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,7 +106,9 @@ class DashboardSummaryWidget extends StatelessWidget {
             Text(
               '${isPositiveDay ? "+" : ""}${summary.dayChangePercentage}% Today',
               style: TextStyle(
-                color: isPositiveDay ? const Color(0xFF00C853) : const Color(0xFFEF4444),
+                color: AppColors.profitLossColor(
+                  summary.dayChangePercentage.toDouble(),
+                ),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Inter',
@@ -120,17 +123,13 @@ class DashboardSummaryWidget extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF4F46E5), Color(0xFF3730A3)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: AppColors.primaryGradient,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Color.fromRGBO(79, 70, 229, 0.25),
+              color: AppColors.primary.withValues(alpha: 0.25),
               blurRadius: 16,
-              offset: Offset(0, 8),
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -146,9 +145,8 @@ class DashboardSummaryWidget extends StatelessWidget {
 
   Widget _buildInvestedCard(BuildContext context) {
     final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final onSurface = context.textPrimary;
+    final onSurfaceVariant = context.textSecondary;
 
     return AmGlassCard(
       padding: const EdgeInsets.all(16),
@@ -198,11 +196,7 @@ class DashboardSummaryWidget extends StatelessWidget {
     final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
     final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);
     final isPositiveReturn = summary.totalGainLoss >= 0;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final valueColor = isPositiveReturn 
-        ? (isDark ? const Color(0xFF10B981) : const Color(0xFF00C853))
-        : (isDark ? const Color(0xFFEF4444) : const Color(0xFFD50000));
+    final valueColor = AppColors.profitLossColor(summary.totalGainLoss);
 
     return AmGlassCard(
       padding: const EdgeInsets.all(16),
@@ -213,7 +207,7 @@ class DashboardSummaryWidget extends StatelessWidget {
           Text(
             'Total Return',
             style: TextStyle(
-              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              color: context.textSecondary,
               fontSize: 12,
               fontWeight: FontWeight.w600,
               fontFamily: 'Inter',
@@ -249,9 +243,8 @@ class DashboardSummaryWidget extends StatelessWidget {
   }
 
   Widget _buildPortfoliosCard(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final onSurface = context.textPrimary;
+    final onSurfaceVariant = context.textSecondary;
 
     return AmGlassCard(
       padding: const EdgeInsets.all(16),

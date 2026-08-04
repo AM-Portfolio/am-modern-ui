@@ -70,7 +70,7 @@ class _DashboardMobileScreenState
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade500,
+                  color: context.textTertiary,
                   fontFamily: 'Inter',
                 ),
               ),
@@ -227,7 +227,8 @@ class _DashboardMobileScreenState
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? Theme.of(context).scaffoldBackgroundColor : const Color(0xFFF8FAFC);
+    final bgColor =
+        isDark ? context.backgroundColor : const Color(0xFFF8FAFC);
     final onSurface = isDark ? Colors.white : const Color(0xFF0B1C30);
     final chipBg = isDark
         ? Colors.white.withValues(alpha: 0.08)

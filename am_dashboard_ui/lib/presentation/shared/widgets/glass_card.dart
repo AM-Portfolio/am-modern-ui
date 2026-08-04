@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 class AmGlassCard extends StatelessWidget {
@@ -13,21 +13,20 @@ class AmGlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = context.isDark;
 
     if (!isDark) {
-      // Modern SaaS Light Theme (Solid, crisp, no blur)
       return Container(
         padding: padding,
         decoration: BoxDecoration(
-          color: const Color(0xFFFFFFFF),
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
-          boxShadow: const [
+          border: Border.all(color: context.borderColor, width: 1),
+          boxShadow: [
             BoxShadow(
-              color: Color.fromRGBO(15, 23, 42, 0.04),
+              color: context.shadow(0.04),
               blurRadius: 8,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -35,30 +34,21 @@ class AmGlassCard extends StatelessWidget {
       );
     }
 
-    // Glassmorphism Dark Theme
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: context.shadow(0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
-          padding: padding,
-          child: child,
-        ),
+        ],
       ),
+      child: child,
     );
   }
 }

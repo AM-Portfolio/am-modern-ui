@@ -21,11 +21,11 @@ extension ThemeColorExtensions on BuildContext {
   /// Get theme-aware card color
   Color get cardColor => isDark ? AppColors.darkCard : AppColors.lightCard;
   
-  /// Get theme-aware background color
-  Color get backgroundColor => isDark ? AppColors.darkBackground : AppColors.lightBackground;
+  /// Get theme-aware background color (aligned with card surface in dark mode)
+  Color get backgroundColor => isDark ? AppColors.darkCard : AppColors.lightBackground;
   
-  /// Get theme-aware surface color
-  Color get surfaceColor => isDark ? AppColors.darkSurface : AppColors.lightSurface;
+  /// Get theme-aware surface color (aligned with card surface in dark mode)
+  Color get surfaceColor => isDark ? AppColors.darkCard : AppColors.lightSurface;
   
   /// Get theme-aware border color
   Color get borderColor => isDark ? AppColors.darkBorder : AppColors.lightBorder;

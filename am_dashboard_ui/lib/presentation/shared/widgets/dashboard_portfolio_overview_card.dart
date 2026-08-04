@@ -1,5 +1,5 @@
 import 'package:am_dashboard_ui/domain/models/portfolio_overview.dart';
-
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'glass_card.dart';
@@ -19,18 +19,11 @@ class DashboardPortfolioOverviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
     final isPositive = overview.totalReturn >= 0;
-    
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    // Dynamic Colors
-    final onSurface = isDark ? Colors.white : const Color(0xFF111827);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
-    final primary = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2E3192);
-    
-    final positiveBg = isDark ? const Color(0xFF064E3B) : const Color(0xFFE8F5E9);
-    final negativeBg = isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFFEBEE);
-    final trendBg = isPositive ? positiveBg : negativeBg;
-    final trendColor = isPositive ? const Color(0xFF00C853) : const Color(0xFFD50000);
+
+    final onSurface = context.textPrimary;
+    final onSurfaceVariant = context.textSecondary;
+    final trendColor = AppColors.profitLossColor(overview.totalReturn);
+    final trendBg = trendColor.withValues(alpha: 0.15);
 
     return InkWell(
       onTap: onTap,

@@ -12,10 +12,12 @@ class AppTheme {
   //-- Theme Definitions --//
   
   static ThemeData get darkTheme {
+    // Flat dark surface: page scaffold and cards share darkCard so modules
+    // stay visually consistent via Theme (no per-screen hardcoded page bg).
     return _buildTheme(
       brightness: Brightness.dark,
-      backgroundColor: AppColors.darkBackground,
-      surfaceColor: AppColors.darkSurface,
+      backgroundColor: AppColors.darkCard,
+      surfaceColor: AppColors.darkCard,
       primaryColor: AppColors.primary,
       textColor: AppColors.textPrimaryDark,
     );
