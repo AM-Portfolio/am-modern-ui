@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../models/trade_holding_view_model.dart';
+import '../../../../providers/trade_controller_providers.dart';
+import '../../../../providers/trade_internal_providers.dart';
 
-class ModernTradeHeader extends StatefulWidget {
-  const ModernTradeHeader({required this.trade, required this.onClose, required this.onFilterChanged, this.onSymbolTap, super.key});
+class ModernTradeHeader extends ConsumerStatefulWidget {
+  const ModernTradeHeader({required this.trade, required this.portfolioId, required this.onClose, required this.onFilterChanged, this.onSymbolTap, super.key});
 
   final TradeHoldingViewModel trade;
+  final String portfolioId;
   final VoidCallback? onClose;
   final ValueChanged<String?> onFilterChanged;
   final Function(String symbol)? onSymbolTap;
 
   @override
-  State<ModernTradeHeader> createState() => _ModernTradeHeaderState();
+  ConsumerState<ModernTradeHeader> createState() => _ModernTradeHeaderState();
 }
 
-class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTickerProviderStateMixin {
+class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> with SingleTickerProviderStateMixin {
   late AnimationController _shineController;
   late Animation<double> _shineAnimation;
   bool _showDetails = true;
@@ -114,14 +118,33 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
                     color: Colors.black87,
                   ),
                 ),
-                // Moon Icon / Context Action
-                 Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.nightlight_round, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                // Delete Trade Action
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: _deleteTrade,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Moon Icon / Context Action
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.nightlight_round, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -741,6 +764,39 @@ class _ModernTradeHeaderState extends State<ModernTradeHeader> with SingleTicker
       return '$difference days ago';
     } else {
       return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
+  void _deleteTrade() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Trade'),
+        content: Text('Are you sure you want to delete the trade for ${widget.trade.displaySymbol}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      final cubit = await ref.read(tradeControllerCubitProvider.future);
+      await cubit.removeTradeById(widget.trade.tradeId, widget.portfolioId);
+      
+      // Refresh trade list so it reflects the deletion
+      ref.invalidate(tradeHoldingsStreamProvider(widget.portfolioId));
+
+      if (mounted) {
+        widget.onClose?.call();
+      }
     }
   }
 }

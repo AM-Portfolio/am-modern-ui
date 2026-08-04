@@ -435,6 +435,17 @@ class TradeRepositoryImpl implements TradeRepository {
     return _calendarController.stream;
   }
 
+  @override
+  Future<void> deleteTrade(String tradeId) async {
+    AppLogger.methodEntry('deleteTrade', tag: 'TradeRepository');
+    try {
+      await _remoteDataSource.deleteTrade(tradeId);
+    } catch (e) {
+      AppLogger.error('Failed to delete trade', tag: 'TradeRepository', error: e);
+      rethrow;
+    }
+  }
+
   void _ensureWebSocketSubscribed(String defaultUserId) {
     if (_stompClient == null) {
       AppLogger.warning('AmStompClient is null. WebSocket features disabled.', tag: 'TradeRepository');
@@ -498,6 +509,68 @@ class TradeRepositoryImpl implements TradeRepository {
         },
         onError: (err) => AppLogger.error('STOMP Subscription error', error: err, tag: 'TradeRepository'),
       );
+    }
+  }
+
+  @override
+  void updateCachedPortfolio(String portfolioId, String name, String? description) {
+    AppLogger.methodEntry('updateCachedPortfolio', tag: 'TradeRepository', params: {'portfolioId': portfolioId});
+    if (_cachedPortfolioList != null) {
+      final updatedPortfolios = _cachedPortfolioList!.portfolios.map((p) {
+        if (p.id == portfolioId) {
+          return p.copyWith(name: name, description: description);
+        }
+        return p;
+      }).toList();
+      
+      _cachedPortfolioList = TradePortfolioList(
+        userId: _cachedPortfolioList!.userId,
+        portfolios: updatedPortfolios,
+        totalCount: _cachedPortfolioList!.totalCount,
+      );
+      
+      // Emit the updated list to bypass backend cache
+      _portfoliosController.add(_cachedPortfolioList!);
+      AppLogger.info('Optimistically updated cached portfolio list', tag: 'TradeRepository');
+    }
+  }
+
+  @override
+  void removeCachedPortfolio(String portfolioId) {
+    AppLogger.methodEntry('removeCachedPortfolio', tag: 'TradeRepository', params: {'portfolioId': portfolioId});
+    if (_cachedPortfolioList != null) {
+      final updatedPortfolios = _cachedPortfolioList!.portfolios
+          .where((p) => p.id != portfolioId)
+          .toList();
+      
+      _cachedPortfolioList = TradePortfolioList(
+        userId: _cachedPortfolioList!.userId,
+        portfolios: updatedPortfolios,
+        totalCount: _cachedPortfolioList!.totalCount > 0 ? _cachedPortfolioList!.totalCount - 1 : 0,
+      );
+      
+      // Emit the updated list to bypass backend cache
+      _portfoliosController.add(_cachedPortfolioList!);
+      AppLogger.info('Optimistically removed portfolio from cached list', tag: 'TradeRepository');
+    }
+  }
+
+  @override
+  void addCachedPortfolio(TradePortfolio portfolio) {
+    AppLogger.methodEntry('addCachedPortfolio', tag: 'TradeRepository', params: {'portfolioId': portfolio.id});
+    final currentList = _cachedPortfolioList;
+    if (currentList != null) {
+      // Prepend so newest portfolio appears at the top
+      final updatedPortfolios = [portfolio, ...currentList.portfolios];
+
+      _cachedPortfolioList = TradePortfolioList(
+        userId: currentList.userId,
+        portfolios: updatedPortfolios,
+        totalCount: currentList.totalCount + 1,
+      );
+
+      _portfoliosController.add(_cachedPortfolioList!);
+      AppLogger.info('Optimistically added new portfolio to cached list', tag: 'TradeRepository');
     }
   }
 

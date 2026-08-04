@@ -55,4 +55,16 @@ abstract class TradeRepository {
 
   /// Get calendar stream for real-time updates
   Stream<TradeCalendar> watchTradeCalendar(String portfolioId);
+
+  /// Delete trade by ID
+  Future<void> deleteTrade(String tradeId);
+
+  /// Update cached portfolio name and description locally to bypass backend cache
+  void updateCachedPortfolio(String portfolioId, String name, String? description);
+
+  /// Remove cached portfolio locally to bypass backend cache
+  void removeCachedPortfolio(String portfolioId);
+
+  /// Add a newly created portfolio to the local cache immediately
+  void addCachedPortfolio(TradePortfolio portfolio);
 }

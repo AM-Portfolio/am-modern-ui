@@ -11,7 +11,10 @@ import '../cubit/portfolio_state.dart';
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../../providers/portfolio_providers.dart';
 import '../../internal/domain/entities/portfolio_list.dart';
+import '../../internal/data/dtos/portfolio_create_request_dto.dart';
+import '../../internal/data/dtos/portfolio_update_request_dto.dart';
 import 'widgets/portfolio_tab_content_widget.dart';
+import 'widgets/portfolio_form_modal.dart';
 
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
 class PortfolioMobileScreen extends ConsumerStatefulWidget {
@@ -324,6 +327,61 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     });
   }
 
+  void _showAddPortfolioModal() {
+    PortfolioFormModal.show(
+      context: context,
+      onSubmit: (name, desc) async {
+        final request = PortfolioCreateRequestDto(
+          name: name,
+          description: desc,
+          currency: 'INR',
+          initialCapital: 0,
+        );
+        await context.read<PortfolioCubit>().createPortfolio(request);
+      },
+    );
+  }
+
+  void _showEditPortfolioModal(PortfolioItem portfolio) {
+    PortfolioFormModal.show(
+      context: context,
+      portfolio: portfolio,
+      onSubmit: (name, desc) async {
+        final request = PortfolioUpdateRequestDto(
+          name: name,
+          description: desc,
+          currency: 'INR',
+        );
+        await context.read<PortfolioCubit>().updatePortfolio(portfolio.portfolioId, request);
+      },
+    );
+  }
+
+  void _deletePortfolio(PortfolioItem portfolio) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Portfolio'),
+        content: Text('Are you sure you want to delete "${portfolio.portfolioName}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      await context.read<PortfolioCubit>().deletePortfolio(portfolio.portfolioId);
+    }
+  }
+
   Widget _buildGlassFab() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
@@ -514,58 +572,60 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
               constraints: const BoxConstraints(maxWidth: 128),
               child: _buildPortfolioSwitcher(context, currentName),
             ),
-            // Right Group
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (widget.onOpenDocIntel != null) ...[
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: widget.onOpenDocIntel,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: chipBg,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: chipBorder),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.psychology_outlined,
-                              size: 17,
-                              color: Color(0xFF00D2D3),
+          ),
+          const Spacer(),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.onOpenDocIntel != null) ...[
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _showAddPortfolioModal,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      height: 36,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: chipBg,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: chipBorder),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.psychology_outlined,
+                            size: 17,
+                            color: Color(0xFF00D2D3),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Add Portfolio',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: onSurface,
+                              height: 1,
                             ),
-                            const SizedBox(width: 5),
-                            Text(
-                              'Add Portfolio',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: onSurface,
-                                height: 1,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12), // Strict gap: 12px
-                ],
-                const GlobalTimeFrameBar(
-                  variant: GlobalTimeFrameVariant.dropdown,
                 ),
+                const SizedBox(width: 12), // Strict gap: 12px
               ],
-            ),
-          ],
-        ),
+              if (_currentPortfolioId != null && _currentPortfolioId != 'all') ...[
+                _buildPortfolioMenu(context),
+                const SizedBox(width: 8),
+              ],
+              const GlobalTimeFrameBar(
+                variant: GlobalTimeFrameVariant.dropdown,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -616,6 +676,46 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         }
         _onPortfolioChanged(id, name);
       },
+    );
+  }
+
+  Widget _buildPortfolioMenu(BuildContext context) {
+    final portfolios = widget.portfolios ?? const <PortfolioItem>[];
+    final portfolio = portfolios.where((p) => p.portfolioId == _currentPortfolioId).firstOrNull;
+
+    if (portfolio == null) return const SizedBox.shrink();
+
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, size: 20),
+      onSelected: (value) {
+        if (value == 'edit') {
+          _showEditPortfolioModal(portfolio);
+        } else if (value == 'delete') {
+          _deletePortfolio(portfolio);
+        }
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 18),
+              SizedBox(width: 8),
+              Text('Edit Portfolio'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, size: 18, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Delete Portfolio', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

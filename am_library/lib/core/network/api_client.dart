@@ -128,6 +128,9 @@ class ApiClient {
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       try {
+        if (response.body.isEmpty) {
+          return parser(null);
+        }
         final dynamic data = jsonDecode(response.body);
         return parser(data);
       } catch (e) {

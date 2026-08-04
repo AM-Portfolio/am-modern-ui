@@ -53,6 +53,7 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
           // Modern Header with animations
           ModernTradeHeader(
             trade: widget.trade,
+            portfolioId: widget.portfolioId,
             onClose: widget.onClose,
             onSymbolTap: widget.onNavigateToChart,
             onFilterChanged: (value) {

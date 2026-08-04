@@ -56,7 +56,7 @@ final _tradeRemoteDataSourceProvider = FutureProvider<TradeRemoteDataSource>((re
 });
 
 /// Provider for trade repository
-final _tradeRepositoryProvider = FutureProvider<TradeRepository>((ref) async {
+final tradeRepositoryProvider = FutureProvider<TradeRepository>((ref) async {
   final remoteDataSource = await ref.watch(_tradeRemoteDataSourceProvider.future);
   final stompClient =
       GetIt.instance.isRegistered<AmStompClient>() ? GetIt.instance<AmStompClient>() : null;
@@ -69,55 +69,55 @@ final _tradeRepositoryProvider = FutureProvider<TradeRepository>((ref) async {
 
 /// Provider for GetTradePortfolios use case
 final _getTradePortfoliosProvider = FutureProvider<GetTradePortfolios>((ref) async {
-  final repository = await ref.watch(_tradeRepositoryProvider.future);
+  final repository = await ref.watch(tradeRepositoryProvider.future);
   return GetTradePortfolios(repository);
 });
 
 /// Provider for GetTradeHoldings use case
 final _getTradeHoldingsProvider = FutureProvider<GetTradeHoldings>((ref) async {
-  final repository = await ref.watch(_tradeRepositoryProvider.future);
+  final repository = await ref.watch(tradeRepositoryProvider.future);
   return GetTradeHoldings(repository);
 });
 
 /// Provider for GetTradeSummary use case
 final _getTradeSummaryProvider = FutureProvider<GetTradeSummary>((ref) async {
-  final repository = await ref.watch(_tradeRepositoryProvider.future);
+  final repository = await ref.watch(tradeRepositoryProvider.future);
   return GetTradeSummary(repository);
 });
 
 /// Provider for GetTradeCalendar use case (private)
 final _getTradeCalendarProvider = FutureProvider<GetTradeCalendar>((ref) async {
-  final repository = await ref.watch(_tradeRepositoryProvider.future);
+  final repository = await ref.watch(tradeRepositoryProvider.future);
   return GetTradeCalendar(repository);
 });
 
 /// Provider for GetTradeCalendar use case (public)
 final getTradeCalendarProvider = FutureProvider<GetTradeCalendar>((ref) async {
-  final repository = await ref.watch(_tradeRepositoryProvider.future);
+  final repository = await ref.watch(tradeRepositoryProvider.future);
   return GetTradeCalendar(repository);
 });
 
 /// Provider for GetTradeCalendarByMonth use case
 final getTradeCalendarByMonthProvider = FutureProvider<GetTradeCalendarByMonth>((ref) async {
-  final repository = await ref.watch(_tradeRepositoryProvider.future);
+  final repository = await ref.watch(tradeRepositoryProvider.future);
   return GetTradeCalendarByMonth(repository);
 });
 
 /// Provider for GetTradeCalendarByDay use case
 final getTradeCalendarByDayProvider = FutureProvider<GetTradeCalendarByDay>((ref) async {
-  final repository = await ref.watch(_tradeRepositoryProvider.future);
+  final repository = await ref.watch(tradeRepositoryProvider.future);
   return GetTradeCalendarByDay(repository);
 });
 
 /// Provider for GetTradeCalendarByDateRange use case
 final getTradeCalendarByDateRangeProvider = FutureProvider<GetTradeCalendarByDateRange>((ref) async {
-  final repository = await ref.watch(_tradeRepositoryProvider.future);
+  final repository = await ref.watch(tradeRepositoryProvider.future);
   return GetTradeCalendarByDateRange(repository);
 });
 
 /// Invalidates trade data providers so the next watch triggers fresh API calls.
 void invalidateTradeData(WidgetRef ref) {
-  ref.invalidate(_tradeRepositoryProvider);
+  ref.invalidate(tradeRepositoryProvider);
   ref.invalidate(tradePortfoliosProvider);
   ref.invalidate(tradePortfoliosStreamProvider);
 }

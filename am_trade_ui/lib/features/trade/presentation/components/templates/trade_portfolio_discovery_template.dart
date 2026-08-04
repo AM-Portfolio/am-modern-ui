@@ -23,6 +23,9 @@ class TradePortfolioDiscoveryTemplate extends StatefulWidget {
     required this.onPortfolioSelected,
     super.key,
     this.errorMessage,
+    this.onEditPortfolio,
+    this.onDeletePortfolio,
+    this.onCreatePortfolio,
     this.onRefresh,
     this.isWebView = true,
   });
@@ -30,6 +33,9 @@ class TradePortfolioDiscoveryTemplate extends StatefulWidget {
   final bool isLoading;
   final String? errorMessage;
   final Function(TradePortfolioViewModel) onPortfolioSelected;
+  final Function(TradePortfolioViewModel)? onEditPortfolio;
+  final Function(TradePortfolioViewModel)? onDeletePortfolio;
+  final VoidCallback? onCreatePortfolio;
   final VoidCallback? onRefresh;
   final bool isWebView;
 
@@ -139,6 +145,24 @@ class _TradePortfolioDiscoveryTemplateState
                   .bodyMedium
                   ?.copyWith(color: Colors.grey[500]),
             ),
+            if (widget.onCreatePortfolio != null) ...
+              [
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: widget.onCreatePortfolio,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Create Portfolio'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7C3AED),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
           ],
         ),
       );
@@ -208,6 +232,28 @@ class _TradePortfolioDiscoveryTemplateState
                     ],
                   ),
                   const Spacer(),
+                  if (widget.onCreatePortfolio != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilledButton.icon(
+                        onPressed: widget.onCreatePortfolio,
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text('New Portfolio'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF7C3AED),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
                   if (widget.onRefresh != null)
                     IconButton(
                       icon: Icon(Icons.refresh,
@@ -550,6 +596,12 @@ class _TradePortfolioDiscoveryTemplateState
                 portfolio: paginatedPortfolios[index],
                 onTap: () =>
                     widget.onPortfolioSelected(paginatedPortfolios[index]),
+                onEdit: widget.onEditPortfolio != null 
+                    ? () => widget.onEditPortfolio!(paginatedPortfolios[index]) 
+                    : null,
+                onDelete: widget.onDeletePortfolio != null 
+                    ? () => widget.onDeletePortfolio!(paginatedPortfolios[index]) 
+                    : null,
               )
                   .animate()
                   .fadeIn(duration: 500.ms, delay: (80 * index).ms)
@@ -588,6 +640,12 @@ class _TradePortfolioDiscoveryTemplateState
               child: _PortfolioHoverCard(
                 portfolio: portfolio,
                 onTap: () => widget.onPortfolioSelected(portfolio),
+                onEdit: widget.onEditPortfolio != null 
+                    ? () => widget.onEditPortfolio!(portfolio) 
+                    : null,
+                onDelete: widget.onDeletePortfolio != null 
+                    ? () => widget.onDeletePortfolio!(portfolio) 
+                    : null,
               )
                   .animate()
                   .fadeIn(duration: 500.ms, delay: (80 * index).ms)
@@ -803,9 +861,11 @@ class _StatBadge extends StatelessWidget {
 class _PortfolioHoverCard extends StatefulWidget {
   final TradePortfolioViewModel portfolio;
   final VoidCallback onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const _PortfolioHoverCard(
-      {required this.portfolio, required this.onTap});
+      {required this.portfolio, required this.onTap, this.onEdit, this.onDelete});
 
   @override
   State<_PortfolioHoverCard> createState() => _PortfolioHoverCardState();
@@ -926,25 +986,62 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(5),
-                        border: Border.all(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12)),
-                      ),
-                      child: Text(
-                        'TRADE',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+                    if (widget.onEdit != null || widget.onDelete != null)
+                      PopupMenuButton<String>(
+                        icon: Icon(Icons.more_vert, size: 20, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                        color: Theme.of(context).colorScheme.surface,
+                        itemBuilder: (context) => [
+                          if (widget.onEdit != null)
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit, size: 16, color: Theme.of(context).colorScheme.onSurface),
+                                  const SizedBox(width: 8),
+                                  const Text('Edit'),
+                                ],
+                              ),
+                            ),
+                          if (widget.onDelete != null)
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete, size: 16, color: Colors.red),
+                                  const SizedBox(width: 8),
+                                  const Text('Delete', style: TextStyle(color: Colors.red)),
+                                ],
+                              ),
+                            ),
+                        ],
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            widget.onEdit?.call();
+                          } else if (value == 'delete') {
+                            widget.onDelete?.call();
+                          }
+                        },
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(5),
+                          border: Border.all(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12)),
+                        ),
+                        child: Text(
+                          'TRADE',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
 

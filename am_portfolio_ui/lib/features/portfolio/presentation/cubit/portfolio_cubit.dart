@@ -13,6 +13,9 @@ import 'package:get_it/get_it.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:uuid/uuid.dart';
+import '../../internal/data/dtos/portfolio_create_request_dto.dart';
+import '../../internal/data/dtos/portfolio_update_request_dto.dart';
+import 'package:uuid/uuid.dart';
 
 class PortfolioCubit extends Cubit<PortfolioState> {
   final String _debugId = DateTime.now().millisecondsSinceEpoch
@@ -259,6 +262,66 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       _socketSubscription = null;
 
       _isSubscribed = false;
+    }
+  }
+
+  /// Refresh the portfolio list
+  Future<void> refreshPortfolioList() async {
+    try {
+      final portfolioList = await _portfolioService.getPortfoliosList();
+      if (!isClosed) {
+        if (state is PortfolioLoaded) {
+          emit((state as PortfolioLoaded).copyWith(portfolioList: portfolioList));
+        } else {
+          emit(PortfolioLoading(portfolioList: portfolioList));
+          // If we want to stay in loaded state, we could just load the first one or 'all' here.
+        }
+      }
+    } catch (e) {
+      CommonLogger.error('Failed to refresh portfolio list', tag: 'PortfolioCubit', error: e);
+    }
+  }
+
+  /// Create a new portfolio
+  Future<void> createPortfolio(PortfolioCreateRequestDto request) async {
+    CommonLogger.methodEntry('createPortfolio', tag: 'PortfolioCubit');
+    try {
+      await _portfolioService.createPortfolio(request);
+      await refreshPortfolioList();
+    } catch (e) {
+      CommonLogger.error('Failed to create portfolio', tag: 'PortfolioCubit', error: e);
+      if (!isClosed) emit(PortfolioError('Failed to create portfolio'));
+    }
+  }
+
+  /// Update an existing portfolio
+  Future<void> updatePortfolio(String portfolioId, PortfolioUpdateRequestDto request) async {
+    CommonLogger.methodEntry('updatePortfolio', tag: 'PortfolioCubit');
+    try {
+      await _portfolioService.updatePortfolio(portfolioId, request);
+      await refreshPortfolioList();
+      if (_loadedPortfolioId == portfolioId) {
+        loadPortfolioById(portfolioId);
+      }
+    } catch (e) {
+      CommonLogger.error('Failed to update portfolio', tag: 'PortfolioCubit', error: e);
+      if (!isClosed) emit(PortfolioError('Failed to update portfolio'));
+    }
+  }
+
+  /// Delete a portfolio
+  Future<void> deletePortfolio(String portfolioId, {bool deleteTrades = false}) async {
+    CommonLogger.methodEntry('deletePortfolio', tag: 'PortfolioCubit');
+    try {
+      await _portfolioService.deletePortfolio(portfolioId, deleteTrades: deleteTrades);
+      await refreshPortfolioList();
+      if (_loadedPortfolioId == portfolioId || _loadedPortfolioId == null) {
+        // If we deleted the currently loaded portfolio, switch to 'all' or empty state
+        loadPortfolioById('all');
+      }
+    } catch (e) {
+      CommonLogger.error('Failed to delete portfolio', tag: 'PortfolioCubit', error: e);
+      if (!isClosed) emit(PortfolioError('Failed to delete portfolio'));
     }
   }
 

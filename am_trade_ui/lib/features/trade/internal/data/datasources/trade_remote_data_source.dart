@@ -51,6 +51,9 @@ abstract class TradeRemoteDataSource {
   /// Get trade calendar from remote API (legacy - delegates to getTradeCalendarByMonth)
   @Deprecated('Use getTradeCalendarByMonth instead')
   Future<TradeCalendarDto> getTradeCalendar(String portfolioId, {int? year, int? month});
+
+  /// Delete trade by ID
+  Future<void> deleteTrade(String tradeId);
 }
 
 /// Concrete implementation of trade remote data source
@@ -645,6 +648,23 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     final targetMonth = month ?? now.month;
 
     return getTradeCalendarByMonth(portfolioId, year: targetYear, month: targetMonth);
+  }
+
+  @override
+  Future<void> deleteTrade(String tradeId) async {
+    AppLogger.methodEntry('deleteTrade', tag: 'TradeRemoteDataSource', params: {'tradeId': tradeId});
+
+    try {
+      final baseUri = _buildUri(_tradeConfig.baseUrl, '/details/$tradeId');
+      await _apiClient.delete<void>(
+        baseUri,
+        parser: (_) {}, // No content expected
+      );
+      AppLogger.info('Trade deleted successfully', tag: 'TradeRemoteDataSource');
+    } catch (e) {
+      AppLogger.error('Failed to delete trade', tag: 'TradeRemoteDataSource', error: e);
+      rethrow;
+    }
   }
 }
 

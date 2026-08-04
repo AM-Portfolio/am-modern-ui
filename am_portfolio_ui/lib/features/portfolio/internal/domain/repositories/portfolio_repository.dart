@@ -1,7 +1,8 @@
 import '../entities/portfolio_holding.dart';
 import '../entities/portfolio_list.dart';
 import '../entities/portfolio_summary.dart';
-
+import '../../data/dtos/portfolio_create_request_dto.dart';
+import '../../data/dtos/portfolio_update_request_dto.dart';
 /// Repository interface for portfolio data operations
 abstract class PortfolioRepository {
   /// Get portfolio holdings for a user
@@ -46,4 +47,13 @@ abstract class PortfolioRepository {
 
   /// Get list of portfolios for a user
   Future<PortfolioList> getPortfoliosList();
+
+  /// Create a new portfolio
+  Future<PortfolioItem> createPortfolio(PortfolioCreateRequestDto request);
+
+  /// Update an existing portfolio
+  Future<PortfolioItem> updatePortfolio(String portfolioId, PortfolioUpdateRequestDto request);
+
+  /// Delete a portfolio
+  Future<void> deletePortfolio(String portfolioId, {bool deleteTrades = false});
 }

@@ -24,8 +24,9 @@ class ConfigService {
   static String _normalizeEnvLabel(String raw) {
     switch (raw.trim().toLowerCase()) {
       case 'development':
-      case 'dev':
       case 'local':
+        return 'local';
+      case 'dev':
         return 'dev';
       case 'preprod':
       case 'staging':

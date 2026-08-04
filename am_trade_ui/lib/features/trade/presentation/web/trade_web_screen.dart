@@ -38,6 +38,12 @@ import '../cubit/trade_controller_cubit.dart';
 import '../cubit/trade_controller_state.dart';
 import '../models/trade_holding_view_model.dart';
 import '../add_trade/pages/add_trade_web_page.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/mobile/widgets/portfolio_form_modal.dart';
+import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_create_request_dto.dart';
+import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_update_request_dto.dart';
+import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_list.dart';
+import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
+import '../../internal/domain/entities/trade_portfolio.dart';
 
 
 /// Trade view types for navigation
@@ -149,7 +155,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         title: 'Portfolios',
         subtitle: 'Portfolio Discovery',
         icon: Icons.folder_open_outlined,
-        page: _buildPortfoliosView(),
+        page: _buildPortfoliosView(context),
         accentColor: ModuleColors.trade,
       ),
       NavigationItem(
@@ -292,6 +298,9 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                                   portfolioId: _currentPortfolioId!, 
                                   forceReload: true,
                                ));
+                             
+                             // Refresh trade list so it reflects the new trade
+                             ref.invalidate(tradeHoldingsStreamProvider(_currentPortfolioId!));
                            }
                            
                            _swipeController.navigateTo(3); // Navigate to trades on success
@@ -546,34 +555,183 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   }
 
   /// Build portfolios view with integrated navigation
-  Widget _buildPortfoliosView() {
+  Widget _buildPortfoliosView(BuildContext context) {
     return Consumer(
       builder: (context, ref, child) {
-        final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider);
+        final portfoliosAsyncValue = ref.watch(tradePortfoliosStreamProvider);
 
-        return portfoliosAsync.when(
-          data: (portfolios) {
-            if (_currentPortfolioId == null && portfolios.isNotEmpty && _swipeController.currentIndex == 0) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  _onPortfolioSelected(portfolios.first.id, portfolios.first.name);
-                }
-              });
-            }
-
-            return TradePortfolioDiscoveryTemplate(
-              portfolios: portfolios,
-              isLoading: false,
-              onPortfolioSelected: (portfolio) {
-                _onPortfolioSelected(portfolio.id, portfolio.name);
-              },
-              onRefresh: () {
-                ref.invalidate(tradePortfoliosStreamProvider);
-              },
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => Center(child: Text('Error: $error')),
+        return portfoliosAsyncValue.when(
+          data: (portfolios) => TradePortfolioDiscoveryTemplate(
+            portfolios: portfolios,
+            isLoading: false,
+            onPortfolioSelected: (portfolio) {
+              _onPortfolioSelected(portfolio.id, portfolio.name);
+            },
+            // ─── CREATE PORTFOLIO ────────────────────────────────────────
+            onCreatePortfolio: () {
+              PortfolioFormModal.show(
+                context: context,
+                portfolio: null, // null = create mode
+                onSubmit: (name, desc) async {
+                  final service = ref.read(portfolioServiceProvider).value;
+                  if (service == null) {
+                    throw Exception('Portfolio service not ready');
+                  }
+                  final request = PortfolioCreateRequestDto(
+                    name: name,
+                    description: desc,
+                    currency: 'USD',
+                    initialCapital: 0,
+                  );
+                  final created = await service.createPortfolio(request);
+                  // Optimistically add the new portfolio to local cache so it
+                  // appears immediately without waiting for the backend cache
+                  final repository = ref.read(tradeRepositoryProvider).value;
+                  if (repository != null) {
+                    repository.addCachedPortfolio(
+                      TradePortfolio(
+                        id: created.portfolioId,
+                        name: created.portfolioName,
+                        description: desc,
+                      ),
+                    );
+                  }
+                  // We explicitly DO NOT call ref.invalidate here, because that would 
+                  // trigger a network request that returns the stale backend cache.
+                },
+              );
+            },
+            // ─── EDIT PORTFOLIO ──────────────────────────────────────────
+            onEditPortfolio: (portfolio) {
+              final portfolioItem = PortfolioItem(
+                portfolioId: portfolio.id,
+                portfolioName: portfolio.name,
+              );
+              PortfolioFormModal.show(
+                context: context,
+                portfolio: portfolioItem,
+                onSubmit: (name, desc) async {
+                  final service = ref.read(portfolioServiceProvider).value;
+                  if (service == null) {
+                    throw Exception('Portfolio service not ready');
+                  }
+                  final request = PortfolioUpdateRequestDto(
+                    name: name,
+                    description: desc,
+                    currency: 'USD',
+                  );
+                  await service.updatePortfolio(portfolio.id, request);
+                  // Optimistically update local cache to bypass backend cache
+                  final repository = ref.read(tradeRepositoryProvider).value;
+                  repository?.updateCachedPortfolio(portfolio.id, request.name, request.description);
+                  // We explicitly DO NOT call ref.invalidate here
+                },
+              );
+            },
+            // ─── DELETE PORTFOLIO ────────────────────────────────────────
+            onDeletePortfolio: (portfolio) async {
+              // Use a StatefulBuilder so the checkbox inside the dialog can
+              // rebuild without closing it — standard Flutter pattern.
+              bool deleteTrades = false;
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => StatefulBuilder(
+                  builder: (ctx, setDialogState) => AlertDialog(
+                    title: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.delete_outline_rounded,
+                              color: Colors.red, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text('Delete Portfolio'),
+                      ],
+                    ),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Are you sure you want to delete "${portfolio.name}"?',
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'This action cannot be undone.',
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                        const SizedBox(height: 16),
+                        CheckboxListTile(
+                          value: deleteTrades,
+                          onChanged: (v) =>
+                              setDialogState(() => deleteTrades = v ?? false),
+                          title: const Text(
+                            'Also delete all associated trades',
+                            style: TextStyle(fontSize: 14),
+                          ),
+                          subtitle: const Text(
+                            'If unchecked, trades remain in the database but will be unassigned.',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          controlAffinity: ListTileControlAffinity.leading,
+                          activeColor: Colors.red,
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton.icon(
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        icon: const Icon(Icons.delete_rounded, size: 18),
+                        label: const Text('Delete'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+              if (confirm == true && mounted) {
+                final service = ref.read(portfolioServiceProvider).value;
+                if (service == null) return;
+                await service.deletePortfolio(
+                  portfolio.id,
+                  deleteTrades: deleteTrades,
+                );
+                // Optimistically remove from local cache
+                final repository = ref.read(tradeRepositoryProvider).value;
+                repository?.removeCachedPortfolio(portfolio.id);
+                // We explicitly DO NOT call ref.invalidate here
+              }
+            },
+            onRefresh: () {
+              ref.invalidate(tradePortfoliosStreamProvider);
+            },
+          ),
+          loading: () => TradePortfolioDiscoveryTemplate(
+            portfolios: const [],
+            isLoading: true,
+            onPortfolioSelected: (_) {},
+          ),
+          error: (error, _) => TradePortfolioDiscoveryTemplate(
+            portfolios: const [],
+            isLoading: false,
+            errorMessage: 'Failed to load portfolios: $error',
+            onPortfolioSelected: (_) {},
+            onRefresh: () => ref.invalidate(tradePortfoliosStreamProvider),
+          ),
         );
       },
     );
