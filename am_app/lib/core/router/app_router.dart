@@ -54,12 +54,19 @@ GoRouter createAppRouter({
         return null;
       }
 
+      // Privacy / Terms must stay public (Play Store policy URL must not hit login).
+      if (AppRoutes.isPublicLegalRoute(location)) {
+        return null;
+      }
+
       // Restoring session — stay on current /app/* URL (avoids login flash on reload).
       if (authPending && AppRoutes.isAuthenticatedAppRoute(location)) {
         return null;
       }
 
-      if (!isAuthenticated && AppRoutes.isAuthenticatedAppRoute(location)) {
+      if (!isAuthenticated &&
+          AppRoutes.isAuthenticatedAppRoute(location) &&
+          !AppRoutes.isPublicLegalRoute(location)) {
         final redirect = Uri.encodeComponent(_redirectTarget(state.uri));
         return '${AppRoutes.login}?redirect=$redirect';
       }
@@ -156,6 +163,34 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.deleteAccount,
         builder: (context, state) => const am_user.DeleteAccountPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.privacyPolicy,
+        builder: (context, state) => buildPrivacyPolicyRoute(
+          onBack: () {
+            final authState = authCubit.state;
+            context.go(
+              authState is Authenticated
+                  ? AppRoutes.profile
+                  : AppRoutes.login,
+            );
+          },
+          onOpenTerms: () => context.go(AppRoutes.termsOfService),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.termsOfService,
+        builder: (context, state) => buildTermsOfServiceRoute(
+          onBack: () {
+            final authState = authCubit.state;
+            context.go(
+              authState is Authenticated
+                  ? AppRoutes.profile
+                  : AppRoutes.login,
+            );
+          },
+          onOpenPrivacy: () => context.go(AppRoutes.privacyPolicy),
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
@@ -354,20 +389,6 @@ GoRouter createAppRouter({
                     context.go(AppRoutes.subscription),
               );
             },
-          ),
-          GoRoute(
-            path: AppRoutes.privacyPolicy,
-            builder: (context, state) => buildPrivacyPolicyRoute(
-              onBack: () => context.go(AppRoutes.profile),
-              onOpenTerms: () => context.go(AppRoutes.termsOfService),
-            ),
-          ),
-          GoRoute(
-            path: AppRoutes.termsOfService,
-            builder: (context, state) => buildTermsOfServiceRoute(
-              onBack: () => context.go(AppRoutes.profile),
-              onOpenPrivacy: () => context.go(AppRoutes.privacyPolicy),
-            ),
           ),
           GoRoute(
             path: AppRoutes.subscription,
