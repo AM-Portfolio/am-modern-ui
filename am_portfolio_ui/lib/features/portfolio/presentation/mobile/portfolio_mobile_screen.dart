@@ -572,12 +572,49 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
               constraints: const BoxConstraints(maxWidth: 128),
               child: _buildPortfolioSwitcher(context, currentName),
             ),
-          ),
-          const Spacer(),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (widget.onOpenDocIntel != null) ...[
+            const Spacer(),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.onOpenDocIntel != null) ...[
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: widget.onOpenDocIntel,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        height: 36,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: chipBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: chipBorder),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.psychology_outlined,
+                              size: 17,
+                              color: Color(0xFF00D2D3),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Doc Intel',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: onSurface,
+                                height: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -594,10 +631,10 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.psychology_outlined,
+                          Icon(
+                            Icons.add_circle_outline,
                             size: 17,
-                            color: Color(0xFF00D2D3),
+                            color: onSurface,
                           ),
                           const SizedBox(width: 5),
                           Text(
