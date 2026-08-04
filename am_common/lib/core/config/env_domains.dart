@@ -64,6 +64,19 @@ class EnvDomains {
   static String get logging =>
       ConfigService.override('logging') ?? '$apiBase/logging';
 
+  /// Finance AI chat base URL (L2 mcp-gateway/am-ai-gateway or L3 fin-portfolio-agent).
+  ///
+  /// Prefer `aiGateway` (port 8120). Fall back to `financeAgent` / `aiChat`
+  /// (Phase 1 direct agent on 8101). Unset local default remains 8101.
+  static String get financeAgent {
+    final override = ConfigService.override('aiGateway') ??
+        ConfigService.override('financeAgent') ??
+        ConfigService.override('aiChat');
+    if (override != null && override.isNotEmpty) return override;
+    if (_domain.isNotEmpty) return '$apiBase/ai';
+    return 'http://localhost:8101';
+  }
+
   // WebSocket — all real-time UI uses am-gateway STOMP
   static String get wsStream =>
       ConfigService.override('wsStream') ?? '$wsBase/v1/streams';

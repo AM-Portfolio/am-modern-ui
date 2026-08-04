@@ -88,7 +88,7 @@ class ApiService {
       {String brokerType = 'ZERODHA'}) async {
     // Same ingress pattern as types (/doc/processor) and other modules
     // (/portfolio, /market): Traefik → service with Keycloak Bearer.
-    // Do NOT use /am/... here — asrax-proxy is a separate auth path and
+    // Do NOT use /am/... here — api-gateway (am-api-gateway) is a separate auth path and
     // is what returned 401 while Keycloak worked everywhere else.
     final url = '$_docBase/documents/process';
     debugPrint('[ApiService] POST $url (type=$docType, broker=$brokerType)');

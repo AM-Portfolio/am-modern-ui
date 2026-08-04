@@ -1,64 +1,102 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../data/ai_intent_response.dart';
+import 'ai_data_intent_card.dart';
 
-/// Maps widgetId strings from AiIntentResponse to rendered Flutter widgets.
-/// Uses design system [AppColors] and theme-aware context extensions.
+/// Deep-link paths matching `am_app` [AppRoutes] (no am_app import).
+class _AiRoutes {
+  static const portfolioOverview = '/app/portfolio/overview';
+  static const portfolioHoldings = '/app/portfolio/holdings';
+  static const portfolioAnalysis = '/app/portfolio/analysis';
+  static const tradeDiscovery = '/app/trade/portfolios';
+  static const analysis = '/app/analysis';
+  static const lab = '/app/lab';
+}
+
+/// Registry + builders for AI chat artifacts ([widgetId] / mapped [artifactType] → Flutter widget).
 class AiWidgetFactory {
   const AiWidgetFactory._();
 
-  static Widget build(AiIntentResponse response) {
-    switch (response.widgetId) {
-      case 'PORTFOLIO_SUMMARY':
-        return _PortfolioSummaryCard(widgetParams: response.widgetParams);
-      case 'HOLDINGS_TABLE':
-        return _IntentCard(
-          title: 'Holdings Table',
-          subtitle: 'All positions with gain/loss breakdown',
+  static final Map<String, Widget Function(AiIntentResponse)> _registry = {
+    'PORTFOLIO_SUMMARY': (r) =>
+        _PortfolioSummaryCard(widgetParams: r.widgetParams),
+    'HOLDINGS_TABLE': (r) => AiDataIntentCard(
+          title: 'Holdings',
+          subtitle: 'Positions with gain/loss',
           icon: Icons.table_chart_rounded,
           color: AppColors.tradeAccent,
-        );
-      case 'ALLOCATION_PIE_CHART':
-        return _IntentCard(
-          title: 'Allocation Breakdown',
-          subtitle: 'Sector and asset type distribution',
+          widgetParams: r.widgetParams,
+          detailsRoute: _AiRoutes.portfolioHoldings,
+        ),
+    'ALLOCATION_PIE_CHART': (r) => AiDataIntentCard(
+          title: 'Allocation',
+          subtitle: 'Sector / asset mix',
           icon: Icons.pie_chart_rounded,
           color: AppColors.portfolioAccent,
-        );
-      case 'TOP_MOVERS':
-        return _IntentCard(
+          widgetParams: r.widgetParams,
+          detailsRoute: _AiRoutes.portfolioAnalysis,
+        ),
+    'TOP_MOVERS': (r) => AiDataIntentCard(
           title: 'Top Movers',
-          subtitle: 'Best and worst performers today',
+          subtitle: 'Best and worst performers',
           icon: Icons.trending_up_rounded,
           color: AppColors.profit,
-        );
-      case 'RECENT_ACTIVITY':
-        return _IntentCard(
+          widgetParams: r.widgetParams,
+          detailsRoute: _AiRoutes.portfolioHoldings,
+        ),
+    'RECENT_ACTIVITY': (r) => AiDataIntentCard(
           title: 'Recent Activity',
-          subtitle: 'Buy/sell transactions and events',
+          subtitle: 'Trades and events',
           icon: Icons.receipt_long_rounded,
           color: AppColors.marketAccent,
-        );
-      case 'ETF_ANALYSIS':
-        return _IntentCard(
+          widgetParams: r.widgetParams,
+          detailsRoute: _AiRoutes.tradeDiscovery,
+        ),
+    'ETF_ANALYSIS': (r) => AiDataIntentCard(
           title: 'ETF Analysis',
-          subtitle: 'Overlap and hidden stock exposure',
+          subtitle: 'Overlap and exposure',
           icon: Icons.analytics_rounded,
           color: AppColors.userAccent,
-        );
-      case 'BENCHMARK_COMPARISON':
-        return _IntentCard(
-          title: 'Benchmark Comparison',
-          subtitle: 'Portfolio vs NIFTY 50',
+          widgetParams: r.widgetParams,
+          detailsRoute: _AiRoutes.analysis,
+        ),
+    'BENCHMARK_COMPARISON': (r) => AiDataIntentCard(
+          title: 'Benchmark',
+          subtitle: 'Portfolio vs benchmark',
           icon: Icons.compare_arrows_rounded,
           color: AppColors.accent,
-        );
-      case 'ERROR':
-        return _ErrorBanner(message: response.message);
-      default:
-        return const SizedBox.shrink();
+          widgetParams: r.widgetParams,
+          detailsRoute: _AiRoutes.portfolioAnalysis,
+        ),
+    'API_TEST_WIDGET': (r) => AiDataIntentCard(
+          title: 'API Test',
+          subtitle: 'Tool / API workflow result',
+          icon: Icons.api_rounded,
+          color: AppColors.accent,
+          widgetParams: r.widgetParams,
+          detailsRoute: _AiRoutes.lab,
+        ),
+    'ERROR': (r) => _ErrorBanner(message: r.message),
+    'TEXT_RESPONSE': (_) => const SizedBox.shrink(),
+  };
+
+  static Widget build(AiIntentResponse response) {
+    final builder = _registry[response.widgetId];
+    if (builder != null) return builder(response);
+    // Unknown artifactType still surfaces as a generic data card when data exists.
+    if (response.data != null && response.artifactType != 'text.v1') {
+      return AiDataIntentCard(
+        title: response.artifactType,
+        subtitle: 'AI data',
+        icon: Icons.insights_rounded,
+        color: AppColors.accent,
+        widgetParams: response.widgetParams,
+        detailsRoute: _AiRoutes.lab,
+      );
     }
+    return const SizedBox.shrink();
   }
 }
 
@@ -211,6 +249,23 @@ class _PortfolioSummaryCard extends StatelessWidget {
                   '$totalHoldings ${totalHoldings == 1 ? 'Holding' : 'Holdings'}',
                   style: TextStyle(
                       fontSize: 11, color: context.textSecondary),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => context.go(_AiRoutes.portfolioOverview),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'View details',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.portfolioAccent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -420,51 +475,58 @@ class _PortfolioSummaryCard extends StatelessWidget {
   }
 
   Widget _buildFallback(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.cardColor,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.go(_AiRoutes.portfolioOverview),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: AppColors.portfolioAccent.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.portfolioAccent.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.account_balance_wallet_rounded,
-                color: AppColors.portfolioAccent, size: 20),
+        child: Container(
+          margin: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: context.cardColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+                color: AppColors.portfolioAccent.withValues(alpha: 0.35)),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Portfolio Summary',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.portfolioAccent,
-                      fontSize: 13),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.portfolioAccent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Tap to view portfolio',
-                  style: TextStyle(
-                      color: context.textSecondary, fontSize: 11),
+                child: Icon(Icons.account_balance_wallet_rounded,
+                    color: AppColors.portfolioAccent, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Portfolio Summary',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.portfolioAccent,
+                          fontSize: 13),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Tap to view portfolio',
+                      style: TextStyle(
+                          color: context.textSecondary, fontSize: 11),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Icon(Icons.arrow_forward_ios,
+                  size: 14,
+                  color: AppColors.portfolioAccent.withValues(alpha: 0.6)),
+            ],
           ),
-          Icon(Icons.arrow_forward_ios,
-              size: 14,
-              color: AppColors.portfolioAccent.withValues(alpha: 0.6)),
-        ],
+        ),
       ),
     );
   }
@@ -586,66 +648,6 @@ class _PerformerChip extends StatelessWidget {
                   fontWeight: FontWeight.w500),
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Intent Preview Card ──────────────────────────────────────────────────────
-
-class _IntentCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-
-  const _IntentCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: color,
-                        fontSize: 13)),
-                const SizedBox(height: 2),
-                Text(subtitle,
-                    style: TextStyle(
-                        color: context.textSecondary, fontSize: 11)),
-              ],
-            ),
-          ),
-          Icon(Icons.arrow_forward_ios,
-              size: 14, color: color.withValues(alpha: 0.6)),
         ],
       ),
     );

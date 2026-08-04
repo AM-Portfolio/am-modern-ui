@@ -2,6 +2,7 @@ library am_auth_ui;
 
 // Core Services (Specific to Auth)
 export 'core/services/secure_storage_service.dart';
+export 'core/constants/auth_endpoints.dart';
 
 // Core Network
 export 'core/network/auth_interceptor.dart';
@@ -53,7 +54,6 @@ export 'features/authentication/presentation/widgets/google_login_button_widget.
 export 'features/authentication/presentation/widgets/registration_form_widget.dart';
 export 'features/authentication/presentation/widgets/feature_flag_panel_widget.dart';
 export 'features/authentication/presentation/widgets/auth_layout.dart';
-
 
 // DI
 export 'di/auth_providers.dart';

@@ -1,34 +1,29 @@
 import 'package:dio/dio.dart';
+import 'package:am_common/am_common.dart';
 import 'ai_intent_response.dart';
 
-/// HTTP service that talks to the am-fin-agent FastAPI on port 8100.
-/// Accepts a pre-configured [Dio] instance so that interceptors (e.g.
-/// [AuthInterceptor]) are applied to every outbound request.
+/// HTTP client for finance AI chat (L3 fin-portfolio-agent or L2 mcp-gateway / am-ai-gateway).
 class AiChatService {
-  /// Base URL for the am-fin-agent FastAPI service.
-  /// Exposed as a public constant so providers can reference it without
-  /// duplicating the string.
-  static const String baseUrl = 'http://localhost:8100';
+  /// Resolved base URL (config `aiGateway` preferred, then `financeAgent` / `aiChat`).
+  static String get baseUrl => EnvDomains.financeAgent;
+
+  /// Chat path on fin-portfolio-agent (and mirrored by am-ai-gateway).
+  static const String chatPath = '/api/v1/ai/chat';
 
   final Dio _dio;
 
-  /// Constructs the service with a caller-supplied [Dio] instance.
-  /// The caller is responsible for attaching any required interceptors
-  /// (e.g. [AuthInterceptor]) before passing the instance here.
   AiChatService(this._dio);
 
-  /// Send a chat message and receive an [AiIntentResponse].
+  /// Identity comes from Bearer via [AuthInterceptor]; do not send body userId.
   Future<AiIntentResponse> chat({
     required String message,
-    required String userId,
     String? sessionId,
   }) async {
     try {
       final response = await _dio.post(
-        '/v1/ai/chat',
+        chatPath,
         data: {
           'message': message,
-          'userId': userId,
           if (sessionId != null) 'sessionId': sessionId,
         },
       );
@@ -41,7 +36,6 @@ class AiChatService {
     }
   }
 
-  /// Health check — returns true if the agent is running.
   Future<bool> isHealthy() async {
     try {
       final r = await _dio.get('/health');

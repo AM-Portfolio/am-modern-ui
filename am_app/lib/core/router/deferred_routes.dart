@@ -229,7 +229,7 @@ Widget buildAiChatRoute({required String userId}) {
     load: _loadAi,
     skeleton: const GenericModuleSkeleton(),
     loadingMessage: 'Loading AI Chat…',
-    builder: () => ai_ui.AiChatScreen(userId: userId),
+    builder: () => const ai_ui.AiChatScreen(),
   );
 }
 

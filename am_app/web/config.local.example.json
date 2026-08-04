@@ -11,7 +11,10 @@
     "trades": "http://localhost:8082",
     "analysis": "http://localhost:8090",
     "docs": "http://localhost:8085",
-    "gmail": "http://localhost:8086"
+    "gmail": "http://localhost:8086",
+    "aiGateway": "https://am-dev.asrax.in/ai",
+    "financeAgent": "https://am-dev.asrax.in/ai",
+    "_comment_ai": "Dev cluster: https://am-dev.asrax.in/ai (am-ai-gateway Ingress /ai). Local-only process: http://localhost:8120 after uvicorn."
   },
   "google": {
     "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
