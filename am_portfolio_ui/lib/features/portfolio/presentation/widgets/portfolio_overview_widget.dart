@@ -41,6 +41,10 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
   double? _periodEndValue;
 
   void _reloadAnalytics(ds.TimeFrame timeFrame) {
+    setState(() {
+      _periodStartValue = null;
+      _periodEndValue = null;
+    });
     if (widget.portfolioId != null) {
       try {
         context.read<PortfolioAnalyticsCubit>().loadAnalytics(
@@ -64,6 +68,10 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     super.didUpdateWidget(oldWidget);
     if (widget.portfolioId != oldWidget.portfolioId &&
         widget.portfolioId != null) {
+      setState(() {
+        _periodStartValue = null;
+        _periodEndValue = null;
+      });
       _triggerLoad();
     }
   }
@@ -393,7 +401,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                               timeFrame: selectedTimeFrame,
                               height: 320,
                               onPeriodStats: (start, end) {
-                                if (mounted) {
+                                if (mounted && (_periodStartValue != start || _periodEndValue != end)) {
                                   setState(() {
                                     _periodStartValue = start;
                                     _periodEndValue = end;
@@ -448,7 +456,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                               portfolioId: portfolioId,
                               selectedTimeFrame: selectedTimeFrame,
                               onPeriodStats: (start, end) {
-                                if (mounted) {
+                                if (mounted && (_periodStartValue != start || _periodEndValue != end)) {
                                   setState(() {
                                     _periodStartValue = start;
                                     _periodEndValue = end;
@@ -481,20 +489,31 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     bool glowBorder = true,
   }) {
     final summaryToUse = state.summary;
-    final selectedTimeFrame = ref.read(appTimeFrameProvider);
+    final selectedTimeFrame = ref.watch(appTimeFrameProvider);
 
     final bool hasPeriodData = _periodStartValue != null && _periodEndValue != null;
-    final double periodReturn = hasPeriodData
+    final bool is1D = selectedTimeFrame.code == '1D';
+    final bool isAllTime = selectedTimeFrame.code == 'ALL';
+    final bool isHistoricalPeriod = !is1D && !isAllTime;
+
+    final double periodReturn = (isHistoricalPeriod && hasPeriodData)
         ? _periodEndValue!
         : summaryToUse.totalGainLoss;
-    final double periodReturnPct = hasPeriodData
+    final double periodReturnPct = (isHistoricalPeriod && hasPeriodData)
         ? _periodStartValue!
         : summaryToUse.totalGainLossPercentage;
-    final String periodLabel = hasPeriodData ? selectedTimeFrame.displayName : 'total';
+        
+    final String periodTitle = (isAllTime || is1D)
+        ? 'Total Return'
+        : (hasPeriodData ? 'Return (${selectedTimeFrame.displayName})' : 'Total Return');
+        
+    final String periodLabel = (isAllTime || is1D)
+        ? 'total'
+        : (hasPeriodData ? selectedTimeFrame.displayName : 'total');
 
     return [
       PortfolioMetricCard(
-        title: 'Total Return',
+        title: periodTitle,
         value: _formatCurrency(periodReturn),
         subtitle:
             '${periodReturnPct >= 0 ? "+" : ""}${periodReturnPct.toStringAsFixed(2)}% in $periodLabel',

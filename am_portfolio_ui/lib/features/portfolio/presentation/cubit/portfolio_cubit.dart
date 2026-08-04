@@ -914,8 +914,12 @@ class PortfolioCubit extends Cubit<PortfolioState> {
           investmentValue: dto.investmentValue,
           totalGainLoss: dto.totalGainLoss,
           totalGainLossPercentage: dto.totalGainLossPercentage,
-          todayChange: dto.todayGainLoss,
-          todayChangePercentage: dto.todayGainLossPercentage,
+          todayChange: (dto.todayGainLoss != 0.0)
+              ? dto.todayGainLoss
+              : currentState.summary.todayChange,
+          todayChangePercentage: (dto.todayGainLoss != 0.0)
+              ? dto.todayGainLossPercentage
+              : currentState.summary.todayChangePercentage,
           lastUpdated: DateTime.now(),
         );
 

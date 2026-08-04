@@ -860,7 +860,7 @@ class _PortfolioHistoryChartWidgetState
           final d = startDate.add(Duration(days: i));
           padding.add(PortfolioSnapshotDto(
             snapshotDate: d.toIso8601String(),
-            totalUserWealth: raw.first.totalUserWealth,
+            totalUserWealth: double.nan,
             portfolios: raw.first.portfolios, // carry forward portfolios to prevent multi-line crash
           ));
         }

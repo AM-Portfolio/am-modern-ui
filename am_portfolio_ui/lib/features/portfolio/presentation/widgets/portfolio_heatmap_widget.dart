@@ -517,10 +517,12 @@ class _PortfolioHeatmapWidgetState
                   return name.isEmpty || name == '-' || name.toLowerCase() == 'unknown';
                 })
                 ..sort((a, b) => b.changePercent.compareTo(a.changePercent));
-              topSector = sectors.first.sectorName;
-              topSectorChange = sectors.first.formattedChangePercent;
-              worstSector = sectors.last.sectorName;
-              worstSectorChange = sectors.last.formattedChangePercent;
+              if (sectors.isNotEmpty) {
+                topSector = sectors.first.sectorName;
+                topSectorChange = sectors.first.formattedChangePercent;
+                worstSector = sectors.last.sectorName;
+                worstSectorChange = sectors.last.formattedChangePercent;
+              }
             }
 
             return LayoutBuilder(
