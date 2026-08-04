@@ -652,7 +652,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                   ),
                 ),
                 const SizedBox(width: 12), // Strict gap: 12px
-              ],
               if (_currentPortfolioId != null && _currentPortfolioId != 'all') ...[
                 _buildPortfolioMenu(context),
                 const SizedBox(width: 8),
@@ -664,6 +663,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           ),
         ],
       ),
+    ),
     );
   }
 
