@@ -16,12 +16,13 @@ abstract class PortfolioRepository {
   Future<PortfolioHoldings?> getCachedPortfolioHoldingsById(String portfolioId);
 
   /// Get portfolio summary for a user
-  Future<PortfolioSummary> getPortfolioSummary();
+  Future<PortfolioSummary> getPortfolioSummary([String? interval]);
 
   /// Get portfolio summary for a user and specific portfolio
   Future<PortfolioSummary> getPortfolioSummaryById(
-    String portfolioId,
-  );
+    String portfolioId, [
+    String? interval,
+  ]);
 
   /// Gets cached portfolio summary for the specified user and portfolio
   Future<PortfolioSummary?> getCachedPortfolioSummaryById(String portfolioId);

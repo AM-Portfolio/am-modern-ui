@@ -26,12 +26,13 @@ abstract class PortfolioRemoteDataSource {
   );
 
   /// Get portfolio summary from remote API (legacy - uses default portfolio)
-  Future<PortfolioSummaryDto> getPortfolioSummary();
+  Future<PortfolioSummaryDto> getPortfolioSummary([String? interval]);
 
   /// Get portfolio summary from remote API for specific portfolio
   Future<PortfolioSummaryDto> getPortfolioSummaryById(
-    String portfolioId,
-  );
+    String portfolioId, [
+    String? interval,
+  ]);
 
   /// Get portfolio analytics from remote API
   Future<PortfolioAnalyticsResponseDto> getPortfolioAnalytics(
@@ -251,7 +252,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   }
 
   @override
-  Future<PortfolioSummaryDto> getPortfolioSummary() async {
+  Future<PortfolioSummaryDto> getPortfolioSummary([String? interval]) async {
     CommonLogger.methodEntry(
       'getPortfolioSummary',
       tag: 'PortfolioRemoteDataSource',
@@ -265,7 +266,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
       // Construct full URI from portfolio config without userId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.summary);
-      final fullUri = baseUri;
+      final fullUri = interval != null ? '$baseUri?interval=$interval' : baseUri;
 
       // Use ApiClient for consistent error handling and logging
       final summaryResponse = await _apiClient.get<PortfolioSummaryDto>(
@@ -322,8 +323,9 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
   @override
   Future<PortfolioSummaryDto> getPortfolioSummaryById(
-    String portfolioId,
-  ) async {
+    String portfolioId, [
+    String? interval,
+  ]) async {
     CommonLogger.methodEntry(
       'getPortfolioSummaryById',
       tag: 'PortfolioRemoteDataSource',
@@ -340,9 +342,12 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
       // Construct full URI from portfolio config with portfolioId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.summary);
-      final fullUri = portfolioId == 'all'
+      var fullUri = portfolioId == 'all'
           ? baseUri
           : '$baseUri?portfolioId=$portfolioId';
+      if (interval != null) {
+        fullUri += (fullUri.contains('?') ? '&' : '?') + 'interval=$interval';
+      }
 
       // Use ApiClient for consistent error handling and logging
       final summaryResponse = await _apiClient.get<PortfolioSummaryDto>(
