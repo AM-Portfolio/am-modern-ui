@@ -9,18 +9,20 @@ class GetPortfolioSummary {
   final PortfolioRepository _repository;
 
   /// Execute the use case
-  Future<PortfolioSummary> call(String portfolioId) async {
+  Future<PortfolioSummary> call(String portfolioId, [String? interval]) async {
     CommonLogger.methodEntry(
       'GetPortfolioSummary.call',
       tag: 'GetPortfolioSummary',
-      metadata: {'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId, 'interval': interval},
     );
-    return _repository.getPortfolioSummaryById(portfolioId);
+    return _repository.getPortfolioSummaryById(portfolioId, interval);
   }
 
   /// Get portfolio summary for specific portfolio
-  Future<PortfolioSummary> callForPortfolio(String portfolioId) async =>
-      call(portfolioId);
+  Future<PortfolioSummary> callForPortfolio(
+    String portfolioId, [
+    String? interval,
+  ]) async => call(portfolioId, interval);
 
   /// Gets cached portfolio summary directly (synchronous return via future)
   Future<PortfolioSummary?> getCached(String portfolioId) async {
@@ -29,6 +31,8 @@ class GetPortfolioSummary {
 
   /// Execute with stream for real-time updates
   Stream<PortfolioSummary> watchSummary() {
+    
+
     return _repository.watchPortfolioSummary();
   }
 }

@@ -21,7 +21,10 @@ import '../../providers/portfolio_providers.dart';
 
 /// Portfolio overview widget showing summary and key metrics
 class PortfolioOverviewWidget extends ConsumerStatefulWidget {
-  const PortfolioOverviewWidget({this.portfolioId, super.key});
+  const PortfolioOverviewWidget({
+    this.portfolioId,
+    super.key,
+  });
   final String? portfolioId;
 
   @override
@@ -29,14 +32,8 @@ class PortfolioOverviewWidget extends ConsumerStatefulWidget {
       _PortfolioOverviewWidgetState();
 }
 
-class _PortfolioOverviewWidgetState
-    extends ConsumerState<PortfolioOverviewWidget> {
-  static const _upSparkData = [8.0, 10.0, 9.0, 12.0, 14.0, 13.0, 16.0];
-  static const _downSparkData = [16.0, 14.0, 15.0, 11.0, 9.0, 10.0, 7.0];
-  static const _flatSparkData = [11.0, 12.0, 11.0, 13.0, 12.0, 13.0, 12.0];
-
-  double? _periodStartValue;
-  double? _periodEndValue;
+class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidget> {
+  // Variables for period values removed as backend handles this
 
   void _reloadAnalytics(ds.TimeFrame timeFrame) {
     if (widget.portfolioId != null) {
@@ -76,9 +73,9 @@ class _PortfolioOverviewWidgetState
           if (widget.portfolioId != 'all') {
             try {
               context.read<PortfolioAnalyticsCubit>().loadAnalytics(
-                widget.portfolioId!,
-                timeFrame: ref.read(appTimeFrameProvider),
-              );
+                    widget.portfolioId!,
+                    timeFrame: ref.read(appTimeFrameProvider),
+                  );
             } catch (_) {
               // Cubit may not be in tree, safe to ignore
             }
@@ -114,27 +111,25 @@ class _PortfolioOverviewWidgetState
     final portfolioId = widget.portfolioId;
     ref.listen(appTimeFrameProvider, (previous, next) {
       if (previous != next) {
-        setState(() {
-          _periodStartValue = null;
-          _periodEndValue = null;
-        });
+        context.read<PortfolioCubit>().setTimeFrame(next.code);
         _reloadAnalytics(next);
       }
     });
     final selectedTimeFrame = ref.watch(appTimeFrameProvider);
-
+    
     ds.CommonLogger.debug(
-      '[PortfolioOverview] Building with portfolioId=$portfolioId',
-      tag: 'PortfolioUI',
-    );
+        '[PortfolioOverview] Building with portfolioId=$portfolioId',
+        tag: 'PortfolioUI');
 
     return BlocConsumer<PortfolioCubit, PortfolioState>(
       listenWhen: (previous, current) {
         if (portfolioId == null) return false;
-        if (current is PortfolioLoaded && current.portfolioId == portfolioId) {
+        if (current is PortfolioLoaded &&
+            current.portfolioId == portfolioId) {
           return false;
         }
-        if (current is PortfolioLoaded && current.portfolioId != portfolioId) {
+        if (current is PortfolioLoaded &&
+            current.portfolioId != portfolioId) {
           return false;
         }
         return current is PortfolioListLoaded ||
@@ -145,7 +140,8 @@ class _PortfolioOverviewWidgetState
         if (portfolioId == null) return;
         final cubit = context.read<PortfolioCubit>();
         final current = cubit.state;
-        if (current is PortfolioLoaded && current.portfolioId == portfolioId) {
+        if (current is PortfolioLoaded &&
+            current.portfolioId == portfolioId) {
           return;
         }
         cubit.loadPortfolioById(portfolioId);
@@ -160,9 +156,8 @@ class _PortfolioOverviewWidgetState
       },
       builder: (context, state) {
         ds.CommonLogger.debug(
-          '[PortfolioOverview] State change: ${state.runtimeType}',
-          tag: 'PortfolioUI',
-        );
+            '[PortfolioOverview] State change: ${state.runtimeType}',
+            tag: 'PortfolioUI');
 
         // ── No portfolio selected ──
         if (portfolioId == null) {
@@ -170,11 +165,8 @@ class _PortfolioOverviewWidgetState
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.account_balance_wallet_outlined,
-                  size: 64,
-                  color: Theme.of(context).disabledColor,
-                ),
+                Icon(Icons.account_balance_wallet_outlined,
+                    size: 64, color: Theme.of(context).disabledColor),
                 const SizedBox(height: 16),
                 Text(
                   'Select a portfolio to view overview',
@@ -207,23 +199,21 @@ class _PortfolioOverviewWidgetState
                     message,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
                     onPressed: () {
-                      context.read<PortfolioCubit>().loadPortfolioById(
-                        portfolioId,
-                      );
+                      context
+                          .read<PortfolioCubit>()
+                          .loadPortfolioById(portfolioId);
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text('Try Again'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
-                      ),
+                          horizontal: 32, vertical: 16),
                     ),
                   ),
                 ],
@@ -372,25 +362,12 @@ class _PortfolioOverviewWidgetState
 
                           // ── ROW 2: Chart + Allocation (or stacked on mobile) ──
                           if (isMobile) ...[
-                            PortfolioHistoryChartWidget(
-                              key: ValueKey(
-                                'hist_${portfolioId}_${selectedTimeFrame.code}',
+                              PortfolioHistoryChartWidget(
+                                key: ValueKey('hist_${portfolioId}_${selectedTimeFrame.code}'),
+                                portfolioId: portfolioId,
+                                timeFrame: selectedTimeFrame,
+                                height: 320,
                               ),
-                              portfolioId: portfolioId,
-                              timeFrame: selectedTimeFrame,
-                              height: 320,
-                              onPeriodStats: (start, end) {
-                                if (mounted) {
-                                  if (_periodStartValue != start ||
-                                      _periodEndValue != end) {
-                                    setState(() {
-                                      _periodStartValue = start;
-                                      _periodEndValue = end;
-                                    });
-                                  }
-                                }
-                              },
-                            ),
                             const SizedBox(height: 16),
                             PortfolioTopMoversPanel(
                               portfolioId: portfolioId,
@@ -399,75 +376,39 @@ class _PortfolioOverviewWidgetState
                             ),
                             const SizedBox(height: 16),
                             SizedBox(
-                              height: isSmallMobile
-                                  ? 650
-                                  : 700, // Increased significantly so the sector list doesn't get clipped
-                              child:
-                                  BlocBuilder<PortfolioCubit, PortfolioState>(
-                                    builder: (context, portfolioState) {
-                                      final holdings =
-                                          portfolioState is PortfolioLoaded
-                                          ? portfolioState.holdings
-                                          : null;
-                                      return BlocBuilder<
-                                        PortfolioAnalyticsCubit,
-                                        PortfolioAnalyticsState
-                                      >(
-                                        builder: (context, state) {
-                                          if (state
-                                              is PortfolioAnalyticsLoading) {
-                                            return const AllocationPanelWidget(
-                                              isLoading: true,
-                                            );
-                                          } else if (state
-                                              is PortfolioAnalyticsLoaded) {
-                                            final isLoading = state
-                                                .isLoadingType(
-                                                  AnalyticsDataType
-                                                      .sectorAllocation,
-                                                );
-                                            final error = state.getErrorForType(
-                                              AnalyticsDataType
-                                                  .sectorAllocation,
-                                            );
-                                            return AllocationPanelWidget(
-                                              sectorAllocation:
-                                                  state.sectorAllocation,
-                                              marketCapAllocation:
-                                                  state.marketCapAllocation,
-                                              holdings: holdings,
-                                              isLoading: isLoading,
-                                              error: error,
-                                            );
-                                          } else if (state
-                                              is PortfolioAnalyticsError) {
-                                            return AllocationPanelWidget(
-                                              error: state.message,
-                                            );
-                                          }
-                                          return const AllocationPanelWidget(
-                                            isLoading: true,
-                                          );
-                                        },
-                                      );
+                              height: isSmallMobile ? 650 : 700, // Increased significantly so the sector list doesn't get clipped
+                              child: BlocBuilder<PortfolioCubit, PortfolioState>(
+                                builder: (context, portfolioState) {
+                                  final holdings = portfolioState is PortfolioLoaded ? portfolioState.holdings : null;
+                                  return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+                                    builder: (context, state) {
+                                      if (state is PortfolioAnalyticsLoading) {
+                                        return const AllocationPanelWidget(isLoading: true);
+                                      } else if (state is PortfolioAnalyticsLoaded) {
+                                        final isLoading =
+                                            state.isLoadingType(AnalyticsDataType.sectorAllocation);
+                                        final error =
+                                            state.getErrorForType(AnalyticsDataType.sectorAllocation);
+                                        return AllocationPanelWidget(
+                                          sectorAllocation: state.sectorAllocation,
+                                          marketCapAllocation: state.marketCapAllocation,
+                                          holdings: holdings,
+                                          isLoading: isLoading,
+                                          error: error,
+                                        );
+                                      } else if (state is PortfolioAnalyticsError) {
+                                        return AllocationPanelWidget(error: state.message);
+                                      }
+                                      return const AllocationPanelWidget(isLoading: true);
                                     },
-                                  ),
+                                  );
+                                },
+                              ),
                             ),
                           ] else ...[
                             _MoversAllocationRow(
                               portfolioId: portfolioId,
                               selectedTimeFrame: selectedTimeFrame,
-                              onPeriodStats: (start, end) {
-                                if (mounted) {
-                                  if (_periodStartValue != start ||
-                                      _periodEndValue != end) {
-                                    setState(() {
-                                      _periodStartValue = start;
-                                      _periodEndValue = end;
-                                    });
-                                  }
-                                }
-                              },
                             ),
                           ],
                           const SizedBox(height: 20),
@@ -496,17 +437,9 @@ class _PortfolioOverviewWidgetState
     final summaryToUse = state.summary;
     final selectedTimeFrame = ref.read(appTimeFrameProvider);
 
-    final bool hasPeriodData =
-        _periodStartValue != null && _periodEndValue != null;
-    final double periodReturn = hasPeriodData
-        ? _periodEndValue!
-        : summaryToUse.totalGainLoss;
-    final double periodReturnPct = hasPeriodData
-        ? _periodStartValue!
-        : summaryToUse.totalGainLossPercentage;
-    final String periodLabel = hasPeriodData
-        ? selectedTimeFrame.displayName
-        : 'total';
+    final double periodReturn = selectedTimeFrame.code == '1d' ? summaryToUse.todayChange : summaryToUse.totalGainLoss;
+    final double periodReturnPct = selectedTimeFrame.code == '1d' ? summaryToUse.todayChangePercentage : summaryToUse.totalGainLossPercentage;
+    final String periodLabel = selectedTimeFrame.code == 'all' ? 'total' : selectedTimeFrame.displayName;
 
     return [
       PortfolioMetricCard(
@@ -517,17 +450,17 @@ class _PortfolioOverviewWidgetState
         accentColor: periodReturn == 0
             ? Colors.grey
             : (periodReturn > 0
-                  ? const Color(0xFF00B894)
-                  : const Color(0xFFFF7675)),
+                ? const Color(0xFF00B894)
+                : const Color(0xFFFF7675)),
         icon: periodReturn >= 0
             ? Icons.trending_up_rounded
             : Icons.trending_down_rounded,
-        isPositive: periodReturn == 0 ? null : periodReturn > 0,
+        isPositive: periodReturn == 0
+            ? null
+            : periodReturn > 0,
         compact: compact,
         glowBorder: glowBorder,
-        tooltip: hasPeriodData
-            ? 'Unrealized profit or loss in $periodLabel'
-            : 'Total unrealized profit or loss across all holdings',
+        tooltip: selectedTimeFrame.code != 'all' ? 'Unrealized profit or loss in $periodLabel' : 'Total unrealized profit or loss across all holdings',
       ),
       PortfolioMetricCard(
         title: "Today's P&L",
@@ -537,8 +470,8 @@ class _PortfolioOverviewWidgetState
         accentColor: summaryToUse.todayChange == 0
             ? Colors.grey
             : (summaryToUse.todayChange > 0
-                  ? const Color(0xFF00B894)
-                  : const Color(0xFFFF7675)),
+                ? const Color(0xFF00B894)
+                : const Color(0xFFFF7675)),
         icon: summaryToUse.todayChange >= 0
             ? Icons.keyboard_double_arrow_up_rounded
             : Icons.keyboard_double_arrow_down_rounded,
@@ -558,7 +491,8 @@ class _PortfolioOverviewWidgetState
         isPositive: null,
         compact: compact,
         glowBorder: false,
-        tooltip: 'Total value of all holdings based on current market price',
+        tooltip:
+            'Total value of all holdings based on current market price',
       ),
       PortfolioMetricCard(
         title: 'Invested Amount',
@@ -613,11 +547,11 @@ class _PortfolioOverviewWidgetState
                 crossAxisSpacing: 12,
                 children: List.generate(4, (index) {
                   return Container(
-                        decoration: BoxDecoration(
-                          color: baseColor,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                      )
+                    decoration: BoxDecoration(
+                      color: baseColor,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  )
                       .animate(onPlay: (controller) => controller.repeat())
                       .shimmer(
                         duration: 1200.ms,
@@ -631,32 +565,24 @@ class _PortfolioOverviewWidgetState
                 Column(
                   children: [
                     Container(
-                          height: 280,
-                          decoration: BoxDecoration(
-                            color: baseColor,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        )
+                      height: 280,
+                      decoration: BoxDecoration(
+                        color: baseColor,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    )
                         .animate(onPlay: (c) => c.repeat())
-                        .shimmer(
-                          duration: 1200.ms,
-                          delay: 400.ms,
-                          color: highlightColor,
-                        ),
+                        .shimmer(duration: 1200.ms, delay: 400.ms, color: highlightColor),
                     const SizedBox(height: 16),
                     Container(
-                          height: 220,
-                          decoration: BoxDecoration(
-                            color: baseColor,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        )
+                      height: 220,
+                      decoration: BoxDecoration(
+                        color: baseColor,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    )
                         .animate(onPlay: (c) => c.repeat())
-                        .shimmer(
-                          duration: 1200.ms,
-                          delay: 500.ms,
-                          color: highlightColor,
-                        ),
+                        .shimmer(duration: 1200.ms, delay: 500.ms, color: highlightColor),
                   ],
                 )
               else
@@ -668,52 +594,39 @@ class _PortfolioOverviewWidgetState
                       child: Column(
                         children: [
                           Container(
-                                height: 420,
-                                decoration: BoxDecoration(
-                                  color: baseColor,
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                              )
+                            height: 420,
+                            decoration: BoxDecoration(
+                              color: baseColor,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          )
                               .animate(onPlay: (c) => c.repeat())
-                              .shimmer(
-                                duration: 1200.ms,
-                                delay: 400.ms,
-                                color: highlightColor,
-                              ),
+                              .shimmer(duration: 1200.ms, delay: 400.ms, color: highlightColor),
                           const SizedBox(height: 16),
                           Container(
-                                height: 280,
-                                decoration: BoxDecoration(
-                                  color: baseColor,
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                              )
+                            height: 280,
+                            decoration: BoxDecoration(
+                              color: baseColor,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          )
                               .animate(onPlay: (c) => c.repeat())
-                              .shimmer(
-                                duration: 1200.ms,
-                                delay: 450.ms,
-                                color: highlightColor,
-                              ),
+                              .shimmer(duration: 1200.ms, delay: 450.ms, color: highlightColor),
                         ],
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       flex: 1,
-                      child:
-                          Container(
-                                height: 716,
-                                decoration: BoxDecoration(
-                                  color: baseColor,
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                              )
-                              .animate(onPlay: (c) => c.repeat())
-                              .shimmer(
-                                duration: 1200.ms,
-                                delay: 500.ms,
-                                color: highlightColor,
-                              ),
+                      child: Container(
+                        height: 716,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      )
+                          .animate(onPlay: (c) => c.repeat())
+                          .shimmer(duration: 1200.ms, delay: 500.ms, color: highlightColor),
                     ),
                   ],
                 ),
@@ -734,12 +647,10 @@ class _MoversAllocationRow extends StatelessWidget {
   const _MoversAllocationRow({
     required this.portfolioId,
     required this.selectedTimeFrame,
-    this.onPeriodStats,
   });
 
   final String portfolioId;
   final ds.TimeFrame selectedTimeFrame;
-  final void Function(double start, double end)? onPeriodStats;
 
   @override
   Widget build(BuildContext context) {
@@ -757,7 +668,6 @@ class _MoversAllocationRow extends StatelessWidget {
                 portfolioId: portfolioId,
                 timeFrame: selectedTimeFrame,
                 height: 360,
-                onPeriodStats: onPeriodStats,
               ),
               const SizedBox(height: 16),
               PortfolioTopMoversPanel(
@@ -773,27 +683,19 @@ class _MoversAllocationRow extends StatelessWidget {
         Expanded(
           flex: 1,
           child: SizedBox(
-            height:
-                720, // Fixed height avoids IntrinsicHeight multi-pass measurement crashes with animated LayoutBuilders
+            height: 720, // Fixed height avoids IntrinsicHeight multi-pass measurement crashes with animated LayoutBuilders
             child: BlocBuilder<PortfolioCubit, PortfolioState>(
               builder: (context, portfolioState) {
-                final holdings = portfolioState is PortfolioLoaded
-                    ? portfolioState.holdings
-                    : null;
-                return BlocBuilder<
-                  PortfolioAnalyticsCubit,
-                  PortfolioAnalyticsState
-                >(
+                final holdings = portfolioState is PortfolioLoaded ? portfolioState.holdings : null;
+                return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
                   builder: (context, state) {
                     if (state is PortfolioAnalyticsLoading) {
                       return const AllocationPanelWidget(isLoading: true);
                     } else if (state is PortfolioAnalyticsLoaded) {
-                      final isLoading = state.isLoadingType(
-                        AnalyticsDataType.sectorAllocation,
-                      );
-                      final error = state.getErrorForType(
-                        AnalyticsDataType.sectorAllocation,
-                      );
+                      final isLoading =
+                          state.isLoadingType(AnalyticsDataType.sectorAllocation);
+                      final error =
+                          state.getErrorForType(AnalyticsDataType.sectorAllocation);
                       return AllocationPanelWidget(
                         sectorAllocation: state.sectorAllocation,
                         marketCapAllocation: state.marketCapAllocation,
