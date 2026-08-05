@@ -33,12 +33,7 @@ class PortfolioOverviewWidget extends ConsumerStatefulWidget {
 }
 
 class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidget> {
-  static const _upSparkData = [8.0, 10.0, 9.0, 12.0, 14.0, 13.0, 16.0];
-  static const _downSparkData = [16.0, 14.0, 15.0, 11.0, 9.0, 10.0, 7.0];
-  static const _flatSparkData = [11.0, 12.0, 11.0, 13.0, 12.0, 13.0, 12.0];
-
-  double? _periodStartValue;
-  double? _periodEndValue;
+  // Variables for period values removed as backend handles this
 
   void _reloadAnalytics(ds.TimeFrame timeFrame) {
     if (widget.portfolioId != null) {
@@ -116,10 +111,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     final portfolioId = widget.portfolioId;
     ref.listen(appTimeFrameProvider, (previous, next) {
       if (previous != next) {
-        setState(() {
-          _periodStartValue = null;
-          _periodEndValue = null;
-        });
+        context.read<PortfolioCubit>().setTimeFrame(next.code);
         _reloadAnalytics(next);
       }
     });
@@ -370,22 +362,12 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
 
                           // ── ROW 2: Chart + Allocation (or stacked on mobile) ──
                           if (isMobile) ...[
-                            PortfolioHistoryChartWidget(
-                              key: ValueKey('hist_${portfolioId}_${selectedTimeFrame.code}'),
-                              portfolioId: portfolioId,
-                              timeFrame: selectedTimeFrame,
-                              height: 320,
-                              onPeriodStats: (start, end) {
-                                if (mounted) {
-                                  if (_periodStartValue != start || _periodEndValue != end) {
-                                    setState(() {
-                                      _periodStartValue = start;
-                                      _periodEndValue = end;
-                                    });
-                                  }
-                                }
-                              },
-                            ),
+                              PortfolioHistoryChartWidget(
+                                key: ValueKey('hist_${portfolioId}_${selectedTimeFrame.code}'),
+                                portfolioId: portfolioId,
+                                timeFrame: selectedTimeFrame,
+                                height: 320,
+                              ),
                             const SizedBox(height: 16),
                             PortfolioTopMoversPanel(
                               portfolioId: portfolioId,
@@ -427,16 +409,6 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                             _MoversAllocationRow(
                               portfolioId: portfolioId,
                               selectedTimeFrame: selectedTimeFrame,
-                              onPeriodStats: (start, end) {
-                                if (mounted) {
-                                  if (_periodStartValue != start || _periodEndValue != end) {
-                                    setState(() {
-                                      _periodStartValue = start;
-                                      _periodEndValue = end;
-                                    });
-                                  }
-                                }
-                              },
                             ),
                           ],
                           const SizedBox(height: 20),
@@ -465,14 +437,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     final summaryToUse = state.summary;
     final selectedTimeFrame = ref.read(appTimeFrameProvider);
 
-    final bool hasPeriodData = _periodStartValue != null && _periodEndValue != null;
-    final double periodReturn = hasPeriodData
-        ? _periodEndValue!
-        : summaryToUse.totalGainLoss;
-    final double periodReturnPct = hasPeriodData
-        ? _periodStartValue!
-        : summaryToUse.totalGainLossPercentage;
-    final String periodLabel = hasPeriodData ? selectedTimeFrame.displayName : 'total';
+    final double periodReturn = selectedTimeFrame.code == '1d' ? summaryToUse.todayChange : summaryToUse.totalGainLoss;
+    final double periodReturnPct = selectedTimeFrame.code == '1d' ? summaryToUse.todayChangePercentage : summaryToUse.totalGainLossPercentage;
+    final String periodLabel = selectedTimeFrame.code == 'all' ? 'total' : selectedTimeFrame.displayName;
 
     return [
       PortfolioMetricCard(
@@ -493,7 +460,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             : periodReturn > 0,
         compact: compact,
         glowBorder: glowBorder,
-        tooltip: hasPeriodData ? 'Unrealized profit or loss in $periodLabel' : 'Total unrealized profit or loss across all holdings',
+        tooltip: selectedTimeFrame.code != 'all' ? 'Unrealized profit or loss in $periodLabel' : 'Total unrealized profit or loss across all holdings',
       ),
       PortfolioMetricCard(
         title: "Today's P&L",
@@ -680,12 +647,10 @@ class _MoversAllocationRow extends StatelessWidget {
   const _MoversAllocationRow({
     required this.portfolioId,
     required this.selectedTimeFrame,
-    this.onPeriodStats,
   });
 
   final String portfolioId;
   final ds.TimeFrame selectedTimeFrame;
-  final void Function(double start, double end)? onPeriodStats;
 
   @override
   Widget build(BuildContext context) {
@@ -703,7 +668,6 @@ class _MoversAllocationRow extends StatelessWidget {
                 portfolioId: portfolioId,
                 timeFrame: selectedTimeFrame,
                 height: 360,
-                onPeriodStats: onPeriodStats,
               ),
               const SizedBox(height: 16),
               PortfolioTopMoversPanel(

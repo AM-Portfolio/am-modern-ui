@@ -118,16 +118,16 @@ class PortfolioService {
 
   /// Retrieves portfolio summary for the specified user
   /// Returns summary data or throws an exception if retrieval fails
-  Future<PortfolioSummary> getPortfolioSummary() async {
+  Future<PortfolioSummary> getPortfolioSummary([String? interval]) async {
     CommonLogger.methodEntry(
       'getPortfolioSummary',
       tag: 'PortfolioService',
-      metadata: {},
+      metadata: {'interval': interval},
     );
 
     try {
       CommonLogger.info('Getting portfolio summary', tag: 'PortfolioService');
-      final summary = await _getPortfolioSummary.call('');
+      final summary = await _getPortfolioSummary.call('', interval);
 
       CommonLogger.info(
         'Portfolio summary retrieved successfully',
@@ -159,12 +159,13 @@ class PortfolioService {
   /// Retrieves portfolio summary for the specified user and portfolio
   /// Returns summary data or throws an exception if retrieval fails
   Future<PortfolioSummary> getPortfolioSummaryById(
-    String portfolioId,
-  ) async {
+    String portfolioId, [
+    String? interval,
+  ]) async {
     CommonLogger.methodEntry(
       'getPortfolioSummaryById',
       tag: 'PortfolioService',
-      metadata: {'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId, 'interval': interval},
     );
 
     try {
@@ -172,7 +173,7 @@ class PortfolioService {
         'Getting portfolio summary by ID',
         tag: 'PortfolioService',
       );
-      final summary = await _getPortfolioSummary.call(portfolioId);
+      final summary = await _getPortfolioSummary.call(portfolioId, interval);
 
       CommonLogger.info(
         'Portfolio summary retrieved successfully by ID',
