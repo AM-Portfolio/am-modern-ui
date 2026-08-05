@@ -4,5 +4,10 @@
   "services": {},
   "google": {
     "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
+  },
+  "growthbook": {
+    "enabled": true,
+    "apiHost": "https://growthbook.asrax.in/gbapi",
+    "clientKey": "sdk-ymGHFQ46K2dxKaX"
   }
 }

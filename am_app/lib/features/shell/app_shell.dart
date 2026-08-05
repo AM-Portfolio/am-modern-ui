@@ -41,6 +41,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   double _bottomNavScrollAccum = 0;
   static const double _bottomNavScrollThreshold = 12;
   Timer? _bottomNavHideTimer;
+  StreamSubscription<bool>? _marketGateSubscription;
 
   @override
   void initState() {
@@ -70,8 +71,50 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   @override
   void dispose() {
     _bottomNavHideTimer?.cancel();
+    _marketGateSubscription?.cancel();
+    _stopMarketStreamingGate();
     _bottomNavController.dispose();
     super.dispose();
+  }
+
+  Future<void> _startMarketStreamingGate() async {
+    if (!GetIt.instance.isRegistered<common.MarketStreamingGate>()) return;
+    final gate = GetIt.instance<common.MarketStreamingGate>();
+    await gate.start();
+    _marketGateSubscription?.cancel();
+    _marketGateSubscription = gate.isOpenStream.listen((open) {
+      if (!mounted) return;
+      if (open) {
+        _applyStreamingTabCoordinator(_activeNavItem);
+      } else {
+        _applyStreamingTabCoordinator(_activeNavItem);
+      }
+    });
+  }
+
+  void _stopMarketStreamingGate() {
+    _marketGateSubscription?.cancel();
+    _marketGateSubscription = null;
+    if (GetIt.instance.isRegistered<common.MarketStreamingGate>()) {
+      GetIt.instance<common.MarketStreamingGate>().stop();
+    }
+  }
+
+  Future<void> _syncFeatureFlagAttributes(String userId) async {
+    if (!GetIt.instance.isRegistered<common.FeatureFlagService>()) return;
+    await GetIt.instance<common.FeatureFlagService>().updateAttributes({
+      'id': userId,
+      'platform': common.featureFlagPlatform(),
+      'environment': common.ConfigService.resolvedEnv,
+    });
+  }
+
+  Future<void> _clearFeatureFlagAttributes() async {
+    if (!GetIt.instance.isRegistered<common.FeatureFlagService>()) return;
+    await GetIt.instance<common.FeatureFlagService>().updateAttributes({
+      'platform': common.featureFlagPlatform(),
+      'environment': common.ConfigService.resolvedEnv,
+    });
   }
 
   void _setBottomNavVisible(bool visible) {
@@ -355,6 +398,8 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       }
       if (mounted) {
         stompCubit.updateToken(token, userId: authState.user.id);
+        unawaited(_startMarketStreamingGate());
+        unawaited(_syncFeatureFlagAttributes(authState.user.id));
       }
     }
   }
@@ -402,12 +447,16 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                 _portfolioSeeded = false;
                 _restoreSessionNav();
                 _seedPortfolioSelectionFromSession();
+                unawaited(_startMarketStreamingGate());
+                unawaited(_syncFeatureFlagAttributes(state.user.id));
               }
             } else if (state is Unauthenticated) {
               _portfolioSeeded = false;
               common.AppLogger.info(
                 'AppShell: AuthState changed to Unauthenticated. Disconnecting STOMP...',
               );
+              _stopMarketStreamingGate();
+              unawaited(_clearFeatureFlagAttributes());
               stompCubit.onConnected = null;
               stompCubit.updateToken(null);
             }

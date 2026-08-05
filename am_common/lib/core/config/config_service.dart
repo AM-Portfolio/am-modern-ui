@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:am_library/am_library.dart';
+import '../feature_flags/feature_flag_config.dart';
 import '../telemetry/boot_trace.dart';
 import 'app_config.dart';
 
@@ -56,7 +57,9 @@ class ConfigService {
 
   static Map<String, String> _services = {};
   static String _googleClientId = '';
+  static FeatureFlagConfig _growthbook = FeatureFlagConfig.disabled;
 
+  static FeatureFlagConfig get growthbook => _growthbook;
   /// Cluster: browser host (am-dev / am-preprod / am.asrax.in). Localhost → empty.
   /// Native (Android/iOS): [Uri.base] is `file:///` — no host.
   static String _bootstrapDomain() {
@@ -197,6 +200,11 @@ class ConfigService {
     } else if (json['googleWebClientId'] != null) {
       _googleClientId = json['googleWebClientId'].toString();
     }
+
+    final growthbookJson = json['growthbook'];
+    _growthbook = FeatureFlagConfig.fromJson(
+      growthbookJson is Map<String, dynamic> ? growthbookJson : null,
+    );
 
     final envLabel = resolvedEnv;
     if (_services.isEmpty) {

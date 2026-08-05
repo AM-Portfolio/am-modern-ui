@@ -17,6 +17,15 @@ import 'launch_location.dart';
 import 'share_url_builder.dart';
 export 'launch_location.dart' show resolveLaunchLocation;
 
+bool _subscriptionPageEnabled() {
+  if (!GetIt.instance.isRegistered<common.FeatureFlagService>()) {
+    return false;
+  }
+  return GetIt.instance<common.FeatureFlagService>().isOn(
+    common.FeatureFlagKeys.subscriptionPageEnabled,
+  );
+}
+
 GoRouter createAppRouter({
   required AuthCubit authCubit,
   required AuthRefreshListenable refreshListenable,
@@ -363,6 +372,9 @@ GoRouter createAppRouter({
             builder: (context, state) {
               final highlightSubscription =
                   state.uri.queryParameters['highlight'] == 'subscription';
+              final openSubscription = _subscriptionPageEnabled()
+                  ? () => context.go(AppRoutes.subscription)
+                  : null;
               final authState = context.read<AuthCubit>().state;
               if (authState is Authenticated) {
                 return buildProfileRoute(
@@ -374,8 +386,7 @@ GoRouter createAppRouter({
                       context.go(AppRoutes.privacyPolicy),
                   onOpenTermsOfService: () =>
                       context.go(AppRoutes.termsOfService),
-                  onOpenSubscription: () =>
-                      context.go(AppRoutes.subscription),
+                  onOpenSubscription: openSubscription,
                 );
               }
               return buildProfileRoute(
@@ -385,13 +396,18 @@ GoRouter createAppRouter({
                     context.go(AppRoutes.privacyPolicy),
                 onOpenTermsOfService: () =>
                     context.go(AppRoutes.termsOfService),
-                onOpenSubscription: () =>
-                    context.go(AppRoutes.subscription),
+                onOpenSubscription: openSubscription,
               );
             },
           ),
           GoRoute(
             path: AppRoutes.subscription,
+            redirect: (context, state) {
+              if (!_subscriptionPageEnabled()) {
+                return AppRoutes.profile;
+              }
+              return null;
+            },
             builder: (context, state) =>
                 BlocProvider<am_sub.SubscriptionCubit>.value(
               value: GetIt.instance<am_sub.SubscriptionCubit>(),
