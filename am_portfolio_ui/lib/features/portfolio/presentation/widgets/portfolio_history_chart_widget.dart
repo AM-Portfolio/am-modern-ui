@@ -32,13 +32,11 @@ class PortfolioHistoryChartWidget extends ConsumerStatefulWidget {
     required this.portfolioId,
     required this.timeFrame,
     this.height = 320,
-    this.onPeriodStats,
   });
 
   final String? portfolioId;
   final TimeFrame timeFrame;
   final double height;
-  final void Function(double start, double end)? onPeriodStats;
 
   @override
   ConsumerState<PortfolioHistoryChartWidget> createState() =>
@@ -49,7 +47,6 @@ class _PortfolioHistoryChartWidgetState
     extends ConsumerState<PortfolioHistoryChartWidget> {
   // ── Local State ──────────────────────────────────────────────────────────
   String? _localSelectedId;
-  String? _localSelectedName;
 
   // Active chart format toggle (₹ or %)
   ChartFormat _activeFormat = ChartFormat.primary;
@@ -86,7 +83,6 @@ class _PortfolioHistoryChartWidgetState
       }
       if (oldWidget.portfolioId != widget.portfolioId) {
         _localSelectedId = null;
-        _localSelectedName = null;
       }
       context.read<PortfolioHistoryCubit>().invalidate();
       _scheduleLoad();
@@ -139,7 +135,6 @@ class _PortfolioHistoryChartWidgetState
         // Global portfolio changed. Reset local selection so chart matches global.
         setState(() {
           _localSelectedId = context.selectedPortfolioId;
-          _localSelectedName = context.selectedPortfolioName;
         });
         context.read<PortfolioHistoryCubit>().invalidate();
         _load();
@@ -233,17 +228,8 @@ class _PortfolioHistoryChartWidgetState
                     )
                     .toList(),
                 onChanged: (id) {
-                  if (id == null || id == selectedId) return;
-                  String name = 'All Portfolios';
-                  for (final p in items) {
-                    if (p.portfolioId == id) {
-                      name = p.portfolioName;
-                      break;
-                    }
-                  }
                   setState(() {
                     _localSelectedId = id;
-                    _localSelectedName = name;
                   });
                   _load();
                 },
@@ -297,12 +283,6 @@ class _PortfolioHistoryChartWidgetState
       }
 
       if (startWealth != null && endWealth != null && startWealth > 0) {
-        final periodReturn = endWealth - startWealth;
-        final periodReturnPct = (periodReturn / startWealth) * 100.0;
-        
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) widget.onPeriodStats?.call(periodReturnPct, periodReturn);
-        });
       }
     }
 
@@ -577,11 +557,6 @@ class _PortfolioHistoryChartWidgetState
     final startWealth = data.first.totalWealth;
     final endWealth = data.last.totalWealth;
     if (startWealth > 0) {
-      final change = endWealth - startWealth;
-      final changePct = (change / startWealth) * 100.0;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) widget.onPeriodStats?.call(changePct, change);
-      });
     }
 
     final activeData = _activeFormat == ChartFormat.secondary
