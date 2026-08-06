@@ -666,7 +666,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
       // Note: Removed silent fallback to stale cache. The UI needs to know
       // when network fetch fails so it can show appropriate error state.
-      return portfolioList;
+      rethrow;
     }
   }
 

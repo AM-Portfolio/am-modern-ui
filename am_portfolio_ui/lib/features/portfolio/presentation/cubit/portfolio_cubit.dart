@@ -1047,7 +1047,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     CommonLogger.methodEntry('createPortfolio', tag: 'PortfolioCubit');
     try {
       await _portfolioService.createPortfolio(request);
-      await refreshPortfolioList();
+      await refreshPortfoliosList();
       // If no portfolio was loaded (or it was 'all'), we might want to reload
       if (_loadedPortfolioId == 'all' || _loadedPortfolioId == null) {
         loadPortfolioById('all');
@@ -1070,7 +1070,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     CommonLogger.methodEntry('updatePortfolio', tag: 'PortfolioCubit');
     try {
       await _portfolioService.updatePortfolio(portfolioId, request);
-      await refreshPortfolioList();
+      await refreshPortfoliosList();
       if (_loadedPortfolioId == portfolioId) {
         loadPortfolioById(portfolioId);
       }
@@ -1095,7 +1095,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         portfolioId,
         deleteTrades: deleteTrades,
       );
-      await refreshPortfolioList();
+      await refreshPortfoliosList();
       if (_loadedPortfolioId == portfolioId || _loadedPortfolioId == null) {
         // If we deleted the currently loaded portfolio, switch to 'all' or empty state
         loadPortfolioById('all');
