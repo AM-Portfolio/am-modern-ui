@@ -11,6 +11,8 @@ import '../dtos/portfolio_intraday_dto.dart';
 import '../dtos/portfolio_list_dto.dart';
 import '../dtos/portfolio_snapshot_dto.dart';
 import '../dtos/portfolio_summary_dto.dart';
+import '../dtos/portfolio_create_request_dto.dart';
+import '../dtos/portfolio_update_request_dto.dart';
 import '../mappers/portfolio_analytics_mapper.dart';
 import '../mappers/portfolio_mapper.dart';
 import 'portfolio_mock_data_helper.dart';
@@ -43,6 +45,18 @@ abstract class PortfolioRemoteDataSource {
   /// Get portfolios list from remote API
   Future<PortfolioListDto> getPortfoliosList();
 
+  /// Create a new portfolio
+  Future<PortfolioItemDto> createPortfolio(PortfolioCreateRequestDto request);
+
+  /// Update an existing portfolio
+  Future<PortfolioItemDto> updatePortfolio(
+    String portfolioId,
+    PortfolioUpdateRequestDto request,
+  );
+
+  /// Delete a portfolio
+  Future<void> deletePortfolio(String portfolioId, {bool deleteTrades = false});
+
   /// Get historical snapshot data for chart rendering
   /// [portfolioId] null or 'all' -> calls /v1/portfolios/history
   /// [portfolioId] set -> calls /v1/portfolios/{id}/history
@@ -73,6 +87,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
   // Use localized endpoints
   String get _baseUrl => PortfolioEndpoints.baseUrl;
+  String get _tradeBaseUrl => ConfigService.config.api.trade.baseUrl;
 
   /// Helper to safely build URI avoiding double slashes
   String _buildUri(String baseUrl, String resource) {
@@ -648,6 +663,136 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         );
         rethrow;
       }
+    }
+  }
+
+  @override
+  Future<PortfolioItemDto> createPortfolio(
+    PortfolioCreateRequestDto request,
+  ) async {
+    CommonLogger.methodEntry(
+      'createPortfolio',
+      tag: 'PortfolioRemoteDataSource',
+    );
+
+    try {
+      final baseUri = _buildUri(
+        _tradeBaseUrl,
+        '/v1/portfolios',
+      ); // POST to /v1/portfolios
+
+      final response = await _apiClient.post<PortfolioItemDto>(
+        baseUri,
+        body: request.toJson(),
+        parser: (data) =>
+            PortfolioItemDto.fromJson(data! as Map<String, dynamic>),
+      );
+
+      CommonLogger.info(
+        'Portfolio created successfully',
+        tag: 'PortfolioRemoteDataSource',
+      );
+
+      return response;
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to create portfolio',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+      );
+      // Fallback to mock data when API is unavailable
+      if (!_useMockData) {
+        rethrow;
+      }
+      return PortfolioItemDto(
+        portfolioId: 'mock-id',
+        portfolioName: request.name,
+      );
+    }
+  }
+
+  @override
+  Future<PortfolioItemDto> updatePortfolio(
+    String portfolioId,
+    PortfolioUpdateRequestDto request,
+  ) async {
+    CommonLogger.methodEntry(
+      'updatePortfolio',
+      tag: 'PortfolioRemoteDataSource',
+      metadata: {'portfolioId': portfolioId},
+    );
+
+    try {
+      final baseUri = _buildUri(
+        _tradeBaseUrl,
+        '/v1/portfolios/$portfolioId',
+      ); // PUT to /v1/portfolios/{id}
+
+      final response = await _apiClient.put<PortfolioItemDto>(
+        baseUri,
+        body: request.toJson(),
+        parser: (data) =>
+            PortfolioItemDto.fromJson(data! as Map<String, dynamic>),
+      );
+
+      CommonLogger.info(
+        'Portfolio updated successfully',
+        tag: 'PortfolioRemoteDataSource',
+      );
+
+      return response;
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to update portfolio',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+      );
+      if (!_useMockData) {
+        rethrow;
+      }
+      return PortfolioItemDto(
+        portfolioId: portfolioId,
+        portfolioName: request.name,
+      );
+    }
+  }
+
+  @override
+  Future<void> deletePortfolio(
+    String portfolioId, {
+    bool deleteTrades = false,
+  }) async {
+    CommonLogger.methodEntry(
+      'deletePortfolio',
+      tag: 'PortfolioRemoteDataSource',
+      metadata: {'portfolioId': portfolioId, 'deleteTrades': deleteTrades},
+    );
+
+    try {
+      final baseUri = _buildUri(
+        _tradeBaseUrl,
+        '/v1/portfolios/$portfolioId?deleteTrades=$deleteTrades',
+      );
+
+      await _apiClient.delete<void>(
+        baseUri,
+        parser: (_) {}, // No content expected
+      );
+
+      CommonLogger.info(
+        'Portfolio deleted successfully',
+        tag: 'PortfolioRemoteDataSource',
+      );
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to delete portfolio',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+      );
+      if (!_useMockData) {
+        rethrow;
+      }
+      return;
     }
   }
 

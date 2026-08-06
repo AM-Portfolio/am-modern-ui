@@ -9,6 +9,8 @@ import '../../internal/services/portfolio_service.dart';
 import 'portfolio_state.dart';
 import '../../internal/data/dtos/portfolio_summary_dto.dart';
 import '../../internal/data/dtos/portfolio_socket_update_dto.dart';
+import '../../internal/data/dtos/portfolio_create_request_dto.dart';
+import '../../internal/data/dtos/portfolio_update_request_dto.dart';
 import 'package:get_it/get_it.dart';
 import 'dart:convert';
 import 'dart:async';
@@ -1037,6 +1039,74 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         '⏭️ Received WebSocket update but state is ${currentState.runtimeType} (Expected PortfolioLoaded)',
         tag: 'PortfolioCubit',
       );
+    }
+  }
+
+  /// Create a new portfolio
+  Future<void> createPortfolio(PortfolioCreateRequestDto request) async {
+    CommonLogger.methodEntry('createPortfolio', tag: 'PortfolioCubit');
+    try {
+      await _portfolioService.createPortfolio(request);
+      await refreshPortfolioList();
+      // If no portfolio was loaded (or it was 'all'), we might want to reload
+      if (_loadedPortfolioId == 'all' || _loadedPortfolioId == null) {
+        loadPortfolioById('all');
+      }
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to create portfolio',
+        tag: 'PortfolioCubit',
+        error: e,
+      );
+      if (!isClosed) emit(PortfolioError('Failed to create portfolio'));
+    }
+  }
+
+  /// Update an existing portfolio
+  Future<void> updatePortfolio(
+    String portfolioId,
+    PortfolioUpdateRequestDto request,
+  ) async {
+    CommonLogger.methodEntry('updatePortfolio', tag: 'PortfolioCubit');
+    try {
+      await _portfolioService.updatePortfolio(portfolioId, request);
+      await refreshPortfolioList();
+      if (_loadedPortfolioId == portfolioId) {
+        loadPortfolioById(portfolioId);
+      }
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to update portfolio',
+        tag: 'PortfolioCubit',
+        error: e,
+      );
+      if (!isClosed) emit(PortfolioError('Failed to update portfolio'));
+    }
+  }
+
+  /// Delete a portfolio
+  Future<void> deletePortfolio(
+    String portfolioId, {
+    bool deleteTrades = false,
+  }) async {
+    CommonLogger.methodEntry('deletePortfolio', tag: 'PortfolioCubit');
+    try {
+      await _portfolioService.deletePortfolio(
+        portfolioId,
+        deleteTrades: deleteTrades,
+      );
+      await refreshPortfolioList();
+      if (_loadedPortfolioId == portfolioId || _loadedPortfolioId == null) {
+        // If we deleted the currently loaded portfolio, switch to 'all' or empty state
+        loadPortfolioById('all');
+      }
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to delete portfolio',
+        tag: 'PortfolioCubit',
+        error: e,
+      );
+      if (!isClosed) emit(PortfolioError('Failed to delete portfolio'));
     }
   }
 }
