@@ -101,9 +101,19 @@ class PortfolioAnalyticsMapper {
   static Heatmap _heatmapFromDto(HeatmapDto dto) =>
       Heatmap(sectors: dto.sectors?.map(_sectorFromDto).toList() ?? []);
 
+  static String _normalizeSectorName(String? name) {
+    final trimmed = (name ?? '').trim();
+    if (trimmed.isEmpty ||
+        trimmed == '-' ||
+        trimmed.toLowerCase() == 'unknown') {
+      return 'Unknown Sector';
+    }
+    return trimmed;
+  }
+
   /// Convert sector DTO to entity
   static Sector _sectorFromDto(SectorDto dto) => Sector(
-    sectorName: dto.sectorName ?? 'Unknown Sector',
+    sectorName: _normalizeSectorName(dto.sectorName),
     performanceRank: dto.performanceRank ?? 0,
     performance: dto.performance ?? 0.0,
     changePercent: dto.changePercent ?? 0.0,
@@ -122,7 +132,7 @@ class PortfolioAnalyticsMapper {
     lastPrice: dto.lastPrice ?? 0.0,
     changeAmount: dto.changeAmount ?? 0.0,
     changePercent: dto.changePercent ?? 0.0,
-    sector: dto.sector ?? 'Unknown',
+    sector: _normalizeSectorName(dto.sector),
     quantity: dto.quantity ?? 0.0,
     avgPrice: dto.avgPrice ?? 0.0,
     marketValue: dto.marketValue ?? 0.0,
@@ -156,7 +166,7 @@ class PortfolioAnalyticsMapper {
 
   /// Convert sector weight DTO to entity
   static SectorWeight _sectorWeightFromDto(SectorWeightDto dto) => SectorWeight(
-    sectorName: dto.sectorName ?? 'Unknown Sector',
+    sectorName: _normalizeSectorName(dto.sectorName),
     weightPercentage: dto.weightPercentage ?? 0.0,
     marketCap: dto.marketCap ?? 0.0,
     topStocks: dto.topStocks ?? [],
@@ -166,7 +176,7 @@ class PortfolioAnalyticsMapper {
   static IndustryWeight _industryWeightFromDto(IndustryWeightDto dto) =>
       IndustryWeight(
         industryName: dto.industryName ?? 'Unknown Industry',
-        parentSector: dto.parentSector ?? 'Unknown Sector',
+        parentSector: _normalizeSectorName(dto.parentSector),
         weightPercentage: dto.weightPercentage ?? 0.0,
         marketCap: dto.marketCap ?? 0.0,
         topStocks: dto.topStocks ?? [],

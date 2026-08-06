@@ -133,6 +133,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
           // Convert real analytics data to heatmap data
           heatmapData = SectorHeatmapConverter.convertToHeatmapData(
             heatmap: analyticsState.heatmap,
+            sectorAllocation: analyticsState.sectorAllocation,
             showSubCards: true,
             subtitle: 'Sector Performance Analysis',
           );

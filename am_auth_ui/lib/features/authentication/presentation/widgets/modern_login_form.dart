@@ -45,7 +45,7 @@ class ModernLoginForm extends StatelessWidget {
         const SizedBox(height: 24),
 
         // Identifier field (email, username, or phone)
-        _buildIdentifierField(),
+        _buildIdentifierField(context),
         const SizedBox(height: 16),
 
         // Password field with improved styling
@@ -190,7 +190,7 @@ class ModernLoginForm extends StatelessWidget {
   );
 
   // Build dynamic identifier field based on selected login method
-  Widget _buildIdentifierField() {
+  Widget _buildIdentifierField(BuildContext context) {
     late final String labelText;
     late final String hintText;
     late final TextInputType keyboardType;
@@ -222,6 +222,7 @@ class ModernLoginForm extends StatelessWidget {
     }
 
     return _buildStyledTextField(
+      context,
       controller: identifierController,
       labelText: labelText,
       hintText: hintText,
@@ -234,6 +235,7 @@ class ModernLoginForm extends StatelessWidget {
 
   // Build password field with improved styling
   Widget _buildPasswordField(BuildContext context) => _buildStyledTextField(
+    context,
     controller: passwordController,
     labelText: 'Password',
     hintText: 'Enter your password',
@@ -244,7 +246,8 @@ class ModernLoginForm extends StatelessWidget {
   );
 
   // Helper method to create styled text fields
-  Widget _buildStyledTextField({
+  Widget _buildStyledTextField(
+    BuildContext context, {
     required TextEditingController controller,
     required String labelText,
     required String hintText,
@@ -270,7 +273,8 @@ class ModernLoginForm extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.white30),
+          // Prevent the focused primary (blue/purple) glow.
+          borderSide: BorderSide(color: context.borderColor, width: 1),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -290,6 +294,8 @@ class ModernLoginForm extends StatelessWidget {
       validator: validator,
       prefix: prefix,
       onSubmitted: onSubmitted,
+      focusedBorderColor: context.borderColor,
+      focusedBorderWidth: 1,
     ),
   );
 
