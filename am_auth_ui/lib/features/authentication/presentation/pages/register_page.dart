@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:am_design_system/am_design_system.dart';
+import 'package:am_common/am_common.dart';
 
 import 'package:am_design_system/core/constants/app_config.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
@@ -225,10 +227,16 @@ class RegisterPageForm extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Open Developer Controls on the login screen to activate your account.',
-                    style: TextStyle(fontSize: 12, color: context.textTertiary),
-                  ),
+                  if (ConfigService.resolvedEnv == 'dev')
+                    Text(
+                      'Open Developer Controls on the login screen to activate your account.',
+                      style: TextStyle(fontSize: 12, color: context.textTertiary),
+                    )
+                  else
+                    Text(
+                      'Check your email for instructions to activate your account.',
+                      style: TextStyle(fontSize: 12, color: context.textTertiary),
+                    ),
                 ],
               ),
               actions: [

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/shared/widgets/inputs/glass_text_field.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
@@ -226,7 +227,8 @@ class _LoginFormState extends State<LoginForm> {
                 ],
               ),
               const SizedBox(height: 16),
-              const DeveloperControlsPanel(),
+              if (ConfigService.resolvedEnv == 'dev')
+                const DeveloperControlsPanel(),
             ],
           ),
         );
