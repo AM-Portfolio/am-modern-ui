@@ -232,7 +232,7 @@ class LoginPage extends StatelessWidget {
         SizedBox(height: isCompact ? 16 : 24),
         
         // Google login
-        const GoogleLoginButtonWidget(),
+        GoogleLoginButtonWidget(isLoading: state is AuthLoading),
         
         SizedBox(height: isCompact ? 16 : 24),
         

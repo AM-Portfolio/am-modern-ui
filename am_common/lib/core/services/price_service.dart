@@ -28,6 +28,7 @@ class PriceService {
   final Set<String> _pendingGatewaySymbols = {};
   Timer? _gatewayConnectDebounce;
   DateTime? _lastTopicResubscribe;
+  bool _streamingAllowed = true;
 
   static const Duration _gatewayConnectDebounceDelay = Duration(milliseconds: 500);
   static const Duration _topicResubscribeCooldown = Duration(seconds: 3);
@@ -51,6 +52,36 @@ class PriceService {
   }
 
   Set<String> get subscribedSymbols => Set.unmodifiable(_subscribedSymbols);
+
+  bool get isStreamingAllowed => _streamingAllowed;
+
+  /// When false, drop live topics and skip gateway connect; desired symbols kept.
+  void setStreamingAllowed(bool allowed) {
+    if (_streamingAllowed == allowed) return;
+    _streamingAllowed = allowed;
+    if (!allowed) {
+      _pauseActiveSubscriptions();
+      return;
+    }
+    if (_subscribedSymbols.isNotEmpty) {
+      unawaited(resubscribeAll());
+    }
+  }
+
+  void _pauseActiveSubscriptions() {
+    _gatewayConnectDebounce?.cancel();
+    _gatewayConnectDebounce = null;
+    _pendingGatewaySymbols.clear();
+    _upstreamSymbols.clear();
+
+    final client = _stompClient;
+    for (final symbol in _subscribedSymbols) {
+      client?.unsubscribe(stockTopicDestination(symbol));
+    }
+    AppLogger.info(
+      'PriceService: streaming paused (${_subscribedSymbols.length} symbols retained)',
+    );
+  }
 
   QuoteChange? getQuote(String symbol) => _priceCache[symbol];
 
@@ -101,6 +132,17 @@ class PriceService {
       if (forceResubscribe || _subscribedSymbols.add(symbol)) {
         newSymbols.add(symbol);
       }
+    }
+
+    if (!_streamingAllowed) {
+      for (final symbol in symbols) {
+        _subscribedSymbols.add(symbol);
+      }
+      AppLogger.info(
+        'PriceService: subscribe deferred — market streaming closed '
+        '(${symbols.length} symbols remembered)',
+      );
+      return;
     }
 
     if (forceResubscribe) {
@@ -247,6 +289,7 @@ class PriceService {
   void _resubscribeStompTopics() {
     final client = _stompClient;
     if (client == null || _subscribedSymbols.isEmpty) return;
+    if (!_streamingAllowed) return;
 
     final now = DateTime.now();
     if (_lastTopicResubscribe != null &&

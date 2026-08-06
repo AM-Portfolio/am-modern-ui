@@ -175,7 +175,7 @@ jobs:
       preprod_namespace: "am-apps-preprod"
       prod_namespace: "am-apps-prod"
       # Automatic deployments by branch + Manual overrides
-      deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
+      deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
       deploy_preprod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
       deploy_prod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod') }}
       # Map environment names
@@ -213,7 +213,7 @@ jobs:
       run_tests: true
       upload_artifact: true
       # Automatic deployments by branch + Manual overrides
-      deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
+      deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
       deploy_preprod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
       deploy_prod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod') }}
       # Map environment names

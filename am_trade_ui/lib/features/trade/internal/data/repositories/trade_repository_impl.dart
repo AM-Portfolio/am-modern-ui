@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:am_common/am_common.dart';
+import 'package:get_it/get_it.dart';
 import '../../domain/entities/favorite_filter.dart';
 import '../../domain/entities/trade_calendar.dart';
 import '../../domain/entities/trade_holding.dart';
@@ -438,6 +439,15 @@ class TradeRepositoryImpl implements TradeRepository {
   void _ensureWebSocketSubscribed(String defaultUserId) {
     if (_stompClient == null) {
       AppLogger.warning('AmStompClient is null. WebSocket features disabled.', tag: 'TradeRepository');
+      return;
+    }
+
+    if (GetIt.instance.isRegistered<MarketStreamingGate>() &&
+        !GetIt.instance<MarketStreamingGate>().isOpen) {
+      AppLogger.info(
+        'Trade portfolio queue subscribe deferred — market closed',
+        tag: 'TradeRepository',
+      );
       return;
     }
 

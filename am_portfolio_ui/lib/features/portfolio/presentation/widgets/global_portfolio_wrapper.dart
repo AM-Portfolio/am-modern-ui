@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:am_common/am_common.dart';
 import '../cubit/portfolio_cubit.dart';
@@ -162,7 +163,12 @@ class _GlobalPortfolioWrapperState
     );
   }
 
-  bool get _portfolioStreamingAllowed => widget.streamingTab == 'Portfolio';
+  bool get _portfolioStreamingAllowed {
+    final onPortfolioTab = widget.streamingTab == 'Portfolio';
+    if (!onPortfolioTab) return false;
+    if (!GetIt.instance.isRegistered<MarketStreamingGate>()) return true;
+    return GetIt.instance<MarketStreamingGate>().isOpen;
+  }
 
   @override
   void didUpdateWidget(GlobalPortfolioWrapper oldWidget) {
@@ -221,6 +227,11 @@ class _GlobalPortfolioWrapperState
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(marketIsOpenProvider, (previous, next) {
+      final cubit = _readPortfolioCubit();
+      if (cubit != null) _syncPortfolioStreaming(cubit);
+    });
+
     final portfolioServiceAsync = ref.watch(portfolioServiceProvider);
     final analyticsServiceAsync = ref.watch(portfolioAnalyticsServiceProvider);
     final remoteDataSourceAsync = ref.watch(portfolioRemoteDataSourceProvider);
