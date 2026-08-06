@@ -216,18 +216,16 @@ class _LiquidTextFieldState extends State<LiquidTextField> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).primaryColor;
     
     // Liquid glass background
     final baseBgColor = isDark
         ? Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.17 : 0.12)
         : Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.15 : 0.05); // Make it highly transparent in light mode
 
-    final borderColor = _isFocused
-        ? primaryColor.withValues(alpha: 0.7)
-        : (isDark
-            ? Colors.white.withValues(alpha: 0.35)
-            : Colors.white.withValues(alpha: 0.45)); // Make border more visible in light mode for glass effect
+    // Keep border neutral on focus to avoid blue glow.
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.35)
+        : Colors.white.withValues(alpha: 0.45); // Make border more visible in light mode for glass effect
 
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
     final labelColor = isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF475569);
@@ -244,14 +242,7 @@ class _LiquidTextFieldState extends State<LiquidTextField> {
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                if (_isFocused)
-                  BoxShadow(
-                    color: primaryColor.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                  ),
-              ],
+              boxShadow: const [],
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),

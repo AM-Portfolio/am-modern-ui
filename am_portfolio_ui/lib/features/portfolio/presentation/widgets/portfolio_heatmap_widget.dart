@@ -11,7 +11,7 @@ import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_heatmap_cubit.dart';
 import '../cubit/portfolio_heatmap_state.dart';
 import '../cubit/portfolio_state.dart';
-import '../../internal/domain/entities/portfolio_analytics.dart' as analytics_entities;
+import '../mappers/sector_heatmap_converter.dart';
 import 'portfolio_metric_card.dart';
 
 
@@ -506,21 +506,15 @@ class _PortfolioHeatmapWidgetState
             String worstSector = '--';
             String worstSectorChange = '';
 
-            if (analyticsState is PortfolioAnalyticsLoaded &&
-                analyticsState.heatmap != null &&
-                analyticsState.heatmap!.sectors.isNotEmpty) {
-              final sectors = List<analytics_entities.Sector>.from(
-                analyticsState.heatmap!.sectors,
-              )
-                ..removeWhere((s) {
-                  final name = s.sectorName.trim();
-                  return name.isEmpty || name == '-' || name.toLowerCase() == 'unknown';
-                })
-                ..sort((a, b) => b.changePercent.compareTo(a.changePercent));
-              topSector = sectors.first.sectorName;
-              topSectorChange = sectors.first.formattedChangePercent;
-              worstSector = sectors.last.sectorName;
-              worstSectorChange = sectors.last.formattedChangePercent;
+            if (analyticsState is PortfolioAnalyticsLoaded) {
+              final summary = SectorHeatmapConverter.resolveSectorSummary(
+                heatmap: analyticsState.heatmap,
+                sectorAllocation: analyticsState.sectorAllocation,
+              );
+              topSector = summary.topSector;
+              topSectorChange = summary.topSectorChange;
+              worstSector = summary.worstSector;
+              worstSectorChange = summary.worstSectorChange;
             }
 
             return LayoutBuilder(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
@@ -868,7 +869,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
     );
   }
 
-  void _copyUserId(BuildContext context, String userId) {
+  Future<void> _copyUserId(BuildContext context, String userId) async {
+    await Clipboard.setData(ClipboardData(text: userId));
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('User ID copied to clipboard')),
     );
