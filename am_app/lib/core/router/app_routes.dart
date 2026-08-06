@@ -23,6 +23,15 @@ class AppRoutes {
   static const subscription = '/app/subscription';
   static const deleteAccount = '/delete-account';
 
+  /// Legal pages must be readable without login (Play Store / App Store reviewers).
+  static const publicLegalRoutes = {
+    privacyPolicy,
+    termsOfService,
+  };
+
+  static bool isPublicLegalRoute(String location) =>
+      publicLegalRoutes.contains(normalizePath(location));
+
   /// Profile deep-link that pulses the Subscription row in Account.
   static String profileHighlightSubscription() =>
       '$profile?highlight=subscription';

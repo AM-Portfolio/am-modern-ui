@@ -5,7 +5,12 @@ import '../cubit/auth_cubit.dart';
 
 /// Google login button widget matching image (1).png
 class GoogleLoginButtonWidget extends StatefulWidget {
-  const GoogleLoginButtonWidget({super.key});
+  final bool isLoading;
+
+  const GoogleLoginButtonWidget({
+    super.key,
+    this.isLoading = false,
+  });
 
   @override
   State<GoogleLoginButtonWidget> createState() => _GoogleLoginButtonWidgetState();
@@ -17,7 +22,7 @@ class _GoogleLoginButtonWidgetState extends State<GoogleLoginButtonWidget> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final enabled = !widget.isLoading;
     final baseBgColor = isDark
         ? Colors.white.withValues(alpha: _isHovering ? 0.15 : 0.10)
         : Colors.white.withValues(alpha: _isHovering ? 0.15 : 0.05);
@@ -29,51 +34,72 @@ class _GoogleLoginButtonWidgetState extends State<GoogleLoginButtonWidget> {
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: 48,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: baseBgColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: borderColor,
-                width: 1.2,
-              ),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  context.read<AuthCubit>().loginWithGoogle();
-                },
+      onEnter: (_) {
+        if (enabled) setState(() => _isHovering = true);
+      },
+      onExit: (_) {
+        if (enabled) setState(() => _isHovering = false);
+      },
+      child: Opacity(
+        opacity: enabled ? 1 : 0.55,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: 48,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: baseBgColor,
                 borderRadius: BorderRadius.circular(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CustomPaint(
-                        painter: _GoogleGLogoPainter(),
+                border: Border.all(
+                  color: borderColor,
+                  width: 1.2,
+                ),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: enabled
+                      ? () {
+                          context.read<AuthCubit>().loginWithGoogle();
+                        }
+                      : null,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (widget.isLoading)
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                          ),
+                        )
+                      else
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CustomPaint(
+                            painter: _GoogleGLogoPainter(),
+                          ),
+                        ),
+                      const SizedBox(width: 10),
+                      Text(
+                        widget.isLoading
+                            ? 'Signing in…'
+                            : 'Continue with Google',
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Continue with Google',
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

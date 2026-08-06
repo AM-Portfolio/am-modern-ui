@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_it/get_it.dart';
 import 'url_strategy_noop.dart'
     if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:am_common/am_common.dart';
@@ -74,6 +75,13 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       await ConfigService.initialize();
       await configureCoreDependencies();
       await configureFeatureDependencies();
+      await GetIt.instance<FeatureFlagService>().init(
+        config: ConfigService.growthbook,
+        attributes: {
+          'platform': featureFlagPlatform(),
+          'environment': ConfigService.resolvedEnv,
+        },
+      );
       if (!mounted) return;
       setState(() {
         _app = AMApp(launchUri: widget.launchUri);

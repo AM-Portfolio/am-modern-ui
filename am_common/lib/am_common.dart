@@ -49,6 +49,17 @@ export 'core/services/streaming_heartbeat_service.dart';
 export 'core/services/streaming_tab_coordinator.dart';
 export 'core/models/equity_price_mapper.dart';
 export 'core/models/price_update_model.dart';
+export 'core/market/market_status.dart';
+export 'core/market/market_status_client.dart';
+export 'core/market/market_streaming_gate.dart';
+export 'core/market/market_streaming_providers.dart';
+export 'core/market/market_closed_chip.dart';
+export 'core/di/price_providers.dart';
+export 'core/feature_flags/feature_flag_keys.dart';
+export 'core/feature_flags/feature_flag_config.dart';
+export 'core/feature_flags/feature_flag_service.dart';
+export 'core/feature_flags/feature_flag_provider.dart';
+export 'core/feature_flags/feature_flag_platform.dart';
 
 // Widgets
 export 'features/attachment/internal/presentation/widgets/shared_attachment_section.dart';

@@ -4,6 +4,7 @@ import 'package:am_library/core/network/websocket/am_stomp_client.dart';
 import 'package:am_common/core/services/price_service.dart';
 import 'package:am_common/core/di/network_providers.dart';
 import 'package:am_common/core/models/price_update_model.dart';
+import 'package:am_common/core/market/market_streaming_gate.dart';
 
 final priceServiceProvider = FutureProvider<PriceService>((ref) async {
   await ref.watch(appConfigProvider.future);
@@ -15,6 +16,13 @@ final priceServiceProvider = FutureProvider<PriceService>((ref) async {
   // Keep one PriceService for the app session — avoids mass UNSUBSCRIBE on tab changes.
   ref.keepAlive();
   service.connect();
+
+  if (GetIt.instance.isRegistered<MarketStreamingGate>()) {
+    final gate = GetIt.instance<MarketStreamingGate>();
+    service.setStreamingAllowed(gate.isOpen);
+    final sub = gate.isOpenStream.listen(service.setStreamingAllowed);
+    ref.onDispose(sub.cancel);
+  }
 
   ref.onDispose(() {
     service.detach();

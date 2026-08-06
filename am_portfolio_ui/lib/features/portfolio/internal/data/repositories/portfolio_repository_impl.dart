@@ -127,7 +127,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<PortfolioSummary> getPortfolioSummary() async {
+  Future<PortfolioSummary> getPortfolioSummary([String? interval]) async {
     CommonLogger.methodEntry(
       'getPortfolioSummary',
       tag: 'PortfolioRepository',
@@ -151,7 +151,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
     try {
       // 2. Fetch Fresh Data
-      final summaryDto = await _remoteDataSource.getPortfolioSummary();
+      final summaryDto = await _remoteDataSource.getPortfolioSummary(interval);
 
       // Map DTO to domain entity using summary mapper
       final summary = PortfolioSummaryMapper.fromApiModel(summaryDto);
@@ -305,8 +305,9 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
   @override
   Future<PortfolioSummary> getPortfolioSummaryById(
-    String portfolioId,
-  ) async {
+    String portfolioId, [
+    String? interval,
+  ]) async {
     CommonLogger.methodEntry(
       'getPortfolioSummaryById',
       tag: 'PortfolioRepository',
@@ -317,6 +318,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       // Fetch from remote data source using specific portfolio ID
       final summaryDto = await _remoteDataSource.getPortfolioSummaryById(
         portfolioId,
+        interval,
       );
 
       // Map DTO to domain entity using summary mapper

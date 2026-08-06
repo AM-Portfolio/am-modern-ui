@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:am_library/am_library.dart';
 import 'package:am_common/am_common.dart';
+import 'package:get_it/get_it.dart';
 import 'package:am_dashboard_ui/data/repositories/dashboard_json_sanitizer.dart';
 import 'package:am_dashboard_ui/domain/models/activity_item.dart';
 import 'package:am_dashboard_ui/domain/models/recent_activity_response.dart';
@@ -29,6 +30,7 @@ class DashboardRepository {
   bool _dashboardSubscribed = false;
   bool _wantsDashboardStream = false;
   StreamSubscription<StompStatus>? _statusSubscription;
+  StreamSubscription<bool>? _marketGateSubscription;
   StreamingHeartbeatService? _heartbeat;
 
   DashboardRepository(this._apiClient, this._stompClient);
@@ -40,8 +42,29 @@ class DashboardRepository {
         AppLogger.info('Dashboard STOMP disconnected — will resubscribe on reconnect');
       } else if (status == StompStatus.connected &&
           _wantsDashboardStream &&
-          !_dashboardSubscribed) {
+          !_dashboardSubscribed &&
+          _isMarketStreamingOpen) {
         unawaited(subscribeToDashboard(forceResubscribe: true));
+      }
+    });
+    _ensureMarketGateListener();
+  }
+
+  bool get _isMarketStreamingOpen {
+    if (!GetIt.I.isRegistered<MarketStreamingGate>()) return true;
+    return GetIt.I<MarketStreamingGate>().isOpen;
+  }
+
+  void _ensureMarketGateListener() {
+    if (_marketGateSubscription != null) return;
+    if (!GetIt.I.isRegistered<MarketStreamingGate>()) return;
+    final gate = GetIt.I<MarketStreamingGate>();
+    _marketGateSubscription = gate.isOpenStream.listen((open) {
+      if (!_wantsDashboardStream) return;
+      if (open) {
+        unawaited(subscribeToDashboard(forceResubscribe: true));
+      } else {
+        pauseDashboardStreaming();
       }
     });
   }
@@ -50,6 +73,8 @@ class DashboardRepository {
     _heartbeat?.dispose();
     _statusSubscription?.cancel();
     _statusSubscription = null;
+    _marketGateSubscription?.cancel();
+    _marketGateSubscription = null;
   }
 
   Future<void> ensureStompConnected({int maxAttempts = 30}) async {
@@ -64,6 +89,13 @@ class DashboardRepository {
   Future<void> subscribeToDashboard({bool forceResubscribe = false}) async {
     _ensureReconnectListener();
     _wantsDashboardStream = true;
+
+    if (!_isMarketStreamingOpen) {
+      AppLogger.info(
+        'Dashboard STOMP subscribe deferred — market closed',
+      );
+      return;
+    }
 
     if (!_stompClient.isConnected) {
       AppLogger.warning(
@@ -108,6 +140,15 @@ class DashboardRepository {
   void unsubscribeFromDashboard() {
     if (!_dashboardSubscribed && !_wantsDashboardStream) return;
     _wantsDashboardStream = false;
+    pauseDashboardStreaming();
+  }
+
+  /// Stops live interest/heartbeats but keeps [_wantsDashboardStream] so reopen resumes.
+  void pauseDashboardStreaming() {
+    if (!_dashboardSubscribed) {
+      _heartbeat?.stop();
+      return;
+    }
     _heartbeat?.stop();
     for (final destination in DashboardQueueDestinations.all) {
       _stompClient.unsubscribe(destination);
@@ -120,7 +161,7 @@ class DashboardRepository {
       );
     }
     _dashboardSubscribed = false;
-    AppLogger.info('Dashboard STOMP unsubscribed');
+    AppLogger.info('Dashboard STOMP paused (market closed or tab left)');
   }
 
   Future<DashboardSummary> getSummary(String userId) async {

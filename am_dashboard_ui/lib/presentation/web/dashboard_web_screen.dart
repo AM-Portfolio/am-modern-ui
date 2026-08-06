@@ -26,7 +26,7 @@ class DashboardWebScreen extends ConsumerWidget {
     this.onOpenDocIntel,
   });
 
-  Widget _buildLoadingCard(double height, {String? label}) {
+  Widget _buildLoadingCard(BuildContext context, double height, {String? label}) {
     return AmGlassCard(
       child: SizedBox(
         height: height,
@@ -100,9 +100,9 @@ class DashboardWebScreen extends ConsumerWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(child: _buildLoadingCard(120)),
+                    Expanded(child: _buildLoadingCard(context, 120)),
                     const SizedBox(width: 16),
-                    Expanded(child: _buildLoadingCard(120)),
+                    Expanded(child: _buildLoadingCard(context, 120)),
                   ],
                 ),
               ),
@@ -111,9 +111,9 @@ class DashboardWebScreen extends ConsumerWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(child: _buildLoadingCard(120)),
+                    Expanded(child: _buildLoadingCard(context, 120)),
                     const SizedBox(width: 16),
-                    Expanded(child: _buildLoadingCard(120)),
+                    Expanded(child: _buildLoadingCard(context, 120)),
                   ],
                 ),
               ),
@@ -125,13 +125,13 @@ class DashboardWebScreen extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(child: _buildLoadingCard(120)),
+              Expanded(child: _buildLoadingCard(context, 120)),
               const SizedBox(width: 16),
-              Expanded(child: _buildLoadingCard(120)),
+              Expanded(child: _buildLoadingCard(context, 120)),
               const SizedBox(width: 16),
-              Expanded(child: _buildLoadingCard(120)),
+              Expanded(child: _buildLoadingCard(context, 120)),
               const SizedBox(width: 16),
-              Expanded(child: _buildLoadingCard(120)),
+              Expanded(child: _buildLoadingCard(context, 120)),
             ],
           ),
         );
@@ -146,7 +146,7 @@ class DashboardWebScreen extends ConsumerWidget {
             ref.watch(historyStreamProvider(userId, timeFrame: tfCode));
         return performanceAsync.when(
           data: (performance) => DashboardChartWidget(performance: performance),
-          loading: () => _buildLoadingCard(280, label: 'Loading chart…'),
+          loading: () => _buildLoadingCard(context, 280, label: 'Loading chart…'),
           error: (err, stack) => AmErrorWidget(
             message: 'Failed to load chart',
             onRetry: () => ref.invalidate(
@@ -168,7 +168,7 @@ class DashboardWebScreen extends ConsumerWidget {
             gainers: topMovers.gainers,
             losers: topMovers.losers,
           ),
-          loading: () => _buildLoadingCard(280),
+          loading: () => _buildLoadingCard(context, 280),
           error: (err, stack) => DashboardRankingWidget.errorState(),
         );
       },
@@ -354,7 +354,7 @@ class DashboardWebScreen extends ConsumerWidget {
                                   )
                                   .toList(),
                             ),
-                            loading: () => _buildLoadingCard(100),
+                            loading: () => _buildLoadingCard(context, 100),
                             error: (err, stack) => AmErrorWidget(
                               message: 'Failed to load portfolios',
                               onRetry: () => ref.invalidate(portfolioOverviewsProvider(userId)),
@@ -401,7 +401,7 @@ class DashboardWebScreen extends ConsumerWidget {
                                         )
                                         .toList(),
                                   ),
-                                  loading: () => _buildLoadingCard(100),
+                                  loading: () => _buildLoadingCard(context, 100),
                                   error: (err, stack) => AmErrorWidget(
                                     message: 'Failed to load portfolios',
                                     onRetry: () => ref.invalidate(portfolioOverviewsProvider(userId)),

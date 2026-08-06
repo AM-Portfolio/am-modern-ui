@@ -17,6 +17,15 @@ import 'launch_location.dart';
 import 'share_url_builder.dart';
 export 'launch_location.dart' show resolveLaunchLocation;
 
+bool _subscriptionPageEnabled() {
+  if (!GetIt.instance.isRegistered<common.FeatureFlagService>()) {
+    return false;
+  }
+  return GetIt.instance<common.FeatureFlagService>().isOn(
+    common.FeatureFlagKeys.subscriptionPageEnabled,
+  );
+}
+
 GoRouter createAppRouter({
   required AuthCubit authCubit,
   required AuthRefreshListenable refreshListenable,
@@ -54,12 +63,19 @@ GoRouter createAppRouter({
         return null;
       }
 
+      // Privacy / Terms must stay public (Play Store policy URL must not hit login).
+      if (AppRoutes.isPublicLegalRoute(location)) {
+        return null;
+      }
+
       // Restoring session — stay on current /app/* URL (avoids login flash on reload).
       if (authPending && AppRoutes.isAuthenticatedAppRoute(location)) {
         return null;
       }
 
-      if (!isAuthenticated && AppRoutes.isAuthenticatedAppRoute(location)) {
+      if (!isAuthenticated &&
+          AppRoutes.isAuthenticatedAppRoute(location) &&
+          !AppRoutes.isPublicLegalRoute(location)) {
         final redirect = Uri.encodeComponent(_redirectTarget(state.uri));
         return '${AppRoutes.login}?redirect=$redirect';
       }
@@ -156,6 +172,34 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.deleteAccount,
         builder: (context, state) => const am_user.DeleteAccountPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.privacyPolicy,
+        builder: (context, state) => buildPrivacyPolicyRoute(
+          onBack: () {
+            final authState = authCubit.state;
+            context.go(
+              authState is Authenticated
+                  ? AppRoutes.profile
+                  : AppRoutes.login,
+            );
+          },
+          onOpenTerms: () => context.go(AppRoutes.termsOfService),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.termsOfService,
+        builder: (context, state) => buildTermsOfServiceRoute(
+          onBack: () {
+            final authState = authCubit.state;
+            context.go(
+              authState is Authenticated
+                  ? AppRoutes.profile
+                  : AppRoutes.login,
+            );
+          },
+          onOpenPrivacy: () => context.go(AppRoutes.privacyPolicy),
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
@@ -328,6 +372,9 @@ GoRouter createAppRouter({
             builder: (context, state) {
               final highlightSubscription =
                   state.uri.queryParameters['highlight'] == 'subscription';
+              final openSubscription = _subscriptionPageEnabled()
+                  ? () => context.go(AppRoutes.subscription)
+                  : null;
               final authState = context.read<AuthCubit>().state;
               if (authState is Authenticated) {
                 return buildProfileRoute(
@@ -339,8 +386,7 @@ GoRouter createAppRouter({
                       context.go(AppRoutes.privacyPolicy),
                   onOpenTermsOfService: () =>
                       context.go(AppRoutes.termsOfService),
-                  onOpenSubscription: () =>
-                      context.go(AppRoutes.subscription),
+                  onOpenSubscription: openSubscription,
                 );
               }
               return buildProfileRoute(
@@ -350,27 +396,18 @@ GoRouter createAppRouter({
                     context.go(AppRoutes.privacyPolicy),
                 onOpenTermsOfService: () =>
                     context.go(AppRoutes.termsOfService),
-                onOpenSubscription: () =>
-                    context.go(AppRoutes.subscription),
+                onOpenSubscription: openSubscription,
               );
             },
           ),
           GoRoute(
-            path: AppRoutes.privacyPolicy,
-            builder: (context, state) => buildPrivacyPolicyRoute(
-              onBack: () => context.go(AppRoutes.profile),
-              onOpenTerms: () => context.go(AppRoutes.termsOfService),
-            ),
-          ),
-          GoRoute(
-            path: AppRoutes.termsOfService,
-            builder: (context, state) => buildTermsOfServiceRoute(
-              onBack: () => context.go(AppRoutes.profile),
-              onOpenPrivacy: () => context.go(AppRoutes.privacyPolicy),
-            ),
-          ),
-          GoRoute(
             path: AppRoutes.subscription,
+            redirect: (context, state) {
+              if (!_subscriptionPageEnabled()) {
+                return AppRoutes.profile;
+              }
+              return null;
+            },
             builder: (context, state) =>
                 BlocProvider<am_sub.SubscriptionCubit>.value(
               value: GetIt.instance<am_sub.SubscriptionCubit>(),

@@ -9,5 +9,10 @@ data:
       "env": {{ .Values.environment | default "dev" | quote }},
       "google": {
         "webClientId": {{ .Values.appConfig.googleWebClientId | default "" | quote }}
+      },
+      "growthbook": {
+        "enabled": {{ .Values.appConfig.growthbook.enabled | default false }},
+        "apiHost": {{ .Values.appConfig.growthbook.apiHost | default "https://api.growthbook.asrax.in" | quote }},
+        "clientKey": {{ .Values.appConfig.growthbook.clientKey | default "" | quote }}
       }
     }
