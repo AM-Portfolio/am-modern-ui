@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -75,12 +76,20 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       await ConfigService.initialize();
       await configureCoreDependencies();
       await configureFeatureDependencies();
-      await GetIt.instance<FeatureFlagService>().init(
-        config: ConfigService.growthbook,
-        attributes: {
-          'platform': featureFlagPlatform(),
-          'environment': ConfigService.resolvedEnv,
-        },
+      // Fire-and-forget: GrowthBook has no request timeout of its own and
+      // can be slow or unreachable. Product flags fail closed until it
+      // resolves — the rest of the app (including login) must not wait on
+      // it. Screens read flags reactively via FeatureFlagService.changes /
+      // featureFlagProvider, so they pick up the real values whenever the
+      // SDK finishes, whether that's before or after first paint.
+      unawaited(
+        GetIt.instance<FeatureFlagService>().init(
+          config: ConfigService.growthbook,
+          attributes: {
+            'platform': featureFlagPlatform(),
+            'environment': ConfigService.resolvedEnv,
+          },
+        ),
       );
       if (!mounted) return;
       setState(() {
