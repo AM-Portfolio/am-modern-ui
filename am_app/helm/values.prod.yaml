@@ -1,4 +1,4 @@
-# Prod Environment — am-modern-ui
+# Prod Environment â€” am-modern-ui
 # Prod app host (prep). Do not remove munish from infra Traefik.
 environment: prod
 
@@ -25,3 +25,7 @@ ingress:
       paths:
         - path: /
           pathType: Prefix
+
+global:
+  image:
+    tag: "31098015238"
