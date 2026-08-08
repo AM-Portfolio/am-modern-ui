@@ -74,16 +74,18 @@ class _BasketContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Compute held and missing items from composition
     final heldItems = opportunity.composition
         .where((item) => item.status == ItemStatus.held)
         .toList();
+    final substituteItems = opportunity.composition
+        .where((item) => item.status == ItemStatus.substitute)
+        .toList();
     final missingItems = opportunity.composition
-        .where((item) => item.status != ItemStatus.held)
+        .where((item) => item.status == ItemStatus.missing)
         .toList();
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Column(
         children: [
           _EntryHeroCard(opportunity: opportunity),
@@ -97,10 +99,12 @@ class _BasketContent extends StatelessWidget {
                unselectedLabelColor: Theme.of(context).hintColor,
                indicatorColor: AppColors.primary,
                indicatorWeight: 3,
+               isScrollable: true,
                labelStyle: const TextStyle(fontWeight: FontWeight.bold),
                tabs: [
-                 Tab(text: "Your Match (${heldItems.length})"),
-                 Tab(text: "The Gap (${missingItems.length})"),
+                 Tab(text: "Held (${heldItems.length})"),
+                 Tab(text: "Substitute (${substituteItems.length})"),
+                 Tab(text: "Missing (${missingItems.length})"),
                ],
              ),
            ),
@@ -108,6 +112,7 @@ class _BasketContent extends StatelessWidget {
             child: TabBarView(
               children: [
                 _HeldItemsList(items: heldItems),
+                _HeldItemsList(items: substituteItems),
                 _MissingItemsList(items: missingItems),
               ],
             ),

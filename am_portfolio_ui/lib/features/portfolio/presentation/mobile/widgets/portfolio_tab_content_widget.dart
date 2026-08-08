@@ -3,16 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:am_common/am_common.dart';
+import 'package:am_auth_ui/am_auth_ui.dart';
 import '../../cubit/portfolio_cubit.dart';
 import '../../cubit/portfolio_heatmap_cubit.dart';
 import '../../cubit/portfolio_state.dart';
 import '../../widgets/portfolio_overview_widget.dart';
-import 'package:am_analysis_ui/am_analysis_ui.dart' hide TimeFrame;
 import '../pages/portfolio_heatmap_mobile_page.dart';
-import '../portfolio_analysis_widget.dart';
 import 'portfolio_holdings_widget.dart';
-import '../pages/trade_portfolio_list_mobile_page.dart';
 import '../../../../basket/presentation/basket_navigation.dart';
 
 /// Widget that handles portfolio tab content based on state
@@ -222,9 +219,16 @@ class _BasketsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.read<AuthCubit>().state;
+    final userId = authState is Authenticated ? authState.user.id : '';
+    if (userId.isEmpty) {
+      return const Scaffold(
+        body: Center(child: Text('Please sign in to view basket opportunities')),
+      );
+    }
     return Scaffold(
       body: BasketSectionNavigator(
-        userId: 'default_user',
+        userId: userId,
         portfolioId: currentPortfolioId,
       ),
     );

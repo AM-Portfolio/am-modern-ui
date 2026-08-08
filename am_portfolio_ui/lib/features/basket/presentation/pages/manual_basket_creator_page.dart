@@ -205,150 +205,13 @@ class _ManualBasketCreatorPageState
       }
     }
 
-    final content = Column(
-        children: [
-          _SummaryHeader(
-            itemCount: _items.length,
-            etfName: widget.opportunity.etfName,
-            totalPortfolioValue: widget.opportunity.totalPortfolioValue,
-          ),
-          
-          // Allocation Visualization
-          if (_items.isNotEmpty)
-            _AllocationSummary(items: _items, includeHeld: _includeHeld),
-          
-          // Investment Input Section
-          Container(
-             padding: const EdgeInsets.all(16),
-             color: Theme.of(context).cardColor,
-             child: Column(
-               children: [
-                 Row(
-                   children: [
-                     Expanded(
-                       child: TextField(
-                         controller: _amountController,
-                         keyboardType: TextInputType.number,
-                         decoration: const InputDecoration(
-                           labelText: 'Investment Amount (₹)',
-                           border: OutlineInputBorder(),
-                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                         ),
-                         onChanged: (val) {
-                           // Debounce could be added here
-                         },
-                       ),
-                     ),
-                     const SizedBox(width: 12),
-                     FilledButton.icon(
-                       onPressed: _isCalculating ? null : _calculateQuantities,
-                       icon: _isCalculating 
-                           ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                           : const Icon(Icons.calculate),
-                       label: const Text('Calculate'),
-                     ),
-                   ],
-                 ),
-                 const SizedBox(height: 12),
-                 // Slider for Amount
-                 Slider(
-                   value: double.tryParse(_amountController.text)?.clamp(5000.0, 1000000.0) ?? 5000.0,
-                   min: 5000.0,
-                   max: 1000000.0,
-                   divisions: 199,
-                   label: _amountController.text,
-                   onChanged: (val) {
-                     setState(() {
-                        _amountController.text = val.toInt().toString();
-                     });
-                   },
-                   onChangeEnd: (val) {
-                     _calculateQuantities();
-                   },
-                 ),
-                 const SizedBox(height: 12),
-                 Row(
-                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                   children: [
-                     // Quick Percentages
-                     Row(
-                       children: [10, 25, 50, 100].map((p) => Padding(
-                         padding: const EdgeInsets.only(right: 8.0),
-                         child: OutlinedButton(
-                           onPressed: () => _setAmountByPercentage(p.toDouble()),
-                           style: OutlinedButton.styleFrom(
-                             padding: const EdgeInsets.symmetric(horizontal: 12),
-                             minimumSize: const Size(0, 32),
-                           ),
-                           child: Text('$p%'),
-                         ),
-                       )).toList(),
-                     ),
-                     // Include Held Toggle
-                     Row(
-                       children: [
-                         const Text('Include Held', style: TextStyle(fontSize: 12)),
-                         Switch(
-                           value: _includeHeld,
-                           onChanged: (val) {
-                             setState(() {
-                               _includeHeld = val;
-                             });
-                             if (_amountController.text.isNotEmpty) {
-                               _calculateQuantities();
-                             }
-                           },
-                         ),
-                       ],
-                     )
-                   ],
-                 )
-               ],
-             ),
-          ),
-          
-          // Info Banner
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.1)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, size: 20, color: Theme.of(context).primaryColor),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      "Quantities are optimized to match ETF weights. 'Match Score' shows how closely we can replicate the index given stock prices.",
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Column Headers
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-              child: _StockListHeader(),
-            ),
-
-          Expanded(
-            child: ListView(
-               padding: const EdgeInsets.all(16),
-               children: [
+    final assetRows = <Widget>[
                   if (otherItems.isNotEmpty) ...[
                     const Padding(
                       padding: EdgeInsets.only(bottom: 8.0),
                       child: Text("Stocks to Buy", style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                     ...otherItems.map((item) {
-                       // Find original index for callbacks
-                       int realIndex = displayItems.indexOf(item); // safe if displayItems preserves order/instances copy
-                       
                        double pct = 0;
                        if (totalActiveInvestment > 0 && item.lastPrice != null) {
                          pct = (item.lastPrice! * item.buyQuantity / totalActiveInvestment) * 100;
@@ -493,11 +356,155 @@ class _ManualBasketCreatorPageState
                     );
                     }),
                   ]
-               ],
+    ];
+
+    final content = Scrollbar(
+      thumbVisibility: true,
+      child: CustomScrollView(
+        primary: false,
+        slivers: [
+          SliverToBoxAdapter(
+            child: _SummaryHeader(
+              itemCount: _items.length,
+              etfName: widget.opportunity.etfName,
+              totalPortfolioValue: widget.opportunity.totalPortfolioValue,
+            ),
+          ),
+          if (_items.isNotEmpty)
+            SliverToBoxAdapter(
+              child: _AllocationSummary(items: _items, includeHeld: _includeHeld),
+            ),
+          SliverToBoxAdapter(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              color: Theme.of(context).cardColor,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _amountController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Investment Amount (₹)',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                          onChanged: (val) {},
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      FilledButton.icon(
+                        onPressed: _isCalculating ? null : _calculateQuantities,
+                        icon: _isCalculating
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.calculate),
+                        label: const Text('Calculate'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Slider(
+                    value: double.tryParse(_amountController.text)?.clamp(5000.0, 1000000.0) ?? 5000.0,
+                    min: 5000.0,
+                    max: 1000000.0,
+                    divisions: 199,
+                    label: _amountController.text,
+                    onChanged: (val) {
+                      setState(() {
+                        _amountController.text = val.toInt().toString();
+                      });
+                    },
+                    onChangeEnd: (val) {
+                      _calculateQuantities();
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [10, 25, 50, 100]
+                            .map(
+                              (p) => Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: OutlinedButton(
+                                  onPressed: () => _setAmountByPercentage(p.toDouble()),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    minimumSize: const Size(0, 32),
+                                  ),
+                                  child: Text('$p%'),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      Row(
+                        children: [
+                          const Text('Include Held', style: TextStyle(fontSize: 12)),
+                          Switch(
+                            value: _includeHeld,
+                            onChanged: (val) {
+                              setState(() {
+                                _includeHeld = val;
+                              });
+                              if (_amountController.text.isNotEmpty) {
+                                _calculateQuantities();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.1)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 20, color: Theme.of(context).primaryColor),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      "Quantities are optimized to match ETF weights. 'Match Score' shows how closely we can replicate the index given stock prices.",
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+              child: _StockListHeader(),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate(assetRows),
             ),
           ),
         ],
-      );
+      ),
+    );
 
     final footer = _InvestmentSummaryFooter(
       items: _items,
