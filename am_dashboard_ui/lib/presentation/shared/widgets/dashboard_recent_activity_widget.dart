@@ -131,8 +131,8 @@ class DashboardRecentActivityWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final onSurface = context.colors.textPrimary;
+    final onSurfaceVariant = context.colors.textSecondary;
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
     final dateFormat = DateFormat('MMM d, yyyy');
     final headerStyle = TextStyle(
@@ -173,7 +173,7 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2E3192),
+                      color: context.colors.actionPrimaryBg,
                       fontFamily: 'Inter',
                     ),
                   ),
@@ -207,10 +207,10 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                   headerTextStyle: headerStyle,
                   rowTextStyle: rowStyle,
                   headerBackgroundColor:
-                      isDark ? Colors.transparent : const Color(0xFFF8FAFC),
+                      isDark ? Colors.transparent : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
                   rowHoverColor: isDark
                       ? Colors.white.withValues(alpha: 0.04)
-                      : const Color(0xFFF8FAFC),
+                      : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
                   emptyMessage: 'No recent activity',
                   columns: [
                     SortableColumn<ActivityItem>(
@@ -280,8 +280,8 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                           style: rowStyle.copyWith(
                             fontWeight: FontWeight.w600,
                             color: positive
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFFEF4444),
+                                ? context.colors.statusSuccess
+                                : context.colors.statusError,
                           ),
                         );
                       },
@@ -340,10 +340,10 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                        (item.quantity != null && item.quantity! < 0);
         
         final iconColor = isBuy 
-            ? const Color(0xFF10B981) // Green
+            ? context.colors.statusSuccess 
             : isSell 
-                ? const Color(0xFFEF4444) // Red
-                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)); // Gray
+                ? context.colors.statusError 
+                : context.colors.textSecondary;
 
         final iconData = isBuy 
             ? Icons.arrow_downward_rounded 
@@ -429,7 +429,7 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                        color: isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(

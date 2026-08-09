@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 class AmGlassCard extends StatelessWidget {
   final Widget child;
@@ -8,26 +9,25 @@ class AmGlassCard extends StatelessWidget {
   const AmGlassCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(24.0),
+    this.padding = const EdgeInsets.all(AppSpacing.lg),
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = context.colors;
 
-    if (!isDark) {
-      // Modern SaaS Light Theme (Solid, crisp, no blur)
+    if (!context.isDark) {
       return Container(
         padding: padding,
         decoration: BoxDecoration(
-          color: const Color(0xFFFFFFFF),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
-          boxShadow: const [
+          color: colors.cardSurface,
+          borderRadius: AppRadii.dialog,
+          border: Border.all(color: colors.border, width: 1),
+          boxShadow: [
             BoxShadow(
-              color: Color.fromRGBO(15, 23, 42, 0.04),
+              color: context.shadow(0.04),
               blurRadius: 8,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -35,21 +35,20 @@ class AmGlassCard extends StatelessWidget {
       );
     }
 
-    // Glassmorphism Dark Theme
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: AppRadii.dialog,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(20),
+            color: context.glassOverlay(0.04),
+            borderRadius: AppRadii.dialog,
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
+              color: context.glassOverlay(0.08),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
+                color: context.shadow(0.2),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),

@@ -9,6 +9,14 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  plugins:
+    - custom_lint
+
+custom_lint:
+  rules:
+    - avoid_hardcoded_colors
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`
@@ -26,3 +34,8 @@ linter:
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
+
+# Theme centralization (see FULL_CENTRALISED_THEME_PLAN.md):
+# Prefer context.colors / AppColorsTheme / AppSpacing / AppRadii.
+# Run: bash scripts/check_hardcoded_colors.sh
+# Future: enable custom_lint avoid_hardcoded_colors when package is added.

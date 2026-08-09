@@ -8,6 +8,9 @@ library am_design_system;
 export 'core/theme/app_theme.dart';
 export 'core/theme/am_chart_theme.dart';
 export 'core/theme/app_colors.dart';
+export 'core/theme/app_colors_theme.dart';
+export 'core/theme/app_spacing.dart';
+export 'core/theme/app_radii.dart';
 export 'core/theme/color_extensions.dart';
 export 'core/theme/app_typography.dart';
 export 'core/theme/app_animations.dart';
@@ -83,6 +86,7 @@ export 'shared/widgets/inputs/custom_dropdown.dart';
 export 'shared/widgets/inputs/multi_select_dropdown.dart';
 export 'shared/widgets/inputs/dropdown_styles.dart';
 export 'shared/widgets/inputs/compact_date_range_picker.dart';
+export 'shared/widgets/inputs/am_toggle_chip.dart';
 
 // --- Display & Cards ---
 export 'shared/widgets/am_click_capsule.dart';
@@ -92,6 +96,7 @@ export 'shared/widgets/display/architecture_card.dart';
 export 'shared/widgets/cards/app_card.dart';
 export 'shared/widgets/cards/investment_card.dart';
 export 'shared/widgets/cards/am_stat_card.dart';
+export 'shared/widgets/cards/am_mobile_list_tile.dart';
 export 'shared/widgets/portfolio_display_controller.dart';
 export 'shared/widgets/display/interactive_background.dart';
 // Heatmaps

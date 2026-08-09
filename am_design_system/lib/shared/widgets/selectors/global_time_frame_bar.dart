@@ -1,5 +1,5 @@
 import 'package:am_common/am_common.dart';
-import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_design_system/core/utils/device_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,7 +56,7 @@ class GlobalTimeFrameBar extends ConsumerWidget {
       selectedTimeFrame: timeFrame,
       availableTimeFrames: options,
       compact: true,
-      primaryColor: AppColors.primary,
+      primaryColor: context.colors.actionPrimaryBg,
       onTimeFrameChanged: (tf) =>
           ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf),
     );

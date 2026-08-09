@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:am_library/am_library.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'glass_card.dart';
 
 /// Performance chart — timeframe is controlled globally via [dashboardTimeFrameProvider].
@@ -36,11 +37,11 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final onSurface = isDark ? Colors.white : const Color(0xFF111827);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
-    final toggleBgColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFF4F6F8);
+    final onSurface = context.colors.textPrimary;
+    final onSurfaceVariant = context.colors.textSecondary;
+    final toggleBgColor = isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.1);
     final emptyStateBg =
-        isDark ? const Color(0xFF1E293B).withValues(alpha: 0.5) : const Color(0xFFFAFAFA);
+        isDark ? Colors.white.withValues(alpha: 0.02) : context.colors.actionPrimaryBg.withValues(alpha: 0.02);
 
     final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
     final returnPct = widget.performance.totalReturnPercentage;
@@ -117,8 +118,8 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: isPositive
-                                      ? const Color(0xFF00C853)
-                                      : const Color(0xFFEF4444),
+                                      ? context.colors.statusSuccess
+                                      : context.colors.statusError,
                                   fontFamily: 'Inter',
                                 ),
                               ),
@@ -215,8 +216,8 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
             color: isSelected
-                ? (isDark ? Colors.black : const Color(0xFF111827))
-                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280)),
+                ? (isDark ? Colors.black : context.colors.textPrimary)
+                : context.colors.textSecondary,
             fontFamily: 'Inter',
           ),
         ),
@@ -234,7 +235,7 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
     final maxY = rawMax + padding;
     final gridColor = isDark
         ? Colors.white.withValues(alpha: 0.06)
-        : const Color(0xFFE2E8F0);
+        : context.colors.actionPrimaryBg.withValues(alpha: 0.1);
 
     return LineChart(
       LineChartData(
@@ -246,12 +247,12 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
               return FlSpot(e.key.toDouble(), e.value.value);
             }).toList(),
             isCurved: true,
-            color: const Color(0xFF0062FF),
+            color: context.colors.actionPrimaryBg,
             barWidth: 2,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: const Color(0xFF0062FF).withValues(alpha: 0.1),
+              color: context.colors.actionPrimaryBg.withValues(alpha: 0.1),
             ),
           ),
         ],
@@ -279,7 +280,7 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9),
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
         ),
       ),
       child: ClipRRect(
@@ -288,7 +289,7 @@ class _DashboardChartWidgetState extends State<DashboardChartWidget> {
           itemCount: reversedData.length,
           separatorBuilder: (context, index) => Divider(
             height: 1,
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9),
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
           ),
           itemBuilder: (context, index) {
             final dp = reversedData[index];

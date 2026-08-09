@@ -15,7 +15,7 @@ class TagsSelector extends StatelessWidget {
     return Wrap(
       spacing: 3,
       runSpacing: 3,
-      children: JournalMoodOptions.tags.map((tagData) {
+      children: JournalMoodOptions.getTags(context).map((tagData) {
         final tag = tagData['label'] as String;
         final color = tagData['color'] as Color;
         final isSelected = selectedTags.contains(tag);

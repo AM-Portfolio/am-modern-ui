@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 class BillingToggle extends StatefulWidget {
   final bool isAnnual;
@@ -19,7 +20,7 @@ class _BillingToggleState extends State<BillingToggle> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+
 
     return Stack(
       clipBehavior: Clip.none, // Allow discount tag to float outside bounds
@@ -33,15 +34,15 @@ class _BillingToggleState extends State<BillingToggle> {
               width: 260,
               height: 50,
               decoration: BoxDecoration(
-                color: isDark ? Colors.black.withOpacity(0.35) : Colors.white.withOpacity(0.55), // Semi-transparent glass background
+                color: context.colors.surface.withValues(alpha: 0.35),
                 borderRadius: BorderRadius.circular(30),
                 border: Border.all(
-                  color: isDark ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.35),
+                  color: context.colors.border.withValues(alpha: 0.1),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.02),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -59,10 +60,10 @@ class _BillingToggleState extends State<BillingToggle> {
                       height: 42,
                       margin: const EdgeInsets.symmetric(horizontal: 3),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
+                        gradient: LinearGradient(
                           colors: [
-                            Color(0xFF1B64F2), // Premium Blue gradient
-                            Color(0xFF3F83F8),
+                            context.colors.premiumActionPrimary,
+                            context.colors.premiumActionPrimary.withValues(alpha: 0.8),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -70,7 +71,7 @@ class _BillingToggleState extends State<BillingToggle> {
                         borderRadius: BorderRadius.circular(26),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF1B64F2).withOpacity(0.25),
+                            color: context.colors.premiumActionPrimary.withValues(alpha: 0.25),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -94,7 +95,7 @@ class _BillingToggleState extends State<BillingToggle> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: !widget.isAnnual ? FontWeight.bold : FontWeight.w600,
-                                  color: !widget.isAnnual ? Colors.white : (isDark ? Colors.white60 : Colors.grey.shade700),
+                                  color: !widget.isAnnual ? Colors.white : context.colors.textSecondary,
                                 ),
                               ),
                             ),
@@ -112,7 +113,7 @@ class _BillingToggleState extends State<BillingToggle> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: widget.isAnnual ? FontWeight.bold : FontWeight.w600,
-                                  color: widget.isAnnual ? Colors.white : (isDark ? Colors.white60 : Colors.grey.shade700),
+                                  color: widget.isAnnual ? Colors.white : context.colors.textSecondary,
                                 ),
                               ),
                             ),
@@ -134,15 +135,15 @@ class _BillingToggleState extends State<BillingToggle> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFE87C00), Color(0xFFFF9E22)], // Premium Orange/Gold
+              gradient: LinearGradient(
+                colors: [context.colors.promotionalHighlight, context.colors.promotionalHighlight.withValues(alpha: 0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFE87C00).withOpacity(0.25),
+                  color: context.colors.promotionalHighlight.withValues(alpha: 0.25),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),

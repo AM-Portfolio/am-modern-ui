@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:am_library/am_library.dart';
+import 'package:am_design_system/am_design_system.dart';
 import '../cubit/subscription_cubit.dart';
 import '../../domain/entities/plan.dart';
 import '../../domain/entities/subscription.dart';
@@ -30,8 +31,7 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
   /// `pro` | `premium`
   String _selectedTier = 'pro';
 
-  static const _accent = Color(0xFFFF4458);
-  static const _accentSoft = Color(0xFFFFE8EB);
+
 
   @override
   void initState() {
@@ -87,9 +87,9 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
             : paymentLink;
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Redirecting to secure payment checkout...'),
-            backgroundColor: _accent,
+          SnackBar(
+            content: const Text('Redirecting to secure payment checkout...'),
+            backgroundColor: context.colors.premiumActionPrimary,
           ),
         );
         _launchUrl(urlString);
@@ -142,9 +142,9 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF0B1120) : const Color(0xFFFFF8F9);
-    final onSurface = isDark ? Colors.white : const Color(0xFF1A1A1A);
-    final muted = isDark ? Colors.white60 : Colors.black54;
+    final bg = context.colors.scaffoldBackground;
+    final onSurface = context.colors.textPrimary;
+    final muted = context.colors.textSecondary;
 
     return Scaffold(
       backgroundColor: bg,
@@ -172,7 +172,7 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: Colors.green.shade600,
+                backgroundColor: context.colors.statusSuccess,
               ),
             );
             if (state.subscription.planCode.contains('premium')) {
@@ -184,7 +184,7 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: Colors.red,
+                backgroundColor: context.colors.statusError,
               ),
             );
           } else if (state is SubscriptionLoaded && state.subscription != null) {
@@ -198,8 +198,8 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
         },
         builder: (context, state) {
           if (state is SubscriptionLoading || state is SubscriptionInitial) {
-            return const Center(
-              child: CircularProgressIndicator(color: _accent),
+            return Center(
+              child: CircularProgressIndicator(color: context.colors.premiumActionPrimary),
             );
           }
 
@@ -238,7 +238,7 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                     ),
                     const SizedBox(height: 20),
                     FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: _accent),
+                      style: FilledButton.styleFrom(backgroundColor: context.colors.premiumActionPrimary),
                       onPressed: () => context
                           .read<SubscriptionCubit>()
                           .loadPlansAndSubscription(),
@@ -291,13 +291,13 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
                               colors: [
-                                _accent.withValues(alpha: 0.9),
-                                const Color(0xFFFF7A8A),
+                                context.colors.premiumGradientStart,
+                                context.colors.premiumGradientCenter,
                               ],
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: _accent.withValues(alpha: 0.35),
+                                color: context.colors.premiumGradientStart.withValues(alpha: 0.35),
                                 blurRadius: 24,
                                 offset: const Offset(0, 8),
                               ),
@@ -339,18 +339,21 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                         _CurrentPlanBanner(
                           subscription: current!,
                           isDark: isDark,
+                          colors: context.colors,
                         ),
                       ],
                       const SizedBox(height: 28),
                       _DurationChips(
                         isAnnual: _isAnnual,
                         isDark: isDark,
+                        colors: context.colors,
                         onChanged: (annual) =>
                             setState(() => _isAnnual = annual),
                       ),
                       const SizedBox(height: 20),
                       _PlanPicker(
                         isDark: isDark,
+                        colors: context.colors,
                         selectedTier: _selectedTier,
                         proPlan: proPlan,
                         premiumPlan: premiumPlan,
@@ -380,14 +383,14 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
                                   color: isDark
-                                      ? _accent.withValues(alpha: 0.2)
-                                      : _accentSoft,
+                                      ? context.colors.premiumActionPrimary.withValues(alpha: 0.2)
+                                      : context.colors.premiumActionPrimary.withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.check_rounded,
                                   size: 14,
-                                  color: _accent,
+                                  color: context.colors.premiumActionPrimary,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -420,6 +423,7 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
               ),
               _BottomCtaBar(
                 isDark: isDark,
+                colors: context.colors,
                 isBusy: isBusy,
                 isCurrent: isCurrent,
                 selectedPlan: selectedPlan,
@@ -443,10 +447,12 @@ class _CurrentPlanBanner extends StatelessWidget {
   const _CurrentPlanBanner({
     required this.subscription,
     required this.isDark,
+    required this.colors,
   });
 
   final Subscription subscription;
   final bool isDark;
+  final AppColorsTheme colors;
 
   @override
   Widget build(BuildContext context) {
@@ -458,19 +464,15 @@ class _CurrentPlanBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : Colors.white,
+        color: colors.cardSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : const Color(0xFFFFD0D6),
+          color: colors.premiumActionPrimary.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.verified_rounded, color: Color(0xFFFF4458), size: 22),
+          Icon(Icons.verified_rounded, color: colors.premiumActionPrimary, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -480,7 +482,7 @@ class _CurrentPlanBanner extends StatelessWidget {
                   subscription.planName,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -488,7 +490,7 @@ class _CurrentPlanBanner extends StatelessWidget {
                   endLabel,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark ? Colors.white54 : Colors.black54,
+                    color: colors.textSecondary,
                   ),
                 ),
               ],
@@ -504,11 +506,13 @@ class _DurationChips extends StatelessWidget {
   const _DurationChips({
     required this.isAnnual,
     required this.isDark,
+    required this.colors,
     required this.onChanged,
   });
 
   final bool isAnnual;
   final bool isDark;
+  final AppColorsTheme colors;
   final ValueChanged<bool> onChanged;
 
   @override
@@ -516,9 +520,7 @@ class _DurationChips extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : Colors.black.withValues(alpha: 0.05),
+        color: colors.cardSurface,
         borderRadius: BorderRadius.circular(28),
       ),
       child: Row(
@@ -549,6 +551,7 @@ class _DurationChips extends StatelessWidget {
     required VoidCallback onTap,
     String? badge,
   }) {
+    final colors = this.colors;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -556,7 +559,7 @@ class _DurationChips extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: selected
-              ? (isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white)
+              ? (isDark ? Colors.white.withValues(alpha: 0.12) : colors.surface)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
           boxShadow: selected && !isDark
@@ -577,9 +580,7 @@ class _DurationChips extends StatelessWidget {
               style: TextStyle(
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 fontSize: 14,
-                color: isDark
-                    ? (selected ? Colors.white : Colors.white70)
-                    : (selected ? Colors.black87 : Colors.black54),
+                color: selected ? colors.textPrimary : colors.textSecondary,
               ),
             ),
             if (badge != null) ...[
@@ -587,13 +588,13 @@ class _DurationChips extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF4458).withValues(alpha: 0.15),
+                  color: colors.premiumActionPrimary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   badge,
-                  style: const TextStyle(
-                    color: Color(0xFFFF4458),
+                  style: TextStyle(
+                    color: colors.premiumActionPrimary,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                   ),
@@ -610,6 +611,7 @@ class _DurationChips extends StatelessWidget {
 class _PlanPicker extends StatelessWidget {
   const _PlanPicker({
     required this.isDark,
+    required this.colors,
     required this.selectedTier,
     required this.proPlan,
     required this.premiumPlan,
@@ -619,6 +621,7 @@ class _PlanPicker extends StatelessWidget {
   });
 
   final bool isDark;
+  final AppColorsTheme colors;
   final String selectedTier;
   final Plan? proPlan;
   final Plan? premiumPlan;
@@ -638,6 +641,7 @@ class _PlanPicker extends StatelessWidget {
                 '₹${formatInr(displayMonthly(proPlan!))}/mo',
             selected: selectedTier == 'pro',
             isDark: isDark,
+            colors: colors,
             popular: true,
             onTap: () => onSelect('pro'),
           ),
@@ -650,6 +654,7 @@ class _PlanPicker extends StatelessWidget {
                 '₹${formatInr(displayMonthly(premiumPlan!))}/mo',
             selected: selectedTier == 'premium',
             isDark: isDark,
+            colors: colors,
             popular: false,
             onTap: () => onSelect('premium'),
           ),
@@ -665,6 +670,7 @@ class _PlanOption extends StatelessWidget {
     required this.priceLabel,
     required this.selected,
     required this.isDark,
+    required this.colors,
     required this.popular,
     required this.onTap,
   });
@@ -674,6 +680,7 @@ class _PlanOption extends StatelessWidget {
   final String priceLabel;
   final bool selected;
   final bool isDark;
+  final AppColorsTheme colors;
   final bool popular;
   final VoidCallback onTap;
 
@@ -686,19 +693,13 @@ class _PlanOption extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: selected
-              ? (isDark
-                  ? const Color(0xFFFF4458).withValues(alpha: 0.12)
-                  : const Color(0xFFFFE8EB))
-              : (isDark
-                  ? Colors.white.withValues(alpha: 0.04)
-                  : Colors.white),
+              ? colors.premiumActionPrimary.withValues(alpha: 0.12)
+              : colors.cardSurface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: selected
-                ? const Color(0xFFFF4458)
-                : (isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.black.withValues(alpha: 0.06)),
+                ? colors.premiumActionPrimary
+                : colors.divider,
             width: selected ? 1.8 : 1,
           ),
         ),
@@ -710,11 +711,11 @@ class _PlanOption extends StatelessWidget {
               height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: selected ? const Color(0xFFFF4458) : Colors.transparent,
+                color: selected ? colors.premiumActionPrimary : Colors.transparent,
                 border: Border.all(
                   color: selected
-                      ? const Color(0xFFFF4458)
-                      : (isDark ? Colors.white38 : Colors.black26),
+                      ? colors.premiumActionPrimary
+                      : colors.divider,
                   width: 2,
                 ),
               ),
@@ -734,7 +735,7 @@ class _PlanOption extends StatelessWidget {
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          color: isDark ? Colors.white : Colors.black87,
+                          color: colors.textPrimary,
                         ),
                       ),
                       if (popular) ...[
@@ -745,7 +746,7 @@ class _PlanOption extends StatelessWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFF4458),
+                            color: colors.premiumActionPrimary,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
@@ -767,7 +768,7 @@ class _PlanOption extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark ? Colors.white54 : Colors.black54,
+                      color: colors.textSecondary,
                     ),
                   ),
                 ],
@@ -779,7 +780,7 @@ class _PlanOption extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 14,
-                color: isDark ? Colors.white : Colors.black87,
+                color: colors.textPrimary,
               ),
             ),
           ],
@@ -792,6 +793,7 @@ class _PlanOption extends StatelessWidget {
 class _BottomCtaBar extends StatelessWidget {
   const _BottomCtaBar({
     required this.isDark,
+    required this.colors,
     required this.isBusy,
     required this.isCurrent,
     required this.selectedPlan,
@@ -803,6 +805,7 @@ class _BottomCtaBar extends StatelessWidget {
   });
 
   final bool isDark;
+  final AppColorsTheme colors;
   final bool isBusy;
   final bool isCurrent;
   final Plan? selectedPlan;
@@ -823,7 +826,7 @@ class _BottomCtaBar extends StatelessWidget {
 
     return Material(
       elevation: 12,
-      color: isDark ? const Color(0xFF121A2A) : Colors.white,
+      color: colors.surface,
       child: SafeArea(
         top: false,
         child: Padding(
@@ -838,7 +841,7 @@ class _BottomCtaBar extends StatelessWidget {
                     priceLine,
                     style: TextStyle(
                       fontSize: 13,
-                      color: isDark ? Colors.white70 : Colors.black54,
+                      color: colors.textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -849,10 +852,8 @@ class _BottomCtaBar extends StatelessWidget {
                 child: FilledButton(
                   onPressed: onContinue,
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF4458),
-                    disabledBackgroundColor: isDark
-                        ? Colors.white12
-                        : Colors.grey.shade300,
+                    backgroundColor: colors.premiumActionPrimary,
+                    disabledBackgroundColor: colors.divider,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),

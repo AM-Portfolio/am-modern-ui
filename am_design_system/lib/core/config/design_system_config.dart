@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_radii.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_animations.dart';
+
 /// Configuration contract for the Application Design System.
 /// Modules (e.g., Investment, Market) implementation this contract to provide
 /// their specific branding, colors, and behavior to common widgets.
@@ -35,37 +40,37 @@ abstract class DesignSystemConfig {
   bool get useGlassmorphism;
 }
 
-/// Start with a default implementation to avoid null issues
+/// Default implementation wired to [AppColors] (brand purple, not Material blue).
 class DefaultDesignSystem extends DesignSystemConfig {
   @override
-  Color get primaryColor => const Color(0xFF2196F3); // Blue
+  Color get primaryColor => AppColors.primary;
 
   @override
-  Color get accentColor => const Color(0xFF00BCD4); // Cyan
+  Color get accentColor => AppColors.accentBlue;
 
   @override
-  Color get scaffoldBackgroundColor => const Color(0xFF121212);
+  Color get scaffoldBackgroundColor => AppColors.darkBackground;
 
   @override
-  Color get surfaceColor => const Color(0xFF1E1E1E);
+  Color get surfaceColor => AppColors.darkCard;
 
   @override
-  Color get successColor => const Color(0xFF4CAF50);
+  Color get successColor => AppColors.success;
 
   @override
-  Color get warningColor => const Color(0xFFFF9800);
+  Color get warningColor => AppColors.warning;
 
   @override
-  Color get errorColor => const Color(0xFFF44336);
+  Color get errorColor => AppColors.error;
 
   @override
-  Color get infoColor => const Color(0xFF2196F3);
+  Color get infoColor => AppColors.info;
 
   @override
-  Duration get animationDuration => const Duration(milliseconds: 300);
+  Duration get animationDuration => AppAnimations.medium;
 
   @override
-  double get defaultRadius => 16.0;
+  double get defaultRadius => AppRadii.lg;
 
   @override
   String get fontFamily => 'Inter';
@@ -73,3 +78,15 @@ class DefaultDesignSystem extends DesignSystemConfig {
   @override
   bool get useGlassmorphism => true;
 }
+
+/// Light-mode defaults for fallbacks outside an active Theme.
+class LightDefaultDesignSystem extends DefaultDesignSystem {
+  @override
+  Color get scaffoldBackgroundColor => AppColors.lightBackground;
+
+  @override
+  Color get surfaceColor => AppColors.lightCard;
+}
+
+/// Re-export spacing token for config consumers.
+double get designSystemPagePadding => AppSpacing.page;

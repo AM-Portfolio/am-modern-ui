@@ -37,9 +37,9 @@ class _SplashScreenState extends State<SplashScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.info,
-            AppColors.accentBlue,
-            AppColors.primary,
+            context.colors.premiumGradientStart,
+            context.colors.premiumGradientCenter,
+            context.colors.premiumGradientEnd,
           ],
         ),
       ),
