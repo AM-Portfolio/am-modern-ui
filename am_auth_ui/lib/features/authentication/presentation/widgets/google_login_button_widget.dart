@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:am_design_system/core/theme/color_extensions.dart';
 import '../cubit/auth_cubit.dart';
 
 /// Google login button widget matching image (1).png
@@ -21,18 +22,11 @@ class _GoogleLoginButtonWidgetState extends State<GoogleLoginButtonWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = !widget.isLoading;
 
-    final baseBgColor = isDark
-        ? Colors.white.withValues(alpha: _isHovering ? 0.15 : 0.10)
-        : Colors.white.withValues(alpha: _isHovering ? 0.15 : 0.05);
-
-    final borderColor = isDark
-        ? Colors.white.withValues(alpha: 0.35)
-        : Colors.white.withValues(alpha: 0.45);
-
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final baseBgColor = context.colors.surface;
+    final borderColor = context.colors.border;
+    final textColor = context.colors.textPrimary;
 
     return MouseRegion(
       onEnter: (_) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_design_system/core/utils/common_logger.dart';
 
 
@@ -270,7 +270,7 @@ class _TimeFrameSelectorState extends State<TimeFrameSelector> {
   ) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accent = widget.primaryColor ?? AppColors.primary;
+    final accent = widget.primaryColor ?? context.colors.actionPrimaryBg;
     final barBg = isDark
         ? Colors.white.withOpacity(0.06)
         : theme.colorScheme.surfaceContainerHighest;

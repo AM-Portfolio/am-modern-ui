@@ -227,14 +227,14 @@ class _DashboardMobileScreenState
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? Theme.of(context).scaffoldBackgroundColor : const Color(0xFFF8FAFC);
-    final onSurface = isDark ? Colors.white : const Color(0xFF0B1C30);
+    final bgColor = Theme.of(context).colorScheme.surface;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     final chipBg = isDark
         ? Colors.white.withValues(alpha: 0.08)
-        : const Color(0xFFEDE9FE);
+        : context.colors.actionPrimaryBg.withValues(alpha: 0.1);
     final chipBorder = isDark
         ? Colors.white.withValues(alpha: 0.12)
-        : const Color(0xFFDDD6FE);
+        : context.colors.actionPrimaryBg.withValues(alpha: 0.2);
 
     Future<void> refresh() async {
       ref.invalidate(dashboardStreamProvider(userId));
@@ -256,7 +256,7 @@ class _DashboardMobileScreenState
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFF0062FF).withValues(alpha: 0.15),
+                      context.colors.actionPrimaryBg.withValues(alpha: 0.15),
                       Colors.transparent,
                     ],
                   ),
@@ -273,7 +273,7 @@ class _DashboardMobileScreenState
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFFFF9100).withValues(alpha: 0.1),
+                      context.colors.actionPrimaryBg.withValues(alpha: 0.1),
                       Colors.transparent,
                     ],
                   ),
@@ -456,10 +456,10 @@ class _DocIntelAddPortfolioButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.psychology_outlined,
                 size: 17,
-                color: Color(0xFF00D2D3),
+                color: Theme.of(context).extension<AppColorsTheme>()?.statusInfo ?? const Color(0xFF00D2D3),
               ),
               const SizedBox(width: 5),
               Text(

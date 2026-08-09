@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:am_design_system/core/theme/color_extensions.dart';
 import '../cubit/auth_cubit.dart';
 
 /// Demo login button widget matching image (1).png
@@ -8,7 +9,6 @@ class DemoLoginButtonWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SizedBox(
       width: double.infinity,
@@ -18,12 +18,10 @@ class DemoLoginButtonWidget extends StatelessWidget {
           context.read<AuthCubit>().loginWithDemo();
         },
         style: OutlinedButton.styleFrom(
-          backgroundColor: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.white.withValues(alpha: 0.14),
-          foregroundColor: isDark ? Colors.white : const Color(0xFF475569),
+          backgroundColor: context.colors.surface,
+          foregroundColor: context.colors.textPrimary,
           side: BorderSide(
-            color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.35),
+            color: context.colors.border,
             width: 1.0,
           ),
           shape: RoundedRectangleBorder(
@@ -39,7 +37,7 @@ class DemoLoginButtonWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : const Color(0xFF475569),
+                color: context.colors.textPrimary,
               ),
             ),
           ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/portfolio_summary.dart';
 
 /// Reusable portfolio summary widget that displays comprehensive portfolio metrics
@@ -50,7 +51,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
 
   Widget _buildPremiumValueCard(BuildContext context) {
     final isPositive = summary.totalGainLoss >= 0;
-    final color = isPositive ? const Color(0xFF00B894) : const Color(0xFFFF7675);
+    final color = isPositive ? context.colors.statusSuccess : context.colors.statusError;
 
     return Container(
       decoration: BoxDecoration(
@@ -59,13 +60,13 @@ class PortfolioSummaryWidget extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF6C5DD3),
-            const Color(0xFF6C5DD3).withValues(alpha: 0.8),
+            context.colors.premiumGradientStart,
+            context.colors.premiumGradientStart.withValues(alpha: 0.8),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6C5DD3).withValues(alpha: 0.3),
+            color: context.colors.premiumGradientStart.withValues(alpha: 0.3),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -218,8 +219,8 @@ class PortfolioSummaryWidget extends StatelessWidget {
   }
 
   Widget _buildMetricCard(BuildContext context, String title, String value, double percentage, bool isPositive, IconData icon) {
-    final color = isPositive ? const Color(0xFF00B894) : const Color(0xFFFF7675);
-    final cardColor = Theme.of(context).cardColor;
+    final color = isPositive ? context.colors.statusSuccess : context.colors.statusError;
+    final cardColor = context.colors.cardSurface;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -227,7 +228,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
         color: cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
+          color: context.colors.divider.withValues(alpha: 0.05),
         ),
         boxShadow: [
           BoxShadow(
@@ -297,8 +298,8 @@ class PortfolioSummaryWidget extends StatelessWidget {
   }
 
   Widget _buildPremiumActionCard(BuildContext context, String title, IconData icon, VoidCallback? onTap) {
-    final cardColor = Theme.of(context).cardColor;
-    final primaryColor = Theme.of(context).primaryColor;
+    final cardColor = context.colors.cardSurface;
+    final primaryColor = context.colors.actionPrimaryBg;
 
     return Material(
       color: Colors.transparent,

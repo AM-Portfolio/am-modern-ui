@@ -1,6 +1,7 @@
 import 'package:am_dashboard_ui/domain/models/allocation_response.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'glass_card.dart';
 
 /// Pixel-perfect Lumina allocation widget based on image.
@@ -38,8 +39,8 @@ class DashboardAllocationWidget extends StatelessWidget {
     ];
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = isDark ? Colors.white : const Color(0xFF111827);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+    final onSurface = context.colors.textPrimary;
+    final onSurfaceVariant = context.colors.textSecondary;
 
     return AmGlassCard(
       padding: const EdgeInsets.all(20.0),
@@ -73,7 +74,7 @@ class DashboardAllocationWidget extends StatelessWidget {
                       sections: totalValue == 0 
                           ? [
                               PieChartSectionData(
-                                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                                color: isDark ? Colors.white.withValues(alpha: 0.1) : context.colors.actionPrimaryBg.withValues(alpha: 0.1),
                                 value: 1,
                                 title: '',
                                 radius: 12,

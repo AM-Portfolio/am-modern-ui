@@ -44,9 +44,9 @@ class SectorOverviewCard extends StatelessWidget {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              const Icon(Icons.error, color: Colors.red),
+              Icon(Icons.error, color: context.colors.statusError),
               const SizedBox(height: 8),
-              Text(error!, style: const TextStyle(color: Colors.red)),
+              Text(error!, style: TextStyle(color: context.colors.statusError)),
             ],
           ),
         ),

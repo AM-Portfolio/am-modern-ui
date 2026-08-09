@@ -2,6 +2,7 @@ import 'package:am_dashboard_ui/domain/models/portfolio_overview.dart';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'glass_card.dart';
 
 /// Pixel-perfect Lumina Portfolio Overview Card matching the image.
@@ -23,14 +24,14 @@ class DashboardPortfolioOverviewCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     // Dynamic Colors
-    final onSurface = isDark ? Colors.white : const Color(0xFF111827);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
-    final primary = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2E3192);
+    final onSurface = context.colors.textPrimary;
+    final onSurfaceVariant = context.colors.textSecondary;
+    final primary = context.colors.actionPrimaryBg;
     
-    final positiveBg = isDark ? const Color(0xFF064E3B) : const Color(0xFFE8F5E9);
-    final negativeBg = isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFFEBEE);
+    final positiveBg = context.colors.statusSuccess.withValues(alpha: 0.15);
+    final negativeBg = context.colors.statusError.withValues(alpha: 0.15);
     final trendBg = isPositive ? positiveBg : negativeBg;
-    final trendColor = isPositive ? const Color(0xFF00C853) : const Color(0xFFD50000);
+    final trendColor = isPositive ? context.colors.statusSuccess : context.colors.statusError;
 
     return InkWell(
       onTap: onTap,

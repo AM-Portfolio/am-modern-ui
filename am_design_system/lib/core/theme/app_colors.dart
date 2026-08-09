@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Central source of truth for all application colors
 /// Supports theme-aware colors, module-specific accents, and financial indicators
+@Deprecated('Use context.colors (AppColorsTheme) for centralized dynamic theming instead.')
 class AppColors {
   // ============================================================================
   // BRAND COLORS

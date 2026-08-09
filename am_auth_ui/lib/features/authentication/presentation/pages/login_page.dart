@@ -53,7 +53,7 @@ class LoginPage extends StatelessWidget {
                   content: Text(
                     'Please verify ${state.email} before signing in. Check your Asrax welcome email.',
                   ),
-                  backgroundColor: AppColors.warning,
+                  backgroundColor: context.colors.statusWarning,
                   duration: const Duration(seconds: 8),
                   action: SnackBarAction(
                     label: 'Resend',
@@ -68,7 +68,7 @@ class LoginPage extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
-                  backgroundColor: AppColors.error,
+                  backgroundColor: context.colors.statusError,
                 ),
               );
             }
@@ -158,22 +158,16 @@ class LoginPage extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: context.isDark
-                  ? [
-                      AppColors.darkBackground,
-                      AppColors.darkBackgroundLight,
-                      AppColors.darkBackgroundDeep,
-                    ]
-                  : [
-                      const Color(0xFFEDEFFF),
-                      const Color(0xFFE2E5FF),
-                      const Color(0xFFE8EAFF),
-                    ],
+              colors: [
+                context.colors.surface,
+                context.colors.scaffoldBackground,
+                context.colors.surface,
+              ],
             ),
           ),
           child: InteractiveBackground(
-            baseColor: context.isDark ? AppColors.authAccent : const Color(0xFF6366F1),
-            highlightColor: context.isDark ? AppColors.accentBlue : const Color(0xFF3B82F6),
+            baseColor: context.colors.actionPrimaryBg,
+            highlightColor: context.colors.actionPrimaryBg.withValues(alpha: 0.8),
           ),
         ),
       ),
@@ -201,9 +195,7 @@ class LoginPage extends StatelessWidget {
           children: [
             Expanded(
               child: Divider(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.2)
-                    : const Color(0xFFCBD5E1),
+                color: context.colors.divider,
               ),
             ),
             Padding(
@@ -212,18 +204,14 @@ class LoginPage extends StatelessWidget {
                 'OR',
                 style: TextStyle(
                   fontSize: isCompact ? 11 : 12,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.7)
-                      : const Color(0xFF64748B),
+                  color: context.colors.textSecondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             Expanded(
               child: Divider(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.2)
-                    : const Color(0xFFCBD5E1),
+                color: context.colors.divider,
               ),
             ),
           ],
@@ -252,9 +240,7 @@ class LoginPage extends StatelessWidget {
               child: Text(
                 '|',
                 style: TextStyle(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.4)
-                      : const Color(0xFF94A3B8),
+                  color: context.colors.textSecondary,
                   fontSize: isCompact ? 13 : 14,
                 ),
               ),
@@ -299,9 +285,7 @@ class _LiquidAuthLinkState extends State<_LiquidAuthLink> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final linkColor = isDark
-        ? Colors.white.withValues(alpha: _isHovering ? 1.0 : 0.75)
-        : const Color(0xFF475569).withValues(alpha: _isHovering ? 1.0 : 0.65);
+    final linkColor = context.colors.textPrimary.withValues(alpha: _isHovering ? 1.0 : 0.75);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),

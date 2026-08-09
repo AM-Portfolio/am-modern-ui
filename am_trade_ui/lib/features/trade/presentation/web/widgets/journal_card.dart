@@ -305,12 +305,12 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
   }
 
   Widget _buildMoodChip(String mood) {
-    var moodData = JournalMoodOptions.moods[mood];
+    var moodData = JournalMoodOptions.getMoods(context)[mood];
 
     if (moodData == null) {
       final moodKey = JournalHelpers.mapMoodFromEntry(mood);
       if (moodKey != null) {
-        moodData = JournalMoodOptions.moods[moodKey];
+        moodData = JournalMoodOptions.getMoods(context)[moodKey];
       }
     }
 
@@ -331,7 +331,7 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
   }
 
   Widget _buildSentimentChip(String sentiment) {
-    final sentimentData = JournalMoodOptions.sentiments[sentiment];
+    final sentimentData = JournalMoodOptions.getSentiments(context)[sentiment];
     if (sentimentData == null) return const SizedBox.shrink();
 
     return Container(
@@ -363,7 +363,7 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
   }
 
   Widget _buildTagChip(String tag) {
-    final tagData = JournalMoodOptions.tags.firstWhere(
+    final tagData = JournalMoodOptions.getTags(context).firstWhere(
       (t) => t['label'] == tag,
       orElse: () => {'label': tag, 'color': const Color(0xFF6B7280)},
     );

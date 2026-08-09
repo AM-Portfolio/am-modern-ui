@@ -124,11 +124,11 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        foregroundColor: isDark ? Colors.white : Colors.black87,
+        foregroundColor: context.colors.textPrimary,
         title: Text(
           'Profile & Settings',
           style: TextStyle(
-            color: isDark ? Colors.white : Colors.black87,
+            color: context.colors.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -138,7 +138,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
         scrolledUnderElevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
-        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black87),
+        iconTheme: IconThemeData(color: context.colors.textPrimary),
         // leading: IconButton(
         //   icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
         //   onPressed: () => Navigator.pop(context),
@@ -198,22 +198,14 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: isDark
-                  ? const [
-                      Color(0xFF3D1F3A),
-                      Color(0xFF1F1630),
-                      Color(0xFF2A1848),
-                    ]
-                  : const [
-                      Color(0xFFFFE8F0),
-                      Color(0xFFFFF0F5),
-                      Color(0xFFEDE7FF),
-                    ],
+              colors: [
+                context.colors.premiumGradientStart,
+                context.colors.premiumGradientCenter,
+                context.colors.premiumGradientEnd,
+              ],
             ),
             border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : ModuleColors.portfolio.withValues(alpha: 0.22),
+              color: context.colors.premiumActionPrimary.withValues(alpha: 0.22),
             ),
             boxShadow: [
               BoxShadow(
@@ -234,9 +226,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : Colors.white.withValues(alpha: 0.85),
+                        color: context.colors.premiumActionPrimary.withValues(alpha: 0.15),
                       ),
                       child: const Icon(
                         Icons.workspace_premium_rounded,
@@ -251,7 +241,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                             ? (subscriptionStatusLabel ?? 'Premium plan')
                             : 'Unlock more with Premium',
                         style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black87,
+                          color: context.colors.textPrimary,
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.2,
@@ -266,7 +256,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       ? 'You’re on a paid plan. Manage billing, change plans, or review access anytime.'
                       : 'Live data, deeper analytics, and AI tools — upgrade to level up your portfolio experience.',
                   style: TextStyle(
-                    color: isDark ? Colors.white70 : Colors.black54,
+                    color: context.colors.textSecondary,
                     fontSize: 13.5,
                     height: 1.4,
                   ),
@@ -318,8 +308,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           child: CircleAvatar(
             radius: 60,
             backgroundColor: isDark
-                ? const Color(0xFF2C2C3E)
-                : Colors.white,
+                ? context.cardColor
+                : context.cardColor,
             child: CircleAvatar(
               radius: 56,
               backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.1),
@@ -337,7 +327,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
               ? displayName!
               : userId,
           style: TextStyle(
-            color: isDark ? Colors.white : Colors.black87,
+            color: context.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
@@ -347,14 +337,10 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withOpacity(0.05)
-                : Colors.black.withOpacity(0.05),
+            color: context.colors.surface.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDark
-                  ? Colors.white.withOpacity(0.1)
-                  : Colors.black.withOpacity(0.1),
+              color: context.colors.border.withValues(alpha: 0.1),
             ),
           ),
           child: Row(
@@ -363,7 +349,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
               Text(
                 'User ID',
                 style: TextStyle(
-                  color: isDark ? Colors.white54 : Colors.black54,
+                  color: context.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -490,19 +476,32 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           context,
           isDark,
           children: [
-            _buildSettingTile(
-              context,
-              icon: isDark
-                  ? Icons.light_mode_outlined
-                  : Icons.dark_mode_outlined,
-              title: 'Theme Mode',
-              subtitle: isDark ? 'Dark Mode' : 'Light Mode',
-              isDark: isDark,
-              trailing: Switch(
-                value: isDark,
-                onChanged: (_) => context.read<ThemeCubit>().toggleTheme(),
-                activeColor: ModuleColors.portfolio,
-              ),
+            BlocBuilder<ThemeCubit, ThemeState>(
+              builder: (context, themeState) {
+                final currentMode = themeState.mode;
+                String modeLabel = 'System Default';
+                if (currentMode == AppThemeMode.light || currentMode == AppThemeMode.white) modeLabel = 'Light Mode';
+                if (currentMode == AppThemeMode.dark) modeLabel = 'Dark Mode';
+                if (currentMode == AppThemeMode.skyBlue) modeLabel = 'Sky Blue Mode';
+
+                return _buildSettingTile(
+                  context,
+                  icon: isDark
+                      ? Icons.light_mode_outlined
+                      : Icons.dark_mode_outlined,
+                  title: 'Theme Mode',
+                  subtitle: modeLabel,
+                  isDark: isDark,
+                  onTap: () => _showThemeSelectionDialog(context, currentMode),
+                  trailing: Text(
+                    modeLabel,
+                    style: TextStyle(
+                      color: context.colors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                );
+              },
             ),
             _buildDivider(isDark),
             _buildSettingTile(
@@ -588,16 +587,12 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF1a1a2e).withValues(alpha: 0.6)
-            : Colors.white.withValues(alpha: 0.8),
+        color: context.colors.surface.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: highlighted
-              ? ModuleColors.portfolio.withValues(alpha: isDark ? 0.55 : 0.45)
-              : (isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.05)),
+              ? ModuleColors.portfolio.withValues(alpha: 0.5)
+              : context.colors.border.withValues(alpha: 0.05),
           width: highlighted ? 1.5 : 1,
         ),
         boxShadow: [
@@ -634,7 +629,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
     final accent = ModuleColors.portfolio;
     final bgTint = highlighted
         ? accent.withValues(
-            alpha: (isDark ? 0.12 : 0.08) + highlightStrength * 0.12,
+            alpha: 0.1 + highlightStrength * 0.12,
           )
         : null;
 
@@ -650,10 +645,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: highlighted
-                      ? accent.withValues(alpha: isDark ? 0.22 : 0.18)
-                      : (isDark
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : accent.withValues(alpha: 0.1)),
+                      ? accent.withValues(alpha: 0.2)
+                      : context.colors.surface.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: highlighted
                       ? Border.all(color: accent.withValues(alpha: 0.45))
@@ -662,8 +655,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                 child: Icon(
                   icon,
                   color:
-                      iconColor ??
-                      (isDark ? Colors.white : ModuleColors.portfolio),
+                      iconColor ?? context.colors.textPrimary,
                   size: 20,
                 ),
               ),
@@ -676,8 +668,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       title,
                       style: TextStyle(
                         color:
-                            textColor ??
-                            (isDark ? Colors.white : Colors.black87),
+                            textColor ?? context.colors.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -687,7 +678,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       Text(
                         subtitle,
                         style: TextStyle(
-                          color: isDark ? Colors.white54 : Colors.black54,
+                          color: context.colors.textSecondary,
                           fontSize: 13,
                         ),
                       ),
@@ -700,7 +691,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                     Icons.chevron_right_rounded,
                     color: highlighted
                         ? accent
-                        : (isDark ? Colors.white24 : Colors.black26),
+                        : context.colors.divider,
                     size: 20,
                   ),
             ],
@@ -716,9 +707,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
       thickness: 1,
       indent: 60,
       endIndent: 0,
-      color: isDark
-          ? Colors.white.withOpacity(0.05)
-          : Colors.black.withOpacity(0.05),
+      color: context.colors.divider,
     );
   }
 
@@ -728,7 +717,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
-          color: isDark ? Colors.white54 : Colors.black54,
+          color: context.colors.textSecondary,
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.5,
@@ -933,6 +922,66 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
     );
   }
 
+  void _showThemeSelectionDialog(BuildContext context, AppThemeMode currentMode) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Select Theme'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<AppThemeMode>(
+                title: const Text('System Default'),
+                value: AppThemeMode.system,
+                groupValue: currentMode,
+                onChanged: (mode) {
+                  if (mode != null) {
+                    context.read<ThemeCubit>().setTheme(mode);
+                  }
+                  Navigator.pop(dialogContext);
+                },
+              ),
+              RadioListTile<AppThemeMode>(
+                title: const Text('Light Mode'),
+                value: AppThemeMode.light,
+                groupValue: currentMode,
+                onChanged: (mode) {
+                  if (mode != null) {
+                    context.read<ThemeCubit>().setTheme(mode);
+                  }
+                  Navigator.pop(dialogContext);
+                },
+              ),
+              RadioListTile<AppThemeMode>(
+                title: const Text('Dark Mode'),
+                value: AppThemeMode.dark,
+                groupValue: currentMode,
+                onChanged: (mode) {
+                  if (mode != null) {
+                    context.read<ThemeCubit>().setTheme(mode);
+                  }
+                  Navigator.pop(dialogContext);
+                },
+              ),
+              RadioListTile<AppThemeMode>(
+                title: const Text('Sky Blue Mode'),
+                value: AppThemeMode.skyBlue,
+                groupValue: currentMode,
+                onChanged: (mode) {
+                  if (mode != null) {
+                    context.read<ThemeCubit>().setTheme(mode);
+                  }
+                  Navigator.pop(dialogContext);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showDeleteAccountDialog(BuildContext context, bool isDark) {
     final feedbackController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -953,7 +1002,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
             final isOtherSelected = selectedReason == reasons.last;
 
             return AlertDialog(
-              backgroundColor: isDark ? const Color(0xFF1F1F2E) : Colors.white,
+              backgroundColor: context.colors.scaffoldBackground,
               title: Text(
                 'Delete Account',
                 style: TextStyle(
@@ -971,7 +1020,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       Text(
                         'Are you sure you want to permanently delete your account? Your account will be deactivated immediately, and all your data will be permanently deleted in 90 days if you do not log back in.',
                         style: TextStyle(
-                          color: isDark ? Colors.white70 : Colors.black87,
+                          color: context.colors.textSecondary,
                           fontSize: 14,
                         ),
                       ),
@@ -979,7 +1028,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       Text(
                         'Please tell us why you are leaving (Required):',
                         style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
+                          color: context.colors.textPrimary,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -987,16 +1036,14 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         value: selectedReason,
-                        dropdownColor: isDark ? const Color(0xFF1F1F2E) : Colors.white,
+                        dropdownColor: context.colors.scaffoldBackground,
                         style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
+                          color: context.colors.textPrimary,
                           fontSize: 14,
                         ),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: isDark
-                              ? Colors.white.withOpacity(0.05)
-                              : Colors.grey.shade100,
+                          fillColor: context.colors.surface,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
@@ -1025,18 +1072,16 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                           decoration: InputDecoration(
                             hintText: 'Your feedback helps us improve...',
                             hintStyle: TextStyle(
-                              color: isDark ? Colors.white30 : Colors.black38,
+                              color: context.colors.textSecondary,
                             ),
                             filled: true,
-                            fillColor: isDark
-                                ? Colors.white.withOpacity(0.05)
-                                : Colors.grey.shade100,
+                            fillColor: context.colors.surface,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
                           ),
-                          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                          style: TextStyle(color: context.colors.textPrimary),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Feedback is required when selecting "Other".';
@@ -1058,7 +1103,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   child: Text(
                     'Cancel',
                     style: TextStyle(
-                      color: isDark ? Colors.white70 : Colors.black54,
+                      color: context.colors.textSecondary,
                     ),
                   ),
                 ),

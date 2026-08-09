@@ -68,10 +68,10 @@ class JournalFiltersBar extends StatelessWidget {
           const SizedBox(height: 10),
           _buildTimePeriodFilters(),
           const SizedBox(height: 10),
-          _buildMoodAndSentimentRow(theme),
+          _buildMoodAndSentimentRow(context, theme),
           if (showAdvancedFilters) ...[
             const SizedBox(height: 8),
-            _buildFilterCategory(theme, 'Tags', _buildTagChips(theme)),
+            _buildFilterCategory(theme, 'Tags', _buildTagChips(context, theme)),
           ],
         ],
       ),
@@ -174,12 +174,12 @@ class JournalFiltersBar extends StatelessWidget {
     ],
   );
 
-  Widget _buildMoodAndSentimentRow(ThemeData theme) => Row(
+  Widget _buildMoodAndSentimentRow(BuildContext context, ThemeData theme) => Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Expanded(child: _buildFilterCategory(theme, 'Mood', _buildMoodChips(theme))),
+      Expanded(child: _buildFilterCategory(theme, 'Mood', _buildMoodChips(context, theme))),
       const SizedBox(width: 12),
-      Expanded(child: _buildFilterCategory(theme, 'Market Sentiment', _buildSentimentChips(theme))),
+      Expanded(child: _buildFilterCategory(theme, 'Market Sentiment', _buildSentimentChips(context, theme))),
     ],
   );
 
@@ -198,7 +198,7 @@ class JournalFiltersBar extends StatelessWidget {
     ],
   );
 
-  List<Widget> _buildMoodChips(ThemeData theme) => JournalMoodOptions.moods.entries.map((entry) {
+  List<Widget> _buildMoodChips(BuildContext context, ThemeData theme) => JournalMoodOptions.getMoods(context).entries.map((entry) {
     final isSelected = selectedMoodFilter == entry.key;
     return FilterChip(
       selected: isSelected,
@@ -215,7 +215,7 @@ class JournalFiltersBar extends StatelessWidget {
     );
   }).toList();
 
-  List<Widget> _buildSentimentChips(ThemeData theme) => JournalMoodOptions.sentiments.entries.map((entry) {
+  List<Widget> _buildSentimentChips(BuildContext context, ThemeData theme) => JournalMoodOptions.getSentiments(context).entries.map((entry) {
     final isSelected = selectedSentimentFilter == entry.key;
     return FilterChip(
       selected: isSelected,
@@ -237,7 +237,7 @@ class JournalFiltersBar extends StatelessWidget {
     );
   }).toList();
 
-  List<Widget> _buildTagChips(ThemeData theme) => JournalMoodOptions.tags.map((tagData) {
+  List<Widget> _buildTagChips(BuildContext context, ThemeData theme) => JournalMoodOptions.getTags(context).map((tagData) {
     final tag = tagData['label'] as String;
     final isSelected = selectedTagFilters.contains(tag);
     return FilterChip(
