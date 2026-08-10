@@ -105,23 +105,32 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                   flex: 3,
                   sortBy: (item) => item.symbol,
                   builder: (item) {
-                    final showName =
-                        item.name.isNotEmpty && item.name != item.symbol;
+                    final isIsinTicker = _looksLikeIsin(item.symbol);
+                    // When legacy data still has ISIN as symbol, show company name as primary label.
+                    final primaryLabel = (isIsinTicker && item.name.isNotEmpty)
+                        ? item.name
+                        : item.symbol;
+                    final subtitle = isIsinTicker && item.name.isNotEmpty
+                        ? item.symbol
+                        : (item.name.isNotEmpty && item.name != item.symbol
+                            ? item.name
+                            : null);
+
                     return Row(
                       children: [
                         Flexible(
                           child: Text(
-                            item.symbol,
+                            primaryLabel,
                             style: rowStyle.copyWith(fontWeight: FontWeight.w700),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (showName) ...[
+                        if (subtitle != null) ...[
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              item.name,
+                              subtitle,
                               style: rowStyle.copyWith(color: onSurfaceVariant),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -309,6 +318,12 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
         );
       },
     );
+  }
+
+  /// Indian equity ISIN pattern (e.g. INE002A01018) — used when Mongo still has legacy symbol values.
+  static bool _looksLikeIsin(String value) {
+    if (value.length != 12) return false;
+    return RegExp(r'^[A-Z]{2}[A-Z0-9]{10}$').hasMatch(value.toUpperCase());
   }
 
   Widget _buildToggleButton(String label, bool isGainers, bool isDark) {
