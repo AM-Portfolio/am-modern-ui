@@ -27,6 +27,25 @@ String activitySortByForColumn(int columnIndex, SortDirection direction) {
   }
 }
 
+bool _looksLikeIsin(String value) {
+  final trimmed = value.trim().toUpperCase();
+  return trimmed.length == 12 && RegExp(r'^[A-Z]{2}[A-Z0-9]{10}$').hasMatch(trimmed);
+}
+
+String _activityDisplayName(ActivityItem item) {
+  final candidates = <String?>[
+    item.companyName,
+    if (!_looksLikeIsin(item.title)) item.title,
+    item.symbol,
+  ];
+  for (final candidate in candidates) {
+    if (candidate != null && candidate.isNotEmpty && !_looksLikeIsin(candidate)) {
+      return candidate.toUpperCase();
+    }
+  }
+  return (item.symbol ?? item.title).toUpperCase();
+}
+
 /// Recent activity with server-side sort and pagination.
 class DashboardRecentActivitySection extends ConsumerStatefulWidget {
   const DashboardRecentActivitySection({super.key, required this.userId});
@@ -216,9 +235,9 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                     SortableColumn<ActivityItem>(
                       title: 'Symbol',
                       flex: 2,
-                      sortBy: (item) => item.symbol ?? item.title,
+                      sortBy: (item) => _activityDisplayName(item),
                       builder: (item) => Text(
-                        (item.symbol ?? item.title).toUpperCase(),
+                        _activityDisplayName(item),
                         style: rowStyle.copyWith(fontWeight: FontWeight.w700),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -351,7 +370,7 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                 ? Icons.arrow_upward_rounded 
                 : Icons.swap_horiz_rounded;
 
-        final symbol = (item.symbol ?? item.title).toUpperCase();
+        final displayName = _activityDisplayName(item);
         
         final subtitleDesc = item.description.contains('@') 
             ? item.description.split('@').last.trim() 
@@ -384,7 +403,7 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      (item.symbol ?? item.title).toUpperCase(),
+                      displayName,
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
