@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import '../../models/trade_holding_view_model.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -15,7 +16,7 @@ class MobileTradeListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF8F9FC), // Light grey/purple background
+      color: context.colors.scaffoldBackground,
       child: Column(
         children: [
           _buildMobileHeader(context),
@@ -24,11 +25,11 @@ class MobileTradeListView extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
                 const SizedBox(height: 16),
-                _buildFilterSection(),
+                _buildFilterSection(context),
                 const SizedBox(height: 24),
-                _buildColumnHeaders(),
+                _buildColumnHeaders(context),
                 const SizedBox(height: 12),
-                ...holdings.map((holding) => _buildMobileTradeItem(holding)),
+                ...holdings.map((holding) => _buildMobileTradeItem(context, holding)),
                 const SizedBox(height: 80), // Bottom padding for nav bar
               ],
             ),
@@ -41,21 +42,21 @@ class MobileTradeListView extends StatelessWidget {
   Widget _buildMobileHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      color: Colors.white,
+      color: context.cardColor,
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black87),
+            icon: Icon(Icons.arrow_back, color: context.textPrimary),
             onPressed: () {
                if (Navigator.of(context).canPop()) Navigator.of(context).pop();
             },
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'Trade Analysis',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
               textAlign: TextAlign.center,
             ),
           ),
@@ -65,12 +66,12 @@ class MobileTradeListView extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterSection() {
+  Widget _buildFilterSection(BuildContext context) {
     return Container(
        height: 70, // Container for the whole filter block
        padding: const EdgeInsets.all(12),
        decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(16)
        ),
        child: Row(
@@ -78,8 +79,8 @@ class MobileTradeListView extends StatelessWidget {
              // Filter Icon
              Container(
                 height: 48, width: 48,
-                decoration: BoxDecoration(color: const Color(0xFFF3E5F5), borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.tune, color: Color(0xFF7C4DFF)),
+                decoration: BoxDecoration(color: context.colors.actionPrimaryBg.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.tune, color: context.colors.actionPrimaryBg),
              ),
              const SizedBox(width: 12),
              Expanded(
@@ -87,31 +88,31 @@ class MobileTradeListView extends StatelessWidget {
                    scrollDirection: Axis.horizontal,
                    children: [
                       // "Filters" Label
-                      const Center(child: Padding(
-                        padding: EdgeInsets.only(right: 12),
-                        child: Text("Filters", style: TextStyle(fontWeight: FontWeight.bold)),
+                      Center(child: Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Text("Filters", style: TextStyle(fontWeight: FontWeight.bold, color: context.textPrimary)),
                       )),
-                      const Icon(Icons.bookmark, color: Colors.grey, size: 20),
+                      Icon(Icons.bookmark, color: context.textSecondary, size: 20),
                       const SizedBox(width: 12),
                       
                       // Add Button
                       Container(
                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                         decoration: BoxDecoration(color: const Color(0xFFEDE7F6), borderRadius: BorderRadius.circular(8)),
+                         decoration: BoxDecoration(color: context.colors.actionPrimaryBg.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                          child: Row(
-                            children: const [
-                               Icon(Icons.add, size: 16, color: Color(0xFF7C4DFF)),
-                               SizedBox(width: 4),
-                               Text("+ Add", style: TextStyle(color: Color(0xFF7C4DFF), fontWeight: FontWeight.bold))
+                            children: [
+                               Icon(Icons.add, size: 16, color: context.colors.actionPrimaryBg),
+                               const SizedBox(width: 4),
+                               Text("+ Add", style: TextStyle(color: context.colors.actionPrimaryBg, fontWeight: FontWeight.bold))
                             ],
                          ),
                       ),
                        const SizedBox(width: 12),
-                      _buildFilterPill("All", true),
+                      _buildFilterPill(context, "All", true),
                       const SizedBox(width: 12),
-                      _buildFilterPill("Profit", false),
+                      _buildFilterPill(context, "Profit", false),
                       const SizedBox(width: 12),
-                      _buildFilterPill("Loss", false),
+                      _buildFilterPill(context, "Loss", false),
                    ],
                 )
              )
@@ -120,20 +121,20 @@ class MobileTradeListView extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterPill(String label, bool isSelected) {
+  Widget _buildFilterPill(BuildContext context, String label, bool isSelected) {
      return Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: Container(
            decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF536DFE) : Colors.transparent, 
+              color: isSelected ? context.colors.actionPrimaryBg : Colors.transparent, 
               borderRadius: BorderRadius.circular(18),
-              border: isSelected ? null : Border.all(color: Colors.grey.shade200)
+              border: isSelected ? null : Border.all(color: context.colors.border)
            ),
            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
            child: Text(
               label,
               style: TextStyle(
-                 color: isSelected ? Colors.white : Colors.grey.shade600,
+                 color: isSelected ? context.colors.actionPrimaryFg : context.textSecondary,
                  fontWeight: FontWeight.bold
               ),
            ),
@@ -141,52 +142,52 @@ class MobileTradeListView extends StatelessWidget {
      );
   }
 
-  Widget _buildColumnHeaders() {
+  Widget _buildColumnHeaders(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         children: [
            const SizedBox(width: 48), // Space for Radio/SymbolBox
-           Expanded(flex: 3, child: Text("SYMBOL", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade500))),
-           Expanded(flex: 2, child: Text("STATUS", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade500), textAlign: TextAlign.center)),
-           Expanded(flex: 2, child: Text("PRICE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade500), textAlign: TextAlign.right)),
+           Expanded(flex: 3, child: Text("SYMBOL", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: context.textSecondary))),
+           Expanded(flex: 2, child: Text("STATUS", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: context.textSecondary), textAlign: TextAlign.center)),
+           Expanded(flex: 2, child: Text("PRICE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: context.textSecondary), textAlign: TextAlign.right)),
         ],
       ),
     );
   }
 
-  Widget _buildMobileTradeItem(TradeHoldingViewModel holding) {
+  Widget _buildMobileTradeItem(BuildContext context, TradeHoldingViewModel holding) {
      String statusText = holding.displayStatus.toUpperCase();
      Color bgPillColor;
      Color textPillColor;
      
      if (statusText == 'WIN') {
-        bgPillColor = const Color(0xFFE8F5E9);
-        textPillColor = const Color(0xFF2E7D32);
+        bgPillColor = context.colors.statusSuccess.withOpacity(0.1);
+        textPillColor = context.colors.statusSuccess;
      } else if (statusText == 'LOSS') {
-        bgPillColor = const Color(0xFFFFEBEE);
-        textPillColor = const Color(0xFFC62828);
+        bgPillColor = context.colors.statusError.withOpacity(0.1);
+        textPillColor = context.colors.statusError;
      } else if (statusText == 'BREAK_EVEN' || statusText == 'BREAKEVEN') {
-        bgPillColor = const Color(0xFFFFF9C4);
-        textPillColor = const Color(0xFFF9A825);
+        bgPillColor = context.colors.statusWarning.withOpacity(0.1);
+        textPillColor = context.colors.statusWarning;
         statusText = "BREAKEVEN"; 
      } else {
-        bgPillColor = Colors.grey.shade100;
-        textPillColor = Colors.grey.shade700;
+        bgPillColor = context.colors.statusNeutral.withOpacity(0.1);
+        textPillColor = context.colors.statusNeutral;
      }
 
-     // Dynamic Symbol Color (Pseudo-random or hash based)
+     final isDark = Theme.of(context).brightness == Brightness.dark;
      final symbolColors = [
-        Colors.blue.shade50,
-        Colors.purple.shade50,
-        Colors.orange.shade50,
-        Colors.teal.shade50
+        Colors.blue.withOpacity(0.1),
+        Colors.purple.withOpacity(0.1),
+        Colors.orange.withOpacity(0.1),
+        Colors.teal.withOpacity(0.1)
      ];
      final symbolTextColors = [
-        Colors.blue.shade700,
-        Colors.purple.shade700,
-        Colors.orange.shade800,
-        Colors.teal.shade700
+        isDark ? Colors.blue.shade300 : Colors.blue.shade700,
+        isDark ? Colors.purple.shade300 : Colors.purple.shade700,
+        isDark ? Colors.orange.shade300 : Colors.orange.shade800,
+        isDark ? Colors.teal.shade300 : Colors.teal.shade700
      ];
      final colorIndex = holding.displaySymbol.length % symbolColors.length;
 
@@ -194,8 +195,9 @@ class MobileTradeListView extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-           color: Colors.white,
+           color: context.cardColor,
            borderRadius: BorderRadius.circular(20),
+           border: Border.all(color: context.colors.border),
            boxShadow: [
               BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))
            ]
@@ -205,7 +207,7 @@ class MobileTradeListView extends StatelessWidget {
            child: Row(
               children: [
                  // Radio Circle
-                 Icon(Icons.radio_button_unchecked, size: 20, color: Colors.grey.shade500),
+                 Icon(Icons.radio_button_unchecked, size: 20, color: context.colors.border),
                  const SizedBox(width: 16),
                  
                  // Symbol Box
@@ -228,9 +230,9 @@ class MobileTradeListView extends StatelessWidget {
                     child: Column(
                        crossAxisAlignment: CrossAxisAlignment.start,
                        children: [
-                          Text(holding.displaySymbol, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
+                          Text(holding.displaySymbol, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.textPrimary)),
                           const SizedBox(height: 2),
-                          Text(holding.displayCompanyName, style: TextStyle(color: Colors.grey.shade500, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(holding.displayCompanyName, style: TextStyle(color: context.textSecondary, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
                        ],
                     ),
                  ),
@@ -254,9 +256,9 @@ class MobileTradeListView extends StatelessWidget {
                  Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                       Text(holding.displayCurrentValue, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
+                       Text(holding.displayCurrentValue, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.textPrimary)),
                        const SizedBox(height: 2),
-                       Text("Qty: ${_formatCompactQty(holding.quantity)}", style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+                       Text("Qty: ${_formatCompactQty(holding.quantity)}", style: TextStyle(color: context.textSecondary, fontSize: 11)),
                     ],
                  )
               ],

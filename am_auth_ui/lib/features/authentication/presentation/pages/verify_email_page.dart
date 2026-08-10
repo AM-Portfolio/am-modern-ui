@@ -67,9 +67,9 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
           listener: (context, state) {
             if (state is Authenticated) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Email verified. Signing you in…'),
-                  backgroundColor: AppColors.success,
+                SnackBar(
+                  content: const Text('Email verified. Signing you in…'),
+                  backgroundColor: context.colors.statusSuccess,
                 ),
               );
               final router = GoRouter.maybeOf(context);
@@ -80,7 +80,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
-                  backgroundColor: AppColors.error,
+                  backgroundColor: context.colors.statusError,
                 ),
               );
             }
@@ -111,26 +111,16 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: context.isDark
-                                    ? [
-                                        AppColors.darkBackground,
-                                        AppColors.darkBackgroundLight,
-                                        AppColors.darkBackgroundDeep,
-                                      ]
-                                    : [
-                                        AppColors.lightBackgroundAlt,
-                                        AppColors.lightBackground,
-                                        AppColors.lightBackgroundAlt,
-                                      ],
+                                colors: [
+                                  context.colors.surface,
+                                  context.colors.scaffoldBackground,
+                                  context.colors.surface,
+                                ],
                               ),
                             ),
                             child: InteractiveBackground(
-                              baseColor: context.isDark
-                                  ? AppColors.authAccent
-                                  : AppColors.primaryLight,
-                              highlightColor: context.isDark
-                                  ? AppColors.accentBlue
-                                  : AppColors.info,
+                              baseColor: context.colors.actionPrimaryBg,
+                              highlightColor: context.colors.actionPrimaryBg.withValues(alpha: 0.8),
                             ),
                           ),
                         ),
@@ -148,9 +138,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                                 Text(
                                   'Asrax account',
                                   style: TextStyle(
-                                    color: context.isDark
-                                        ? Colors.white70
-                                        : AppColors.textSecondaryLight,
+                                    color: context.colors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 24),

@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:am_design_system/am_design_system.dart' as ds;
+import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
 
 /// Top movers panel — Gainers left, Losers right.
@@ -28,7 +28,7 @@ class _MoversWidgetState extends State<MoversWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
@@ -38,20 +38,13 @@ class _MoversWidgetState extends State<MoversWidget> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: isDark
-                  ? [
-                      const Color(0xFF0D1B2A).withValues(alpha: 0.9),
-                      const Color(0xFF0A1628).withValues(alpha: 0.75),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.50),
-                      const Color(0xFFF5F7FF).withValues(alpha: 0.30),
-                    ],
+              colors: [
+                context.colors.marketCardSurface.withValues(alpha: 0.9),
+                context.colors.marketCardSurface.withValues(alpha: 0.75),
+              ],
             ),
             border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.07)
-                  : Colors.black.withValues(alpha: 0.07),
+              color: context.colors.marketBorderDefault,
               width: 1,
             ),
             borderRadius: BorderRadius.circular(18),
@@ -175,7 +168,7 @@ class _MoversWidgetState extends State<MoversWidget> {
     }
 
     final isMobile = MediaQuery.of(context).size.width < 600;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+
 
     if (isMobile) {
       return Column(
@@ -185,7 +178,7 @@ class _MoversWidgetState extends State<MoversWidget> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.06),
+              color: context.colors.marketBorderDefault.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -197,7 +190,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: _showGainers ? ds.AppColors.profit.withValues(alpha: 0.15) : Colors.transparent,
+                        color: _showGainers ? context.colors.marketPositiveIndicator.withValues(alpha: 0.15) : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
@@ -206,7 +199,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: _showGainers ? FontWeight.bold : FontWeight.w500,
-                            color: _showGainers ? ds.AppColors.profit : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                            color: _showGainers ? context.colors.marketPositiveIndicator : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                           ),
                         ),
                       ),
@@ -220,7 +213,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: !_showGainers ? ds.AppColors.loss.withValues(alpha: 0.15) : Colors.transparent,
+                        color: !_showGainers ? context.colors.marketNegativeIndicator.withValues(alpha: 0.15) : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
@@ -229,7 +222,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: !_showGainers ? FontWeight.bold : FontWeight.w500,
-                            color: !_showGainers ? ds.AppColors.loss : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                            color: !_showGainers ? context.colors.marketNegativeIndicator : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                           ),
                         ),
                       ),
@@ -273,7 +266,7 @@ class _MoversWidgetState extends State<MoversWidget> {
     List<Stock> stocks,
     bool isGainers,
   ) {
-    final color = isGainers ? ds.AppColors.profit : ds.AppColors.loss;
+    final color = isGainers ? context.colors.marketPositiveIndicator : context.colors.marketNegativeIndicator;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -337,14 +330,14 @@ class _MoverTileState extends State<MoverTile> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final stock = widget.stock;
     final isPositive = stock.changeAmount != 0
         ? stock.changeAmount > 0
         : (stock.changePercent != 0
             ? stock.changePercent > 0
             : widget.isGainer);
-    final color = isPositive ? ds.AppColors.profit : ds.AppColors.loss;
+    final color = isPositive ? context.colors.marketPositiveIndicator : context.colors.marketNegativeIndicator;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -360,10 +353,8 @@ class _MoverTileState extends State<MoverTile> {
             : Matrix4.identity(),
         decoration: BoxDecoration(
           color: _hovered
-              ? color.withValues(alpha: isDark ? 0.08 : 0.05)
-              : (isDark
-                  ? Colors.white.withValues(alpha: 0.04)
-                  : Colors.black.withValues(alpha: 0.04)),
+              ? color.withValues(alpha: 0.08)
+              : context.colors.surface.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _hovered
@@ -388,7 +379,7 @@ class _MoverTileState extends State<MoverTile> {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: isDark ? 0.15 : 0.1),
+                color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(7),
               ),
               child: Icon(
@@ -444,7 +435,7 @@ class _MoverTileState extends State<MoverTile> {
               padding: const EdgeInsets.symmetric(
                   horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: isDark ? 0.16 : 0.1),
+                color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: color.withValues(alpha: 0.35),

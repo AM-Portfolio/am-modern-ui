@@ -79,7 +79,12 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/app_logo.png"
+  web:
+    generate: true
+    image_path: "assets/images/app_icon_new.jpg"
+    background_color: "#15161A"
+    theme_color: "#15161A"
+  image_path: "assets/images/app_icon_new.jpg"
 
 dependency_overrides:
   path_provider_foundation: 2.3.2

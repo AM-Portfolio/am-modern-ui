@@ -300,7 +300,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   Widget _buildHeader() {
-    Color statusColor = _isServiceConnected == true ? Colors.green : (_isServiceConnected == false ? Colors.red : Colors.grey);
+    Color statusColor = _isServiceConnected == true ? context.colors.statusSuccess : (_isServiceConnected == false ? context.colors.statusError : Colors.grey);
     String statusText = _isServiceConnected == true ? 'Online' : (_isServiceConnected == false ? 'Offline' : 'Checking...');
     final bool isMobile = ResponsiveHelper.isMobile(context);
 
@@ -715,7 +715,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
   Widget _buildStatusLog() {
     bool isError = _status.toLowerCase().contains('error');
-    Color statusColor = isError ? Colors.red : Theme.of(context).colorScheme.primary;
+    Color statusColor = isError ? context.colors.statusError : Theme.of(context).colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -814,7 +814,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         
         Row(
           children: [
-            _buildResultStatCard(isTrade ? 'TOTAL VOLUME' : 'TOTAL VALUATION', currencyFormatter.format(totalValuation), Icons.account_balance_wallet_outlined, Colors.green),
+            _buildResultStatCard(isTrade ? 'TOTAL VOLUME' : 'TOTAL VALUATION', currencyFormatter.format(totalValuation), Icons.account_balance_wallet_outlined, context.colors.statusSuccess),
             const SizedBox(width: 16),
             _buildResultStatCard('PARSED RECORDS', '${parsedDataList.length} Items', Icons.format_list_bulleted_outlined, Colors.blue),
             const SizedBox(width: 16),
@@ -839,8 +839,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             child: SingleChildScrollView(
               child: Text(
                 JsonEncoder.withIndent('  ').convert(_lastResult),
-                style: const TextStyle(
-                  color: Colors.greenAccent, 
+                style: TextStyle(
+                  color: context.colors.statusSuccess, 
                   fontFamily: 'monospace',
                   fontSize: 12,
                 ),
@@ -918,7 +918,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                                   final double price = (exec['price'] ?? map['price'] ?? 0.0).toDouble();
                                   final double totalValue = quantity * price;
 
-                                  final Color typeColor = tradeType.contains('BUY') ? Colors.green : Colors.red;
+                                  final Color typeColor = tradeType.contains('BUY') ? context.colors.statusSuccess : context.colors.statusError;
 
                                   return DataRow(
                                     cells: [

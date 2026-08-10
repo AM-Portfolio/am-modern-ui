@@ -29,15 +29,15 @@ class ResetPasswordPage extends StatelessWidget {
           listener: (context, state) {
             if (state is PasswordResetSuccess) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Password reset successfully! Please sign in with your new password.'),
-                  backgroundColor: AppColors.success,
+                SnackBar(
+                  content: const Text('Password reset successfully! Please sign in with your new password.'),
+                  backgroundColor: context.colors.statusSuccess,
                 ),
               );
               context.go('/login');
             } else if (state is AuthError) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
+                SnackBar(content: Text(state.message), backgroundColor: context.colors.statusError),
               );
             }
           },
@@ -115,22 +115,16 @@ class ResetPasswordPage extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: context.isDark
-                  ? [
-                      AppColors.darkBackground,
-                      AppColors.darkBackgroundLight,
-                      AppColors.darkBackgroundDeep,
-                    ]
-                  : [
-                      AppColors.lightBackgroundAlt,
-                      AppColors.lightBackground,
-                      AppColors.lightBackgroundAlt,
-                    ],
+              colors: [
+                context.colors.surface,
+                context.colors.scaffoldBackground,
+                context.colors.surface,
+              ],
             ),
           ),
           child: InteractiveBackground(
-            baseColor: context.isDark ? AppColors.authAccent : AppColors.primaryLight,
-            highlightColor: context.isDark ? AppColors.accentBlue : AppColors.info,
+            baseColor: context.colors.actionPrimaryBg,
+            highlightColor: context.colors.actionPrimaryBg.withValues(alpha: 0.8),
           ),
         ),
       ),
@@ -291,8 +285,8 @@ class _ResetPasswordPageFormState extends State<ResetPasswordPageForm> {
           child: ElevatedButton(
             onPressed: _handleSubmit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
+              backgroundColor: context.colors.actionPrimaryBg,
+              foregroundColor: context.colors.actionPrimaryFg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),

@@ -115,10 +115,6 @@ class GlobalSidebar extends StatelessWidget {
   }
 
   Widget _buildAppLogo() {
-    final logoAsset = isDarkMode
-        ? 'lib/assets/images/app_logo_dark.png'
-        : 'lib/assets/images/app_logo_light.png';
-
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -137,8 +133,7 @@ class GlobalSidebar extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Image.asset(
-            logoAsset,
-            package: 'am_design_system',
+            'assets/images/app_icon_new.jpg',
             fit: BoxFit.contain,
             alignment: Alignment.center,
           ),

@@ -30,9 +30,9 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
   Widget build(BuildContext context) {
     final items = _showGainers ? widget.gainers : widget.losers;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final toggleBgColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+    final onSurface = context.colors.textPrimary;
+    final onSurfaceVariant = context.colors.textSecondary;
+    final toggleBgColor = isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.1);
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
     final headerStyle = TextStyle(
       fontSize: 11,
@@ -95,9 +95,9 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
               headerTextStyle: headerStyle,
               rowTextStyle: rowStyle,
               headerBackgroundColor:
-                  isDark ? Colors.transparent : const Color(0xFFF8FAFC),
+                  isDark ? Colors.transparent : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
               rowHoverColor:
-                  isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFF8FAFC),
+                  isDark ? Colors.white.withOpacity(0.04) : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
               emptyMessage: 'No data available',
               columns: [
                 SortableColumn<MoverItem>(
@@ -105,23 +105,32 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                   flex: 3,
                   sortBy: (item) => item.symbol,
                   builder: (item) {
-                    final showName =
-                        item.name.isNotEmpty && item.name != item.symbol;
+                    final isIsinTicker = _looksLikeIsin(item.symbol);
+                    // When legacy data still has ISIN as symbol, show company name as primary label.
+                    final primaryLabel = (isIsinTicker && item.name.isNotEmpty)
+                        ? item.name
+                        : item.symbol;
+                    final subtitle = isIsinTicker && item.name.isNotEmpty
+                        ? item.symbol
+                        : (item.name.isNotEmpty && item.name != item.symbol
+                            ? item.name
+                            : null);
+
                     return Row(
                       children: [
                         Flexible(
                           child: Text(
-                            item.symbol,
+                            primaryLabel,
                             style: rowStyle.copyWith(fontWeight: FontWeight.w700),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (showName) ...[
+                        if (subtitle != null) ...[
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              item.name,
+                              subtitle,
                               style: rowStyle.copyWith(color: onSurfaceVariant),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -156,8 +165,8 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                       style: rowStyle.copyWith(
                         fontWeight: FontWeight.w600,
                         color: positive
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                            ? context.colors.statusSuccess
+                            : context.colors.statusError,
                       ),
                     );
                   },
@@ -174,8 +183,8 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                       textAlign: TextAlign.right,
                       style: rowStyle.copyWith(
                         color: positive
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                            ? context.colors.statusSuccess
+                            : context.colors.statusError,
                       ),
                     );
                   },
@@ -220,7 +229,7 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
       itemBuilder: (context, index) {
         final item = displayItems[index];
         final positive = item.changePercentage >= 0;
-        final changeColor = positive ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+        final changeColor = positive ? context.colors.statusSuccess : context.colors.statusError;
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -231,7 +240,7 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                  color: isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
@@ -311,9 +320,15 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
     );
   }
 
+  /// Indian equity ISIN pattern (e.g. INE002A01018) — used when Mongo still has legacy symbol values.
+  static bool _looksLikeIsin(String value) {
+    if (value.length != 12) return false;
+    return RegExp(r'^[A-Z]{2}[A-Z0-9]{10}$').hasMatch(value.toUpperCase());
+  }
+
   Widget _buildToggleButton(String label, bool isGainers, bool isDark) {
     final isSelected = _showGainers == isGainers;
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+    final onSurfaceVariant = context.colors.textSecondary;
     return GestureDetector(
       onTap: () => setState(() => _showGainers = isGainers),
       child: Container(
@@ -337,7 +352,7 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
             color: isSelected
-                ? (isDark ? Colors.black : const Color(0xFF111827))
+                ? (isDark ? Colors.black : context.colors.textPrimary)
                 : onSurfaceVariant,
             fontFamily: 'Inter',
           ),

@@ -52,7 +52,7 @@ class PortfolioOverviewCard extends StatelessWidget {
                 Text(
                   percentFormat.format(overview.returnPercentage / 100),
                   style: TextStyle(
-                    color: _getColor(overview.returnPercentage),
+                    color: _getColor(context, overview.returnPercentage),
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -61,14 +61,14 @@ class PortfolioOverviewCard extends StatelessWidget {
                 Text(
                   currencyFormat.format(overview.totalReturn),
                   style: TextStyle(
-                    color: _getColor(overview.totalReturn),
+                    color: _getColor(context, overview.totalReturn),
                     fontSize: 12,
                   ),
                 ),
               ],
             ),
-            const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textSecondaryLight),
+            const SizedBox(width: AppSpacing.sm),
+            Icon(Icons.arrow_forward_ios, size: 16, color: context.textSecondary),
           ],
         ),
       ),
@@ -81,14 +81,14 @@ class PortfolioOverviewCard extends StatelessWidget {
 
     if (overview.type.contains("AM")) {
       icon = Icons.account_balance;
-      color = AppColors.info;
+      color = context.statusInfo;
     } else {
       icon = Icons.show_chart;
       color = AppColors.portfolioAccent;
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.sm + AppSpacing.xs),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         shape: BoxShape.circle,
@@ -97,9 +97,9 @@ class PortfolioOverviewCard extends StatelessWidget {
     );
   }
 
-  Color _getColor(double value) {
-    if (value > 0) return AppColors.profit;
-    if (value < 0) return AppColors.loss;
-    return AppColors.textSecondaryLight;
+  Color _getColor(BuildContext context, double value) {
+    if (value > 0) return context.statusSuccess;
+    if (value < 0) return context.statusError;
+    return context.textSecondary;
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'widgets/glossy_card.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'widgets/metrics_charts.dart';
 import 'cubit/trade_metrics_cubit.dart';
 import 'cubit/trade_metrics_state.dart';
@@ -196,8 +196,8 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
     return Row(
       children: [
         Expanded(
-          child: GlossyCard(
-            color: Colors.blueAccent,
+          child: GlassCard(
+            colorScheme: 'info',
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,8 +218,8 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
         ),
         const SizedBox(width: 12), // Reduced spacing
         Expanded(
-          child: GlossyCard(
-            color: metrics.performanceMetrics.winRate >= 0.5 ? Colors.green : Colors.orange,
+          child: GlassCard(
+            colorScheme: metrics.performanceMetrics.winRate >= 0.5 ? 'success' : 'accent',
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,7 +275,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
               children: [
                 Expanded(
                   flex: 3,
-                  child: GlossyCard(
+                  child: GlassCard(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,7 +293,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
                   child: Column(
                     children: [
                       Expanded(
-                        child: GlossyCard(
+                        child: GlassCard(
                           padding: const EdgeInsets.all(12),
                           child: Row(
                             children: [
@@ -309,7 +309,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
                       ),
                       const SizedBox(height: 12),
                       Expanded(
-                        child: GlossyCard(
+                        child: GlassCard(
                           padding: const EdgeInsets.all(12),
                           child: Row(
                             children: [
@@ -334,7 +334,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
         // On smaller screens, keep vertical but compact
         return Column(
           children: [
-            GlossyCard(
+            GlassCard(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,7 +352,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
             Row(
               children: [
                 Expanded(
-                  child: GlossyCard(
+                  child: GlassCard(
                     padding: const EdgeInsets.all(12),
                     child: Column(
                       children: [
@@ -368,7 +368,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: GlossyCard(
+                  child: GlassCard(
                      padding: const EdgeInsets.all(12),
                     child: Column(
                       children: [
@@ -399,7 +399,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
         Row(
           children: [
             Expanded(
-              child: GlossyCard(
+              child: GlassCard(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   children: [
@@ -415,7 +415,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
             ),
             const SizedBox(width: 12),
              Expanded(
-              child: GlossyCard(
+              child: GlassCard(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   children: [
@@ -436,24 +436,25 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color, {double? width}) {
-    return GlossyCard(
+    return SizedBox(
       width: width,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16), // Thinner padding
-      // Use a subtle background for individual stat cards
-      color: Theme.of(context).cardColor,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).hintColor)),
-              Icon(icon, color: color, size: 20),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color)), // Bolder value
-        ],
+      child: GlassCard(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16), // Thinner padding
+        // Note: For individual stat cards, GlassCard uses default glass style which respects theme implicitly.
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).hintColor)),
+                Icon(icon, color: color, size: 20),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color)), // Bolder value
+          ],
+        ),
       ),
     );
   }

@@ -33,7 +33,7 @@ class DashboardRankingWidget extends StatelessWidget {
             ),
              TabBar(
               labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textSecondaryLight,
+              unselectedLabelColor: context.textSecondary,
               indicatorColor: AppColors.primary,
               tabs: const [
                 Tab(text: 'Gainers'),

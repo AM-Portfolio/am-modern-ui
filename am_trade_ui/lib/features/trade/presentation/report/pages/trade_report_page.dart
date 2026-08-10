@@ -11,7 +11,6 @@ import '../../../internal/domain/entities/metrics/metrics_filter_request.dart';
 import '../../../internal/domain/entities/metrics_filter_config.dart';
 import '../../../internal/domain/entities/filter_criteria.dart';
 import '../../../providers/trade_report_providers.dart';
-import '../../metrics/widgets/glossy_card.dart';
 import '../widgets/dynamic_chart_card.dart';
 import '../models/chart_config.dart';
 import '../cubit/trade_report_cubit.dart';
@@ -375,9 +374,9 @@ class _TradeReportPageState extends ConsumerState<TradeReportPage> {
   ) {
     return SizedBox(
       width: width,
-      child: GlossyCard(
+      child: GlassCard(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: 16.0,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,

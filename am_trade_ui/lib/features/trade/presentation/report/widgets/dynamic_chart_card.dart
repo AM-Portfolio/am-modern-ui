@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../metrics/widgets/glossy_card.dart';
+import 'package:am_design_system/am_design_system.dart' hide ChartType;
 import '../models/chart_config.dart';
 import '../../../internal/domain/entities/report/timing_analysis.dart';
 import '../../../internal/domain/entities/report/daily_performance.dart';
@@ -185,7 +185,7 @@ class _DynamicChartCardState extends ConsumerState<DynamicChartCard> {
     // Determine labels from the first available dataset (assuming shared X access)
     // If multiple timeframes alignment is an issue, we assume standardized X-axis by aggregator.
     
-    return GlossyCard(
+    return GlassCard(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
