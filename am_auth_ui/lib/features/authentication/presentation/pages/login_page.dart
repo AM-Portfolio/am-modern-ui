@@ -6,6 +6,7 @@ import 'package:am_design_system/core/constants/app_config.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
+import '../../../../core/utils/auth_redirect.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../widgets/app_header_widget.dart';
@@ -40,9 +41,9 @@ class LoginPage extends StatelessWidget {
             if (state is Authenticated) {
               final router = GoRouter.maybeOf(context);
               if (router != null) {
-                final redirect =
-                    GoRouterState.of(context).uri.queryParameters['redirect'];
-                final target = _sanitizeAppRedirect(redirect) ?? '/app/dashboard';
+                final target = AuthRedirect.postLoginLocation(
+                  GoRouterState.of(context).uri,
+                );
                 context.go(target);
               } else {
                 Navigator.of(context).pushReplacementNamed('/home');
@@ -309,19 +310,3 @@ class _LiquidAuthLinkState extends State<_LiquidAuthLink> {
   }
 }
 
-String? _sanitizeAppRedirect(String? redirect) {
-  if (redirect == null || redirect.isEmpty) return null;
-
-  var candidate = redirect;
-  if (candidate.startsWith('http://') || candidate.startsWith('https://')) {
-    try {
-      final uri = Uri.parse(candidate);
-      candidate = uri.hasQuery ? '${uri.path}?${uri.query}' : uri.path;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  if (!candidate.startsWith('/app')) return null;
-  return candidate;
-}

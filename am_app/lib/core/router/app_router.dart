@@ -55,10 +55,7 @@ GoRouter createAppRouter({
           return AppRoutes.dashboard;
         }
         if (isAuthenticated && location == AppRoutes.login) {
-          final target = ShareUrlBuilder.sanitizeRedirect(
-            state.uri.queryParameters['redirect'],
-          );
-          return target ?? AppRoutes.dashboard;
+          return AuthRedirect.postLoginLocation(state.uri);
         }
         return null;
       }
@@ -76,8 +73,7 @@ GoRouter createAppRouter({
       if (!isAuthenticated &&
           AppRoutes.isAuthenticatedAppRoute(location) &&
           !AppRoutes.isPublicLegalRoute(location)) {
-        final redirect = Uri.encodeComponent(_redirectTarget(state.uri));
-        return '${AppRoutes.login}?redirect=$redirect';
+        return AuthRedirect.loginLocationFromAppUri(state.uri);
       }
 
       // Lab is disabled in navigation — block direct URL access.
@@ -119,29 +115,39 @@ GoRouter createAppRouter({
 
       return null;
     },
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text(
-                'Page not found: ${state.uri}',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => context.go(AppRoutes.login),
-                child: const Text('Go to login'),
-              ),
-            ],
+    errorBuilder: (context, state) {
+      final authState = authCubit.state;
+      final isAuthenticated = authState is Authenticated;
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'Page not found: ${state.uri}',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: () {
+                    if (isAuthenticated) {
+                      context.go(AppRoutes.dashboard);
+                      return;
+                    }
+                    context.go(AuthRedirect.recoverLoginLocation(state.uri));
+                  },
+                  child: Text(isAuthenticated ? 'Go to dashboard' : 'Go to login'),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    ),
+      );
+    },
     routes: [
       GoRoute(
         path: AppRoutes.login,
@@ -453,11 +459,6 @@ String? _portfolioIdOnlyRedirect(String location) {
 String _userId(BuildContext context) {
   final authState = context.read<AuthCubit>().state;
   return authState is Authenticated ? authState.user.id : '';
-}
-
-String _redirectTarget(Uri uri) {
-  final path = uri.path.isEmpty ? '/' : uri.path;
-  return uri.hasQuery ? '$path?${uri.query}' : path;
 }
 
 void _patchPortfolioSession(BuildContext context, String id, String name) {
