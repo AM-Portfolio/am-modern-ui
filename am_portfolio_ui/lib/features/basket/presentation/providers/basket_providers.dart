@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/am_common.dart';
 
+import '../../domain/models/basket_catalog.dart';
 import '../../domain/models/basket_opportunity.dart';
 import '../../domain/repositories/basket_repository.dart';
 import '../../data/repositories/basket_repository_impl.dart';
@@ -14,6 +15,12 @@ Future<BasketRepository> basketRepository(Ref ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
   final remoteDataSource = BasketRemoteDataSourceImpl(apiClient: apiClient);
   return BasketRepositoryImpl(remoteDataSource: remoteDataSource);
+}
+
+@riverpod
+Future<BasketCatalog> basketCatalog(Ref ref) async {
+  final repository = await ref.watch(basketRepositoryProvider.future);
+  return repository.getCatalog();
 }
 
 @riverpod

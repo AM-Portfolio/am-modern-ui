@@ -53,6 +53,7 @@ class BasketNavigation {
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => BasketExplorer(
+            userId: userId,
             portfolioId: portfolioId,
           ),
         );

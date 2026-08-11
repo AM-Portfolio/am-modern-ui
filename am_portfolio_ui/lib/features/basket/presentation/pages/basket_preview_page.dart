@@ -74,16 +74,18 @@ class _BasketContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Compute held and missing items from composition
     final heldItems = opportunity.composition
         .where((item) => item.status == ItemStatus.held)
         .toList();
+    final substituteItems = opportunity.composition
+        .where((item) => item.status == ItemStatus.substitute)
+        .toList();
     final missingItems = opportunity.composition
-        .where((item) => item.status != ItemStatus.held)
+        .where((item) => item.status == ItemStatus.missing)
         .toList();
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Column(
         children: [
           _EntryHeroCard(opportunity: opportunity),
@@ -93,14 +95,16 @@ class _BasketContent extends StatelessWidget {
                border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
              ),
              child: TabBar(
-               labelColor: AppColors.primary,
-               unselectedLabelColor: Theme.of(context).hintColor,
-               indicatorColor: AppColors.primary,
+               labelColor: context.colors.actionPrimaryBg,
+               unselectedLabelColor: context.textSecondary,
+               indicatorColor: context.colors.actionPrimaryBg,
                indicatorWeight: 3,
+               isScrollable: true,
                labelStyle: const TextStyle(fontWeight: FontWeight.bold),
                tabs: [
-                 Tab(text: "Your Match (${heldItems.length})"),
-                 Tab(text: "The Gap (${missingItems.length})"),
+                 Tab(text: "Held (${heldItems.length})"),
+                 Tab(text: "Substitute (${substituteItems.length})"),
+                 Tab(text: "Missing (${missingItems.length})"),
                ],
              ),
            ),
@@ -108,6 +112,10 @@ class _BasketContent extends StatelessWidget {
             child: TabBarView(
               children: [
                 _HeldItemsList(items: heldItems),
+                _HeldItemsList(
+                  items: substituteItems,
+                  emptyMessage: 'No substitute holdings for this basket.',
+                ),
                 _MissingItemsList(items: missingItems),
               ],
             ),
@@ -242,16 +250,22 @@ class _BasketItemHeader extends StatelessWidget {
 
 class _HeldItemsList extends StatelessWidget {
   final List<BasketItem> items;
+  final String emptyMessage;
 
-  const _HeldItemsList({required this.items});
+  const _HeldItemsList({
+    required this.items,
+    this.emptyMessage = 'No held items match this basket.',
+  });
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(20.0),
-        child: Text('No held items match this basket.'),
-      ));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Text(emptyMessage),
+        ),
+      );
     }
     return Column(
       children: [

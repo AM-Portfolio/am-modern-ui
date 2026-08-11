@@ -94,7 +94,7 @@ class _EtfSearchBarState extends State<EtfSearchBar> {
               style: Theme.of(context).textTheme.bodyMedium,
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
-                hintText: 'Search ETF to replicate (e.g. NIFTYBEES)...',
+                hintText: 'Search ETF by symbol or name...',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(

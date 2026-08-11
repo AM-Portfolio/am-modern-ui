@@ -1,3 +1,5 @@
+import 'package:am_auth_ui/core/utils/auth_redirect.dart';
+
 import 'app_routes.dart';
 
 /// Builds and parses shareable deep-link paths for portfolio-scoped modules.
@@ -97,25 +99,8 @@ class ShareUrlBuilder {
       isDeepPortfolioLink(location) || isDeepTradeLink(location);
 
   /// Validates redirect target from login query param.
-  static String? sanitizeRedirect(String? redirect) {
-    if (redirect == null || redirect.isEmpty) return null;
-
-    var candidate = redirect;
-    if (candidate.startsWith('http://') || candidate.startsWith('https://')) {
-      try {
-        candidate = Uri.parse(candidate).path;
-        final query = Uri.parse(redirect).hasQuery
-            ? '?${Uri.parse(redirect).query}'
-            : '';
-        candidate = '$candidate$query';
-      } catch (_) {
-        return null;
-      }
-    }
-
-    if (!candidate.startsWith('/app')) return null;
-    return candidate;
-  }
+  static String? sanitizeRedirect(String? redirect) =>
+      AuthRedirect.sanitize(redirect);
 
   /// True when reload should keep the browser URL (any /app/* route with path).
   static bool isReloadableAppRoute(String location) {
