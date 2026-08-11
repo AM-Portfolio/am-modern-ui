@@ -108,6 +108,7 @@ class BasketItem {
   final double? marketCapValue;
   final double? heldQuantity;
   final double? heldAveragePrice;
+  final String? userHoldingIsin;
   final List<Alternative> alternatives;
 
   const BasketItem({
@@ -126,6 +127,7 @@ class BasketItem {
     this.marketCapValue,
     this.heldQuantity,
     this.heldAveragePrice,
+    this.userHoldingIsin,
     this.alternatives = const [],
   });
 
@@ -149,6 +151,7 @@ class BasketItem {
       marketCapValue: (json['marketCapValue'] as num?)?.toDouble(),
       heldQuantity: (json['heldQuantity'] as num?)?.toDouble(),
       heldAveragePrice: (json['heldAveragePrice'] as num?)?.toDouble(),
+      userHoldingIsin: json['userHoldingIsin'] as String?,
       alternatives: (json['alternatives'] as List<dynamic>?)
               ?.map((e) => Alternative.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -190,6 +193,7 @@ class BasketItem {
     List<Alternative>? alternatives,
     double? heldQuantity,
     double? heldAveragePrice,
+    String? userHoldingIsin,
   }) {
     return BasketItem(
       stockSymbol: stockSymbol ?? this.stockSymbol,
@@ -206,6 +210,9 @@ class BasketItem {
       alternatives: alternatives ?? this.alternatives,
       heldQuantity: heldQuantity ?? this.heldQuantity,
       heldAveragePrice: heldAveragePrice ?? this.heldAveragePrice,
+      userHoldingIsin: userHoldingIsin ?? this.userHoldingIsin,
+      marketCapCategory: this.marketCapCategory,
+      marketCapValue: this.marketCapValue,
     );
   }
 }
@@ -214,11 +221,13 @@ class Alternative {
   final String symbol;
   final String isin;
   final double userWeight;
+  final double? quantity;
 
   const Alternative({
     required this.symbol,
     required this.isin,
     this.userWeight = 0.0,
+    this.quantity,
   });
 
   factory Alternative.fromJson(Map<String, dynamic> json) {
@@ -226,6 +235,7 @@ class Alternative {
       symbol: json['symbol'] as String? ?? 'Unknown',
       isin: json['isin'] as String? ?? '',
       userWeight: (json['userWeight'] as num?)?.toDouble() ?? 0.0,
+      quantity: (json['quantity'] as num?)?.toDouble(),
     );
   }
 
@@ -234,6 +244,7 @@ class Alternative {
       'symbol': symbol,
       'isin': isin,
       'userWeight': userWeight,
+      'quantity': quantity,
     };
   }
 
@@ -241,11 +252,13 @@ class Alternative {
     String? symbol,
     String? isin,
     double? userWeight,
+    double? quantity,
   }) {
     return Alternative(
       symbol: symbol ?? this.symbol,
       isin: isin ?? this.isin,
       userWeight: userWeight ?? this.userWeight,
+      quantity: quantity ?? this.quantity,
     );
   }
 }

@@ -17,6 +17,17 @@ abstract class BasketRemoteDataSource {
     required String userId,
     required String portfolioId,
   });
+
+  Future<BasketOpportunity> applySubstitutes({
+    required String etfIsin,
+    required String userId,
+    required String portfolioId,
+    required List<Map<String, String>> assignments,
+  });
+
+  Future<Map<String, dynamic>> createBasketPortfolio({
+    required Map<String, dynamic> body,
+  });
 }
 
 class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
@@ -71,5 +82,37 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
     );
 
     return BasketOpportunity.fromJson(response as Map<String, dynamic>);
+  }
+
+  @override
+  Future<BasketOpportunity> applySubstitutes({
+    required String etfIsin,
+    required String userId,
+    required String portfolioId,
+    required List<Map<String, String>> assignments,
+  }) async {
+    final response = await apiClient.post(
+      BasketEndpoints.applySubstitutes,
+      parser: (data) => data,
+      body: {
+        'etfIsin': etfIsin,
+        'userId': userId,
+        'portfolioId': portfolioId,
+        'assignments': assignments,
+      },
+    );
+    return BasketOpportunity.fromJson(response as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Map<String, dynamic>> createBasketPortfolio({
+    required Map<String, dynamic> body,
+  }) async {
+    final response = await apiClient.post(
+      BasketEndpoints.createPortfolio,
+      parser: (data) => data,
+      body: body,
+    );
+    return response as Map<String, dynamic>;
   }
 }

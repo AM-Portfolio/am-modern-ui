@@ -9,6 +9,8 @@ abstract class PortfolioItem with _$PortfolioItem {
   const factory PortfolioItem({
     required String portfolioId,
     required String portfolioName,
+    @Default('BROKER') String kind,
+    int? gapMissingCount,
   }) = _PortfolioItem;
   const PortfolioItem._();
 
@@ -24,6 +26,8 @@ abstract class PortfolioItem with _$PortfolioItem {
 
   /// Helper getter to check if portfolio is valid
   bool get isValid => hasValidId && hasValidName;
+
+  bool get isBasket => kind == 'BASKET';
 }
 
 /// Domain entity representing a list of portfolios

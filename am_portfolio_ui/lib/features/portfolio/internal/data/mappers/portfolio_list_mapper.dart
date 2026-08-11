@@ -20,26 +20,32 @@ class PortfolioListMapper {
           .map(
             (itemDto) {
               String name = itemDto.portfolioName;
-              final lower = name.toLowerCase();
-              if (lower.contains('grow')) {
-                name = 'Groww';
-              } else if (lower.contains('zerodha')) {
-                name = 'Zerodha';
-              } else if (lower.contains('dhan')) {
-                name = 'Dhan';
-              } else if (lower.contains('angelone') || lower.contains('angel one')) {
-                name = 'Angel One';
-              } else if (lower.contains('upstox')) {
-                name = 'Upstox';
-              } else if (lower.contains('mstock')) {
-                name = 'MStock';
-              } else if (lower.contains('kotak')) {
-                name = 'Kotak';
+              final kind = itemDto.kind ?? 'BROKER';
+              // Do not rewrite basket display names (e.g. "Nifty IT · Zerodha")
+              if (kind != 'BASKET' && !name.contains('·')) {
+                final lower = name.toLowerCase();
+                if (lower.contains('grow')) {
+                  name = 'Groww';
+                } else if (lower.contains('zerodha')) {
+                  name = 'Zerodha';
+                } else if (lower.contains('dhan')) {
+                  name = 'Dhan';
+                } else if (lower.contains('angelone') || lower.contains('angel one')) {
+                  name = 'Angel One';
+                } else if (lower.contains('upstox')) {
+                  name = 'Upstox';
+                } else if (lower.contains('mstock')) {
+                  name = 'MStock';
+                } else if (lower.contains('kotak')) {
+                  name = 'Kotak';
+                }
               }
               
               return PortfolioItem(
                 portfolioId: itemDto.portfolioId,
                 portfolioName: name,
+                kind: kind,
+                gapMissingCount: itemDto.gapMissingCount,
               );
             },
           )

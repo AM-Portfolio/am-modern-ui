@@ -38,4 +38,26 @@ class BasketRepositoryImpl implements BasketRepository {
       portfolioId: portfolioId,
     );
   }
+
+  @override
+  Future<BasketOpportunity> applySubstitutes({
+    required String etfIsin,
+    required String userId,
+    required String portfolioId,
+    required List<Map<String, String>> assignments,
+  }) {
+    return remoteDataSource.applySubstitutes(
+      etfIsin: etfIsin,
+      userId: userId,
+      portfolioId: portfolioId,
+      assignments: assignments,
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> createBasketPortfolio({
+    required Map<String, dynamic> body,
+  }) {
+    return remoteDataSource.createBasketPortfolio(body: body);
+  }
 }

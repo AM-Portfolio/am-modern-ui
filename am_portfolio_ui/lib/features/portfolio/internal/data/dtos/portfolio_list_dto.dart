@@ -6,6 +6,8 @@ class PortfolioItemDto {
   const PortfolioItemDto({
     required this.portfolioId,
     required this.portfolioName,
+    this.kind,
+    this.gapMissingCount,
   });
 
   /// Create from JSON
@@ -14,14 +16,20 @@ class PortfolioItemDto {
         portfolioId: json['portfolioId'] as String,
         portfolioName:
             (json['portfolioName'] as String?) ?? 'Unnamed Portfolio',
+        kind: json['kind'] as String?,
+        gapMissingCount: json['gapMissingCount'] as int?,
       );
   final String portfolioId;
   final String portfolioName;
+  final String? kind;
+  final int? gapMissingCount;
 
   /// Convert to JSON
   Map<String, dynamic> toJson() => {
     'portfolioId': portfolioId,
     'portfolioName': portfolioName,
+    if (kind != null) 'kind': kind,
+    if (gapMissingCount != null) 'gapMissingCount': gapMissingCount,
   };
 
   @override

@@ -6,8 +6,11 @@ import '../../domain/models/basket_opportunity.dart';
 import '../../../../core/constants/basket_endpoints.dart';
 import '../widgets/allocation_bar.dart';
 import '../widgets/basket_section_header.dart';
+import '../providers/basket_providers.dart';
 import '../../../portfolio/providers/portfolio_providers.dart';
 import '../../../portfolio/internal/domain/entities/portfolio_holding.dart';
+import '../../../portfolio/presentation/cubit/portfolio_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ManualBasketCreatorPage extends ConsumerStatefulWidget {
   final BasketOpportunity opportunity;
@@ -542,7 +545,7 @@ class _ManualBasketCreatorPageState
 
     final saveAction = TextButton(
       onPressed: _savePortfolio,
-      child: const Text('Save Portfolio'),
+      child: const Text('Create Basket'),
     );
 
     if (widget.embedded) {
@@ -571,13 +574,191 @@ class _ManualBasketCreatorPageState
   }
 
   void _savePortfolio() {
-    // TODO: Implement save logic when backend endpoint is available
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Portfolio Creation API not yet implemented'),
-        backgroundColor: context.statusWarning,
+    _showCreateBasketSheet();
+  }
+
+  String _defaultBasketName() {
+    final etf = widget.opportunity.etfName;
+    var short = etf;
+    for (final prefix in [
+      'Nippon India ETF ',
+      'UTI ',
+      'HDFC ',
+      'ICICI Prudential ',
+      'SBI ',
+      'Kotak ',
+    ]) {
+      if (short.toLowerCase().startsWith(prefix.toLowerCase())) {
+        short = short.substring(prefix.length).trim();
+        break;
+      }
+    }
+    short = short.replaceAll(RegExp(r'\s*ETF\s*', caseSensitive: false), ' ').trim();
+    if (short.isEmpty) short = etf;
+    // Source name from selected portfolio — fallback Zerodha-style from id context
+    return '$short · Portfolio';
+  }
+
+  List<BasketItem> get _movableLines => _items
+      .where((i) =>
+          (i.status == ItemStatus.held || i.status == ItemStatus.substitute) &&
+          ((i.heldQuantity ?? 0) > 0 || i.buyQuantity > 0))
+      .toList();
+
+  Future<void> _showCreateBasketSheet() async {
+    final movable = _movableLines;
+    if (movable.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Accept swaps or you have nothing to move into a basket'),
+          backgroundColor: context.statusWarning,
+        ),
+      );
+      return;
+    }
+
+    final nameController = TextEditingController(text: _defaultBasketName());
+    final missingCount =
+        _items.where((i) => i.status == ItemStatus.missing).length;
+    double notional = 0;
+    for (final i in movable) {
+      final qty = (i.heldQuantity != null && i.heldQuantity! > 0)
+          ? i.heldQuantity!
+          : i.buyQuantity;
+      final px = i.lastPrice ?? i.heldAveragePrice ?? 0;
+      notional += qty * px;
+    }
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.lg)),
       ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+            top: AppSpacing.md,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.md,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Create Basket', style: Theme.of(ctx).textTheme.titleLarge),
+              const SizedBox(height: AppSpacing.sm),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Basket name'),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Moving ${movable.length} holdings · ₹${notional.toStringAsFixed(0)}'
+                '${missingCount > 0 ? ' · $missingCount still Missing' : ''}',
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Reserves these shares from your source portfolio into this AM basket. '
+                'Does not place broker orders.',
+                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: ctx.textSecondary),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel'),
+                  ),
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Create Basket'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
+
+    if (confirmed != true || !mounted) {
+      nameController.dispose();
+      return;
+    }
+
+    await _createBasket(nameController.text.trim());
+    nameController.dispose();
+  }
+
+  Future<void> _createBasket(String basketName) async {
+    final movable = _movableLines;
+    final remainingMissing = _items
+        .where((i) => i.status == ItemStatus.missing)
+        .map((i) => i.stockSymbol)
+        .toList();
+
+    final lines = movable.map((i) {
+      final qty = (i.heldQuantity != null && i.heldQuantity! > 0)
+          ? i.heldQuantity!
+          : i.buyQuantity;
+      final holdingIsin = i.userHoldingIsin ?? i.isin;
+      return {
+        'status': i.status.name.toUpperCase(),
+        'etfSymbol': i.stockSymbol,
+        'etfIsin': i.isin,
+        'holdingIsin': holdingIsin,
+        'holdingSymbol': i.userHoldingSymbol ?? i.stockSymbol,
+        'quantity': qty,
+        'averageBuyingPrice': i.heldAveragePrice ?? i.lastPrice,
+      };
+    }).toList();
+
+    try {
+      final repo = await ref.read(basketRepositoryProvider.future);
+      final result = await repo.createBasketPortfolio(body: {
+        'userId': widget.userId,
+        'sourcePortfolioId': widget.portfolioId,
+        'etfIsin': widget.opportunity.etfIsin,
+        'etfName': widget.opportunity.etfName,
+        'basketName': basketName.isEmpty ? _defaultBasketName() : basketName,
+        'idempotencyKey': DateTime.now().millisecondsSinceEpoch.toString(),
+        'remainingMissingCount': remainingMissing.length,
+        'remainingMissing': remainingMissing,
+        'lines': lines,
+      });
+
+      if (!mounted) return;
+      final newId = result['portfolioId'] as String?;
+      final newName = result['name'] as String? ?? basketName;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Created $newName')),
+      );
+
+      try {
+        final cubit = context.read<PortfolioCubit>();
+        await cubit.loadPortfoliosList();
+        if (newId != null) {
+          cubit.loadPortfolioById(newId);
+        }
+      } catch (_) {}
+
+      if (mounted && newId != null) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Create Basket failed: $e'),
+            backgroundColor: context.statusError,
+          ),
+        );
+      }
+    }
   }
 }
 
@@ -1045,6 +1226,10 @@ class _InvestmentSummaryFooter extends StatelessWidget {
       }
     }
 
+    final canCreate = items.any((i) =>
+        (i.status == ItemStatus.held || i.status == ItemStatus.substitute) &&
+        ((i.heldQuantity ?? 0) > 0 || i.buyQuantity > 0));
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -1065,11 +1250,11 @@ class _InvestmentSummaryFooter extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Payable Amount",
+                  'Moving notional',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textTertiary),
                 ),
                 Text(
-                  "₹${totalPayable.toStringAsFixed(2)}",
+                  '₹${totalPayable.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: context.colors.actionPrimaryBg,
@@ -1079,12 +1264,12 @@ class _InvestmentSummaryFooter extends StatelessWidget {
             ),
             const Spacer(),
             FilledButton(
-              onPressed: totalPayable > 0 ? onInvest : null,
+              onPressed: canCreate ? onInvest : null,
               style: FilledButton.styleFrom(
                 minimumSize: const Size(AppSpacing.xxl * 3, AppSpacing.xl + AppSpacing.md),
                 shape: RoundedRectangleBorder(borderRadius: AppRadii.input),
               ),
-              child: const Text("Pay & Invest"),
+              child: Text(canCreate ? 'Create Basket' : 'Nothing to move'),
             ),
           ],
         ),

@@ -677,7 +677,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       'all'.toSimpleDropdownItem(text: 'All Portfolios', fontSize: 12),
       ...portfolios.map(
         (p) => p.portfolioId.toSimpleDropdownItem(
-          text: p.portfolioName,
+          text: p.kind == 'BASKET' ? '${p.portfolioName} (Basket)' : p.portfolioName,
           fontSize: 12,
         ),
       ),
