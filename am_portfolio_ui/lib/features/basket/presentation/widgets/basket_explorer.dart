@@ -190,7 +190,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                     ),
                     gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: 340,
-                      mainAxisExtent: 210,
+                      mainAxisExtent: 220,
                       crossAxisSpacing: AppSpacing.md,
                       mainAxisSpacing: AppSpacing.md,
                     ),
@@ -303,6 +303,9 @@ class _BasketOpportunityCard extends StatelessWidget {
   final BasketOpportunity opportunity;
   final VoidCallback onTap;
 
+  /// Compact score ring — must stay small inside fixed-height grid cards.
+  static const double _scoreRingSize = AppSpacing.xxl + AppSpacing.xs; // 52
+
   const _BasketOpportunityCard({
     required this.opportunity,
     required this.onTap,
@@ -334,12 +337,14 @@ class _BasketOpportunityCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Text(
                       opportunity.etfName,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
+                        height: 1.25,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -366,12 +371,13 @@ class _BasketOpportunityCard extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.md - 2),
+              const SizedBox(height: AppSpacing.md),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(
-                    width: MediaQuery.sizeOf(context).width * 0.12,
-                    height: MediaQuery.sizeOf(context).width * 0.12,
+                    width: _scoreRingSize,
+                    height: _scoreRingSize,
                     child: TweenAnimationBuilder<double>(
                       tween: Tween(begin: 0, end: score / 100),
                       duration: const Duration(milliseconds: 700),
@@ -398,23 +404,28 @@ class _BasketOpportunityCard extends StatelessWidget {
                       },
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md - 2),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           'Portfolio match',
                           style: theme.textTheme.labelMedium?.copyWith(
                             color: context.textSecondary,
+                            height: 1.2,
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.sm - 2),
+                        const SizedBox(height: AppSpacing.xs),
                         Text(
                           '${opportunity.heldCount} held · ${opportunity.missingCount} missing',
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.w600,
+                            height: 1.3,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         if (opportunity.totalItems > 0) ...[
                           const SizedBox(height: AppSpacing.xxs),
@@ -422,7 +433,10 @@ class _BasketOpportunityCard extends StatelessWidget {
                             '${opportunity.totalItems} constituents',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: context.textTertiary,
+                              height: 1.3,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ],
@@ -438,7 +452,8 @@ class _BasketOpportunityCard extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: context.colors.actionPrimaryBg,
                     foregroundColor: context.colors.actionPrimaryFg,
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm + 2),
+                    minimumSize: const Size.fromHeight(AppSpacing.xl),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.button),
                   ),
                   child: const Text('Preview basket'),
@@ -461,9 +476,9 @@ class _SkeletonGrid extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 340,
-        mainAxisExtent: 210,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+        mainAxisExtent: 220,
+        crossAxisSpacing: AppSpacing.md,
+        mainAxisSpacing: AppSpacing.md,
       ),
       itemCount: 6,
       itemBuilder: (context, index) {

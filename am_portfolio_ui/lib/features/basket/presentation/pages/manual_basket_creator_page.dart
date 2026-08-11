@@ -405,13 +405,10 @@ class _ManualBasketCreatorPageState
                       FilledButton.icon(
                         onPressed: _isCalculating ? null : _calculateQuantities,
                         icon: _isCalculating
-                            ? SizedBox(
-                                width: MediaQuery.sizeOf(context).shortestSide * 0.04,
-                                height: MediaQuery.sizeOf(context).shortestSide * 0.04,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: context.colors.actionPrimaryFg,
-                                ),
+                            ? const SizedBox(
+                                width: AppSpacing.md,
+                                height: AppSpacing.md,
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.calculate),
                         label: const Text('Calculate'),
@@ -447,14 +444,11 @@ class _ManualBasketCreatorPageState
                                 (p) => OutlinedButton(
                                   onPressed: () => _setAmountByPercentage(p.toDouble()),
                                   style: OutlinedButton.styleFrom(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: MediaQuery.sizeOf(context).width * 0.03,
-                                      vertical: MediaQuery.sizeOf(context).height * 0.008,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.sm + AppSpacing.xs,
+                                      vertical: AppSpacing.xs,
                                     ),
-                                    minimumSize: Size(
-                                      MediaQuery.sizeOf(context).width * 0.12,
-                                      MediaQuery.sizeOf(context).height * 0.04,
-                                    ),
+                                    minimumSize: const Size(0, AppSpacing.xl),
                                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                   ),
                                   child: Text('$p%'),
@@ -1087,10 +1081,7 @@ class _InvestmentSummaryFooter extends StatelessWidget {
             FilledButton(
               onPressed: totalPayable > 0 ? onInvest : null,
               style: FilledButton.styleFrom(
-                minimumSize: Size(
-                  MediaQuery.sizeOf(context).width * 0.28,
-                  MediaQuery.sizeOf(context).height * 0.055,
-                ),
+                minimumSize: const Size(AppSpacing.xxl * 3, AppSpacing.xl + AppSpacing.md),
                 shape: RoundedRectangleBorder(borderRadius: AppRadii.input),
               ),
               child: const Text("Pay & Invest"),
