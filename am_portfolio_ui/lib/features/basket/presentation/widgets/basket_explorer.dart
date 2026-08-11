@@ -24,7 +24,17 @@ class BasketExplorer extends ConsumerStatefulWidget {
 class _BasketExplorerState extends ConsumerState<BasketExplorer> {
   String? _query;
   bool _emittedEmpty = false;
+  String? _lastEmptyQuery;
   String? _selectedThemeId;
+
+  void _updateQuery({String? query, String? themeId}) {
+    setState(() {
+      _query = query;
+      _selectedThemeId = themeId;
+      _emittedEmpty = false;
+      _lastEmptyQuery = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +44,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
     return catalogAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, _) => _ErrorState(
+        title: 'Couldn’t load baskets',
         message: err.toString(),
         onRetry: () => ref.invalidate(basketCatalogProvider),
       ),
@@ -42,14 +53,10 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
             ? _query!
             : catalog.defaultQuery;
         if (activeQuery.isEmpty) {
-          return _EmptyState(
-            themeSelected: false,
-            onReset: () {
-              setState(() {
-                _selectedThemeId = null;
-                _query = catalog.defaultQuery;
-              });
-            },
+          return _ErrorState(
+            title: 'Couldn’t load baskets',
+            message: 'No default basket query is configured yet.',
+            onRetry: () => ref.invalidate(basketCatalogProvider),
           );
         }
 
@@ -65,7 +72,12 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.md,
+                AppSpacing.xs,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -76,26 +88,28 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                       letterSpacing: -0.3,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     'Match your holdings to ETF baskets and see what you already own.',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.65),
+                      color: context.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.sm + AppSpacing.xs,
+                AppSpacing.md,
+                AppSpacing.sm,
+              ),
               child: EtfSearchBar(
                 onEtfSelected: (selection) {
                   if (selection.isin != null) {
                     if (selection.isin!.contains(',')) {
-                      setState(() {
-                        _query = selection.isin!;
-                        _selectedThemeId = null;
-                      });
+                      _updateQuery(query: selection.isin!, themeId: null);
                     } else {
                       BasketNavigation.openPreview(
                         context,
@@ -111,15 +125,12 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                   }
                 },
                 onCleared: () {
-                  setState(() {
-                    _query = catalog.defaultQuery;
-                    _selectedThemeId = null;
-                  });
+                  _updateQuery(query: catalog.defaultQuery, themeId: null);
                 },
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               child: _ThemeChipScroller(
                 child: Row(
                   children: [
@@ -127,29 +138,22 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                       label: 'Top picks',
                       selected: _selectedThemeId == null,
                       onTap: () {
-                        setState(() {
-                          _selectedThemeId = null;
-                          _query = catalog.defaultQuery;
-                        });
+                        _updateQuery(query: catalog.defaultQuery, themeId: null);
                       },
                     ),
                     ...themes.map((entry) {
                       final isSelected = _selectedThemeId == entry.id;
                       return Padding(
-                        padding: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.only(left: AppSpacing.sm),
                         child: _ThemeChip(
                           label: entry.label,
                           selected: isSelected,
                           onTap: () {
-                            setState(() {
-                              if (isSelected) {
-                                _selectedThemeId = null;
-                                _query = catalog.defaultQuery;
-                              } else {
-                                _selectedThemeId = entry.id;
-                                _query = entry.query;
-                              }
-                            });
+                            if (isSelected) {
+                              _updateQuery(query: catalog.defaultQuery, themeId: null);
+                            } else {
+                              _updateQuery(query: entry.query, themeId: entry.id);
+                            }
                           },
                         ),
                       );
@@ -158,33 +162,37 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
             Expanded(
               child: opportunitiesAsync.when(
                 data: (opportunities) {
                   if (opportunities.isEmpty) {
-                    if (!_emittedEmpty) {
+                    if (!_emittedEmpty || _lastEmptyQuery != activeQuery) {
                       _emittedEmpty = true;
+                      _lastEmptyQuery = activeQuery;
                       ProductTelemetry.instance.emptyState('basket_opportunities_empty');
                     }
                     return _EmptyState(
                       themeSelected: _selectedThemeId != null,
                       onReset: () {
-                        setState(() {
-                          _selectedThemeId = null;
-                          _query = catalog.defaultQuery;
-                        });
+                        _updateQuery(query: catalog.defaultQuery, themeId: null);
                       },
                     );
                   }
                   _emittedEmpty = false;
+                  _lastEmptyQuery = null;
                   return GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.xs,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                    ),
                     gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: 340,
                       mainAxisExtent: 210,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+                      crossAxisSpacing: AppSpacing.md,
+                      mainAxisSpacing: AppSpacing.md,
                     ),
                     itemCount: opportunities.length,
                     itemBuilder: (context, index) {
@@ -224,6 +232,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                 },
                 loading: () => const _SkeletonGrid(),
                 error: (err, stack) => _ErrorState(
+                  title: 'Couldn’t load opportunities',
                   message: err.toString(),
                   onRetry: () => ref.invalidate(basketOpportunitiesProvider(
                     userId: widget.userId,
@@ -254,29 +263,33 @@ class _ThemeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final primary = context.colors.actionPrimaryBg;
     return Material(
       color: selected
-          ? theme.colorScheme.primary.withOpacity(0.12)
-          : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-      borderRadius: BorderRadius.circular(10),
+          ? primary.withValues(alpha: 0.12)
+          : context.colors.surface.withValues(alpha: 0.5),
+      borderRadius: AppRadii.button,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppRadii.button,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md - 2,
+            vertical: AppSpacing.sm,
+          ),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppRadii.button,
             border: Border.all(
               color: selected
-                  ? theme.colorScheme.primary.withOpacity(0.45)
-                  : theme.dividerColor.withOpacity(0.35),
+                  ? primary.withValues(alpha: 0.45)
+                  : context.dividerColor.withValues(alpha: 0.35),
             ),
           ),
           child: Text(
             label,
             style: theme.textTheme.labelMedium?.copyWith(
-              color: selected ? theme.colorScheme.primary : null,
+              color: selected ? primary : null,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
@@ -300,23 +313,23 @@ class _BasketOpportunityCard extends StatelessWidget {
     final theme = Theme.of(context);
     final score = opportunity.matchScore.clamp(0, 100);
     final scoreColor = score >= 70
-        ? AppColors.success
+        ? context.statusSuccess
         : score >= 40
-            ? Colors.orange.shade700
-            : theme.colorScheme.error;
+            ? context.statusWarning
+            : context.statusError;
 
     return Material(
-      color: theme.colorScheme.surface,
+      color: context.cardColor,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.dividerColor.withOpacity(0.4)),
+        borderRadius: AppRadii.card,
+        side: BorderSide(color: context.dividerColor.withValues(alpha: 0.4)),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.card,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -334,28 +347,31 @@ class _BasketOpportunityCard extends StatelessWidget {
                   ),
                   if (opportunity.readyToReplicate)
                     Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      margin: const EdgeInsets.only(left: AppSpacing.sm),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs,
+                      ),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
+                        color: context.statusSuccess.withValues(alpha: 0.12),
+                        borderRadius: AppRadii.button,
                       ),
                       child: Text(
                         'Ready',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppColors.success,
+                          color: context.statusSuccess,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.md - 2),
               Row(
                 children: [
                   SizedBox(
-                    width: 52,
-                    height: 52,
+                    width: MediaQuery.sizeOf(context).width * 0.12,
+                    height: MediaQuery.sizeOf(context).width * 0.12,
                     child: TweenAnimationBuilder<double>(
                       tween: Tween(begin: 0, end: score / 100),
                       duration: const Duration(milliseconds: 700),
@@ -367,7 +383,7 @@ class _BasketOpportunityCard extends StatelessWidget {
                             CircularProgressIndicator(
                               value: value,
                               strokeWidth: 5,
-                              backgroundColor: scoreColor.withOpacity(0.15),
+                              backgroundColor: scoreColor.withValues(alpha: 0.15),
                               color: scoreColor,
                             ),
                             Text(
@@ -382,7 +398,7 @@ class _BasketOpportunityCard extends StatelessWidget {
                       },
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: AppSpacing.md - 2),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,10 +406,10 @@ class _BasketOpportunityCard extends StatelessWidget {
                         Text(
                           'Portfolio match',
                           style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.55),
+                            color: context.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: AppSpacing.sm - 2),
                         Text(
                           '${opportunity.heldCount} held · ${opportunity.missingCount} missing',
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -401,11 +417,11 @@ class _BasketOpportunityCard extends StatelessWidget {
                           ),
                         ),
                         if (opportunity.totalItems > 0) ...[
-                          const SizedBox(height: 2),
+                          const SizedBox(height: AppSpacing.xxs),
                           Text(
                             '${opportunity.totalItems} constituents',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.5),
+                              color: context.textTertiary,
                             ),
                           ),
                         ],
@@ -420,12 +436,10 @@ class _BasketOpportunityCard extends StatelessWidget {
                 child: FilledButton(
                   onPressed: onTap,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    backgroundColor: context.colors.actionPrimaryBg,
+                    foregroundColor: context.colors.actionPrimaryFg,
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm + 2),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadii.button),
                   ),
                   child: const Text('Preview basket'),
                 ),
@@ -455,8 +469,8 @@ class _SkeletonGrid extends StatelessWidget {
       itemBuilder: (context, index) {
         return Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.45),
-            borderRadius: BorderRadius.circular(16),
+            color: context.colors.surface.withValues(alpha: 0.45),
+            borderRadius: AppRadii.card,
           ),
         );
       },
@@ -471,7 +485,6 @@ class _ThemeChipScroller extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Stack(
       children: [
         SingleChildScrollView(
@@ -492,15 +505,15 @@ class _ThemeChipScroller extends StatelessWidget {
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
-                    theme.scaffoldBackgroundColor.withOpacity(0),
-                    theme.scaffoldBackgroundColor.withOpacity(0.92),
+                    context.backgroundColor.withValues(alpha: 0),
+                    context.backgroundColor.withValues(alpha: 0.92),
                   ],
                 ),
               ),
               child: Icon(
                 Icons.chevron_right,
                 size: 20,
-                color: theme.colorScheme.onSurface.withOpacity(0.45),
+                color: context.textTertiary,
               ),
             ),
           ),
@@ -528,26 +541,26 @@ class _EmptyState extends StatelessWidget {
         : 'Try Top picks or search for an ETF by name or ISIN.';
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.shopping_basket_outlined,
-                size: 48, color: theme.colorScheme.onSurface.withOpacity(0.35)),
-            const SizedBox(height: 16),
+                size: 48, color: context.textTertiary),
+            const SizedBox(height: AppSpacing.md),
             Text(
               title,
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               body,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: context.textSecondary,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg - 4),
             OutlinedButton(onPressed: onReset, child: const Text('Reset filters')),
           ],
         ),
@@ -557,8 +570,13 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message, required this.onRetry});
+  const _ErrorState({
+    required this.message,
+    required this.onRetry,
+    this.title = 'Couldn’t load opportunities',
+  });
 
+  final String title;
   final String message;
   final VoidCallback onRetry;
 
@@ -567,27 +585,27 @@ class _ErrorState extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 44, color: theme.colorScheme.error),
-            const SizedBox(height: 12),
+            Icon(Icons.error_outline, size: 44, color: context.statusError),
+            const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
             Text(
-              'Couldn’t load opportunities',
+              title,
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               message,
               textAlign: TextAlign.center,
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.55),
+                color: context.textSecondary,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             FilledButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),

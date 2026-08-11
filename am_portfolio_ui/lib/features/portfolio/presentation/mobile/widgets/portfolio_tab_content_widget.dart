@@ -219,7 +219,7 @@ class _BasketsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authState = context.read<AuthCubit>().state;
+    final authState = context.watch<AuthCubit>().state;
     final userId = authState is Authenticated ? authState.user.id : '';
     if (userId.isEmpty) {
       return const Scaffold(
