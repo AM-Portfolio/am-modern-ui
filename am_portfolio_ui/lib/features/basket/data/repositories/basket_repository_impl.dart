@@ -1,3 +1,4 @@
+import '../../domain/models/basket_catalog.dart';
 import '../../domain/models/basket_opportunity.dart';
 import '../../domain/repositories/basket_repository.dart';
 import '../datasources/basket_remote_data_source.dart';
@@ -6,6 +7,11 @@ class BasketRepositoryImpl implements BasketRepository {
   final BasketRemoteDataSource remoteDataSource;
 
   BasketRepositoryImpl({required this.remoteDataSource});
+
+  @override
+  Future<BasketCatalog> getCatalog() {
+    return remoteDataSource.getCatalog();
+  }
 
   @override
   Future<List<BasketOpportunity>> getOpportunities({

@@ -4,12 +4,10 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:dio/dio.dart'; // Import Dio for API calls
 import '../../domain/models/basket_opportunity.dart';
 import '../../../../core/constants/basket_endpoints.dart';
-import '../../domain/models/basket_opportunity.dart'; // Ensure this path is correct
 import '../widgets/allocation_bar.dart';
 import '../widgets/basket_section_header.dart';
 import '../../../portfolio/providers/portfolio_providers.dart';
 import '../../../portfolio/internal/domain/entities/portfolio_holding.dart';
-// import '../../../portfolio/internal/domain/entities/portfolio_holding.dart'; // Already imported implicitly or explicitly if needed
 
 class ManualBasketCreatorPage extends ConsumerStatefulWidget {
   final BasketOpportunity opportunity;
@@ -35,6 +33,7 @@ class _ManualBasketCreatorPageState
   late List<BasketItem> _items;
   double? _investmentAmount;
   final TextEditingController _amountController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   bool _includeHeld = false;
   bool _isCalculating = false;
 
@@ -69,6 +68,7 @@ class _ManualBasketCreatorPageState
   @override
   void dispose() {
     _amountController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -205,150 +205,13 @@ class _ManualBasketCreatorPageState
       }
     }
 
-    final content = Column(
-        children: [
-          _SummaryHeader(
-            itemCount: _items.length,
-            etfName: widget.opportunity.etfName,
-            totalPortfolioValue: widget.opportunity.totalPortfolioValue,
-          ),
-          
-          // Allocation Visualization
-          if (_items.isNotEmpty)
-            _AllocationSummary(items: _items, includeHeld: _includeHeld),
-          
-          // Investment Input Section
-          Container(
-             padding: const EdgeInsets.all(16),
-             color: Theme.of(context).cardColor,
-             child: Column(
-               children: [
-                 Row(
-                   children: [
-                     Expanded(
-                       child: TextField(
-                         controller: _amountController,
-                         keyboardType: TextInputType.number,
-                         decoration: const InputDecoration(
-                           labelText: 'Investment Amount (₹)',
-                           border: OutlineInputBorder(),
-                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                         ),
-                         onChanged: (val) {
-                           // Debounce could be added here
-                         },
-                       ),
-                     ),
-                     const SizedBox(width: 12),
-                     FilledButton.icon(
-                       onPressed: _isCalculating ? null : _calculateQuantities,
-                       icon: _isCalculating 
-                           ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                           : const Icon(Icons.calculate),
-                       label: const Text('Calculate'),
-                     ),
-                   ],
-                 ),
-                 const SizedBox(height: 12),
-                 // Slider for Amount
-                 Slider(
-                   value: double.tryParse(_amountController.text)?.clamp(5000.0, 1000000.0) ?? 5000.0,
-                   min: 5000.0,
-                   max: 1000000.0,
-                   divisions: 199,
-                   label: _amountController.text,
-                   onChanged: (val) {
-                     setState(() {
-                        _amountController.text = val.toInt().toString();
-                     });
-                   },
-                   onChangeEnd: (val) {
-                     _calculateQuantities();
-                   },
-                 ),
-                 const SizedBox(height: 12),
-                 Row(
-                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                   children: [
-                     // Quick Percentages
-                     Row(
-                       children: [10, 25, 50, 100].map((p) => Padding(
-                         padding: const EdgeInsets.only(right: 8.0),
-                         child: OutlinedButton(
-                           onPressed: () => _setAmountByPercentage(p.toDouble()),
-                           style: OutlinedButton.styleFrom(
-                             padding: const EdgeInsets.symmetric(horizontal: 12),
-                             minimumSize: const Size(0, 32),
-                           ),
-                           child: Text('$p%'),
-                         ),
-                       )).toList(),
-                     ),
-                     // Include Held Toggle
-                     Row(
-                       children: [
-                         const Text('Include Held', style: TextStyle(fontSize: 12)),
-                         Switch(
-                           value: _includeHeld,
-                           onChanged: (val) {
-                             setState(() {
-                               _includeHeld = val;
-                             });
-                             if (_amountController.text.isNotEmpty) {
-                               _calculateQuantities();
-                             }
-                           },
-                         ),
-                       ],
-                     )
-                   ],
-                 )
-               ],
-             ),
-          ),
-          
-          // Info Banner
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.1)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, size: 20, color: Theme.of(context).primaryColor),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      "Quantities are optimized to match ETF weights. 'Match Score' shows how closely we can replicate the index given stock prices.",
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Column Headers
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-              child: _StockListHeader(),
-            ),
-
-          Expanded(
-            child: ListView(
-               padding: const EdgeInsets.all(16),
-               children: [
+    final assetRows = <Widget>[
                   if (otherItems.isNotEmpty) ...[
                     const Padding(
                       padding: EdgeInsets.only(bottom: 8.0),
                       child: Text("Stocks to Buy", style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                     ...otherItems.map((item) {
-                       // Find original index for callbacks
-                       int realIndex = displayItems.indexOf(item); // safe if displayItems preserves order/instances copy
-                       
                        double pct = 0;
                        if (totalActiveInvestment > 0 && item.lastPrice != null) {
                          pct = (item.lastPrice! * item.buyQuantity / totalActiveInvestment) * 100;
@@ -364,20 +227,22 @@ class _ManualBasketCreatorPageState
                           matchWidget = Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                               Text("Target: ${targetPct.toStringAsFixed(1)}%", style: const TextStyle(fontSize: 9, color: Colors.grey)),
+                               Text("Target: ${targetPct.toStringAsFixed(1)}%", style: TextStyle(fontSize: 9, color: context.textTertiary)),
                                const SizedBox(height: 2),
-                               const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                               Icon(Icons.check_circle, size: 14, color: context.statusSuccess),
                             ],
                           );
                        } else {
                           double score = (100.0 - diff).clamp(0.0, 100.0);
-                          Color scoreColor = score > 98 ? Colors.green : (score > 90 ? Colors.orange : Colors.red);
+                          Color scoreColor = score > 98
+                              ? context.statusSuccess
+                              : (score > 90 ? context.statusWarning : context.statusError);
                           
                           matchWidget = Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                               Text("Target: ${targetPct.toStringAsFixed(1)}%", style: const TextStyle(fontSize: 9, color: Colors.grey)),
-                               Container(height: 1, width: 40, color: Colors.grey.shade300, margin: const EdgeInsets.symmetric(vertical: 2)),
+                               Text("Target: ${targetPct.toStringAsFixed(1)}%", style: TextStyle(fontSize: 9, color: context.textTertiary)),
+                               Container(height: 1, width: 40, color: context.dividerColor, margin: const EdgeInsets.symmetric(vertical: 2)),
                                Text("Match: ${score.toStringAsFixed(1)}%", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: scoreColor)),
                             ],
                           );
@@ -408,7 +273,7 @@ class _ManualBasketCreatorPageState
                           const Text("Already Held", style: TextStyle(fontWeight: FontWeight.bold)),
                           const SizedBox(width: 8),
                           if (!_includeHeld) 
-                             const Text("(Excluded from calculation)", style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+                             Text("(Excluded from calculation)", style: TextStyle(fontSize: 12, color: context.textTertiary, fontStyle: FontStyle.italic)),
                         ],
                       ),
                     ),
@@ -493,11 +358,181 @@ class _ManualBasketCreatorPageState
                     );
                     }),
                   ]
-               ],
+    ];
+
+    final content = Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: true,
+      child: CustomScrollView(
+        controller: _scrollController,
+        primary: false,
+        slivers: [
+          SliverToBoxAdapter(
+            child: _SummaryHeader(
+              itemCount: _items.length,
+              etfName: widget.opportunity.etfName,
+              totalPortfolioValue: widget.opportunity.totalPortfolioValue,
+            ),
+          ),
+          if (_items.isNotEmpty)
+            SliverToBoxAdapter(
+              child: _AllocationSummary(items: _items, includeHeld: _includeHeld),
+            ),
+          SliverToBoxAdapter(
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              color: context.cardColor,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _amountController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Investment Amount (₹)',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm + AppSpacing.xs,
+                              vertical: AppSpacing.sm,
+                            ),
+                          ),
+                          onChanged: (val) {},
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
+                      FilledButton.icon(
+                        onPressed: _isCalculating ? null : _calculateQuantities,
+                        icon: _isCalculating
+                            ? const SizedBox(
+                                width: AppSpacing.md,
+                                height: AppSpacing.md,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.calculate),
+                        label: const Text('Calculate'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
+                  Slider(
+                    value: double.tryParse(_amountController.text)?.clamp(5000.0, 1000000.0) ?? 5000.0,
+                    min: 5000.0,
+                    max: 1000000.0,
+                    divisions: 199,
+                    label: _amountController.text,
+                    onChanged: (val) {
+                      setState(() {
+                        _amountController.text = val.toInt().toString();
+                      });
+                    },
+                    onChangeEnd: (val) {
+                      _calculateQuantities();
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.xs,
+                          children: [10, 25, 50, 100]
+                              .map(
+                                (p) => OutlinedButton(
+                                  onPressed: () => _setAmountByPercentage(p.toDouble()),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.sm + AppSpacing.xs,
+                                      vertical: AppSpacing.xs,
+                                    ),
+                                    minimumSize: const Size(0, AppSpacing.xl),
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text('$p%'),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            'Include Held',
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                          Switch(
+                            value: _includeHeld,
+                            onChanged: (val) {
+                              setState(() {
+                                _includeHeld = val;
+                              });
+                              if (_amountController.text.isNotEmpty) {
+                                _calculateQuantities();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              padding: const EdgeInsets.all(AppSpacing.sm + AppSpacing.xs),
+              decoration: BoxDecoration(
+                color: context.colors.actionPrimaryBg.withValues(alpha: 0.05),
+                borderRadius: AppRadii.button,
+                border: Border.all(
+                  color: context.colors.actionPrimaryBg.withValues(alpha: 0.1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 20, color: context.colors.actionPrimaryBg),
+                  const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      "Quantities are optimized to match ETF weights. 'Match Score' shows how closely we can replicate the index given stock prices.",
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              child: _StockListHeader(),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.xl,
+            ),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate(assetRows),
             ),
           ),
         ],
-      );
+      ),
+    );
 
     final footer = _InvestmentSummaryFooter(
       items: _items,
@@ -538,9 +573,9 @@ class _ManualBasketCreatorPageState
   void _savePortfolio() {
     // TODO: Implement save logic when backend endpoint is available
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Portfolio Creation API not yet implemented'),
-        backgroundColor: AppColors.warning,
+      SnackBar(
+        content: const Text('Portfolio Creation API not yet implemented'),
+        backgroundColor: context.statusWarning,
       ),
     );
   }
@@ -1011,12 +1046,12 @@ class _InvestmentSummaryFooter extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: context.cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: context.textPrimary.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -1031,13 +1066,13 @@ class _InvestmentSummaryFooter extends StatelessWidget {
               children: [
                 Text(
                   "Payable Amount",
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textTertiary),
                 ),
                 Text(
                   "₹${totalPayable.toStringAsFixed(2)}",
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
+                    color: context.colors.actionPrimaryBg,
                   ),
                 ),
               ],
@@ -1046,8 +1081,8 @@ class _InvestmentSummaryFooter extends StatelessWidget {
             FilledButton(
               onPressed: totalPayable > 0 ? onInvest : null,
               style: FilledButton.styleFrom(
-                minimumSize: const Size(140, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                minimumSize: const Size(AppSpacing.xxl * 3, AppSpacing.xl + AppSpacing.md),
+                shape: RoundedRectangleBorder(borderRadius: AppRadii.input),
               ),
               child: const Text("Pay & Invest"),
             ),
