@@ -1075,7 +1075,7 @@ class _StockListHeader extends StatelessWidget {
         _buildHeaderCell(context, "Price", 12, TextAlign.right), 
         _buildHeaderCell(context, "Target", 10, TextAlign.center),
         _buildHeaderCell(context, "Actual", 10, TextAlign.center),
-        _buildHeaderCell(context, "Swap", 8, TextAlign.center),
+        _buildHeaderCell(context, "Match", 8, TextAlign.center),
         _buildHeaderCell(context, "Qty", 18, TextAlign.center),
         _buildHeaderCell(context, "", 8, TextAlign.center),
       ],

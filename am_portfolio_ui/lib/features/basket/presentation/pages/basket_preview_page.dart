@@ -124,7 +124,6 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
   }
 
   Future<void> _showSwapSheet(BasketItem item) async {
-    if (item.alternatives.isEmpty) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -132,6 +131,7 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.lg)),
       ),
       builder: (ctx) {
+        final hasAlts = item.alternatives.isNotEmpty;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -140,32 +140,39 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Cover ${item.stockSymbol} with a holding you own',
+                  hasAlts
+                      ? 'Cover ${item.stockSymbol} with a holding you own'
+                      : 'No free holding to cover ${item.stockSymbol}',
                   style: Theme.of(ctx).textTheme.titleMedium,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'Sector proxy — raises Match %, not an exact stock match.',
+                  hasAlts
+                      ? 'Sector proxy — raises Match %, not an exact stock match. '
+                          'Cross-sector picks are allowed when same-sector peers are used up.'
+                      : 'All free holdings are already covering Held/Substitute rows. '
+                          'This name stays Missing and won’t move into the basket.',
                   style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: ctx.textSecondary),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                ...item.alternatives.map((alt) => ListTile(
-                      title: Text(alt.symbol),
-                      subtitle: Text(
-                        'Weight ${alt.userWeight.toStringAsFixed(1)}%'
-                        '${alt.quantity != null ? ' · Qty ${alt.quantity!.toStringAsFixed(0)}' : ''}',
-                      ),
-                      trailing: FilledButton(
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          _acceptSwap(item, alt);
-                        },
-                        child: const Text('Use this holding'),
-                      ),
-                    )),
+                if (hasAlts)
+                  ...item.alternatives.map((alt) => ListTile(
+                        title: Text(alt.symbol),
+                        subtitle: Text(
+                          'Weight ${alt.userWeight.toStringAsFixed(1)}%'
+                          '${alt.quantity != null ? ' · Qty ${alt.quantity!.toStringAsFixed(0)}' : ''}',
+                        ),
+                        trailing: FilledButton(
+                          onPressed: () {
+                            Navigator.of(ctx).pop();
+                            _acceptSwap(item, alt);
+                          },
+                          child: const Text('Use this holding'),
+                        ),
+                      )),
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(hasAlts ? 'Cancel' : 'Got it'),
                 ),
               ],
             ),
@@ -397,14 +404,12 @@ class _MissingItemsList extends StatelessWidget {
           subtitle: Text(
             hasAlts
                 ? '${item.sector} · Tap Suggest swap'
-                : '${item.sector} · No same-sector holding to swap. This name stays Missing and won’t move into the basket.',
+                : '${item.sector} · No free holding left to swap',
           ),
-          trailing: hasAlts
-              ? TextButton(
-                  onPressed: () => onSuggestSwap(item),
-                  child: const Text('Suggest swap'),
-                )
-              : Text('${item.etfWeight.toStringAsFixed(2)}%'),
+          trailing: TextButton(
+            onPressed: () => onSuggestSwap(item),
+            child: Text(hasAlts ? 'Suggest swap' : 'Why?'),
+          ),
         );
       },
     );
