@@ -209,7 +209,7 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
             // Since it's a manual swap, we use the user's selected stock as the alternative.
             // Note: SubstituteSelector returns a StockSearchResult, which might not have the user's holding quantity.
             // The backend's applySubstitutes endpoint handles resolving it against userHoldings.
-            final alt = BasketAlternative(
+            final alt = Alternative(
               isin: newStock.isin ?? newStock.symbol, 
               symbol: newStock.symbol,
               userWeight: 100.0, // Backend will recalculate
