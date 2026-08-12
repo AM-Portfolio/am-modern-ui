@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/am_common.dart';
@@ -38,13 +39,18 @@ Future<List<BasketOpportunity>> basketOpportunities(
   );
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<BasketOpportunity> basketPreview(
   Ref ref, {
   required String etfIsin,
   required String userId,
   required String portfolioId,
 }) async {
+  final link = ref.keepAlive();
+  Timer(const Duration(minutes: 5), () {
+    link.close();
+  });
+
   final repository = await ref.watch(basketRepositoryProvider.future);
   return repository.getBasketPreview(
     etfIsin: etfIsin,

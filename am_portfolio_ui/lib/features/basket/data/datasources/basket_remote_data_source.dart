@@ -90,6 +90,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
     required String userId,
     required String portfolioId,
     required List<Map<String, String>> assignments,
+    BasketOpportunity? currentOpportunity,
   }) async {
     final response = await apiClient.post(
       BasketEndpoints.applySubstitutes,
@@ -99,6 +100,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
         'userId': userId,
         'portfolioId': portfolioId,
         'assignments': assignments,
+        if (currentOpportunity != null) 'currentOpportunity': currentOpportunity.toJson(),
       },
     );
     return BasketOpportunity.fromJson(response as Map<String, dynamic>);

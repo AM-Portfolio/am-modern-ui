@@ -45,12 +45,14 @@ class BasketRepositoryImpl implements BasketRepository {
     required String userId,
     required String portfolioId,
     required List<Map<String, String>> assignments,
-  }) {
+    BasketOpportunity? currentOpportunity,
+  }) async {
     return remoteDataSource.applySubstitutes(
       etfIsin: etfIsin,
       userId: userId,
       portfolioId: portfolioId,
       assignments: assignments,
+      currentOpportunity: currentOpportunity,
     );
   }
 

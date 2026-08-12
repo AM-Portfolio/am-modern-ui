@@ -467,8 +467,30 @@ class _BasketOpportunityCard extends StatelessWidget {
   }
 }
 
-class _SkeletonGrid extends StatelessWidget {
+class _SkeletonGrid extends StatefulWidget {
   const _SkeletonGrid();
+
+  @override
+  State<_SkeletonGrid> createState() => _SkeletonGridState();
+}
+
+class _SkeletonGridState extends State<_SkeletonGrid> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -482,11 +504,19 @@ class _SkeletonGrid extends StatelessWidget {
       ),
       itemCount: 6,
       itemBuilder: (context, index) {
-        return Container(
-          decoration: BoxDecoration(
-            color: context.colors.surface.withValues(alpha: 0.45),
-            borderRadius: AppRadii.card,
-          ),
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Opacity(
+              opacity: 0.3 + (_controller.value * 0.4),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: context.colors.surface,
+                  borderRadius: AppRadii.card,
+                ),
+              ),
+            );
+          },
         );
       },
     );

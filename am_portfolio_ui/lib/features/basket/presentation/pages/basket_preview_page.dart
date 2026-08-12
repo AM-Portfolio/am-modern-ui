@@ -99,6 +99,7 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
         userId: widget.userId,
         portfolioId: widget.portfolioId,
         assignments: _assignments,
+        currentOpportunity: _opportunity,
       );
       if (mounted) {
         setState(() => _opportunity = updated);

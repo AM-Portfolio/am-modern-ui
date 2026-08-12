@@ -39,6 +39,7 @@ class _ManualBasketCreatorPageState
   final ScrollController _scrollController = ScrollController();
   bool _includeHeld = false;
   bool _isCalculating = false;
+  bool _isCreating = false;
 
   @override
   void initState() {
@@ -155,7 +156,17 @@ class _ManualBasketCreatorPageState
       if (response.statusCode == 200) {
         final updatedOpportunity = BasketOpportunity.fromJson(response.data);
         setState(() {
-           _items = updatedOpportunity.composition;
+          for (final updated in updatedOpportunity.composition) {
+            final idx = _items.indexWhere((i) => i.isin == updated.isin);
+            if (idx != -1) {
+              _items[idx] = _items[idx].copyWith(
+                buyQuantity: updated.buyQuantity,
+                lastPrice: updated.lastPrice,
+              );
+            } else {
+              _items.add(updated);
+            }
+          }
         });
       }
     } catch (e) {
@@ -544,8 +555,10 @@ class _ManualBasketCreatorPageState
     );
 
     final saveAction = TextButton(
-      onPressed: _savePortfolio,
-      child: const Text('Create Basket'),
+      onPressed: _isCreating ? null : _savePortfolio,
+      child: _isCreating 
+        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+        : const Text('Create Basket'),
     );
 
     if (widget.embedded) {
@@ -600,9 +613,7 @@ class _ManualBasketCreatorPageState
   }
 
   List<BasketItem> get _movableLines => _items
-      .where((i) =>
-          (i.status == ItemStatus.held || i.status == ItemStatus.substitute) &&
-          ((i.heldQuantity ?? 0) > 0 || i.buyQuantity > 0))
+      .where((i) => i.status == ItemStatus.held || i.status == ItemStatus.substitute)
       .toList();
 
   Future<void> _showCreateBasketSheet() async {
@@ -694,6 +705,8 @@ class _ManualBasketCreatorPageState
   }
 
   Future<void> _createBasket(String basketName) async {
+    if (_isCreating) return;
+    setState(() => _isCreating = true);
     final movable = _movableLines;
     final remainingMissing = _items
         .where((i) => i.status == ItemStatus.missing)
@@ -701,9 +714,11 @@ class _ManualBasketCreatorPageState
         .toList();
 
     final lines = movable.map((i) {
-      final qty = (i.heldQuantity != null && i.heldQuantity! > 0)
-          ? i.heldQuantity!
-          : i.buyQuantity;
+      final qty = switch (i.status) {
+        ItemStatus.held => i.heldQuantity ?? 0.0,
+        ItemStatus.substitute => i.heldQuantity ?? 0.0,
+        _ => i.buyQuantity,
+      };
       final holdingIsin = i.userHoldingIsin ?? i.isin;
       return {
         'status': i.status.name.toUpperCase(),
@@ -747,13 +762,21 @@ class _ManualBasketCreatorPageState
       } catch (_) {}
 
       if (mounted && newId != null) {
+        setState(() => _isCreating = false);
         Navigator.of(context).popUntil((route) => route.isFirst);
+      } else {
+        if (mounted) setState(() => _isCreating = false);
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _isCreating = false);
+        String msg = 'Create Basket failed: $e';
+        if (e.toString().contains('409')) {
+          msg = 'Some shares are already reserved in another basket. We created the basket with available quantities.';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Create Basket failed: $e'),
+            content: Text(msg),
             backgroundColor: context.statusError,
           ),
         );
@@ -914,6 +937,8 @@ class _EditableBasketItemCard extends StatelessWidget {
                       _buildIconBadge(context, _getSectorIcon(item.sector), item.sector, Colors.blue.shade700),
                       if (item.marketCapCategory != null)
                         _buildIconBadge(context, Icons.bar_chart, item.marketCapCategory!, Colors.purple.shade700),
+                      if (item.status == ItemStatus.substitute)
+                        _buildIconBadge(context, Icons.swap_horiz, 'Sector Proxy', Colors.orange.shade700),
                     ],
                   ),
                    if (item.heldQuantity != null && item.heldQuantity! > 0) ...[
