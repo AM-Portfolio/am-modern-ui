@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
-import '../../providers/custom_basket_provider.dart';
+import '../../../providers/custom_basket_provider.dart';
 import '../../../domain/models/custom_basket.dart';
 import '../../../domain/models/stock_search_result.dart';
 import '../../widgets/substitute_selector.dart';
@@ -28,8 +28,8 @@ class _BasketCreatorPageState extends ConsumerState<BasketCreatorPage> {
 
   @override
   Widget build(BuildContext context) {
-    final basket = ref.watch(customBasketNotifierProvider);
-    final searchResults = ref.watch(stockSearchNotifierProvider);
+    final basket = ref.watch(customBasketProvider);
+    final searchResults = ref.watch(stockSearchProvider);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -49,7 +49,7 @@ class _BasketCreatorPageState extends ConsumerState<BasketCreatorPage> {
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.white),
               onPressed: () {
-                ref.read(customBasketNotifierProvider.notifier).clearBasket();
+                ref.read(customBasketProvider.notifier).clearBasket();
               },
             ),
         ],
@@ -120,7 +120,7 @@ class _BasketCreatorPageState extends ConsumerState<BasketCreatorPage> {
                             onChanged: (value) {
                               final amount = double.tryParse(value) ?? 0;
                               ref
-                                  .read(customBasketNotifierProvider.notifier)
+                                  .read(customBasketProvider.notifier)
                                   .updateInvestmentAmount(amount);
                             },
                           ),
@@ -177,7 +177,7 @@ class _BasketCreatorPageState extends ConsumerState<BasketCreatorPage> {
                   _searchController.text.isEmpty
                       ? searchResults
                       : ref
-                          .read(stockSearchNotifierProvider.notifier)
+                          .read(stockSearchProvider.notifier)
                           .search(_searchController.text),
                   basket,
                 ),
@@ -303,11 +303,11 @@ class _BasketCreatorPageState extends ConsumerState<BasketCreatorPage> {
                     onPressed: () {
                       if (isSelected) {
                         ref
-                            .read(customBasketNotifierProvider.notifier)
+                            .read(customBasketProvider.notifier)
                             .removeStock(stock.symbol);
                       } else {
                         ref
-                            .read(customBasketNotifierProvider.notifier)
+                            .read(customBasketProvider.notifier)
                             .addStock(stock);
                       }
                     },
@@ -341,8 +341,8 @@ class _BasketCreatorPageState extends ConsumerState<BasketCreatorPage> {
              
              // Remove then add to perform substitution
              // Note: This trigger weight recalculation based on current notifier logic
-             ref.read(customBasketNotifierProvider.notifier).removeStock(original.symbol);
-             ref.read(customBasketNotifierProvider.notifier).addStock(stockToAdd);
+             ref.read(customBasketProvider.notifier).removeStock(original.symbol);
+             ref.read(customBasketProvider.notifier).addStock(stockToAdd);
              
              ScaffoldMessenger.of(context).showSnackBar(
                SnackBar(content: Text('Replaced ${original.symbol} with ${newStock.symbol}')),

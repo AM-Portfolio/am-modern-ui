@@ -1,5 +1,5 @@
-﻿import 'package:equatable/equatable.dart';
-import '../../../../shared/models/heatmap/heatmap_ui_data.dart';
+import 'package:equatable/equatable.dart';
+import 'package:am_design_system/shared/models/heatmap/heatmap_ui_data.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 /// Base state for PortfolioHeatmapCubit

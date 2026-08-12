@@ -23,6 +23,7 @@ abstract class BasketRemoteDataSource {
     required String userId,
     required String portfolioId,
     required List<Map<String, String>> assignments,
+    BasketOpportunity? currentOpportunity,
   });
 
   Future<Map<String, dynamic>> createBasketPortfolio({

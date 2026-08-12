@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import '../../domain/models/custom_basket.dart';
+import '../../../domain/models/custom_basket.dart';
 
 class BasketSummaryFooter extends StatelessWidget {
   final CustomBasket basket;

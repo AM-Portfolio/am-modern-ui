@@ -1,4 +1,4 @@
-import '../../../shared/core/filters/filter_models.dart';
+import 'package:am_design_system/shared/core/filters/filter_models.dart';
 
 /// Portfolio-specific implementation of the FilterProvider
 /// Handles filtering logic for portfolio investment data

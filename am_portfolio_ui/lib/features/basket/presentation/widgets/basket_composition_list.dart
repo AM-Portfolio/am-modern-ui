@@ -3,8 +3,7 @@
  
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import '../../domain/models/basket_item.dart';
-import '../../domain/models/basket_enums.dart';
+import '../../domain/models/basket_opportunity.dart';
 
 class BasketCompositionList extends StatefulWidget {
   final List<BasketItem> items;
@@ -35,14 +34,14 @@ class _BasketCompositionListState extends State<BasketCompositionList>
   }
 
   List<BasketItem> get _matchedItems {
-    return widget.items.where((item) => item.status == BasketItemStatus.held).toList();
+    return widget.items.where((item) => item.status == ItemStatus.held).toList();
   }
 
   List<BasketItem> get _gapItems {
     return widget.items
         .where((item) =>
-            item.status == BasketItemStatus.missing ||
-            item.status == BasketItemStatus.substitute)
+            item.status == ItemStatus.missing ||
+            item.status == ItemStatus.substitute)
         .toList();
   }
 
@@ -142,7 +141,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
   }
 
   Widget _buildStockItem(BasketItem item) {
-    if (item.status == BasketItemStatus.substitute) {
+    if (item.status == ItemStatus.substitute) {
       return _buildSubstituteItem(item);
     }
 
@@ -185,7 +184,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item.symbol,
+                        item.stockSymbol,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -194,7 +193,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        item.name,
+                        item.sector,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.6),
                           fontSize: 12,
@@ -206,7 +205,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                 
                 // Weight
                 Text(
-                  '${item.weight.toStringAsFixed(1)}%',
+                  '${item.etfWeight.toStringAsFixed(1)}%',
                   style: const TextStyle(
                     color: Colors.white70,
                     fontWeight: FontWeight.w600,
@@ -302,7 +301,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              item.symbol,
+                              item.stockSymbol,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -351,28 +350,28 @@ class _BasketCompositionListState extends State<BasketCompositionList>
     );
   }
 
-  Color _getStatusColor(BasketItemStatus status) {
+  Color _getStatusColor(ItemStatus status) {
     switch (status) {
-      case BasketItemStatus.held:
+      case ItemStatus.held:
         return Colors.greenAccent;
-      case BasketItemStatus.missing:
+      case ItemStatus.missing:
         return Colors.orangeAccent;
-      case BasketItemStatus.substitute:
+      case ItemStatus.substitute:
         return Colors.blueAccent;
     }
   }
 
-  Color _getBorderColor(BasketItemStatus status) {
+  Color _getBorderColor(ItemStatus status) {
     return _getStatusColor(status).withOpacity(0.3);
   }
 
-  IconData _getStatusIcon(BasketItemStatus status) {
+  IconData _getStatusIcon(ItemStatus status) {
     switch (status) {
-      case BasketItemStatus.held:
+      case ItemStatus.held:
         return Icons.check_circle;
-      case BasketItemStatus.missing:
+      case ItemStatus.missing:
         return Icons.add_circle_outline;
-      case BasketItemStatus.substitute:
+      case ItemStatus.substitute:
         return Icons.swap_horiz;
     }
   }

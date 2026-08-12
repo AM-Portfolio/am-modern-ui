@@ -5,7 +5,7 @@ part 'custom_basket.freezed.dart';
 part 'custom_basket.g.dart';
 
 @freezed
-class CustomBasketStock with _$CustomBasketStock {
+abstract class CustomBasketStock with _$CustomBasketStock {
   const factory CustomBasketStock({
     required String symbol,
     required String name,
@@ -18,7 +18,7 @@ class CustomBasketStock with _$CustomBasketStock {
 }
 
 @freezed
-class CustomBasket with _$CustomBasket {
+abstract class CustomBasket with _$CustomBasket {
   const factory CustomBasket({
     String? id,
     required String name,

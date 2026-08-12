@@ -135,7 +135,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                     _detectedMarketCap != null 
                         ? 'Recommendation: Select a $_detectedMarketCap stock.'
                         : 'Fetching original stock details...',
-                    style: const TextStyle(color: Colors.blueBytes),
+                    style: const TextStyle(color: Colors.blue),
                   ),
                 ),
               ],
