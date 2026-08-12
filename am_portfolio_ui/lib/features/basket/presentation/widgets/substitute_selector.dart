@@ -30,6 +30,8 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
 
   String? _detectedMarketCap;
   
+  bool _isFetchingDetails = false;
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +43,9 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
   }
 
   Future<void> _fetchOriginalDetails() async {
+    setState(() {
+      _isFetchingDetails = true;
+    });
     try {
       final service = ref.read(stockSearchServiceProvider);
       final results = await service.searchStocks(widget.originalSymbol);
@@ -51,6 +56,12 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
       }
     } catch (e) {
       print('Failed to fetch original details: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFetchingDetails = false;
+        });
+      }
     }
   }
 
@@ -132,9 +143,11 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _detectedMarketCap != null 
-                        ? 'Recommendation: Select a $_detectedMarketCap stock.'
-                        : 'Fetching original stock details...',
+                    _isFetchingDetails 
+                        ? 'Fetching original stock details...'
+                        : (_detectedMarketCap != null && _detectedMarketCap!.isNotEmpty)
+                            ? 'Recommendation: Select a $_detectedMarketCap stock.'
+                            : 'Search for any stock to substitute ${widget.originalSymbol}.',
                     style: const TextStyle(color: Colors.blue),
                   ),
                 ),
