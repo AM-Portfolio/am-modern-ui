@@ -202,7 +202,9 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: SubstituteSelector(
           originalSymbol: item.stockSymbol,
-          requiredMarketCap: '', 
+          requiredMarketCap: item.marketCapCategory ?? '', 
+          portfolioId: widget.portfolioId,
+          userId: widget.userId,
           onSelected: (StockSearchResult newStock) {
             Navigator.of(context).pop();
             // We need a BasketAlternative to pass to _acceptSwap.

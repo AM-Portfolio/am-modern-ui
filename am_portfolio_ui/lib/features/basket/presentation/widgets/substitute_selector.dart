@@ -3,17 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart'; // Assuming specific design system
 import '../../data/services/stock_search_service.dart';
 import '../../domain/models/stock_search_result.dart';
+import '../../../portfolio/providers/portfolio_providers.dart';
 import 'dart:async';
 
 class SubstituteSelector extends ConsumerStatefulWidget {
   final String originalSymbol;
   final String requiredMarketCap;
+  final String? portfolioId;
+  final String? userId;
   final Function(StockSearchResult) onSelected;
 
   const SubstituteSelector({
     super.key,
     required this.originalSymbol,
     required this.requiredMarketCap,
+    this.portfolioId,
+    this.userId,
     required this.onSelected,
   });
 
@@ -188,6 +193,53 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
 
     if (_results.isEmpty && _searchController.text.isNotEmpty) {
       return const Center(child: Text('No stocks found'));
+    }
+
+    if (_searchController.text.isEmpty && widget.portfolioId != null) {
+      final holdingsAsync = ref.watch(portfolioHoldingsProvider(widget.portfolioId!));
+      return holdingsAsync.when(
+        data: (holdings) {
+          if (holdings.isEmpty) {
+            return const Center(child: Text('Search above to find a substitute.'));
+          }
+          final sortedHoldings = List.of(holdings.holdings)
+            ..sort((a, b) => b.portfolioWeight.compareTo(a.portfolioWeight));
+            
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text('SUGGESTED FROM PORTFOLIO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: sortedHoldings.length,
+                  itemBuilder: (context, index) {
+                    final holding = sortedHoldings[index];
+                    return ListTile(
+                      title: Text(holding.symbol),
+                      subtitle: Text('${holding.sector} · ${holding.portfolioWeight.toStringAsFixed(2)}%'),
+                      trailing: const Icon(Icons.add_circle_outline, color: Colors.blue),
+                      onTap: () {
+                        widget.onSelected(StockSearchResult(
+                          symbol: holding.symbol,
+                          name: holding.name,
+                          isin: null,
+                          sector: holding.sector,
+                        ));
+                        Navigator.pop(context); // Close the sheet if needed, or already handled in basket_preview_page
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, st) => Center(child: Text('Error loading holdings: $e')),
+      );
     }
 
     return ListView.builder(
