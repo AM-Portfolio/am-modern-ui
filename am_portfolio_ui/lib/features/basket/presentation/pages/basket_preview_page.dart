@@ -5,6 +5,8 @@ import '../providers/basket_providers.dart';
 import '../basket_navigation.dart';
 import '../widgets/basket_section_header.dart';
 import '../../domain/models/basket_opportunity.dart';
+import '../widgets/substitute_selector.dart';
+import '../../domain/models/stock_search_result.dart';
 
 class BasketPreviewPage extends ConsumerWidget {
   final String etfIsin;
@@ -143,7 +145,7 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
                 Text(
                   hasAlts
                       ? 'Cover ${item.stockSymbol} with a holding you own'
-                      : 'No free holding to cover ${item.stockSymbol}',
+                      : 'No pre-calculated alternatives for ${item.stockSymbol}',
                   style: Theme.of(ctx).textTheme.titleMedium,
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -151,8 +153,7 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
                   hasAlts
                       ? 'Sector proxy — raises Match %, not an exact stock match. '
                           'Cross-sector picks are allowed when same-sector peers are used up.'
-                      : 'All free holdings are already covering Held/Substitute rows. '
-                          'This name stays Missing and won’t move into the basket.',
+                      : 'You can manually search your portfolio for a holding to use as a substitute. This will increase your Match %.',
                   style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: ctx.textSecondary),
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -171,6 +172,15 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
                           child: const Text('Use this holding'),
                         ),
                       )),
+                if (!hasAlts)
+                  FilledButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      _openManualSubstituteSelector(item);
+                    },
+                    child: const Text('Swap Manually'),
+                  ),
+                if (!hasAlts) const SizedBox(height: AppSpacing.sm),
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(),
                   child: Text(hasAlts ? 'Cancel' : 'Got it'),
@@ -180,6 +190,35 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
           ),
         );
       },
+    );
+  }
+
+  void _openManualSubstituteSelector(BasketItem item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: SubstituteSelector(
+          originalSymbol: item.stockSymbol,
+          requiredMarketCap: '', 
+          onSelected: (StockSearchResult newStock) {
+            Navigator.of(context).pop();
+            // We need a BasketAlternative to pass to _acceptSwap.
+            // Since it's a manual swap, we use the user's selected stock as the alternative.
+            // Note: SubstituteSelector returns a StockSearchResult, which might not have the user's holding quantity.
+            // The backend's applySubstitutes endpoint handles resolving it against userHoldings.
+            final alt = BasketAlternative(
+              isin: newStock.isin ?? newStock.symbol, 
+              symbol: newStock.symbol,
+              userWeight: 100.0, // Backend will recalculate
+              quantity: null,
+            );
+            _acceptSwap(item, alt);
+          },
+        ),
+      ),
     );
   }
 
@@ -405,11 +444,11 @@ class _MissingItemsList extends StatelessWidget {
           subtitle: Text(
             hasAlts
                 ? '${item.sector} · Tap Suggest swap'
-                : '${item.sector} · No free holding left to swap',
+                : '${item.sector} · No auto-alternatives (Tap Swap)',
           ),
           trailing: TextButton(
             onPressed: () => onSuggestSwap(item),
-            child: Text(hasAlts ? 'Suggest swap' : 'Why?'),
+            child: const Text('Swap'),
           ),
         );
       },

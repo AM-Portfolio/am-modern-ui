@@ -729,7 +729,7 @@ class _ManualBasketCreatorPageState
         'quantity': qty,
         'averageBuyingPrice': i.heldAveragePrice ?? i.lastPrice,
       };
-    }).toList();
+    }).where((line) => (line['quantity'] as double) > 0.0).toList();
 
     try {
       final repo = await ref.read(basketRepositoryProvider.future);
