@@ -6,6 +6,7 @@ import 'package:am_design_system/am_design_system.dart';
 
 import 'package:am_common/am_common.dart';
 import '../../providers/trade_controller_providers.dart';
+import '../../providers/portfolio_overview_providers.dart';
 import '../../providers/trade_internal_providers.dart';
 import '../../trade_calendar_providers.dart';
 import '../components/templates/trade_portfolio_discovery_template.dart';
@@ -28,7 +29,6 @@ enum MobileTradeViewType {
   calendar,
   addTrade,
   journal,
-  metrics,
   templates,
 }
 
@@ -92,8 +92,6 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         _selectedView = MobileTradeViewType.calendar;
       } else if (index == 4) {
         _selectedView = MobileTradeViewType.journal;
-      } else if (index == 5 || index == MobileTradeViewType.metrics.index) {
-        _selectedView = MobileTradeViewType.metrics;
       } else if (index == MobileTradeViewType.templates.index) {
         _selectedView = MobileTradeViewType.templates;
       } else {
@@ -249,12 +247,6 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                     onTap: () => _onViewChanged(MobileTradeViewType.journal),
                   ),
                   SecondarySidebarItem(
-                    title: 'Metrics',
-                    icon: Icons.analytics_outlined,
-                    isSelected: _selectedView == MobileTradeViewType.metrics,
-                    onTap: () => _onViewChanged(MobileTradeViewType.metrics),
-                  ),
-                  SecondarySidebarItem(
                     title: 'Templates',
                     icon: Icons.style_outlined,
                     isSelected: _selectedView == MobileTradeViewType.templates,
@@ -295,8 +287,6 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
           embedded: true,
         );
 
-      case MobileTradeViewType.metrics:
-        return TradeMetricsPage(portfolioId: _currentPortfolioId);
 
       case MobileTradeViewType.templates:
         return const TemplateBrowserPage(embedded: true);
@@ -348,7 +338,12 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
   /// Build portfolios view
   Widget _buildPortfoliosView() => Consumer(
         builder: (context, ref, child) {
-          final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider);
+          final portfoliosAsync = ref.watch(enrichedTradePortfoliosProvider);
+
+          void handleRefresh() {
+            ref.invalidate(tradePortfoliosStreamProvider);
+            ref.invalidate(enrichedTradePortfoliosProvider);
+          }
 
           return portfoliosAsync.when(
             data: (portfolios) => TradePortfolioDiscoveryTemplate(
@@ -357,9 +352,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
               onPortfolioSelected: (portfolio) {
                 _onPortfolioSelected(portfolio.id, portfolio.name);
               },
-              onRefresh: () {
-                ref.invalidate(tradePortfoliosStreamProvider);
-              },
+              onRefresh: handleRefresh,
               isWebView: false,
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -368,9 +361,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
               isLoading: false,
               errorMessage: error.toString(),
               onPortfolioSelected: (_) {},
-              onRefresh: () {
-                ref.invalidate(tradePortfoliosStreamProvider);
-              },
+              onRefresh: handleRefresh,
               isWebView: false,
             ),
           );
@@ -438,7 +429,6 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
   Widget? _buildFloatingActionButton(BuildContext context) {
     if (_selectedView == MobileTradeViewType.addTrade ||
         _selectedView == MobileTradeViewType.journal ||
-        _selectedView == MobileTradeViewType.metrics ||
         _selectedView == MobileTradeViewType.templates) {
       return null;
     }

@@ -191,9 +191,9 @@ class _TradePortfolioDiscoveryTemplateState
     final totalNetProfitLoss = widget.portfolios
         .fold<double>(0.0, (sum, p) => sum + (p.netProfitLoss ?? 0.0));
     final avgWinRate = widget.portfolios.isNotEmpty
-        ? widget.portfolios
+        ? (widget.portfolios
                 .fold<double>(0.0, (sum, p) => sum + (p.winRate ?? 0.0)) /
-            widget.portfolios.length
+            widget.portfolios.length) * 100
         : 0.0;
 
     return LayoutBuilder(
@@ -313,7 +313,7 @@ class _TradePortfolioDiscoveryTemplateState
                     ),
                     const SizedBox(width: 8),
                     _buildStatBadge(
-                      label: 'Trade P&L',
+                      label: 'Realized P&L',
                       value:
                           '${totalNetProfitLoss >= 0 ? '+' : ''}₹${_formatNum(totalNetProfitLoss)}',
                       icon: totalNetProfitLoss >= 0
@@ -329,7 +329,7 @@ class _TradePortfolioDiscoveryTemplateState
                     ),
                     const SizedBox(width: 8),
                     _buildStatBadge(
-                      label: 'Avg Win Rate',
+                      label: 'Closed Win Rate',
                       value: '${avgWinRate.toStringAsFixed(1)}%',
                       icon: Icons.percent_rounded,
                       iconColor: Colors.white,
@@ -1140,7 +1140,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                         iconColor: p.isTradeProfit
                             ? const Color(0xFF10B981)
                             : const Color(0xFFEF4444),
-                        label: 'Net P&L',
+                        label: 'Realized P&L',
                         value: p.displayNetProfitLoss,
                         valueColor: p.isTradeProfit
                             ? const Color(0xFF10B981)
@@ -1156,7 +1156,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                       _metric(
                         icon: Icons.check_circle_outline_rounded,
                         iconColor: const Color(0xFF7C3AED),
-                        label: 'Win Rate',
+                        label: 'Closed Win Rate',
                         value: p.displayWinRate,
                       ),
                     ],
@@ -1264,31 +1264,32 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
     required String value,
     Color? valueColor,
   }) {
-    return Expanded(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Transform.translate(
-                offset: const Offset(0, 1),
-                child: Icon(icon, size: 12, color: iconColor),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Transform.translate(
+              offset: const Offset(0, 1),
+              child: Icon(icon, size: 12, color: iconColor),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.5),
               ),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.5),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 3),
+            ),
+          ],
+        ),
+        const SizedBox(height: 3),
           Text(
             value,
             style: TextStyle(
@@ -1298,10 +1299,9 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
+            textAlign: TextAlign.left,
           ),
         ],
-      ),
-    );
+      );
   }
 }

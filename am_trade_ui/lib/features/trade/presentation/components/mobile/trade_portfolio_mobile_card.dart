@@ -149,7 +149,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
                     Container(width: 1, height: 24, color: Theme.of(context).dividerColor),
                     _buildMetric(
                       context,
-                      'Net P&L',
+                      'Realized P&L',
                       portfolio.displayNetProfitLoss,
                       portfolio.isTradeProfit ? Icons.trending_up : Icons.trending_down,
                       portfolio.isTradeProfit ? Colors.green : Colors.red,
@@ -157,7 +157,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
                     Container(width: 1, height: 24, color: Theme.of(context).dividerColor),
                     _buildMetric(
                       context,
-                      'Win Rate',
+                      'Closed Win %',
                       portfolio.displayWinRate,
                       Icons.show_chart,
                       (portfolio.winRate ?? 0) >= 50 ? Colors.green : Colors.orange,
