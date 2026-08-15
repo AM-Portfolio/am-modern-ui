@@ -1,14 +1,15 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 /// Horizontal edge / fling navigator used for cross-section mobile swipe.
 ///
+/// Automatically disabled on tablet and desktop screens to prevent gesture conflicts
+/// with multi-column layouts and interactive charts.
+///
 /// **Direction:** finger swipe **left** → [onNextPage],
 /// finger swipe **right** → [onPreviousPage] (standard PageView semantics).
-///
-/// Prefers not to fight vertical scrolling: a gesture only counts when
-/// horizontal movement dominates.
 class HorizontalSectionNavigator extends StatefulWidget {
   const HorizontalSectionNavigator({
     required this.child,
@@ -41,8 +42,16 @@ class _HorizontalSectionNavigatorState extends State<HorizontalSectionNavigator>
   double _dragDx = 0;
   double _dragDy = 0;
 
+  bool _isSwipeAllowed(BuildContext context) {
+    if (!widget.enabled) return false;
+    // Disable horizontal tab swiping on tablet and desktop (width >= 600px)
+    final isTabletOrDesktop =
+        AmBreakpoints.isTabletContext(context) || AmBreakpoints.isDesktopContext(context);
+    return !isTabletOrDesktop;
+  }
+
   Future<void> _handleNavigation({required bool isNext}) async {
-    if (_isNavigating || !widget.enabled) return;
+    if (_isNavigating || !_isSwipeAllowed(context)) return;
     if (isNext && widget.onNextPage == null) return;
     if (!isNext && widget.onPreviousPage == null) return;
 
@@ -68,66 +77,43 @@ class _HorizontalSectionNavigatorState extends State<HorizontalSectionNavigator>
   }
 
   void _onDragEnd(DragEndDetails details) {
-    if (!widget.enabled || _isNavigating) return;
+    if (!_isSwipeAllowed(context)) return;
 
     final vx = details.velocity.pixelsPerSecond.dx;
-    final horizontalDominant = _dragDx.abs() >= _dragDy.abs();
-    if (!horizontalDominant && vx.abs() < widget.flingVelocity) return;
+    final vy = details.velocity.pixelsPerSecond.dy;
 
-    // Finger left → next, finger right → previous (standard PageView).
-    final wentRight =
-        vx > widget.flingVelocity || _dragDx > widget.dragDistance;
-    final wentLeft =
-        vx < -widget.flingVelocity || _dragDx < -widget.dragDistance;
+    // Must be predominantly horizontal
+    if (vx.abs() < vy.abs()) return;
 
-    if (wentLeft) {
-      _handleNavigation(isNext: true);
-    } else if (wentRight) {
-      _handleNavigation(isNext: false);
+    if (vx.abs() >= widget.flingVelocity || _dragDx.abs() >= widget.dragDistance) {
+      if (vx < 0 || _dragDx < 0) {
+        _handleNavigation(isNext: true);
+      } else if (vx > 0 || _dragDx > 0) {
+        _handleNavigation(isNext: false);
+      }
     }
-
-    _dragDx = 0;
-    _dragDy = 0;
-  }
-
-  /// Overscroll handoff when a child [PageView]/[TabBarView] is at an edge.
-  bool _onScrollNotification(ScrollNotification notification) {
-    if (!widget.enabled || _isNavigating) return false;
-    if (notification.metrics.axis != Axis.horizontal) return false;
-    if (notification is! OverscrollNotification) return false;
-
-    // Standard PageView: past last page → next; past first → previous.
-    if (notification.overscroll > 8) {
-      _handleNavigation(isNext: true);
-    } else if (notification.overscroll < -8) {
-      _handleNavigation(isNext: false);
-    }
-    return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      onPointerSignal: (event) {
-        if (event is PointerScrollEvent &&
-            event.scrollDelta.dx.abs() > event.scrollDelta.dy.abs()) {
-          if (event.scrollDelta.dx > 0) {
-            _handleNavigation(isNext: true);
-          } else if (event.scrollDelta.dx < 0) {
-            _handleNavigation(isNext: false);
-          }
-        }
-      },
-      child: NotificationListener<ScrollNotification>(
-        onNotification: _onScrollNotification,
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onHorizontalDragStart: _onDragStart,
-          onHorizontalDragUpdate: _onDragUpdate,
-          onHorizontalDragEnd: _onDragEnd,
-          child: widget.child,
+    if (!_isSwipeAllowed(context)) {
+      return widget.child;
+    }
+
+    return RawGestureDetector(
+      gestures: <Type, GestureRecognizerFactory>{
+        PanGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
+          () => PanGestureRecognizer(),
+          (PanGestureRecognizer instance) {
+            instance
+              ..onStart = _onDragStart
+              ..onUpdate = _onDragUpdate
+              ..onEnd = _onDragEnd;
+          },
         ),
-      ),
+      },
+      child: widget.child,
     );
   }
 }

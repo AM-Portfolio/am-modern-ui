@@ -51,6 +51,14 @@ Future<void> configureCoreDependencies() async {
     ),
   );
 
+  getIt.registerLazySingleton<common.MarketStreamingGate>(
+    () => common.MarketStreamingGate(),
+  );
+
+  getIt.registerLazySingleton<common.FeatureFlagService>(
+    () => common.FeatureFlagService(config: common.ConfigService.growthbook),
+  );
+
   common.BootTrace.instance.mark('di_core_done');
 }
 

@@ -5,6 +5,7 @@ import '../navigation/sidebar_item.dart';
 
 /// A layout component specifically designed for web interfaces
 /// Includes header navigation and footer
+@Deprecated('Use AmAdaptiveLayout or UnifiedSidebarScaffold instead. Will be removed in v2.1.0.')
 class WebLayout extends StatelessWidget {
   /// Constructor
   const WebLayout({

@@ -5,6 +5,9 @@ import '../domain/entities/portfolio_list.dart';
 import '../domain/usecases/get_portfolio_holdings.dart';
 import '../domain/usecases/get_portfolio_summary.dart';
 import '../domain/usecases/get_portfolios_list.dart';
+import '../domain/repositories/portfolio_repository.dart';
+import '../data/dtos/portfolio_create_request_dto.dart';
+import '../data/dtos/portfolio_update_request_dto.dart';
 import 'package:am_common/am_common.dart';
 
 /// Portfolio orchestration service for core workflows.
@@ -21,10 +24,12 @@ class PortfolioService {
     this._getPortfolioHoldings,
     this._getPortfolioSummary,
     this._getPortfoliosList,
+    this._portfolioRepository,
   );
   final GetPortfolioHoldings _getPortfolioHoldings;
   final GetPortfolioSummary _getPortfolioSummary;
   final GetPortfoliosList _getPortfoliosList;
+  final PortfolioRepository _portfolioRepository;
 
   /// Retrieves portfolio holdings for the specified user
   /// Returns holdings data or throws an exception if retrieval fails
@@ -118,16 +123,16 @@ class PortfolioService {
 
   /// Retrieves portfolio summary for the specified user
   /// Returns summary data or throws an exception if retrieval fails
-  Future<PortfolioSummary> getPortfolioSummary() async {
+  Future<PortfolioSummary> getPortfolioSummary([String? interval]) async {
     CommonLogger.methodEntry(
       'getPortfolioSummary',
       tag: 'PortfolioService',
-      metadata: {},
+      metadata: {'interval': interval},
     );
 
     try {
       CommonLogger.info('Getting portfolio summary', tag: 'PortfolioService');
-      final summary = await _getPortfolioSummary.call('');
+      final summary = await _getPortfolioSummary.call('', interval);
 
       CommonLogger.info(
         'Portfolio summary retrieved successfully',
@@ -159,12 +164,13 @@ class PortfolioService {
   /// Retrieves portfolio summary for the specified user and portfolio
   /// Returns summary data or throws an exception if retrieval fails
   Future<PortfolioSummary> getPortfolioSummaryById(
-    String portfolioId,
-  ) async {
+    String portfolioId, [
+    String? interval,
+  ]) async {
     CommonLogger.methodEntry(
       'getPortfolioSummaryById',
       tag: 'PortfolioService',
-      metadata: {'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId, 'interval': interval},
     );
 
     try {
@@ -172,7 +178,7 @@ class PortfolioService {
         'Getting portfolio summary by ID',
         tag: 'PortfolioService',
       );
-      final summary = await _getPortfolioSummary.call(portfolioId);
+      final summary = await _getPortfolioSummary.call(portfolioId, interval);
 
       CommonLogger.info(
         'Portfolio summary retrieved successfully by ID',
@@ -260,6 +266,67 @@ class PortfolioService {
       return results.isNotEmpty;
     } catch (error) {
       return false;
+    }
+  }
+
+  /// Create a new portfolio
+  Future<PortfolioItem> createPortfolio(
+    PortfolioCreateRequestDto request,
+  ) async {
+    CommonLogger.methodEntry('createPortfolio', tag: 'PortfolioService');
+    try {
+      final item = await _portfolioRepository.createPortfolio(request);
+      return item;
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to create portfolio in service',
+        tag: 'PortfolioService',
+        error: e,
+      );
+      rethrow;
+    }
+  }
+
+  /// Update an existing portfolio
+  Future<PortfolioItem> updatePortfolio(
+    String portfolioId,
+    PortfolioUpdateRequestDto request,
+  ) async {
+    CommonLogger.methodEntry('updatePortfolio', tag: 'PortfolioService');
+    try {
+      final item = await _portfolioRepository.updatePortfolio(
+        portfolioId,
+        request,
+      );
+      return item;
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to update portfolio in service',
+        tag: 'PortfolioService',
+        error: e,
+      );
+      rethrow;
+    }
+  }
+
+  /// Delete a portfolio
+  Future<void> deletePortfolio(
+    String portfolioId, {
+    bool deleteTrades = false,
+  }) async {
+    CommonLogger.methodEntry('deletePortfolio', tag: 'PortfolioService');
+    try {
+      await _portfolioRepository.deletePortfolio(
+        portfolioId,
+        deleteTrades: deleteTrades,
+      );
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to delete portfolio in service',
+        tag: 'PortfolioService',
+        error: e,
+      );
+      rethrow;
     }
   }
 }

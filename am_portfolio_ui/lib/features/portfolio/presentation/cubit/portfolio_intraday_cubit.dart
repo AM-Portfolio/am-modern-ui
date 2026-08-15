@@ -26,6 +26,7 @@ class PortfolioIntradayCubit extends Cubit<PortfolioIntradayState> {
   }
 
   Future<void> _load() async {
+    if (isClosed) return;
     if (state is PortfolioIntradayInitial) {
       emit(PortfolioIntradayLoading());
     }
@@ -40,6 +41,7 @@ class PortfolioIntradayCubit extends Cubit<PortfolioIntradayState> {
         operation: 'fetch',
         technicalArea: 'portfolio',
       );
+      if (isClosed) return;
       if (data.isEmpty) {
         ProductTelemetry.instance.emptyState('intraday_empty');
         emit(PortfolioIntradayEmpty());
@@ -65,6 +67,7 @@ class PortfolioIntradayCubit extends Cubit<PortfolioIntradayState> {
         error: e,
         stackTrace: stack,
       );
+      if (isClosed) return;
       emit(PortfolioIntradayError(e.toString()));
     }
   }

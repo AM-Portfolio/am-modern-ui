@@ -1,6 +1,6 @@
 name: am_user_ui
 description: "User Management Module (Profile, Settings, Payments)"
-version: 0.0.1
+version: 2.0.0
 homepage:
 
 environment:

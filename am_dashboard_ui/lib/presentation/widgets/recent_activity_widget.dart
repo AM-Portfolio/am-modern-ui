@@ -19,7 +19,7 @@ class RecentActivityWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Text(
               'Recent Activity',
               style: Theme.of(context).textTheme.titleLarge,
@@ -27,7 +27,7 @@ class RecentActivityWidget extends StatelessWidget {
           ),
           if (activities.isEmpty)
             const Padding(
-              padding: EdgeInsets.all(32.0),
+              padding: EdgeInsets.all(AppSpacing.xl),
               child: Center(child: Text('No recent activity')),
             )
           else
@@ -54,23 +54,23 @@ class RecentActivityWidget extends StatelessWidget {
     switch (activity.type) {
       case 'TRADE':
         icon = Icons.swap_horiz;
-        color = Colors.blue;
+        color = context.statusInfo;
         break;
       case 'DEPOSIT':
         icon = Icons.add_circle_outline;
-        color = AppColors.profit;
+        color = context.statusSuccess;
         break;
       case 'WITHDRAWAL':
         icon = Icons.remove_circle_outline;
-        color = AppColors.loss;
+        color = context.statusError;
         break;
       case 'ALERT':
         icon = Icons.notifications_none;
-        color = Colors.orange;
+        color = context.statusWarning;
         break;
       default:
         icon = Icons.info_outline;
-        color = Colors.grey;
+        color = context.textTertiary;
     }
 
     final timeFormat = DateFormat.jm().add_MMMEd();
@@ -83,7 +83,7 @@ class RecentActivityWidget extends StatelessWidget {
       title: Text(activity.title, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text(
         '${activity.description}\n${timeFormat.format(activity.timestamp)}',
-        style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 12),
+        style: TextStyle(color: context.textSecondary, fontSize: 12),
       ),
       isThreeLine: true,
       trailing: (activity.amount?.isNotEmpty ?? false)
@@ -91,7 +91,9 @@ class RecentActivityWidget extends StatelessWidget {
               activity.amount!,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: activity.isPositive ? AppColors.profit : AppColors.loss,
+                color: activity.isPositive
+                    ? context.statusSuccess
+                    : context.statusError,
               ),
             )
           : null,

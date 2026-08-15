@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:am_library/am_library.dart';
+import '../feature_flags/feature_flag_config.dart';
 import '../telemetry/boot_trace.dart';
 import 'app_config.dart';
 
@@ -11,6 +12,7 @@ class ConfigService {
   static AppConfig? _config;
   static const _envFromDefine = String.fromEnvironment('AM_ENV');
   static const _domainFromDefine = String.fromEnvironment('AM_DOMAIN');
+
   /// No baked env host. Prefer same-tab host on web until Helm/config loads.
   static String _domain = _bootstrapDomain();
   static String _resolvedEnv = _envFromDefine;
@@ -24,8 +26,9 @@ class ConfigService {
   static String _normalizeEnvLabel(String raw) {
     switch (raw.trim().toLowerCase()) {
       case 'development':
-      case 'dev':
       case 'local':
+        return 'local';
+      case 'dev':
         return 'dev';
       case 'preprod':
       case 'staging':
@@ -56,7 +59,9 @@ class ConfigService {
 
   static Map<String, String> _services = {};
   static String _googleClientId = '';
+  static FeatureFlagConfig _growthbook = FeatureFlagConfig.disabled;
 
+  static FeatureFlagConfig get growthbook => _growthbook;
   /// Cluster: browser host (am-dev / am-preprod / am.asrax.in). Localhost → empty.
   /// Native (Android/iOS): [Uri.base] is `file:///` — no host.
   static String _bootstrapDomain() {
@@ -198,6 +203,11 @@ class ConfigService {
       _googleClientId = json['googleWebClientId'].toString();
     }
 
+    final growthbookJson = json['growthbook'];
+    _growthbook = FeatureFlagConfig.fromJson(
+      growthbookJson is Map<String, dynamic> ? growthbookJson : null,
+    );
+
     final envLabel = resolvedEnv;
     if (_services.isEmpty) {
       AppLogger.info(
@@ -258,8 +268,7 @@ class ConfigService {
       if (entry.key.startsWith('_')) continue;
       final value = entry.value;
       final existing = result[entry.key];
-      if (value is Map<String, dynamic> &&
-          existing is Map<String, dynamic>) {
+      if (value is Map<String, dynamic> && existing is Map<String, dynamic>) {
         result[entry.key] = _deepMerge(existing, value);
       } else {
         result[entry.key] = value;
@@ -270,25 +279,18 @@ class ConfigService {
 
   static AppConfig _buildConfig() {
     final host = _resolveApiHost();
-    final api = host.isNotEmpty
-        ? 'https://$host'
-        : (_httpOrigin() ?? '');
+    final api = host.isNotEmpty ? 'https://$host' : (_httpOrigin() ?? '');
     final wsScheme = api.startsWith('https') ? 'wss' : 'ws';
     final ws = host.isNotEmpty
         ? '$wsScheme://$host'
-        : (api.isNotEmpty
-            ? api.replaceFirst(RegExp(r'^http'), 'ws')
-            : '');
+        : (api.isNotEmpty ? api.replaceFirst(RegExp(r'^http'), 'ws') : '');
 
-    final authUrl = _services['auth'] ??
-        _services['identity'] ??
-        '$api/identity';
+    final authUrl =
+        _services['auth'] ?? _services['identity'] ?? '$api/identity';
     final usersUrl = _services['users'] ?? '$api/users';
     final portfolioUrl = _services['portfolio'] ?? '$api/portfolio';
     final marketUrl = _services['market'] ?? '$api/market';
-    final tradesUrl = _services['trade'] ??
-        _services['trades'] ??
-        '$api/trade';
+    final tradesUrl = _services['trade'] ?? _services['trades'] ?? '$api/trade';
     final analysisUrl = _services['analysis'] ?? '$api/analysis';
     final gmailUrl = _services['gmail'] ?? '$api/gmail';
     final marketWsUrl =

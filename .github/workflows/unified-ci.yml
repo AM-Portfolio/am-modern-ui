@@ -75,7 +75,7 @@ jobs:
         id: filter
         with:
           filters: |
-            # WEB: Docker image, Helm/K8s charts, nginx config, web assets
+            # WEB: Docker image, Helm/K8s charts, nginx config, web assets, and all shared UI modules
             web:
               - 'am_app/Dockerfile'
               - 'am_app/docker-entrypoint.sh'
@@ -89,6 +89,20 @@ jobs:
               - 'am_app/pubspec.lock'
               - 'am_app/lib/**'
               - 'am_app/analysis_options.yaml'
+              - 'am_library/**'
+              - 'am_common/**'
+              - 'am_design_system/**'
+              - 'am_analysis/**'
+              - 'am_market/**'
+              - 'am_portfolio_ui/**'
+              - 'am_trade_ui/**'
+              - 'am_auth_ui/**'
+              - 'am_dashboard_ui/**'
+              - 'am_ai_ui/**'
+              - 'am_subscription_ui/**'
+              - 'am_user_ui/**'
+              - 'am_diagnostic_ui/**'
+              - 'am_doc_intelligence_ui/**'
               - '.github/workflows/unified-ci.yml'
 
             # ANDROID: Flutter app code, all shared Dart modules, android folder
@@ -160,10 +174,10 @@ jobs:
       image_name: "am-modern-ui"
       preprod_namespace: "am-apps-preprod"
       prod_namespace: "am-apps-prod"
-      # Deploy options (Pause/Review via Environment gates)
-      deploy_dev: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') }}
-      deploy_preprod: ${{ github.ref == 'refs/heads/main' }}
-      deploy_prod: ${{ github.ref == 'refs/heads/main' }}
+      # Automatic deployments by branch + Manual overrides
+      deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
+      deploy_preprod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
+      deploy_prod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod') }}
       # Map environment names
       gh_env_dev: "web-dev"
       gh_env_preprod: "web-preprod"
@@ -198,10 +212,10 @@ jobs:
       run_analyze: true
       run_tests: true
       upload_artifact: true
-      # Deploy options (Pause/Review via Environment gates)
-      deploy_dev: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') }}
-      deploy_preprod: ${{ github.ref == 'refs/heads/main' }}
-      deploy_prod: ${{ github.ref == 'refs/heads/main' }}
+      # Automatic deployments by branch + Manual overrides
+      deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
+      deploy_preprod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
+      deploy_prod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod') }}
       # Map environment names
       gh_env_dev: "android-dev"
       gh_env_preprod: "android-preprod"

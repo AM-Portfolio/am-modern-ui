@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:am_common/am_common.dart';
+import 'package:get_it/get_it.dart';
 import '../../domain/entities/favorite_filter.dart';
 import '../../domain/entities/trade_calendar.dart';
 import '../../domain/entities/trade_holding.dart';
@@ -21,19 +22,24 @@ class TradeRepositoryImpl implements TradeRepository {
   TradeRepositoryImpl({
     required TradeRemoteDataSource remoteDataSource,
     AmStompClient? stompClient,
-  }) : _remoteDataSource = remoteDataSource,
-       _stompClient = stompClient;
+  })  : _remoteDataSource = remoteDataSource,
+        _stompClient = stompClient;
 
   final TradeRemoteDataSource _remoteDataSource;
   final AmStompClient? _stompClient;
   StreamSubscription? _stompSubscription;
 
   // Stream controllers for real-time updates
-  final StreamController<TradePortfolioList> _portfoliosController = StreamController<TradePortfolioList>.broadcast();
-  final StreamController<TradeHoldings> _holdingsController = StreamController<TradeHoldings>.broadcast();
-  final StreamController<TradeSummary> _summaryController = StreamController<TradeSummary>.broadcast();
-  final StreamController<TradeCalendar> _calendarController = StreamController<TradeCalendar>.broadcast();
-  final StreamController<FavoriteFilterList> _filtersController = StreamController<FavoriteFilterList>.broadcast();
+  final StreamController<TradePortfolioList> _portfoliosController =
+      StreamController<TradePortfolioList>.broadcast();
+  final StreamController<TradeHoldings> _holdingsController =
+      StreamController<TradeHoldings>.broadcast();
+  final StreamController<TradeSummary> _summaryController =
+      StreamController<TradeSummary>.broadcast();
+  final StreamController<TradeCalendar> _calendarController =
+      StreamController<TradeCalendar>.broadcast();
+  final StreamController<FavoriteFilterList> _filtersController =
+      StreamController<FavoriteFilterList>.broadcast();
 
   // Cache for the latest data
   TradePortfolioList? _cachedPortfolioList;
@@ -44,7 +50,8 @@ class TradeRepositoryImpl implements TradeRepository {
 
   @override
   Future<TradePortfolioList> getTradePortfolios() async {
-    AppLogger.methodEntry('getTradePortfolios', tag: 'TradeRepository', params: {});
+    AppLogger.methodEntry('getTradePortfolios',
+        tag: 'TradeRepository', params: {});
 
     try {
       final dto = await _remoteDataSource.getTradePortfolios();
@@ -53,8 +60,10 @@ class TradeRepositoryImpl implements TradeRepository {
       _cachedPortfolioList = portfolioList;
       _portfoliosController.add(portfolioList);
 
-      AppLogger.info('Trade portfolios fetched successfully', tag: 'TradeRepository');
-      AppLogger.methodExit('getTradePortfolios', tag: 'TradeRepository', result: 'success');
+      AppLogger.info('Trade portfolios fetched successfully',
+          tag: 'TradeRepository');
+      AppLogger.methodExit('getTradePortfolios',
+          tag: 'TradeRepository', result: 'success');
 
       return portfolioList;
     } catch (e) {
@@ -64,10 +73,12 @@ class TradeRepositoryImpl implements TradeRepository {
         error: e,
         stackTrace: StackTrace.current,
       );
-      AppLogger.methodExit('getTradePortfolios', tag: 'TradeRepository', result: 'error');
+      AppLogger.methodExit('getTradePortfolios',
+          tag: 'TradeRepository', result: 'error');
 
       if (_cachedPortfolioList != null) {
-        AppLogger.info('Returning cached trade portfolios', tag: 'TradeRepository');
+        AppLogger.info('Returning cached trade portfolios',
+            tag: 'TradeRepository');
         return _cachedPortfolioList!;
       }
 
@@ -90,8 +101,10 @@ class TradeRepositoryImpl implements TradeRepository {
       _cachedHoldings = holdings;
       _holdingsController.add(holdings);
 
-      AppLogger.info('Trade holdings fetched successfully', tag: 'TradeRepository');
-      AppLogger.methodExit('getTradeHoldings', tag: 'TradeRepository', result: 'success');
+      AppLogger.info('Trade holdings fetched successfully',
+          tag: 'TradeRepository');
+      AppLogger.methodExit('getTradeHoldings',
+          tag: 'TradeRepository', result: 'success');
 
       return holdings;
     } catch (e) {
@@ -101,10 +114,12 @@ class TradeRepositoryImpl implements TradeRepository {
         error: e,
         stackTrace: StackTrace.current,
       );
-      AppLogger.methodExit('getTradeHoldings', tag: 'TradeRepository', result: 'error');
+      AppLogger.methodExit('getTradeHoldings',
+          tag: 'TradeRepository', result: 'error');
 
       if (_cachedHoldings != null) {
-        AppLogger.info('Returning cached trade holdings', tag: 'TradeRepository');
+        AppLogger.info('Returning cached trade holdings',
+            tag: 'TradeRepository');
         return _cachedHoldings!;
       }
 
@@ -127,8 +142,10 @@ class TradeRepositoryImpl implements TradeRepository {
       _cachedSummary = summary;
       _summaryController.add(summary);
 
-      AppLogger.info('Trade summary fetched successfully', tag: 'TradeRepository');
-      AppLogger.methodExit('getTradeSummary', tag: 'TradeRepository', result: 'success');
+      AppLogger.info('Trade summary fetched successfully',
+          tag: 'TradeRepository');
+      AppLogger.methodExit('getTradeSummary',
+          tag: 'TradeRepository', result: 'success');
 
       return summary;
     } catch (e) {
@@ -138,10 +155,12 @@ class TradeRepositoryImpl implements TradeRepository {
         error: e,
         stackTrace: StackTrace.current,
       );
-      AppLogger.methodExit('getTradeSummary', tag: 'TradeRepository', result: 'error');
+      AppLogger.methodExit('getTradeSummary',
+          tag: 'TradeRepository', result: 'error');
 
       if (_cachedSummary != null) {
-        AppLogger.info('Returning cached trade summary', tag: 'TradeRepository');
+        AppLogger.info('Returning cached trade summary',
+            tag: 'TradeRepository');
         return _cachedSummary!;
       }
 
@@ -150,7 +169,8 @@ class TradeRepositoryImpl implements TradeRepository {
   }
 
   @override
-  Future<TradeCalendar> getTradeCalendarByMonth(String portfolioId, {
+  Future<TradeCalendar> getTradeCalendarByMonth(
+    String portfolioId, {
     required int year,
     required int month,
   }) async {
@@ -161,14 +181,17 @@ class TradeRepositoryImpl implements TradeRepository {
     );
 
     try {
-      final dto = await _remoteDataSource.getTradeCalendarByMonth(portfolioId, year: year, month: month);
+      final dto = await _remoteDataSource.getTradeCalendarByMonth(portfolioId,
+          year: year, month: month);
       final calendar = TradeCalendarMapper.fromDto(dto);
 
       _cachedCalendar = calendar;
       _calendarController.add(calendar);
 
-      AppLogger.info('Trade calendar by month fetched successfully', tag: 'TradeRepository');
-      AppLogger.methodExit('getTradeCalendarByMonth', tag: 'TradeRepository', result: 'success');
+      AppLogger.info('Trade calendar by month fetched successfully',
+          tag: 'TradeRepository');
+      AppLogger.methodExit('getTradeCalendarByMonth',
+          tag: 'TradeRepository', result: 'success');
 
       return calendar;
     } catch (e) {
@@ -178,10 +201,12 @@ class TradeRepositoryImpl implements TradeRepository {
         error: e,
         stackTrace: StackTrace.current,
       );
-      AppLogger.methodExit('getTradeCalendarByMonth', tag: 'TradeRepository', result: 'error');
+      AppLogger.methodExit('getTradeCalendarByMonth',
+          tag: 'TradeRepository', result: 'error');
 
       if (_cachedCalendar != null) {
-        AppLogger.info('Returning cached trade calendar', tag: 'TradeRepository');
+        AppLogger.info('Returning cached trade calendar',
+            tag: 'TradeRepository');
         return _cachedCalendar!;
       }
 
@@ -190,7 +215,8 @@ class TradeRepositoryImpl implements TradeRepository {
   }
 
   @override
-  Future<TradeCalendar> getTradeCalendarByDay(String portfolioId, {required DateTime date}) async {
+  Future<TradeCalendar> getTradeCalendarByDay(String portfolioId,
+      {required DateTime date}) async {
     AppLogger.methodEntry(
       'getTradeCalendarByDay',
       tag: 'TradeRepository',
@@ -198,11 +224,14 @@ class TradeRepositoryImpl implements TradeRepository {
     );
 
     try {
-      final dto = await _remoteDataSource.getTradeCalendarByDay(portfolioId, date: date);
+      final dto = await _remoteDataSource.getTradeCalendarByDay(portfolioId,
+          date: date);
       final calendar = TradeCalendarMapper.fromDto(dto);
 
-      AppLogger.info('Trade calendar by day fetched successfully', tag: 'TradeRepository');
-      AppLogger.methodExit('getTradeCalendarByDay', tag: 'TradeRepository', result: 'success');
+      AppLogger.info('Trade calendar by day fetched successfully',
+          tag: 'TradeRepository');
+      AppLogger.methodExit('getTradeCalendarByDay',
+          tag: 'TradeRepository', result: 'success');
 
       return calendar;
     } catch (e) {
@@ -212,14 +241,16 @@ class TradeRepositoryImpl implements TradeRepository {
         error: e,
         stackTrace: StackTrace.current,
       );
-      AppLogger.methodExit('getTradeCalendarByDay', tag: 'TradeRepository', result: 'error');
+      AppLogger.methodExit('getTradeCalendarByDay',
+          tag: 'TradeRepository', result: 'error');
 
       rethrow;
     }
   }
 
   @override
-  Future<TradeCalendar> getTradeCalendarByDateRange(String portfolioId, {
+  Future<TradeCalendar> getTradeCalendarByDateRange(
+    String portfolioId, {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
@@ -230,14 +261,17 @@ class TradeRepositoryImpl implements TradeRepository {
     );
 
     try {
-      final dto = await _remoteDataSource.getTradeCalendarByDateRange(portfolioId,
+      final dto = await _remoteDataSource.getTradeCalendarByDateRange(
+        portfolioId,
         startDate: startDate,
         endDate: endDate,
       );
       final calendar = TradeCalendarMapper.fromDto(dto);
 
-      AppLogger.info('Trade calendar by date range fetched successfully', tag: 'TradeRepository');
-      AppLogger.methodExit('getTradeCalendarByDateRange', tag: 'TradeRepository', result: 'success');
+      AppLogger.info('Trade calendar by date range fetched successfully',
+          tag: 'TradeRepository');
+      AppLogger.methodExit('getTradeCalendarByDateRange',
+          tag: 'TradeRepository', result: 'success');
 
       return calendar;
     } catch (e) {
@@ -247,14 +281,16 @@ class TradeRepositoryImpl implements TradeRepository {
         error: e,
         stackTrace: StackTrace.current,
       );
-      AppLogger.methodExit('getTradeCalendarByDateRange', tag: 'TradeRepository', result: 'error');
+      AppLogger.methodExit('getTradeCalendarByDateRange',
+          tag: 'TradeRepository', result: 'error');
 
       rethrow;
     }
   }
 
   @override
-  Future<TradeCalendar> getTradeCalendarByQuarter(String portfolioId, {
+  Future<TradeCalendar> getTradeCalendarByQuarter(
+    String portfolioId, {
     required int year,
     required int quarter,
   }) async {
@@ -265,14 +301,17 @@ class TradeRepositoryImpl implements TradeRepository {
     );
 
     try {
-      final dto = await _remoteDataSource.getTradeCalendarByQuarter(portfolioId, year: year, quarter: quarter);
+      final dto = await _remoteDataSource.getTradeCalendarByQuarter(portfolioId,
+          year: year, quarter: quarter);
       final calendar = TradeCalendarMapper.fromDto(dto);
 
       _cachedCalendar = calendar;
       _calendarController.add(calendar);
 
-      AppLogger.info('Trade calendar by quarter fetched successfully', tag: 'TradeRepository');
-      AppLogger.methodExit('getTradeCalendarByQuarter', tag: 'TradeRepository', result: 'success');
+      AppLogger.info('Trade calendar by quarter fetched successfully',
+          tag: 'TradeRepository');
+      AppLogger.methodExit('getTradeCalendarByQuarter',
+          tag: 'TradeRepository', result: 'success');
 
       return calendar;
     } catch (e) {
@@ -282,10 +321,12 @@ class TradeRepositoryImpl implements TradeRepository {
         error: e,
         stackTrace: StackTrace.current,
       );
-      AppLogger.methodExit('getTradeCalendarByQuarter', tag: 'TradeRepository', result: 'error');
+      AppLogger.methodExit('getTradeCalendarByQuarter',
+          tag: 'TradeRepository', result: 'error');
 
       if (_cachedCalendar != null) {
-        AppLogger.info('Returning cached trade calendar', tag: 'TradeRepository');
+        AppLogger.info('Returning cached trade calendar',
+            tag: 'TradeRepository');
         return _cachedCalendar!;
       }
 
@@ -294,7 +335,8 @@ class TradeRepositoryImpl implements TradeRepository {
   }
 
   @override
-  Future<TradeCalendar> getTradeCalendarByFinancialYear(String portfolioId, {
+  Future<TradeCalendar> getTradeCalendarByFinancialYear(
+    String portfolioId, {
     required int financialYear,
   }) async {
     AppLogger.methodEntry(
@@ -304,7 +346,8 @@ class TradeRepositoryImpl implements TradeRepository {
     );
 
     try {
-      final dto = await _remoteDataSource.getTradeCalendarByFinancialYear(portfolioId,
+      final dto = await _remoteDataSource.getTradeCalendarByFinancialYear(
+        portfolioId,
         financialYear: financialYear,
       );
       final calendar = TradeCalendarMapper.fromDto(dto);
@@ -312,8 +355,10 @@ class TradeRepositoryImpl implements TradeRepository {
       _cachedCalendar = calendar;
       _calendarController.add(calendar);
 
-      AppLogger.info('Trade calendar by financial year fetched successfully', tag: 'TradeRepository');
-      AppLogger.methodExit('getTradeCalendarByFinancialYear', tag: 'TradeRepository', result: 'success');
+      AppLogger.info('Trade calendar by financial year fetched successfully',
+          tag: 'TradeRepository');
+      AppLogger.methodExit('getTradeCalendarByFinancialYear',
+          tag: 'TradeRepository', result: 'success');
 
       return calendar;
     } catch (e) {
@@ -323,10 +368,12 @@ class TradeRepositoryImpl implements TradeRepository {
         error: e,
         stackTrace: StackTrace.current,
       );
-      AppLogger.methodExit('getTradeCalendarByFinancialYear', tag: 'TradeRepository', result: 'error');
+      AppLogger.methodExit('getTradeCalendarByFinancialYear',
+          tag: 'TradeRepository', result: 'error');
 
       if (_cachedCalendar != null) {
-        AppLogger.info('Returning cached trade calendar', tag: 'TradeRepository');
+        AppLogger.info('Returning cached trade calendar',
+            tag: 'TradeRepository');
         return _cachedCalendar!;
       }
 
@@ -335,13 +382,15 @@ class TradeRepositoryImpl implements TradeRepository {
   }
 
   @override
-  Future<TradeCalendar> getTradeCalendar(String portfolioId, {int? year, int? month}) async {
+  Future<TradeCalendar> getTradeCalendar(String portfolioId,
+      {int? year, int? month}) async {
     // Legacy method - delegates to getTradeCalendarByMonth
     final now = DateTime.now();
     final targetYear = year ?? now.year;
     final targetMonth = month ?? now.month;
 
-    return getTradeCalendarByMonth(portfolioId, year: targetYear, month: targetMonth);
+    return getTradeCalendarByMonth(portfolioId,
+        year: targetYear, month: targetMonth);
   }
 
   @override
@@ -353,11 +402,13 @@ class TradeRepositoryImpl implements TradeRepository {
     );
 
     // Check if cache exists AND matches the requested portfolio
-    if (_cachedHoldings != null && _cachedHoldings!.portfolioId == portfolioId) {
+    if (_cachedHoldings != null &&
+        _cachedHoldings!.portfolioId == portfolioId) {
       Future.microtask(() => _holdingsController.add(_cachedHoldings!));
     } else {
       getTradeHoldings(portfolioId).catchError((error) {
-        AppLogger.error('Failed to fetch initial holdings for stream', tag: 'TradeRepository', error: error);
+        AppLogger.error('Failed to fetch initial holdings for stream',
+            tag: 'TradeRepository', error: error);
         _holdingsController.addError(error);
         return TradeHoldings.empty('', portfolioId);
       });
@@ -368,7 +419,8 @@ class TradeRepositoryImpl implements TradeRepository {
 
   @override
   Stream<TradePortfolioList> watchTradePortfolios() {
-    AppLogger.methodEntry('watchTradePortfolios', tag: 'TradeRepository', params: {});
+    AppLogger.methodEntry('watchTradePortfolios',
+        tag: 'TradeRepository', params: {});
 
     _ensureWebSocketSubscribed('');
 
@@ -402,7 +454,8 @@ class TradeRepositoryImpl implements TradeRepository {
       Future.microtask(() => _summaryController.add(_cachedSummary!));
     } else {
       getTradeSummary(portfolioId).catchError((error) {
-        AppLogger.error('Failed to fetch initial summary for stream', tag: 'TradeRepository', error: error);
+        AppLogger.error('Failed to fetch initial summary for stream',
+            tag: 'TradeRepository', error: error);
         _summaryController.addError(error);
         return TradeSummary.empty(portfolioId, '');
       });
@@ -422,11 +475,13 @@ class TradeRepositoryImpl implements TradeRepository {
     _ensureWebSocketSubscribed('');
 
     // Check if cache exists AND contains data for the requested portfolio
-    if (_cachedCalendar != null && _cachedCalendar!.portfolioTrades.containsKey(portfolioId)) {
+    if (_cachedCalendar != null &&
+        _cachedCalendar!.portfolioTrades.containsKey(portfolioId)) {
       Future.microtask(() => _calendarController.add(_cachedCalendar!));
     } else {
       getTradeCalendar(portfolioId).catchError((error) {
-        AppLogger.error('Failed to fetch initial calendar for stream', tag: 'TradeRepository', error: error);
+        AppLogger.error('Failed to fetch initial calendar for stream',
+            tag: 'TradeRepository', error: error);
         _calendarController.addError(error);
         return TradeCalendar.empty('', portfolioId);
       });
@@ -435,9 +490,31 @@ class TradeRepositoryImpl implements TradeRepository {
     return _calendarController.stream;
   }
 
+  @override
+  Future<void> deleteTrade(String tradeId) async {
+    AppLogger.methodEntry('deleteTrade', tag: 'TradeRepository');
+    try {
+      await _remoteDataSource.deleteTrade(tradeId);
+    } catch (e) {
+      AppLogger.error('Failed to delete trade',
+          tag: 'TradeRepository', error: e);
+      rethrow;
+    }
+  }
+
   void _ensureWebSocketSubscribed(String defaultUserId) {
     if (_stompClient == null) {
-      AppLogger.warning('AmStompClient is null. WebSocket features disabled.', tag: 'TradeRepository');
+      AppLogger.warning('AmStompClient is null. WebSocket features disabled.',
+          tag: 'TradeRepository');
+      return;
+    }
+
+    if (GetIt.instance.isRegistered<MarketStreamingGate>() &&
+        !GetIt.instance<MarketStreamingGate>().isOpen) {
+      AppLogger.info(
+        'Trade portfolio queue subscribe deferred — market closed',
+        tag: 'TradeRepository',
+      );
       return;
     }
 
@@ -454,7 +531,8 @@ class TradeRepositoryImpl implements TradeRepository {
           if (frame.body == null) return;
           try {
             final json = jsonDecode(frame.body!) as Map<String, dynamic>;
-            AppLogger.info('Received real-time portfolio update via WebSocket', tag: 'TradeRepository');
+            AppLogger.info('Received real-time portfolio update via WebSocket',
+                tag: 'TradeRepository');
 
             // Flatten nested metrics to the root level since TradePortfolioDto expects flat metrics
             final enriched = Map<String, dynamic>.from(json);
@@ -467,37 +545,115 @@ class TradeRepositoryImpl implements TradeRepository {
               });
             }
             // Fallback for totalValue if missing
-            if (enriched['totalValue'] == null && enriched['currentCapital'] != null) {
+            if (enriched['totalValue'] == null &&
+                enriched['currentCapital'] != null) {
               enriched['totalValue'] = enriched['currentCapital'];
             }
 
             // Map the update to our entity using enriched flat map
             final dto = TradePortfolioDto.fromJson(enriched);
             final updatedPortfolio = TradePortfolioMapper.fromDto(dto);
-            
+
             // Merge with existing cache
             if (_cachedPortfolioList != null) {
-              final existingPortfolios = List<TradePortfolio>.from(_cachedPortfolioList!.portfolios);
-              final index = existingPortfolios.indexWhere((p) => p.id == updatedPortfolio.id);
-              
+              final existingPortfolios =
+                  List<TradePortfolio>.from(_cachedPortfolioList!.portfolios);
+              final index = existingPortfolios
+                  .indexWhere((p) => p.id == updatedPortfolio.id);
+
               if (index != -1) {
                 existingPortfolios[index] = updatedPortfolio;
               } else {
                 existingPortfolios.add(updatedPortfolio);
               }
-              
-              _cachedPortfolioList = _cachedPortfolioList!.copyWith(portfolios: existingPortfolios);
+
+              _cachedPortfolioList = _cachedPortfolioList!
+                  .copyWith(portfolios: existingPortfolios);
             } else {
-              _cachedPortfolioList = TradePortfolioList(userId: defaultUserId, portfolios: [updatedPortfolio]);
+              _cachedPortfolioList = TradePortfolioList(
+                  userId: defaultUserId, portfolios: [updatedPortfolio]);
             }
-            
+
             _portfoliosController.add(_cachedPortfolioList!);
           } catch (e) {
-            AppLogger.error('Failed to parse portfolio STOMP message', error: e, tag: 'TradeRepository');
+            AppLogger.error('Failed to parse portfolio STOMP message',
+                error: e, tag: 'TradeRepository');
           }
         },
-        onError: (err) => AppLogger.error('STOMP Subscription error', error: err, tag: 'TradeRepository'),
+        onError: (err) => AppLogger.error('STOMP Subscription error',
+            error: err, tag: 'TradeRepository'),
       );
+    }
+  }
+
+  @override
+  void updateCachedPortfolio(
+      String portfolioId, String name, String? description) {
+    AppLogger.methodEntry('updateCachedPortfolio',
+        tag: 'TradeRepository', params: {'portfolioId': portfolioId});
+    if (_cachedPortfolioList != null) {
+      final updatedPortfolios = _cachedPortfolioList!.portfolios.map((p) {
+        if (p.id == portfolioId) {
+          return p.copyWith(name: name, description: description);
+        }
+        return p;
+      }).toList();
+
+      _cachedPortfolioList = TradePortfolioList(
+        userId: _cachedPortfolioList!.userId,
+        portfolios: updatedPortfolios,
+        totalCount: _cachedPortfolioList!.totalCount,
+      );
+
+      // Emit the updated list to bypass backend cache
+      _portfoliosController.add(_cachedPortfolioList!);
+      AppLogger.info('Optimistically updated cached portfolio list',
+          tag: 'TradeRepository');
+    }
+  }
+
+  @override
+  void removeCachedPortfolio(String portfolioId) {
+    AppLogger.methodEntry('removeCachedPortfolio',
+        tag: 'TradeRepository', params: {'portfolioId': portfolioId});
+    if (_cachedPortfolioList != null) {
+      final updatedPortfolios = _cachedPortfolioList!.portfolios
+          .where((p) => p.id != portfolioId)
+          .toList();
+
+      _cachedPortfolioList = TradePortfolioList(
+        userId: _cachedPortfolioList!.userId,
+        portfolios: updatedPortfolios,
+        totalCount: _cachedPortfolioList!.totalCount > 0
+            ? _cachedPortfolioList!.totalCount - 1
+            : 0,
+      );
+
+      // Emit the updated list to bypass backend cache
+      _portfoliosController.add(_cachedPortfolioList!);
+      AppLogger.info('Optimistically removed portfolio from cached list',
+          tag: 'TradeRepository');
+    }
+  }
+
+  @override
+  void addCachedPortfolio(TradePortfolio portfolio) {
+    AppLogger.methodEntry('addCachedPortfolio',
+        tag: 'TradeRepository', params: {'portfolioId': portfolio.id});
+    final currentList = _cachedPortfolioList;
+    if (currentList != null) {
+      // Prepend so newest portfolio appears at the top
+      final updatedPortfolios = [portfolio, ...currentList.portfolios];
+
+      _cachedPortfolioList = TradePortfolioList(
+        userId: currentList.userId,
+        portfolios: updatedPortfolios,
+        totalCount: currentList.totalCount + 1,
+      );
+
+      _portfoliosController.add(_cachedPortfolioList!);
+      AppLogger.info('Optimistically added new portfolio to cached list',
+          tag: 'TradeRepository');
     }
   }
 
@@ -523,4 +679,3 @@ class TradeRepositoryImpl implements TradeRepository {
     AppLogger.info('TradeRepository disposed', tag: 'TradeRepository');
   }
 }
-

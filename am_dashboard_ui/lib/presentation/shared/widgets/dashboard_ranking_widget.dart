@@ -30,9 +30,9 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
   Widget build(BuildContext context) {
     final items = _showGainers ? widget.gainers : widget.losers;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final toggleBgColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+    final onSurface = context.colors.textPrimary;
+    final onSurfaceVariant = context.colors.textSecondary;
+    final toggleBgColor = isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.1);
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
     final headerStyle = TextStyle(
       fontSize: 11,
@@ -76,7 +76,14 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
             ),
           ),
           const SizedBox(height: 12),
-          Expanded(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = MediaQuery.of(context).size.width < 600;
+              if (isMobile) {
+                return _buildMobileList(items, isDark, currencyFormat, onSurface, onSurfaceVariant);
+              }
+              return SizedBox(
+                height: 280,
             child: PaginatedSortableTable<MoverItem>(
               items: items,
               pageSize: 10,
@@ -88,9 +95,9 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
               headerTextStyle: headerStyle,
               rowTextStyle: rowStyle,
               headerBackgroundColor:
-                  isDark ? Colors.transparent : const Color(0xFFF8FAFC),
+                  isDark ? Colors.transparent : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
               rowHoverColor:
-                  isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFF8FAFC),
+                  isDark ? Colors.white.withOpacity(0.04) : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
               emptyMessage: 'No data available',
               columns: [
                 SortableColumn<MoverItem>(
@@ -98,23 +105,32 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                   flex: 3,
                   sortBy: (item) => item.symbol,
                   builder: (item) {
-                    final showName =
-                        item.name.isNotEmpty && item.name != item.symbol;
+                    final isIsinTicker = _looksLikeIsin(item.symbol);
+                    // When legacy data still has ISIN as symbol, show company name as primary label.
+                    final primaryLabel = (isIsinTicker && item.name.isNotEmpty)
+                        ? item.name
+                        : item.symbol;
+                    final subtitle = isIsinTicker && item.name.isNotEmpty
+                        ? item.symbol
+                        : (item.name.isNotEmpty && item.name != item.symbol
+                            ? item.name
+                            : null);
+
                     return Row(
                       children: [
                         Flexible(
                           child: Text(
-                            item.symbol,
+                            primaryLabel,
                             style: rowStyle.copyWith(fontWeight: FontWeight.w700),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (showName) ...[
+                        if (subtitle != null) ...[
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              item.name,
+                              subtitle,
                               style: rowStyle.copyWith(color: onSurfaceVariant),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -149,8 +165,8 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                       style: rowStyle.copyWith(
                         fontWeight: FontWeight.w600,
                         color: positive
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                            ? context.colors.statusSuccess
+                            : context.colors.statusError,
                       ),
                     );
                   },
@@ -167,23 +183,152 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                       textAlign: TextAlign.right,
                       style: rowStyle.copyWith(
                         color: positive
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                            ? context.colors.statusSuccess
+                            : context.colors.statusError,
                       ),
                     );
                   },
                 ),
               ],
             ),
-          ),
-        ],
+          );
+        },
       ),
+    ],
+  ),
     );
+  }
+
+  Widget _buildMobileList(
+    List<MoverItem> items,
+    bool isDark,
+    NumberFormat currencyFormat,
+    Color onSurface,
+    Color onSurfaceVariant,
+  ) {
+    if (items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: Text('No data available', style: TextStyle(color: onSurfaceVariant)),
+        ),
+      );
+    }
+    
+    // Show only up to 5 items on mobile to save vertical space
+    final displayItems = items.take(5).toList();
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: displayItems.length,
+      separatorBuilder: (context, index) => Divider(
+        color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
+        height: 1,
+      ),
+      itemBuilder: (context, index) {
+        final item = displayItems[index];
+        final positive = item.changePercentage >= 0;
+        final changeColor = positive ? context.colors.statusSuccess : context.colors.statusError;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          child: Row(
+            children: [
+              // Avatar
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  item.symbol.isNotEmpty ? item.symbol[0].toUpperCase() : '?',
+                  style: TextStyle(
+                    color: onSurface,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Ticker and Name
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.symbol,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: onSurface,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    if (item.name.isNotEmpty && item.name != item.symbol)
+                      Text(
+                        item.name,
+                        style: TextStyle(
+                          color: onSurfaceVariant,
+                          fontSize: 12,
+                          fontFamily: 'Inter',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+              // Price and Change
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    currencyFormat.format(item.price),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: onSurface,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: changeColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${positive ? '+' : ''}${item.changePercentage.toStringAsFixed(2)}%',
+                      style: TextStyle(
+                        color: changeColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Indian equity ISIN pattern (e.g. INE002A01018) — used when Mongo still has legacy symbol values.
+  static bool _looksLikeIsin(String value) {
+    if (value.length != 12) return false;
+    return RegExp(r'^[A-Z]{2}[A-Z0-9]{10}$').hasMatch(value.toUpperCase());
   }
 
   Widget _buildToggleButton(String label, bool isGainers, bool isDark) {
     final isSelected = _showGainers == isGainers;
-    final onSurfaceVariant = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+    final onSurfaceVariant = context.colors.textSecondary;
     return GestureDetector(
       onTap: () => setState(() => _showGainers = isGainers),
       child: Container(
@@ -207,7 +352,7 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
             color: isSelected
-                ? (isDark ? Colors.black : const Color(0xFF111827))
+                ? (isDark ? Colors.black : context.colors.textPrimary)
                 : onSurfaceVariant,
             fontFamily: 'Inter',
           ),

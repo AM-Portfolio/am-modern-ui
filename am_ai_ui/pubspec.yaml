@@ -1,7 +1,7 @@
 name: am_ai_ui
 description: AI Chat UI — sends user messages to the am-fin-agent FastAPI and renders dynamic widget responses.
 publish_to: "none"
-version: 1.0.0+1
+version: 2.0.0
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

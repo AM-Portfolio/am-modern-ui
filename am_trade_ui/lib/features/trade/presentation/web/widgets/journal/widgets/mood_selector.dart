@@ -15,7 +15,7 @@ class MoodSelector extends StatelessWidget {
     return Wrap(
       spacing: 3,
       runSpacing: 3,
-      children: JournalMoodOptions.moods.entries.map((entry) {
+      children: JournalMoodOptions.getMoods(context).entries.map((entry) {
         final isSelected = selectedMood == entry.key;
         final moodData = entry.value;
         return InkWell(

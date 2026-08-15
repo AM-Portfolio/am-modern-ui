@@ -1,6 +1,6 @@
 name: am_diagnostic_ui
 description: Diagnostic & UI Lab for AM Investment Platform
-version: 0.0.1
+version: 2.0.0
 publish_to: "none"
 
 environment:

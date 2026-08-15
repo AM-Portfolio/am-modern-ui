@@ -191,8 +191,8 @@ class IndexCard extends StatelessWidget {
                         curve: Curves.easeInOut,
                         width: isSelected ? 24.0 : 0.0,
                         height: 2.0,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF00C896),
+                        decoration: BoxDecoration(
+                          color: MarketColors.borderSelected(context),
                           borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(2),
                             topRight: Radius.circular(2),

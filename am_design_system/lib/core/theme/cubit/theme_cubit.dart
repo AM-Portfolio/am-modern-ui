@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../app_theme.dart';
 import '../theme_repository.dart';
 
-enum AppThemeMode { system, light, dark, white }
+enum AppThemeMode { system, light, dark, white, skyBlue }
 
 class ThemeState {
   final AppThemeMode mode;
@@ -16,6 +16,7 @@ class ThemeState {
         return ThemeMode.dark; 
       case AppThemeMode.light:
       case AppThemeMode.white:
+      case AppThemeMode.skyBlue:
         return ThemeMode.light;
       case AppThemeMode.system:
         return ThemeMode.system;
@@ -25,6 +26,9 @@ class ThemeState {
   ThemeData get lightTheme {
     if (mode == AppThemeMode.white) {
       return AppTheme.whiteTheme;
+    }
+    if (mode == AppThemeMode.skyBlue) {
+      return AppTheme.skyBlueTheme;
     }
     return AppTheme.lightTheme;
   }
@@ -37,7 +41,7 @@ class ThemeState {
   bool get isDarkMode => mode == AppThemeMode.dark;
   
   /// Helper to check if current theme is light
-  bool get isLightMode => mode == AppThemeMode.light || mode == AppThemeMode.white;
+  bool get isLightMode => mode == AppThemeMode.light || mode == AppThemeMode.white || mode == AppThemeMode.skyBlue;
   
   ThemeState copyWith({AppThemeMode? mode}) {
     return ThemeState(mode ?? this.mode);
@@ -83,6 +87,8 @@ class ThemeCubit extends Cubit<ThemeState> {
         return 'dark';
       case AppThemeMode.white:
         return 'white';
+      case AppThemeMode.skyBlue:
+        return 'skyBlue';
     }
   }
   
@@ -97,6 +103,8 @@ class ThemeCubit extends Cubit<ThemeState> {
         return AppThemeMode.dark;
       case 'white':
         return AppThemeMode.white;
+      case 'skyBlue':
+        return AppThemeMode.skyBlue;
       default:
         return AppThemeMode.system;
     }

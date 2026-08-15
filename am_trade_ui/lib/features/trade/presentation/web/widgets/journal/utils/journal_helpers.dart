@@ -23,7 +23,7 @@ class JournalHelpers {
   /// Convert mood key to display string (emoji + label)
   static String getMoodString(String? key) {
     if (key == null) return '';
-    final mood = JournalMoodOptions.moods[key];
+    final mood = JournalMoodOptions.moodsStatic[key];
     if (mood == null) return '';
     return '${mood['emoji']} ${mood['label']}';
   }
@@ -32,7 +32,7 @@ class JournalHelpers {
   static String? mapMoodFromEntry(String? moodText) {
     if (moodText == null) return null;
     final lowerMood = moodText.toLowerCase();
-    for (final key in JournalMoodOptions.moods.keys) {
+    for (final key in JournalMoodOptions.moodsStatic.keys) {
       if (lowerMood.contains(key)) {
         return key;
       }

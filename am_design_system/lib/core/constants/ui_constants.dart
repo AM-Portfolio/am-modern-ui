@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'breakpoints.dart';
 
 /// UI and styling constants
 class UIConstants {
@@ -33,10 +34,10 @@ class UIConstants {
   static const int animationMedium = 300; // milliseconds
   static const int animationLong = 500; // milliseconds
   
-  /// Breakpoints for responsive design
-  static const double mobileBreakpoint = 600.0;
-  static const double tabletBreakpoint = 900.0;
-  static const double desktopBreakpoint = 1200.0;
+  /// Breakpoints for responsive design (delegated to AmBreakpoints)
+  static const double mobileBreakpoint = AmBreakpoints.mobile;
+  static const double tabletBreakpoint = AmBreakpoints.tablet;
+  static const double desktopBreakpoint = AmBreakpoints.tablet;
   
   /// Icon Sizes
   static const double iconSizeS = 16.0;

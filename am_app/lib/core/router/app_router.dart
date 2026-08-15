@@ -17,6 +17,15 @@ import 'launch_location.dart';
 import 'share_url_builder.dart';
 export 'launch_location.dart' show resolveLaunchLocation;
 
+bool _subscriptionPageEnabled() {
+  if (!GetIt.instance.isRegistered<common.FeatureFlagService>()) {
+    return false;
+  }
+  return GetIt.instance<common.FeatureFlagService>().isOn(
+    common.FeatureFlagKeys.subscriptionPageEnabled,
+  );
+}
+
 GoRouter createAppRouter({
   required AuthCubit authCubit,
   required AuthRefreshListenable refreshListenable,
@@ -46,11 +55,13 @@ GoRouter createAppRouter({
           return AppRoutes.dashboard;
         }
         if (isAuthenticated && location == AppRoutes.login) {
-          final target = ShareUrlBuilder.sanitizeRedirect(
-            state.uri.queryParameters['redirect'],
-          );
-          return target ?? AppRoutes.dashboard;
+          return AuthRedirect.postLoginLocation(state.uri);
         }
+        return null;
+      }
+
+      // Privacy / Terms must stay public (Play Store policy URL must not hit login).
+      if (AppRoutes.isPublicLegalRoute(location)) {
         return null;
       }
 
@@ -59,9 +70,10 @@ GoRouter createAppRouter({
         return null;
       }
 
-      if (!isAuthenticated && AppRoutes.isAuthenticatedAppRoute(location)) {
-        final redirect = Uri.encodeComponent(_redirectTarget(state.uri));
-        return '${AppRoutes.login}?redirect=$redirect';
+      if (!isAuthenticated &&
+          AppRoutes.isAuthenticatedAppRoute(location) &&
+          !AppRoutes.isPublicLegalRoute(location)) {
+        return AuthRedirect.loginLocationFromAppUri(state.uri);
       }
 
       // Lab is disabled in navigation — block direct URL access.
@@ -103,29 +115,39 @@ GoRouter createAppRouter({
 
       return null;
     },
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text(
-                'Page not found: ${state.uri}',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => context.go(AppRoutes.login),
-                child: const Text('Go to login'),
-              ),
-            ],
+    errorBuilder: (context, state) {
+      final authState = authCubit.state;
+      final isAuthenticated = authState is Authenticated;
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'Page not found: ${state.uri}',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: () {
+                    if (isAuthenticated) {
+                      context.go(AppRoutes.dashboard);
+                      return;
+                    }
+                    context.go(AuthRedirect.recoverLoginLocation(state.uri));
+                  },
+                  child: Text(isAuthenticated ? 'Go to dashboard' : 'Go to login'),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    ),
+      );
+    },
     routes: [
       GoRoute(
         path: AppRoutes.login,
@@ -156,6 +178,34 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.deleteAccount,
         builder: (context, state) => const am_user.DeleteAccountPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.privacyPolicy,
+        builder: (context, state) => buildPrivacyPolicyRoute(
+          onBack: () {
+            final authState = authCubit.state;
+            context.go(
+              authState is Authenticated
+                  ? AppRoutes.profile
+                  : AppRoutes.login,
+            );
+          },
+          onOpenTerms: () => context.go(AppRoutes.termsOfService),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.termsOfService,
+        builder: (context, state) => buildTermsOfServiceRoute(
+          onBack: () {
+            final authState = authCubit.state;
+            context.go(
+              authState is Authenticated
+                  ? AppRoutes.profile
+                  : AppRoutes.login,
+            );
+          },
+          onOpenPrivacy: () => context.go(AppRoutes.privacyPolicy),
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
@@ -328,6 +378,9 @@ GoRouter createAppRouter({
             builder: (context, state) {
               final highlightSubscription =
                   state.uri.queryParameters['highlight'] == 'subscription';
+              final openSubscription = _subscriptionPageEnabled()
+                  ? () => context.go(AppRoutes.subscription)
+                  : null;
               final authState = context.read<AuthCubit>().state;
               if (authState is Authenticated) {
                 return buildProfileRoute(
@@ -339,8 +392,7 @@ GoRouter createAppRouter({
                       context.go(AppRoutes.privacyPolicy),
                   onOpenTermsOfService: () =>
                       context.go(AppRoutes.termsOfService),
-                  onOpenSubscription: () =>
-                      context.go(AppRoutes.subscription),
+                  onOpenSubscription: openSubscription,
                 );
               }
               return buildProfileRoute(
@@ -350,27 +402,18 @@ GoRouter createAppRouter({
                     context.go(AppRoutes.privacyPolicy),
                 onOpenTermsOfService: () =>
                     context.go(AppRoutes.termsOfService),
-                onOpenSubscription: () =>
-                    context.go(AppRoutes.subscription),
+                onOpenSubscription: openSubscription,
               );
             },
           ),
           GoRoute(
-            path: AppRoutes.privacyPolicy,
-            builder: (context, state) => buildPrivacyPolicyRoute(
-              onBack: () => context.go(AppRoutes.profile),
-              onOpenTerms: () => context.go(AppRoutes.termsOfService),
-            ),
-          ),
-          GoRoute(
-            path: AppRoutes.termsOfService,
-            builder: (context, state) => buildTermsOfServiceRoute(
-              onBack: () => context.go(AppRoutes.profile),
-              onOpenPrivacy: () => context.go(AppRoutes.privacyPolicy),
-            ),
-          ),
-          GoRoute(
             path: AppRoutes.subscription,
+            redirect: (context, state) {
+              if (!_subscriptionPageEnabled()) {
+                return AppRoutes.profile;
+              }
+              return null;
+            },
             builder: (context, state) =>
                 BlocProvider<am_sub.SubscriptionCubit>.value(
               value: GetIt.instance<am_sub.SubscriptionCubit>(),
@@ -416,11 +459,6 @@ String? _portfolioIdOnlyRedirect(String location) {
 String _userId(BuildContext context) {
   final authState = context.read<AuthCubit>().state;
   return authState is Authenticated ? authState.user.id : '';
-}
-
-String _redirectTarget(Uri uri) {
-  final path = uri.path.isEmpty ? '/' : uri.path;
-  return uri.hasQuery ? '$path?${uri.query}' : path;
 }
 
 void _patchPortfolioSession(BuildContext context, String id, String name) {

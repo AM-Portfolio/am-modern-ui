@@ -3,6 +3,7 @@ import 'package:am_market_common/models/market_data.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:am_market_common/providers/market_provider.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 /// Individual index card showing name, price, and change
 class IndexCard extends StatelessWidget {
@@ -42,15 +43,15 @@ class IndexCard extends StatelessWidget {
 
         final isPositive = displayChange >= 0;
         final accentColor = isLoading 
-            ? Colors.white54
-            : (isPositive ? const Color(0xFF00FF88) : const Color(0xFFFF6B6B));
+            ? context.colors.textSecondary
+            : (isPositive ? context.colors.statusSuccess : context.colors.statusError);
 
         return Container(
           width: 160,
           margin: const EdgeInsets.only(right: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1D26).withOpacity(0.6),
+            color: context.colors.actionPrimaryBg.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: accentColor.withOpacity(0.3),
@@ -72,7 +73,7 @@ class IndexCard extends StatelessWidget {
               Text(
                 data.indexSymbol,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: context.colors.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -84,8 +85,8 @@ class IndexCard extends StatelessWidget {
               // Price
               Text(
                 '${numberFormat.format(data.lastPrice)}',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.colors.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),

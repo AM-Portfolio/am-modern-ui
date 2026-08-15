@@ -194,14 +194,10 @@ class DashboardWebScreen extends ConsumerWidget {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isCompactWeb = screenWidth < 1280;
 
-    final onSurface = isDark ? Colors.white : const Color(0xFF0F172A);
-
-    final marketOpenBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
-    final marketOpenText = isDark ? const Color(0xFF60A5FA) : const Color(0xFF0F172A);
-    final marketOpenDot = isDark ? const Color(0xFF3B82F6) : const Color(0xFF10B981);
+    final onSurface = Theme.of(context).colorScheme.onSurface;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0B1120) : const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Stack(
         children: [
           if (isDark) ...[
@@ -215,7 +211,7 @@ class DashboardWebScreen extends ConsumerWidget {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFF0062FF).withValues(alpha: 0.15),
+                      context.colors.actionPrimaryBg.withValues(alpha: 0.15),
                       Colors.transparent,
                     ],
                   ),
@@ -232,7 +228,7 @@ class DashboardWebScreen extends ConsumerWidget {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFFFF9100).withValues(alpha: 0.1),
+                      context.colors.actionPrimaryBg.withValues(alpha: 0.1),
                       Colors.transparent,
                     ],
                   ),
@@ -246,84 +242,44 @@ class DashboardWebScreen extends ConsumerWidget {
               ),
             ),
           ],
-          SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1600),
+          Positioned.fill(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+              child: SizedBox(
+                width: double.infinity,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 16,
-                        runSpacing: 12,
-                        children: [
-                          Text(
-                            'Dashboard',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: onSurface,
-                              fontFamily: 'Inter',
+              children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Dashboard',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: onSurface,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                        const Spacer(),
+                        if (onOpenDocIntel != null)
+                          TextButton.icon(
+                            onPressed: onOpenDocIntel,
+                            icon: Icon(
+                              Icons.psychology_outlined,
+                              size: 18,
+                              color: context.colors.statusInfo,
+                            ),
+                            label: const Text('Add Portfolio'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: onSurface,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             ),
                           ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (onOpenDocIntel != null) ...[
-                                TextButton.icon(
-                                  onPressed: onOpenDocIntel,
-                                  icon: const Icon(
-                                    Icons.psychology_outlined,
-                                    size: 18,
-                                    color: Color(0xFF00D2D3),
-                                  ),
-                                  label: const Text('Add Portfolio'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: onSurface,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                              ],
-                              const GlobalTimeFrameBar(),
-                              const SizedBox(width: 16),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: marketOpenBg,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        color: marketOpenDot,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Market Open',
-                                      style: TextStyle(
-                                        color: marketOpenText,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        fontFamily: 'Inter',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                        const SizedBox(width: 16),
+                        const GlobalTimeFrameBar(),
+                      ],
                     ),
                     const SizedBox(height: 24),
                     dashboardAsync.when(
@@ -337,17 +293,17 @@ class DashboardWebScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
                     if (isCompactWeb) ...[
                       SizedBox(
-                        height: 380,
+                        height: 420,
                         child: _buildPerformanceChart(ref, tfCode),
                       ),
                       const SizedBox(height: 24),
                       SizedBox(
-                        height: 380,
+                        height: 420,
                         child: _buildMoversPanel(ref, tfCode),
                       ),
                     ] else ...[
                       SizedBox(
-                        height: 380,
+                        height: 420,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [

@@ -91,22 +91,16 @@ class RegisterPage extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: context.isDark
-                  ? [
-                      AppColors.darkBackground,
-                      AppColors.darkBackgroundLight,
-                      AppColors.darkBackgroundDeep,
-                    ]
-                  : [
-                      AppColors.lightBackgroundAlt,
-                      AppColors.lightBackground,
-                      AppColors.lightBackgroundAlt,
-                    ],
+              colors: [
+                context.colors.surface,
+                context.colors.scaffoldBackground,
+                context.colors.surface,
+              ],
             ),
           ),
           child: InteractiveBackground(
-            baseColor: context.isDark ? AppColors.authAccent : AppColors.primaryLight,
-            highlightColor: context.isDark ? AppColors.accentBlue : AppColors.info,
+            baseColor: context.colors.actionPrimaryBg,
+            highlightColor: context.colors.actionPrimaryBg.withValues(alpha: 0.8),
           ),
         ),
       ),
@@ -170,7 +164,7 @@ class RegisterPageForm extends StatelessWidget {
             builder: (context) => AlertDialog(
               title: Row(
                 children: [
-                  Icon(Icons.check_circle, color: AppColors.success),
+                  Icon(Icons.check_circle, color: context.colors.statusSuccess),
                   const SizedBox(width: 8),
                   const Text('Account Created!'),
                 ],
@@ -192,9 +186,9 @@ class RegisterPageForm extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: context.colors.surface,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(color: context.colors.border),
                     ),
                     child: Row(
                       children: [
@@ -213,10 +207,10 @@ class RegisterPageForm extends StatelessWidget {
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: userId));
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('UUID copied to clipboard!'),
-                                duration: Duration(seconds: 2),
-                                backgroundColor: AppColors.success,
+                              SnackBar(
+                                content: const Text('UUID copied to clipboard!'),
+                                duration: const Duration(seconds: 2),
+                                backgroundColor: context.colors.statusSuccess,
                               ),
                             );
                           },
@@ -245,7 +239,7 @@ class RegisterPageForm extends StatelessWidget {
         } else {
           // Show regular error message
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
+            SnackBar(content: Text(state.message), backgroundColor: context.colors.statusError),
           );
         }
       }

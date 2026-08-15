@@ -174,7 +174,8 @@ class ChartFactory extends StatelessWidget {
 
       if (minVal != double.infinity && maxVal != double.negativeInfinity) {
         final double range = (maxVal - minVal).abs();
-        final double padding = range == 0 ? maxVal.abs() * 0.15 : range * 0.15;
+        double padding = range == 0 ? maxVal.abs() * 0.15 : range * 0.15;
+        if (padding == 0) padding = 1.0; // Prevent min==max when all values are 0
         
         calculatedMinY = minVal - padding;
         calculatedMaxY = maxVal + padding;

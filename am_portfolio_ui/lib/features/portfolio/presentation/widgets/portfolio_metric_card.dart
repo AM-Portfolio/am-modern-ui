@@ -1,6 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'dart:math' as math;
+
+/// Semantic tone for metric cards — prefer this over raw accent colors.
+enum PortfolioMetricTone { profit, loss, neutral, info, custom }
 
 class PortfolioMetricCard extends StatelessWidget {
   final String title;
@@ -14,6 +18,7 @@ class PortfolioMetricCard extends StatelessWidget {
   final String? tooltip;
   final List<double>? sparklineData;
   final bool glowBorder;
+  final PortfolioMetricTone tone;
 
   const PortfolioMetricCard({
     super.key,
@@ -28,17 +33,32 @@ class PortfolioMetricCard extends StatelessWidget {
     this.tooltip,
     this.sparklineData,
     this.glowBorder = false,
+    this.tone = PortfolioMetricTone.custom,
   });
+
+  Color _resolveAccent(BuildContext context) {
+    switch (tone) {
+      case PortfolioMetricTone.profit:
+        return context.statusSuccess;
+      case PortfolioMetricTone.loss:
+        return context.statusError;
+      case PortfolioMetricTone.neutral:
+        return context.statusNeutral;
+      case PortfolioMetricTone.info:
+        return context.statusInfo;
+      case PortfolioMetricTone.custom:
+        return accentColor;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = _resolveAccent(context);
     final textTheme = Theme.of(context).textTheme;
-    final vPad = compact ? 12.0 : 16.0;
-    final hPad = compact ? 12.0 : 16.0;
+    final vPad = compact ? AppSpacing.sm + AppSpacing.xs : AppSpacing.md;
+    final hPad = compact ? AppSpacing.sm + AppSpacing.xs : AppSpacing.md;
 
-    final Color cardBase =
-        isDark ? const Color(0xFF0D1B2A) : const Color(0xFFFFFFFF);
+    final Color cardBase = context.cardColor;
     final bool useAccentValue = glowBorder || isPositive != null;
 
     return Tooltip(
@@ -55,7 +75,7 @@ class PortfolioMetricCard extends StatelessWidget {
                     center: Alignment.bottomLeft,
                     radius: 1.2,
                     colors: [
-                      accentColor.withValues(alpha: 0.18),
+                      accent.withValues(alpha: 0.18),
                       Colors.transparent,
                     ],
                   ),
@@ -76,22 +96,22 @@ class PortfolioMetricCard extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            accentColor.withValues(alpha: 0.25),
-                            accentColor.withValues(alpha: 0.1),
+                            accent.withValues(alpha: 0.25),
+                            accent.withValues(alpha: 0.1),
                           ],
                         )
                       : LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            cardBase.withValues(alpha: isDark ? 0.3 : 0.5),
-                            cardBase.withValues(alpha: isDark ? 0.1 : 0.15),
+                            cardBase.withValues(alpha: context.isDark ? 0.3 : 0.5),
+                            cardBase.withValues(alpha: context.isDark ? 0.1 : 0.15),
                           ],
                         ),
                   border: Border.all(
                     color: glowBorder
-                        ? accentColor.withValues(alpha: 0.35)
-                        : (isDark
+                        ? accent.withValues(alpha: 0.35)
+                        : (context.isDark
                             ? Colors.white.withValues(alpha: 0.07)
                             : Colors.black.withValues(alpha: 0.06)),
                     width: 1,
@@ -102,7 +122,7 @@ class PortfolioMetricCard extends StatelessWidget {
                       : glowBorder
                           ? [
                               BoxShadow(
-                                color: accentColor.withValues(alpha: 0.22),
+                                color: accent.withValues(alpha: 0.22),
                                 blurRadius: 24,
                                 spreadRadius: -2,
                                 offset: const Offset(0, 4),
@@ -111,7 +131,7 @@ class PortfolioMetricCard extends StatelessWidget {
                           : [
                               BoxShadow(
                                 color: Colors.black.withValues(
-                                    alpha: isDark ? 0.3 : 0.06),
+                                    alpha: context.isDark ? 0.3 : 0.06),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -133,7 +153,7 @@ class PortfolioMetricCard extends StatelessWidget {
                               size: compact ? 56 : 76,
                               color: isHighlight
                                   ? Colors.white.withValues(alpha: 0.14)
-                                  : accentColor.withValues(alpha: 0.07),
+                                  : accent.withValues(alpha: 0.07),
                             ),
                           ),
                         ),
@@ -155,7 +175,7 @@ class PortfolioMetricCard extends StatelessWidget {
                                 fontSize: compact ? 10 : 11,
                                 color: isHighlight
                                     ? Colors.white.withValues(alpha: 0.85)
-                                    : (isDark
+                                    : (context.isDark
                                         ? Colors.white.withValues(alpha: 0.5)
                                         : Colors.black.withValues(alpha: 0.45)),
                                 fontWeight: FontWeight.w600,
@@ -176,15 +196,15 @@ class PortfolioMetricCard extends StatelessWidget {
                                   color: isHighlight
                                       ? Colors.white
                                       : (useAccentValue
-                                          ? accentColor
-                                          : (isDark
+                                          ? accent
+                                          : (context.isDark
                                               ? Colors.white
-                                              : const Color(0xFF1A1A2E))),
+                                              : context.textPrimary)),
                                   height: 1.1,
-                                  shadows: (glowBorder && isDark)
+                                  shadows: (glowBorder && context.isDark)
                                       ? [
                                           Shadow(
-                                            color: accentColor
+                                            color: accent
                                                 .withValues(alpha: 0.6),
                                             blurRadius: 12,
                                           ),
@@ -207,7 +227,7 @@ class PortfolioMetricCard extends StatelessWidget {
                                     size: compact ? 10 : 12,
                                     color: isHighlight
                                         ? Colors.white.withValues(alpha: 0.9)
-                                        : accentColor,
+                                        : accent,
                                   ),
                                   const SizedBox(width: 2),
                                 ],
@@ -219,9 +239,9 @@ class PortfolioMetricCard extends StatelessWidget {
                                       color: isHighlight
                                           ? Colors.white.withValues(alpha: 0.75)
                                           : (isPositive != null
-                                              ? accentColor
+                                              ? accent
                                                   .withValues(alpha: 0.9)
-                                              : (isDark
+                                              : (context.isDark
                                                   ? Colors.white
                                                       .withValues(alpha: 0.4)
                                                   : Colors.black

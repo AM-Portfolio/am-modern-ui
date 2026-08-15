@@ -9,6 +9,8 @@ import '../../internal/services/portfolio_service.dart';
 import 'portfolio_state.dart';
 import '../../internal/data/dtos/portfolio_summary_dto.dart';
 import '../../internal/data/dtos/portfolio_socket_update_dto.dart';
+import '../../internal/data/dtos/portfolio_create_request_dto.dart';
+import '../../internal/data/dtos/portfolio_update_request_dto.dart';
 import 'package:get_it/get_it.dart';
 import 'dart:convert';
 import 'dart:async';
@@ -42,6 +44,31 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
   String? _loadingPortfolioId;
   String? _loadedPortfolioId;
+
+  String _currentTimeFrame = 'all';
+
+  void setTimeFrame(String timeFrame) {
+    if (_currentTimeFrame == timeFrame) return;
+    _currentTimeFrame = timeFrame;
+    _refreshSummaryForTimeFrame();
+  }
+
+  Future<void> _refreshSummaryForTimeFrame() async {
+    final currentState = state;
+    if (currentState is PortfolioLoaded) {
+      try {
+        emit(currentState.copyWith(isRefreshing: true));
+        final summary = await _portfolioService.getPortfolioSummaryById(
+          currentState.portfolioId,
+          _currentTimeFrame,
+        );
+        emit(currentState.copyWith(summary: summary, isRefreshing: false));
+      } catch (e) {
+        CommonLogger.error('Failed to refresh summary for timeframe $_currentTimeFrame', error: e, tag: 'PortfolioCubit');
+        emit(currentState.copyWith(isRefreshing: false));
+      }
+    }
+  }
 
   /// When false (e.g. Dashboard tab active), skip STOMP portfolio interest registration.
   void setPortfolioStreamingAllowed(bool allowed) {
@@ -291,7 +318,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       );
 
       // Progressive Loading: Fetch Summary first (Fast)
-      final summary = await _portfolioService.getPortfolioSummary();
+      final summary = await _portfolioService.getPortfolioSummary(_currentTimeFrame);
 
       if (!isClosed) {
         emit(
@@ -371,7 +398,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     }
 
     try {
-      final summary = await _portfolioService.getPortfolioSummary();
+      final summary = await _portfolioService.getPortfolioSummary(_currentTimeFrame);
       final holdings = await _portfolioService.getPortfolioHoldings();
       
       if (!isClosed) {
@@ -460,7 +487,10 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       );
 
       // Progressive Loading: Fetch Summary first (Fast)
-      final summary = await _portfolioService.getPortfolioSummaryById(portfolioId);
+      final summary = await _portfolioService.getPortfolioSummaryById(
+        portfolioId,
+        _currentTimeFrame,
+      );
 
       if (!isClosed) {
         emit(
@@ -581,6 +611,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       // Only fetch summary, not holdings
       final summary = await _portfolioService.getPortfolioSummaryById(
         portfolioId,
+        _currentTimeFrame,
       );
 
       CommonLogger.stateChange(
@@ -662,7 +693,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         // Use portfolio service to refresh data
         final results = await Future.wait([
           _portfolioService.getPortfolioHoldings(),
-          _portfolioService.getPortfolioSummary(),
+          _portfolioService.getPortfolioSummary(_currentTimeFrame),
         ]);
 
         final holdings = results[0] as PortfolioHoldings;
@@ -717,7 +748,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         // Use portfolio service to refresh data by portfolio ID
         final results = await Future.wait([
           _portfolioService.getPortfolioHoldingsById(portfolioId),
-          _portfolioService.getPortfolioSummaryById(portfolioId),
+          _portfolioService.getPortfolioSummaryById(portfolioId, _currentTimeFrame),
         ]);
 
         final holdings = results[0] as PortfolioHoldings;
@@ -909,11 +940,25 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         );
 
         // 2. Update Summary
+        double newTotalGainLoss = dto.totalGainLoss;
+        double newTotalGainLossPercentage = dto.totalGainLossPercentage;
+        
+        if (_currentTimeFrame != 'all') {
+          final baselineWealth = currentState.summary.totalValue - currentState.summary.totalGainLoss;
+          if (baselineWealth > 0) {
+            newTotalGainLoss = dto.currentValue - baselineWealth;
+            newTotalGainLossPercentage = (newTotalGainLoss / baselineWealth) * 100.0;
+          } else {
+            newTotalGainLoss = currentState.summary.totalGainLoss;
+            newTotalGainLossPercentage = currentState.summary.totalGainLossPercentage;
+          }
+        }
+
         final updatedSummary = currentState.summary.copyWith(
           totalValue: dto.currentValue,
           investmentValue: dto.investmentValue,
-          totalGainLoss: dto.totalGainLoss,
-          totalGainLossPercentage: dto.totalGainLossPercentage,
+          totalGainLoss: newTotalGainLoss,
+          totalGainLossPercentage: newTotalGainLossPercentage,
           todayChange: dto.todayGainLoss,
           todayChangePercentage: dto.todayGainLossPercentage,
           lastUpdated: DateTime.now(),
@@ -994,6 +1039,74 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         '⏭️ Received WebSocket update but state is ${currentState.runtimeType} (Expected PortfolioLoaded)',
         tag: 'PortfolioCubit',
       );
+    }
+  }
+
+  /// Create a new portfolio
+  Future<void> createPortfolio(PortfolioCreateRequestDto request) async {
+    CommonLogger.methodEntry('createPortfolio', tag: 'PortfolioCubit');
+    try {
+      await _portfolioService.createPortfolio(request);
+      await refreshPortfoliosList();
+      // If no portfolio was loaded (or it was 'all'), we might want to reload
+      if (_loadedPortfolioId == 'all' || _loadedPortfolioId == null) {
+        loadPortfolioById('all');
+      }
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to create portfolio',
+        tag: 'PortfolioCubit',
+        error: e,
+      );
+      if (!isClosed) emit(PortfolioError('Failed to create portfolio'));
+    }
+  }
+
+  /// Update an existing portfolio
+  Future<void> updatePortfolio(
+    String portfolioId,
+    PortfolioUpdateRequestDto request,
+  ) async {
+    CommonLogger.methodEntry('updatePortfolio', tag: 'PortfolioCubit');
+    try {
+      await _portfolioService.updatePortfolio(portfolioId, request);
+      await refreshPortfoliosList();
+      if (_loadedPortfolioId == portfolioId) {
+        loadPortfolioById(portfolioId);
+      }
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to update portfolio',
+        tag: 'PortfolioCubit',
+        error: e,
+      );
+      if (!isClosed) emit(PortfolioError('Failed to update portfolio'));
+    }
+  }
+
+  /// Delete a portfolio
+  Future<void> deletePortfolio(
+    String portfolioId, {
+    bool deleteTrades = false,
+  }) async {
+    CommonLogger.methodEntry('deletePortfolio', tag: 'PortfolioCubit');
+    try {
+      await _portfolioService.deletePortfolio(
+        portfolioId,
+        deleteTrades: deleteTrades,
+      );
+      await refreshPortfoliosList();
+      if (_loadedPortfolioId == portfolioId || _loadedPortfolioId == null) {
+        // If we deleted the currently loaded portfolio, switch to 'all' or empty state
+        loadPortfolioById('all');
+      }
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to delete portfolio',
+        tag: 'PortfolioCubit',
+        error: e,
+      );
+      if (!isClosed) emit(PortfolioError('Failed to delete portfolio'));
     }
   }
 }

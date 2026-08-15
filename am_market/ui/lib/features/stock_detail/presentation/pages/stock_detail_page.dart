@@ -5,6 +5,7 @@ import 'package:am_market_ui/shared/widgets/stock_chart.dart';
 import 'package:am_market_ui/shared/widgets/time_range_selector.dart';
 import 'package:am_market_common/services/api_service.dart';
 import 'package:am_market_ui/features/etf/services/etf_service.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import 'package:provider/provider.dart';
 import 'package:am_market_common/providers/market_provider.dart';
@@ -64,7 +65,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
     final marketProvider = Provider.of<MarketProvider>(context, listen: false);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E), // Dark Theme Background
+      backgroundColor: context.colors.surface,
       appBar: AppBar(
         title: StreamBuilder<Map<String, dynamic>>(
           stream: marketProvider.livePriceStream,
@@ -80,7 +81,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
                ltp = (liveData['lastPrice'] as num).toDouble();
                change = (liveData['change'] as num).toDouble();
                pChange = (liveData['changePercent'] as num).toDouble();
-               color = change >= 0 ? Colors.greenAccent : Colors.redAccent;
+               color = change >= 0 ? context.colors.statusSuccess : context.colors.statusError;
             }
 
             return Column(
@@ -96,7 +97,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
             );
           }
         ),
-        backgroundColor: const Color(0xFF2E2E3E),
+        backgroundColor: context.colors.cardSurface,
       ),
       body: Column(
         children: [

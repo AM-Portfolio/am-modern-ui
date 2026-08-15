@@ -15,7 +15,7 @@ class SentimentSelector extends StatelessWidget {
     return Wrap(
       spacing: 3,
       runSpacing: 3,
-      children: JournalMoodOptions.sentiments.entries.map((entry) {
+      children: JournalMoodOptions.getSentiments(context).entries.map((entry) {
         final isSelected = selectedSentiment == entry.key;
         final sentimentData = entry.value;
         return InkWell(

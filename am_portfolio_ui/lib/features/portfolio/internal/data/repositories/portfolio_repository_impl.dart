@@ -5,6 +5,8 @@ import 'dart:convert';
 import '../../domain/entities/portfolio_holding.dart';
 import '../../domain/entities/portfolio_summary.dart';
 import '../../domain/entities/portfolio_list.dart';
+import '../../data/dtos/portfolio_create_request_dto.dart';
+import '../../data/dtos/portfolio_update_request_dto.dart';
 import '../../domain/repositories/portfolio_repository.dart';
 import '../datasources/portfolio_remote_data_source.dart';
 import '../mappers/portfolio_holdings_mapper.dart';
@@ -127,7 +129,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<PortfolioSummary> getPortfolioSummary() async {
+  Future<PortfolioSummary> getPortfolioSummary([String? interval]) async {
     CommonLogger.methodEntry(
       'getPortfolioSummary',
       tag: 'PortfolioRepository',
@@ -151,7 +153,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
     try {
       // 2. Fetch Fresh Data
-      final summaryDto = await _remoteDataSource.getPortfolioSummary();
+      final summaryDto = await _remoteDataSource.getPortfolioSummary(interval);
 
       // Map DTO to domain entity using summary mapper
       final summary = PortfolioSummaryMapper.fromApiModel(summaryDto);
@@ -305,8 +307,9 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
   @override
   Future<PortfolioSummary> getPortfolioSummaryById(
-    String portfolioId,
-  ) async {
+    String portfolioId, [
+    String? interval,
+  ]) async {
     CommonLogger.methodEntry(
       'getPortfolioSummaryById',
       tag: 'PortfolioRepository',
@@ -317,6 +320,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       // Fetch from remote data source using specific portfolio ID
       final summaryDto = await _remoteDataSource.getPortfolioSummaryById(
         portfolioId,
+        interval,
       );
 
       // Map DTO to domain entity using summary mapper
@@ -662,6 +666,72 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
       // Note: Removed silent fallback to stale cache. The UI needs to know
       // when network fetch fails so it can show appropriate error state.
+      rethrow;
+    }
+  }
+
+  @override
+  Future<PortfolioItem> createPortfolio(
+    PortfolioCreateRequestDto request,
+  ) async {
+    CommonLogger.methodEntry('createPortfolio', tag: 'PortfolioRepository');
+    try {
+      final dto = await _remoteDataSource.createPortfolio(request);
+      final item = PortfolioItem(
+        portfolioId: dto.portfolioId,
+        portfolioName: dto.portfolioName,
+      );
+      return item;
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to create portfolio',
+        tag: 'PortfolioRepository',
+        error: e,
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<PortfolioItem> updatePortfolio(
+    String portfolioId,
+    PortfolioUpdateRequestDto request,
+  ) async {
+    CommonLogger.methodEntry('updatePortfolio', tag: 'PortfolioRepository');
+    try {
+      final dto = await _remoteDataSource.updatePortfolio(portfolioId, request);
+      final item = PortfolioItem(
+        portfolioId: dto.portfolioId,
+        portfolioName: dto.portfolioName,
+      );
+      return item;
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to update portfolio',
+        tag: 'PortfolioRepository',
+        error: e,
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deletePortfolio(
+    String portfolioId, {
+    bool deleteTrades = false,
+  }) async {
+    CommonLogger.methodEntry('deletePortfolio', tag: 'PortfolioRepository');
+    try {
+      await _remoteDataSource.deletePortfolio(
+        portfolioId,
+        deleteTrades: deleteTrades,
+      );
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to delete portfolio',
+        tag: 'PortfolioRepository',
+        error: e,
+      );
       rethrow;
     }
   }

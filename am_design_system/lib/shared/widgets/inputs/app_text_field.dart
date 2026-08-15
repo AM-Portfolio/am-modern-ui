@@ -27,6 +27,8 @@ class AppTextField extends PlatformWidget<CupertinoTextField, TextField> {
     this.contentPadding,
     this.prefix,
     this.suffix,
+    this.focusedBorderColor,
+    this.focusedBorderWidth = 2,
   });
   final TextEditingController? controller;
   final String? labelText;
@@ -44,6 +46,8 @@ class AppTextField extends PlatformWidget<CupertinoTextField, TextField> {
   final EdgeInsetsGeometry? contentPadding;
   final Widget? prefix;
   final Widget? suffix;
+  final Color? focusedBorderColor;
+  final double focusedBorderWidth;
 
   @override
   CupertinoTextField buildIosWidget(BuildContext context) {
@@ -101,8 +105,8 @@ class AppTextField extends PlatformWidget<CupertinoTextField, TextField> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(config.defaultRadius),
           borderSide: BorderSide(
-            color: config.primaryColor,
-            width: 2,
+            color: focusedBorderColor ?? config.primaryColor,
+            width: focusedBorderWidth,
           ),
         ),
       ),

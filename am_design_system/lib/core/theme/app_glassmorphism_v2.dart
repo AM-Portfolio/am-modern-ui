@@ -142,16 +142,7 @@ class AppGlassmorphismV2 {
     }
     
     return const BoxDecoration(
-      gradient: LinearGradient(
-        colors: [
-          Color(0xFF0A0A0F),
-          Color(0xFF1A1A2E),
-          Color(0xFF16213E),
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        stops: [0.0, 0.5, 1.0],
-      ),
+      color: AppColors.darkBackground,
     );
   }
 

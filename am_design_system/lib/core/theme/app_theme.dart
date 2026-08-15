@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
+import 'app_colors_theme.dart';
+import 'app_radii.dart';
+import 'app_spacing.dart';
 import 'app_typography.dart';
-import 'app_animations.dart';
 
 /// Main Theme Engine for the Application
 /// Provides Light and Dark modes with granular control
@@ -41,15 +42,28 @@ class AppTheme {
     );
   }
 
+  static ThemeData get skyBlueTheme {
+    return _buildTheme(
+      brightness: Brightness.light,
+      backgroundColor: const Color(0xFFD1ECF9),
+      surfaceColor: const Color(0xFFD1ECF9),
+      primaryColor: const Color(0xFF0288D1),
+      textColor: AppColors.textPrimaryLight,
+      customColors: AppColorsTheme.skyBlue,
+    );
+  }
+
   static ThemeData _buildTheme({
     required Brightness brightness,
     required Color backgroundColor,
     required Color surfaceColor,
     required Color primaryColor,
     required Color textColor,
+    AppColorsTheme? customColors,
   }) {
     final isDark = brightness == Brightness.dark;
     final textTheme = AppTypography.getTextTheme(isDark: isDark);
+    final colors = customColors ?? (isDark ? AppColorsTheme.dark : AppColorsTheme.light);
     
     // Apply Google Fonts Inter globally if desired, overlaying our custom TextTheme
     // final fontTheme = GoogleFonts.interTextTheme(textTheme);
@@ -61,21 +75,22 @@ class AppTheme {
       primaryColor: primaryColor,
       scaffoldBackgroundColor: backgroundColor,
       fontFamily: 'Inter',
+      extensions: <ThemeExtension<dynamic>>[colors],
       
       // Color Scheme
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: primaryColor,
-        onPrimary: Colors.white,
+        onPrimary: colors.actionPrimaryFg,
         secondary: AppColors.accent,
-        onSecondary: Colors.white,
-        error: AppColors.error,
-        onError: Colors.white,
+        onSecondary: colors.actionPrimaryFg,
+        error: colors.statusError,
+        onError: colors.actionPrimaryFg,
         surface: surfaceColor,
         onSurface: textColor, // Usually text color
         // Surface Container Highest is often used for input fields / cards in M3
-        surfaceContainerHighest: isDark ? AppColors.darkCard : AppColors.lightCard,
-        outline: isDark ? Colors.white24 : Colors.grey.shade300,
+        surfaceContainerHighest: colors.cardSurface,
+        outline: colors.border,
       ),
       
       // Typography
@@ -83,13 +98,13 @@ class AppTheme {
       
       // Component Themes
       cardTheme: CardThemeData(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+        color: colors.cardSurface,
         elevation: 0,
-        margin: EdgeInsets.all(0),
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadii.card,
           side: BorderSide(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+            color: colors.border.withValues(alpha: 0.35),
             width: 1,
           ),
         ),
@@ -107,7 +122,7 @@ class AppTheme {
       ),
       
       dividerTheme: DividerThemeData(
-        color: isDark ? Colors.white10 : Colors.black12,
+        color: colors.divider,
         thickness: 1,
         space: 1,
       ),
@@ -120,28 +135,33 @@ class AppTheme {
       // Inputs
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        fillColor: isDark
+            ? colors.cardSurface.withValues(alpha: 0.55)
+            : colors.surface,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm + AppSpacing.xs,
+        ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadii.input,
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadii.input,
           borderSide: BorderSide(
-            color: isDark ? Colors.white10 : Colors.black12,
+            color: colors.border.withValues(alpha: 0.45),
             width: 1,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadii.input,
           borderSide: BorderSide(
             color: primaryColor,
             width: 1.5,
           ),
         ),
         hintStyle: fontTheme.bodyMedium?.copyWith(
-          color: isDark ? Colors.white38 : Colors.black38,
+          color: colors.textDisabled,
         ),
       ),
       
@@ -149,11 +169,14 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
-          foregroundColor: Colors.white,
+          foregroundColor: colors.actionPrimaryFg,
           elevation: 0,
-          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.sm + AppSpacing.xs,
+          ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadii.input,
           ),
           textStyle: fontTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.bold,

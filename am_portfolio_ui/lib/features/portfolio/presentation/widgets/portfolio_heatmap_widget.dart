@@ -11,7 +11,7 @@ import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_heatmap_cubit.dart';
 import '../cubit/portfolio_heatmap_state.dart';
 import '../cubit/portfolio_state.dart';
-import '../../internal/domain/entities/portfolio_analytics.dart' as analytics_entities;
+import '../mappers/sector_heatmap_converter.dart';
 import 'portfolio_metric_card.dart';
 
 
@@ -506,21 +506,15 @@ class _PortfolioHeatmapWidgetState
             String worstSector = '--';
             String worstSectorChange = '';
 
-            if (analyticsState is PortfolioAnalyticsLoaded &&
-                analyticsState.heatmap != null &&
-                analyticsState.heatmap!.sectors.isNotEmpty) {
-              final sectors = List<analytics_entities.Sector>.from(
-                analyticsState.heatmap!.sectors,
-              )
-                ..removeWhere((s) {
-                  final name = s.sectorName.trim();
-                  return name.isEmpty || name == '-' || name.toLowerCase() == 'unknown';
-                })
-                ..sort((a, b) => b.changePercent.compareTo(a.changePercent));
-              topSector = sectors.first.sectorName;
-              topSectorChange = sectors.first.formattedChangePercent;
-              worstSector = sectors.last.sectorName;
-              worstSectorChange = sectors.last.formattedChangePercent;
+            if (analyticsState is PortfolioAnalyticsLoaded) {
+              final summary = SectorHeatmapConverter.resolveSectorSummary(
+                heatmap: analyticsState.heatmap,
+                sectorAllocation: analyticsState.sectorAllocation,
+              );
+              topSector = summary.topSector;
+              topSectorChange = summary.topSectorChange;
+              worstSector = summary.worstSector;
+              worstSectorChange = summary.worstSectorChange;
             }
 
             return LayoutBuilder(
@@ -598,78 +592,127 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Builds the "Equity Distribution" header with pill tag, status, and legend.
-  /// Uses [Wrap] so title / timeframe / status never force a horizontal overflow.
+  /// Builds the "Equity Distribution" header with perfectly aligned title, filters, and timeframe.
   Widget _buildEquityDistributionHeader(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Pills need ~420px; below that switch to compact dropdown.
-        final useDropdown = constraints.maxWidth < 1100;
+        final isNarrow = constraints.maxWidth < 950;
 
-        final titleChip = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Equity Distribution',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
+        final titleWidget = Container(
+          height: 40,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Equity Distribution',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
             ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'MARKET CAP WEIGHTED',
-                style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.55),
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ),
-          ],
+          ),
         );
 
-        final legendRow = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildLegendDot(context, const Color(0xFF0BA95B), 'Outperform'),
-            const SizedBox(width: 12),
-            _buildLegendDot(context, const Color(0xFF6B7280), 'Neutral'),
-            const SizedBox(width: 12),
-            _buildLegendDot(context, const Color(0xFFB22222), 'Underperform'),
-          ],
+        final filterRow = _buildFilterRow(context, isCompact: isNarrow);
+
+        final timeframeBar = Container(
+          height: 40,
+          alignment: Alignment.centerRight,
+          child: GlobalTimeFrameBar(
+            variant: isNarrow
+                ? GlobalTimeFrameVariant.dropdown
+                : GlobalTimeFrameVariant.pills,
+          ),
         );
 
-        return Wrap(
-          spacing: 16,
-          runSpacing: 10,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        if (isNarrow) {
+          return Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              titleWidget,
+              filterRow,
+              timeframeBar,
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            titleChip,
-            GlobalTimeFrameBar(
-              variant: useDropdown
-                  ? GlobalTimeFrameVariant.dropdown
-                  : GlobalTimeFrameVariant.pills,
-            ),
-            _buildInlineStatusBar(context),
-            legendRow,
+            // Left: Title
+            titleWidget,
+            
+            const SizedBox(width: 20),
+            
+            // Center-left: Filters grouped beside title
+            filterRow,
+            
+            const Spacer(),
+            
+            // Right: Timeframe Pills
+            timeframeBar,
           ],
         );
       },
+    );
+  }
+
+  Widget _buildFilterRow(BuildContext context, {bool isCompact = false}) {
+    final dropWidth = isCompact ? 130.0 : 150.0;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Sector Filter
+        SizedBox(
+          width: dropWidth,
+          child: CustomDropdown<SectorType>(
+            value: _selectedSector ?? SectorType.all,
+            items: SectorType.values
+                .map((item) => item.toDropdownItem(
+                    text: item.displayName, icon: Icons.category_outlined))
+                .toList(),
+            onChanged: (val) {
+              if (val != null) _onFiltersChanged(sector: val);
+            },
+            isExpanded: true,
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Market Cap Filter
+        SizedBox(
+          width: dropWidth,
+          child: CustomDropdown<MarketCapType>(
+            value: _selectedMarketCap ?? MarketCapType.all,
+            items: MarketCapType.values
+                .map((item) => item.toDropdownItem(
+                    text: item.displayName, icon: Icons.pie_chart_outline))
+                .toList(),
+            onChanged: (val) {
+              if (val != null) _onFiltersChanged(marketCap: val);
+            },
+            isExpanded: true,
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Layout Filter
+        SizedBox(
+          width: dropWidth,
+          child: CustomDropdown<HeatmapLayoutType>(
+            value: _selectedLayout,
+            items: HeatmapLayoutType.values
+                .map((item) => item.toDropdownItem(
+                    text: item.displayName, icon: Icons.grid_view_outlined))
+                .toList(),
+            onChanged: (val) {
+              if (val != null) _onFiltersChanged(layout: val);
+            },
+            isExpanded: true,
+          ),
+        ),
+      ],
     );
   }
 

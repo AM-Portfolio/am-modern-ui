@@ -6,6 +6,7 @@ import 'package:am_design_system/core/constants/app_config.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
+import '../../../../core/utils/auth_redirect.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../widgets/app_header_widget.dart';
@@ -40,9 +41,9 @@ class LoginPage extends StatelessWidget {
             if (state is Authenticated) {
               final router = GoRouter.maybeOf(context);
               if (router != null) {
-                final redirect =
-                    GoRouterState.of(context).uri.queryParameters['redirect'];
-                final target = _sanitizeAppRedirect(redirect) ?? '/app/dashboard';
+                final target = AuthRedirect.postLoginLocation(
+                  GoRouterState.of(context).uri,
+                );
                 context.go(target);
               } else {
                 Navigator.of(context).pushReplacementNamed('/home');
@@ -53,7 +54,7 @@ class LoginPage extends StatelessWidget {
                   content: Text(
                     'Please verify ${state.email} before signing in. Check your Asrax welcome email.',
                   ),
-                  backgroundColor: AppColors.warning,
+                  backgroundColor: context.colors.statusWarning,
                   duration: const Duration(seconds: 8),
                   action: SnackBarAction(
                     label: 'Resend',
@@ -68,7 +69,7 @@ class LoginPage extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
-                  backgroundColor: AppColors.error,
+                  backgroundColor: context.colors.statusError,
                 ),
               );
             }
@@ -158,22 +159,16 @@ class LoginPage extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: context.isDark
-                  ? [
-                      AppColors.darkBackground,
-                      AppColors.darkBackgroundLight,
-                      AppColors.darkBackgroundDeep,
-                    ]
-                  : [
-                      AppColors.lightBackgroundAlt,
-                      AppColors.lightBackground,
-                      AppColors.lightBackgroundAlt,
-                    ],
+              colors: [
+                context.colors.surface,
+                context.colors.scaffoldBackground,
+                context.colors.surface,
+              ],
             ),
           ),
           child: InteractiveBackground(
-            baseColor: context.isDark ? AppColors.authAccent : AppColors.primaryLight,
-            highlightColor: context.isDark ? AppColors.accentBlue : AppColors.info,
+            baseColor: context.colors.actionPrimaryBg,
+            highlightColor: context.colors.actionPrimaryBg.withValues(alpha: 0.8),
           ),
         ),
       ),
@@ -182,6 +177,8 @@ class LoginPage extends StatelessWidget {
 
   
   Widget _buildLoginForm(BuildContext context, AuthState state, bool isCompact) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -197,25 +194,34 @@ class LoginPage extends StatelessWidget {
         // Divider
         Row(
           children: [
-            const Expanded(child: Divider()),
+            Expanded(
+              child: Divider(
+                color: context.colors.divider,
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 'OR',
                 style: TextStyle(
                   fontSize: isCompact ? 11 : 12,
-                  color: context.textTertiary,
+                  color: context.colors.textSecondary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const Expanded(child: Divider()),
+            Expanded(
+              child: Divider(
+                color: context.colors.divider,
+              ),
+            ),
           ],
         ),
         
         SizedBox(height: isCompact ? 16 : 24),
         
         // Google login
-        const GoogleLoginButtonWidget(),
+        GoogleLoginButtonWidget(isLoading: state is AuthLoading),
         
         SizedBox(height: isCompact ? 16 : 24),
         
@@ -224,48 +230,27 @@ class LoginPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Flexible(
-              child: TextButton(
+              child: _LiquidAuthLink(
+                text: 'Forgot Password?',
+                isCompact: isCompact,
                 onPressed: () => context.push('/forgot-password'),
-                child: Text(
-                  'Forgot Password?',
-                  style: TextStyle(
-                    fontSize: isCompact ? 13 : 14,
-                    color: Theme.of(context).primaryColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
               ),
             ),
-            Text(
-              '|',
-              style: TextStyle(
-                color: context.textTertiary,
-                fontSize: isCompact ? 13 : 14,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                '|',
+                style: TextStyle(
+                  color: context.colors.textSecondary,
+                  fontSize: isCompact ? 13 : 14,
+                ),
               ),
             ),
             Flexible(
-              child: TextButton(
+              child: _LiquidAuthLink(
+                text: 'Create Account',
+                isCompact: isCompact,
                 onPressed: () => context.push('/register'),
-                child: Text(
-                  'Create Account',
-                  style: TextStyle(
-                    fontSize: isCompact ? 13 : 14,
-                    color: Theme.of(context).primaryColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
               ),
             ),
           ],
@@ -280,19 +265,48 @@ class LoginPage extends StatelessWidget {
   }
 }
 
-String? _sanitizeAppRedirect(String? redirect) {
-  if (redirect == null || redirect.isEmpty) return null;
+class _LiquidAuthLink extends StatefulWidget {
+  final String text;
+  final bool isCompact;
+  final VoidCallback onPressed;
 
-  var candidate = redirect;
-  if (candidate.startsWith('http://') || candidate.startsWith('https://')) {
-    try {
-      final uri = Uri.parse(candidate);
-      candidate = uri.hasQuery ? '${uri.path}?${uri.query}' : uri.path;
-    } catch (_) {
-      return null;
-    }
-  }
+  const _LiquidAuthLink({
+    required this.text,
+    required this.isCompact,
+    required this.onPressed,
+  });
 
-  if (!candidate.startsWith('/app')) return null;
-  return candidate;
+  @override
+  State<_LiquidAuthLink> createState() => _LiquidAuthLinkState();
 }
+
+class _LiquidAuthLinkState extends State<_LiquidAuthLink> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final linkColor = context.colors.textPrimary.withValues(alpha: _isHovering ? 1.0 : 0.75);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          style: TextStyle(
+            fontSize: widget.isCompact ? 13 : 14,
+            color: linkColor,
+            fontWeight: FontWeight.w500,
+          ),
+          child: Text(
+            widget.text,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
+}
+

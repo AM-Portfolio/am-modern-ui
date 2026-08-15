@@ -8,5 +8,6 @@ class BasketEndpoints {
   // Basket endpoints - using full URLs so ApiClient handles them correctly
   static String get opportunities => '$baseUrl/v1/basket/opportunities';
   static String get preview => '$baseUrl/v1/basket/preview';
+  static String get catalog => '$baseUrl/v1/basket/catalog';
   static String get calculateQuantities => '$baseUrl/v1/basket/calculate-quantities';
 }

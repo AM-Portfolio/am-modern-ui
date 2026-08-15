@@ -133,8 +133,14 @@ Future<PortfolioService> portfolioService(Ref ref) async {
   final getHoldings = await ref.watch(getPortfolioHoldingsProvider.future);
   final getSummary = await ref.watch(getPortfolioSummaryProvider.future);
   final getPortfoliosList = await ref.watch(getPortfoliosListProvider.future);
+  final repository = await ref.watch(portfolioRepositoryProvider.future);
 
-  return PortfolioService(getHoldings, getSummary, getPortfoliosList);
+  return PortfolioService(
+    getHoldings,
+    getSummary,
+    getPortfoliosList,
+    repository,
+  );
 }
 
 @Riverpod(keepAlive: true)

@@ -29,12 +29,14 @@ class GoogleSignInAuthentication {
   final String? idToken;
 }
 
-/// Service for Google Sign-In (Stub/Mobile)
+/// Fallback Google Sign-In when neither web nor dart:io is available.
 class GoogleSignInService {
   /// Sign in with Google
   Future<GoogleSignInAccount?> signIn() async {
-    CommonLogger.warning('Google Sign-In not implemented for mobile in this Service stub.');
-    throw AuthException('Google Sign-In not supported on mobile (Stub)');
+    CommonLogger.warning(
+      'Google Sign-In stub invoked — unexpected platform (not web/io).',
+    );
+    throw AuthException('Google Sign-In is not available on this platform');
   }
 
   /// Sign out from Google
