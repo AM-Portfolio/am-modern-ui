@@ -47,17 +47,19 @@ class BasketPreviewPage extends ConsumerWidget {
     // Apply Dark Theme override for this specific page to match premium aesthetic
     return Theme(
       data: AppTheme.darkTheme,
-      child: Scaffold(
-        backgroundColor: AppColors.backgroundDark,
-        appBar: embedded
-            ? null
-            : AppBar(
-                title: const Text('Basket Preview'),
-                centerTitle: false,
-                backgroundColor: AppColors.surfacePrimaryDark,
-                elevation: 0,
-              ),
-        body: body,
+      child: Builder(
+        builder: (innerContext) => Scaffold(
+          backgroundColor: innerContext.colors.scaffoldBackground,
+          appBar: embedded
+              ? null
+              : AppBar(
+                  title: const Text('Basket Preview'),
+                  centerTitle: false,
+                  backgroundColor: innerContext.colors.surface,
+                  elevation: 0,
+                ),
+          body: body,
+        ),
       ),
     );
   }
@@ -95,7 +97,7 @@ class _BasketContent extends StatelessWidget {
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
                   border: Border(
-                    left: BorderSide(color: context.colors.borderLight),
+                    left: BorderSide(color: context.colors.border),
                   ),
                 ),
                 child: SingleChildScrollView(
@@ -224,9 +226,9 @@ class _BottomActionBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: context.colors.surfacePrimary,
+        color: context.colors.surface,
         border: Border(
-          top: BorderSide(color: context.colors.borderLight),
+          top: BorderSide(color: context.colors.border),
         ),
       ),
       child: SafeArea(

@@ -20,10 +20,10 @@ class PreviewHeroHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: context.colors.surfacePrimary,
+        color: context.colors.surface,
         border: Border(
           bottom: BorderSide(
-            color: context.colors.borderLight,
+                        color: context.colors.border,
             width: 1,
           ),
         ),
@@ -90,10 +90,10 @@ class PreviewHeroHeader extends StatelessWidget {
                       vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
-                      color: context.colors.surfaceSecondary,
+                      color: context.colors.cardSurface,
                       borderRadius: AppRadii.button,
                       border: Border.all(
-                        color: context.colors.borderLight,
+                                    color: context.colors.border,
                       ),
                     ),
                     child: Row(

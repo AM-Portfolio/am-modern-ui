@@ -607,9 +607,9 @@ class _ManualBasketCreatorPageState
     final confirm = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: context.colors.surfacePrimary,
+      backgroundColor: context.colors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.cardRadius)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.lg)),
       ),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),

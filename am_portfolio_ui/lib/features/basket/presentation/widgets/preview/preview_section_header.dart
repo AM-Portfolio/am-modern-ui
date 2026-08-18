@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
-import '../../../domain/models/basket_enums.dart';
+import '../../../domain/models/basket_opportunity.dart';
 
 class PreviewSectionHeader extends StatelessWidget {
   final String title;

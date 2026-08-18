@@ -87,10 +87,10 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
               vertical: AppSpacing.sm,
             ),
             decoration: BoxDecoration(
-              color: context.colors.surfacePrimary,
+              color: context.colors.surface,
               border: Border(
                 bottom: BorderSide(
-                  color: context.colors.borderLight,
+                  color: context.colors.border,
                 ),
               ),
             ),
