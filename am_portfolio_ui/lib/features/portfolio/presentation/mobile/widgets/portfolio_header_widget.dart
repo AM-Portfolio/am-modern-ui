@@ -157,16 +157,34 @@ class PortfolioHeaderWidget extends StatelessWidget {
                         ? Theme.of(context).primaryColor
                         : Colors.grey,
                   ),
-                  title: Text(
-                    p.portfolioName,
-                    style: TextStyle(
-                      fontWeight: p.portfolioId == currentPortfolioId
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: p.portfolioId == currentPortfolioId
-                          ? Theme.of(context).primaryColor
-                          : null,
-                    ),
+                  title: Row(
+                    children: [
+                      Text(
+                        p.portfolioName,
+                        style: TextStyle(
+                          fontWeight: p.portfolioId == currentPortfolioId
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: p.portfolioId == currentPortfolioId
+                              ? Theme.of(context).primaryColor
+                              : null,
+                        ),
+                      ),
+                      if (p.isBasket)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                          ),
+                          child: const Text(
+                            'BASKET',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue),
+                          ),
+                        ),
+                    ],
                   ),
                   trailing: p.portfolioId == currentPortfolioId
                       ? Icon(Icons.check, color: Theme.of(context).primaryColor)

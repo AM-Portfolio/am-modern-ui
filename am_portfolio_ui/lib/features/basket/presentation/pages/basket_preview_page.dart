@@ -3,8 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../providers/basket_providers.dart';
 import '../basket_navigation.dart';
-import '../widgets/basket_section_header.dart';
 import '../../domain/models/basket_opportunity.dart';
+import '../../domain/models/basket_enums.dart';
+
+// New Modular Widgets
+import '../widgets/preview/preview_hero_header.dart';
+import '../widgets/preview/preview_section_header.dart';
+import '../widgets/preview/preview_stock_row.dart';
+import '../widgets/preview/preview_summary_sidebar.dart';
 
 class BasketPreviewPage extends ConsumerWidget {
   final String etfIsin;
@@ -22,7 +28,7 @@ class BasketPreviewPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final opportunityAsync = ref.watch(basketPreviewProvider(
+    final opportunityAsync = ref.watch(enhancedBasketPreviewProvider(
       etfIsin: etfIsin,
       userId: userId,
       portfolioId: portfolioId,
@@ -38,25 +44,21 @@ class BasketPreviewPage extends ConsumerWidget {
       error: (err, stack) => Center(child: Text('Error: $err')),
     );
 
-    if (embedded) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          BasketSectionHeader(
-            title: 'Basket Preview',
-            onBack: () => Navigator.of(context).pop(),
-          ),
-          Expanded(child: body),
-        ],
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Basket Preview'),
-        centerTitle: false,
+    // Apply Dark Theme override for this specific page to match premium aesthetic
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundDark,
+        appBar: embedded
+            ? null
+            : AppBar(
+                title: const Text('Basket Preview'),
+                centerTitle: false,
+                backgroundColor: AppColors.surfacePrimaryDark,
+                elevation: 0,
+              ),
+        body: body,
       ),
-      body: body,
     );
   }
 }
@@ -74,6 +76,65 @@ class _BasketContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth > 800;
+
+        if (isDesktop) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Pane: Hero + Grouped Lists
+              Expanded(
+                flex: 65,
+                child: _buildScrollableContent(context, isDesktop),
+              ),
+              // Right Pane: Sticky Summary Sidebar
+              Container(
+                width: 350,
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(color: context.colors.borderLight),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  child: PreviewSummarySidebar(
+                    opportunity: opportunity,
+                    onCustomizeTap: () => BasketNavigation.openCreator(
+                      context,
+                      opportunity: opportunity,
+                      userId: userId,
+                      portfolioId: portfolioId,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        } else {
+          // Mobile: Stacked view with sticky CTA at bottom
+          return Column(
+            children: [
+              Expanded(
+                child: _buildScrollableContent(context, isDesktop),
+              ),
+              _BottomActionBar(
+                onPressed: () => BasketNavigation.openCreator(
+                  context,
+                  opportunity: opportunity,
+                  userId: userId,
+                  portfolioId: portfolioId,
+                ),
+              ),
+            ],
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildScrollableContent(BuildContext context, bool isDesktop) {
     final heldItems = opportunity.composition
         .where((item) => item.status == ItemStatus.held)
         .toList();
@@ -84,296 +145,70 @@ class _BasketContent extends StatelessWidget {
         .where((item) => item.status == ItemStatus.missing)
         .toList();
 
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        children: [
-          _EntryHeroCard(opportunity: opportunity),
-          Container(
-             margin: const EdgeInsets.symmetric(horizontal: 16),
-             decoration: BoxDecoration(
-               border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
-             ),
-             child: TabBar(
-               labelColor: context.colors.actionPrimaryBg,
-               unselectedLabelColor: context.textSecondary,
-               indicatorColor: context.colors.actionPrimaryBg,
-               indicatorWeight: 3,
-               isScrollable: true,
-               labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-               tabs: [
-                 Tab(text: "Held (${heldItems.length})"),
-                 Tab(text: "Substitute (${substituteItems.length})"),
-                 Tab(text: "Missing (${missingItems.length})"),
-               ],
-             ),
-           ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _HeldItemsList(items: heldItems),
-                _HeldItemsList(
-                  items: substituteItems,
-                  emptyMessage: 'No substitute holdings for this basket.',
-                ),
-                _MissingItemsList(items: missingItems),
-              ],
+    return CustomScrollView(
+      slivers: [
+        if (!isDesktop) // Standard AppBar handles this on Desktop if not embedded, but we just use HeroHeader
+          SliverToBoxAdapter(
+            child: PreviewHeroHeader(opportunity: opportunity),
+          ),
+        if (isDesktop)
+          SliverToBoxAdapter(
+            child: PreviewHeroHeader(opportunity: opportunity),
+          ),
+        
+        // Missing Section
+        if (missingItems.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: PreviewSectionHeader(
+              title: 'Missing / Swap Required',
+              subtitle: '${missingItems.length} Stocks',
+              statusType: ItemStatus.missing,
             ),
           ),
-          _BottomActionBar(
-            onPressed: () {
-              BasketNavigation.openCreator(
-                context,
-                opportunity: opportunity,
-                userId: userId,
-                portfolioId: portfolioId,
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EntryHeroCard extends StatelessWidget {
-  final BasketOpportunity opportunity;
-
-  const _EntryHeroCard({required this.opportunity});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withOpacity(0.1),
-            Theme.of(context).scaffoldBackgroundColor,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  opportunity.etfName,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Based on your holdings, you are ${opportunity.composition.length - opportunity.heldCount} stocks away from replicating this basket.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                 const SizedBox(height: 12),
-                 Row(
-                   children: [
-                     _ScoreBadge(label: "Match Score", score: opportunity.matchScore, color: AppColors.primary),
-                     const SizedBox(width: 12),
-                     _ScoreBadge(label: "Replica Score", score: opportunity.replicaScore, color: AppColors.success),
-                   ],
-                 )
-              ],
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => PreviewStockRow(item: missingItems[index]),
+              childCount: missingItems.length,
             ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
         ],
-      ),
-    );
-  }
-}
 
-class _ScoreBadge extends StatelessWidget {
-  final String label;
-  final double score;
-  final Color color;
-
-  const _ScoreBadge({required this.label, required this.score, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-     return Container(
-       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-       decoration: BoxDecoration(
-         color: color.withOpacity(0.1),
-         borderRadius: BorderRadius.circular(8),
-         border: Border.all(color: color.withOpacity(0.3)),
-       ),
-       child: Column(
-         crossAxisAlignment: CrossAxisAlignment.start,
-         children: [
-           Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color)),
-           Text("${score.toStringAsFixed(1)}%", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: color)),
-         ],
-       ),
-     );
-  }
-}
-
-class _BasketItemHeader extends StatelessWidget {
-  const _BasketItemHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).canvasColor,
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
-      ),
-      child: Row(
-        children: [
-          Expanded(flex: 4, child: Text("Instrument", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
-          Expanded(flex: 1, child: Text("ETF %", textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
-          Expanded(flex: 1, child: Text("Your %", textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
+        // Substituted Section
+        if (substituteItems.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: PreviewSectionHeader(
+              title: 'Automatically Substituted',
+              subtitle: '${substituteItems.length} Stocks',
+              statusType: ItemStatus.substitute,
+            ),
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => PreviewStockRow(item: substituteItems[index]),
+              childCount: substituteItems.length,
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
         ],
-      ),
-    );
-  }
-}
 
-class _HeldItemsList extends StatelessWidget {
-  final List<BasketItem> items;
-  final String emptyMessage;
-
-  const _HeldItemsList({
-    required this.items,
-    this.emptyMessage = 'No held items match this basket.',
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Text(emptyMessage),
-        ),
-      );
-    }
-    return Column(
-      children: [
-        const _BasketItemHeader(),
-        Expanded(
-          child: ListView.separated(
-            itemCount: items.length,
-            separatorBuilder: (c, i) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              final isSubstitute = item.status == ItemStatus.substitute;
-              
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                color: isSubstitute ? AppColors.info.withOpacity(0.05) : null,
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(
-                            "${item.sector} ${item.marketCapCategory != null ? '• ${item.marketCapCategory}' : ''}",
-                            style: Theme.of(context).textTheme.bodySmall
-                          ),
-                          if (isSubstitute)
-                             Padding(
-                               padding: const EdgeInsets.only(top: 4.0),
-                               child: Text("Using: ${item.userHoldingSymbol} (Sub)", style: TextStyle(fontSize: 11, color: AppColors.info, fontStyle: FontStyle.italic)),
-                             )
-                        ],
-                      )
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Text("${item.etfWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right)
-                    ),
-                     Expanded(
-                      flex: 1,
-                      child: Text("${item.userWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right, 
-                        style: TextStyle(fontWeight: FontWeight.bold, color: item.userWeight < item.etfWeight ? AppColors.warning : AppColors.success))
-                    ),
-                  ],
-                ),
-              );
-            },
+        // Held Section
+        if (heldItems.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: PreviewSectionHeader(
+              title: 'Held in Portfolio',
+              subtitle: '${heldItems.length} Stocks',
+              statusType: ItemStatus.held,
+            ),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MissingItemsList extends StatelessWidget {
-  final List<BasketItem> items;
-
-  const _MissingItemsList({required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(20.0),
-        child: Text('You have all items!'),
-      ));
-    }
-    return Column(
-      children: [
-        const _BasketItemHeader(),
-        Expanded(
-          child: ListView.separated(
-            itemCount: items.length,
-            separatorBuilder: (c, i) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(
-                             "${item.sector} ${item.marketCapCategory != null ? '• ${item.marketCapCategory}' : ''}",
-                             style: Theme.of(context).textTheme.bodySmall
-                          ),
-                        ],
-                      )
-                    ),
-                     Expanded(
-                      flex: 1,
-                      child: Text("${item.etfWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right)
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Text("-", textAlign: TextAlign.right, style: TextStyle(color: Theme.of(context).disabledColor))
-                    ),
-                  ],
-                ),
-              );
-            },
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => PreviewStockRow(item: heldItems[index]),
+              childCount: heldItems.length,
+            ),
           ),
-        ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
+        ],
       ],
     );
   }
@@ -387,16 +222,12 @@ class _BottomActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
+        color: context.colors.surfacePrimary,
+        border: Border(
+          top: BorderSide(color: context.colors.borderLight),
+        ),
       ),
       child: SafeArea(
         child: SizedBox(
@@ -404,10 +235,7 @@ class _BottomActionBar extends StatelessWidget {
           child: FilledButton(
             onPressed: onPressed,
             style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
             ),
             child: const Text('Customize & Create Portfolio'),
           ),

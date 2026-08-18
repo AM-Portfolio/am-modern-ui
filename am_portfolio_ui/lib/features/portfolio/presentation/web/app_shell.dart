@@ -81,6 +81,7 @@ class AppShell extends StatelessWidget {
                       },
                       idExtractor: (p) => p.portfolioId,
                       nameExtractor: (p) => p.portfolioName,
+                      isBasketExtractor: (p) => p.isBasket,
                       accentColor: ModuleColors.portfolio,
                     );
                   }

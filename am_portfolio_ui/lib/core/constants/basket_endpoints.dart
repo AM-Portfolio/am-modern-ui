@@ -10,4 +10,7 @@ class BasketEndpoints {
   static String get preview => '$baseUrl/v1/basket/preview';
   static String get catalog => '$baseUrl/v1/basket/catalog';
   static String get calculateQuantities => '$baseUrl/v1/basket/calculate-quantities';
+  static String get myBaskets => '$baseUrl/v1/basket/my';
+  static String get createPortfolio => '$baseUrl/v1/basket/create-portfolio';
+  static String deleteBasket(String basketId) => '$baseUrl/v1/basket/$basketId';
 }

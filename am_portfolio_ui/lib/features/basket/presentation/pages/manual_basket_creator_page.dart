@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:dio/dio.dart'; // Import Dio for API calls
+
 import '../../domain/models/basket_opportunity.dart';
 import '../../../../core/constants/basket_endpoints.dart';
 import '../widgets/allocation_bar.dart';
 import '../widgets/basket_section_header.dart';
 import '../../../portfolio/providers/portfolio_providers.dart';
 import '../../../portfolio/internal/domain/entities/portfolio_holding.dart';
+import '../providers/basket_providers.dart';
+import 'package:go_router/go_router.dart';
+import 'basket_success_page.dart';
 
 class ManualBasketCreatorPage extends ConsumerStatefulWidget {
   final BasketOpportunity opportunity;
@@ -33,6 +36,7 @@ class _ManualBasketCreatorPageState
   late List<BasketItem> _items;
   double? _investmentAmount;
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _basketNameController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _includeHeld = false;
   bool _isCalculating = false;
@@ -41,8 +45,7 @@ class _ManualBasketCreatorPageState
   void initState() {
     super.initState();
     _items = List.from(widget.opportunity.composition);
-    // Pre-fill amount if totalPortfolioValue is available, maybe default to 10%?
-    // User requested quick sets. Let's start empty or 0.
+    _basketNameController.text = 'My ${widget.opportunity.etfName} Basket';
   }
 
   // Enrich items with local holdings data
@@ -68,6 +71,7 @@ class _ManualBasketCreatorPageState
   @override
   void dispose() {
     _amountController.dispose();
+    _basketNameController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -111,8 +115,6 @@ class _ManualBasketCreatorPageState
     });
 
     try {
-      // Direct Dio call for now, ideally strictly use provider/repository
-      final dio = Dio(); 
       double targetAmount = amount;
       
       // Cost Basis Adjustment Logic
@@ -140,21 +142,17 @@ class _ManualBasketCreatorPageState
          }
       }
 
-      final response = await dio.post(
-        BasketEndpoints.calculateQuantities,
-        data: {
+      final updatedOpportunity = await ref.read(calculateBasketQuantitiesProvider(
+        request: {
           'investmentAmount': targetAmount,
           'opportunity': widget.opportunity.toJson(), 
           'includeHeld': _includeHeld,
         },
-      );
+      ).future);
       
-      if (response.statusCode == 200) {
-        final updatedOpportunity = BasketOpportunity.fromJson(response.data);
-        setState(() {
-           _items = updatedOpportunity.composition;
-        });
-      }
+      setState(() {
+         _items = updatedOpportunity.composition;
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error calculating quantities: $e')),
@@ -384,6 +382,18 @@ class _ManualBasketCreatorPageState
               color: context.cardColor,
               child: Column(
                 children: [
+                  TextField(
+                    controller: _basketNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Basket Name',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm + AppSpacing.xs,
+                        vertical: AppSpacing.sm,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   Row(
                     children: [
                       Expanded(
@@ -570,13 +580,149 @@ class _ManualBasketCreatorPageState
     );
   }
 
-  void _savePortfolio() {
-    // TODO: Implement save logic when backend endpoint is available
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Portfolio Creation API not yet implemented'),
-        backgroundColor: context.statusWarning,
+  Future<void> _savePortfolio() async {
+    final amount = double.tryParse(_amountController.text) ?? 0;
+    if (amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please calculate investment amount first'),
+          backgroundColor: context.statusWarning,
+        ),
+      );
+      return;
+    }
+
+    final basketName = _basketNameController.text.trim();
+    if (basketName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter a basket name'),
+          backgroundColor: context.statusWarning,
+        ),
+      );
+      return;
+    }
+
+    // Show Final Review Bottom Sheet
+    final confirm = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.colors.surfacePrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.cardRadius)),
       ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Final Review',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _buildReviewRow(context, 'Basket Name', basketName),
+            const SizedBox(height: AppSpacing.sm),
+            _buildReviewRow(context, 'Investment', '₹${amount.toStringAsFixed(0)}'),
+            const SizedBox(height: AppSpacing.sm),
+            _buildReviewRow(context, 'Assets to Buy', '${_items.where((i) => i.buyQuantity > 0).length} Stocks'),
+            const SizedBox(height: AppSpacing.xl),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                ),
+                child: const Text('CONFIRM & CREATE BASKET'),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (c) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final request = {
+        'userId': widget.userId,
+        'portfolioId': widget.portfolioId,
+        'name': basketName,
+        'opportunity': widget.opportunity.toJson(),
+        'investmentAmount': amount,
+        'includeHeld': _includeHeld,
+      };
+
+      await ref.read(createBasketPortfolioProvider(request: request).future);
+      
+      // Dismiss dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      // Invalidate my baskets
+      ref.invalidate(myBasketsProvider(userId: widget.userId, portfolioId: widget.portfolioId));
+
+      if (mounted) {
+        // Navigate to Success Page
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => BasketSuccessPage(
+              opportunity: widget.opportunity,
+              basketName: basketName,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Dismiss dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create portfolio: $e'),
+            backgroundColor: context.statusError,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildReviewRow(BuildContext context, String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: context.colors.textSecondary,
+              ),
+        ),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+      ],
     );
   }
 }

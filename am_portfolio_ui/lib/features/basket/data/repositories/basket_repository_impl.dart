@@ -1,5 +1,6 @@
 import '../../domain/models/basket_catalog.dart';
 import '../../domain/models/basket_opportunity.dart';
+import '../../domain/models/tracking_basket.dart';
 import '../../domain/repositories/basket_repository.dart';
 import '../datasources/basket_remote_data_source.dart';
 
@@ -37,5 +38,36 @@ class BasketRepositoryImpl implements BasketRepository {
       userId: userId,
       portfolioId: portfolioId,
     );
+  }
+
+  @override
+  Future<List<TrackingBasket>> getMyBaskets({
+    required String userId,
+    required String portfolioId,
+  }) async {
+    final rawList = await remoteDataSource.getMyBaskets(
+      userId: userId,
+      portfolioId: portfolioId,
+    );
+    return rawList.map((e) => TrackingBasket.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  @override
+  Future<void> createPortfolio(Map<String, dynamic> request) {
+    return remoteDataSource.createPortfolio(request);
+  }
+
+  @override
+  Future<BasketOpportunity> calculateQuantities(Map<String, dynamic> request) async {
+    final response = await remoteDataSource.calculateQuantities(request);
+    return BasketOpportunity.fromJson(response as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> deleteBasket({
+    required String basketId,
+    required String userId,
+  }) {
+    return remoteDataSource.deleteBasket(basketId: basketId, userId: userId);
   }
 }

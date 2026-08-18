@@ -310,6 +310,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                 onPortfolioSelected: _onPortfolioChanged,
                 idExtractor: (p) => p.portfolioId,
                 nameExtractor: (p) => p.portfolioName,
+                isBasketExtractor: (p) => p.isBasket,
                 accentColor: ModuleColors.portfolio,
               ),
             ),
