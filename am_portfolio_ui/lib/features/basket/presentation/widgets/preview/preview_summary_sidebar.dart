@@ -22,9 +22,9 @@ class PreviewSummarySidebar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: context.colors.surfacePrimary,
+        color: context.colors.surface,
         borderRadius: AppRadii.card,
-        border: Border.all(color: context.colors.borderLight),
+        border: Border.all(color: context.colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,7 +47,7 @@ class PreviewSummarySidebar extends StatelessWidget {
                   child: CircularProgressIndicator(
                     value: matchScore / 100,
                     strokeWidth: 8,
-                    backgroundColor: context.colors.surfaceSecondary,
+                    backgroundColor: context.colors.cardSurface,
                     valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
                   ),
                 ),

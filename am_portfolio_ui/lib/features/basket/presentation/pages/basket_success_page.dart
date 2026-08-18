@@ -16,7 +16,7 @@ class BasketSuccessPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.colors.surfacePrimary,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
@@ -56,9 +56,9 @@ class BasketSuccessPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
-                  color: context.colors.surfaceSecondary,
+                  color: context.colors.cardSurface,
                   borderRadius: AppRadii.card,
-                  border: Border.all(color: context.colors.borderLight),
+                  border: Border.all(color: context.colors.border),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

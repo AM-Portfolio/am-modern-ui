@@ -58,7 +58,7 @@ class _InlineSwapPanelState extends State<InlineSwapPanel> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: context.colors.surfaceSecondary,
+      color: context.colors.cardSurface,
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,11 +89,11 @@ class _InlineSwapPanelState extends State<InlineSwapPanel> {
               ),
               border: OutlineInputBorder(
                 borderRadius: AppRadii.input,
-                borderSide: BorderSide(color: context.colors.borderLight),
+                borderSide: BorderSide(color: context.colors.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: AppRadii.input,
-                borderSide: BorderSide(color: context.colors.borderLight),
+                borderSide: BorderSide(color: context.colors.border),
               ),
             ),
           ),
@@ -120,9 +120,9 @@ class _InlineSwapPanelState extends State<InlineSwapPanel> {
                     vertical: AppSpacing.sm,
                   ),
                   decoration: BoxDecoration(
-                    color: context.colors.surfacePrimary,
+                    color: context.colors.surface,
                     borderRadius: AppRadii.button,
-                    border: Border.all(color: context.colors.borderLight),
+                    border: Border.all(color: context.colors.border),
                   ),
                   child: Row(
                     children: [
