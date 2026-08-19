@@ -1,8 +1,11 @@
 import 'package:am_common/am_common.dart';
 import '../../../../core/constants/basket_endpoints.dart';
+import '../../domain/models/basket_catalog.dart';
 import '../../domain/models/basket_opportunity.dart';
 
 abstract class BasketRemoteDataSource {
+  Future<BasketCatalog> getCatalog();
+
   Future<List<BasketOpportunity>> getOpportunities({
     required String userId,
     required String portfolioId,
@@ -20,6 +23,15 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
   final ApiClient apiClient;
 
   BasketRemoteDataSourceImpl({required this.apiClient});
+
+  @override
+  Future<BasketCatalog> getCatalog() async {
+    final response = await apiClient.get(
+      BasketEndpoints.catalog,
+      parser: (data) => data,
+    );
+    return BasketCatalog.fromJson(response as Map<String, dynamic>);
+  }
 
   @override
   Future<List<BasketOpportunity>> getOpportunities({
@@ -50,7 +62,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
   }) async {
     final response = await apiClient.post(
       BasketEndpoints.preview,
-      parser: (data) => data, // Pass-through as we need raw map for fromJson
+      parser: (data) => data,
       body: {
         'etfIsin': etfIsin,
         'userId': userId,
