@@ -7,6 +7,7 @@ import 'package:am_common/am_common.dart';
 import '../../domain/models/basket_enums.dart';
 import '../../domain/models/tracking_basket.dart';
 import '../providers/basket_providers.dart';
+import '../basket_navigation.dart';
 
 class MyBasketsView extends ConsumerWidget {
   final String userId;
@@ -21,7 +22,7 @@ class MyBasketsView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final basketsAsyncValue = ref.watch(
-      myBasketsProvider(userId: userId, portfolioId: portfolioId),
+      myBasketsProvider(userId: userId, portfolioId: ''),
     );
 
     return basketsAsyncValue.when(
@@ -49,8 +50,8 @@ class MyBasketsView extends ConsumerWidget {
 
         return RefreshIndicator(
           onRefresh: () async {
-            ref.invalidate(myBasketsProvider(userId: userId, portfolioId: portfolioId));
-            return ref.read(myBasketsProvider(userId: userId, portfolioId: portfolioId).future);
+            ref.invalidate(myBasketsProvider(userId: userId, portfolioId: ''));
+            return ref.read(myBasketsProvider(userId: userId, portfolioId: '').future);
           },
           child: ListView.builder(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -76,7 +77,7 @@ class MyBasketsView extends ConsumerWidget {
             Text('Failed to load baskets', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.sm),
             TextButton(
-              onPressed: () => ref.invalidate(myBasketsProvider(userId: userId, portfolioId: portfolioId)),
+              onPressed: () => ref.invalidate(myBasketsProvider(userId: userId, portfolioId: '')),
               child: const Text('Retry'),
             ),
           ],
@@ -114,7 +115,7 @@ class _TrackingBasketCard extends ConsumerWidget {
               Navigator.of(c).pop();
               try {
                 await ref.read(deleteBasketProvider(basketId: basket.basketId, userId: userId).future);
-                ref.invalidate(myBasketsProvider(userId: userId, portfolioId: portfolioId));
+                ref.invalidate(myBasketsProvider(userId: userId, portfolioId: ''));
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Basket deleted'), backgroundColor: Colors.green),
@@ -146,20 +147,14 @@ class _TrackingBasketCard extends ConsumerWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
-          // Select this basket as the active portfolio
-          // Since the basket is effectively a portfolio, we can select it using its ID.
-          // Note: In am_common context.selectPortfolio is available if the app shell provides it.
-          // However, using the GoRouter context is the safest standard way if selectPortfolio is globally available.
-          try {
-            // Import am_common required for context.selectPortfolio
-            // Ensure this is properly handled
-            // For now just navigate, as the UI shell updates automatically if we go to overview
-            // with the right query or state if needed. But usually `context.selectPortfolio` is an extension on BuildContext.
-            // Let's use that if it exists.
-            (context as dynamic).selectPortfolio(basket.basketId, basket.etfName ?? 'Basket');
-          } catch (_) {}
-          
-          GoRouter.of(context).go('/portfolio/overview');
+          if (basket.etfIsin != null && basket.etfIsin!.isNotEmpty) {
+            BasketNavigation.openPreview(
+              context,
+              etfIsin: basket.etfIsin!,
+              userId: userId,
+              portfolioId: portfolioId,
+            );
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),

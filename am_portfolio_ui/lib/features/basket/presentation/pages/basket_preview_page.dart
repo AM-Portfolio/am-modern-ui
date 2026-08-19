@@ -46,6 +46,17 @@ class BasketPreviewPage extends ConsumerWidget {
 
     // Apply Dark Theme override for this specific page to match premium aesthetic
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: BackButton(
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
+        ),
+      ),
       backgroundColor: context.colors.scaffoldBackground,
       body: body,
     );
@@ -119,7 +130,8 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
       final request = {
         'userId': widget.userId,
         'portfolioId': widget.portfolioId,
-        'basket': _opportunity.toJson(),
+        'etfIsin': _opportunity.etfIsin,
+        'currentOpportunity': _opportunity.toJson(),
         'assignments': [
           {
             'missingIsin': item.isin ?? item.stockSymbol, // Fallback logic
