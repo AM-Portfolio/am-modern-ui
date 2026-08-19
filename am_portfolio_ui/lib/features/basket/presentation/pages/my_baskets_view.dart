@@ -262,6 +262,7 @@ class _TrackingBasketCard extends ConsumerWidget {
 
   Color _getStatusColor(BasketStatus status) {
     switch (status) {
+      case BasketStatus.active: return Colors.green;
       case BasketStatus.completed: return Colors.green;
       case BasketStatus.partially_filled: return Colors.orange;
       case BasketStatus.failed: return Colors.red;
@@ -272,6 +273,7 @@ class _TrackingBasketCard extends ConsumerWidget {
 
   String _getStatusText(BasketStatus status) {
     switch (status) {
+      case BasketStatus.active: return 'ACTIVE';
       case BasketStatus.completed: return 'COMPLETED';
       case BasketStatus.partially_filled: return 'UNDERFUNDED';
       case BasketStatus.failed: return 'FAILED';

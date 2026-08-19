@@ -222,11 +222,23 @@ class Alternative {
   final String symbol;
   final String isin;
   final double userWeight;
+  final double? quantity;
+  final double? lastPrice;
+  final String? sector;
+  final bool isSameSector;
+  final bool canFullyCover;
+  final String? coverageLabel;
 
   const Alternative({
     required this.symbol,
     required this.isin,
     this.userWeight = 0.0,
+    this.quantity,
+    this.lastPrice,
+    this.sector,
+    this.isSameSector = false,
+    this.canFullyCover = false,
+    this.coverageLabel,
   });
 
   factory Alternative.fromJson(Map<String, dynamic> json) {
@@ -234,6 +246,12 @@ class Alternative {
       symbol: json['symbol'] as String? ?? 'Unknown',
       isin: json['isin'] as String? ?? '',
       userWeight: (json['userWeight'] as num?)?.toDouble() ?? 0.0,
+      quantity: (json['quantity'] as num?)?.toDouble(),
+      lastPrice: (json['lastPrice'] as num?)?.toDouble(),
+      sector: json['sector'] as String?,
+      isSameSector: json['isSameSector'] as bool? ?? false,
+      canFullyCover: json['canFullyCover'] as bool? ?? false,
+      coverageLabel: json['coverageLabel'] as String?,
     );
   }
 
@@ -242,6 +260,12 @@ class Alternative {
       'symbol': symbol,
       'isin': isin,
       'userWeight': userWeight,
+      'quantity': quantity,
+      'lastPrice': lastPrice,
+      'sector': sector,
+      'isSameSector': isSameSector,
+      'canFullyCover': canFullyCover,
+      'coverageLabel': coverageLabel,
     };
   }
 
@@ -249,11 +273,23 @@ class Alternative {
     String? symbol,
     String? isin,
     double? userWeight,
+    double? quantity,
+    double? lastPrice,
+    String? sector,
+    bool? isSameSector,
+    bool? canFullyCover,
+    String? coverageLabel,
   }) {
     return Alternative(
       symbol: symbol ?? this.symbol,
       isin: isin ?? this.isin,
       userWeight: userWeight ?? this.userWeight,
+      quantity: quantity ?? this.quantity,
+      lastPrice: lastPrice ?? this.lastPrice,
+      sector: sector ?? this.sector,
+      isSameSector: isSameSector ?? this.isSameSector,
+      canFullyCover: canFullyCover ?? this.canFullyCover,
+      coverageLabel: coverageLabel ?? this.coverageLabel,
     );
   }
 }

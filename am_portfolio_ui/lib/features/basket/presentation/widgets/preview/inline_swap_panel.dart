@@ -112,6 +112,17 @@ class _InlineSwapPanelState extends State<InlineSwapPanel> {
             )
           else
             ..._filteredAlternatives.map((alt) {
+              final isFullyCovered = alt.canFullyCover;
+              final isSameSector = alt.isSameSector;
+              
+              final Color badgeColor = isSameSector 
+                  ? (isFullyCovered ? Colors.green : Colors.orange) 
+                  : Colors.red;
+                  
+              final IconData statusIcon = isSameSector 
+                  ? (isFullyCovered ? Icons.check_circle : Icons.warning) 
+                  : Icons.warning;
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                 child: Container(
@@ -126,6 +137,8 @@ class _InlineSwapPanelState extends State<InlineSwapPanel> {
                   ),
                   child: Row(
                     children: [
+                      Icon(statusIcon, color: badgeColor, size: 20),
+                      const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,7 +151,9 @@ class _InlineSwapPanelState extends State<InlineSwapPanel> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Same sector | Held weight: ${alt.userWeight.toStringAsFixed(1)}%',
+                              isSameSector 
+                                  ? '${alt.userWeight.toStringAsFixed(1)}% held • ${alt.coverageLabel ?? "Covers gap"}'
+                                  : 'Cross-sector • Not recommended',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: context.colors.textSecondary,
                                   ),

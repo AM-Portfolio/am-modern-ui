@@ -6,6 +6,7 @@ enum BasketItemStatus {
 }
 
 enum BasketStatus {
+  active,
   pending,
   partially_filled,
   completed,

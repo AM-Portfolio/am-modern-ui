@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 
@@ -401,7 +401,7 @@ class _ManualBasketCreatorPageState
                           controller: _amountController,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                            labelText: 'Investment Amount (₹)',
+                            labelText: 'Investment Amount (Γé╣)',
                             border: OutlineInputBorder(),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: AppSpacing.sm + AppSpacing.xs,
@@ -603,7 +603,58 @@ class _ManualBasketCreatorPageState
       return;
     }
 
-    // Bypassed Final Review Bottom Sheet as per user request
+    // Show Final Review Bottom Sheet
+    final confirm = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.colors.surfacePrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.cardRadius)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Final Review',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _buildReviewRow(context, 'Basket Name', basketName),
+            const SizedBox(height: AppSpacing.sm),
+            _buildReviewRow(context, 'Investment', 'Γé╣${amount.toStringAsFixed(0)}'),
+            const SizedBox(height: AppSpacing.sm),
+            _buildReviewRow(context, 'Assets to Buy', '${_items.where((i) => i.buyQuantity > 0).length} Stocks'),
+            const SizedBox(height: AppSpacing.xl),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                ),
+                child: const Text('CONFIRM & CREATE BASKET'),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirm != true) return;
+
     try {
       showDialog(
         context: context,
@@ -613,28 +664,11 @@ class _ManualBasketCreatorPageState
 
       final request = {
         'userId': widget.userId,
-        'sourcePortfolioId': widget.portfolioId,
-        'etfIsin': widget.opportunity.etfIsin,
-        'etfName': widget.opportunity.etfName,
-        'basketName': basketName,
-        'idempotencyKey': DateTime.now().millisecondsSinceEpoch.toString(),
-        'remainingMissingCount': _items.where((c) => c.status == ItemStatus.missing).length,
-        'remainingMissing': _items.where((c) => c.status == ItemStatus.missing).map((c) => c.stockSymbol).toList(),
-        'lines': _items.map((item) {
-          return {
-            'status': item.status.toString().split('.').last.toUpperCase(),
-            'etfIsin': item.isin,
-            'etfSymbol': item.stockSymbol,
-            'holdingIsin': (item.status == ItemStatus.substitute || item.status == ItemStatus.held)
-                ? (item.userHoldingIsin ?? item.isin)
-                : item.isin,
-            'holdingSymbol': (item.status == ItemStatus.substitute || item.status == ItemStatus.held)
-                ? (item.userHoldingSymbol ?? item.stockSymbol)
-                : item.stockSymbol,
-            'quantity': item.buyQuantity,
-            'averageBuyingPrice': item.lastPrice,
-          };
-        }).toList(),
+        'portfolioId': widget.portfolioId,
+        'name': basketName,
+        'opportunity': widget.opportunity.toJson(),
+        'investmentAmount': amount,
+        'includeHeld': _includeHeld,
       };
 
       await ref.read(createBasketPortfolioProvider(request: request).future);
@@ -645,7 +679,7 @@ class _ManualBasketCreatorPageState
       }
 
       // Invalidate my baskets
-      ref.invalidate(myBasketsProvider(userId: widget.userId, portfolioId: ''));
+      ref.invalidate(myBasketsProvider(userId: widget.userId, portfolioId: widget.portfolioId));
 
       if (mounted) {
         // Navigate to Success Page
@@ -733,7 +767,7 @@ class _SummaryHeader extends StatelessWidget {
                        style: Theme.of(context).textTheme.labelSmall,
                      ),
                      Text(
-                       '₹${totalPortfolioValue!.toStringAsFixed(0)}', // Basic formatting
+                       'Γé╣${totalPortfolioValue!.toStringAsFixed(0)}', // Basic formatting
                        style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                      ),
                    ],
@@ -857,7 +891,7 @@ class _EditableBasketItemCard extends StatelessWidget {
                          border: Border.all(color: Colors.amber.shade200),
                        ),
                        child: Text(
-                         "Held: ${item.heldQuantity!.toInt()} @ ₹${item.heldAveragePrice?.toStringAsFixed(0) ?? '-'}",
+                         "Held: ${item.heldQuantity!.toInt()} @ Γé╣${item.heldAveragePrice?.toStringAsFixed(0) ?? '-'}", 
                          style: TextStyle(fontSize: 9, color: Colors.amber.shade900, fontWeight: FontWeight.bold)
                        ),
                      ),
@@ -871,7 +905,7 @@ class _EditableBasketItemCard extends StatelessWidget {
               flex: 12,
               child: item.lastPrice != null 
                   ? Text(
-                      "₹${item.lastPrice!.toStringAsFixed(1)}",
+                      "Γé╣${item.lastPrice!.toStringAsFixed(1)}",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
@@ -1157,8 +1191,6 @@ class _InvestmentSummaryFooter extends StatelessWidget {
       }
     }
 
-    final assetsToBuy = activeItems.where((i) => i.buyQuantity > 0).length;
-
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -1179,16 +1211,11 @@ class _InvestmentSummaryFooter extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Assets to Buy: $assetsToBuy Stocks",
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textSecondary),
-                ),
-                const SizedBox(height: 2),
-                Text(
                   "Payable Amount",
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textTertiary),
                 ),
                 Text(
-                  "₹${totalPayable.toStringAsFixed(2)}",
+                  "Γé╣${totalPayable.toStringAsFixed(2)}",
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: context.colors.actionPrimaryBg,
@@ -1203,7 +1230,7 @@ class _InvestmentSummaryFooter extends StatelessWidget {
                 minimumSize: const Size(AppSpacing.xxl * 3, AppSpacing.xl + AppSpacing.md),
                 shape: RoundedRectangleBorder(borderRadius: AppRadii.input),
               ),
-              child: const Text("Confirm & Create Basket"),
+              child: const Text("Pay & Invest"),
             ),
           ],
         ),

@@ -118,26 +118,32 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: widget.item.status == ItemStatus.substitute && widget.item.userHoldingSymbol != null
-                                ? RichText(
-                                    text: TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text: widget.item.stockSymbol,
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          widget.item.stockSymbol,
                                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                decoration: TextDecoration.lineThrough,
                                                 color: Colors.grey,
                                               ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        TextSpan(
-                                          text: " → ${widget.item.userHoldingSymbol}",
+                                      ),
+                                      const SizedBox(width: AppSpacing.xs),
+                                      Icon(Icons.sync_alt, size: 14, color: context.colors.statusSuccess),
+                                      const SizedBox(width: AppSpacing.xs),
+                                      Flexible(
+                                        child: Text(
+                                          widget.item.userHoldingSymbol!,
                                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                                 fontWeight: FontWeight.bold,
                                                 color: context.colors.statusSuccess,
                                               ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ],
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
                                   )
                                 : Text(
                                     widget.item.stockSymbol,
