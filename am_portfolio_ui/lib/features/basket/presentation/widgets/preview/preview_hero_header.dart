@@ -38,23 +38,23 @@ class PreviewHeroHeader extends StatelessWidget {
     final topHoldings = List<BasketItem>.from(opportunity.composition)
       ..sort((a, b) => b.etfWeight.compareTo(a.etfWeight));
     
-    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '?', decimalDigits: 0);
+    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final scoreColor = _getScoreColor(opportunity.matchScore);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xxl, AppSpacing.xl, AppSpacing.xl),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF1E1E1E),
-            Color(0xFF121212),
+            context.colors.surface,
+            context.colors.scaffoldBackground,
           ],
         ),
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: context.colors.border,
             width: 1,
           ),
         ),
@@ -68,12 +68,12 @@ class PreviewHeroHeader extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: context.colors.actionPrimaryBg.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.auto_awesome,
-                  color: Colors.white,
+                  color: context.colors.actionPrimaryBg,
                   size: 28,
                 ),
               ),
@@ -89,7 +89,7 @@ class PreviewHeroHeader extends StatelessWidget {
                             opportunity.etfName,
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: context.colors.textPrimary,
                                 ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -103,7 +103,7 @@ class PreviewHeroHeader extends StatelessWidget {
                             border: Border.all(color: scoreColor.withValues(alpha: 0.5)),
                           ),
                           child: Text(
-                            'Match: %',
+                            'Match: ${opportunity.matchScore.toStringAsFixed(1)}%',
                             style: TextStyle(
                               color: scoreColor,
                               fontWeight: FontWeight.bold,
@@ -117,7 +117,7 @@ class PreviewHeroHeader extends StatelessWidget {
                     Text(
                       opportunity.etfIsin,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Colors.white54,
+                            color: context.colors.textSecondary,
                             letterSpacing: 1.2,
                           ),
                     ),
@@ -125,7 +125,7 @@ class PreviewHeroHeader extends StatelessWidget {
                     Text(
                       'Replicate this ETF as a custom basket',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white70,
+                            color: context.colors.textSecondary,
                           ),
                     ),
                   ],
@@ -137,21 +137,21 @@ class PreviewHeroHeader extends StatelessWidget {
                   Text(
                     'Total Value',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.white54,
+                          color: context.colors.textSecondary,
                         ),
                   ),
                   Text(
                     formatter.format(opportunity.totalPortfolioValue ?? 0),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
+                          color: context.colors.textPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'Constituents: ',
+                    'Constituents: ${opportunity.composition.length}',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.white70,
+                          color: context.colors.textSecondary,
                         ),
                   ),
                 ],
@@ -163,7 +163,7 @@ class PreviewHeroHeader extends StatelessWidget {
             'TOP HOLDINGS',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.white54,
+                  color: context.colors.textTertiary,
                   letterSpacing: 1.2,
                 ),
           ),
@@ -181,10 +181,10 @@ class PreviewHeroHeader extends StatelessWidget {
                       vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: context.colors.surface,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.1),
+                        color: context.colors.border,
                       ),
                     ),
                     child: Row(
@@ -203,14 +203,14 @@ class PreviewHeroHeader extends StatelessWidget {
                           item.stockSymbol,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: context.colors.textPrimary,
                               ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         Text(
-                          '%',
+                          '${item.etfWeight.toStringAsFixed(1)}%',
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: Colors.white70,
+                                color: context.colors.textSecondary,
                               ),
                         ),
                       ],

@@ -98,6 +98,7 @@ class BasketItem {
   final String sector;
   final ItemStatus status;
   final String? userHoldingSymbol;
+  final String? userHoldingIsin;
   final String? reason;
   final double etfWeight;
   final double userWeight;
@@ -116,6 +117,7 @@ class BasketItem {
     required this.sector,
     required this.status,
     this.userHoldingSymbol,
+    this.userHoldingIsin,
     this.reason,
     this.etfWeight = 0.0,
     this.userWeight = 0.0,
@@ -139,6 +141,7 @@ class BasketItem {
         orElse: () => ItemStatus.missing,
       ),
       userHoldingSymbol: json['userHoldingSymbol'] as String?,
+      userHoldingIsin: json['userHoldingIsin'] as String?,
       reason: json['reason'] as String?,
       etfWeight: (json['etfWeight'] as num?)?.toDouble() ?? 0.0,
       userWeight: (json['userWeight'] as num?)?.toDouble() ?? 0.0,
@@ -163,6 +166,7 @@ class BasketItem {
       'sector': sector,
       'status': status.name.toUpperCase(),
       'userHoldingSymbol': userHoldingSymbol,
+      'userHoldingIsin': userHoldingIsin,
       'reason': reason,
       'etfWeight': etfWeight,
       'userWeight': userWeight,
@@ -171,6 +175,8 @@ class BasketItem {
       'lastPrice': lastPrice,
       'marketCapCategory': marketCapCategory,
       'marketCapValue': marketCapValue,
+      'heldQuantity': heldQuantity,
+      'heldAveragePrice': heldAveragePrice,
       'alternatives': alternatives.map((e) => e.toJson()).toList(),
     };
   }
@@ -181,6 +187,7 @@ class BasketItem {
     String? sector,
     ItemStatus? status,
     String? userHoldingSymbol,
+    String? userHoldingIsin,
     String? reason,
     double? etfWeight,
     double? userWeight,
@@ -197,6 +204,7 @@ class BasketItem {
       sector: sector ?? this.sector,
       status: status ?? this.status,
       userHoldingSymbol: userHoldingSymbol ?? this.userHoldingSymbol,
+      userHoldingIsin: userHoldingIsin ?? this.userHoldingIsin,
       reason: reason ?? this.reason,
       etfWeight: etfWeight ?? this.etfWeight,
       userWeight: userWeight ?? this.userWeight,

@@ -75,7 +75,7 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
         ? (widget.item.heldQuantity ?? 0.0)
         : widget.item.buyQuantity;
     final double value = (widget.item.lastPrice ?? 0.0) * units;
-    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '?', decimalDigits: 0);
+    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     return Stack(
       children: [
@@ -117,13 +117,35 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
-                            child: Text(
-                              widget.item.stockSymbol,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
+                            child: widget.item.status == ItemStatus.substitute && widget.item.userHoldingSymbol != null
+                                ? RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: widget.item.stockSymbol,
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                decoration: TextDecoration.lineThrough,
+                                                color: Colors.grey,
+                                              ),
+                                        ),
+                                        TextSpan(
+                                          text: " → ${widget.item.userHoldingSymbol}",
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: context.colors.statusSuccess,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                : Text(
+                                    widget.item.stockSymbol,
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
                           ),
                         ],
                       ),
@@ -206,8 +228,8 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
               ),
             ),
             if (_isExpanded)
-              if (widget.item.status == ItemStatus.held)
-                // Show holding details for held items
+              if (widget.item.status == ItemStatus.held || widget.item.status == ItemStatus.substitute)
+                // Show holding details for held and substituted items
                 Container(
                   color: context.colors.cardSurface,
                   padding: const EdgeInsets.all(AppSpacing.md),
@@ -221,8 +243,8 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
                     ],
                   ),
                 )
-              else if (widget.item.alternatives != null)
-                // Show swap panel for missing/substitute
+              else if (widget.item.status == ItemStatus.missing && widget.item.alternatives != null)
+                // Show swap panel for missing
                 InlineSwapPanel(
                   alternatives: widget.item.alternatives!,
                   onSwapSelected: (selectedAlt) {
