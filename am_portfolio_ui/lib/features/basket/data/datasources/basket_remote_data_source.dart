@@ -25,6 +25,8 @@ abstract class BasketRemoteDataSource {
 
   Future<dynamic> createPortfolio(Map<String, dynamic> request);
 
+  Future<dynamic> applySubstitutes(Map<String, dynamic> request);
+
   Future<dynamic> calculateQuantities(Map<String, dynamic> request);
 
   Future<void> deleteBasket({
@@ -117,6 +119,16 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
   Future<dynamic> calculateQuantities(Map<String, dynamic> request) async {
     final response = await apiClient.post(
       BasketEndpoints.calculateQuantities,
+      body: request,
+      parser: (data) => data,
+    );
+    return response;
+  }
+
+  @override
+  Future<dynamic> applySubstitutes(Map<String, dynamic> request) async {
+    final response = await apiClient.post(
+      BasketEndpoints.applySubstitutes,
       body: request,
       parser: (data) => data,
     );

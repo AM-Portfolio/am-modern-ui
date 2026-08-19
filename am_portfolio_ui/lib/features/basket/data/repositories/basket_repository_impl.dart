@@ -64,6 +64,12 @@ class BasketRepositoryImpl implements BasketRepository {
   }
 
   @override
+  Future<BasketOpportunity> applySubstitutes(Map<String, dynamic> request) async {
+    final response = await remoteDataSource.applySubstitutes(request);
+    return BasketOpportunity.fromJson(response as Map<String, dynamic>);
+  }
+
+  @override
   Future<void> deleteBasket({
     required String basketId,
     required String userId,

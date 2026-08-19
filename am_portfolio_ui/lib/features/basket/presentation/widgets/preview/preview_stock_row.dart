@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:intl/intl.dart';
 import '../../../domain/models/basket_opportunity.dart';
 import '../../../domain/models/basket_enums.dart';
 import 'inline_swap_panel.dart';
 
 class PreviewStockRow extends StatefulWidget {
   final BasketItem item;
-  final ValueChanged<String>? onSwapSelected;
+  final bool isSwapping;
+  final void Function(BasketItem item, Alternative selected)? onSwapSelected;
 
   const PreviewStockRow({
     super.key,
     required this.item,
+    this.isSwapping = false,
     this.onSwapSelected,
   });
 
@@ -22,7 +25,6 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
   bool _isExpanded = false;
 
   void _toggleExpand() {
-    if (widget.item.status == ItemStatus.held) return;
     setState(() {
       _isExpanded = !_isExpanded;
     });
@@ -33,7 +35,7 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
       case ItemStatus.held:
         return context.statusSuccess;
       case ItemStatus.substitute:
-        return context.statusWarning;
+        return Theme.of(context).primaryColor;
       case ItemStatus.missing:
         return context.statusError;
     }
@@ -44,172 +46,228 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
       case ItemStatus.held:
         return 'HELD';
       case ItemStatus.substitute:
-        return 'SUBSTITUTE';
+        return 'SUBSTITUTED';
       case ItemStatus.missing:
         return 'MISSING';
     }
   }
 
-  Widget _buildDeltaColumn(BuildContext context) {
-    final double delta = widget.item.userWeight - widget.item.etfWeight;
-    final bool isZero = delta.abs() < 0.1;
-    final bool isNegative = delta < -0.1;
-    
-    final Color color = isZero
-        ? context.colors.textTertiary
-        : isNegative
-            ? context.statusError
-            : context.statusSuccess;
-
-    final String sign = delta > 0 ? '+' : '';
-
-    return Text(
-      isZero ? '0.0%' : '$sign${delta.toStringAsFixed(1)}%',
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: color,
-            fontWeight: FontWeight.bold,
-          ),
-    );
+  Color _getSectorColor(String sector) {
+    final int hash = sector.hashCode;
+    final List<Color> palette = [
+      Colors.blueAccent,
+      Colors.indigo,
+      Colors.deepPurple,
+      Colors.purple,
+      Colors.pink,
+      Colors.teal,
+      Colors.green,
+      Colors.orange,
+      Colors.deepOrange,
+    ];
+    return palette[hash.abs() % palette.length];
   }
 
   @override
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor(context);
-    final canExpand = widget.item.status != ItemStatus.held;
+    final double units = (widget.item.status == ItemStatus.held)
+        ? (widget.item.heldQuantity ?? 0.0)
+        : widget.item.buyQuantity;
+    final double value = (widget.item.lastPrice ?? 0.0) * units;
+    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '?', decimalDigits: 0);
 
-    return Column(
+    return Stack(
       children: [
-        InkWell(
-          onTap: canExpand ? _toggleExpand : null,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              color: context.colors.surface,
-              border: Border(
-                bottom: BorderSide(
-                  color: context.colors.border,
+        Column(
+          children: [
+            InkWell(
+              onTap: _toggleExpand,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                decoration: BoxDecoration(
+                  color: context.colors.surface,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: context.colors.border,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Drag handle
+                    Icon(Icons.drag_indicator, size: 16, color: context.colors.textTertiary),
+                    const SizedBox(width: AppSpacing.sm),
+                    
+                    // Avatar & Full Name (using stockSymbol)
+                    Expanded(
+                      flex: 4,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundColor: _getSectorColor(widget.item.sector),
+                            child: Text(
+                              widget.item.stockSymbol.isNotEmpty ? widget.item.stockSymbol[0].toUpperCase() : '?',
+                              style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              widget.item.stockSymbol,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Symbol
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        widget.item.stockSymbol,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: context.colors.textSecondary,
+                            ),
+                      ),
+                    ),
+                    
+                    // Allocation %
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        '${widget.item.etfWeight.toStringAsFixed(1)}%',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    
+                    // Units
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        units.toStringAsFixed(0),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    
+                    // Current Value
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        formatter.format(value),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    
+                    // Status Pill & Chevron
+                    Expanded(
+                      flex: 3,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: statusColor.withValues(alpha: 0.5)),
+                            ),
+                            child: Text(
+                              _getStatusText(),
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: statusColor,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Icon(
+                            _isExpanded ? Icons.expand_less : Icons.expand_more,
+                            size: 16,
+                            color: context.colors.textSecondary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            child: Row(
-              children: [
-                // Symbol Column
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    widget.item.stockSymbol,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ),
-                
-                // ETF Target
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${widget.item.etfWeight.toStringAsFixed(1)}%',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      Text(
-                        'ETF Target',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: context.colors.textTertiary,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // User Holding
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${widget.item.userWeight.toStringAsFixed(1)}%',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      Text(
-                        'Your Holding',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: context.colors.textTertiary,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Delta Column
-                Expanded(
-                  flex: 2,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: _buildDeltaColumn(context),
-                  ),
-                ),
-                
-                // Status Pill & Chevron
-                Expanded(
-                  flex: 3,
+            if (_isExpanded)
+              if (widget.item.status == ItemStatus.held)
+                // Show holding details for held items
+                Container(
+                  color: context.colors.cardSurface,
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.xs,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: statusColor.withValues(alpha: 0.5)),
-                        ),
-                        child: Text(
-                          _getStatusText(),
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: statusColor,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ),
-                      if (canExpand) ...[
-                        const SizedBox(width: AppSpacing.xs),
-                        Icon(
-                          _isExpanded ? Icons.expand_less : Icons.expand_more,
-                          size: 16,
-                          color: context.colors.textSecondary,
-                        ),
-                      ],
+                      _buildHoldingStat(context, 'Avg. Price', formatter.format(widget.item.heldAveragePrice ?? 0)),
+                      const SizedBox(width: AppSpacing.xl),
+                      _buildHoldingStat(context, 'Current Price', formatter.format(widget.item.lastPrice ?? 0)),
+                      const SizedBox(width: AppSpacing.xl),
+                      _buildHoldingStat(context, 'Total Value', formatter.format(value)),
                     ],
                   ),
+                )
+              else if (widget.item.alternatives != null)
+                // Show swap panel for missing/substitute
+                InlineSwapPanel(
+                  alternatives: widget.item.alternatives!,
+                  onSwapSelected: (selectedAlt) {
+                    _toggleExpand();
+                    if (widget.onSwapSelected != null) {
+                      widget.onSwapSelected!(widget.item, selectedAlt);
+                    }
+                  },
                 ),
-              ],
+          ],
+        ),
+        if (widget.isSwapping)
+          Positioned.fill(
+            child: Container(
+              color: context.colors.scaffoldBackground.withValues(alpha: 0.7),
+              child: const Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _buildHoldingStat(BuildContext context, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: context.colors.textSecondary,
+              ),
         ),
-        if (_isExpanded && widget.item.alternatives != null)
-          InlineSwapPanel(
-            alternatives: widget.item.alternatives!,
-            onSwapSelected: (symbol) {
-              _toggleExpand();
-              if (widget.onSwapSelected != null) {
-                widget.onSwapSelected!(symbol);
-              }
-            },
-          ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
       ],
     );
   }

@@ -4,7 +4,7 @@ import '../../../domain/models/basket_opportunity.dart';
 
 class InlineSwapPanel extends StatefulWidget {
   final List<Alternative> alternatives;
-  final ValueChanged<String> onSwapSelected;
+  final ValueChanged<Alternative> onSwapSelected;
 
   const InlineSwapPanel({
     super.key,
@@ -147,7 +147,7 @@ class _InlineSwapPanelState extends State<InlineSwapPanel> {
                         ),
                       ),
                       OutlinedButton(
-                        onPressed: () => widget.onSwapSelected(alt.symbol),
+                        onPressed: () => widget.onSwapSelected(alt),
                         style: OutlinedButton.styleFrom(
                           visualDensity: VisualDensity.compact,
                           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),

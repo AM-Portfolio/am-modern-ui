@@ -24,6 +24,8 @@ abstract class BasketRepository {
 
   Future<void> createPortfolio(Map<String, dynamic> request);
 
+  Future<BasketOpportunity> applySubstitutes(Map<String, dynamic> request);
+
   Future<BasketOpportunity> calculateQuantities(Map<String, dynamic> request);
 
   Future<void> deleteBasket({

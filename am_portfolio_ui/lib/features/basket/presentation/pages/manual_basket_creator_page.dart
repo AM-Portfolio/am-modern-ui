@@ -401,7 +401,7 @@ class _ManualBasketCreatorPageState
                           controller: _amountController,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                            labelText: 'Investment Amount (₹)',
+                            labelText: 'Investment Amount (Γé╣)',
                             border: OutlineInputBorder(),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: AppSpacing.sm + AppSpacing.xs,
@@ -626,7 +626,7 @@ class _ManualBasketCreatorPageState
             const SizedBox(height: AppSpacing.lg),
             _buildReviewRow(context, 'Basket Name', basketName),
             const SizedBox(height: AppSpacing.sm),
-            _buildReviewRow(context, 'Investment', '₹${amount.toStringAsFixed(0)}'),
+            _buildReviewRow(context, 'Investment', 'Γé╣${amount.toStringAsFixed(0)}'),
             const SizedBox(height: AppSpacing.sm),
             _buildReviewRow(context, 'Assets to Buy', '${_items.where((i) => i.buyQuantity > 0).length} Stocks'),
             const SizedBox(height: AppSpacing.xl),
@@ -767,7 +767,7 @@ class _SummaryHeader extends StatelessWidget {
                        style: Theme.of(context).textTheme.labelSmall,
                      ),
                      Text(
-                       '₹${totalPortfolioValue!.toStringAsFixed(0)}', // Basic formatting
+                       'Γé╣${totalPortfolioValue!.toStringAsFixed(0)}', // Basic formatting
                        style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                      ),
                    ],
@@ -891,7 +891,7 @@ class _EditableBasketItemCard extends StatelessWidget {
                          border: Border.all(color: Colors.amber.shade200),
                        ),
                        child: Text(
-                         "Held: ${item.heldQuantity!.toInt()} @ ₹${item.heldAveragePrice?.toStringAsFixed(0) ?? '-'}", 
+                         "Held: ${item.heldQuantity!.toInt()} @ Γé╣${item.heldAveragePrice?.toStringAsFixed(0) ?? '-'}", 
                          style: TextStyle(fontSize: 9, color: Colors.amber.shade900, fontWeight: FontWeight.bold)
                        ),
                      ),
@@ -905,7 +905,7 @@ class _EditableBasketItemCard extends StatelessWidget {
               flex: 12,
               child: item.lastPrice != null 
                   ? Text(
-                      "₹${item.lastPrice!.toStringAsFixed(1)}",
+                      "Γé╣${item.lastPrice!.toStringAsFixed(1)}",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
@@ -1215,7 +1215,7 @@ class _InvestmentSummaryFooter extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textTertiary),
                 ),
                 Text(
-                  "₹${totalPayable.toStringAsFixed(2)}",
+                  "Γé╣${totalPayable.toStringAsFixed(2)}",
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: context.colors.actionPrimaryBg,

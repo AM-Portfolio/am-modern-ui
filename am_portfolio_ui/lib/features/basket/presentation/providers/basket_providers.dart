@@ -57,6 +57,15 @@ Future<BasketOpportunity> basketPreview(
 }
 
 @riverpod
+Future<BasketOpportunity> applySubstitutes(
+  Ref ref, {
+  required Map<String, dynamic> request,
+}) async {
+  final repository = await ref.watch(basketRepositoryProvider.future);
+  return repository.applySubstitutes(request);
+}
+
+@riverpod
 Future<List<TrackingBasket>> myBaskets(
   Ref ref, {
   required String userId,
