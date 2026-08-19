@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -74,26 +75,28 @@ class LoginPage extends StatelessWidget {
             }
           },
           builder: (context, state) {
-            final redirect =
-                GoRouterState.of(context).uri.queryParameters['redirect'];
-            final restoringSession = redirect != null &&
-                redirect.startsWith('/app') &&
-                (state is AuthInitial ||
-                    state is AuthLoading ||
-                    state is AuthRestoreFailed);
-            if (restoringSession) {
-              return const Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
-                      Text('Restoring your session…'),
-                    ],
+            if (kIsWeb) {
+              final redirect =
+                  GoRouterState.of(context).uri.queryParameters['redirect'];
+              final restoringSession = redirect != null &&
+                  redirect.startsWith('/app') &&
+                  (state is AuthInitial ||
+                      state is AuthLoading ||
+                      state is AuthRestoreFailed);
+              if (restoringSession) {
+                return const Scaffold(
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Restoring your session…'),
+                      ],
+                    ),
                   ),
-                ),
-              );
+                );
+              }
             }
 
             return BlocBuilder<ThemeCubit, ThemeState>(
