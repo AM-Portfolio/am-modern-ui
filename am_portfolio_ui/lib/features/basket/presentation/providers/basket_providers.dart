@@ -5,6 +5,7 @@ import 'package:am_common/am_common.dart';
 import '../../domain/models/basket_catalog.dart';
 import '../../domain/models/basket_opportunity.dart';
 import '../../domain/models/tracking_basket.dart';
+import '../../domain/models/basket_detail.dart';
 import '../../domain/repositories/basket_repository.dart';
 import '../../data/repositories/basket_repository_impl.dart';
 import '../../data/datasources/basket_remote_data_source.dart';
@@ -131,5 +132,18 @@ Future<BasketOpportunity> enhancedBasketPreview(
   // 3. Enhance opportunity
   final recommendationService = ref.watch(basketRecommendationServiceProvider);
   return recommendationService.enhanceOpportunityWithHoldings(opportunity, holdings.holdings);
+}
+
+@riverpod
+Future<BasketDetail> basketDetail(
+  Ref ref, {
+  required String basketId,
+  required String userId,
+}) async {
+  final repository = await ref.watch(basketRepositoryProvider.future);
+  return repository.getBasketDetail(
+    basketId: basketId,
+    userId: userId,
+  );
 }
 

@@ -20,6 +20,7 @@ abstract class BasketRemoteDataSource {
 
   Future<List<dynamic>> getMyBaskets({
     required String userId,
+
     required String portfolioId,
   });
 
@@ -30,6 +31,11 @@ abstract class BasketRemoteDataSource {
   Future<dynamic> calculateQuantities(Map<String, dynamic> request);
 
   Future<void> deleteBasket({
+    required String basketId,
+    required String userId,
+  });
+
+  Future<dynamic> getBasketDetail({
     required String basketId,
     required String userId,
   });
@@ -130,6 +136,21 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
     final response = await apiClient.post(
       BasketEndpoints.applySubstitutes,
       body: request,
+      parser: (data) => data,
+    );
+    return response;
+  }
+
+  @override
+  Future<dynamic> getBasketDetail({
+    required String basketId,
+    required String userId,
+  }) async {
+    final response = await apiClient.get(
+      BasketEndpoints.getBasketDetail(basketId),
+      queryParams: {
+        'userId': userId,
+      },
       parser: (data) => data,
     );
     return response;

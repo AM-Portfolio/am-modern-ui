@@ -8,6 +8,7 @@ class BasketOpportunity {
   final int heldCount;
   final int missingCount;
   final double? totalPortfolioValue;
+  final double? minimumInvestmentAmount;
   final List<BasketItem> composition;
   final List<BasketItem> buyList;
 
@@ -21,6 +22,7 @@ class BasketOpportunity {
     this.heldCount = 0,
     this.missingCount = 0,
     this.totalPortfolioValue,
+    this.minimumInvestmentAmount,
     this.composition = const [],
     this.buyList = const [],
   });
@@ -36,6 +38,7 @@ class BasketOpportunity {
       heldCount: json['heldCount'] as int? ?? 0,
       missingCount: json['missingCount'] as int? ?? 0,
       totalPortfolioValue: (json['totalPortfolioValue'] as num?)?.toDouble(),
+      minimumInvestmentAmount: (json['minimumInvestmentAmount'] as num?)?.toDouble(),
       composition: (json['composition'] as List<dynamic>?)
               ?.map((e) => BasketItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -58,6 +61,7 @@ class BasketOpportunity {
       'heldCount': heldCount,
       'missingCount': missingCount,
       'totalPortfolioValue': totalPortfolioValue,
+      'minimumInvestmentAmount': minimumInvestmentAmount,
       'composition': composition.map((e) => e.toJson()).toList(),
       'buyList': buyList.map((e) => e.toJson()).toList(),
     };
@@ -73,6 +77,7 @@ class BasketOpportunity {
     int? heldCount,
     int? missingCount,
     double? totalPortfolioValue,
+    double? minimumInvestmentAmount,
     List<BasketItem>? composition,
     List<BasketItem>? buyList,
   }) {
@@ -86,6 +91,7 @@ class BasketOpportunity {
       heldCount: heldCount ?? this.heldCount,
       missingCount: missingCount ?? this.missingCount,
       totalPortfolioValue: totalPortfolioValue ?? this.totalPortfolioValue,
+      minimumInvestmentAmount: minimumInvestmentAmount ?? this.minimumInvestmentAmount,
       composition: composition ?? this.composition,
       buyList: buyList ?? this.buyList,
     );
@@ -103,7 +109,8 @@ class BasketItem {
   final double etfWeight;
   final double userWeight;
   final double replicaWeight;
-  final double buyQuantity;
+  final double? rebalancedWeight;
+  final double? buyQuantity;
   final double? lastPrice;
   final String? marketCapCategory;
   final double? marketCapValue;
@@ -122,7 +129,8 @@ class BasketItem {
     this.etfWeight = 0.0,
     this.userWeight = 0.0,
     this.replicaWeight = 0.0,
-    this.buyQuantity = 0.0,
+    this.rebalancedWeight,
+    this.buyQuantity,
     this.lastPrice,
     this.marketCapCategory,
     this.marketCapValue,
@@ -146,7 +154,8 @@ class BasketItem {
       etfWeight: (json['etfWeight'] as num?)?.toDouble() ?? 0.0,
       userWeight: (json['userWeight'] as num?)?.toDouble() ?? 0.0,
       replicaWeight: (json['replicaWeight'] as num?)?.toDouble() ?? 0.0,
-      buyQuantity: (json['buyQuantity'] as num?)?.toDouble() ?? 0.0,
+      rebalancedWeight: (json['rebalancedWeight'] as num?)?.toDouble(),
+      buyQuantity: (json['buyQuantity'] as num?)?.toDouble(),
       lastPrice: (json['lastPrice'] as num?)?.toDouble(),
       marketCapCategory: json['marketCapCategory'] as String?,
       marketCapValue: (json['marketCapValue'] as num?)?.toDouble(),
@@ -171,6 +180,7 @@ class BasketItem {
       'etfWeight': etfWeight,
       'userWeight': userWeight,
       'replicaWeight': replicaWeight,
+      'rebalancedWeight': rebalancedWeight,
       'buyQuantity': buyQuantity,
       'lastPrice': lastPrice,
       'marketCapCategory': marketCapCategory,
@@ -192,6 +202,7 @@ class BasketItem {
     double? etfWeight,
     double? userWeight,
     double? replicaWeight,
+    double? rebalancedWeight,
     double? buyQuantity,
     double? lastPrice,
     List<Alternative>? alternatives,
@@ -209,6 +220,7 @@ class BasketItem {
       etfWeight: etfWeight ?? this.etfWeight,
       userWeight: userWeight ?? this.userWeight,
       replicaWeight: replicaWeight ?? this.replicaWeight,
+      rebalancedWeight: rebalancedWeight ?? this.rebalancedWeight,
       buyQuantity: buyQuantity ?? this.buyQuantity,
       lastPrice: lastPrice ?? this.lastPrice,
       alternatives: alternatives ?? this.alternatives,

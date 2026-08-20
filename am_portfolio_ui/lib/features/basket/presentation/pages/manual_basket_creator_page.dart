@@ -6,6 +6,8 @@ import '../../domain/models/basket_opportunity.dart';
 import '../../../../core/constants/basket_endpoints.dart';
 import '../widgets/allocation_bar.dart';
 import '../widgets/basket_section_header.dart';
+import '../widgets/minimum_investment_warning_widget.dart';
+import '../widgets/coverage_bar_widget.dart';
 import '../../../portfolio/providers/portfolio_providers.dart';
 import '../../../portfolio/internal/domain/entities/portfolio_holding.dart';
 import '../providers/basket_providers.dart';
@@ -33,6 +35,7 @@ class ManualBasketCreatorPage extends ConsumerStatefulWidget {
 
 class _ManualBasketCreatorPageState
     extends ConsumerState<ManualBasketCreatorPage> {
+  late BasketOpportunity _currentOpportunity;
   late List<BasketItem> _items;
   double? _investmentAmount;
   final TextEditingController _amountController = TextEditingController();
@@ -40,12 +43,14 @@ class _ManualBasketCreatorPageState
   final ScrollController _scrollController = ScrollController();
   bool _includeHeld = false;
   bool _isCalculating = false;
+  bool _hasCalculated = false;
 
   @override
   void initState() {
     super.initState();
-    _items = List.from(widget.opportunity.composition);
-    _basketNameController.text = 'My ${widget.opportunity.etfName} Basket';
+    _currentOpportunity = widget.opportunity;
+    _items = List.from(_currentOpportunity.composition);
+    _basketNameController.text = 'My ${_currentOpportunity.etfName} Basket';
   }
 
   // Enrich items with local holdings data
@@ -79,13 +84,55 @@ class _ManualBasketCreatorPageState
   void _updateQuantity(int index, double newQuantity) {
     setState(() {
       _items[index] = _items[index].copyWith(buyQuantity: newQuantity);
+      _hasCalculated = false;
     });
   }
 
   void _removeItem(int index) {
     setState(() {
-      _items.removeAt(index);
+      _items[index] = _items[index].copyWith(buyQuantity: null);
+      _hasCalculated = false;
     });
+  }
+
+  void _addItem(int index) {
+    setState(() {
+      _items[index] = _items[index].copyWith(buyQuantity: 0.0);
+      _hasCalculated = false;
+    });
+  }
+
+  void _resetBasket() {
+    setState(() {
+      _items = List.from(widget.opportunity.composition);
+      _hasCalculated = false;
+    });
+  }
+
+  void _rebalance() {
+    double activeWeights = 0.0;
+    for (var item in _items) {
+      if (item.buyQuantity != null || item.status == ItemStatus.held || item.status == ItemStatus.substitute) {
+        activeWeights += item.etfWeight;
+      }
+    }
+    
+    if (activeWeights > 0 && activeWeights < 100.0) {
+      final multiplier = 100.0 / activeWeights;
+      setState(() {
+        _items = _items.map((item) {
+          if (item.buyQuantity != null || item.status == ItemStatus.held || item.status == ItemStatus.substitute) {
+            return item.copyWith(rebalancedWeight: item.etfWeight * multiplier);
+          } else {
+            return item;
+          }
+        }).toList();
+        _hasCalculated = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Basket rebalanced! Please click Calculate to see new quantities.')),
+      );
+    }
   }
   
   void _setAmountByPercentage(double percentage) {
@@ -142,16 +189,22 @@ class _ManualBasketCreatorPageState
          }
       }
 
+      final holdingsAsync = ref.read(portfolioHoldingsProvider(widget.userId));
+      final localHoldings = holdingsAsync.asData?.value;
+      final itemsToSend = _enrichItemsWithHoldings(_items, localHoldings);
+
       final updatedOpportunity = await ref.read(calculateBasketQuantitiesProvider(
         request: {
           'investmentAmount': targetAmount,
-          'opportunity': widget.opportunity.toJson(), 
+          'opportunity': widget.opportunity.copyWith(composition: itemsToSend).toJson(), 
           'includeHeld': _includeHeld,
         },
       ).future);
       
       setState(() {
-         _items = updatedOpportunity.composition;
+         _currentOpportunity = updatedOpportunity;
+         _items = _currentOpportunity.composition;
+         _hasCalculated = true;
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -199,7 +252,7 @@ class _ManualBasketCreatorPageState
     final activeCalculationItems = _includeHeld ? displayItems : otherItems;
     for (var item in activeCalculationItems) {
       if (item.lastPrice != null) {
-        totalActiveInvestment += item.lastPrice! * item.buyQuantity;
+        totalActiveInvestment += item.lastPrice! * (item.buyQuantity ?? 0.0);
       }
     }
 
@@ -212,7 +265,7 @@ class _ManualBasketCreatorPageState
                     ...otherItems.map((item) {
                        double pct = 0;
                        if (totalActiveInvestment > 0 && item.lastPrice != null) {
-                         pct = (item.lastPrice! * item.buyQuantity / totalActiveInvestment) * 100;
+                         pct = (item.lastPrice! * (item.buyQuantity ?? 0.0) / totalActiveInvestment) * 100;
                        }
                        
                        // Matching Score Logic
@@ -248,6 +301,10 @@ class _ManualBasketCreatorPageState
                        
                        return _EditableBasketItemCard(
                         item: item,
+                        onAdd: () {
+                           int realIndex = displayItems.indexOf(item);
+                           _addItem(realIndex);
+                        },
                         investmentPercentage: pct,
                         substituteOverride: matchWidget,
                         onRemove: () {
@@ -278,7 +335,7 @@ class _ManualBasketCreatorPageState
                     ...heldItems.map((item) {
                        double pct = 0;
                        if (totalActiveInvestment > 0 && item.lastPrice != null) {
-                         pct = (item.lastPrice! * item.buyQuantity / totalActiveInvestment) * 100;
+                         pct = (item.lastPrice! * (item.buyQuantity ?? 0.0) / totalActiveInvestment) * 100;
                        }
                        
                        
@@ -345,12 +402,28 @@ class _ManualBasketCreatorPageState
                         substituteOverride: calcWidget,
                         readOnly: !_includeHeld,
                         onRemove: () {
-                           int realIndex = displayItems.indexOf(item);
+                           int realIndex = _items.indexOf(item);
                            _removeItem(realIndex);
                         },
+                        onAdd: () {
+                           int realIndex = _items.indexOf(item);
+                           _addItem(realIndex);
+                        },
                         onQuantityChanged: (val) {
-                           int realIndex = displayItems.indexOf(item);
+                           int realIndex = _items.indexOf(item);
                            _updateQuantity(realIndex, val);
+                        },
+                        onSubstituteSelected: (alt) {
+                           int realIndex = _items.indexOf(item);
+                           setState(() {
+                              _items[realIndex] = _items[realIndex].copyWith(
+                                 status: ItemStatus.substitute,
+                                 userHoldingSymbol: alt.symbol,
+                                 userHoldingIsin: alt.isin,
+                                 lastPrice: alt.lastPrice,
+                              );
+                              _hasCalculated = false;
+                           });
                         },
                       ),
                     );
@@ -368,8 +441,10 @@ class _ManualBasketCreatorPageState
           SliverToBoxAdapter(
             child: _SummaryHeader(
               itemCount: _items.length,
-              etfName: widget.opportunity.etfName,
-              totalPortfolioValue: widget.opportunity.totalPortfolioValue,
+              etfName: _currentOpportunity.etfName,
+              totalPortfolioValue: _currentOpportunity.totalPortfolioValue,
+              matchScore: _currentOpportunity.matchScore,
+              replicaScore: _currentOpportunity.replicaScore,
             ),
           ),
           if (_items.isNotEmpty)
@@ -408,7 +483,11 @@ class _ManualBasketCreatorPageState
                               vertical: AppSpacing.sm,
                             ),
                           ),
-                          onChanged: (val) {},
+                          onChanged: (val) {
+                            setState(() {
+                              _hasCalculated = false;
+                            });
+                          },
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
@@ -427,14 +506,15 @@ class _ManualBasketCreatorPageState
                   ),
                   const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
                   Slider(
-                    value: double.tryParse(_amountController.text)?.clamp(5000.0, 1000000.0) ?? 5000.0,
-                    min: 5000.0,
+                    value: double.tryParse(_amountController.text)?.clamp(widget.opportunity.minimumInvestmentAmount ?? 50000.0, 1000000.0) ?? (widget.opportunity.minimumInvestmentAmount ?? 50000.0),
+                    min: widget.opportunity.minimumInvestmentAmount ?? 50000.0,
                     max: 1000000.0,
                     divisions: 199,
                     label: _amountController.text,
                     onChanged: (val) {
                       setState(() {
                         _amountController.text = val.toInt().toString();
+                        _hasCalculated = false;
                       });
                     },
                     onChangeEnd: (val) {
@@ -469,6 +549,18 @@ class _ManualBasketCreatorPageState
                       ),
                       Row(
                         children: [
+                          TextButton(
+                            onPressed: _resetBasket,
+                            child: const Text('Reset'),
+                          ),
+                          TextButton(
+                            onPressed: _rebalance,
+                            child: const Text('Rebalance'),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
                           Text(
                             'Include Held',
                             style: Theme.of(context).textTheme.labelMedium,
@@ -487,6 +579,11 @@ class _ManualBasketCreatorPageState
                         ],
                       ),
                     ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  MinimumInvestmentWarningWidget(
+                    minimumInvestmentAmount: widget.opportunity.minimumInvestmentAmount ?? 50000.0,
+                    currentInvestmentAmount: double.tryParse(_amountController.text) ?? 0.0,
                   ),
                 ],
               ),
@@ -586,6 +683,27 @@ class _ManualBasketCreatorPageState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please calculate investment amount first'),
+          backgroundColor: context.statusWarning,
+        ),
+      );
+      return;
+    }
+
+    if (!_hasCalculated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please click Calculate before saving the basket.'),
+          backgroundColor: context.statusWarning,
+        ),
+      );
+      return;
+    }
+
+    final minInvestment = widget.opportunity.minimumInvestmentAmount ?? 50000.0;
+    if (amount < minInvestment) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Minimum investment amount is ₹${minInvestment.toStringAsFixed(0)}'),
           backgroundColor: context.statusWarning,
         ),
       );
@@ -697,11 +815,15 @@ class _SummaryHeader extends StatelessWidget {
   final int itemCount;
   final String etfName;
   final double? totalPortfolioValue;
+  final double matchScore;
+  final double replicaScore;
 
   const _SummaryHeader({
     required this.itemCount,
     required this.etfName,
     this.totalPortfolioValue,
+    this.matchScore = 0.0,
+    this.replicaScore = 0.0,
   });
 
   @override
@@ -740,6 +862,12 @@ class _SummaryHeader extends StatelessWidget {
                  )
             ],
           ),
+          const SizedBox(height: AppSpacing.md),
+          CoverageBarWidget(
+            matchScore: matchScore / 100.0,
+            replicaScore: replicaScore / 100.0,
+            missingScore: 1.0 - (replicaScore / 100.0),
+          ),
         ],
       ),
     );
@@ -749,7 +877,9 @@ class _SummaryHeader extends StatelessWidget {
 class _EditableBasketItemCard extends StatelessWidget {
   final BasketItem item;
   final VoidCallback onRemove;
+  final VoidCallback onAdd;
   final ValueChanged<double> onQuantityChanged;
+  final ValueChanged<Alternative>? onSubstituteSelected;
   final bool readOnly;
   final double? investmentPercentage;
   final Widget? substituteOverride;
@@ -757,7 +887,9 @@ class _EditableBasketItemCard extends StatelessWidget {
   const _EditableBasketItemCard({
     required this.item,
     required this.onRemove,
+    required this.onAdd,
     required this.onQuantityChanged,
+    this.onSubstituteSelected,
     this.readOnly = false,
     this.investmentPercentage,
     this.substituteOverride,
@@ -815,6 +947,9 @@ class _EditableBasketItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMissing = item.buyQuantity == null;
+    final contentColor = isMissing ? Colors.grey : null;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 0,
@@ -834,7 +969,11 @@ class _EditableBasketItemCard extends StatelessWidget {
                 children: [
                   Text(
                     item.stockSymbol,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: contentColor,
+                      decoration: isMissing ? TextDecoration.lineThrough : null,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   const SizedBox(height: 2),
@@ -922,15 +1061,33 @@ class _EditableBasketItemCard extends StatelessWidget {
             // Column 5: Substitute (Flex 8)
             Expanded(
               flex: 8,
-              child: substituteOverride ?? (item.status == ItemStatus.substitute
-                  ? const Icon(Icons.swap_horiz, size: 16, color: AppColors.info)
+              child: substituteOverride ?? (item.alternatives != null && item.alternatives!.isNotEmpty
+                  ? PopupMenuButton<Alternative>(
+                      icon: Icon(Icons.swap_horiz, size: 16, color: isMissing ? Colors.grey : AppColors.info),
+                      onSelected: onSubstituteSelected,
+                      itemBuilder: (BuildContext context) {
+                        return item.alternatives!.map((Alternative alt) {
+                          return PopupMenuItem<Alternative>(
+                            value: alt,
+                            child: Text(alt.symbol),
+                          );
+                        }).toList();
+                      },
+                    )
                   : const SizedBox()), 
             ),
 
             // Column 6: Quantity (Flex 18)
             Expanded(
               flex: 18,
-              child: Column(
+              child: isMissing 
+                ? Center(
+                    child: TextButton(
+                      onPressed: onAdd,
+                      child: const Text('Add'),
+                    ),
+                  )
+                : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                    Row(
@@ -939,7 +1096,7 @@ class _EditableBasketItemCard extends StatelessWidget {
                       if (!readOnly)
                         InkWell(
                           onTap: () {
-                             if (item.buyQuantity > 0) onQuantityChanged(item.buyQuantity - 1);
+                             if (item.buyQuantity! > 0) onQuantityChanged(item.buyQuantity! - 1);
                           },
                           child: const Padding(
                             padding: EdgeInsets.all(4.0),
@@ -947,7 +1104,7 @@ class _EditableBasketItemCard extends StatelessWidget {
                           ),
                         ),
                       Text(
-                        item.buyQuantity.toInt().toString(),
+                        item.buyQuantity!.toInt().toString(),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: readOnly ? Colors.grey : null,
@@ -955,7 +1112,7 @@ class _EditableBasketItemCard extends StatelessWidget {
                       ),
                       if (!readOnly)
                         InkWell(
-                          onTap: () => onQuantityChanged(item.buyQuantity + 1),
+                          onTap: () => onQuantityChanged(item.buyQuantity! + 1),
                           child: const Padding(
                             padding: EdgeInsets.all(4.0),
                             child: Icon(Icons.add_circle_outline, size: 18, color: Colors.grey),
@@ -965,11 +1122,11 @@ class _EditableBasketItemCard extends StatelessWidget {
                   ),
                   if (item.heldQuantity != null && item.heldQuantity! > 0)
                      Text(
-                       "Buy: ${(item.buyQuantity - item.heldQuantity!).clamp(0.0, 9999).toInt()}",
+                       "Buy: ${(item.buyQuantity! - item.heldQuantity!).clamp(0.0, 9999).toInt()}",
                        style: TextStyle(
                          fontSize: 9, 
                          fontWeight: FontWeight.bold,
-                         color: (item.buyQuantity - item.heldQuantity!) > 0 ? Theme.of(context).primaryColor : Colors.green
+                         color: (item.buyQuantity! - item.heldQuantity!) > 0 ? Theme.of(context).primaryColor : Colors.green
                        ),
                      ),
                 ],
@@ -979,7 +1136,7 @@ class _EditableBasketItemCard extends StatelessWidget {
             // Column 7: Actions (Flex 8)
             Expanded(
               flex: 8,
-              child: !readOnly
+              child: !readOnly && !isMissing
                   ? IconButton(
                       icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
                       onPressed: onRemove,
@@ -1049,8 +1206,8 @@ class _AllocationSummary extends StatelessWidget {
 
     for (var item in activeItems) {
        double weight = 0;
-       if (item.lastPrice != null && item.buyQuantity > 0) {
-         weight = item.lastPrice! * item.buyQuantity;
+       if (item.lastPrice != null && (item.buyQuantity ?? 0.0) > 0) {
+         weight = item.lastPrice! * (item.buyQuantity ?? 0.0);
        } else {
          weight = item.etfWeight; // Fallback to target weight
        }
@@ -1149,7 +1306,7 @@ class _InvestmentSummaryFooter extends StatelessWidget {
 
     for (var item in activeItems) {
       if (item.lastPrice != null) {
-        double qtyToPayFor = item.buyQuantity;
+        double qtyToPayFor = item.buyQuantity ?? 0.0;
         if (includeHeld && item.heldQuantity != null) {
           qtyToPayFor = (qtyToPayFor - item.heldQuantity!).clamp(0.0, 999999.0);
         }
@@ -1157,7 +1314,7 @@ class _InvestmentSummaryFooter extends StatelessWidget {
       }
     }
 
-    final assetsToBuy = activeItems.where((i) => i.buyQuantity > 0).length;
+    final assetsToBuy = activeItems.where((i) => (i.buyQuantity ?? 0.0) > 0).length;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),

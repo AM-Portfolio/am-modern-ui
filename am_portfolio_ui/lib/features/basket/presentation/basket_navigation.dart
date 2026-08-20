@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:am_common/am_common.dart';
 import '../domain/models/basket_opportunity.dart';
 import 'pages/basket_preview_page.dart';
+import 'pages/basket_dashboard_page.dart';
 import 'pages/manual_basket_creator_page.dart';
 import 'widgets/basket_explorer.dart';
 
@@ -13,6 +14,7 @@ class BasketNavigation {
   static const String explorerRoute = '/';
   static const String previewRoute = '/preview';
   static const String creatorRoute = '/creator';
+  static const String dashboardRoute = '/dashboard';
   static const int basketsTabIndex = 4;
 
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -45,6 +47,16 @@ class BasketNavigation {
             opportunity: args.opportunity,
             userId: args.userId,
             portfolioId: args.portfolioId,
+            embedded: true,
+          ),
+        );
+      case dashboardRoute:
+        final args = settings.arguments! as Map<String, dynamic>;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => BasketDashboardPage(
+            basketId: args['basketId'] as String,
+            userId: args['userId'] as String,
             embedded: true,
           ),
         );
@@ -97,6 +109,39 @@ class BasketNavigation {
           etfIsin: etfIsin,
           userId: userId,
           portfolioId: portfolioId,
+        ),
+      ),
+    );
+  }
+
+  static void openDashboard(
+    BuildContext context, {
+    required String basketId,
+    required String userId,
+    required String portfolioId,
+  }) {
+    final args = {
+      'basketId': basketId,
+      'userId': userId,
+    };
+
+    final nested = navigatorKey.currentState;
+    if (nested != null) {
+      nested.pushNamed(dashboardRoute, arguments: args);
+      return;
+    }
+
+    if (GoRouter.maybeOf(context) != null) {
+      context.push('/portfolio/basket/dashboard', extra: args);
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BasketDashboardPage(
+          basketId: basketId,
+          userId: userId,
+          embedded: false,
         ),
       ),
     );

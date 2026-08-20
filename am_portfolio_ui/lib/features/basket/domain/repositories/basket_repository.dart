@@ -1,6 +1,7 @@
 import '../models/basket_catalog.dart';
 import '../models/basket_opportunity.dart';
 import '../models/tracking_basket.dart';
+import '../models/basket_detail.dart';
 
 abstract class BasketRepository {
   Future<BasketCatalog> getCatalog();
@@ -29,6 +30,11 @@ abstract class BasketRepository {
   Future<BasketOpportunity> calculateQuantities(Map<String, dynamic> request);
 
   Future<void> deleteBasket({
+    required String basketId,
+    required String userId,
+  });
+
+  Future<BasketDetail> getBasketDetail({
     required String basketId,
     required String userId,
   });

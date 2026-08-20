@@ -73,7 +73,7 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
     final statusColor = _getStatusColor(context);
     final double units = (widget.item.status == ItemStatus.held)
         ? (widget.item.heldQuantity ?? 0.0)
-        : widget.item.buyQuantity;
+        : (widget.item.buyQuantity ?? 0.0);
     final double value = (widget.item.lastPrice ?? 0.0) * units;
     final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 

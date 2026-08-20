@@ -147,10 +147,10 @@ class _TrackingBasketCard extends ConsumerWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
-          if (basket.etfIsin != null && basket.etfIsin!.isNotEmpty) {
-            BasketNavigation.openPreview(
+          if (basket.basketId.isNotEmpty) {
+            BasketNavigation.openDashboard(
               context,
-              etfIsin: basket.etfIsin!,
+              basketId: basket.basketId,
               userId: userId,
               portfolioId: portfolioId,
             );
