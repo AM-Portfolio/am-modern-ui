@@ -1,4 +1,3 @@
-
 enum BasketItemStatus {
   held,
   missing,
@@ -14,10 +13,14 @@ enum BasketStatus {
   unknown;
 
   static BasketStatus fromString(String? value) {
-    if (value == null) return BasketStatus.unknown;
-    return BasketStatus.values.firstWhere(
-      (e) => e.name.toUpperCase() == value.toUpperCase(),
-      orElse: () => BasketStatus.unknown,
-    );
+    if (value == null || value.trim().isEmpty) return BasketStatus.active;
+    final normalized = value.trim().toLowerCase();
+    for (final s in BasketStatus.values) {
+      if (s.name.toLowerCase() == normalized ||
+          s.name.replaceAll('_', '').toLowerCase() == normalized.replaceAll('_', '')) {
+        return s;
+      }
+    }
+    return BasketStatus.active;
   }
 }
