@@ -306,7 +306,7 @@ class _ManualBasketCreatorPageState
                            _addItem(realIndex);
                         },
                         investmentPercentage: pct,
-                        substituteOverride: matchWidget,
+                        matchWidget: matchWidget,
                         onRemove: () {
                            int realIndex = displayItems.indexOf(item);
                            _removeItem(realIndex);
@@ -399,22 +399,22 @@ class _ManualBasketCreatorPageState
                       child: _EditableBasketItemCard(
                         item: item,
                         investmentPercentage: _includeHeld ? pct : null,
-                        substituteOverride: calcWidget,
+                        matchWidget: calcWidget,
                         readOnly: !_includeHeld,
                         onRemove: () {
-                           int realIndex = _items.indexOf(item);
+                           int realIndex = displayItems.indexOf(item);
                            _removeItem(realIndex);
                         },
                         onAdd: () {
-                           int realIndex = _items.indexOf(item);
+                           int realIndex = displayItems.indexOf(item);
                            _addItem(realIndex);
                         },
                         onQuantityChanged: (val) {
-                           int realIndex = _items.indexOf(item);
+                           int realIndex = displayItems.indexOf(item);
                            _updateQuantity(realIndex, val);
                         },
                         onSubstituteSelected: (alt) {
-                           int realIndex = _items.indexOf(item);
+                           int realIndex = displayItems.indexOf(item);
                            setState(() {
                               _items[realIndex] = _items[realIndex].copyWith(
                                  status: ItemStatus.substitute,
@@ -882,7 +882,7 @@ class _EditableBasketItemCard extends StatelessWidget {
   final ValueChanged<Alternative>? onSubstituteSelected;
   final bool readOnly;
   final double? investmentPercentage;
-  final Widget? substituteOverride;
+  final Widget? matchWidget;
 
   const _EditableBasketItemCard({
     required this.item,
@@ -892,7 +892,7 @@ class _EditableBasketItemCard extends StatelessWidget {
     this.onSubstituteSelected,
     this.readOnly = false,
     this.investmentPercentage,
-    this.substituteOverride,
+    this.matchWidget,
   });
 
   Widget _buildIconBadge(BuildContext context, IconData icon, String tooltip, Color color) {
@@ -1023,7 +1023,7 @@ class _EditableBasketItemCard extends StatelessWidget {
             // Column 3: Target % (Flex 10)
             Expanded(
               flex: 10,
-              child: Text(
+              child: matchWidget ?? Text(
                 "${item.etfWeight.toStringAsFixed(1)}%",
                 style: Theme.of(context).textTheme.bodySmall,
                 textAlign: TextAlign.center,
@@ -1061,7 +1061,7 @@ class _EditableBasketItemCard extends StatelessWidget {
             // Column 5: Substitute (Flex 8)
             Expanded(
               flex: 8,
-              child: substituteOverride ?? (item.alternatives != null && item.alternatives!.isNotEmpty
+              child: item.alternatives != null && item.alternatives!.isNotEmpty
                   ? PopupMenuButton<Alternative>(
                       icon: Icon(Icons.swap_horiz, size: 16, color: isMissing ? Colors.grey : AppColors.info),
                       onSelected: onSubstituteSelected,
@@ -1074,7 +1074,7 @@ class _EditableBasketItemCard extends StatelessWidget {
                         }).toList();
                       },
                     )
-                  : const SizedBox()), 
+                  : const SizedBox(), 
             ),
 
             // Column 6: Quantity (Flex 18)
