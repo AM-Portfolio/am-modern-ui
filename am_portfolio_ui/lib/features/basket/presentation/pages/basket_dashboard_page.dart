@@ -23,7 +23,22 @@ class BasketDashboardPage extends ConsumerStatefulWidget {
   ConsumerState<BasketDashboardPage> createState() => _BasketDashboardPageState();
 }
 
-class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
+class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(basketDetailProvider(
@@ -32,8 +47,21 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
     ));
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, 
       appBar: AppBar(
         title: const Text('Basket Dashboard'),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_horiz),
+            onPressed: () {},
+          ),
+        ],
         leading: widget.embedded
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -48,71 +76,157 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
           }
 
           final colors = context.colors;
-          final pnlColor = basket.totalPnL >= 0 ? Colors.green : Colors.red;
+          final pnlColor = basket.totalPnL >= 0 ? Colors.greenAccent.shade400 : Colors.redAccent.shade400;
           final pnlSign = basket.totalPnL >= 0 ? '+' : '';
+          
+          final dateFormat = DateFormat('MMM dd, yyyy');
+          // Dummy date since it's not in the model yet, fallback to now
+          final createdDateStr = dateFormat.format(DateTime.now());
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          return NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header section
+                        Text(
+                          basket.name,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          '${basket.etfName}  ●  Created $createdDateStr',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
+
+                        // Summary Cards
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _PremiumSummaryCard(
+                                title: 'Invested Value',
+                                value: '₹${NumberFormat('#,##,##0.00').format(basket.totalCurrentValue - basket.totalPnL)}',
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: _PremiumSummaryCard(
+                                title: 'Current Value',
+                                value: '₹${NumberFormat('#,##,##0.00').format(basket.totalCurrentValue)}',
+                                trendIcon: basket.totalPnL >= 0 ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                                trendColor: pnlColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        
+                        // Total P&L Card
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.lg),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).cardColor,
+                            borderRadius: AppRadii.card,
+                            border: Border.all(color: colors.divider),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Total P&L:', style: Theme.of(context).textTheme.titleMedium),
+                              Row(
+                                children: [
+                                  Text(
+                                    '$pnlSign₹${NumberFormat('#,##,##0.00').format(basket.totalPnL)}',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: pnlColor,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '($pnlSign${basket.pnlPercent.toStringAsFixed(2)}%)',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: pnlColor,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            ],
+                          ),
+                        ),
+                        
+                        const SizedBox(height: AppSpacing.xl),
+
+                        // Composition Progress
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Composition',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            Row(
+                              children: [
+                                _CompactStatusLabel(label: 'Held', count: basket.heldCount, color: Colors.green),
+                                const SizedBox(width: 8),
+                                _CompactStatusLabel(label: 'Sub', count: basket.lines.where((l) => l.status == 'SUBSTITUTE').length, color: Colors.purple),
+                                const SizedBox(width: 8),
+                                _CompactStatusLabel(label: 'Missing', count: basket.missingCount, color: Colors.red),
+                              ],
+                            )
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        // Mock progress bar
+                        LinearProgressIndicator(
+                          value: 0.82,
+                          backgroundColor: colors.divider,
+                          color: colors.actionPrimaryBg,
+                          minHeight: 8,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        const SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text('82% Match', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SliverAppBarDelegate(
+                    TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      labelColor: colors.textPrimary,
+                      unselectedLabelColor: colors.textSecondary,
+                      indicatorColor: colors.actionPrimaryBg,
+                      tabs: const [
+                        Tab(text: 'All'),
+                        Tab(text: 'Held'),
+                        Tab(text: 'Missing'),
+                        Tab(text: 'Substitute'),
+                      ],
+                    ),
+                  ),
+                ),
+              ];
+            },
+            body: TabBarView(
+              controller: _tabController,
               children: [
-                // Header section
-                Text(
-                  basket.name,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  basket.etfName,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colors.textSecondary),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-
-                // Summary Cards
-                Row(
-                  children: [
-                    Expanded(
-                      child: _SummaryCard(
-                        title: 'Current Value',
-                        value: NumberFormat.currency(symbol: '\$').format(basket.totalCurrentValue),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: _SummaryCard(
-                        title: 'Total PnL',
-                        value: '$pnlSign${NumberFormat.currency(symbol: '\$').format(basket.totalPnL)}',
-                        valueColor: pnlColor,
-                        subtitle: '$pnlSign${basket.pnlPercent.toStringAsFixed(2)}%',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xl),
-
-                // Status breakdown
-                Text(
-                  'Composition Status',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _StatusBadge(label: 'Held', count: basket.heldCount, color: Colors.green),
-                    _StatusBadge(label: 'Missing', count: basket.missingCount, color: Colors.red),
-                    _StatusBadge(label: 'Underfunded', count: basket.underfundedCount, color: Colors.orange),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xl),
-
-                // Holdings List
-                Text(
-                  'Holdings',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                ...basket.lines.map((line) => _BasketLineTile(line: line)),
+                _HoldingsList(lines: basket.lines),
+                _HoldingsList(lines: basket.lines.where((l) => l.status == 'HELD').toList()),
+                _HoldingsList(lines: basket.lines.where((l) => l.status == 'MISSING').toList()),
+                _HoldingsList(lines: basket.lines.where((l) => l.status == 'SUBSTITUTE').toList()),
               ],
             ),
           );
@@ -141,60 +255,60 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
   }
 }
 
-class _SummaryCard extends StatelessWidget {
+class _PremiumSummaryCard extends StatelessWidget {
   final String title;
   final String value;
-  final Color? valueColor;
-  final String? subtitle;
+  final IconData? trendIcon;
+  final Color? trendColor;
 
-  const _SummaryCard({
+  const _PremiumSummaryCard({
     required this.title,
     required this.value,
-    this.valueColor,
-    this.subtitle,
+    this.trendIcon,
+    this.trendColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: AppRadii.card),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: context.colors.textSecondary)),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: valueColor,
-              ),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                subtitle!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: valueColor,
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: AppRadii.card,
+        border: Border.all(color: context.colors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: context.colors.textSecondary)),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  value,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ]
-          ],
-        ),
+              if (trendIcon != null)
+                Icon(trendIcon, color: trendColor, size: 24),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _StatusBadge extends StatelessWidget {
+class _CompactStatusLabel extends StatelessWidget {
   final String label;
   final int count;
   final Color color;
 
-  const _StatusBadge({
+  const _CompactStatusLabel({
     required this.label,
     required this.count,
     required this.color,
@@ -202,25 +316,37 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Text(
-            count.toString(),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        '$label: $count',
+        style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+}
+
+class _HoldingsList extends StatelessWidget {
+  final List<BasketLineDetail> lines;
+
+  const _HoldingsList({required this.lines});
+
+  @override
+  Widget build(BuildContext context) {
+    if (lines.isEmpty) {
+      return const Center(
+        child: Text('No assets in this category.', style: TextStyle(color: Colors.grey)),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      itemCount: lines.length,
+      itemBuilder: (context, index) => _BasketLineTile(line: lines[index]),
     );
   }
 }
@@ -252,47 +378,102 @@ class _BasketLineTile extends StatelessWidget {
 
     final pnlColor = line.pnl >= 0 ? Colors.green : Colors.red;
     final pnlSign = line.pnl >= 0 ? '+' : '';
+    final isMissing = line.status == 'MISSING';
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: context.colors.divider),
-      ),
-      child: ListTile(
-        title: Row(
-          children: [
-            Text(line.symbol, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(width: AppSpacing.sm),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Symbol & Sector
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(line.symbol, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  line.etfWeight != null ? '${line.etfWeight?.toStringAsFixed(1)}% ETF weight' : 'ETF Stock',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.colors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          
+          // Status Badge
+          Expanded(
+            flex: 2,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  line.status,
+                  style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
               ),
+            ),
+          ),
+          
+          // Price & PnL
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  isMissing ? '-' : '₹${NumberFormat('#,##,##0.00').format(line.currentPrice)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  isMissing ? '-' : '$pnlSign₹${NumberFormat('#,##,##0.00').format(line.pnl)}',
+                  style: TextStyle(color: isMissing ? Colors.grey : pnlColor, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          
+          // Weight
+          Expanded(
+            flex: 2,
+            child: Align(
+              alignment: Alignment.centerRight,
               child: Text(
-                line.status,
-                style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                line.etfWeight != null ? '${line.etfWeight?.toStringAsFixed(1)}%' : '-',
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
-          ],
-        ),
-        subtitle: Text(line.sector ?? 'Unknown Sector'),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              NumberFormat.currency(symbol: '\$').format(line.currentPrice),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              '$pnlSign${NumberFormat.currency(symbol: '\$').format(line.pnl)}',
-              style: TextStyle(color: pnlColor, fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar _tabBar;
+
+  _SliverAppBarDelegate(this._tabBar);
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
   }
 }

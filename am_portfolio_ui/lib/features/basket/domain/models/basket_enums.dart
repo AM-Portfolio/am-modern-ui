@@ -13,7 +13,7 @@ enum BasketStatus {
   unknown;
 
   static BasketStatus fromString(String? value) {
-    if (value == null || value.trim().isEmpty) return BasketStatus.active;
+    if (value == null || value.trim().isEmpty) return BasketStatus.unknown;
     final normalized = value.trim().toLowerCase();
     for (final s in BasketStatus.values) {
       if (s.name.toLowerCase() == normalized ||
@@ -21,6 +21,6 @@ enum BasketStatus {
         return s;
       }
     }
-    return BasketStatus.active;
+    return BasketStatus.unknown;
   }
 }

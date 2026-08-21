@@ -34,7 +34,8 @@ class ManualBasketCreatorPage extends ConsumerStatefulWidget {
 }
 
 class _ManualBasketCreatorPageState
-    extends ConsumerState<ManualBasketCreatorPage> {
+    extends ConsumerState<ManualBasketCreatorPage>
+    with SingleTickerProviderStateMixin {
   late BasketOpportunity _currentOpportunity;
   late List<BasketItem> _items;
   double? _investmentAmount;
@@ -44,10 +45,12 @@ class _ManualBasketCreatorPageState
   bool _includeHeld = false;
   bool _isCalculating = false;
   bool _hasCalculated = false;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _currentOpportunity = widget.opportunity;
     _items = List.from(_currentOpportunity.composition);
     _basketNameController.text = 'My ${_currentOpportunity.etfName} Basket';
@@ -78,6 +81,7 @@ class _ManualBasketCreatorPageState
     _amountController.dispose();
     _basketNameController.dispose();
     _scrollController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -90,7 +94,7 @@ class _ManualBasketCreatorPageState
 
   void _removeItem(int index) {
     setState(() {
-      _items[index] = _items[index].copyWith(buyQuantity: null);
+      _items[index] = _items[index].copyWith(clearBuyQuantity: true);
       _hasCalculated = false;
     });
   }
@@ -196,7 +200,7 @@ class _ManualBasketCreatorPageState
       final updatedOpportunity = await ref.read(calculateBasketQuantitiesProvider(
         request: {
           'investmentAmount': targetAmount,
-          'opportunity': widget.opportunity.copyWith(composition: itemsToSend).toJson(), 
+          'opportunity': _currentOpportunity.copyWith(composition: itemsToSend).toJson(), 
           'includeHeld': _includeHeld,
         },
       ).future);
@@ -314,6 +318,18 @@ class _ManualBasketCreatorPageState
                         onQuantityChanged: (val) {
                            int realIndex = displayItems.indexOf(item);
                            _updateQuantity(realIndex, val);
+                        },
+                        onSubstituteSelected: (alt) {
+                           int realIndex = displayItems.indexOf(item);
+                           setState(() {
+                              _items[realIndex] = _items[realIndex].copyWith(
+                                 status: ItemStatus.substitute,
+                                 userHoldingSymbol: alt.symbol,
+                                 userHoldingIsin: alt.isin,
+                                 lastPrice: alt.lastPrice,
+                              );
+                              _hasCalculated = false;
+                           });
                         },
                       );
                     }),
@@ -589,52 +605,95 @@ class _ManualBasketCreatorPageState
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: Container(
-              margin: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              padding: const EdgeInsets.all(AppSpacing.sm + AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: context.colors.actionPrimaryBg.withValues(alpha: 0.05),
-                borderRadius: AppRadii.button,
-                border: Border.all(
-                  color: context.colors.actionPrimaryBg.withValues(alpha: 0.1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, size: 20, color: context.colors.actionPrimaryBg),
-                  const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      "Quantities are optimized to match ETF weights. 'Match Score' shows how closely we can replicate the index given stock prices.",
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _SliverAppBarDelegate(
+              TabBar(
+                controller: _tabController,
+                labelColor: context.colors.textPrimary,
+                unselectedLabelColor: context.colors.textSecondary,
+                indicatorColor: context.colors.actionPrimaryBg,
+                tabs: const [
+                  Tab(text: 'Edit List'),
+                  Tab(text: 'Comparison'),
+                  Tab(text: 'Sector Analysis'),
                 ],
               ),
             ),
           ),
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.xs,
-              ),
-              child: _StockListHeader(),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.sm,
-              AppSpacing.md,
-              AppSpacing.xl,
-            ),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate(assetRows),
+          SliverFillRemaining(
+            hasScrollBody: true,
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                // Tab 1: Edit List
+                CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
+                        ),
+                        padding: const EdgeInsets.all(AppSpacing.sm + AppSpacing.xs),
+                        decoration: BoxDecoration(
+                          color: context.colors.actionPrimaryBg.withValues(alpha: 0.05),
+                          borderRadius: AppRadii.button,
+                          border: Border.all(
+                            color: context.colors.actionPrimaryBg.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 20, color: context.colors.actionPrimaryBg),
+                            const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
+                            Expanded(
+                              child: Text(
+                                "Quantities are optimized to match ETF weights. 'Match Score' shows how closely we can replicate the index given stock prices.",
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.xs,
+                        ),
+                        child: _StockListHeader(),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        AppSpacing.sm,
+                        AppSpacing.md,
+                        AppSpacing.xl,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate(assetRows),
+                      ),
+                    ),
+                  ],
+                ),
+                // Tab 2: Comparison
+                _BasketComparisonTab(
+                  originalOpportunity: _currentOpportunity,
+                  myBasketItems: _items,
+                  hasCalculated: _hasCalculated,
+                  includeHeld: _includeHeld,
+                ),
+                // Tab 3: Sector Analysis
+                _SectorComparisonTab(
+                  originalOpportunity: _currentOpportunity,
+                  myBasketItems: _items,
+                  hasCalculated: _hasCalculated,
+                  includeHeld: _includeHeld,
+                ),
+              ],
             ),
           ),
         ],
@@ -967,14 +1026,29 @@ class _EditableBasketItemCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.stockSymbol,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: contentColor,
-                      decoration: isMissing ? TextDecoration.lineThrough : null,
+                  if (item.status == ItemStatus.substitute && item.userHoldingSymbol != null) ...[
+                    Text(
+                      item.userHoldingSymbol!,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: contentColor,
+                        decoration: isMissing ? TextDecoration.lineThrough : null,
+                      ),
                     ),
-                  ),
+                    Text(
+                      '(${item.stockSymbol})',
+                      style: const TextStyle(fontSize: 9, color: Colors.grey),
+                    ),
+                  ] else ...[
+                    Text(
+                      item.stockSymbol,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: contentColor,
+                        decoration: isMissing ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 2),
                   const SizedBox(height: 2),
                   Wrap(
@@ -1136,7 +1210,7 @@ class _EditableBasketItemCard extends StatelessWidget {
             // Column 7: Actions (Flex 8)
             Expanded(
               flex: 8,
-              child: !readOnly && !isMissing
+              child: !readOnly
                   ? IconButton(
                       icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
                       onPressed: onRemove,
@@ -1365,6 +1439,244 @@ class _InvestmentSummaryFooter extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar _tabBar;
+
+  _SliverAppBarDelegate(this._tabBar);
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
+  }
+}
+
+class _BasketComparisonTab extends StatelessWidget {
+  final BasketOpportunity originalOpportunity;
+  final List<BasketItem> myBasketItems;
+  final bool hasCalculated;
+  final bool includeHeld;
+
+  const _BasketComparisonTab({
+    required this.originalOpportunity,
+    required this.myBasketItems,
+    required this.hasCalculated,
+    required this.includeHeld,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasCalculated) {
+      return const Center(
+        child: Text('Please calculate the basket to see the comparison.'),
+      );
+    }
+
+    final activeItems = includeHeld ? myBasketItems : myBasketItems.where((i) => i.status != ItemStatus.held).toList();
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      itemCount: activeItems.length,
+      itemBuilder: (context, index) {
+        final item = activeItems[index];
+        final isMissing = item.status == ItemStatus.missing;
+        final isSubstitute = item.status == ItemStatus.substitute;
+        
+        double pct = 0;
+        double totalActiveInvestment = 0;
+        for(var i in activeItems){
+          if(i.lastPrice != null && i.buyQuantity != null){
+             totalActiveInvestment += i.lastPrice! * i.buyQuantity!;
+          }
+        }
+        
+        if (totalActiveInvestment > 0 && item.lastPrice != null) {
+          pct = (item.lastPrice! * (item.buyQuantity ?? 0.0) / totalActiveInvestment) * 100;
+        }
+
+        return Card(
+          elevation: 0,
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+          shape: RoundedRectangleBorder(
+            side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.5)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: Row(
+              children: [
+                // ETF Side
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text('${item.etfWeight.toStringAsFixed(1)}%', style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+                
+                // Divider/Arrow
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  child: Icon(Icons.arrow_forward, size: 16, color: Colors.grey),
+                ),
+                
+                // My Basket Side
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isMissing) ...[
+                        const Text('— EXCLUDED —', style: TextStyle(color: Colors.red, fontStyle: FontStyle.italic)),
+                      ] else if (isSubstitute) ...[
+                        Text(item.userHoldingSymbol ?? 'Sub', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                        Text('${pct.toStringAsFixed(1)}% (sub)', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.blue)),
+                      ] else ...[
+                         Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                         Text('${pct.toStringAsFixed(1)}%', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.green)),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SectorComparisonTab extends StatelessWidget {
+  final BasketOpportunity originalOpportunity;
+  final List<BasketItem> myBasketItems;
+  final bool hasCalculated;
+  final bool includeHeld;
+
+  const _SectorComparisonTab({
+    required this.originalOpportunity,
+    required this.myBasketItems,
+    required this.hasCalculated,
+    required this.includeHeld,
+  });
+
+  Color _getColorForSector(String sector) {
+    final colors = [
+      const Color(0xFF2196F3),
+      const Color(0xFF4CAF50),
+      const Color(0xFFFF9800),
+      const Color(0xFF9C27B0),
+      const Color(0xFFF44336),
+      const Color(0xFF00BCD4),
+      const Color(0xFFFFEB3B),
+      const Color(0xFF795548),
+      const Color(0xFF607D8B),
+      const Color(0xFFE91E63),
+    ];
+    return colors[sector.hashCode.abs() % colors.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasCalculated) {
+      return const Center(
+        child: Text('Please calculate the basket to see the sector analysis.'),
+      );
+    }
+
+    final activeItems = includeHeld ? myBasketItems : myBasketItems.where((i) => i.status != ItemStatus.held).toList();
+
+    final Map<String, double> etfSectorWeights = {};
+    final Map<String, double> mySectorWeights = {};
+    double myTotalWeight = 0;
+
+    // Calculate ETF Sector Weights
+    for (var item in originalOpportunity.composition) {
+      etfSectorWeights[item.sector] = (etfSectorWeights[item.sector] ?? 0) + item.etfWeight;
+    }
+
+    // Calculate My Basket Sector Weights
+    for (var item in activeItems) {
+      double weight = 0;
+      if (item.lastPrice != null && (item.buyQuantity ?? 0.0) > 0) {
+        weight = item.lastPrice! * (item.buyQuantity ?? 0.0);
+      }
+      mySectorWeights[item.sector] = (mySectorWeights[item.sector] ?? 0) + weight;
+      myTotalWeight += weight;
+    }
+
+    // Normalize My Basket Weights
+    if (myTotalWeight > 0) {
+       mySectorWeights.updateAll((key, value) => (value / myTotalWeight) * 100);
+    }
+
+    final allSectors = {...etfSectorWeights.keys, ...mySectorWeights.keys}.toList();
+    allSectors.sort((a, b) => (etfSectorWeights[b] ?? 0).compareTo(etfSectorWeights[a] ?? 0));
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      itemCount: allSectors.length,
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+      itemBuilder: (context, index) {
+        final sector = allSectors[index];
+        final etfPct = etfSectorWeights[sector] ?? 0.0;
+        final myPct = mySectorWeights[sector] ?? 0.0;
+        final color = _getColorForSector(sector);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(sector, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text('ETF: ${etfPct.toStringAsFixed(1)}% | My: ${myPct.toStringAsFixed(1)}%'),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: LinearProgressIndicator(
+                    value: etfPct / 100,
+                    backgroundColor: Colors.grey.shade200,
+                    color: Colors.grey.shade400,
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: LinearProgressIndicator(
+                    value: myPct / 100,
+                    backgroundColor: color.withOpacity(0.2),
+                    color: color,
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            )
+          ],
+        );
+      },
     );
   }
 }

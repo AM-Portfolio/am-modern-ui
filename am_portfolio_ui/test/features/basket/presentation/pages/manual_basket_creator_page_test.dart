@@ -15,11 +15,10 @@ void main() {
           stockSymbol: 'HDFCBANK',
           isin: 'INE040A01034',
           sector: 'Financial Services',
-          status: ItemStatus.held,
+          status: ItemStatus.missing,
           etfWeight: 10.0,
           buyQuantity: 5,
           lastPrice: 1000.0,
-          heldQuantity: 2,
         ),
       ],
     );
@@ -40,8 +39,16 @@ void main() {
     );
 
     await tester.pumpAndSettle();
+    
+    debugDumpApp();
 
-    // Verify item is rendered with quantity
+    // Scroll the item into view
+    final quantityText = find.text('5', skipOffstage: false);
+    expect(quantityText, findsOneWidget);
+    await tester.ensureVisible(quantityText);
+    await tester.pumpAndSettle();
+
+    // Now verify it's visible on screen
     expect(find.text('5'), findsOneWidget);
 
     // Tap delete button
