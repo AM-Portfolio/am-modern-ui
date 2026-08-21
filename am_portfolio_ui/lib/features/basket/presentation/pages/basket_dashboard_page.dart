@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import '../../domain/models/basket_detail.dart';
 import '../providers/basket_providers.dart';
 
-class BasketDashboardPage extends ConsumerStatefulWidget {
+class BasketDashboardPage extends ConsumerWidget {
   final String basketId;
   final String userId;
   final bool embedded;
@@ -20,30 +20,10 @@ class BasketDashboardPage extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<BasketDashboardPage> createState() => _BasketDashboardPageState();
-}
-
-class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(basketDetailProvider(
-      basketId: widget.basketId,
-      userId: widget.userId,
+      basketId: basketId,
+      userId: userId,
     ));
 
     return Scaffold(
@@ -62,7 +42,7 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage>
             onPressed: () {},
           ),
         ],
-        leading: widget.embedded
+        leading: embedded
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => Navigator.of(context).pop(),
@@ -83,152 +63,206 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage>
           // Dummy date since it's not in the model yet, fallback to now
           final createdDateStr = dateFormat.format(DateTime.now());
 
-          return NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header section
-                        Text(
-                          basket.name,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          '${basket.etfName}  ●  Created $createdDateStr',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
-                        ),
-                        const SizedBox(height: AppSpacing.xl),
+          final heldLines = basket.lines.where((l) => l.status == 'HELD').toList();
+          final substituteLines = basket.lines.where((l) => l.status == 'SUBSTITUTE').toList();
+          final missingLines = basket.lines.where((l) => l.status == 'MISSING').toList();
+          final underfundedLines = basket.lines.where((l) => l.status == 'UNDERFUNDED').toList();
 
-                        // Summary Cards
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _PremiumSummaryCard(
-                                title: 'Invested Value',
-                                value: '₹${NumberFormat('#,##,##0.00').format(basket.totalCurrentValue - basket.totalPnL)}',
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: _PremiumSummaryCard(
-                                title: 'Current Value',
-                                value: '₹${NumberFormat('#,##,##0.00').format(basket.totalCurrentValue)}',
-                                trendIcon: basket.totalPnL >= 0 ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                                trendColor: pnlColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        
-                        // Total P&L Card
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.lg),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            borderRadius: AppRadii.card,
-                            border: Border.all(color: colors.divider),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Total P&L:', style: Theme.of(context).textTheme.titleMedium),
-                              Row(
-                                children: [
-                                  Text(
-                                    '$pnlSign₹${NumberFormat('#,##,##0.00').format(basket.totalPnL)}',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: pnlColor,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '($pnlSign${basket.pnlPercent.toStringAsFixed(2)}%)',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: pnlColor,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            ],
-                          ),
-                        ),
-                        
-                        const SizedBox(height: AppSpacing.xl),
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header section
+                      Text(
+                        basket.name,
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '${basket.etfName}  ●  Created $createdDateStr',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
 
-                        // Composition Progress
-                        Row(
+                      // Summary Cards
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _PremiumSummaryCard(
+                              title: 'Invested Value',
+                              value: '₹${NumberFormat('#,##,##0.00').format(basket.totalCurrentValue - basket.totalPnL)}',
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: _PremiumSummaryCard(
+                              title: 'Current Value',
+                              value: '₹${NumberFormat('#,##,##0.00').format(basket.totalCurrentValue)}',
+                              trendIcon: basket.totalPnL >= 0 ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                              trendColor: pnlColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      
+                      // Total P&L Card
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.lg),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: AppRadii.card,
+                          border: Border.all(color: colors.divider),
+                        ),
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Composition',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                            ),
+                            Text('Total P&L:', style: Theme.of(context).textTheme.titleMedium),
                             Row(
                               children: [
-                                _CompactStatusLabel(label: 'Held', count: basket.heldCount, color: Colors.green),
+                                Text(
+                                  '$pnlSign₹${NumberFormat('#,##,##0.00').format(basket.totalPnL)}',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: pnlColor,
+                                  ),
+                                ),
                                 const SizedBox(width: 8),
-                                _CompactStatusLabel(label: 'Sub', count: basket.lines.where((l) => l.status == 'SUBSTITUTE').length, color: Colors.purple),
-                                const SizedBox(width: 8),
-                                _CompactStatusLabel(label: 'Missing', count: basket.missingCount, color: Colors.red),
+                                Text(
+                                  '($pnlSign${basket.pnlPercent.toStringAsFixed(2)}%)',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: pnlColor,
+                                  ),
+                                ),
                               ],
                             )
                           ],
                         ),
-                        const SizedBox(height: AppSpacing.sm),
-                        // Mock progress bar
-                        LinearProgressIndicator(
-                          value: 0.82,
-                          backgroundColor: colors.divider,
-                          color: colors.actionPrimaryBg,
-                          minHeight: 8,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        const SizedBox(height: 4),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Text('82% Match', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
-                        ),
-                      ],
-                    ),
+                      ),
+                      
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Composition Progress
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Composition',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Row(
+                            children: [
+                              _CompactStatusLabel(label: 'Held', count: basket.heldCount, color: Colors.green),
+                              const SizedBox(width: 8),
+                              _CompactStatusLabel(label: 'Sub', count: substituteLines.length, color: Colors.purple),
+                              const SizedBox(width: 8),
+                              _CompactStatusLabel(label: 'Missing', count: basket.missingCount, color: Colors.red),
+                            ],
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      // Mock progress bar
+                      LinearProgressIndicator(
+                        value: 0.82,
+                        backgroundColor: colors.divider,
+                        color: colors.actionPrimaryBg,
+                        minHeight: 8,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      const SizedBox(height: 4),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text('82% Match', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      const Divider(),
+                    ],
                   ),
                 ),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _SliverAppBarDelegate(
-                    TabBar(
-                      controller: _tabController,
-                      isScrollable: true,
-                      labelColor: colors.textPrimary,
-                      unselectedLabelColor: colors.textSecondary,
-                      indicatorColor: colors.actionPrimaryBg,
-                      tabs: const [
-                        Tab(text: 'All'),
-                        Tab(text: 'Held'),
-                        Tab(text: 'Missing'),
-                        Tab(text: 'Substitute'),
-                      ],
-                    ),
+              ),
+
+              if (heldLines.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                    child: Text('Held Assets', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.green)),
                   ),
                 ),
-              ];
-            },
-            body: TabBarView(
-              controller: _tabController,
-              children: [
-                _HoldingsList(lines: basket.lines),
-                _HoldingsList(lines: basket.lines.where((l) => l.status == 'HELD').toList()),
-                _HoldingsList(lines: basket.lines.where((l) => l.status == 'MISSING').toList()),
-                _HoldingsList(lines: basket.lines.where((l) => l.status == 'SUBSTITUTE').toList()),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                      child: _BasketLineTile(line: heldLines[index]),
+                    ),
+                    childCount: heldLines.length,
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
               ],
-            ),
+
+              if (substituteLines.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                    child: Text('Substitute Assets', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.purple)),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                      child: _BasketLineTile(line: substituteLines[index]),
+                    ),
+                    childCount: substituteLines.length,
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+              ],
+
+              if (underfundedLines.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                    child: Text('Underfunded Assets', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.orange)),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                      child: _BasketLineTile(line: underfundedLines[index]),
+                    ),
+                    childCount: underfundedLines.length,
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+              ],
+
+              if (missingLines.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                    child: Text('Missing Assets', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.red)),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                      child: _BasketLineTile(line: missingLines[index]),
+                    ),
+                    childCount: missingLines.length,
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
+              ],
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -242,8 +276,8 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage>
               const SizedBox(height: AppSpacing.sm),
               TextButton(
                 onPressed: () => ref.invalidate(basketDetailProvider(
-                  basketId: widget.basketId,
-                  userId: widget.userId,
+                  basketId: basketId,
+                  userId: userId,
                 )),
                 child: const Text('Retry'),
               ),

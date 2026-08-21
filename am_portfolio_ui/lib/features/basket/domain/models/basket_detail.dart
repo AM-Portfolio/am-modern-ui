@@ -13,6 +13,7 @@ abstract class BasketDetail with _$BasketDetail {
     @Default('ACTIVE') String? status,
     @Default(0.0) double totalInvestedValue,
     @Default(0.0) double totalCurrentValue,
+    @Default(0.0) double? investmentAmount,
     @Default(0.0) double totalPnL,
     @Default(0.0) double pnlPercent,
     @Default(0.0) double? coveragePercent,

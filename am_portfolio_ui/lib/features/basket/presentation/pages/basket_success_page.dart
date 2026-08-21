@@ -2,15 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../domain/models/basket_opportunity.dart';
 import 'package:go_router/go_router.dart';
+import '../basket_navigation.dart';
 
 class BasketSuccessPage extends StatelessWidget {
   final BasketOpportunity opportunity;
   final String basketName;
+  final String basketId;
+  final String userId;
+  final String portfolioId;
 
   const BasketSuccessPage({
     super.key,
     required this.opportunity,
     required this.basketName,
+    required this.basketId,
+    required this.userId,
+    required this.portfolioId,
   });
 
   @override
@@ -104,11 +111,12 @@ class BasketSuccessPage extends StatelessWidget {
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () {
-                     if (GoRouter.maybeOf(context) != null) {
-                      context.go('/portfolio');
-                    } else {
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                    }
+                     BasketNavigation.openDashboard(
+                       context,
+                       basketId: basketId,
+                       userId: userId,
+                       portfolioId: portfolioId,
+                     );
                   },
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),

@@ -54,8 +54,9 @@ class BasketRepositoryImpl implements BasketRepository {
   }
 
   @override
-  Future<void> createPortfolio(Map<String, dynamic> request) {
-    return remoteDataSource.createPortfolio(request);
+  Future<String> createPortfolio(Map<String, dynamic> request) async {
+    final response = await remoteDataSource.createPortfolio(request);
+    return response['portfolioId'] as String;
   }
 
   @override

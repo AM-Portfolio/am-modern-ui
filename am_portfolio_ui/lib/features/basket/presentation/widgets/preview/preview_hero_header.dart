@@ -98,17 +98,33 @@ class PreviewHeroHeader extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: scoreColor.withValues(alpha: 0.2),
+                            color: scoreColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: scoreColor.withValues(alpha: 0.5)),
+                            border: Border.all(color: scoreColor.withValues(alpha: 0.3)),
                           ),
-                          child: Text(
-                            'Match: ${opportunity.matchScore.toStringAsFixed(1)}%',
-                            style: TextStyle(
-                              color: scoreColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Held: ${(opportunity.heldMatchScore ?? opportunity.matchScore).toStringAsFixed(1)}%',
+                                style: TextStyle(
+                                  color: scoreColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              if (opportunity.substituteMatchScore != null && opportunity.substituteMatchScore! > 0) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Sub: ${opportunity.substituteMatchScore!.toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    color: Colors.purple.shade700,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ]
+                            ],
                           ),
                         ),
                       ],
@@ -135,13 +151,13 @@ class PreviewHeroHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'Total Value',
+                    'Available to Invest',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: context.colors.textSecondary,
                         ),
                   ),
                   Text(
-                    formatter.format(opportunity.totalPortfolioValue ?? 0),
+                    formatter.format(opportunity.remainingPortfolioValue ?? opportunity.totalPortfolioValue ?? 0),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: context.colors.textPrimary,
                           fontWeight: FontWeight.bold,
@@ -160,7 +176,7 @@ class PreviewHeroHeader extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           Text(
-            'TOP HOLDINGS',
+            'ETF CONSTITUENTS',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: context.colors.textTertiary,

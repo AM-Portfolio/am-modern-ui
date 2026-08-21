@@ -7,6 +7,10 @@ class BasketOpportunity {
   final int totalItems;
   final int heldCount;
   final int missingCount;
+  final double? heldMatchScore;
+  final double? substituteMatchScore;
+  final double? remainingPortfolioValue;
+  final double? investmentAmount;
   final double? totalPortfolioValue;
   final double? minimumInvestmentAmount;
   final List<BasketItem> composition;
@@ -21,6 +25,10 @@ class BasketOpportunity {
     this.totalItems = 0,
     this.heldCount = 0,
     this.missingCount = 0,
+    this.heldMatchScore,
+    this.substituteMatchScore,
+    this.remainingPortfolioValue,
+    this.investmentAmount,
     this.totalPortfolioValue,
     this.minimumInvestmentAmount,
     this.composition = const [],
@@ -37,6 +45,10 @@ class BasketOpportunity {
       totalItems: json['totalItems'] as int? ?? 0,
       heldCount: json['heldCount'] as int? ?? 0,
       missingCount: json['missingCount'] as int? ?? 0,
+      heldMatchScore: (json['heldMatchScore'] as num?)?.toDouble(),
+      substituteMatchScore: (json['substituteMatchScore'] as num?)?.toDouble(),
+      remainingPortfolioValue: (json['remainingPortfolioValue'] as num?)?.toDouble(),
+      investmentAmount: (json['investmentAmount'] as num?)?.toDouble(),
       totalPortfolioValue: (json['totalPortfolioValue'] as num?)?.toDouble(),
       minimumInvestmentAmount: (json['minimumInvestmentAmount'] as num?)?.toDouble(),
       composition: (json['composition'] as List<dynamic>?)
@@ -60,6 +72,10 @@ class BasketOpportunity {
       'totalItems': totalItems,
       'heldCount': heldCount,
       'missingCount': missingCount,
+      'heldMatchScore': heldMatchScore,
+      'substituteMatchScore': substituteMatchScore,
+      'remainingPortfolioValue': remainingPortfolioValue,
+      'investmentAmount': investmentAmount,
       'totalPortfolioValue': totalPortfolioValue,
       'minimumInvestmentAmount': minimumInvestmentAmount,
       'composition': composition.map((e) => e.toJson()).toList(),
@@ -76,6 +92,10 @@ class BasketOpportunity {
     int? totalItems,
     int? heldCount,
     int? missingCount,
+    double? heldMatchScore,
+    double? substituteMatchScore,
+    double? remainingPortfolioValue,
+    double? investmentAmount,
     double? totalPortfolioValue,
     double? minimumInvestmentAmount,
     List<BasketItem>? composition,
@@ -90,6 +110,10 @@ class BasketOpportunity {
       totalItems: totalItems ?? this.totalItems,
       heldCount: heldCount ?? this.heldCount,
       missingCount: missingCount ?? this.missingCount,
+      heldMatchScore: heldMatchScore ?? this.heldMatchScore,
+      substituteMatchScore: substituteMatchScore ?? this.substituteMatchScore,
+      remainingPortfolioValue: remainingPortfolioValue ?? this.remainingPortfolioValue,
+      investmentAmount: investmentAmount ?? this.investmentAmount,
       totalPortfolioValue: totalPortfolioValue ?? this.totalPortfolioValue,
       minimumInvestmentAmount: minimumInvestmentAmount ?? this.minimumInvestmentAmount,
       composition: composition ?? this.composition,

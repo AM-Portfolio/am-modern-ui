@@ -23,7 +23,7 @@ abstract class BasketRepository {
     required String portfolioId,
   });
 
-  Future<void> createPortfolio(Map<String, dynamic> request);
+  Future<String> createPortfolio(Map<String, dynamic> request);
 
   Future<BasketOpportunity> applySubstitutes(Map<String, dynamic> request);
 

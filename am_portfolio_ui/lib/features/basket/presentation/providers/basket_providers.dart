@@ -80,7 +80,7 @@ Future<List<TrackingBasket>> myBaskets(
 }
 
 @riverpod
-Future<void> createBasketPortfolio(
+Future<String> createBasketPortfolio(
   Ref ref, {
   required Map<String, dynamic> request,
 }) async {

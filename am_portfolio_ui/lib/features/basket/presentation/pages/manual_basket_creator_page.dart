@@ -45,6 +45,7 @@ class _ManualBasketCreatorPageState
   bool _includeHeld = false;
   bool _isCalculating = false;
   bool _hasCalculated = false;
+  final Set<String> _excludedItems = {};
   late TabController _tabController;
 
   @override
@@ -94,6 +95,7 @@ class _ManualBasketCreatorPageState
 
   void _removeItem(int index) {
     setState(() {
+      _excludedItems.add(_items[index].stockSymbol);
       _items[index] = _items[index].copyWith(clearBuyQuantity: true);
       _hasCalculated = false;
     });
@@ -101,6 +103,7 @@ class _ManualBasketCreatorPageState
 
   void _addItem(int index) {
     setState(() {
+      _excludedItems.remove(_items[index].stockSymbol);
       _items[index] = _items[index].copyWith(buyQuantity: 0.0);
       _hasCalculated = false;
     });
@@ -108,6 +111,7 @@ class _ManualBasketCreatorPageState
 
   void _resetBasket() {
     setState(() {
+      _excludedItems.clear();
       _items = List.from(widget.opportunity.composition);
       _hasCalculated = false;
     });
@@ -140,9 +144,9 @@ class _ManualBasketCreatorPageState
   }
   
   void _setAmountByPercentage(double percentage) {
-    final totalPortfolioValue = widget.opportunity.totalPortfolioValue ?? 0.0;
-    if (totalPortfolioValue > 0) {
-      final amount = totalPortfolioValue * (percentage / 100.0);
+    final remainingPortfolioValue = widget.opportunity.remainingPortfolioValue ?? 0.0;
+    if (remainingPortfolioValue > 0) {
+      final amount = remainingPortfolioValue * (percentage / 100.0);
       setState(() {
         _investmentAmount = amount;
         _amountController.text = amount.toStringAsFixed(0);
@@ -207,7 +211,24 @@ class _ManualBasketCreatorPageState
       
       setState(() {
          _currentOpportunity = updatedOpportunity;
-         _items = _currentOpportunity.composition;
+         
+         // Preserve user-deleted items: only map over current _items and merge new values from updatedOpportunity
+         final Map<String, BasketItem> updatedItemsMap = {
+            for (var item in updatedOpportunity.composition) item.stockSymbol.toLowerCase(): item
+         };
+         
+         _items = _items.map((item) {
+            final updatedItem = updatedItemsMap[item.stockSymbol.toLowerCase()];
+            if (updatedItem != null) {
+               // If item was manually cleared (deleted) by user, keep it deleted.
+               if (_excludedItems.contains(item.stockSymbol)) {
+                   return updatedItem.copyWith(clearBuyQuantity: true);
+               }
+               return updatedItem;
+            }
+            return item; // Fallback if not found in updated (shouldn't happen)
+         }).toList();
+         
          _hasCalculated = true;
       });
     } catch (e) {
@@ -795,6 +816,7 @@ class _ManualBasketCreatorPageState
         'etfName': widget.opportunity.etfName,
         'basketName': basketName,
         'idempotencyKey': DateTime.now().millisecondsSinceEpoch.toString(),
+        'investmentAmount': amount,
         'remainingMissingCount': _items.where((c) => c.status == ItemStatus.missing).length,
         'remainingMissing': _items.where((c) => c.status == ItemStatus.missing).map((c) => c.stockSymbol).toList(),
         'lines': _items.map((item) {
@@ -809,12 +831,13 @@ class _ManualBasketCreatorPageState
                 ? (item.userHoldingSymbol ?? item.stockSymbol)
                 : item.stockSymbol,
             'quantity': item.buyQuantity,
+            'heldQuantity': item.heldQuantity,
             'averageBuyingPrice': item.lastPrice,
           };
         }).toList(),
       };
 
-      await ref.read(createBasketPortfolioProvider(request: request).future);
+      final newBasketId = await ref.read(createBasketPortfolioProvider(request: request).future);
       
       // Dismiss dialog
       if (mounted) {
@@ -831,6 +854,9 @@ class _ManualBasketCreatorPageState
             builder: (context) => BasketSuccessPage(
               opportunity: widget.opportunity,
               basketName: basketName,
+              basketId: newBasketId,
+              userId: widget.userId,
+              portfolioId: widget.portfolioId,
             ),
           ),
         );
@@ -1429,7 +1455,7 @@ class _InvestmentSummaryFooter extends StatelessWidget {
             ),
             const Spacer(),
             FilledButton(
-              onPressed: totalPayable > 0 ? onInvest : null,
+              onPressed: totalPayable >= 0 ? onInvest : null,
               style: FilledButton.styleFrom(
                 minimumSize: const Size(AppSpacing.xxl * 3, AppSpacing.xl + AppSpacing.md),
                 shape: RoundedRectangleBorder(borderRadius: AppRadii.input),
@@ -1490,76 +1516,76 @@ class _BasketComparisonTab extends StatelessWidget {
 
     final activeItems = includeHeld ? myBasketItems : myBasketItems.where((i) => i.status != ItemStatus.held).toList();
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      itemCount: activeItems.length,
-      itemBuilder: (context, index) {
-        final item = activeItems[index];
-        final isMissing = item.status == ItemStatus.missing;
-        final isSubstitute = item.status == ItemStatus.substitute;
-        
-        double pct = 0;
-        double totalActiveInvestment = 0;
-        for(var i in activeItems){
-          if(i.lastPrice != null && i.buyQuantity != null){
-             totalActiveInvestment += i.lastPrice! * i.buyQuantity!;
-          }
-        }
-        
-        if (totalActiveInvestment > 0 && item.lastPrice != null) {
-          pct = (item.lastPrice! * (item.buyQuantity ?? 0.0) / totalActiveInvestment) * 100;
-        }
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columnSpacing: 24,
+          headingRowHeight: 48,
+          dataRowMinHeight: 40,
+          dataRowMaxHeight: 48,
+          columns: const [
+            DataColumn(label: Text('Constituent', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('ETF Wt.', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('Action', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('My Basket', style: TextStyle(fontWeight: FontWeight.bold))),
+          ],
+          rows: activeItems.map((item) {
+            final isMissing = item.status == ItemStatus.missing;
+            final isSubstitute = item.status == ItemStatus.substitute;
+            
+            double pct = 0;
+            double totalActiveInvestment = 0;
+            for(var i in activeItems){
+              if(i.lastPrice != null && i.buyQuantity != null){
+                 totalActiveInvestment += i.lastPrice! * i.buyQuantity!;
+              }
+            }
+            
+            if (totalActiveInvestment > 0 && item.lastPrice != null) {
+              pct = (item.lastPrice! * (item.buyQuantity ?? 0.0) / totalActiveInvestment) * 100;
+            }
+            
+            Widget actionWidget;
+            if (isMissing) {
+               actionWidget = const Text('EXCLUDED', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold));
+            } else if (isSubstitute) {
+               actionWidget = Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                 decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                 child: Text('SUB: ${item.userHoldingSymbol}', style: const TextStyle(color: Colors.blue, fontSize: 10, fontWeight: FontWeight.bold)),
+               );
+            } else if (item.status == ItemStatus.held) {
+               actionWidget = Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                 decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                 child: const Text('HELD', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+               );
+            } else {
+               actionWidget = Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                 decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                 child: const Text('BUY', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+               );
+            }
 
-        return Card(
-          elevation: 0,
-          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-          shape: RoundedRectangleBorder(
-            side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.5)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            child: Row(
-              children: [
-                // ETF Side
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text('${item.etfWeight.toStringAsFixed(1)}%', style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                ),
-                
-                // Divider/Arrow
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  child: Icon(Icons.arrow_forward, size: 16, color: Colors.grey),
-                ),
-                
-                // My Basket Side
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (isMissing) ...[
-                        const Text('— EXCLUDED —', style: TextStyle(color: Colors.red, fontStyle: FontStyle.italic)),
-                      ] else if (isSubstitute) ...[
-                        Text(item.userHoldingSymbol ?? 'Sub', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-                        Text('${pct.toStringAsFixed(1)}% (sub)', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.blue)),
-                      ] else ...[
-                         Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-                         Text('${pct.toStringAsFixed(1)}%', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.green)),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+            return DataRow(cells: [
+              DataCell(Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+              DataCell(Text('${item.etfWeight.toStringAsFixed(1)}%', style: const TextStyle(fontSize: 13))),
+              DataCell(actionWidget),
+              DataCell(Text(
+                 isMissing ? '-' : '${pct.toStringAsFixed(1)}%',
+                 style: TextStyle(
+                    color: isMissing ? Colors.grey : Colors.green.shade700, 
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                 )
+              )),
+            ]);
+          }).toList(),
+        ),
+      ),
     );
   }
 }

@@ -161,189 +161,132 @@ class _TrackingBasketCard extends ConsumerWidget {
     final statusColor = _getStatusColor(basket.status);
     final statusText = _getStatusText(basket.status);
 
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: AppRadii.card),
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      color: colors.surface,
-      child: InkWell(
-        onTap: () {
-          if (basket.basketId.isNotEmpty) {
-            BasketNavigation.openDashboard(
-              context,
-              basketId: basket.basketId,
-              userId: userId,
-              portfolioId: portfolioId,
-            );
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // 1. Top Row: Title + Status
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: AppRadii.card,
+        border: Border.all(color: colors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: AppRadii.card,
+          onTap: () {
+            if (basket.basketId.isNotEmpty) {
+              BasketNavigation.openDashboard(
+                context,
+                basketId: basket.basketId,
+                userId: userId,
+                portfolioId: portfolioId,
+              );
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Top Section (Status + ISIN)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: statusColor.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        statusText,
+                        style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    if (basket.etfIsin != null && basket.etfIsin!.isNotEmpty)
+                      Text(
+                        basket.etfIsin!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                      ),
+                  ],
+                ),
+                
+                const SizedBox(height: AppSpacing.md),
+
+                // 2. Title Section
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          basket.etfName ?? 'Unnamed Basket',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                height: 1.2,
-                              ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                      Text(
+                        basket.etfName ?? 'Unnamed Basket',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, height: 1.2),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: statusColor.withOpacity(0.4), width: 1),
-                        ),
-                        child: Text(
-                          statusText,
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: statusColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      if (basket.etfIsin != null && basket.etfIsin!.isNotEmpty) ...[
-                        Text(
-                          'ISIN: ${basket.etfIsin}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11,
-                              ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                      ],
+                      const SizedBox(height: AppSpacing.xs),
                       if (basket.createdAt != null)
                         Text(
-                          DateFormat('MMM dd, yyyy').format(basket.createdAt!),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11,
-                              ),
+                          'Created on ${DateFormat('MMM dd, yyyy').format(basket.createdAt!)}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary, fontSize: 11),
                         ),
                     ],
                   ),
-                ],
-              ),
+                ),
 
-              // 2. Middle Value Section
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                child: Column(
+                // 3. Value Section
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Total Value',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11,
-                          ),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.textSecondary, fontSize: 11),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '₹${basket.totalValue != null ? NumberFormat('#,##,##0.00').format(basket.totalValue!) : '0.00'}',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.5,
-                          ),
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, letterSpacing: -0.5),
                     ),
                   ],
                 ),
-              ),
 
-              // 3. Progress Section
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Fill Progress',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 11,
-                            ),
-                      ),
-                      Text(
-                        '${basket.activeLines} / ${basket.totalLines} lines',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11,
-                            ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: basket.totalLines == 0 ? 0 : basket.activeLines / basket.totalLines,
-                      backgroundColor: colors.border,
-                      valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-                      minHeight: 6,
-                    ),
-                  ),
-                ],
-              ),
+                const SizedBox(height: AppSpacing.md),
+                Divider(height: 1, color: colors.border.withOpacity(0.5)),
+                const SizedBox(height: AppSpacing.md),
 
-              // 4. Bottom Row: Action / Details & Delete
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'View Dashboard',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                      const SizedBox(width: 2),
-                      Icon(Icons.arrow_forward_ios, size: 10, color: Theme.of(context).colorScheme.primary),
-                    ],
-                  ),
-                  InkWell(
-                    onTap: () => _confirmDelete(context, ref),
-                    borderRadius: BorderRadius.circular(6),
-                    child: const Padding(
-                      padding: EdgeInsets.all(4.0),
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
-                          SizedBox(width: 2),
-                          Text(
-                            'Delete',
-                            style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
+                // 4. Action Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'View Details',
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_forward, size: 14, color: Theme.of(context).colorScheme.primary),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                      onPressed: () => _confirmDelete(context, ref),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
