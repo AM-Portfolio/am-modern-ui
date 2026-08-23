@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import '../providers/basket_providers.dart';
 import '../basket_navigation.dart';
 import '../../domain/models/basket_opportunity.dart';
-import '../../domain/models/basket_enums.dart';
 
 // New Modular Widgets
 import '../widgets/preview/preview_hero_header.dart';
@@ -134,8 +133,8 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
         'currentOpportunity': _opportunity.toJson(),
         'assignments': [
           {
-            'missingIsin': item.isin ?? item.stockSymbol, // Fallback logic
-            'substituteIsin': selectedAlt.isin ?? selectedAlt.symbol,
+            'missingIsin': item.isin,
+            'substituteIsin': selectedAlt.isin,
             'reason': 'User selected swap'
           }
         ],
@@ -216,7 +215,7 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
           SliverToBoxAdapter(
             child: PreviewSectionHeader(
               title: 'Held in Portfolio',
-              subtitle: '\ Stocks',
+              subtitle: 'Stocks',
               statusType: ItemStatus.held,
             ),
           ),
@@ -241,7 +240,7 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
           SliverToBoxAdapter(
             child: PreviewSectionHeader(
               title: 'Automatically Substituted',
-              subtitle: '\ Stocks',
+              subtitle: 'Stocks',
               statusType: ItemStatus.substitute,
             ),
           ),
@@ -266,7 +265,7 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
           SliverToBoxAdapter(
             child: PreviewSectionHeader(
               title: 'Missing / Swap Required',
-              subtitle: '\ Stocks',
+              subtitle: 'Stocks',
               statusType: ItemStatus.missing,
             ),
           ),
