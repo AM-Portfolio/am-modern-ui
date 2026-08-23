@@ -1,6 +1,0 @@
-{
-  "domain": "am-dev.asrax.in",
-  "services": {
-    "portfolio": "http://localhost:8081"
-  }
-}
