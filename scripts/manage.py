@@ -212,10 +212,29 @@ def get_web_port(package, env_vars):
     base_package = package.replace("/live", "").replace("\\live", "")
     return DEFAULT_PORTS.get(base_package, "9000")
 
+def sync_web_config(env_vars, env_name):
+    """Sync am_app/web/config.json with the active environment domain."""
+    web_config_path = os.path.join(workspace_root, "am_app", "web", "config.json")
+    domain = env_vars.get("AM_DOMAIN", "")
+    if os.path.exists(os.path.dirname(web_config_path)):
+        try:
+            import json
+            data = {
+                "domain": domain,
+                "env": env_name or "local",
+                "services": {}
+            }
+            with open(web_config_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            print(f"[Config] Synced am_app/web/config.json (domain: '{domain}', env: '{env_name}')")
+        except Exception as e:
+            print(f"[Warning] Failed to sync am_app/web/config.json: {e}")
+
 def handle_run(pkg, env_name, flags):
     package = resolve_package(pkg)
     env_vars = load_env(env_name)
     env_vars['AM_ENV'] = env_name
+    sync_web_config(env_vars, env_name)
     boot_trace = resolve_boot_trace(env_vars, flags, action="run")
     defines = construct_dart_defines(env_vars, boot_trace)
 
@@ -241,6 +260,7 @@ def handle_build(pkg, env_name, flags):
     package = resolve_package(pkg)
     env_vars = load_env(env_name)
     env_vars['AM_ENV'] = env_name
+    sync_web_config(env_vars, env_name)
     boot_trace = resolve_boot_trace(env_vars, flags, action="build")
     defines = construct_dart_defines(env_vars, boot_trace)
 

@@ -1,4 +1,5 @@
 {
-  "domain": "am-dev.asrax.in",
+  "domain": "am.asrax.in",
+  "env": "prod",
   "services": {}
 }

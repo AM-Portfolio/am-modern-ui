@@ -181,7 +181,7 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
           child: _buildScrollableContent(context),
         ),
         _BottomActionBar(
-          totalValue: _opportunity.totalPortfolioValue ?? 0,
+          totalValue: _opportunity.remainingPortfolioValue ?? _opportunity.totalPortfolioValue ?? 0,
           onPressed: () => BasketNavigation.openCreator(
             context,
             opportunity: _opportunity, // Pass the mutable updated state!
@@ -301,7 +301,7 @@ class _BottomActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '?', decimalDigits: 0);
+    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     String formattedValue = formatter.format(totalValue);
 
     return Container(
@@ -321,7 +321,7 @@ class _BottomActionBar extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Total Held Value',
+                  'Available to Invest',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.colors.textDisabled),
                 ),
                 Text(
