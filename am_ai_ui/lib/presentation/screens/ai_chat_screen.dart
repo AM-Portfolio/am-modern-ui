@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -6,8 +6,7 @@ import '../providers/ai_chat_provider.dart';
 import '../widgets/ai_widget_factory.dart';
 import '../../data/ai_intent_response.dart';
 
-/// AI Chat Screen — uses [AppColors] and [ThemeColorExtensions] for full
-/// dark/light theme sync with the rest of the AM design system.
+/// AI Chat Screen with SSE real-time streaming, dynamic widgets, Stop Generation, and feedback.
 class AiChatScreen extends ConsumerStatefulWidget {
   final String userId;
   const AiChatScreen({super.key, required this.userId});
@@ -25,7 +24,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
       if (_scroll.hasClients) {
         _scroll.animateTo(
           _scroll.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
       }
@@ -39,8 +38,13 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     ref.read(aiChatProvider.notifier).sendMessage(
       text: text,
       userId: widget.userId,
+      stream: true,
     );
     _scrollToBottom();
+  }
+
+  void _stop() {
+    ref.read(aiChatProvider.notifier).stopGeneration();
   }
 
   @override
@@ -63,7 +67,6 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
         surfaceTintColor: Colors.transparent,
         title: Row(
           children: [
-            // AI avatar from primary gradient
             Container(
               width: 32,
               height: 32,
@@ -82,9 +85,18 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                         color: context.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w600)),
-                Text('Powered by am-fin-agent',
-                    style: TextStyle(
-                        color: context.textSecondary, fontSize: 11)),
+                Text(
+                  chatState.activeTool != null
+                      ? '⚡ Running ${chatState.activeTool}…'
+                      : 'AI Gateway Edge',
+                  style: TextStyle(
+                    color: chatState.activeTool != null
+                        ? AppColors.primary
+                        : context.textSecondary,
+                    fontSize: 11,
+                    fontWeight: chatState.activeTool != null ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
               ],
             ),
           ],
@@ -93,7 +105,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
           IconButton(
             icon: Icon(Icons.refresh_rounded, color: context.textSecondary),
             onPressed: () => ref.read(aiChatProvider.notifier).clearChat(),
-            tooltip: 'Clear conversation',
+            tooltip: 'New conversation',
           ),
         ],
         bottom: PreferredSize(
@@ -116,24 +128,26 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                     controller: _scroll,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 16),
-                    itemCount: chatState.messages.length +
-                        (chatState.isLoading ? 1 : 0),
+                    itemCount: chatState.messages.length,
                     itemBuilder: (context, index) {
-                      if (chatState.isLoading &&
-                          index == chatState.messages.length) {
-                        return const _TypingIndicator();
-                      }
+                      final msg = chatState.messages[index];
                       return _MessageBubble(
-                          message: chatState.messages[index]);
+                        message: msg,
+                        index: index,
+                        onRate: (rating) => ref
+                            .read(aiChatProvider.notifier)
+                            .rateMessage(messageIndex: index, rating: rating),
+                      );
                     },
                   ),
           ),
 
-          // ── Input Bar ───────────────────────────────────────────────────────
+          // ── Input Bar with Send & Stop ───────────────────────────────────────
           _InputBar(
             controller: _input,
             isLoading: chatState.isLoading,
             onSend: _send,
+            onStop: _stop,
           ),
         ],
       ),
@@ -145,7 +159,14 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
 class _MessageBubble extends StatelessWidget {
   final ChatMessage message;
-  const _MessageBubble({required this.message});
+  final int index;
+  final ValueChanged<String> onRate;
+
+  const _MessageBubble({
+    required this.message,
+    required this.index,
+    required this.onRate,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +194,7 @@ class _MessageBubble extends StatelessWidget {
           // Bubble
           Container(
             constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.78),
+                maxWidth: MediaQuery.of(context).size.width * 0.82),
             padding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
@@ -188,17 +209,60 @@ class _MessageBubble extends StatelessWidget {
                   ? null
                   : Border.all(color: context.borderColor),
             ),
-            child: Text(
-              message.text,
-              style: TextStyle(
-                color: isUser
-                    ? AppColors.textPrimaryDark
-                    : context.textPrimary,
-                fontSize: 14,
-                height: 1.4,
+            child: message.text.isEmpty && message.isStreaming
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        message.activeTool != null
+                            ? 'Calling ${message.activeTool}…'
+                            : 'Thinking…',
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: context.textSecondary,
+                            fontStyle: FontStyle.italic),
+                      ),
+                    ],
+                  )
+                : Text(
+                    message.text,
+                    style: TextStyle(
+                      color: isUser
+                          ? AppColors.textPrimaryDark
+                          : context.textPrimary,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+          ),
+
+          // Active Tool chip if currently executing
+          if (!isUser && message.isStreaming && message.activeTool != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 4),
+              child: Row(
+                children: [
+                  Icon(Icons.bolt_rounded, size: 12, color: AppColors.primary),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Running ${message.activeTool}…',
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.primary),
+                  ),
+                ],
               ),
             ),
-          ),
 
           // Intent widget card below AI message
           if (!isUser && message.response != null)
@@ -207,86 +271,59 @@ class _MessageBubble extends StatelessWidget {
               child: AiWidgetFactory.build(message.response!),
             ),
 
-          // Tools used — subtle debug line
-          if (!isUser &&
-              message.response != null &&
-              message.response!.toolsUsed.isNotEmpty)
+          // Tools used summary + Feedback thumbs
+          if (!isUser && !message.isStreaming && message.text.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4, left: 4),
-              child: Text(
-                '⚡ ${message.response!.toolsUsed.join(', ')}',
-                style: TextStyle(
-                    fontSize: 10, color: context.textSecondary),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Typing Indicator ─────────────────────────────────────────────────────────
-
-class _TypingIndicator extends StatefulWidget {
-  const _TypingIndicator();
-  @override
-  State<_TypingIndicator> createState() => _TypingIndicatorState();
-}
-
-class _TypingIndicatorState extends State<_TypingIndicator>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 800))
-          ..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: context.cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: context.borderColor),
-            ),
-            child: AnimatedBuilder(
-              animation: _ctrl,
-              builder: (_, __) => Row(
-                children: List.generate(
-                  3,
-                  (i) => Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color.lerp(
-                        AppColors.primary.withValues(alpha: 0.3),
-                        AppColors.primary,
-                        (_ctrl.value + i * 0.3).clamp(0.0, 1.0),
+              padding: const EdgeInsets.only(top: 6, left: 4, right: 4),
+              child: Row(
+                children: [
+                  if (message.response != null &&
+                      message.response!.toolsUsed.isNotEmpty)
+                    Expanded(
+                      child: Text(
+                        '⚡ ${message.response!.toolsUsed.join(', ')}',
+                        style: TextStyle(
+                            fontSize: 10, color: context.textSecondary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  // Thumbs Up / Down feedback
+                  InkWell(
+                    onTap: () => onRate('thumbs_up'),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        message.userRating == 'thumbs_up'
+                            ? Icons.thumb_up
+                            : Icons.thumb_up_outlined,
+                        size: 14,
+                        color: message.userRating == 'thumbs_up'
+                            ? AppColors.profit
+                            : context.textSecondary,
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  InkWell(
+                    onTap: () => onRate('thumbs_down'),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        message.userRating == 'thumbs_down'
+                            ? Icons.thumb_down
+                            : Icons.thumb_down_outlined,
+                        size: 14,
+                        color: message.userRating == 'thumbs_down'
+                            ? AppColors.loss
+                            : context.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
         ],
       ),
     );
@@ -299,11 +336,13 @@ class _InputBar extends StatelessWidget {
   final TextEditingController controller;
   final bool isLoading;
   final VoidCallback onSend;
+  final VoidCallback onStop;
 
   const _InputBar({
     required this.controller,
     required this.isLoading,
     required this.onSend,
+    required this.onStop,
   });
 
   @override
@@ -351,16 +390,20 @@ class _InputBar extends StatelessWidget {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: isLoading
-                ? SizedBox(
-                    key: const ValueKey('loading'),
-                    width: 44,
-                    height: 44,
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.primary,
+                ? InkWell(
+                    key: const ValueKey('stop'),
+                    onTap: onStop,
+                    borderRadius: BorderRadius.circular(22),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.error),
                       ),
+                      child: Icon(Icons.stop_rounded,
+                          color: AppColors.error, size: 22),
                     ),
                   )
                 : InkWell(
@@ -395,6 +438,7 @@ class _EmptyState extends StatelessWidget {
 
   static const _suggestions = [
     '📊 Show my portfolio summary',
+    '🧺 List my investment baskets',
     '📈 What are my top movers today?',
     '🥧 Show my sector allocation',
     '📋 List all my holdings',
@@ -410,7 +454,6 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Brand avatar
             Container(
               width: 64,
               height: 64,
@@ -429,9 +472,10 @@ class _EmptyState extends StatelessWidget {
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(
-              'Ask anything about your portfolio',
+              'Ask anything about your portfolio or investment baskets',
               style:
                   TextStyle(color: context.textSecondary, fontSize: 14),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
             Wrap(

@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:am_ai_ui/data/ai_intent_response.dart';
 
 void main() {
@@ -98,10 +98,11 @@ void main() {
       expect(response.message, 'Something went wrong');
     });
 
-    test('widgetParams is empty map', () {
-      final response = AiIntentResponse.error('Network failure');
+    test('widgetParams contains reason and traceId', () {
+      final response = AiIntentResponse.error('Network failure', traceId: 'tr-err');
 
-      expect(response.widgetParams, isEmpty);
+      expect(response.widgetParams['reason'], 'Network failure');
+      expect(response.widgetParams['traceId'], 'tr-err');
     });
 
     test('toolsUsed is empty list', () {
@@ -110,11 +111,10 @@ void main() {
       expect(response.toolsUsed, isEmpty);
     });
 
-    test('sessionId and traceId are empty strings', () {
+    test('sessionId is empty string', () {
       final response = AiIntentResponse.error('Bad request');
 
       expect(response.sessionId, '');
-      expect(response.traceId, '');
     });
   });
 }
