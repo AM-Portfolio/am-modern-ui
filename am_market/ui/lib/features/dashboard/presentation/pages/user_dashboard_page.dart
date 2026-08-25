@@ -7,9 +7,12 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_common/models/market_data.dart';
+import 'package:am_market_common/models/indices_region.dart';
 import 'package:am_market_common/models/top_mover_stock.dart';
 // REMOVED: import 'package:am_market_ui/shared/widgets/index_card.dart';
 import 'package:am_market_ui/features/market/widgets/market_header.dart';
+import 'package:am_market_ui/features/market/widgets/market_colors.dart';
+import 'package:am_market_ui/features/market/widgets/market_region_toggle.dart';
 import 'package:am_market_ui/features/market/widgets/pinned_indices_grid.dart';
 import 'package:am_market_ui/features/market/widgets/all_indices_drawer.dart';
 import 'package:am_market_ui/features/market/widgets/all_indices_bottom_sheet.dart';
@@ -36,6 +39,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   
   // Selected indices for comparison chart
   List<String> selectedIndicesForChart = ['NIFTY 50', 'NIFTY BANK'];
+  IndicesRegion _compareRegion = IndicesRegion.indian;
   
   // Top movers data
   List<TopMoverStock> topGainers = [];
@@ -307,7 +311,10 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     // Fetch base prices for all 30 indices on-demand. Since this only requests 1 timeframe,
     // it is very lightweight and runs only when the user explicitly opens the drawer.
     final provider = context.read<MarketProvider>();
-    final allSymbols = provider.allIndicesData.map((e) => e.indexSymbol).toList();
+    final allSymbols = [
+      ...provider.allIndicesData.map((e) => e.indexSymbol),
+      ...provider.globalIndicesData.map((e) => e.indexSymbol),
+    ];
     _loadTimeframeOnDemand(allSymbols, _selectedTimeframe);
   }
 
@@ -316,11 +323,12 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   }
 
   /// [SIP Optimization] Opens the mobile bottom sheet and lazy-loads the base prices
-  /// for all 30 indices for the current timeframe so they display correct percentages.
+  /// for all indices for the current timeframe so they display correct percentages.
   void _showMobileAllIndicesBottomSheet(BuildContext context, MarketProvider provider) {
-    // Fetch base prices for all 30 indices on-demand. Since this only requests 1 timeframe,
-    // it is very lightweight and runs only when the user explicitly opens the bottom sheet.
-    final allSymbols = provider.allIndicesData.map((e) => e.indexSymbol).toList();
+    final allSymbols = [
+      ...provider.allIndicesData.map((e) => e.indexSymbol),
+      ...provider.globalIndicesData.map((e) => e.indexSymbol),
+    ];
     _loadTimeframeOnDemand(allSymbols, _selectedTimeframe);
 
     showModalBottomSheet(
@@ -328,26 +336,38 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: const Color(0x8C000000),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.75,
-        minChildSize: 0.4,
-        maxChildSize: 0.92,
-        expand: false,
-        builder: (context, scrollController) => AllIndicesBottomSheet(
-          scrollController: scrollController,
-          initialTimeframe: _selectedTimeframe,
-          indices: provider.allIndicesData,
-          selectedIndexSymbol: selectedIndexForMovers,
-          onIndexSelected: (data) {
-            setState(() {
-              selectedIndexForMovers = data.indexSymbol;
-            });
-            _loadTopMovers();
-            Navigator.pop(context);
+      builder: (context) {
+        return ListenableBuilder(
+          listenable: provider,
+          builder: (context, _) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.75,
+              minChildSize: 0.4,
+              maxChildSize: 0.92,
+              expand: false,
+              builder: (context, scrollController) => AllIndicesBottomSheet(
+                scrollController: scrollController,
+                initialTimeframe: _selectedTimeframe,
+                indices: provider.allIndicesData,
+                globalIndices: provider.globalIndicesData,
+                region: provider.indicesRegion,
+                onRegionChanged: provider.setIndicesRegion,
+                selectedIndexSymbol: selectedIndexForMovers,
+                onIndexSelected: (data) {
+                  if (!provider.isGlobalSymbol(data.indexSymbol)) {
+                    setState(() {
+                      selectedIndexForMovers = data.indexSymbol;
+                    });
+                    _loadTopMovers();
+                  }
+                  Navigator.pop(context);
+                },
+                allTimeframeBasePrices: allTimeframeBasePrices,
+              ),
+            );
           },
-          allTimeframeBasePrices: allTimeframeBasePrices,
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -658,14 +678,14 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                 children: [
                                   IconButton(
                                     icon: Icon(Icons.show_chart, 
-                                        color: !isBarChart ? const Color(0xFF00D1FF) : (isDark ? Colors.white54 : Colors.black54),
+                                        color: !isBarChart ? MarketColors.borderSelected(context) : (isDark ? Colors.white54 : Colors.black54),
                                         size: 20),
                                     onPressed: () => setState(() => isBarChart = false),
                                     tooltip: 'Line Chart',
                                   ),
                                   IconButton(
                                     icon: Icon(Icons.bar_chart, 
-                                        color: isBarChart ? const Color(0xFF00D1FF) : (isDark ? Colors.white54 : Colors.black54),
+                                        color: isBarChart ? MarketColors.borderSelected(context) : (isDark ? Colors.white54 : Colors.black54),
                                         size: 20),
                                     onPressed: () => setState(() => isBarChart = true),
                                     tooltip: 'Bar Chart',
@@ -740,9 +760,14 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                                  ),
                                                  child: StatefulBuilder(
                                                    builder: (context, setPopoverState) {
-                                                     final filteredIndices = marketProvider.allIndicesData.where((data) =>
-                                                       data.indexSymbol.toLowerCase().contains(_popoverSearchQuery.toLowerCase())
+                                                     final source = _compareRegion == IndicesRegion.global
+                                                         ? marketProvider.globalIndicesData
+                                                         : marketProvider.allIndicesData;
+                                                     final filteredIndices = source.where((data) =>
+                                                       data.indexSymbol.toLowerCase().contains(_popoverSearchQuery.toLowerCase()) ||
+                                                       (data.indexName?.toLowerCase().contains(_popoverSearchQuery.toLowerCase()) ?? false)
                                                      ).toList();
+                                                     final accent = MarketColors.borderSelected(context);
 
                                                      return Column(
                                                        mainAxisSize: MainAxisSize.min,
@@ -757,6 +782,22 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                                                fontWeight: FontWeight.bold,
                                                                color: Theme.of(context).colorScheme.onSurface,
                                                              ),
+                                                           ),
+                                                         ),
+                                                         Padding(
+                                                           padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                                                           child: MarketRegionToggle(
+                                                             value: _compareRegion,
+                                                             onChanged: (region) {
+                                                               setPopoverState(() {
+                                                                 _compareRegion = region;
+                                                               });
+                                                               setState(() {});
+                                                               if (region == IndicesRegion.global &&
+                                                                   marketProvider.globalIndicesData.isEmpty) {
+                                                                 marketProvider.loadGlobalIndicesData();
+                                                               }
+                                                             },
                                                            ),
                                                          ),
                                                          // Search input field
@@ -821,9 +862,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                                                ),
                                                                focusedBorder: OutlineInputBorder(
                                                                  borderRadius: BorderRadius.circular(8),
-                                                                 borderSide: const BorderSide(
-                                                                   color: Color(0xFF00D1FF),
-                                                                 ),
+                                                                 borderSide: BorderSide(color: accent),
                                                                ),
                                                              ),
                                                            ),
@@ -835,7 +874,9 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                                                 ? Padding(
                                                                     padding: const EdgeInsets.all(24.0),
                                                                     child: Text(
-                                                                      'No indices found',
+                                                                      _compareRegion == IndicesRegion.global
+                                                                          ? 'No global indices found'
+                                                                          : 'No indices found',
                                                                       textAlign: TextAlign.center,
                                                                       style: TextStyle(
                                                                         fontSize: 12,
@@ -850,17 +891,38 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                                                     itemBuilder: (context, index) {
                                                                       final data = filteredIndices[index];
                                                                       final isSelected = selectedIndicesForChart.contains(data.indexSymbol);
+                                                                      final title = data.indexName?.isNotEmpty == true
+                                                                          ? data.indexName!
+                                                                          : data.indexSymbol;
                                                                       return CheckboxListTile(
                                                                         title: Text(
-                                                                          data.indexSymbol,
+                                                                          title,
                                                                           style: TextStyle(
                                                                             fontSize: 13,
                                                                             color: Theme.of(context).colorScheme.onSurface,
                                                                           ),
                                                                         ),
+                                                                        subtitle: data.suspended
+                                                                            ? Text(
+                                                                                'Suspended',
+                                                                                style: TextStyle(
+                                                                                  fontSize: 10,
+                                                                                  color: MarketColors.textMuted(context),
+                                                                                ),
+                                                                              )
+                                                                            : (data.indexName != null &&
+                                                                                    data.indexName != data.indexSymbol
+                                                                                ? Text(
+                                                                                    data.indexSymbol,
+                                                                                    style: TextStyle(
+                                                                                      fontSize: 10,
+                                                                                      color: MarketColors.textMuted(context),
+                                                                                    ),
+                                                                                  )
+                                                                                : null),
                                                                         value: isSelected,
-                                                                        activeColor: const Color(0xFF00D1FF),
-                                                                        checkColor: Colors.black,
+                                                                        activeColor: accent,
+                                                                        checkColor: Theme.of(context).colorScheme.surface,
                                                                         dense: true,
                                                                         visualDensity: VisualDensity.compact,
                                                                         onChanged: (bool? value) {
@@ -892,10 +954,10 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                                                     _togglePopover();
                                                                     _loadHistoricalData();
                                                                   },
-                                                                  child: const Text(
+                                                                  child: Text(
                                                                     'Done',
                                                                     style: TextStyle(
-                                                                      color: Color(0xFF00D1FF),
+                                                                      color: accent,
                                                                       fontWeight: FontWeight.bold,
                                                                     ),
                                                                   ),
@@ -918,7 +980,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                  child: IconButton(
                                    icon: RotationTransition(
                                      turns: Tween<double>(begin: 0.0, end: 0.125).animate(_popoverAnimationController),
-                                     child: const Icon(Icons.add, color: Color(0xFF00D1FF)),
+                                     child: Icon(Icons.add, color: MarketColors.borderSelected(context)),
                                    ),
                                    onPressed: _togglePopover,
                                    tooltip: 'Compare Indices',
@@ -974,10 +1036,10 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF00D1FF).withOpacity(0.15),
+                        color: MarketColors.borderSelected(context).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: const Color(0xFF00D1FF).withOpacity(0.35),
+                          color: MarketColors.borderSelected(context).withValues(alpha: 0.35),
                         ),
                       ),
                       child: Row(
@@ -985,8 +1047,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                         children: [
                           Text(
                             selectedIndexForMovers,
-                            style: const TextStyle(
-                              color: Color(0xFF00D1FF),
+                            style: TextStyle(
+                              color: MarketColors.borderSelected(context),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
@@ -995,7 +1057,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                           Icon(
                             Icons.keyboard_arrow_down_rounded,
                             size: 16,
-                            color: const Color(0xFF00D1FF).withOpacity(0.9),
+                            color: MarketColors.borderSelected(context).withValues(alpha: 0.9),
                           ),
                         ],
                       ),
@@ -1041,13 +1103,18 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
               ),
               child: AllIndicesDrawer(
                 indices: marketProvider.allIndicesData,
+                globalIndices: marketProvider.globalIndicesData,
+                region: marketProvider.indicesRegion,
+                onRegionChanged: marketProvider.setIndicesRegion,
                 initialTimeframe: _selectedTimeframe,
                 selectedIndexSymbol: selectedIndexForMovers,
                 onIndexSelected: (data) {
-                  setState(() {
-                    selectedIndexForMovers = data.indexSymbol;
-                  });
-                  _loadTopMovers();
+                  if (!marketProvider.isGlobalSymbol(data.indexSymbol)) {
+                    setState(() {
+                      selectedIndexForMovers = data.indexSymbol;
+                    });
+                    _loadTopMovers();
+                  }
                   _closeDrawer();
                 },
                 onClose: _closeDrawer,

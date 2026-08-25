@@ -7,6 +7,7 @@ class MarketEndpoints {
   
   // Indices
   static const String availableIndices = '/v1/indices/available';
+  static const String availableGlobalIndices = '/v1/indices/global/available';
   static const String indicesBatch = '/v1/indices/batch';
   
   // Market Data (Real-time & Historical)
