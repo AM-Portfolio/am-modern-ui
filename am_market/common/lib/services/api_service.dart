@@ -18,6 +18,12 @@ class ApiService {
 
   final _storage = GetIt.I<SecureStorageService>();
 
+  /// Cache of known global index short symbols (e.g. "DJI", "SPX").
+  /// Populated when [fetchAvailableGlobalIndices] is called.
+  /// Used to auto-prefix global symbols with "GLOBAL_INDEX|" before sending
+  /// to the historical-data endpoint, which requires the full instrument key.
+  final Set<String> _globalSymbols = {};
+
   Future<Map<String, String>> _getHeaders() async {
     final token = await _storage.getAccessToken();
     CommonLogger.debug('Token present: ${token != null}', tag: 'ApiService');
@@ -42,6 +48,33 @@ class ApiService {
 
       throw Exception('Failed to load indices');
     }
+  }
+
+  /// GET /v1/indices/global/available — separate from Indian /available contract.
+  Future<List<String>> fetchAvailableGlobalIndices() async {
+    CommonLogger.info(
+      "Requesting global indices from $baseUrl${MarketEndpoints.availableGlobalIndices}",
+      tag: "ApiService.fetchAvailableGlobalIndices",
+    );
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl${MarketEndpoints.availableGlobalIndices}'),
+      headers: headers,
+    );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<String> global = List<String>.from(data['global'] ?? data['globalIndices'] ?? []);
+      // Populate the local cache so historical requests can auto-prefix symbols
+      _globalSymbols
+        ..clear()
+        ..addAll(global);
+      return global;
+    }
+    CommonLogger.error(
+      "Failed to load global indices: ${response.statusCode}",
+      tag: "ApiService.fetchAvailableGlobalIndices",
+    );
+    throw Exception('Failed to load global indices');
   }
 
 
@@ -590,6 +623,30 @@ class ApiService {
     }
   }
 
+  /// Returns the full Upstox instrument key for a given symbol.
+  /// Global index short symbols (e.g. "DJI") are prefixed with "GLOBAL_INDEX|"
+  /// so the backend can route them to the correct InfluxDB repository.
+  /// Non-global symbols are returned unchanged.
+  String _resolveHistoricalSymbol(String symbol) {
+    final upper = symbol.toUpperCase();
+    // Already has the full key prefix — pass through unchanged
+    if (upper.startsWith('GLOBAL_INDEX|')) return symbol;
+    // Known global symbol — add the required prefix
+    if (_globalSymbols.contains(upper) || _globalSymbols.contains(symbol)) {
+      return 'GLOBAL_INDEX|$upper';
+    }
+    return symbol;
+  }
+
+  /// Strips the "GLOBAL_INDEX|" prefix from a response key to produce the
+  /// short symbol that the rest of the UI uses (e.g. "GLOBAL_INDEX|DJI" → "DJI").
+  String _normalizeResponseKey(String responseKey) {
+    if (responseKey.startsWith('GLOBAL_INDEX|')) {
+      return responseKey.substring('GLOBAL_INDEX|'.length);
+    }
+    return responseKey;
+  }
+
   Future<Map<String, dynamic>> fetchHistoricalData({
     required List<String> symbols,
     required String from,
@@ -601,8 +658,20 @@ class ApiService {
     bool continuous = false,
   }) async {
     try {
+      // For global index symbols the backend requires the full Upstox instrument key
+      // ("GLOBAL_INDEX|DJI"). The UI stores and exposes only the short symbol ("DJI"),
+      // so we auto-prefix here and then strip the prefix back from the response.
+      final resolvedSymbols = symbols.map(_resolveHistoricalSymbol).toList();
+      // Track which short symbols were remapped so we can normalise the response.
+      final Map<String, String> prefixedToShort = {};
+      for (int i = 0; i < symbols.length; i++) {
+        if (resolvedSymbols[i] != symbols[i]) {
+          prefixedToShort[resolvedSymbols[i]] = symbols[i];
+        }
+      }
+
       final requestBody = {
-        'symbols': symbols.join(','),
+        'symbols': resolvedSymbols.join(','),
         'from': from,
         'to': to,
         'interval': interval,
@@ -612,6 +681,13 @@ class ApiService {
         'continuous': continuous,
       };
 
+      if (prefixedToShort.isNotEmpty) {
+        CommonLogger.info(
+          "Global symbol remapping: $prefixedToShort",
+          tag: "ApiService.fetchHistoricalData",
+        );
+      }
+
       final headers = await _getHeaders();
       final response = await http.post(
         Uri.parse('$baseUrl${MarketEndpoints.historicalData}'),
@@ -620,14 +696,27 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        return Map<String, dynamic>.from(json.decode(response.body));
+        final Map<String, dynamic> raw = Map<String, dynamic>.from(json.decode(response.body));
+
+        // Normalise data keys: replace "GLOBAL_INDEX|DJI" → "DJI" so the chart
+        // cache lookup (which uses the short symbol) finds the data.
+        if (prefixedToShort.isNotEmpty && raw.containsKey('data')) {
+          final originalData = raw['data'] as Map<String, dynamic>;
+          final Map<String, dynamic> normalisedData = {};
+          originalData.forEach((key, value) {
+            final normKey = prefixedToShort[key] ?? _normalizeResponseKey(key);
+            normalisedData[normKey] = value;
+          });
+          raw['data'] = normalisedData;
+        }
+
+        return raw;
       } else {
         CommonLogger.error("Failed with ${response.statusCode}: ${response.body}", tag: "ApiService.fetchHistoricalData");
-            throw Exception('Failed to fetch historical data: ${response.statusCode} - ${response.body}');
-          }
-        } catch (e) {
-          CommonLogger.error("Error fetching historical data", tag: "ApiService.fetchHistoricalData", error: e);
-
+        throw Exception('Failed to fetch historical data: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      CommonLogger.error("Error fetching historical data", tag: "ApiService.fetchHistoricalData", error: e);
       rethrow;
     }
   }
@@ -676,12 +765,17 @@ class ApiService {
     }
   }
 
-  Future<Map<String, double>> fetchHeatmap(String symbol, {String timeframe = '1D'}) async {
+  Future<Map<String, double>> fetchHeatmap(
+    String symbol, {
+    String timeframe = '1D',
+    bool forceRefresh = false,
+  }) async {
     try {
       final headers = await _getHeaders();
-      final url = '$baseUrl/v1/analysis/heatmap?symbol=$symbol&timeframe=$timeframe';
+      final url =
+          '$baseUrl/v1/analysis/heatmap?symbol=${Uri.encodeQueryComponent(symbol)}&timeframe=${Uri.encodeQueryComponent(timeframe)}&forceRefresh=$forceRefresh';
       final response = await http.get(Uri.parse(url), headers: headers);
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         // Cast values to double, handling integers if any

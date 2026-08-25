@@ -1,17 +1,27 @@
 class StockIndicesMarketData {
   final String indexSymbol;
+  final String? indexName;
   final double lastPrice;
   final double change;
   final double pChange;
   final List<StockData> stocks;
+  final bool suspended;
+  final String? segment;
 
   StockIndicesMarketData({
     required this.indexSymbol,
+    this.indexName,
     required this.lastPrice,
     required this.change,
     required this.pChange,
     required this.stocks,
+    this.suspended = false,
+    this.segment,
   });
+
+  bool get isGlobal =>
+      (segment?.toUpperCase() == 'GLOBAL') ||
+      (indexSymbol.toUpperCase().startsWith('GLOBAL_'));
 
   static double _number(dynamic value) => value is num ? value.toDouble() : 0.0;
 
@@ -45,26 +55,35 @@ class StockIndicesMarketData {
 
     return StockIndicesMarketData(
       indexSymbol: json['indexSymbol'] ?? 'Unknown',
+      indexName: json['indexName'] as String? ?? metadata['indexName'] as String?,
       lastPrice: _resolveLastPrice(json, metadata),
       change: _number(json['change'] ?? metadata['change']),
       pChange: _number(json['pChange'] ?? json['percentChange'] ?? metadata['percChange'] ?? metadata['percentChange']),
       stocks: stocksList,
+      suspended: json['suspended'] == true || metadata['suspended'] == true,
+      segment: json['segment'] as String? ?? metadata['segment'] as String?,
     );
   }
 
   StockIndicesMarketData copyWith({
     String? indexSymbol,
+    String? indexName,
     double? lastPrice,
     double? change,
     double? pChange,
     List<StockData>? stocks,
+    bool? suspended,
+    String? segment,
   }) {
     return StockIndicesMarketData(
       indexSymbol: indexSymbol ?? this.indexSymbol,
+      indexName: indexName ?? this.indexName,
       lastPrice: lastPrice ?? this.lastPrice,
       change: change ?? this.change,
       pChange: pChange ?? this.pChange,
       stocks: stocks ?? this.stocks,
+      suspended: suspended ?? this.suspended,
+      segment: segment ?? this.segment,
     );
   }
 }
