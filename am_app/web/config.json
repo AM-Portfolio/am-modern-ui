@@ -1,7 +1,9 @@
 {
   "_comment": "Cluster production gateway (am.asrax.in). Munish removed as app host.",
   "domain": "am.asrax.in",
-  "services": {},
+  "services": {
+    "ai": "http://localhost:8120"
+  },
   "google": {
     "webClientId": ""
   },

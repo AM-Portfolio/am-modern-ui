@@ -1,16 +1,15 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:am_common/am_common.dart' as common;
 import 'ai_intent_response.dart';
 import 'ai_stream_event.dart';
 
 /// HTTP and SSE Streaming service for the AM AI Gateway.
 class AiChatService {
-  /// Base URL for the AM AI Gateway. Configurable at build/runtime via --dart-define=AI_GATEWAY_URL=...
-  static String get baseUrl => const String.fromEnvironment(
-        'AI_GATEWAY_URL',
-        defaultValue: 'https://am-dev.asrax.in/ai',
-      );
+  /// Base URL resolved at runtime from config.json → `services.ai`
+  /// or defaults to `https://{domain}/ai`.
+  static String get baseUrl => common.EnvDomains.ai;
 
   final Dio _dio;
 

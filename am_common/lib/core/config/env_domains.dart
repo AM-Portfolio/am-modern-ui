@@ -63,6 +63,8 @@ class EnvDomains {
       ConfigService.override('subscription') ?? '$apiBase/subscriptions';
   static String get logging =>
       ConfigService.override('logging') ?? '$apiBase/logging';
+  static String get ai =>
+      ConfigService.override('ai') ?? '$apiBase/ai';
 
   // WebSocket — all real-time UI uses am-gateway STOMP
   static String get wsStream =>
