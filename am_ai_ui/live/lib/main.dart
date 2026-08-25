@@ -1,15 +1,30 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:am_ai_ui/am_ai_ui.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 
+final _router = GoRouter(
+  initialLocation: '/',
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const AiChatScreen(
+        userId: 'demo-user-1',
+      ),
+    ),
+  ],
+);
+
 void main() {
   // Initialize DI
   final storage = SecureStorageService();
-  GetIt.I.registerSingleton<SecureStorageService>(storage);
+  if (!GetIt.I.isRegistered<SecureStorageService>()) {
+    GetIt.I.registerSingleton<SecureStorageService>(storage);
+  }
 
   runApp(
     MultiBlocProvider(
@@ -31,23 +46,10 @@ class AIChatExampleApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'AI Chat UI Example',
+    return MaterialApp.router(
+      title: 'AM Finance AI Chat',
       theme: AppTheme.darkTheme,
-      home: AuthWrapper(
-        child: BlocBuilder<AuthCubit, AuthState>(
-          builder: (context, state) {
-            String userId = '';
-            if (state is Authenticated) {
-              userId = state.user.id;
-            }
-            // Using AIChatScreen as the home
-            return AiChatScreen(
-              userId: userId,
-            );
-          },
-        ),
-      ),
+      routerConfig: _router,
       debugShowCheckedModeBanner: false,
     );
   }
