@@ -100,8 +100,6 @@ Future<void> _loadMarket() async {
   market_deps.registerMarketAnalysisServiceDi();
 }
 
-Future<void> _loadAi() => ai_ui.loadLibrary();
-
 Future<void> _loadAnalysis() async {
   await Future.wait([
     analysis_ui.loadLibrary(),
