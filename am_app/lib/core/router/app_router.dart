@@ -81,11 +81,9 @@ GoRouter createAppRouter({
         return AppRoutes.dashboard;
       }
 
-      // Global Analysis + AI Chat are admin-only.
+      // Global Analysis is admin-only.
       if (location == AppRoutes.analysis ||
-          location.startsWith('${AppRoutes.analysis}/') ||
-          location == AppRoutes.aiChat ||
-          location.startsWith('${AppRoutes.aiChat}/')) {
+          location.startsWith('${AppRoutes.analysis}/')) {
         final isAdmin =
             authState is Authenticated && authState.user.isAdmin;
         if (!isAdmin) return AppRoutes.dashboard;
