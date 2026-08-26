@@ -169,7 +169,19 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/summary',
-        parser: (data) => DashboardSummary.fromJson(data),
+        parser: (data) {
+          try {
+            return DashboardSummary.fromJson(
+              DashboardJsonSanitizer.summary(data),
+            );
+          } catch (parseError) {
+            AppLogger.error(
+              'Dashboard summary JSON parse failed',
+              error: parseError,
+            );
+            rethrow;
+          }
+        },
       );
     } catch (e) {
       AppLogger.error('Failed to fetch dashboard summary', error: e);
@@ -262,7 +274,7 @@ class DashboardRepository {
 
   Stream<DashboardSummary> watchSummary() => _watchWidget(
         DashboardQueueDestinations.summary,
-        (json) => DashboardSummary.fromJson(json),
+        (json) => DashboardSummary.fromJson(DashboardJsonSanitizer.summary(json)),
       );
 
   Stream<List<ActivityItem>> watchActivity() => _watchWidget(
@@ -300,27 +312,37 @@ class DashboardRepository {
   Stream<T> _watchWidget<T>(String destination, T Function(Map<String, dynamic>) parser) {
     return _stompClient.messages
         .where((frame) => _matchesDestination(frame.headers['destination'], destination))
-        .map((frame) {
-          final body = frame.body;
-          if (body == null || body.isEmpty) {
-            throw StateError('Empty body on $destination');
-          }
-          try {
-            final decoded = jsonDecode(body);
-            if (decoded is! Map<String, dynamic>) {
-              throw FormatException('Expected object on $destination');
-            }
-            final parsed = parser(decoded);
-            AppLogger.info('Dashboard widget update received: ${_widgetLabel(destination)}');
-            return parsed;
-          } catch (e) {
-            AppLogger.error('Failed to parse dashboard frame on $destination', error: e);
-            rethrow;
-          }
-        })
+        .map((frame) => _tryParseWidgetFrame<T>(destination, frame, parser))
+        .where((parsed) => parsed != null)
+        .cast<T>()
         .handleError((Object error, StackTrace stack) {
           AppLogger.error('Error in dashboard stream $destination', error: error);
         });
+  }
+
+  T? _tryParseWidgetFrame<T>(
+    String destination,
+    dynamic frame,
+    T Function(Map<String, dynamic>) parser,
+  ) {
+    final body = frame.body;
+    if (body == null || body.isEmpty) {
+      AppLogger.warning('Empty dashboard frame on $destination — skipped');
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is! Map) {
+        AppLogger.warning('Non-object dashboard frame on $destination — skipped');
+        return null;
+      }
+      final parsed = parser(DashboardJsonSanitizer.asObject(decoded));
+      AppLogger.info('Dashboard widget update received: ${_widgetLabel(destination)}');
+      return parsed;
+    } catch (e) {
+      AppLogger.error('Failed to parse dashboard frame on $destination', error: e);
+      return null;
+    }
   }
 
   String _widgetLabel(String destination) {

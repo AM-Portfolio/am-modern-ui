@@ -55,7 +55,7 @@ class DashboardPage extends ConsumerWidget {
                 loading: () => const SkeletonBox(height: 200),
                 error: (err, stack) => AmErrorWidget(
                   message: 'Failed to load summary',
-                  onRetry: () => ref.invalidate(dashboardStreamProvider(userId)),
+                  onRetry: () => retryDashboardSummary(ref, userId),
                 ),
               ),
             ),

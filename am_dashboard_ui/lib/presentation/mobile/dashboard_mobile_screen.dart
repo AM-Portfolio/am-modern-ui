@@ -217,7 +217,7 @@ class _DashboardMobileScreenState
         : context.colors.actionPrimaryBg.withValues(alpha: 0.2);
 
     Future<void> refresh() async {
-      ref.invalidate(dashboardStreamProvider(userId));
+      retryDashboardSummary(ref, userId);
       ref.invalidate(portfolioOverviewsProvider(userId));
     }
 
@@ -298,8 +298,7 @@ class _DashboardMobileScreenState
                             loading: _buildSummaryLoading,
                             error: (err, stack) => AmErrorWidget(
                               message: 'Failed to load summary',
-                              onRetry: () =>
-                                  ref.invalidate(dashboardStreamProvider(userId)),
+                              onRetry: () => retryDashboardSummary(ref, userId),
                             ),
                           ),
                           const SizedBox(height: 16),

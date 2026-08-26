@@ -274,7 +274,7 @@ class DashboardWebScreen extends ConsumerWidget {
                       loading: () => _buildSummaryLoading(context),
                       error: (err, stack) => AmErrorWidget(
                         message: 'Failed to load summary',
-                        onRetry: () => ref.invalidate(dashboardStreamProvider(userId)),
+                        onRetry: () => retryDashboardSummary(ref, userId),
                       ),
                     ),
                     const SizedBox(height: 24),
