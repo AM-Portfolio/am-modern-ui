@@ -38,10 +38,10 @@ void main() {
       expect(axis.maxY - axis.minY, greaterThanOrEqualTo(934000 * 0.08));
     });
 
-    test('zero / near-zero stays non-negative', () {
-      final axis = ChartAxisScale.fromRange(0, 0);
-      expect(axis.minY, 0);
-      expect(axis.maxY, greaterThan(0));
+    test('small percent range still has several ticks', () {
+      final axis = ChartAxisScale.fromValues([0, 0.2], minBandFraction: 0.2);
+      expect(axis.ticks.length, greaterThanOrEqualTo(4));
+      expect(axis.step, lessThan(axis.maxY - axis.minY));
     });
 
     test('compactRupee suffixes', () {

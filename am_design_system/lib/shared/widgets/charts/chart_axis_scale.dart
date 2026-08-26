@@ -22,6 +22,7 @@ class ChartAxisScale {
   static ChartAxisScale fromValues(
     Iterable<double> values, {
     double minBandFraction = 0.08,
+    int targetTicks = 5,
   }) {
     final nums = values.where((v) => v.isFinite).toList();
     if (nums.isEmpty) {
@@ -37,6 +38,7 @@ class ChartAxisScale {
       nums.reduce(math.min),
       nums.reduce(math.max),
       minBandFraction: minBandFraction,
+      targetTicks: targetTicks,
     );
   }
 
@@ -44,6 +46,7 @@ class ChartAxisScale {
     double dataMin,
     double dataMax, {
     double minBandFraction = 0.08,
+    int targetTicks = 5,
   }) {
     if (dataMax < dataMin) {
       final tmp = dataMin;
@@ -62,7 +65,7 @@ class ChartAxisScale {
       range = dataMax - dataMin;
     }
 
-    const tickCount = 5;
+    final tickCount = targetTicks.clamp(3, 8);
     final step = _niceNum(range / (tickCount - 1), round: true);
     var niceMin = (dataMin / step).floor() * step;
     var niceMax = (dataMax / step).ceil() * step;
@@ -72,7 +75,7 @@ class ChartAxisScale {
     final ticks = <double>[];
     for (var t = niceMin; t <= niceMax + step * 0.25; t += step) {
       ticks.add(_snap(t));
-      if (ticks.length >= 8) break;
+      if (ticks.length >= tickCount + 2) break;
     }
     if (ticks.isEmpty) {
       ticks.addAll([niceMin, niceMax]);

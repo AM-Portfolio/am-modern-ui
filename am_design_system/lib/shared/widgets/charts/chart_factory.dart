@@ -9,6 +9,71 @@ import 'chart_types.dart';
 import 'chart_axis_scale.dart';
 import 'candle_chart.dart';
 
+/// One shared header for a multi-series hover: `26 Aug · 15:15` when labels mix.
+String combineChartTooltipHeader(Iterable<String?> labels) {
+  final unique = <String>[];
+  for (final raw in labels) {
+    final text = raw?.trim() ?? '';
+    if (text.isEmpty || unique.contains(text)) continue;
+    unique.add(text);
+  }
+  if (unique.isEmpty) return '';
+  if (unique.length == 1) return unique.first;
+  final timePattern = RegExp(r'^\d{1,2}:\d{2}$');
+  final times = unique.where(timePattern.hasMatch).toList()..sort();
+  final dates = unique.where((label) => !timePattern.hasMatch(label)).toList();
+  final time = times.isEmpty ? null : times.last;
+  final date = dates.isEmpty ? null : dates.first;
+  if (date != null && time != null) return '$date · $time';
+  if (time != null) return time;
+  return unique.first;
+}
+
+LineTooltipItem _tooltipRow({
+  required LineBarSpot spot,
+  required String header,
+  required bool hasMultiLines,
+  required List<ChartLineData>? lines,
+  required List<CommonChartDataPoint> data,
+  required bool isDark,
+  required bool lockToTop,
+  int nameWidth = 0,
+}) {
+  final points = hasMultiLines ? lines![spot.barIndex].points : data;
+  final index = spot.spotIndex.clamp(0, points.length - 1);
+  final point = points[index];
+  final seriesName = hasMultiLines ? lines![spot.barIndex].label : '';
+  final valueText = point.yLabel ?? point.y.toString();
+  final paddedName = nameWidth > seriesName.length
+      ? seriesName.padRight(nameWidth)
+      : seriesName;
+  final rowText = paddedName.isEmpty ? valueText : '$paddedName  $valueText';
+  final textColor = hasMultiLines
+      ? (lines![spot.barIndex].color ?? Colors.white)
+      : Colors.white;
+  final dateColor = lockToTop
+      ? (isDark ? Colors.white60 : Colors.black54)
+      : Colors.white70;
+  if (header.isEmpty) {
+    return LineTooltipItem(
+      rowText,
+      TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 12),
+      textAlign: TextAlign.left,
+    );
+  }
+  return LineTooltipItem(
+    '$header\n',
+    TextStyle(color: dateColor, fontSize: 10, fontWeight: FontWeight.w500),
+    textAlign: TextAlign.left,
+    children: [
+      TextSpan(
+        text: rowText,
+        style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 12),
+      ),
+    ],
+  );
+}
+
 
 /// Factory widget for creating standardized charts
 class ChartFactory extends StatelessWidget {
@@ -220,17 +285,13 @@ class ChartFactory extends StatelessWidget {
           calculatedMinY = rupeeScale.minY;
           calculatedMaxY = rupeeScale.maxY;
         } else {
-          final double range = (maxVal - minVal).abs();
-          double padding = range == 0 ? maxVal.abs() * 0.15 : range * 0.15;
-          if (padding == 0) padding = 1.0; // Prevent min==max when all values are 0
-
-          calculatedMinY = minVal - padding;
-          calculatedMaxY = maxVal + padding;
-
-          // If all values are non-negative, don't let minY go below 0 (unless we want to show negative drops)
-          if (minVal >= 0 && calculatedMinY! < 0) {
-            calculatedMinY = 0;
-          }
+          // Percent / small values: nice ticks so the axis is not a single 0.0%.
+          rupeeScale = ChartAxisScale.fromValues(
+            [minVal, maxVal],
+            minBandFraction: 0.2,
+          );
+          calculatedMinY = rupeeScale.minY;
+          calculatedMaxY = rupeeScale.maxY;
         }
       }
     } // end of: if (data.isNotEmpty || hasMultiLines)
@@ -322,6 +383,8 @@ class ChartFactory extends StatelessWidget {
 
     final chart = LineChart(
       LineChartData(
+        minX: 0,
+        maxX: dataLength > 1 ? (dataLength - 1) + 0.25 : null,
         minY: calculatedMinY,
         maxY: calculatedMaxY,
         gridData: FlGridData(
@@ -353,7 +416,7 @@ class ChartFactory extends StatelessWidget {
                 }
                 return const SizedBox();
               },
-              reservedSize: 14,
+              reservedSize: 28,
             ),
           ),
           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -368,7 +431,7 @@ class ChartFactory extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               interval: calculatedYInterval, // Use calculated interval for clean spacing
-              reservedSize: 52,
+              reservedSize: 56,
               getTitlesWidget: (value, meta) {
                 // Hide exact min/max if they don't align with our interval to prevent overlapping labels
                 if (calculatedYInterval != null && (value == calculatedMinY || value == calculatedMaxY)) {
@@ -379,6 +442,14 @@ class ChartFactory extends StatelessWidget {
                 
                 // Smart formatter: cleanly format 0, and show decimals for small non-zero numbers
                 String text;
+                if (calculatedYInterval != null && calculatedYInterval! > 0) {
+                  final snapped =
+                      (value / calculatedYInterval!).round() * calculatedYInterval!;
+                  if ((value - snapped).abs() > calculatedYInterval! * 0.05) {
+                    return const SizedBox.shrink();
+                  }
+                  value = snapped;
+                }
                 if (config.formatYLabel != null) {
                   text = config.formatYLabel!(value);
                 } else if (value == 0) {
@@ -442,35 +513,40 @@ class ChartFactory extends StatelessWidget {
                 : const BorderSide(color: Colors.transparent),
             fitInsideHorizontally: true,
             fitInsideVertically: true,
+            tooltipPadding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
             getTooltipItems: (touchedSpots) {
-              return touchedSpots.map((spot) {
-                final List<CommonChartDataPoint> activePoints = hasMultiLines
-                    ? lines![spot.barIndex].points
-                    : data;
-                final point = activePoints[spot.spotIndex];
-                final String lineLabel = hasMultiLines
-                    ? '${lines![spot.barIndex].label}: '
-                    : '';
-                // [Interactive] Color tooltip text to match the line color when top-locked
-                final Color textColor = config.lockTooltipToTop && hasMultiLines
-                    ? (lines![spot.barIndex].color ?? Colors.white)
-                    : (hasMultiLines ? (lines![spot.barIndex].color ?? Colors.white) : Colors.white);
-                final Color dateColor = config.lockTooltipToTop
-                    ? (isDark ? Colors.white60 : Colors.black54)
-                    : Colors.white70;
-                
-                // If locked to top, we might want a different layout, but for now just show date first
-                return LineTooltipItem(
-                  '${point.xLabel ?? ''}\n',
-                  TextStyle(color: dateColor, fontSize: 10),
-                  children: [
-                    TextSpan(
-                      text: '$lineLabel${point.yLabel ?? point.y.toString()}',
-                      style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12),
-                    ),
-                  ],
-                );
-              }).toList();
+              if (touchedSpots.isEmpty) return [];
+              final sorted = [...touchedSpots]
+                ..sort((a, b) => a.barIndex.compareTo(b.barIndex));
+              final header = combineChartTooltipHeader([
+                for (final spot in sorted)
+                  (hasMultiLines
+                          ? lines![spot.barIndex].points
+                          : data)[spot.spotIndex]
+                      .xLabel,
+              ]);
+              final nameWidth = hasMultiLines
+                  ? sorted.fold<int>(
+                      0,
+                      (max, spot) {
+                        final name = lines![spot.barIndex].label;
+                        return name.length > max ? name.length : max;
+                      },
+                    )
+                  : 0;
+              return [
+                for (var i = 0; i < sorted.length; i++)
+                  _tooltipRow(
+                    spot: sorted[i],
+                    header: i == 0 ? header : '',
+                    hasMultiLines: hasMultiLines,
+                    lines: lines,
+                    data: data,
+                    isDark: isDark,
+                    lockToTop: config.lockTooltipToTop,
+                    nameWidth: nameWidth,
+                  ),
+              ];
             },
           ),
         ),

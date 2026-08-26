@@ -3,8 +3,6 @@ import 'package:am_dashboard_ui/domain/models/overlay_chart_models.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-const _maxOverlayLines = 3;
-
 final marketApiClientProvider = FutureProvider<ApiClient>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
   final baseUrl = config.api.marketData?.baseUrl ??
@@ -26,6 +24,7 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
 
   final String userId;
   int _generation = 0;
+  bool _selectionTouched = false;
 
   @override
   OverlayChartState build() {
@@ -40,89 +39,138 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
 
   Future<void> reload() async {
     final timeFrame = ref.read(appTimeFrameProvider).code;
-    final selected = List<String>.from(state.selectedIndexIds);
-    if (selected.isEmpty) selected.add(OverlayChartIds.nifty50);
+    final selected = List<String>.from(state.selectedIds);
     _generation += 1;
     final gen = _generation;
     state = OverlayChartState.initial(timeFrame).copyWith(
-      selectedIndexIds: selected,
-      pendingIds: {OverlayChartIds.portfolio, ...selected},
+      selectedIds: selected,
+      pendingIds: {...selected},
     );
     await Future.wait([
-      _loadPortfolio(gen, timeFrame),
-      _loadIndices(gen, timeFrame, selected),
+      _loadPortfolios(gen, timeFrame),
+      _loadIndices(
+        gen,
+        timeFrame,
+        selected.where(OverlayChartIds.needsIndexFetch).toList(),
+      ),
     ]);
   }
 
   Future<void> retry(String id) {
-    if (id == OverlayChartIds.portfolio) {
-      return _loadPortfolio(_generation, state.timeFrame);
+    if (OverlayChartIds.needsIndexFetch(id)) {
+      return _loadIndices(_generation, state.timeFrame, [id]);
     }
-    return _loadIndices(_generation, state.timeFrame, [id]);
+    return _loadPortfolios(_generation, state.timeFrame);
   }
 
-  Future<void> addIndex(String symbol) async {
-    if (state.selectedIndexIds.contains(symbol)) return;
-    if (1 + state.selectedIndexIds.length >= _maxOverlayLines) return;
-    final selected = [...state.selectedIndexIds, symbol];
+  Future<void> addSeries(String id) async {
+    if (state.selectedIds.contains(id) || state.atCap) return;
+    _selectionTouched = true;
+    final selected = [...state.selectedIds, id];
     state = state.copyWith(
-      selectedIndexIds: selected,
-      pendingIds: {...state.pendingIds, symbol},
-      failedIds: {...state.failedIds}..remove(symbol),
+      selectedIds: selected,
+      pendingIds: OverlayChartIds.needsIndexFetch(id)
+          ? {...state.pendingIds, id}
+          : state.pendingIds,
+      failedIds: {...state.failedIds}..remove(id),
     );
-    await _loadIndices(_generation, state.timeFrame, [symbol]);
+    if (OverlayChartIds.needsIndexFetch(id)) {
+      await _loadIndices(_generation, state.timeFrame, [id]);
+    }
   }
 
-  void removeIndex(String symbol) {
-    if (!state.selectedIndexIds.contains(symbol)) return;
-    final selected = [...state.selectedIndexIds]..remove(symbol);
-    final series = Map<String, OverlaySeries>.from(state.series)..remove(symbol);
-    final pending = Set<String>.from(state.pendingIds)..remove(symbol);
-    final failed = Map<String, String>.from(state.failedIds)..remove(symbol);
+  void removeSeries(String id) {
+    if (!state.selectedIds.contains(id)) return;
+    _selectionTouched = true;
+    final selected = [...state.selectedIds]..remove(id);
+    final series = Map<String, OverlaySeries>.from(state.series);
+    if (OverlayChartIds.needsIndexFetch(id)) {
+      series.remove(id);
+    }
+    final pending = Set<String>.from(state.pendingIds)..remove(id);
+    final failed = Map<String, String>.from(state.failedIds)..remove(id);
     state = state.copyWith(
-      selectedIndexIds: selected,
+      selectedIds: selected,
       series: series,
       pendingIds: pending,
       failedIds: failed,
     );
   }
 
-  Future<void> _loadPortfolio(int gen, String timeFrame) async {
-    _markPending(OverlayChartIds.portfolio);
+  Future<void> _loadPortfolios(int gen, String timeFrame) async {
+    final previousSelected = List<String>.from(state.selectedIds);
+    for (final id in previousSelected.where((id) => !OverlayChartIds.isIndex(id))) {
+      _markPending(id);
+    }
     try {
       final repo = await ref.read(dashboardRepositoryProvider.future);
       final client = await ref.read(portfolioApiClientProvider.future);
-      final raw = await repo.getPortfolioHistory(client, timeFrame: timeFrame);
+      final history = await repo.getPortfolioHistory(client, timeFrame: timeFrame);
       if (gen != _generation) return;
-      final percent = toPercentPoints(raw);
-      final nextSeries = Map<String, OverlaySeries>.from(state.series);
-      if (percent.length >= 2) {
-        nextSeries[OverlayChartIds.portfolio] = OverlaySeries(
-          id: OverlayChartIds.portfolio,
-          label: 'Portfolio',
-          points: percent,
-        );
-      } else {
-        nextSeries.remove(OverlayChartIds.portfolio);
-      }
-      state = state.copyWith(
-        series: nextSeries,
-        pendingIds: {...state.pendingIds}..remove(OverlayChartIds.portfolio),
-        failedIds: {...state.failedIds}..remove(OverlayChartIds.portfolio),
-        firstWealth: raw.isEmpty ? null : raw.first.value,
-        lastWealth: raw.isEmpty ? null : raw.last.value,
-        clearWealth: raw.isEmpty,
+
+      final availableIds = history.portfolios.map((p) => p.id).toList();
+      final selected = mergeOverlaySelection(
+        previous: previousSelected,
+        availablePortfolioIds: availableIds,
+        selectionTouched: _selectionTouched,
       );
+
+      final nextSeries = Map<String, OverlaySeries>.from(state.series);
+      nextSeries.removeWhere((id, _) => !OverlayChartIds.isIndex(id));
+      final overallPct = toPercentPoints(history.aggregate);
+      if (overallPct.length >= 2) {
+        nextSeries[OverlayChartIds.overall] = OverlaySeries(
+          id: OverlayChartIds.overall,
+          label: OverlayChartIds.overall,
+          points: overallPct,
+        );
+      }
+      for (final ref in history.portfolios) {
+        final raw = history.byPortfolioId[ref.id] ?? const <OverlayPoint>[];
+        final percent = toPercentPoints(raw);
+        if (percent.length >= 2) {
+          nextSeries[ref.id] = OverlaySeries(
+            id: ref.id,
+            label: ref.label,
+            points: percent,
+          );
+        }
+      }
+
+      final pending = Set<String>.from(state.pendingIds)
+        ..removeWhere((id) => !OverlayChartIds.needsIndexFetch(id));
+      final failed = Map<String, String>.from(state.failedIds)
+        ..removeWhere((id, _) => !OverlayChartIds.needsIndexFetch(id));
+
+      final aggregate = history.aggregate;
+      state = state.copyWith(
+        selectedIds: selected,
+        availablePortfolios: history.portfolios,
+        series: nextSeries,
+        pendingIds: pending,
+        failedIds: failed,
+        firstWealth: aggregate.isEmpty ? null : aggregate.first.value,
+        lastWealth: aggregate.isEmpty ? null : aggregate.last.value,
+        clearWealth: aggregate.isEmpty,
+      );
+
+      final selectedIndices = selected.where(OverlayChartIds.isIndex).toList();
+      final alreadyLoading = previousSelected.where(OverlayChartIds.isIndex).toSet();
+      final extraIndices =
+          selectedIndices.where((id) => !alreadyLoading.contains(id)).toList();
+      if (extraIndices.isNotEmpty) {
+        await _loadIndices(gen, timeFrame, extraIndices);
+      }
     } catch (e) {
       if (gen != _generation) return;
       AppLogger.error('Overlay portfolio series failed', error: e);
-      state = state.copyWith(
-        pendingIds: {...state.pendingIds}..remove(OverlayChartIds.portfolio),
-        failedIds: {
-          ...state.failedIds,
-          OverlayChartIds.portfolio: 'Could not load portfolio',
-        },
-      );
+      final pending = Set<String>.from(state.pendingIds)
+        ..removeWhere((id) => !OverlayChartIds.isIndex(id));
+      final failed = Map<String, String>.from(state.failedIds);
+      for (final id in previousSelected.where((id) => !OverlayChartIds.isIndex(id))) {
+        failed[id] = 'Could not load portfolio';
+      }
+      state = state.copyWith(pendingIds: pending, failedIds: failed);
     }
   }
 

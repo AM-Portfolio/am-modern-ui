@@ -11,6 +11,7 @@ import 'package:am_dashboard_ui/domain/models/performance_response.dart';
 import 'package:am_dashboard_ui/domain/models/portfolio_overview.dart';
 import 'package:am_dashboard_ui/domain/models/top_movers_response.dart';
 import 'package:am_dashboard_ui/domain/models/overlay_chart_models.dart';
+import 'package:am_dashboard_ui/domain/models/overlay_history_parser.dart';
 
 /// STOMP destinations for per-widget dashboard streaming (gateway relay).
 class DashboardQueueDestinations {
@@ -380,20 +381,19 @@ class DashboardRepository {
 
   /// Same feed as the portfolio history chart (`GET /v1/portfolios/history`).
   /// 1D uses `/v1/portfolios/intraday`.
-  Future<List<OverlayPoint>> getPortfolioHistory(
+  Future<PortfolioOverlayHistory> getPortfolioHistory(
     ApiClient portfolioClient, {
     required String timeFrame,
   }) async {
-    final isIntraday = timeFrame == '1D';
+    final isIntraday = timeFrame.toUpperCase() == '1D';
     final path = isIntraday ? '/v1/portfolios/intraday' : '/v1/portfolios/history';
     try {
       final data = await portfolioClient.get(
         path,
         queryParams: isIntraday ? null : {'timeFrame': timeFrame},
-        
         parser: (raw) => raw,
       );
-      return _parsePortfolioOverlayPoints(data, isIntraday: isIntraday);
+      return parsePortfolioOverlayHistory(data, isIntraday: isIntraday);
     } catch (e) {
       AppLogger.error('Failed to fetch portfolio history for overlay', error: e);
       rethrow;
@@ -421,31 +421,6 @@ class DashboardRepository {
       AppLogger.error('Failed to fetch index history for overlay', error: e);
       rethrow;
     }
-  }
-
-  List<OverlayPoint> _parsePortfolioOverlayPoints(
-    dynamic data, {
-    required bool isIntraday,
-  }) {
-    final rows = _asObjectList(data);
-    final points = <OverlayPoint>[];
-    for (final row in rows) {
-      final label = _stringOf(
-        row,
-        isIntraday
-            ? const ['timestamp', 'time', 'date']
-            : const ['snapshotDate', 'date', 'timestamp'],
-      );
-      final value = _numOf(
-        row,
-        isIntraday
-            ? const ['totalWealth', 'totalUserWealth', 'close']
-            : const ['totalUserWealth', 'totalWealth', 'close'],
-      );
-      if (value == null || !value.isFinite) continue;
-      points.add(OverlayPoint(xLabel: label ?? '', value: value));
-    }
-    return points;
   }
 
   Map<String, List<OverlayPoint>> _parseIndexOverlayPoints(
