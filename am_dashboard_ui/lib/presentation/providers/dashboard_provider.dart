@@ -67,7 +67,6 @@ void dashboardParallelKickoff(
 }) {
   if (userId.isEmpty) return;
   ref.watch(dashboardStreamProvider(userId));
-  ref.watch(historyStreamProvider(userId, timeFrame: timeFrame));
   ref.watch(moversStreamProvider(userId, timeFrame: timeFrame));
   ref.watch(portfolioOverviewsProvider(userId));
   ref.watch(recentActivityProvider(userId, page: 0, size: 10));

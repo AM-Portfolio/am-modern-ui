@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:am_library/am_library.dart';
 import 'package:am_common/am_common.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_dashboard_ui/data/repositories/dashboard_json_sanitizer.dart';
@@ -11,6 +10,7 @@ import 'package:am_dashboard_ui/domain/models/dashboard_summary.dart';
 import 'package:am_dashboard_ui/domain/models/performance_response.dart';
 import 'package:am_dashboard_ui/domain/models/portfolio_overview.dart';
 import 'package:am_dashboard_ui/domain/models/top_movers_response.dart';
+import 'package:am_dashboard_ui/domain/models/overlay_chart_models.dart';
 
 /// STOMP destinations for per-widget dashboard streaming (gateway relay).
 class DashboardQueueDestinations {
@@ -376,5 +376,150 @@ class DashboardRepository {
       }
       return ActivityItem.fromJson(json);
     }).toList() ?? [];
+  }
+
+  /// Same feed as the portfolio history chart (`GET /v1/portfolios/history`).
+  /// 1D uses `/v1/portfolios/intraday`.
+  Future<List<OverlayPoint>> getPortfolioHistory(
+    ApiClient portfolioClient, {
+    required String timeFrame,
+  }) async {
+    final isIntraday = timeFrame == '1D';
+    final path = isIntraday ? '/v1/portfolios/intraday' : '/v1/portfolios/history';
+    try {
+      final data = await portfolioClient.get(
+        path,
+        queryParams: isIntraday ? null : {'timeFrame': timeFrame},
+        
+        parser: (raw) => raw,
+      );
+      return _parsePortfolioOverlayPoints(data, isIntraday: isIntraday);
+    } catch (e) {
+      AppLogger.error('Failed to fetch portfolio history for overlay', error: e);
+      rethrow;
+    }
+  }
+
+  /// Same feed as the market multi-index chart (`GET /v1/analysis/historical-charts`).
+  Future<Map<String, List<OverlayPoint>>> getIndexHistory(
+    ApiClient marketClient, {
+    required List<String> symbols,
+    required String range,
+  }) async {
+    if (symbols.isEmpty) return {};
+    try {
+      final data = await marketClient.get(
+        '/v1/analysis/historical-charts',
+        queryParams: {
+          'symbols': symbols.join(','),
+          'range': range,
+        },
+        parser: (raw) => raw,
+      );
+      return _parseIndexOverlayPoints(data, symbols);
+    } catch (e) {
+      AppLogger.error('Failed to fetch index history for overlay', error: e);
+      rethrow;
+    }
+  }
+
+  List<OverlayPoint> _parsePortfolioOverlayPoints(
+    dynamic data, {
+    required bool isIntraday,
+  }) {
+    final rows = _asObjectList(data);
+    final points = <OverlayPoint>[];
+    for (final row in rows) {
+      final label = _stringOf(
+        row,
+        isIntraday
+            ? const ['timestamp', 'time', 'date']
+            : const ['snapshotDate', 'date', 'timestamp'],
+      );
+      final value = _numOf(
+        row,
+        isIntraday
+            ? const ['totalWealth', 'totalUserWealth', 'close']
+            : const ['totalUserWealth', 'totalWealth', 'close'],
+      );
+      if (value == null || !value.isFinite) continue;
+      points.add(OverlayPoint(xLabel: label ?? '', value: value));
+    }
+    return points;
+  }
+
+  Map<String, List<OverlayPoint>> _parseIndexOverlayPoints(
+    dynamic data,
+    List<String> symbols,
+  ) {
+    final result = <String, List<OverlayPoint>>{};
+    Map<String, dynamic>? bySymbol;
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      final inner = map['data'];
+      if (inner is Map) {
+        bySymbol = Map<String, dynamic>.from(inner);
+      } else {
+        bySymbol = map;
+      }
+    }
+    if (bySymbol == null) return result;
+
+    for (final symbol in symbols) {
+      final entry = bySymbol[symbol] ??
+          bySymbol.entries
+              .where((e) => e.key.toUpperCase() == symbol.toUpperCase())
+              .map((e) => e.value)
+              .firstOrNull;
+      if (entry is! Map) continue;
+      final entryMap = Map<String, dynamic>.from(entry);
+      final rawPoints =
+          entryMap['dataPoints'] ?? entryMap['dataPoints'] ?? entryMap['data'];
+      final rows = _asObjectList(rawPoints);
+      final points = <OverlayPoint>[];
+      for (final row in rows) {
+        final label = _stringOf(row, const ['time', 'timestamp', 'date']);
+        final value = _numOf(
+          row,
+          const ['close', 'price', 'lastPrice', 'value'],
+        );
+        if (value == null || !value.isFinite) continue;
+        points.add(OverlayPoint(xLabel: label ?? '', value: value));
+      }
+      if (points.isNotEmpty) result[symbol] = points;
+    }
+    return result;
+  }
+
+  List<Map<String, dynamic>> _asObjectList(dynamic data) {
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    if (data is Map && data['data'] is List) {
+      return _asObjectList(data['data']);
+    }
+    return const [];
+  }
+
+  String? _stringOf(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) continue;
+      final text = value.toString();
+      if (text.isNotEmpty) return text;
+    }
+    return null;
+  }
+
+  double? _numOf(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+    }
+    return null;
   }
 }

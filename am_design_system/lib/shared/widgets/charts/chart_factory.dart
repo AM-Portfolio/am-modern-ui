@@ -6,6 +6,8 @@ import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/theme/app_typography.dart';
 import 'package:am_design_system/core/config/design_system_provider.dart';
 import 'chart_types.dart';
+import 'chart_axis_scale.dart';
+import 'candle_chart.dart';
 
 
 /// Factory widget for creating standardized charts
@@ -16,6 +18,7 @@ class ChartFactory extends StatelessWidget {
   final Color? primaryColor;
   final double height;
   final List<ChartLineData>? lines;
+  final List<CommonCandlePoint>? candles;
   final void Function(double min, double max)? onMinMaxCalculated;
 
   const ChartFactory({
@@ -26,6 +29,7 @@ class ChartFactory extends StatelessWidget {
     this.primaryColor,
     this.height = 300,
     this.lines,
+    this.candles,
     this.onMinMaxCalculated,
   });
 
@@ -69,6 +73,23 @@ class ChartFactory extends StatelessWidget {
     );
   }
 
+  /// Factory constructor for candlestick chart
+  factory ChartFactory.candle({
+    required List<CommonCandlePoint> candles,
+    CommonChartConfig config = const CommonChartConfig(),
+    double height = 300,
+  }) {
+    return ChartFactory(
+      type: ChartType.candle,
+      data: candles
+          .map((c) => CommonChartDataPoint(x: c.x, y: c.close, xLabel: c.xLabel))
+          .toList(),
+      candles: candles,
+      config: config,
+      height: height,
+    );
+  }
+
   /// Factory constructor for Bar Chart
   factory ChartFactory.bar({
     required List<CommonChartDataPoint> data,
@@ -94,7 +115,18 @@ class ChartFactory extends StatelessWidget {
   }
 
   Widget _buildChart(BuildContext context) {
-    if (data.isEmpty && (lines == null || lines!.isEmpty)) {
+    if (type == ChartType.candle) {
+      if (candles == null || candles!.isEmpty) {
+        return Center(
+          child: Text(
+            'No data available',
+            style: AppTypography.getTextTheme(
+              isDark: Theme.of(context).brightness == Brightness.dark,
+            ).bodyMedium,
+          ),
+        );
+      }
+    } else if (data.isEmpty && (lines == null || lines!.isEmpty)) {
       return Center(
         child: Text(
           'No data available',
@@ -116,6 +148,11 @@ class ChartFactory extends StatelessWidget {
         return _buildPieChart(context);
       case ChartType.table:
         return _buildTableChart(context);
+      case ChartType.candle:
+        return CandleChartView(
+          candles: candles ?? const [],
+          config: config,
+        );
     }
   }
 
@@ -151,9 +188,11 @@ class ChartFactory extends StatelessWidget {
     
     final bool hasMultiLines = lines != null && lines!.isNotEmpty;
 
-    // Calculate minY and maxY dynamically with 15% padding so the line doesn't hit the ceiling
+    // Rupee series (1W/1M/1Y and 1D): nice ticks + min ~8% band.
+    // Percent / small values keep a tight 15% pad.
     double? calculatedMinY;
     double? calculatedMaxY;
+    ChartAxisScale? rupeeScale;
     if (data.isNotEmpty || hasMultiLines) {
       double minVal = double.infinity;
       double maxVal = double.negativeInfinity;
@@ -173,16 +212,25 @@ class ChartFactory extends StatelessWidget {
       }
 
       if (minVal != double.infinity && maxVal != double.negativeInfinity) {
-        final double range = (maxVal - minVal).abs();
-        double padding = range == 0 ? maxVal.abs() * 0.15 : range * 0.15;
-        if (padding == 0) padding = 1.0; // Prevent min==max when all values are 0
-        
-        calculatedMinY = minVal - padding;
-        calculatedMaxY = maxVal + padding;
+        if (config.minY != null && config.maxY != null) {
+          calculatedMinY = config.minY;
+          calculatedMaxY = config.maxY;
+        } else if (minVal.abs() >= 1000 || maxVal.abs() >= 1000) {
+          rupeeScale = ChartAxisScale.fromValues([minVal, maxVal]);
+          calculatedMinY = rupeeScale.minY;
+          calculatedMaxY = rupeeScale.maxY;
+        } else {
+          final double range = (maxVal - minVal).abs();
+          double padding = range == 0 ? maxVal.abs() * 0.15 : range * 0.15;
+          if (padding == 0) padding = 1.0; // Prevent min==max when all values are 0
 
-        // If all values are non-negative, don't let minY go below 0 (unless we want to show negative drops)
-        if (minVal >= 0 && calculatedMinY! < 0) {
-          calculatedMinY = 0;
+          calculatedMinY = minVal - padding;
+          calculatedMaxY = maxVal + padding;
+
+          // If all values are non-negative, don't let minY go below 0 (unless we want to show negative drops)
+          if (minVal >= 0 && calculatedMinY! < 0) {
+            calculatedMinY = 0;
+          }
         }
       }
     } // end of: if (data.isNotEmpty || hasMultiLines)
@@ -194,7 +242,11 @@ class ChartFactory extends StatelessWidget {
     }
 
     double? calculatedYInterval;
-    if (calculatedMinY != null && calculatedMaxY != null) {
+    if (config.yInterval != null && config.yInterval! > 0) {
+      calculatedYInterval = config.yInterval;
+    } else if (rupeeScale != null) {
+      calculatedYInterval = rupeeScale.step;
+    } else if (calculatedMinY != null && calculatedMaxY != null) {
       final double range = calculatedMaxY! - calculatedMinY!;
       if (range > 0) {
         if (range <= 10) calculatedYInterval = 2;
@@ -275,6 +327,7 @@ class ChartFactory extends StatelessWidget {
         gridData: FlGridData(
           show: config.showGrid,
           drawVerticalLine: false,
+          horizontalInterval: calculatedYInterval,
           getDrawingHorizontalLine: (value) => FlLine(
             color: gridColor,
             strokeWidth: 1,
@@ -315,7 +368,7 @@ class ChartFactory extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               interval: calculatedYInterval, // Use calculated interval for clean spacing
-              reservedSize: 48,
+              reservedSize: 52,
               getTitlesWidget: (value, meta) {
                 // Hide exact min/max if they don't align with our interval to prevent overlapping labels
                 if (calculatedYInterval != null && (value == calculatedMinY || value == calculatedMaxY)) {
@@ -422,7 +475,8 @@ class ChartFactory extends StatelessWidget {
           ),
         ),
       ),
-      duration: config.animate ? config.animationDuration : Duration.zero,
+      // Don't lerp minY from the previous timeframe (1D vs 1W) or the axis stays cropped.
+      duration: Duration.zero,
       curve: Curves.easeInOutCubic,
     );
 

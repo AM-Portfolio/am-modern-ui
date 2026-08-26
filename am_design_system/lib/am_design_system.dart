@@ -129,6 +129,7 @@ export 'shared/widgets/tables/paginated_sortable_table.dart';
 export 'shared/widgets/tables/adaptive_data_table.dart';
 export 'shared/widgets/charts/chart_factory.dart';
 export 'shared/widgets/charts/chart_types.dart';
+export 'shared/widgets/charts/chart_axis_scale.dart';
 
 // Portfolio Charts & Models
 export 'shared/widgets/portfolio_overview/models/portfolio_overview_data.dart';
