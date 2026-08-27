@@ -125,10 +125,14 @@ class DrawerIndexCard extends StatelessWidget {
 
               // Change Detail
               Text(
-                '$timeframe change: $sign${displayChange.toStringAsFixed(2)}',
+                data.suspended
+                    ? 'Suspended / no live ticks'
+                    : '$timeframe change: $sign${displayChange.toStringAsFixed(2)}',
                 style: TextStyle(
                   fontSize: isMobile ? 10 : 12,
-                  color: accentColor,
+                  color: data.suspended
+                      ? MarketColors.textMuted(context)
+                      : accentColor,
                   fontWeight: FontWeight.bold,
                 ),
                 maxLines: 1,
