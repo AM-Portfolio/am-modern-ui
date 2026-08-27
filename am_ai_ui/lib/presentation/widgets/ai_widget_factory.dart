@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:am_common/am_common.dart' as common;
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../data/ai_intent_response.dart';
@@ -12,6 +14,8 @@ class AiWidgetFactory {
     switch (response.widgetId) {
       case 'PORTFOLIO_SUMMARY':
         return _PortfolioSummaryCard(widgetParams: response.widgetParams);
+      case 'ORDER_PREVIEW':
+        return _OrderPreviewCard(widgetParams: response.widgetParams);
       case 'BASKET_CARD':
         return _BasketCard(widgetParams: response.widgetParams);
       case 'HOLDINGS_TABLE':
@@ -769,6 +773,95 @@ class _ErrorBanner extends StatelessWidget {
               style: TextStyle(color: context.textSecondary, fontSize: 10),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+
+
+class _OrderPreviewCard extends StatefulWidget {
+  final Map<String, dynamic> widgetParams;
+  const _OrderPreviewCard({required this.widgetParams});
+  @override
+  State<_OrderPreviewCard> createState() => _OrderPreviewCardState();
+}
+
+class _OrderPreviewCardState extends State<_OrderPreviewCard> {
+  bool _confirmed = false;
+  bool _loading = false;
+  String? _error;
+
+  Future<void> _confirmOrder() async {
+    final token = widget.widgetParams['confirmToken'];
+    if (token == null) return;
+    setState(() { _loading = true; _error = null; });
+    try {
+      final dio = Dio(BaseOptions(baseUrl: common.EnvDomains.ai));
+      await dio.post('/v1/ai/actions/confirm', data: {'confirmToken': token});
+      setState(() { _confirmed = true; _loading = false; });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = widget.widgetParams['data']?['order'] ?? widget.widgetParams['order'] ?? {};
+    final symbol = data['symbol'] ?? 'Unknown';
+    final action = data['action'] ?? 'BUY';
+    final qty = data['quantity'] ?? 1;
+    final val = data['totalValue'] ?? 0.0;
+    final token = widget.widgetParams['confirmToken'];
+    
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.tradeAccent.withValues(alpha: 0.4), width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.gavel_rounded, color: AppColors.tradeAccent),
+              const SizedBox(width: 8),
+              Text('Smart Order Preview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text('$action $qty shares of $symbol', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text('Estimated Value: ₹$val', style: TextStyle(fontSize: 14, color: context.textSecondary)),
+          const SizedBox(height: 16),
+          if (_error != null)
+            Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(_error!, style: TextStyle(color: AppColors.error, fontSize: 12))),
+          if (_confirmed)
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: AppColors.profit.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+              child: Row(children: [
+                Icon(Icons.check_circle, color: AppColors.profit),
+                const SizedBox(width: 8),
+                Text('Order Placed Successfully!', style: TextStyle(color: AppColors.profit, fontWeight: FontWeight.bold))
+              ]),
+            )
+          else if (token != null)
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.tradeAccent, foregroundColor: Colors.white),
+                    onPressed: _loading ? null : _confirmOrder,
+                    child: _loading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Confirm Order'),
+                  ),
+                ),
+              ],
+            )
         ],
       ),
     );
