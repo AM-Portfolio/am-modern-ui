@@ -293,6 +293,8 @@ class _DashboardMobileScreenState
                         children: [
                           // 1 — Summary metrics and Performance Chart
                           dashboardAsync.when(
+                            skipLoadingOnReload: true,
+                            skipLoadingOnRefresh: true,
                             data: (summary) =>
                                 DashboardSummaryWidget(summary: summary),
                             loading: _buildSummaryLoading,

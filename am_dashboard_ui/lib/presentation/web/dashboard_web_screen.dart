@@ -270,6 +270,8 @@ class DashboardWebScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
                     dashboardAsync.when(
+                      skipLoadingOnReload: true,
+                      skipLoadingOnRefresh: true,
                       data: (summary) => DashboardSummaryWidget(summary: summary),
                       loading: () => _buildSummaryLoading(context),
                       error: (err, stack) => AmErrorWidget(

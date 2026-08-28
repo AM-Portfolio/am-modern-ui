@@ -51,6 +51,8 @@ class DashboardPage extends ConsumerWidget {
             padding: const EdgeInsets.all(16.0),
             sliver: SliverToBoxAdapter(
               child: dashboardAsync.when(
+                skipLoadingOnReload: true,
+                skipLoadingOnRefresh: true,
                 data: (summary) => DashboardSummaryWidget(summary: summary),
                 loading: () => const SkeletonBox(height: 200),
                 error: (err, stack) => AmErrorWidget(

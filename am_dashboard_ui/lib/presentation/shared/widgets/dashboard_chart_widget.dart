@@ -48,43 +48,59 @@ class DashboardChartWidget extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
+                // Value + series chips share one row (chips stay on the right).
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Flexible(
-                      child: Text(
-                        lastWealth == null ? '—' : currency.format(lastWealth),
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: colors.textPrimary,
-                          fontFamily: 'Inter',
-                          letterSpacing: -0.5,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              lastWealth == null
+                                  ? '—'
+                                  : currency.format(lastWealth),
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: colors.textPrimary,
+                                fontFamily: 'Inter',
+                                letterSpacing: -0.5,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (returnPct != null) ...[
+                            const SizedBox(width: 8),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Text(
+                                '${isPositive ? '+' : ''}${returnPct.toStringAsFixed(2)}%',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isPositive
+                                      ? colors.statusSuccess
+                                      : colors.statusError,
+                                  fontFamily: 'Inter',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    if (returnPct != null) ...[
-                      const SizedBox(width: 8),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          '${isPositive ? '+' : ''}${returnPct.toStringAsFixed(2)}%',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isPositive
-                                ? colors.statusSuccess
-                                : colors.statusError,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      flex: 2,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: _LegendRow(overlay: overlay, state: state),
                       ),
-                    ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                _LegendRow(overlay: overlay, state: state),
                 const SizedBox(height: 12),
                 Expanded(
                   child: _ChartBody(state: state),
@@ -120,64 +136,70 @@ class _LegendRow extends StatelessWidget {
             remainingPortfolios.isNotEmpty ||
             remainingIndices.isNotEmpty);
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        for (final id in state.selectedIds)
-          _SeriesChip(
-            label: _labelFor(state, id),
-            color: _seriesColor(context, id, state.selectedIds),
-            pending: state.pendingIds.contains(id),
-            failed: state.failedIds[id],
-            removable: true,
-            onRemove: () => overlay.removeSeries(id),
-            onRetry: () => overlay.retry(id),
-          ),
-        if (canAdd)
-          PopupMenuButton<String>(
-            tooltip: 'Add series',
-            onSelected: overlay.addSeries,
-            itemBuilder: (context) {
-              final items = <PopupMenuEntry<String>>[
-                if (remainingOverall)
-                  const PopupMenuItem(
-                    value: OverlayChartIds.overall,
-                    child: Text(OverlayChartIds.overall),
-                  ),
-                for (final p in remainingPortfolios)
-                  PopupMenuItem(value: p.id, child: Text(p.label)),
-              ];
-              if (items.isNotEmpty && remainingIndices.isNotEmpty) {
-                items.add(const PopupMenuDivider());
-              }
-              for (final id in remainingIndices) {
-                items.add(
-                  PopupMenuItem(
-                    value: id,
-                    child: Semantics(
-                      button: true,
-                      label: id,
-                      child: Text(id),
+    // Keep chips on one horizontal strip (scroll if needed) so they stay
+    // on the Performance value row instead of wrapping underneath.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      reverse: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final id in state.selectedIds) ...[
+            _SeriesChip(
+              label: _labelFor(state, id),
+              color: _seriesColor(context, id, state.selectedIds),
+              pending: state.pendingIds.contains(id),
+              failed: state.failedIds[id],
+              removable: true,
+              onRemove: () => overlay.removeSeries(id),
+              onRetry: () => overlay.retry(id),
+            ),
+            const SizedBox(width: 8),
+          ],
+          if (canAdd)
+            PopupMenuButton<String>(
+              tooltip: 'Add series',
+              onSelected: overlay.addSeries,
+              itemBuilder: (context) {
+                final items = <PopupMenuEntry<String>>[
+                  if (remainingOverall)
+                    const PopupMenuItem(
+                      value: OverlayChartIds.overall,
+                      child: Text(OverlayChartIds.overall),
                     ),
-                  ),
-                );
-              }
-              return items;
-            },
-            child: Semantics(
-              button: true,
-              label: 'Add series',
-              child: Chip(
-                visualDensity: VisualDensity.compact,
-                label: const Text('+'),
-                backgroundColor: colors.actionPrimaryBg.withValues(alpha: 0.08),
-                side: BorderSide(color: colors.border),
+                  for (final p in remainingPortfolios)
+                    PopupMenuItem(value: p.id, child: Text(p.label)),
+                ];
+                if (items.isNotEmpty && remainingIndices.isNotEmpty) {
+                  items.add(const PopupMenuDivider());
+                }
+                for (final id in remainingIndices) {
+                  items.add(
+                    PopupMenuItem(
+                      value: id,
+                      child: Semantics(
+                        button: true,
+                        label: id,
+                        child: Text(id),
+                      ),
+                    ),
+                  );
+                }
+                return items;
+              },
+              child: Semantics(
+                button: true,
+                label: 'Add series',
+                child: Chip(
+                  visualDensity: VisualDensity.compact,
+                  label: const Text('+'),
+                  backgroundColor: colors.actionPrimaryBg.withValues(alpha: 0.08),
+                  side: BorderSide(color: colors.border),
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 

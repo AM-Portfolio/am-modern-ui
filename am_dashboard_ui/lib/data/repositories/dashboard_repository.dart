@@ -169,6 +169,7 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/summary',
+        timeout: const Duration(seconds: 45),
         parser: (data) {
           try {
             return DashboardSummary.fromJson(

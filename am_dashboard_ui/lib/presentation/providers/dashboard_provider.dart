@@ -114,8 +114,52 @@ void retryDashboardSummary(WidgetRef ref, String userId) {
 }
 
 Future<Map<String, dynamic>> _loadPortfolioSummaryFallback(Ref ref) async {
-  // Always refresh so a previous keepAlive failure cannot poison summary.
-  return ref.refresh(portfolioSummaryFallbackProvider.future);
+  // Prefer cached success. Only invalidate+retry when the keepAlive is in error
+  // — always calling refresh() races when summary/overviews/history fall back
+  // together and intermittently fails the header.
+  final cached = ref.read(portfolioSummaryFallbackProvider);
+  if (cached.hasValue) return cached.requireValue;
+  if (cached.hasError) {
+    ref.invalidate(portfolioSummaryFallbackProvider);
+  }
+  return ref.read(portfolioSummaryFallbackProvider.future);
+}
+
+Future<DashboardSummary> _resolveDashboardSummary(
+  Ref ref,
+  DashboardRepository repository,
+  String userId,
+) async {
+  final portfolioFallback = _loadPortfolioSummaryFallback(ref)
+      .then(_dashboardSummaryFromPortfolioRaw);
+
+  try {
+    return await repository
+        .getSummary(userId)
+        .timeout(const Duration(seconds: 20));
+  } catch (e) {
+    AppLogger.warning(
+      'Failed to get summary from analysis service. Trying fallback to portfolio service...',
+      error: e,
+    );
+    try {
+      return await portfolioFallback.timeout(const Duration(seconds: 20));
+    } catch (fallbackError) {
+      // Last chance: fresh portfolio fetch (clears a poisoned keepAlive).
+      ref.invalidate(portfolioSummaryFallbackProvider);
+      try {
+        final raw = await ref.read(portfolioSummaryFallbackProvider.future)
+            .timeout(const Duration(seconds: 25));
+        return _dashboardSummaryFromPortfolioRaw(raw);
+      } catch (finalError) {
+        AppLogger.error(
+          'Dashboard summary fallback also failed',
+          error: finalError,
+        );
+        rethrow;
+      }
+    }
+  }
 }
 
 List<PortfolioOverview> _portfolioOverviewsFromPortfolioRaw(
@@ -220,41 +264,16 @@ PerformanceResponse _generatePerformanceFromSummary(double totalValue, double to
 @riverpod
 Future<DashboardSummary> dashboardSummary(Ref ref, String userId) async {
   final repository = await ref.watch(dashboardRepositoryProvider.future);
-  try {
-    return await repository.getSummary(userId);
-  } catch (e) {
-    AppLogger.warning(
-      'Failed to get dashboard summary from analysis service. Using portfolio service fallback.',
-      error: e,
-    );
-    final rawData = await _loadPortfolioSummaryFallback(ref);
-    return _dashboardSummaryFromPortfolioRaw(rawData);
-  }
+  return _resolveDashboardSummary(ref, repository, userId);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
   if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
 
-  DashboardSummary summary;
-  try {
-    summary = await repository.getSummary(userId);
-  } catch (e) {
-    AppLogger.warning(
-      'Failed to get summary from analysis service. Trying fallback to portfolio service...',
-      error: e,
-    );
-    try {
-      final rawData = await _loadPortfolioSummaryFallback(ref);
-      summary = _dashboardSummaryFromPortfolioRaw(rawData);
-    } catch (fallbackError) {
-      AppLogger.error('Dashboard summary fallback also failed', error: fallbackError);
-      rethrow;
-    }
-  }
-
+  final summary = await _resolveDashboardSummary(ref, repository, userId);
   yield summary;
 
   _attachDashboardStreaming(ref, userId);
