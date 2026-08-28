@@ -108,6 +108,20 @@ void main() {
         history.byPortfolioId[zerodhaA]!.map((p) => p.value).toList(),
         [55.0, 56.0],
       );
+      for (final point in history.byPortfolioId[zerodhaA]!) {
+        expect(DateTime.tryParse(point.xLabel), isNotNull);
+        expect(point.xLabel, contains('T09:'));
+      }
+    });
+
+    test('daily history uses yyyy-MM-dd xLabels', () {
+      final history = parsePortfolioOverlayHistory(
+        twoZerodhaDays(),
+        isIntraday: false,
+      );
+      for (final point in history.aggregate) {
+        expect(point.xLabel, matches(RegExp(r'^\d{4}-\d{2}-\d{2}$')));
+      }
     });
 
     test('does not use a UUID as the visible portfolio name', () {
@@ -247,6 +261,24 @@ void main() {
       );
       expect(kept, hasLength(OverlayChartIds.maxVisibleLines));
       expect(kept.contains(OverlayChartIds.sensex), isFalse);
+    });
+  });
+
+  group('normalizeOverlayTimestamp', () {
+    test('time-only intraday becomes ISO datetime', () {
+      final normalized = normalizeOverlayTimestamp(
+        '09:15',
+        isIntraday: true,
+        referenceDate: DateTime(2026, 8, 26),
+      );
+      expect(normalized, '2026-08-26T09:15:00');
+    });
+
+    test('daily date stays yyyy-MM-dd', () {
+      expect(
+        normalizeOverlayTimestamp('2026-08-20', isIntraday: false),
+        '2026-08-20',
+      );
     });
   });
 

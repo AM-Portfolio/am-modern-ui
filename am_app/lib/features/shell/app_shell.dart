@@ -73,7 +73,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   void dispose() {
     _bottomNavHideTimer?.cancel();
     _marketGateSubscription?.cancel();
-    _stopMarketStreamingGate();
+    _marketGateSubscription = null;
     _bottomNavController.dispose();
     super.dispose();
   }
@@ -93,11 +93,11 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     });
   }
 
-  void _stopMarketStreamingGate() {
+  void _resetMarketStreamingGate() {
     _marketGateSubscription?.cancel();
     _marketGateSubscription = null;
     if (GetIt.instance.isRegistered<common.MarketStreamingGate>()) {
-      GetIt.instance<common.MarketStreamingGate>().stop();
+      GetIt.instance<common.MarketStreamingGate>().reset();
     }
   }
 
@@ -456,7 +456,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
               common.AppLogger.info(
                 'AppShell: AuthState changed to Unauthenticated. Disconnecting STOMP...',
               );
-              _stopMarketStreamingGate();
+              _resetMarketStreamingGate();
               unawaited(_clearFeatureFlagAttributes());
               stompCubit.onConnected = null;
               stompCubit.updateToken(null);

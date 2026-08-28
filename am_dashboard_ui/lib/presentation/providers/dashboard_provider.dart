@@ -16,6 +16,24 @@ import 'package:am_library/am_library.dart';
 
 part 'dashboard_provider.g.dart';
 
+/// Waits for auth restore on reload — route may pass empty userId while session
+/// is still loading from secure storage.
+@riverpod
+Future<String> dashboardSessionUserId(Ref ref, String routeUserId) async {
+  if (routeUserId.isNotEmpty) return routeUserId;
+  for (var attempt = 0; attempt < 100; attempt++) {
+    final id = await UserContext.instance.userId;
+    if (id != null && id.isNotEmpty) return id;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  throw StateError('Dashboard session not ready');
+}
+
+Future<String> _requireDashboardUserId(Ref ref, String userId) async {
+  if (userId.isNotEmpty) return userId;
+  return ref.watch(dashboardSessionUserIdProvider('').future);
+}
+
 @Riverpod(keepAlive: true)
 Future<DashboardRepository> dashboardRepository(Ref ref) async {
   final apiClient = await ref.watch(analysisApiClientProvider.future);
@@ -269,14 +287,14 @@ Future<DashboardSummary> dashboardSummary(Ref ref, String userId) async {
 
 @Riverpod(keepAlive: true)
 Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
-  if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
+  final resolvedUserId = await _requireDashboardUserId(ref, userId);
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
 
-  final summary = await _resolveDashboardSummary(ref, repository, userId);
+  final summary = await _resolveDashboardSummary(ref, repository, resolvedUserId);
   yield summary;
 
-  _attachDashboardStreaming(ref, userId);
+  _attachDashboardStreaming(ref, resolvedUserId);
   try {
     await for (final next in repository.watchSummary()) {
       yield next;
@@ -335,20 +353,20 @@ Stream<AllocationResponse> allocationStream(Ref ref, String userId) async* {
 
 @riverpod
 Stream<TopMoversResponse> moversStream(Ref ref, String userId, {String timeFrame = '1D'}) async* {
-  if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
+  final resolvedUserId = await _requireDashboardUserId(ref, userId);
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   
   TopMoversResponse movers = TopMoversResponse(timeFrame: timeFrame, gainers: [], losers: []);
   try {
-    movers = await repository.getTopMovers(userId, timeFrame: timeFrame);
+    movers = await repository.getTopMovers(resolvedUserId, timeFrame: timeFrame);
   } catch (e) {
     AppLogger.warning('Failed to get top movers from analysis service', error: e);
   }
   
   yield movers;
 
-  _attachDashboardStreaming(ref, userId);
+  _attachDashboardStreaming(ref, resolvedUserId);
   try {
     yield* repository.watchMovers(timeFrame: timeFrame);
   } catch (e) {

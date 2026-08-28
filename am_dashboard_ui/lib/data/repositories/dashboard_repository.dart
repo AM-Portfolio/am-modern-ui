@@ -439,7 +439,7 @@ class DashboardRepository {
         },
         parser: (raw) => raw,
       );
-      return _parseIndexOverlayPoints(data, symbols);
+      return _parseIndexOverlayPoints(data, symbols, range: range);
     } catch (e) {
       AppLogger.error('Failed to fetch index history for overlay', error: e);
       rethrow;
@@ -448,8 +448,9 @@ class DashboardRepository {
 
   Map<String, List<OverlayPoint>> _parseIndexOverlayPoints(
     dynamic data,
-    List<String> symbols,
-  ) {
+    List<String> symbols, {
+    required String range,
+  }) {
     final result = <String, List<OverlayPoint>>{};
     Map<String, dynamic>? bySymbol;
     if (data is Map) {
@@ -482,7 +483,13 @@ class DashboardRepository {
           const ['close', 'price', 'lastPrice', 'value'],
         );
         if (value == null || !value.isFinite) continue;
-        points.add(OverlayPoint(xLabel: label ?? '', value: value));
+        final isIntraday = range.toUpperCase() == '1D';
+        points.add(
+          OverlayPoint(
+            xLabel: normalizeOverlayTimestamp(label ?? '', isIntraday: isIntraday),
+            value: value,
+          ),
+        );
       }
       if (points.isNotEmpty) result[symbol] = points;
     }

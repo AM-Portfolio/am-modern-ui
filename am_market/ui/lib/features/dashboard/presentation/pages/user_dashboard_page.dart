@@ -17,7 +17,6 @@ import 'package:am_market_ui/features/market/widgets/pinned_indices_grid.dart';
 import 'package:am_market_ui/features/market/widgets/all_indices_drawer.dart';
 import 'package:am_market_ui/features/market/widgets/all_indices_bottom_sheet.dart';
 import '../widgets/top_movers_widget_v2.dart';
-import 'package:am_market_ui/features/market_analysis/presentation/widgets/multi_index_chart.dart';
 import 'package:am_market_common/services/api_service.dart';
 
 /// User Dashboard page with API-driven features
@@ -996,17 +995,21 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     // Multi-Index Chart
                     SizedBox(
                       height: isMobile ? 280 : 400,
-                      child: MultiIndexChart(
-                        historicalData: historicalData,
-                        selectedIndices: selectedIndicesForChart,
-                        isLoading: isLoadingChart,
-                        error: chartError,
-                        isBarChart: isBarChart,
-                        onRemoveIndex: (symbol) {
-                          setState(() {
-                            selectedIndicesForChart = List.from(selectedIndicesForChart)..remove(symbol);
-                          });
-                        },
+                      child: ComparisonChartView(
+                        data: MultiSeriesChartData.fromLegacyMaps(historicalData),
+                        config: MultiSeriesChartConfig(
+                          selectedSeries: selectedIndicesForChart,
+                          isLoading: isLoadingChart,
+                          error: chartError,
+                          isBarChart: isBarChart,
+                          onRemoveSeries: (symbol) {
+                            setState(() {
+                              selectedIndicesForChart =
+                                  List.from(selectedIndicesForChart)
+                                    ..remove(symbol);
+                            });
+                          },
+                        ),
                       ),
                     ),
                   ],

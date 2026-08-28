@@ -117,22 +117,30 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
 
       final nextSeries = Map<String, OverlaySeries>.from(state.series);
       nextSeries.removeWhere((id, _) => !OverlayChartIds.isIndex(id));
-      final overallPct = toPercentPoints(history.aggregate);
+      final overallRaw = history.aggregate
+          .where((p) => p.value.isFinite && p.value > 0)
+          .toList();
+      final overallPct = toPercentPoints(overallRaw);
       if (overallPct.length >= 2) {
         nextSeries[OverlayChartIds.overall] = OverlaySeries(
           id: OverlayChartIds.overall,
           label: OverlayChartIds.overall,
           points: overallPct,
+          rawPoints: overallRaw,
         );
       }
       for (final ref in history.portfolios) {
         final raw = history.byPortfolioId[ref.id] ?? const <OverlayPoint>[];
-        final percent = toPercentPoints(raw);
+        final rawFinite = raw
+            .where((p) => p.value.isFinite && p.value > 0)
+            .toList();
+        final percent = toPercentPoints(rawFinite);
         if (percent.length >= 2) {
           nextSeries[ref.id] = OverlaySeries(
             id: ref.id,
             label: ref.label,
             points: percent,
+            rawPoints: rawFinite,
           );
         }
       }
@@ -198,12 +206,16 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
       for (final symbol in symbols) {
         pending.remove(symbol);
         final raw = bySymbol[symbol] ?? const <OverlayPoint>[];
-        final percent = toPercentPoints(raw);
+        final rawFinite = raw
+            .where((p) => p.value.isFinite && p.value > 0)
+            .toList();
+        final percent = toPercentPoints(rawFinite);
         if (percent.length >= 2) {
           nextSeries[symbol] = OverlaySeries(
             id: symbol,
             label: symbol,
             points: percent,
+            rawPoints: rawFinite,
           );
           failed.remove(symbol);
         } else {

@@ -1,3 +1,5 @@
+import 'package:am_design_system/am_design_system.dart';
+
 class OverlayPoint {
   const OverlayPoint({required this.xLabel, required this.value});
 
@@ -10,11 +12,17 @@ class OverlaySeries {
     required this.id,
     required this.label,
     required this.points,
+    this.rawPoints,
   });
 
   final String id;
   final String label;
+
+  /// Percent-normalized points (baseline = first valid value).
   final List<OverlayPoint> points;
+
+  /// Raw wealth/close values for chart rendering (MultiIndexChart normalizes to %).
+  final List<OverlayPoint>? rawPoints;
 }
 
 class OverlayPortfolioRef {
@@ -146,6 +154,18 @@ List<OverlayPoint> toPercentPoints(List<OverlayPoint> raw) {
       ),
   ];
 }
+
+/// Machine-parseable timestamp for comparison chart union alignment.
+String normalizeOverlayTimestamp(
+  String raw, {
+  required bool isIntraday,
+  DateTime? referenceDate,
+}) =>
+    MultiSeriesChartTime.normalize(
+      raw,
+      isIntraday: isIntraday,
+      referenceDate: referenceDate,
+    );
 
 const _monthAbbr = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',

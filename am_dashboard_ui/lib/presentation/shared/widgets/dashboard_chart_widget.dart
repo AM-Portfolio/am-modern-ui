@@ -1,4 +1,5 @@
 import 'package:am_dashboard_ui/domain/models/overlay_chart_models.dart';
+import 'package:am_dashboard_ui/domain/models/overlay_series_adapter.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +49,6 @@ class DashboardChartWidget extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                // Value + series chips share one row (chips stay on the right).
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -136,8 +136,6 @@ class _LegendRow extends StatelessWidget {
             remainingPortfolios.isNotEmpty ||
             remainingIndices.isNotEmpty);
 
-    // Keep chips on one horizontal strip (scroll if needed) so they stay
-    // on the Performance value row instead of wrapping underneath.
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       reverse: true,
@@ -279,31 +277,8 @@ class _ChartBody extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final lines = <ChartLineData>[];
-    for (final id in state.selectedIds) {
-      final series = state.series[id];
-      if (series == null || series.points.length < 2) continue;
-      lines.add(
-        ChartLineData(
-          label: series.label,
-          points: [
-            for (var i = 0; i < series.points.length; i++)
-              CommonChartDataPoint(
-                x: i.toDouble(),
-                y: series.points[i].value,
-                xLabel: shortOverlayXLabel(
-                  series.points[i].xLabel,
-                  preferTime: state.timeFrame.toUpperCase() == '1D',
-                ),
-                yLabel: formatOverlayPercent(series.points[i].value),
-              ),
-          ],
-          color: _seriesColor(context, id, state.selectedIds),
-        ),
-      );
-    }
-
-    if (lines.isEmpty) {
+    final selectedLabels = overlaySelectedLabels(state);
+    if (selectedLabels.isEmpty) {
       return Center(
         child: Text(
           'No overlay data for ${state.timeFrame}',
@@ -316,143 +291,11 @@ class _ChartBody extends StatelessWidget {
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final available = constraints.maxHeight.isFinite
-            ? constraints.maxHeight
-            : 240.0;
-        final height = available > 8 ? available - 8 : available;
-        final ys = <double>[
-          for (final line in lines)
-            for (final p in line.points)
-              if (p.y.isFinite) p.y,
-        ];
-        final axis = ChartAxisScale.fromValues(
-          ys,
-          minBandFraction: 0.2,
-          targetTicks: 4,
-        );
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 64),
-              child: ChartFactory.area(
-                data: const [],
-                lines: lines,
-                color: colors.actionPrimaryBg,
-                height: height,
-                config: CommonChartConfig(
-                  showTitles: true,
-                  showLegend: false,
-                  minY: axis.minY,
-                  maxY: axis.maxY,
-                  yInterval: axis.step,
-                  formatYLabel: formatOverlayAxisPercent,
-                ),
-              ),
-            ),
-            for (final badge in _endValueBadges(
-              lines,
-              axis,
-              height,
-              colors.actionPrimaryBg,
-            ))
-              badge,
-          ],
-        );
-      },
-    );
-  }
-}
-
-CommonChartDataPoint? _lastFinitePoint(List<CommonChartDataPoint> points) {
-  for (var i = points.length - 1; i >= 0; i--) {
-    if (points[i].y.isFinite) return points[i];
-  }
-  return null;
-}
-
-List<Widget> _endValueBadges(
-  List<ChartLineData> lines,
-  ChartAxisScale axis,
-  double height,
-  Color fallback,
-) {
-  final seen = <String>{};
-  final badges = <Widget>[];
-  var stack = 0;
-  for (final line in lines) {
-    final last = _lastFinitePoint(line.points);
-    if (last == null) continue;
-    final label = last.yLabel ?? formatOverlayPercent(last.y);
-    final key = '${label}_${last.y.toStringAsFixed(2)}';
-    if (!seen.add(key)) continue;
-    badges.add(
-      _EndValueBadge(
-        lastPoint: last,
-        minY: axis.minY,
-        maxY: axis.maxY,
-        chartHeight: height,
-        color: line.color ?? fallback,
-        stackIndex: stack++,
-      ),
-    );
-  }
-  return badges;
-}
-
-class _EndValueBadge extends StatelessWidget {
-  const _EndValueBadge({
-    required this.lastPoint,
-    required this.minY,
-    required this.maxY,
-    required this.chartHeight,
-    required this.color,
-    this.stackIndex = 0,
-  });
-
-  final CommonChartDataPoint lastPoint;
-  final double minY;
-  final double maxY;
-  final double chartHeight;
-  final Color color;
-  final int stackIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    const topReserved = 16.0;
-    const bottomReserved = 28.0;
-    final drawingHeight = chartHeight - topReserved - bottomReserved;
-    final range = maxY - minY;
-    final fromBottom = range == 0 ? 0.5 : (lastPoint.y - minY) / range;
-    final topPixels = topReserved + (drawingHeight * (1 - fromBottom));
-    final nudge = stackIndex * 22.0;
-    final label = lastPoint.yLabel ?? formatOverlayPercent(lastPoint.y);
-    final minTop = topReserved;
-    final maxTop = chartHeight - bottomReserved - 20;
-
-    return Positioned(
-      top: (topPixels - 11 + nudge).clamp(minTop, maxTop),
-      right: 4,
-      child: Semantics(
-        label: 'End ${lastPoint.xLabel ?? ''} $label',
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Inter',
-            ),
-          ),
-        ),
+    return ComparisonChartView(
+      data: overlayStateToChartData(state),
+      config: MultiSeriesChartConfig(
+        preferredSeriesOrder: overlaySelectedLabels(state),
+        embedMode: true,
       ),
     );
   }
