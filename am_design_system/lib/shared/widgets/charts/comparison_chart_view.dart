@@ -27,6 +27,13 @@ class ComparisonChartView extends StatelessWidget {
           error: config.error,
           isBarChart: config.isBarChart,
           onRemoveIndex: config.onRemoveSeries,
+          timeFrameCode: config.timeFrameCode,
+          headerLeading: config.headerLeading,
+          legendTrailing: config.legendTrailing,
+          showExpandButton: config.showExpandButton,
+          onOpenExpanded: config.onOpenExpanded,
+          expandedChartPath: config.expandedChartPath,
+          showEndValuePills: config.showEndValuePills,
         ),
     };
 

@@ -42,6 +42,7 @@ export 'core/cache/cache_provider.dart';
 
 // Navigation Logic
 export 'core/navigation/swipe_navigation_controller.dart';
+export 'core/navigation/app_web_navigation.dart';
 
 // Module System
 export 'core/module/i_module.dart';

@@ -602,6 +602,7 @@ final userId =
                                   isDarkMode: isDark,
                                   userName: authState.user.displayName,
                                   visibleCount: 5,
+                                  moduleShareUrls: AppRoutes.navTitleToDefaultPath,
                                   onNavigate: (title) =>
                                       _onGlobalNavigate(title, userId),
                                   items: [

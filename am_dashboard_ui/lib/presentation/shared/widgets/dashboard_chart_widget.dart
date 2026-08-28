@@ -1,10 +1,11 @@
 import 'package:am_dashboard_ui/domain/models/overlay_chart_models.dart';
 import 'package:am_dashboard_ui/domain/models/overlay_series_adapter.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import 'glass_card.dart';
 
 /// Overlay chart of portfolio wealth vs selected indices (% from first point).
@@ -20,11 +21,11 @@ class DashboardChartWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final overlay = ref.watch(dashboardOverlayProvider(userId).notifier);
     final state = ref.watch(dashboardOverlayProvider(userId));
-    final colors = context.colors;
-    final currency = NumberFormat.compactCurrency(symbol: '₹', decimalDigits: 1);
-    final lastWealth = state.lastWealth;
-    final returnPct = state.wealthReturnPct;
-    final isPositive = (returnPct ?? 0) >= 0;
+    final tfCode = dashboardTimeFrameCode(ref);
+    final selectedLabels = overlaySelectedLabels(state);
+    final expandPath = selectedLabels.isEmpty
+        ? null
+        : _chartComparePath(tfCode, selectedLabels);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -36,86 +37,27 @@ class DashboardChartWidget extends ConsumerWidget {
           height: height,
           child: AmGlassCard(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Performance',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: colors.textSecondary,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              lastWealth == null
-                                  ? '—'
-                                  : currency.format(lastWealth),
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: colors.textPrimary,
-                                fontFamily: 'Inter',
-                                letterSpacing: -0.5,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (returnPct != null) ...[
-                            const SizedBox(width: 8),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                '${isPositive ? '+' : ''}${returnPct.toStringAsFixed(2)}%',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isPositive
-                                      ? colors.statusSuccess
-                                      : colors.statusError,
-                                  fontFamily: 'Inter',
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      flex: 2,
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: _LegendRow(overlay: overlay, state: state),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: _ChartBody(state: state),
-                ),
-              ],
+            child: _ChartBody(
+              state: state,
+              overlay: overlay,
+              tfCode: tfCode,
+              expandPath: expandPath,
+              legendTrailing: _AddSeriesButton(overlay: overlay, state: state),
             ),
           ),
         );
       },
     );
   }
+
+  String _chartComparePath(String tfCode, List<String> series) {
+    final seriesParam = Uri.encodeComponent(series.join(','));
+    return '/app/chart/compare?context=dashboard&tf=$tfCode&series=$seriesParam';
+  }
 }
 
-class _LegendRow extends StatelessWidget {
-  const _LegendRow({required this.overlay, required this.state});
+class _AddSeriesButton extends StatelessWidget {
+  const _AddSeriesButton({required this.overlay, required this.state});
 
   final DashboardOverlayNotifier overlay;
   final OverlayChartState state;
@@ -136,142 +78,61 @@ class _LegendRow extends StatelessWidget {
             remainingPortfolios.isNotEmpty ||
             remainingIndices.isNotEmpty);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      reverse: true,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final id in state.selectedIds) ...[
-            _SeriesChip(
-              label: _labelFor(state, id),
-              color: _seriesColor(context, id, state.selectedIds),
-              pending: state.pendingIds.contains(id),
-              failed: state.failedIds[id],
-              removable: true,
-              onRemove: () => overlay.removeSeries(id),
-              onRetry: () => overlay.retry(id),
+    if (!canAdd) return const SizedBox.shrink();
+
+    return PopupMenuButton<String>(
+      tooltip: 'Add series',
+      onSelected: overlay.addSeries,
+      itemBuilder: (context) {
+        final items = <PopupMenuEntry<String>>[
+          if (remainingOverall)
+            const PopupMenuItem(
+              value: OverlayChartIds.overall,
+              child: Text(OverlayChartIds.overall),
             ),
-            const SizedBox(width: 8),
-          ],
-          if (canAdd)
-            PopupMenuButton<String>(
-              tooltip: 'Add series',
-              onSelected: overlay.addSeries,
-              itemBuilder: (context) {
-                final items = <PopupMenuEntry<String>>[
-                  if (remainingOverall)
-                    const PopupMenuItem(
-                      value: OverlayChartIds.overall,
-                      child: Text(OverlayChartIds.overall),
-                    ),
-                  for (final p in remainingPortfolios)
-                    PopupMenuItem(value: p.id, child: Text(p.label)),
-                ];
-                if (items.isNotEmpty && remainingIndices.isNotEmpty) {
-                  items.add(const PopupMenuDivider());
-                }
-                for (final id in remainingIndices) {
-                  items.add(
-                    PopupMenuItem(
-                      value: id,
-                      child: Semantics(
-                        button: true,
-                        label: id,
-                        child: Text(id),
-                      ),
-                    ),
-                  );
-                }
-                return items;
-              },
-              child: Semantics(
-                button: true,
-                label: 'Add series',
-                child: Chip(
-                  visualDensity: VisualDensity.compact,
-                  label: const Text('+'),
-                  backgroundColor: colors.actionPrimaryBg.withValues(alpha: 0.08),
-                  side: BorderSide(color: colors.border),
-                ),
-              ),
+          for (final p in remainingPortfolios)
+            PopupMenuItem(value: p.id, child: Text(p.label)),
+        ];
+        if (items.isNotEmpty && remainingIndices.isNotEmpty) {
+          items.add(const PopupMenuDivider());
+        }
+        for (final id in remainingIndices) {
+          items.add(
+            PopupMenuItem(
+              value: id,
+              child: Text(id),
             ),
-        ],
+          );
+        }
+        return items;
+      },
+      child: Chip(
+        visualDensity: VisualDensity.compact,
+        label: const Text('+'),
+        backgroundColor: colors.actionPrimaryBg.withValues(alpha: 0.08),
+        side: BorderSide(color: colors.border),
       ),
     );
   }
-
-  String _labelFor(OverlayChartState state, String id) {
-    if (OverlayChartIds.isOverall(id)) return OverlayChartIds.overall;
-    for (final p in state.availablePortfolios) {
-      if (p.id == id) return p.label;
-    }
-    return state.series[id]?.label ?? id;
-  }
 }
 
-class _SeriesChip extends StatelessWidget {
-  const _SeriesChip({
-    required this.label,
-    required this.color,
-    required this.pending,
-    required this.failed,
-    required this.removable,
-    this.onRemove,
-    this.onRetry,
+class _ChartBody extends ConsumerWidget {
+  const _ChartBody({
+    required this.state,
+    required this.overlay,
+    required this.tfCode,
+    required this.expandPath,
+    required this.legendTrailing,
   });
 
-  final String label;
-  final Color color;
-  final bool pending;
-  final String? failed;
-  final bool removable;
-  final VoidCallback? onRemove;
-  final VoidCallback? onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Semantics(
-      button: true,
-      label: label,
-      child: InputChip(
-        visualDensity: VisualDensity.compact,
-        onDeleted: removable ? onRemove : null,
-        onPressed: failed != null ? onRetry : null,
-        avatar: pending
-            ? const SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(strokeWidth: 1.5),
-              )
-            : CircleAvatar(backgroundColor: color, radius: 6),
-        label: Text(
-          failed != null ? '$label · retry' : label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: failed != null ? colors.statusError : colors.textPrimary,
-            fontFamily: 'Inter',
-          ),
-        ),
-        side: BorderSide(
-          color: failed != null
-              ? colors.statusError.withValues(alpha: 0.4)
-              : color.withValues(alpha: 0.4),
-        ),
-      ),
-    );
-  }
-}
-
-class _ChartBody extends StatelessWidget {
-  const _ChartBody({required this.state});
-
   final OverlayChartState state;
+  final DashboardOverlayNotifier overlay;
+  final String tfCode;
+  final String? expandPath;
+  final Widget legendTrailing;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     if (state.isBootstrapping) {
       return const Center(child: CircularProgressIndicator());
@@ -294,24 +155,24 @@ class _ChartBody extends StatelessWidget {
     return ComparisonChartView(
       data: overlayStateToChartData(state),
       config: MultiSeriesChartConfig(
-        preferredSeriesOrder: overlaySelectedLabels(state),
+        preferredSeriesOrder: selectedLabels,
         embedMode: true,
+        timeFrameCode: tfCode,
+        showEndValuePills: false,
+        legendTrailing: legendTrailing,
+        expandedChartPath: expandPath,
+        onOpenExpanded: expandPath == null
+            ? null
+            : () => context.push(expandPath!),
+        onRemoveSeries: (label) {
+          for (final entry in state.series.entries) {
+            if (entry.value.label == label) {
+              overlay.removeSeries(entry.key);
+              return;
+            }
+          }
+        },
       ),
     );
-  }
-}
-
-Color _seriesColor(BuildContext context, String id, List<String> selectedIds) {
-  final colors = context.colors;
-  final index = selectedIds.indexOf(id);
-  switch (index) {
-    case 0:
-      return colors.actionPrimaryBg;
-    case 1:
-      return colors.statusInfo;
-    case 2:
-      return colors.premiumActionPrimary;
-    default:
-      return colors.statusWarning;
   }
 }

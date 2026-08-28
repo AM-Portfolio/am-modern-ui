@@ -1,11 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import '../../../core/navigation/app_web_navigation.dart';
 import '../am_click_capsule.dart';
 import 'comparison_chart_colors.dart';
 import 'multi_series_chart_data.dart';
+
+const double kComparisonChartHeaderRowHeight = 36.0;
 
 /// Wins the gesture arena against parent [PageView] / scroll navigators so
 /// vertical drags on the chart do not switch Market Data pages.
@@ -56,8 +60,15 @@ class MultiIndexChart extends StatefulWidget {
   final bool isBarChart;
   final void Function(String symbol)? onRemoveIndex;
 
-  /// When true, skips card chrome, built-in legend, and %/absolute toggle (embed in parent shell).
+  /// When true, skips outer card padding/shadow only.
   final bool embedMode;
+  final String? timeFrameCode;
+  final Widget? headerLeading;
+  final Widget? legendTrailing;
+  final bool showExpandButton;
+  final VoidCallback? onOpenExpanded;
+  final String? expandedChartPath;
+  final bool showEndValuePills;
 
   const MultiIndexChart({
     super.key,
@@ -69,6 +80,13 @@ class MultiIndexChart extends StatefulWidget {
     this.isBarChart = false,
     this.onRemoveIndex,
     this.embedMode = false,
+    this.timeFrameCode,
+    this.headerLeading,
+    this.legendTrailing,
+    this.showExpandButton = true,
+    this.onOpenExpanded,
+    this.expandedChartPath,
+    this.showEndValuePills = true,
   }) : assert(
           chartData != null || historicalData != null,
           'Provide chartData or historicalData',
@@ -84,6 +102,13 @@ class MultiIndexChart extends StatefulWidget {
     bool isBarChart = false,
     void Function(String symbol)? onRemoveIndex,
     bool embedMode = false,
+    String? timeFrameCode,
+    Widget? headerLeading,
+    Widget? legendTrailing,
+    bool showExpandButton = true,
+    VoidCallback? onOpenExpanded,
+    String? expandedChartPath,
+    bool showEndValuePills = true,
   }) {
     return MultiIndexChart(
       key: key,
@@ -94,6 +119,13 @@ class MultiIndexChart extends StatefulWidget {
       isBarChart: isBarChart,
       onRemoveIndex: onRemoveIndex,
       embedMode: embedMode,
+      timeFrameCode: timeFrameCode,
+      headerLeading: headerLeading,
+      legendTrailing: legendTrailing,
+      showExpandButton: showExpandButton,
+      onOpenExpanded: onOpenExpanded,
+      expandedChartPath: expandedChartPath,
+      showEndValuePills: showEndValuePills,
     );
   }
 
@@ -136,13 +168,13 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   double _leftAxisReserve(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 700;
     if (compact) {
-      if (_useMultiYAxis) return 36.0;
-      return _showAbsoluteValues ? 34.0 : 32.0;
+      if (_useMultiYAxis) return 44.0;
+      return _showAbsoluteValues ? 40.0 : 40.0;
     }
     if (!_useMultiYAxis) {
-      return _showAbsoluteValues ? 44.0 : 38.0;
+      return _showAbsoluteValues ? 48.0 : 48.0;
     }
-    return 40.0;
+    return 48.0;
   }
 
   Widget _leftAxisTitle(TitleMeta meta, Widget child) {
@@ -222,7 +254,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         _formatAxisTick(value),
         textAlign: TextAlign.right,
         style: TextStyle(
-          color: theme.textTheme.bodySmall?.color?.withOpacity(0.75),
+          color: theme.textTheme.bodySmall?.color,
           fontSize: compact ? 9 : 10,
           fontWeight: FontWeight.w500,
           height: 1.1,
@@ -881,44 +913,45 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
     final theme = Theme.of(context);
     final isCompact = MediaQuery.sizeOf(context).width < 700;
-    final showHeader = !widget.embedMode;
 
     final chartColumn = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (showHeader && isCompact) ...[
-          _buildLegend(context),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _buildUnitToggle(context),
-              const Spacer(),
-              if (!widget.isBarChart) _buildZoomControls(theme),
-            ],
+        if (widget.headerLeading != null) ...[
+          SizedBox(
+            height: kComparisonChartHeaderRowHeight,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: widget.headerLeading!,
+            ),
           ),
-        ] else if (showHeader)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 4),
+        ],
+        SizedBox(
+          height: kComparisonChartHeaderRowHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(child: _buildLegend(context)),
+              if (widget.legendTrailing != null) ...[
+                const SizedBox(width: 8),
+                widget.legendTrailing!,
+              ],
               const SizedBox(width: 8),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildUnitToggle(context),
-                  const SizedBox(width: 8),
-                  if (!widget.isBarChart) _buildZoomControls(theme),
-                ],
-              ),
+              _buildUnitToggle(context),
+              if (!widget.isBarChart) ...[
+                const SizedBox(width: 8),
+                _buildZoomControls(theme),
+              ],
+              if (widget.showExpandButton &&
+                  (widget.onOpenExpanded != null ||
+                      widget.expandedChartPath != null)) ...[
+                _buildExpandButton(context),
+              ],
             ],
-          )
-        else if (!widget.isBarChart)
-          Align(
-            alignment: Alignment.centerRight,
-            child: _buildZoomControls(theme),
           ),
-        if (showHeader || !widget.isBarChart)
-          SizedBox(height: showHeader ? (isCompact ? 8 : 24) : 4),
+        ),
+        SizedBox(height: isCompact ? 8 : 12),
         Expanded(
           child: widget.isBarChart
               ? _buildBarChart(context, _chartData)
@@ -988,6 +1021,28 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildExpandButton(BuildContext context) {
+    final path = widget.expandedChartPath;
+    return IconButton(
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      tooltip: kIsWeb ? 'Open chart (Ctrl+click for new tab)' : 'Open chart',
+      icon: const Icon(Icons.open_in_new, size: 20),
+      onPressed: () {
+        if (path != null) {
+          AppWebNavigation.navigate(
+            context: context,
+            path: path,
+            onSameTab: widget.onOpenExpanded ?? () {},
+          );
+        } else {
+          widget.onOpenExpanded?.call();
+        }
+      },
     );
   }
 
@@ -1276,10 +1331,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                 reservedSize: _leftAxisReserve(context),
                                 interval: chartInterval,
                                 getTitlesWidget: (value, meta) {
-                                  if ((value - meta.min).abs() < 0.01 ||
-                                      (value - meta.max).abs() < 0.01) {
-                                    return const SizedBox.shrink();
-                                  }
                                   return _buildLeftAxisLabel(
                                     context: context,
                                     meta: meta,
@@ -1519,10 +1570,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                 reservedSize: _leftAxisReserve(context),
                                 interval: chartInterval,
                                 getTitlesWidget: (value, meta) {
-                                  if ((value - meta.min).abs() < 0.01 ||
-                                      (value - meta.max).abs() < 0.01) {
-                                    return const SizedBox.shrink();
-                                  }
                                   return _buildLeftAxisLabel(
                                     context: context,
                                     meta: meta,
@@ -1732,7 +1779,14 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
               ),
             ),
             _buildDummyScrollView(chartWidth),
-            _buildPricePills(context, chartData, constraints, cleanMin, cleanMax, endIndex == chartData.length - 1),
+            _buildPricePills(
+              context,
+              chartData,
+              constraints,
+              cleanMin,
+              cleanMax,
+              widget.showEndValuePills && endIndex == chartData.length - 1,
+            ),
           ],
         );
       },
@@ -1921,6 +1975,24 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   }
 
   DateFormat _getDateFormat(List<Map<String, dynamic>> chartData) {
+    final code = widget.timeFrameCode?.toUpperCase();
+    if (code != null && code.isNotEmpty) {
+      switch (code) {
+        case '1D':
+          return DateFormat('HH:mm');
+        case '1W':
+          return DateFormat('E');
+        case '1M':
+        case '3M':
+          return DateFormat('dd MMM');
+        case '6M':
+        case '1Y':
+        case '5Y':
+        case 'YTD':
+        case 'ALL':
+          return DateFormat('MMM yy');
+      }
+    }
     if (chartData.isEmpty) return DateFormat('MMM yy');
     try {
       final firstDate = _parseFlexibleDateTime(chartData.first['time'] as String);
