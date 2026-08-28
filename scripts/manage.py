@@ -127,8 +127,12 @@ def run_cmd(package, cmd_parts, env_vars=None):
     if is_run:
         # For run commands, execute interactively so input streams work
         try:
-            result = subprocess.run(cmd_parts, cwd=package_dir, env=env, shell=is_windows)
-            return result.returncode == 0
+            # Force unicode for interactive runs
+            env["PYTHONUTF8"] = "1"
+            env["PYTHONIOENCODING"] = "utf-8"
+            process = subprocess.Popen(cmd_parts, cwd=package_dir, env=env, shell=is_windows)
+            process.wait()
+            return process.returncode == 0
         except Exception as e:
             print(f"[Error] Execution failed: {e}")
             return False

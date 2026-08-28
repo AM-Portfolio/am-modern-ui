@@ -22,6 +22,8 @@ class PreviewSectionHeader extends StatelessWidget {
         return Theme.of(context).primaryColor;
       case ItemStatus.missing:
         return context.statusError;
+      case ItemStatus.excluded:
+        return context.colors.textTertiary;
     }
   }
 
@@ -33,6 +35,8 @@ class PreviewSectionHeader extends StatelessWidget {
         return Icons.swap_horiz;
       case ItemStatus.missing:
         return Icons.error_outline;
+      case ItemStatus.excluded:
+        return Icons.block;
     }
   }
 

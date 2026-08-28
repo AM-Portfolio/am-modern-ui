@@ -152,7 +152,7 @@ class _InlineSwapPanelState extends State<InlineSwapPanel> {
                             const SizedBox(height: 2),
                             Text(
                               isSameSector 
-                                  ? '${alt.userWeight.toStringAsFixed(1)}% held • ${alt.coverageLabel ?? "Covers gap"}'
+                                  ? '${alt.userWeight.toStringAsFixed(1)}% held • ${alt.coverageLabel ?? "Matching gap"}'
                                   : 'Cross-sector • Not recommended',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: context.colors.textSecondary,

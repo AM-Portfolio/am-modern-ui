@@ -72,14 +72,14 @@ class BasketSuccessPage extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Match Score',
+                      'Coverage Score',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: context.colors.textSecondary,
                           ),
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Text(
-                      '${opportunity.matchScore.toStringAsFixed(0)}%',
+                      '${opportunity.replicaScore.toStringAsFixed(1)}%',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: context.statusSuccess,

@@ -1,15 +1,13 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:intl/intl.dart';
 
 import '../../domain/models/basket_opportunity.dart';
 import '../widgets/minimum_investment_warning_widget.dart';
 import '../../../portfolio/providers/portfolio_providers.dart';
 import '../../../portfolio/internal/domain/entities/portfolio_holding.dart';
 import '../providers/basket_providers.dart';
+import 'package:go_router/go_router.dart';
 import 'basket_success_page.dart';
 import '../widgets/substitute_selector.dart';
 
@@ -48,16 +46,13 @@ class _ManualBasketCreatorPageState
   late TabController _tabController;
 
   // --- UI state ---
+  bool _includeHeld = false;
   bool _isCalculating = false;
   bool _hasCalculated = false;
   bool _isCustomAmount = false;
+  bool _showPercentAllocation = false;
   bool _hasStaleData = false;
   bool _showSummaryDrawer = false; // tablet side panel
-  bool _isSidebarCollapsed = false;
-  DateTime? _lastCalculatedAt;
-  Timer? _debounceTimer;
-  double? _actualCost;
-  double? _budgetVariance;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -74,7 +69,6 @@ class _ManualBasketCreatorPageState
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
     _amountController.dispose();
     _basketNameController.dispose();
     _scrollController.dispose();
@@ -136,13 +130,7 @@ class _ManualBasketCreatorPageState
   }
 
   String _investedText(BasketItem item) {
-    if (item.lastPrice == null) return '—';
-    // For held items with no additional buy needed, show current holding value
-    if ((item.buyQuantity == null || item.buyQuantity == 0) &&
-        item.heldQuantity != null && item.heldQuantity! > 0) {
-      return '₹${(item.heldQuantity! * item.lastPrice!).toStringAsFixed(0)}';
-    }
-    if (item.buyQuantity == null || item.buyQuantity == 0) return '—';
+    if (item.lastPrice == null || item.buyQuantity == null) return '—';
     return '₹${(item.lastPrice! * item.buyQuantity!).toStringAsFixed(0)}';
   }
 
@@ -159,17 +147,17 @@ class _ManualBasketCreatorPageState
   void _removeItem(int index) {
     setState(() {
       _excludedItems.add(_items[index].stockSymbol);
+      _items[index] = _items[index].copyWith(clearBuyQuantity: true);
       _hasCalculated = false;
     });
-    _calculateQuantities();
   }
 
   void _addItem(int index) {
     setState(() {
       _excludedItems.remove(_items[index].stockSymbol);
+      _items[index] = _items[index].copyWith(buyQuantity: 0.0);
       _hasCalculated = false;
     });
-    _calculateQuantities();
   }
 
   void _resetBasket() {
@@ -180,7 +168,36 @@ class _ManualBasketCreatorPageState
     });
   }
 
-
+  void _rebalance() {
+    double activeWeights = 0.0;
+    for (var item in _items) {
+      if (item.buyQuantity != null ||
+          item.status == ItemStatus.held ||
+          item.status == ItemStatus.substitute) {
+        activeWeights += item.etfWeight;
+      }
+    }
+    if (activeWeights > 0 && activeWeights < 100.0) {
+      final multiplier = 100.0 / activeWeights;
+      setState(() {
+        _items = _items.map((item) {
+          if (item.buyQuantity != null ||
+              item.status == ItemStatus.held ||
+              item.status == ItemStatus.substitute) {
+            return item.copyWith(
+                rebalancedWeight: item.etfWeight * multiplier);
+          }
+          return item;
+        }).toList();
+        _hasCalculated = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Basket rebalanced! Click Recalculate to see new quantities.')),
+      );
+    }
+  }
 
   void _setFixedAmount(int amountRs) {
     setState(() {
@@ -191,69 +208,83 @@ class _ManualBasketCreatorPageState
     _calculateQuantities();
   }
 
-  void _calculateQuantities() {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
-      if (!mounted) return;
-      if (_amountController.text.isEmpty) return;
-      final amount = double.tryParse(_amountController.text);
-      if (amount == null || amount <= 0) return;
+  Future<void> _calculateQuantities() async {
+    if (_amountController.text.isEmpty) return;
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null || amount <= 0) return;
 
-      setState(() {
-        _isCalculating = true;
-        _hasStaleData = false;
-      });
+    setState(() {
+      _isCalculating = true;
+      _hasStaleData = false;
+    });
 
-      try {
-        final holdingsAsync = ref.read(portfolioHoldingsProvider(widget.portfolioId!));
+    try {
+      double targetAmount = amount;
+      if (_includeHeld) {
+        final holdingsAsync =
+            ref.read(portfolioHoldingsProvider(widget.userId));
         final localHoldings = holdingsAsync.asData?.value;
-        final itemsToSend = _enrichItemsWithHoldings(_items, localHoldings);
-
-        final updatedOpportunity =
-            await ref.read(calculateBasketQuantitiesProvider(
-          request: {
-            'investmentAmount': amount,
-            'opportunity':
-                _currentOpportunity.copyWith(composition: itemsToSend).toJson(),
-            'includeHeld': true,
-            'excludedSymbols': _excludedItems.toList(),
-          },
-        ).future);
-
-        if (!mounted) return;
-        setState(() {
-          _currentOpportunity = updatedOpportunity;
-          final Map<String, BasketItem> updatedMap = {
-            for (var item in updatedOpportunity.composition)
-              item.stockSymbol.toLowerCase(): item
-          };
-          _items = _items.map((item) {
-            final updatedItem = updatedMap[item.stockSymbol.toLowerCase()];
-            if (updatedItem != null) {
-              if (_excludedItems.contains(item.stockSymbol)) {
-                return updatedItem.copyWith(clearBuyQuantity: true);
-              }
-              return updatedItem;
+        if (localHoldings != null) {
+          double totalHeldCost = 0;
+          double totalHeldCurrentVal = 0;
+          for (var item in _items) {
+            final h = localHoldings.holdings
+                .where((h) =>
+                    h.symbol.toLowerCase() ==
+                    item.stockSymbol.toLowerCase())
+                .firstOrNull;
+            if (h != null) {
+              totalHeldCost += h.quantity * h.avgPrice;
+              totalHeldCurrentVal +=
+                  h.quantity * (item.lastPrice ?? h.currentPrice);
             }
-            return item;
-          }).toList();
-          _hasCalculated = true;
-          _lastCalculatedAt = DateTime.now();
-          _actualCost = updatedOpportunity.actualInvestmentCost;
-          _budgetVariance = updatedOpportunity.budgetVariance;
-        });
-      } catch (e) {
-        if (!mounted) return;
-        setState(() => _hasStaleData = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error calculating quantities: $e')),
-        );
-      } finally {
-        if (mounted) {
-          setState(() => _isCalculating = false);
+          }
+          if (amount > totalHeldCost) {
+            targetAmount = totalHeldCurrentVal + (amount - totalHeldCost);
+          }
         }
       }
-    });
+
+      final holdingsAsync = ref.read(portfolioHoldingsProvider(widget.userId));
+      final localHoldings = holdingsAsync.asData?.value;
+      final itemsToSend = _enrichItemsWithHoldings(_items, localHoldings);
+
+      final updatedOpportunity =
+          await ref.read(calculateBasketQuantitiesProvider(
+        request: {
+          'investmentAmount': targetAmount,
+          'opportunity':
+              _currentOpportunity.copyWith(composition: itemsToSend).toJson(),
+          'includeHeld': _includeHeld,
+        },
+      ).future);
+
+      setState(() {
+        _currentOpportunity = updatedOpportunity;
+        final Map<String, BasketItem> updatedMap = {
+          for (var item in updatedOpportunity.composition)
+            item.stockSymbol.toLowerCase(): item
+        };
+        _items = _items.map((item) {
+          final updatedItem = updatedMap[item.stockSymbol.toLowerCase()];
+          if (updatedItem != null) {
+            if (_excludedItems.contains(item.stockSymbol)) {
+              return updatedItem.copyWith(clearBuyQuantity: true);
+            }
+            return updatedItem;
+          }
+          return item;
+        }).toList();
+        _hasCalculated = true;
+      });
+    } catch (e) {
+      setState(() => _hasStaleData = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error calculating quantities: $e')),
+      );
+    } finally {
+      setState(() => _isCalculating = false);
+    }
   }
 
   void _openSubstituteSelectorFor(int originalIdx) {
@@ -264,8 +295,7 @@ class _ManualBasketCreatorPageState
       builder: (ctx) => SubstituteSelector(
         originalSymbol: item.stockSymbol,
         requiredMarketCap: item.marketCapCategory ?? '',
-        alternatives: item.alternatives,
-        onSelected: (stock) async {
+        onSelected: (stock) {
           setState(() {
             _items[originalIdx] = _items[originalIdx].copyWith(
               status: ItemStatus.substitute,
@@ -275,7 +305,6 @@ class _ManualBasketCreatorPageState
             _hasCalculated = false;
           });
           Navigator.of(ctx).pop();
-          _calculateQuantities();
         },
       ),
     );
@@ -314,33 +343,6 @@ class _ManualBasketCreatorPageState
       ));
       return;
     }
-    if (_currentOpportunity.readyToReplicate == false) {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: context.cardColor,
-          title: const Text('Low Coverage Warning'),
-          content: Text(
-            'Your basket covers ${_currentOpportunity.replicaScore.toStringAsFixed(1)}% of the ETF. Industry best practice is 90%+.\n\nContinue anyway?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: context.statusWarning,
-                foregroundColor: context.colors.textPrimary, // use textPrimary for better contrast on warning bg
-              ),
-              child: const Text('Create Anyway'),
-            ),
-          ],
-        ),
-      );
-      if (confirm != true) return;
-    }
     final basketName = _basketNameController.text.trim();
 
     try {
@@ -358,8 +360,6 @@ class _ManualBasketCreatorPageState
         'basketName': basketName,
         'idempotencyKey': DateTime.now().millisecondsSinceEpoch.toString(),
         'investmentAmount': amount,
-        'replicaScore': _currentOpportunity.replicaScore,
-        'coverageAfterCreation': _currentOpportunity.replicaScore,
         'remainingMissingCount':
             _items.where((c) => c.status == ItemStatus.missing).length,
         'remainingMissing': _items
@@ -383,9 +383,7 @@ class _ManualBasketCreatorPageState
                     ? (item.userHoldingSymbol ?? item.stockSymbol)
                     : item.stockSymbol,
             'quantity': item.buyQuantity,
-            'heldQuantity': (item.heldQuantity != null && item.targetQuantity != null)
-                ? math.min(item.heldQuantity!, item.targetQuantity!)
-                : item.heldQuantity,
+            'heldQuantity': item.heldQuantity,
             'averageBuyingPrice': item.lastPrice,
           };
         }).toList(),
@@ -401,7 +399,7 @@ class _ManualBasketCreatorPageState
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => BasketSuccessPage(
-              opportunity: _currentOpportunity,
+              opportunity: widget.opportunity,
               basketName: basketName,
               basketId: newBasketId,
               userId: widget.userId,
@@ -431,7 +429,7 @@ class _ManualBasketCreatorPageState
     final isDesktop = screenWidth >= AmBreakpoints.tablet; // >= 1100
 
     final portfolioHoldingsAsync =
-        ref.watch(portfolioHoldingsProvider(widget.portfolioId!));
+        ref.watch(portfolioHoldingsProvider(widget.userId));
     final localHoldings = portfolioHoldingsAsync.asData?.value;
     final displayItems = _enrichItemsWithHoldings(_items, localHoldings);
 
@@ -451,16 +449,14 @@ class _ManualBasketCreatorPageState
 
     final heldWeight = displayItems
         .where((i) => i.status == ItemStatus.held)
-        .fold(0.0, (s, i) => s + (i.rebalancedWeight ?? i.etfWeight));
+        .fold(0.0, (s, i) => s + i.etfWeight);
     final subWeight = displayItems
         .where((i) => i.status == ItemStatus.substitute)
-        .fold(0.0, (s, i) => s + (i.rebalancedWeight ?? i.etfWeight));
+        .fold(0.0, (s, i) => s + i.etfWeight);
     final missingWeight = displayItems
         .where((i) => i.status == ItemStatus.missing)
-        .fold(0.0, (s, i) => s + (i.rebalancedWeight ?? i.etfWeight));
-    final coverage = _hasCalculated
-        ? _currentOpportunity.replicaScore
-        : (heldWeight + subWeight);
+        .fold(0.0, (s, i) => s + i.etfWeight);
+    final coverage = heldWeight + subWeight;
 
     // tab-filtered items
     final tabItems = _getTabItems(_tabController.index, displayItems);
@@ -513,23 +509,11 @@ class _ManualBasketCreatorPageState
                     isMobile: false, isTablet: false),
               ),
               // Right sidebar
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: _isSidebarCollapsed ? 0 : 320,
-                child: _isSidebarCollapsed
-                    ? const SizedBox.shrink()
-                    : _buildRightSidebar(
-                        context,
-                        theme,
-                        displayItems,
-                        heldCount,
-                        subCount,
-                        missingCount,
-                        excludedCount,
-                        heldWeight,
-                        subWeight,
-                        missingWeight,
-                        coverage),
+              SizedBox(
+                width: 320,
+                child: _buildRightSidebar(context, theme, displayItems,
+                    heldCount, subCount, missingCount, excludedCount, heldWeight,
+                    subWeight, missingWeight, coverage),
               ),
             ],
           ),
@@ -680,23 +664,14 @@ class _ManualBasketCreatorPageState
         TextButton.icon(
           icon: const Icon(Icons.arrow_back, size: 16),
           label: const Text('Back'),
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => context.pop(),
         ),
         const SizedBox(width: 12),
         Icon(Icons.auto_awesome, color: context.colors.actionPrimaryBg),
         const SizedBox(width: 10),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(
-              children: [
-                Text('Customize Basket', style: theme.textTheme.titleMedium),
-                if (_hasCalculated && _lastCalculatedAt != null) ...[
-                  const SizedBox(width: 8),
-                  Text('• Prices as of ${DateFormat('hh:mm a').format(_lastCalculatedAt!)}',
-                      style: TextStyle(fontSize: 11, color: context.textTertiary)),
-                ],
-              ],
-            ),
+            Text('Customize Basket', style: theme.textTheme.titleMedium),
             Text(widget.opportunity.etfName,
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: context.textSecondary)),
@@ -714,12 +689,6 @@ class _ManualBasketCreatorPageState
           ]),
           const SizedBox(width: 16),
         ],
-        IconButton(
-          icon: Icon(_isSidebarCollapsed ? Icons.keyboard_double_arrow_left : Icons.keyboard_double_arrow_right),
-          tooltip: _isSidebarCollapsed ? 'Show Summary' : 'Hide Summary',
-          onPressed: () => setState(() => _isSidebarCollapsed = !_isSidebarCollapsed),
-        ),
-        const SizedBox(width: 8),
         OutlinedButton.icon(
           onPressed: _isCalculating ? null : _calculateQuantities,
           icon: _isCalculating
@@ -753,7 +722,7 @@ class _ManualBasketCreatorPageState
       child: Row(children: [
         IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).maybePop()),
+            onPressed: () => context.pop()),
         const SizedBox(width: 8),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -801,7 +770,7 @@ class _ManualBasketCreatorPageState
         child: Row(children: [
           IconButton(
               icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.of(context).maybePop()),
+              onPressed: () => context.pop()),
           Expanded(
             child: Text('Customize Basket',
                 style: theme.textTheme.titleMedium,
@@ -841,70 +810,66 @@ class _ManualBasketCreatorPageState
     required bool isMobile,
     required bool isTablet,
   }) {
-    return CustomScrollView(
-      controller: _scrollController,
-      slivers: [
-        SliverToBoxAdapter(
-          child: Column(
-            children: [
-              // Investment controls
-              _buildInvestmentControls(context, theme, isMobile: isMobile),
-              // Stale data banner
-              if (_hasStaleData)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: context.statusWarning.withValues(alpha: 0.12),
-                  child: Row(children: [
-                    Icon(Icons.warning_amber_rounded,
-                        color: context.statusWarning, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                        child: Text('Calculation failed. Showing previous data.',
-                            style: TextStyle(
-                                color: context.statusWarning, fontSize: 12))),
-                    TextButton(
-                      onPressed: () {
-                        setState(() => _hasStaleData = false);
-                        _calculateQuantities();
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ]),
-                ),
-
-              // Tab bar
-              Container(
-                color: context.cardColor,
-                child: TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  labelColor: context.textPrimary,
-                  unselectedLabelColor: context.textSecondary,
-                  indicatorColor: context.colors.actionPrimaryBg,
-                  dividerColor: context.borderColor,
-                  tabs: [
-                    Tab(text: 'All (${displayItems.length})'),
-                    Tab(text: 'Held ($heldCount)'),
-                    Tab(text: 'Subst. ($subCount)'),
-                    Tab(text: 'Missing ($missingCount)'),
-                    Tab(text: 'Excl. ($excludedCount)'),
-                  ],
-                ),
+    return Column(
+      children: [
+        // Investment controls
+        _buildInvestmentControls(context, theme, isMobile: isMobile),
+        // Stale data banner
+        if (_hasStaleData)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: context.statusWarning.withValues(alpha: 0.12),
+            child: Row(children: [
+              Icon(Icons.warning_amber_rounded,
+                  color: context.statusWarning, size: 16),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: Text('Calculation failed. Showing previous data.',
+                      style: TextStyle(
+                          color: context.statusWarning, fontSize: 12))),
+              TextButton(
+                onPressed: () {
+                  setState(() => _hasStaleData = false);
+                  _calculateQuantities();
+                },
+                child: const Text('Retry'),
               ),
-              // Table header (desktop only)
-              if (!isMobile && !isTablet)
-                _buildDesktopTableHeader(context, theme),
+            ]),
+          ),
+        // Stats strip
+        _buildStatsStrip(context, theme, displayItems.length, heldCount,
+            subCount, missingCount, excludedCount,
+            isMobile: isMobile),
+        // Tab bar
+        Container(
+          color: context.cardColor,
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            labelColor: context.textPrimary,
+            unselectedLabelColor: context.textSecondary,
+            indicatorColor: context.colors.actionPrimaryBg,
+            dividerColor: context.borderColor,
+            tabs: [
+              Tab(text: 'All (${displayItems.length})'),
+              Tab(text: 'Held ($heldCount)'),
+              Tab(text: 'Subst. ($subCount)'),
+              Tab(text: 'Missing ($missingCount)'),
+              Tab(text: 'Excl. ($excludedCount)'),
             ],
           ),
         ),
+        // Table header (desktop only)
+        if (!isMobile && !isTablet)
+          _buildDesktopTableHeader(context, theme),
         // Constituent list
-        _buildConstituentList(context, theme, tabItems, displayItems,
-            isMobile: isMobile, isTablet: isTablet),
-        // Bottom info bar
-        SliverToBoxAdapter(
-          child: _buildBottomInfoBar(context, theme),
+        Expanded(
+          child: _buildConstituentList(context, theme, tabItems, displayItems,
+              isMobile: isMobile, isTablet: isTablet),
         ),
+        // Bottom info bar
+        _buildBottomInfoBar(context, theme),
       ],
     );
   }
@@ -988,22 +953,26 @@ class _ManualBasketCreatorPageState
         else
           Wrap(spacing: 6, runSpacing: 6, children: chips),
         const SizedBox(height: 8),
-        if (_actualCost != null && _budgetVariance != null)
-          _ActualCostBanner(
-            actualCost: _actualCost!,
-            variance: _budgetVariance!,
-            investmentAmount: double.tryParse(_amountController.text) ?? 0.0,
-            residualCash: _currentOpportunity.residualCash,
-            heldCoverage: _currentOpportunity.heldCoverageValue ?? _items
-                .where((i) =>
-                    (i.status == ItemStatus.held ||
-                        i.status == ItemStatus.substitute) &&
-                    i.heldQuantity != null &&
-                    i.lastPrice != null &&
-                    i.targetQuantity != null)
-                .fold(0.0, (s, i) => s + (math.min(i.heldQuantity!, i.targetQuantity!) * i.lastPrice!)),
-            formatCurrency: (val) => '₹${val.toStringAsFixed(0)}',
+        // Include Held toggle
+        Row(children: [
+          Text('Include Held', style: theme.textTheme.labelSmall),
+          const SizedBox(width: 4),
+          Switch(
+            value: _includeHeld,
+            onChanged: (v) {
+              setState(() => _includeHeld = v);
+              if (_amountController.text.isNotEmpty) _calculateQuantities();
+            },
           ),
+          if (!isMobile) ...[
+            const Spacer(),
+            Text('Show % Alloc', style: theme.textTheme.labelSmall),
+            Switch(
+              value: _showPercentAllocation,
+              onChanged: (v) => setState(() => _showPercentAllocation = v),
+            ),
+          ],
+        ]),
         MinimumInvestmentWarningWidget(
           minimumInvestmentAmount:
               widget.opportunity.minimumInvestmentAmount ?? 50000.0,
@@ -1077,16 +1046,16 @@ class _ManualBasketCreatorPageState
         );
 
     return Container(
-      height: 48,
+      height: 36,
       color: context.backgroundColor,
       child: Row(children: [
-        cell('Asset', 22),
-        cell('ETF Weight', 10),
-        cell('Current Holding\n(Units | Value)', 16),
-        cell('Needed to Match\n(Units | Value)', 16),
-        cell('Gap\n(Units)', 8, align: TextAlign.center),
-        cell('Investment\nAmount', 13, align: TextAlign.right),
-        cell('Action', 9, align: TextAlign.center),
+        cell('Asset', 26),
+        cell('Status', 12),
+        cell('Holding', 16),
+        cell('ETF Wt.', 10, align: TextAlign.right),
+        if (_showPercentAllocation) cell('Alloc %', 14),
+        cell('Invested', 14, align: TextAlign.right),
+        cell('', 8),
       ]),
     );
   }
@@ -1153,13 +1122,21 @@ class _ManualBasketCreatorPageState
           rows.add(_DenseBasketRow(
             item: item,
             investedText: _investedText(item),
-            investmentAmount: double.tryParse(_amountController.text) ?? 0.0,
             isExcluded: _excludedItems.contains(item.stockSymbol),
+            showAllocationSlider: _showPercentAllocation,
             originalIdx: originalIdx,
             onRemove: () => _removeItem(originalIdx),
             onAdd: () => _addItem(originalIdx),
             onSubstitute: () => _openSubstituteSelectorFor(originalIdx),
             onQtyChanged: (v) => _updateQuantity(originalIdx, v),
+            onWeightChanged: (w) {
+              setState(() {
+                _items[originalIdx] =
+                    _items[originalIdx].copyWith(rebalancedWeight: w);
+                _hasCalculated = false;
+              });
+              _calculateQuantities();
+            },
           ));
         }
       }
@@ -1175,19 +1152,15 @@ class _ManualBasketCreatorPageState
       rows.add(_buildDesktopTotalRow(context, theme));
     }
 
-    return SliverPadding(
+    return ListView(
+      controller: _scrollController,
       padding: EdgeInsets.only(
         bottom: isMobile ? 80 : 16,
         left: isMobile ? 8 : 0,
         right: isMobile ? 8 : 0,
         top: 4,
       ),
-      sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) => rows[index],
-          childCount: rows.length,
-        ),
-      ),
+      children: rows,
     );
   }
 
@@ -1207,16 +1180,15 @@ class _ManualBasketCreatorPageState
               child: Text('Total',
                   style: const TextStyle(fontWeight: FontWeight.bold)),
             )),
+        const Expanded(flex: 12, child: SizedBox()),
+        const Expanded(flex: 16, child: SizedBox()),
         Expanded(
             flex: 10,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text('100%',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.right),
-            )),
-        const Expanded(flex: 16, child: SizedBox()),
-        const Expanded(flex: 12, child: SizedBox()),
+            child: Text('100%',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.right)),
+        if (_showPercentAllocation)
+          const Expanded(flex: 14, child: SizedBox()),
         Expanded(
             flex: 14,
             child: Text('₹${_amountController.text}',
@@ -1454,7 +1426,7 @@ class _ManualBasketCreatorPageState
                 originalOpportunity: _currentOpportunity,
                 myBasketItems: _items,
                 hasCalculated: _hasCalculated,
-                includeHeld: true,
+                includeHeld: _includeHeld,
               ),
             ),
           ],
@@ -1476,7 +1448,7 @@ class _ManualBasketCreatorPageState
                 originalOpportunity: _currentOpportunity,
                 myBasketItems: _items,
                 hasCalculated: _hasCalculated,
-                includeHeld: true,
+                includeHeld: _includeHeld,
               ),
             ),
           ],
@@ -1577,7 +1549,25 @@ class _ManualBasketCreatorPageState
             _resetBasket();
           },
         ),
-
+        ListTile(
+          leading: const Icon(Icons.balance),
+          title: const Text('Rebalance Weights'),
+          onTap: () {
+            Navigator.of(ctx).pop();
+            _rebalance();
+          },
+        ),
+        ListTile(
+          leading: Icon(Icons.percent, color: context.colors.actionPrimaryBg),
+          title: const Text('Show % Allocation'),
+          trailing: Switch(
+            value: _showPercentAllocation,
+            onChanged: (v) {
+              Navigator.of(ctx).pop();
+              setState(() => _showPercentAllocation = v);
+            },
+          ),
+        ),
         ListTile(
           leading: Icon(Icons.assessment_outlined,
               color: context.colors.actionPrimaryBg),
@@ -1783,7 +1773,6 @@ class _StatusBadge extends StatelessWidget {
       ItemStatus.held => ('Held', context.statusSuccess),
       ItemStatus.substitute => ('Subst.', context.colors.actionPrimaryBg),
       ItemStatus.missing => ('Missing', context.statusError),
-      ItemStatus.excluded => ('Excluded', context.textTertiary),
     };
     return _pill(label, color);
   }
@@ -1888,24 +1877,26 @@ class _SummaryRow extends StatelessWidget {
 class _DenseBasketRow extends StatefulWidget {
   final BasketItem item;
   final String investedText;
-  final double investmentAmount;
   final bool isExcluded;
+  final bool showAllocationSlider;
   final int originalIdx;
   final VoidCallback onRemove;
   final VoidCallback onAdd;
   final VoidCallback onSubstitute;
   final ValueChanged<double> onQtyChanged;
+  final ValueChanged<double> onWeightChanged;
 
   const _DenseBasketRow({
     required this.item,
     required this.investedText,
-    required this.investmentAmount,
     required this.isExcluded,
+    required this.showAllocationSlider,
     required this.originalIdx,
     required this.onRemove,
     required this.onAdd,
     required this.onSubstitute,
     required this.onQtyChanged,
+    required this.onWeightChanged,
   });
 
   @override
@@ -1920,11 +1911,6 @@ class _DenseBasketRowState extends State<_DenseBasketRow> {
     final item = widget.item;
     final isMissing = item.status == ItemStatus.missing && !widget.isExcluded;
 
-    final weight = item.rebalancedWeight ?? item.etfWeight;
-    final targetAmount = (weight / 100.0) * widget.investmentAmount;
-    final targetQty = item.targetQuantity ?? 0.0;
-    final targetVal = targetQty > 0 ? (targetQty * (item.lastPrice ?? 0.0)) : targetAmount;
-
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -1937,7 +1923,7 @@ class _DenseBasketRowState extends State<_DenseBasketRow> {
         child: Row(children: [
           // Asset
           Expanded(
-            flex: 22,
+              flex: 26,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(children: [
@@ -1993,149 +1979,83 @@ class _DenseBasketRowState extends State<_DenseBasketRow> {
                             Text('sub for ${item.stockSymbol}',
                                 style: TextStyle(
                                     fontSize: 9,
-                                    color: context.textTertiary))
-                          else if (item.underfunded)
-                            Container(
-                              margin: const EdgeInsets.only(top: 1),
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: context.statusWarning.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'Min ₹${(item.lastPrice ?? 0).toStringAsFixed(0)} needed',
-                                style: TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold,
-                                    color: context.statusWarning),
-                              ),
-                            ),
+                                    color: context.textTertiary)),
                         ]),
                   ),
                 ]),
               )),
-          // Allocation %
+          // Status
           Expanded(
-            flex: 10,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 64,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
-                    child: LinearProgressIndicator(
-                      value: (item.rebalancedWeight ?? item.etfWeight) / 100.0,
-                      minHeight: 4,
-                      backgroundColor: context.textTertiary.withValues(alpha: 0.2),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        widget.isExcluded
-                            ? context.textTertiary
-                            : (item.status == ItemStatus.held
-                                ? context.statusSuccess
-                                : item.status == ItemStatus.substitute
-                                    ? context.colors.actionPrimaryBg
-                                    : isMissing
-                                        ? context.statusError
-                                        : context.colors.actionPrimaryBg),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${(item.rebalancedWeight ?? item.etfWeight).toStringAsFixed(1)}%',
-                  style: TextStyle(fontSize: 9, color: context.textSecondary),
-                ),
-              ],
-            ),
-          ),
-          // Current Holding
+              flex: 12,
+              child: _StatusBadge(
+                  status: item.status, isExcluded: widget.isExcluded)),
+          // Holding
           Expanded(
               flex: 16,
-              child: ((item.heldQuantity ?? 0) > 0 && item.lastPrice != null)
+              child: (item.heldQuantity ?? 0) > 0
                   ? Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('${item.heldQuantity!.toInt()} | ₹${(item.heldQuantity! * item.lastPrice!).toStringAsFixed(0)}',
+                        Text('${item.heldQuantity!.toInt()} units',
                             style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: context.statusSuccess)),
-                        Text(
-                            '@ ₹${item.heldAveragePrice?.toStringAsFixed(0) ?? '—'}',
-                            style: TextStyle(
-                                fontSize: 9,
-                                color: context.textTertiary)),
+                        if (item.heldAveragePrice != null)
+                          Text(
+                              '@ ₹${item.heldAveragePrice!.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                  fontSize: 9,
+                                  color: context.textTertiary)),
                       ],
                     )
-                  : Text('—', style: TextStyle(fontSize: 11, color: context.textTertiary))),
-          // Needed to Match
+                  : const SizedBox()),
+          // ETF weight
           Expanded(
-              flex: 16,
-              child: (item.lastPrice != null)
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${targetQty.toInt()} | ₹${targetVal.toStringAsFixed(0)}',
-                            style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: targetQty > 0 ? FontWeight.w500 : FontWeight.normal,
-                                color: targetQty > 0 ? context.textPrimary : context.textTertiary)),
-                      ],
-                    )
-                  : Text('—', style: TextStyle(fontSize: 11, color: context.textTertiary))),
-          // Gap
-          Expanded(
-              flex: 8,
-              child: () {
-                if (item.targetQuantity == null) {
-                  return Text('—', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: context.textTertiary));
-                }
-                final gap = item.targetQuantity!.toInt() - (item.heldQuantity ?? 0).toInt();
-                if (gap > 0) {
-                  return Text('+$gap', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: context.statusSuccess));
-                } else if (gap < 0) {
-                  return Text('$gap', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: context.statusError));
-                } else {
-                  return Text('0', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: context.textTertiary));
-                }
-              }()
-          ),
-          // Investment Amount
-          Expanded(
-              flex: 13,
+              flex: 10,
               child: Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: () {
-                  if (item.buyQuantity != null && item.buyQuantity! > 0 && item.lastPrice != null) {
-                    return Text('₹${(item.buyQuantity! * item.lastPrice!).toStringAsFixed(0)}',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: context.textPrimary));
-                  } else if (item.lastPrice != null && (item.heldQuantity ?? 0) > 0 && (item.targetQuantity ?? 0) > 0) {
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('₹${(item.targetQuantity! * item.lastPrice!).toStringAsFixed(0)}',
-                             style: TextStyle(fontSize: 11, color: context.textTertiary)),
-                        Text('Covered', style: TextStyle(fontSize: 9, fontStyle: FontStyle.italic, color: context.statusSuccess)),
-                      ]
-                    );
-                  } else {
-                    return Text('—', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, color: context.textTertiary));
-                  }
-                }()
+                child: Text('${item.etfWeight.toStringAsFixed(1)}%',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                        fontSize: 12, color: context.textSecondary)),
+              )),
+          // Alloc slider
+          if (widget.showAllocationSlider)
+            Expanded(
+                flex: 14,
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: context.colors.actionPrimaryBg,
+                    thumbColor: context.colors.actionPrimaryBg,
+                    inactiveTrackColor: context.dividerColor,
+                    trackHeight: 3,
+                  ),
+                  child: Slider(
+                    value: (item.rebalancedWeight ?? item.etfWeight)
+                        .clamp(0.0, 100.0),
+                    min: 0,
+                    max: 100,
+                    onChangeEnd: widget.onWeightChanged,
+                    onChanged: (_) {},
+                  ),
+                )),
+          // Invested
+          Expanded(
+              flex: 14,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(widget.investedText,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: context.textPrimary)),
               )),
           // Action
           Expanded(
-              flex: 9,
+              flex: 8,
               child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -2145,20 +2065,11 @@ class _DenseBasketRowState extends State<_DenseBasketRow> {
                           child: Icon(Icons.undo,
                               size: 18, color: context.textSecondary))
                     else if (isMissing)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          InkWell(
-                            onTap: widget.onSubstitute,
-                            child: Icon(Icons.swap_horiz, size: 18, color: context.colors.actionPrimaryBg),
-                          ),
-                          const SizedBox(width: 8),
-                          InkWell(
-                            onTap: widget.onRemove,
-                            child: Icon(Icons.delete_outline, size: 18, color: context.statusError),
-                          ),
-                        ]
-                      )
+                      InkWell(
+                          onTap: widget.onSubstitute,
+                          child: Icon(Icons.swap_horiz,
+                              size: 18,
+                              color: context.colors.actionPrimaryBg))
                     else
                       InkWell(
                           onTap: widget.onRemove,
@@ -2451,7 +2362,7 @@ class _MiniStat extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // ALLOCATION SUMMARY CARD (Donut chart + legend)
 // ---------------------------------------------------------------------------
-class _AllocationSummaryCard extends StatefulWidget {
+class _AllocationSummaryCard extends StatelessWidget {
   final double heldFraction;
   final double subFraction;
   final double missingFraction;
@@ -2481,50 +2392,6 @@ class _AllocationSummaryCard extends StatefulWidget {
   });
 
   @override
-  State<_AllocationSummaryCard> createState() => _AllocationSummaryCardState();
-}
-
-class _AllocationSummaryCardState extends State<_AllocationSummaryCard> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _heldAnim;
-  late Animation<double> _subAnim;
-  late Animation<double> _missingAnim;
-  late Animation<double> _coverageAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
-    _setupAnimations(0, 0, 0, 0);
-    _controller.forward();
-  }
-
-  void _setupAnimations(double startHeld, double startSub, double startMissing, double startCoverage) {
-    _heldAnim = Tween<double>(begin: startHeld, end: widget.heldFraction).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _subAnim = Tween<double>(begin: startSub, end: widget.subFraction).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _missingAnim = Tween<double>(begin: startMissing, end: widget.missingFraction).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _coverageAnim = Tween<double>(begin: startCoverage, end: widget.coverage).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-  }
-
-  @override
-  void didUpdateWidget(covariant _AllocationSummaryCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.heldFraction != widget.heldFraction ||
-        oldWidget.subFraction != widget.subFraction ||
-        oldWidget.missingFraction != widget.missingFraction ||
-        oldWidget.coverage != widget.coverage) {
-      _setupAnimations(_heldAnim.value, _subAnim.value, _missingAnim.value, _coverageAnim.value);
-      _controller.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
@@ -2544,32 +2411,24 @@ class _AllocationSummaryCardState extends State<_AllocationSummaryCard> with Sin
             width: 100,
             height: 100,
             child: Stack(alignment: Alignment.center, children: [
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  return CustomPaint(
-                    size: const Size(100, 100),
-                    painter: _DonutCoveragePainter(
-                      heldFraction: _heldAnim.value,
-                      subFraction: _subAnim.value,
-                      missingFraction: _missingAnim.value,
-                      heldColor: widget.heldColor,
-                      subColor: widget.subColor,
-                      missingColor: widget.missingColor,
-                      bgColor: widget.bgColor,
-                    ),
-                  );
-                },
+              CustomPaint(
+                size: const Size(100, 100),
+                painter: _DonutCoveragePainter(
+                  heldFraction: heldFraction,
+                  subFraction: subFraction,
+                  missingFraction: missingFraction,
+                  heldColor: heldColor,
+                  subColor: subColor,
+                  missingColor: missingColor,
+                  bgColor: bgColor,
+                ),
               ),
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  return Column(mainAxisSize: MainAxisSize.min, children: [
-                    Text('${_coverageAnim.value.toStringAsFixed(0)}%',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: context.textPrimary)),
+              Column(mainAxisSize: MainAxisSize.min, children: [
+                Text('${coverage.toStringAsFixed(0)}%',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: context.textPrimary)),
                 Text('covered',
                     style: TextStyle(
                         fontSize: 10, color: context.textSecondary)),
@@ -2578,29 +2437,24 @@ class _AllocationSummaryCardState extends State<_AllocationSummaryCard> with Sin
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return Column(children: [
-                  _LegendItem(
-                      color: widget.heldColor,
-                      label: 'Held',
-                      value: '${widget.heldCount} (${(_heldAnim.value * 100).toStringAsFixed(1)}%)'),
-                  _LegendItem(
-                      color: widget.subColor,
-                      label: 'Subst.',
-                      value: '${widget.subCount} (${(_subAnim.value * 100).toStringAsFixed(1)}%)'),
-                  _LegendItem(
-                      color: widget.missingColor,
-                      label: 'Missing',
-                      value: '${widget.missingCount} (${(_missingAnim.value * 100).toStringAsFixed(1)}%)'),
-                  _LegendItem(
-                      color: context.textTertiary,
-                      label: 'Excluded',
-                      value: '${widget.excludedCount} (0%)'),
-                ]);
-              },
-            ),
+            child: Column(children: [
+              _LegendItem(
+                  color: heldColor,
+                  label: 'Held',
+                  value: '$heldCount (${(heldFraction * 100).toStringAsFixed(1)}%)'),
+              _LegendItem(
+                  color: subColor,
+                  label: 'Subst.',
+                  value: '$subCount (${(subFraction * 100).toStringAsFixed(1)}%)'),
+              _LegendItem(
+                  color: missingColor,
+                  label: 'Missing',
+                  value: '$missingCount (${(missingFraction * 100).toStringAsFixed(1)}%)'),
+              _LegendItem(
+                  color: context.textTertiary,
+                  label: 'Excluded',
+                  value: '$excludedCount (0%)'),
+            ]),
           ),
         ]),
       ]),
@@ -2974,6 +2828,11 @@ class _SectorComparisonTab extends StatelessWidget {
     );
   }
 }
+
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // SLIVER TAB BAR DELEGATE (kept for potential future use)
 // ---------------------------------------------------------------------------
@@ -2995,87 +2854,5 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_SliverTabBarDelegate old) => false;
-}
-
-class _ActualCostBanner extends StatelessWidget {
-  final double actualCost;
-  final double variance;
-  final double investmentAmount;
-  final double? residualCash;
-  final double heldCoverage;
-  final String Function(double) formatCurrency;
-
-  const _ActualCostBanner({
-    required this.actualCost,
-    required this.variance,
-    required this.investmentAmount,
-    this.residualCash,
-    required this.heldCoverage,
-    required this.formatCurrency,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isOverBudget = variance > 0;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isOverBudget
-            ? context.statusWarning.withValues(alpha: 0.1)
-            : context.statusSuccess.withValues(alpha: 0.1),
-        borderRadius: AppRadii.button,
-        border: Border.all(
-          color: isOverBudget
-              ? context.statusWarning.withValues(alpha: 0.3)
-              : context.statusSuccess.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(
-              isOverBudget ? Icons.warning_amber_rounded : Icons.check_circle_outline,
-              size: 16,
-              color: isOverBudget ? context.statusWarning : context.statusSuccess,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Order Budget: ${formatCurrency(actualCost)} of ${formatCurrency(investmentAmount)} deployed in fresh orders',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: context.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                if (heldCoverage > 0)
-                  Text(
-                    'Held stocks cover ${formatCurrency(heldCoverage)} of the basket',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: context.statusSuccess,
-                    ),
-                  ),
-                if (residualCash != null && residualCash! > 0)
-                  Text(
-                    'Rounding leftover: ${formatCurrency(residualCash!)} (undeployed)',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: context.textSecondary,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 

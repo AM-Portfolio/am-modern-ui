@@ -167,9 +167,9 @@ class BasketDashboardPage extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: AppSpacing.sm),
-                      // Mock progress bar
+                      // Coverage progress bar
                       LinearProgressIndicator(
-                        value: 0.82,
+                        value: (basket.coveragePercent ?? 0) / 100.0,
                         backgroundColor: colors.divider,
                         color: colors.actionPrimaryBg,
                         minHeight: 8,
@@ -178,7 +178,7 @@ class BasketDashboardPage extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Align(
                         alignment: Alignment.centerRight,
-                        child: Text('82% Match', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+                        child: Text('${(basket.coveragePercent ?? 0).toStringAsFixed(0)}% Match', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
                       ),
                       const SizedBox(height: AppSpacing.xl),
                       const Divider(),

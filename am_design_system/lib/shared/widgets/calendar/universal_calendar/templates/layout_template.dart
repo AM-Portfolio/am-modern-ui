@@ -169,7 +169,7 @@ class _CalendarLayoutTemplateState extends State<CalendarLayoutTemplate> with Si
     padding: const EdgeInsets.all(16.0),
     decoration: BoxDecoration(
       color: Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.vertical(top: Radius.circular(widget.config.borderRadius)),
+      // Fixed: Cannot use borderRadius with non-uniform borders like Border(bottom: ...)
       border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
     ),
     child: Column(

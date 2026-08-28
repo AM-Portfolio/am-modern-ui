@@ -13,6 +13,12 @@ class BasketOpportunity {
   final double? investmentAmount;
   final double? totalPortfolioValue;
   final double? minimumInvestmentAmount;
+  final double? actualInvestmentCost;
+  final double? budgetVariance;
+  final double? residualCash;
+  final double? budgetUtilization;
+  final double? heldCoverageValue;
+  final List<String> excludedSymbols;
   final List<BasketItem> composition;
   final List<BasketItem> buyList;
 
@@ -31,6 +37,12 @@ class BasketOpportunity {
     this.investmentAmount,
     this.totalPortfolioValue,
     this.minimumInvestmentAmount,
+    this.actualInvestmentCost,
+    this.budgetVariance,
+    this.residualCash,
+    this.budgetUtilization,
+    this.heldCoverageValue,
+    this.excludedSymbols = const [],
     this.composition = const [],
     this.buyList = const [],
   });
@@ -51,6 +63,15 @@ class BasketOpportunity {
       investmentAmount: (json['investmentAmount'] as num?)?.toDouble(),
       totalPortfolioValue: (json['totalPortfolioValue'] as num?)?.toDouble(),
       minimumInvestmentAmount: (json['minimumInvestmentAmount'] as num?)?.toDouble(),
+      actualInvestmentCost: (json['actualInvestmentCost'] as num?)?.toDouble(),
+      budgetVariance: (json['budgetVariance'] as num?)?.toDouble(),
+      residualCash: (json['residualCash'] as num?)?.toDouble(),
+      budgetUtilization: (json['budgetUtilization'] as num?)?.toDouble(),
+      heldCoverageValue: (json['heldCoverageValue'] as num?)?.toDouble(),
+      excludedSymbols: (json['excludedSymbols'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
       composition: (json['composition'] as List<dynamic>?)
               ?.map((e) => BasketItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -78,6 +99,12 @@ class BasketOpportunity {
       'investmentAmount': investmentAmount,
       'totalPortfolioValue': totalPortfolioValue,
       'minimumInvestmentAmount': minimumInvestmentAmount,
+      'actualInvestmentCost': actualInvestmentCost,
+      'budgetVariance': budgetVariance,
+      'residualCash': residualCash,
+      'budgetUtilization': budgetUtilization,
+      'heldCoverageValue': heldCoverageValue,
+      'excludedSymbols': excludedSymbols,
       'composition': composition.map((e) => e.toJson()).toList(),
       'buyList': buyList.map((e) => e.toJson()).toList(),
     };
@@ -98,6 +125,12 @@ class BasketOpportunity {
     double? investmentAmount,
     double? totalPortfolioValue,
     double? minimumInvestmentAmount,
+    double? actualInvestmentCost,
+    double? budgetVariance,
+    double? residualCash,
+    double? budgetUtilization,
+    double? heldCoverageValue,
+    List<String>? excludedSymbols,
     List<BasketItem>? composition,
     List<BasketItem>? buyList,
   }) {
@@ -116,6 +149,12 @@ class BasketOpportunity {
       investmentAmount: investmentAmount ?? this.investmentAmount,
       totalPortfolioValue: totalPortfolioValue ?? this.totalPortfolioValue,
       minimumInvestmentAmount: minimumInvestmentAmount ?? this.minimumInvestmentAmount,
+      actualInvestmentCost: actualInvestmentCost ?? this.actualInvestmentCost,
+      budgetVariance: budgetVariance ?? this.budgetVariance,
+      residualCash: residualCash ?? this.residualCash,
+      budgetUtilization: budgetUtilization ?? this.budgetUtilization,
+      heldCoverageValue: heldCoverageValue ?? this.heldCoverageValue,
+      excludedSymbols: excludedSymbols ?? this.excludedSymbols,
       composition: composition ?? this.composition,
       buyList: buyList ?? this.buyList,
     );
@@ -138,6 +177,8 @@ class BasketItem {
   final double? lastPrice;
   final String? marketCapCategory;
   final double? marketCapValue;
+  final double? targetQuantity;
+  final bool underfunded;
   final double? heldQuantity;
   final double? heldAveragePrice;
   final List<Alternative> alternatives;
@@ -158,6 +199,8 @@ class BasketItem {
     this.lastPrice,
     this.marketCapCategory,
     this.marketCapValue,
+    this.targetQuantity,
+    this.underfunded = false,
     this.heldQuantity,
     this.heldAveragePrice,
     this.alternatives = const [],
@@ -183,6 +226,8 @@ class BasketItem {
       lastPrice: (json['lastPrice'] as num?)?.toDouble(),
       marketCapCategory: json['marketCapCategory'] as String?,
       marketCapValue: (json['marketCapValue'] as num?)?.toDouble(),
+      targetQuantity: (json['targetQuantity'] as num?)?.toDouble(),
+      underfunded: json['underfunded'] as bool? ?? false,
       heldQuantity: (json['heldQuantity'] as num?)?.toDouble(),
       heldAveragePrice: (json['heldAveragePrice'] as num?)?.toDouble(),
       alternatives: (json['alternatives'] as List<dynamic>?)
@@ -209,6 +254,8 @@ class BasketItem {
       'lastPrice': lastPrice,
       'marketCapCategory': marketCapCategory,
       'marketCapValue': marketCapValue,
+      'targetQuantity': targetQuantity,
+      'underfunded': underfunded,
       'heldQuantity': heldQuantity,
       'heldAveragePrice': heldAveragePrice,
       'alternatives': alternatives.map((e) => e.toJson()).toList(),
@@ -219,6 +266,7 @@ class BasketItem {
     String? stockSymbol,
     String? isin,
     String? sector,
+    String? marketCapCategory,
     ItemStatus? status,
     String? userHoldingSymbol,
     String? userHoldingIsin,
@@ -231,6 +279,8 @@ class BasketItem {
     bool clearBuyQuantity = false,
     double? lastPrice,
     List<Alternative>? alternatives,
+    double? targetQuantity,
+    bool? underfunded,
     double? heldQuantity,
     double? heldAveragePrice,
   }) {
@@ -238,6 +288,7 @@ class BasketItem {
       stockSymbol: stockSymbol ?? this.stockSymbol,
       isin: isin ?? this.isin,
       sector: sector ?? this.sector,
+      marketCapCategory: marketCapCategory ?? this.marketCapCategory,
       status: status ?? this.status,
       userHoldingSymbol: userHoldingSymbol ?? this.userHoldingSymbol,
       userHoldingIsin: userHoldingIsin ?? this.userHoldingIsin,
@@ -249,6 +300,8 @@ class BasketItem {
       buyQuantity: clearBuyQuantity ? null : (buyQuantity ?? this.buyQuantity),
       lastPrice: lastPrice ?? this.lastPrice,
       alternatives: alternatives ?? this.alternatives,
+      targetQuantity: targetQuantity ?? this.targetQuantity,
+      underfunded: underfunded ?? this.underfunded,
       heldQuantity: heldQuantity ?? this.heldQuantity,
       heldAveragePrice: heldAveragePrice ?? this.heldAveragePrice,
     );
@@ -335,4 +388,5 @@ enum ItemStatus {
   held,
   missing,
   substitute,
+  excluded,
 }

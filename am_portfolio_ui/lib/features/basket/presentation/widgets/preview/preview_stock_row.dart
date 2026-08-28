@@ -38,6 +38,8 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
         return Theme.of(context).primaryColor;
       case ItemStatus.missing:
         return context.statusError;
+      case ItemStatus.excluded:
+        return context.colors.textTertiary;
     }
   }
 
@@ -49,6 +51,8 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
         return 'SUBSTITUTED';
       case ItemStatus.missing:
         return 'MISSING';
+      case ItemStatus.excluded:
+        return 'EXCLUDED';
     }
   }
 
