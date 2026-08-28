@@ -1,3 +1,5 @@
+import 'package:am_design_system/am_design_system.dart';
+
 class OverlayPoint {
   const OverlayPoint({required this.xLabel, required this.value});
 
@@ -10,11 +12,17 @@ class OverlaySeries {
     required this.id,
     required this.label,
     required this.points,
+    this.rawPoints,
   });
 
   final String id;
   final String label;
+
+  /// Percent-normalized points (baseline = first valid value).
   final List<OverlayPoint> points;
+
+  /// Raw wealth/close values for chart rendering (MultiIndexChart normalizes to %).
+  final List<OverlayPoint>? rawPoints;
 }
 
 class OverlayPortfolioRef {
@@ -51,10 +59,16 @@ class OverlayChartState {
   factory OverlayChartState.initial(String timeFrame) {
     return OverlayChartState(
       timeFrame: timeFrame,
-      selectedIds: const [OverlayChartIds.overall],
+      selectedIds: const [
+        OverlayChartIds.overall,
+        OverlayChartIds.nifty50,
+      ],
       availablePortfolios: const [],
       series: const {},
-      pendingIds: const {OverlayChartIds.overall},
+      pendingIds: const {
+        OverlayChartIds.overall,
+        OverlayChartIds.nifty50,
+      },
       failedIds: const {},
     );
   }
@@ -147,6 +161,18 @@ List<OverlayPoint> toPercentPoints(List<OverlayPoint> raw) {
   ];
 }
 
+/// Machine-parseable timestamp for comparison chart union alignment.
+String normalizeOverlayTimestamp(
+  String raw, {
+  required bool isIntraday,
+  DateTime? referenceDate,
+}) =>
+    MultiSeriesChartTime.normalize(
+      raw,
+      isIntraday: isIntraday,
+      referenceDate: referenceDate,
+    );
+
 const _monthAbbr = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
@@ -224,14 +250,15 @@ String _overlayDisplayName(OverlayPortfolioRef p) {
   return name;
 }
 
-/// Overall + first 2 portfolios (appearance order), then NIFTY 50 if a slot remains.
+/// Overall + NIFTY 50 by default; optional third line is the first portfolio.
 List<String> defaultOverlaySelectedIds(List<String> portfolioIds) {
   final selected = <String>[
     OverlayChartIds.overall,
-    ...portfolioIds.take(OverlayChartIds.defaultPortfolioSlots),
+    OverlayChartIds.nifty50,
   ];
-  if (selected.length < OverlayChartIds.defaultVisibleLines) {
-    selected.add(OverlayChartIds.nifty50);
+  if (selected.length < OverlayChartIds.defaultVisibleLines &&
+      portfolioIds.isNotEmpty) {
+    selected.add(portfolioIds.first);
   }
   return selected.take(OverlayChartIds.defaultVisibleLines).toList();
 }

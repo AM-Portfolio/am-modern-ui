@@ -80,6 +80,7 @@
     "build:market:prod": "python scripts/manage.py build market prod",
     "build:subscription:prod": "python scripts/manage.py build subscription prod",
     "build:app:prod:trace": "python scripts/manage.py build app prod --boot-trace",
+    "serve:app:prod": "python scripts/serve_web.py --port 9000 --directory am_app/build/web",
     "─── GLOBAL UTILITIES ───": "echo",
     "clean:all": "python scripts/manage.py clean-all",
     "get:all": "python scripts/manage.py get-all",

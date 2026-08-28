@@ -46,14 +46,13 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
       selectedIds: selected,
       pendingIds: {...selected},
     );
-    await Future.wait([
-      _loadPortfolios(gen, timeFrame),
-      _loadIndices(
-        gen,
-        timeFrame,
-        selected.where(OverlayChartIds.needsIndexFetch).toList(),
-      ),
-    ]);
+    await _loadPortfolios(gen, timeFrame);
+    if (gen != _generation) return;
+    await _loadIndices(
+      gen,
+      timeFrame,
+      state.selectedIds.where(OverlayChartIds.needsIndexFetch).toList(),
+    );
   }
 
   Future<void> retry(String id) {
@@ -76,6 +75,8 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
     );
     if (OverlayChartIds.needsIndexFetch(id)) {
       await _loadIndices(_generation, state.timeFrame, [id]);
+    } else {
+      await _loadPortfolios(_generation, state.timeFrame);
     }
   }
 
@@ -98,8 +99,7 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
   }
 
   Future<void> _loadPortfolios(int gen, String timeFrame) async {
-    final previousSelected = List<String>.from(state.selectedIds);
-    for (final id in previousSelected.where((id) => !OverlayChartIds.isIndex(id))) {
+    for (final id in state.selectedIds.where((id) => !OverlayChartIds.isIndex(id))) {
       _markPending(id);
     }
     try {
@@ -109,33 +109,48 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
       if (gen != _generation) return;
 
       final availableIds = history.portfolios.map((p) => p.id).toList();
-      final selected = mergeOverlaySelection(
-        previous: previousSelected,
-        availablePortfolioIds: availableIds,
-        selectionTouched: _selectionTouched,
-      );
 
-      final nextSeries = Map<String, OverlaySeries>.from(state.series);
-      nextSeries.removeWhere((id, _) => !OverlayChartIds.isIndex(id));
-      final overallPct = toPercentPoints(history.aggregate);
+      final portfolioSeries = <String, OverlaySeries>{};
+      final overallRaw = history.aggregate
+          .where((p) => p.value.isFinite && p.value > 0)
+          .toList();
+      final overallPct = toPercentPoints(overallRaw);
       if (overallPct.length >= 2) {
-        nextSeries[OverlayChartIds.overall] = OverlaySeries(
+        portfolioSeries[OverlayChartIds.overall] = OverlaySeries(
           id: OverlayChartIds.overall,
           label: OverlayChartIds.overall,
           points: overallPct,
+          rawPoints: overallRaw,
         );
       }
       for (final ref in history.portfolios) {
         final raw = history.byPortfolioId[ref.id] ?? const <OverlayPoint>[];
-        final percent = toPercentPoints(raw);
+        final rawFinite = raw
+            .where((p) => p.value.isFinite && p.value > 0)
+            .toList();
+        final percent = toPercentPoints(rawFinite);
         if (percent.length >= 2) {
-          nextSeries[ref.id] = OverlaySeries(
+          portfolioSeries[ref.id] = OverlaySeries(
             id: ref.id,
             label: ref.label,
             points: percent,
+            rawPoints: rawFinite,
           );
         }
       }
+
+      if (gen != _generation) return;
+
+      // Fresh read — user may have added indices while portfolio history loaded.
+      final indicesFromState = Map<String, OverlaySeries>.from(state.series)
+        ..removeWhere((id, _) => !OverlayChartIds.isIndex(id));
+      final nextSeries = {...indicesFromState, ...portfolioSeries};
+
+      final selected = mergeOverlaySelection(
+        previous: List<String>.from(state.selectedIds),
+        availablePortfolioIds: availableIds,
+        selectionTouched: _selectionTouched,
+      );
 
       final pending = Set<String>.from(state.pendingIds)
         ..removeWhere((id) => !OverlayChartIds.needsIndexFetch(id));
@@ -154,10 +169,10 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
         clearWealth: aggregate.isEmpty,
       );
 
-      final selectedIndices = selected.where(OverlayChartIds.isIndex).toList();
-      final alreadyLoading = previousSelected.where(OverlayChartIds.isIndex).toSet();
-      final extraIndices =
-          selectedIndices.where((id) => !alreadyLoading.contains(id)).toList();
+      final extraIndices = selected
+          .where(OverlayChartIds.isIndex)
+          .where((id) => (state.series[id]?.points.length ?? 0) < 2)
+          .toList();
       if (extraIndices.isNotEmpty) {
         await _loadIndices(gen, timeFrame, extraIndices);
       }
@@ -167,7 +182,8 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
       final pending = Set<String>.from(state.pendingIds)
         ..removeWhere((id) => !OverlayChartIds.isIndex(id));
       final failed = Map<String, String>.from(state.failedIds);
-      for (final id in previousSelected.where((id) => !OverlayChartIds.isIndex(id))) {
+      for (final id
+          in state.selectedIds.where((id) => !OverlayChartIds.isIndex(id))) {
         failed[id] = 'Could not load portfolio';
       }
       state = state.copyWith(pendingIds: pending, failedIds: failed);
@@ -195,23 +211,32 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
       final nextSeries = Map<String, OverlaySeries>.from(state.series);
       final failed = Map<String, String>.from(state.failedIds);
       final pending = Set<String>.from(state.pendingIds);
+      final selectedIds = List<String>.from(state.selectedIds);
       for (final symbol in symbols) {
         pending.remove(symbol);
         final raw = bySymbol[symbol] ?? const <OverlayPoint>[];
-        final percent = toPercentPoints(raw);
+        final rawFinite = raw
+            .where((p) => p.value.isFinite && p.value > 0)
+            .toList();
+        final percent = toPercentPoints(rawFinite);
         if (percent.length >= 2) {
           nextSeries[symbol] = OverlaySeries(
             id: symbol,
             label: symbol,
             points: percent,
+            rawPoints: rawFinite,
           );
           failed.remove(symbol);
+          if (!selectedIds.contains(symbol)) {
+            selectedIds.add(symbol);
+          }
         } else {
           nextSeries.remove(symbol);
           failed[symbol] = 'No data for $symbol';
         }
       }
       state = state.copyWith(
+        selectedIds: selectedIds,
         series: nextSeries,
         pendingIds: pending,
         failedIds: failed,

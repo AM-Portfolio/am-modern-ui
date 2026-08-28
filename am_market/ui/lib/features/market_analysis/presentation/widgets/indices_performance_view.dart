@@ -5,8 +5,6 @@ import 'package:intl/intl.dart';
 import '../providers/market_provider.dart';
 import '../models/market_data.dart';
 import '../services/api_service.dart';
-import '../widgets/multi_index_chart.dart';
-
 
 class IndicesPerformanceView extends StatefulWidget {
   const IndicesPerformanceView({Key? key}) : super(key: key);
@@ -222,11 +220,15 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
                       // Chart Section
                       SizedBox(
                         height: 400,
-                        child: MultiIndexChart(
-                          historicalData: _historicalDataCache,
-                          selectedIndices: _selectedForChart.toList(),
-                          isLoading: _isLoadingHistorical,
-                          error: _error,
+                        child: ComparisonChartView(
+                          data: MultiSeriesChartData.fromLegacyMaps(
+                            _historicalDataCache,
+                          ),
+                          config: MultiSeriesChartConfig(
+                            selectedSeries: _selectedForChart.toList(),
+                            isLoading: _isLoadingHistorical,
+                            error: _error,
+                          ),
                         ),
                       ),
 
@@ -323,9 +325,9 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
         spacing: 8,
         runSpacing: 8,
         children: _selectedForChart.map((symbol) {
-          final color = MultiIndexChart.indexColors[
+          final color = ComparisonChartColors.palette[
               _selectedForChart.toList().indexOf(symbol) %
-                  MultiIndexChart.indexColors.length];
+                  ComparisonChartColors.palette.length];
 
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

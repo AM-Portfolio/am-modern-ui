@@ -35,11 +35,19 @@ class PortfolioHistoryChartWidget extends ConsumerStatefulWidget {
     required this.portfolioId,
     required this.timeFrame,
     this.height = 320,
+    this.embedMode = false,
+    this.showPortfolioDropdown = true,
+    this.showCandleToggle = true,
+    this.showFormatToggle = true,
   });
 
   final String? portfolioId;
   final TimeFrame timeFrame;
   final double height;
+  final bool embedMode;
+  final bool showPortfolioDropdown;
+  final bool showCandleToggle;
+  final bool showFormatToggle;
 
   @override
   ConsumerState<PortfolioHistoryChartWidget> createState() =>
@@ -642,31 +650,7 @@ class _PortfolioHistoryChartWidgetState
     final showCandles = candles != null;
     final Color cardBase = isDark ? const Color(0xFF0D1B2A) : const Color(0xFFFFFFFF);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                cardBase.withValues(alpha: isDark ? 0.55 : 0.45),
-                cardBase.withValues(alpha: isDark ? 0.3 : 0.25),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.07)
-                    : Colors.black.withValues(alpha: 0.07)),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, 8)),
-            ],
-          ),
-          child: Column(
+    final inner = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -674,12 +658,13 @@ class _PortfolioHistoryChartWidgetState
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildPortfolioTabs(),
+                  if (widget.showPortfolioDropdown) _buildPortfolioTabs(),
                   const Spacer(),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (widget.timeFrame != TimeFrame.oneDay) ...[
+                      if (widget.showCandleToggle &&
+                          widget.timeFrame != TimeFrame.oneDay) ...[
                         AppSegmentedControl<_HistoryChartKind>(
                           selectedValue: _chartKind,
                           children: const {
@@ -692,7 +677,7 @@ class _PortfolioHistoryChartWidgetState
                         ),
                         if (!showCandles) const SizedBox(width: 8),
                       ],
-                      if (!showCandles)
+                      if (widget.showFormatToggle && !showCandles)
                         AppSegmentedControl<ChartFormat>(
                           selectedValue: _activeFormat,
                           children: const {
@@ -875,7 +860,37 @@ class _PortfolioHistoryChartWidgetState
                 },
               ),
             ],
+          );
+
+    if (widget.embedMode) {
+      return inner;
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                cardBase.withValues(alpha: isDark ? 0.55 : 0.45),
+                cardBase.withValues(alpha: isDark ? 0.3 : 0.25),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.07)
+                    : Colors.black.withValues(alpha: 0.07)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, 8)),
+            ],
           ),
+          child: inner,
         ),
       ),
     );

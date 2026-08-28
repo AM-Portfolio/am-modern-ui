@@ -118,6 +118,23 @@ class DashboardJsonSanitizer {
     m['title'] = m['title']?.toString() ?? m['symbol']?.toString() ?? 'Activity';
     m['description'] ??= '';
     m['timestamp'] = _coerceTimestamp(m['timestamp']);
+    for (final key in [
+      'quantity',
+      'avgBuyingPrice',
+      'investmentValue',
+      'currentPrice',
+      'currentValue',
+      'profitLoss',
+      'profitLossPercent',
+    ]) {
+      final v = m[key];
+      if (v == null) continue;
+      if (v is num) {
+        m[key] = v.toDouble();
+      } else if (v is String) {
+        m[key] = double.tryParse(v);
+      }
+    }
     return m;
   }
 

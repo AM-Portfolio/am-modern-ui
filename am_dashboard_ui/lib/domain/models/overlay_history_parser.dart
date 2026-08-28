@@ -23,7 +23,11 @@ PortfolioOverlayHistory parsePortfolioOverlayHistory(
   final aggregate = <OverlayPoint>[];
 
   for (final row in rows) {
-    final dateLabel = _stringOf(row, dateKeys) ?? '';
+    final rawDateLabel = _stringOf(row, dateKeys) ?? '';
+    final dateLabel = normalizeOverlayTimestamp(
+      rawDateLabel,
+      isIntraday: isIntraday,
+    );
     dates.add(dateLabel);
 
     final agg = _numOf(row, aggregateKeys);
