@@ -69,6 +69,7 @@ class MultiIndexChart extends StatefulWidget {
   final VoidCallback? onOpenExpanded;
   final String? expandedChartPath;
   final bool showEndValuePills;
+  final bool preNormalizedPercent;
 
   const MultiIndexChart({
     super.key,
@@ -87,6 +88,7 @@ class MultiIndexChart extends StatefulWidget {
     this.onOpenExpanded,
     this.expandedChartPath,
     this.showEndValuePills = true,
+    this.preNormalizedPercent = false,
   }) : assert(
           chartData != null || historicalData != null,
           'Provide chartData or historicalData',
@@ -453,27 +455,29 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
     final sortedTimestamps = allTimestamps.toList()..sort();
 
-    // Baseline prices: Look forward for the first available price for each index (safety baseline)
+    // Baseline prices: first available level per series (skipped when pre-normalized).
     final Map<String, double> baselinePrices = {};
-    for (final symbol in _activeIndices) {
-      final data = widget._resolvedHistoricalData[symbol];
-      if (data != null && data.isNotEmpty) {
-        for (final timestamp in sortedTimestamps) {
-          final matchingPoint = data.firstWhere(
-            (p) {
-              final pTime = p['time'] as String?;
-              return pTime != null && normalizeTime(pTime) == timestamp;
-            },
-            orElse: () => {},
-          );
-          if (matchingPoint.isNotEmpty) {
-            final pVal = matchingPoint['close'] ??
-                matchingPoint['price'] ??
-                matchingPoint['lastPrice'] ??
-                matchingPoint['value'];
-            if (pVal != null) {
-              baselinePrices[symbol] = (pVal as num).toDouble();
-              break;
+    if (!widget.preNormalizedPercent) {
+      for (final symbol in _activeIndices) {
+        final data = widget._resolvedHistoricalData[symbol];
+        if (data != null && data.isNotEmpty) {
+          for (final timestamp in sortedTimestamps) {
+            final matchingPoint = data.firstWhere(
+              (p) {
+                final pTime = p['time'] as String?;
+                return pTime != null && normalizeTime(pTime) == timestamp;
+              },
+              orElse: () => {},
+            );
+            if (matchingPoint.isNotEmpty) {
+              final pVal = matchingPoint['close'] ??
+                  matchingPoint['price'] ??
+                  matchingPoint['lastPrice'] ??
+                  matchingPoint['value'];
+              if (pVal != null) {
+                baselinePrices[symbol] = (pVal as num).toDouble();
+                break;
+              }
             }
           }
         }
@@ -490,7 +494,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
       for (final symbol in _activeIndices) {
         final data = widget._resolvedHistoricalData[symbol];
-        if (data != null && baselinePrices.containsKey(symbol)) {
+        if (data != null &&
+            (widget.preNormalizedPercent || baselinePrices.containsKey(symbol))) {
           final matchingPoint = data.firstWhere(
             (p) {
               final pTime = p['time'] as String?;
@@ -508,7 +513,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
               final price = (pVal as num).toDouble();
               lastKnownPrices[symbol] = price;
 
-              if (_showAbsoluteValues) {
+              if (widget.preNormalizedPercent) {
+                point[symbol] = price;
+              } else if (_showAbsoluteValues) {
                 // [SIP/Absolute Value Optimization] In Absolute Mode, we store the raw price value directly.
                 point[symbol] = price;
               } else {
@@ -543,7 +550,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
               if (isGapShort) {
                 // Carry over for short gaps to maintain visual continuity
                 final price = lastKnownPrices[symbol]!;
-                if (_showAbsoluteValues) {
+                if (widget.preNormalizedPercent) {
+                  point[symbol] = price;
+                } else if (_showAbsoluteValues) {
                   // [SIP/Absolute Value Optimization] Carry over absolute price.
                   point[symbol] = price;
                 } else {
@@ -987,6 +996,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   }
 
   Widget _buildUnitToggle(BuildContext context) {
+    if (widget.preNormalizedPercent) {
+      return const SizedBox.shrink();
+    }
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(

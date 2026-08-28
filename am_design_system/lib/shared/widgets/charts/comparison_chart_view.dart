@@ -34,6 +34,7 @@ class ComparisonChartView extends StatelessWidget {
           onOpenExpanded: config.onOpenExpanded,
           expandedChartPath: config.expandedChartPath,
           showEndValuePills: config.showEndValuePills,
+          preNormalizedPercent: config.preNormalizedPercent,
         ),
     };
 

@@ -5,7 +5,6 @@ import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provi
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'glass_card.dart';
 
 /// Overlay chart of portfolio wealth vs selected indices (% from first point).
@@ -22,10 +21,6 @@ class DashboardChartWidget extends ConsumerWidget {
     final overlay = ref.watch(dashboardOverlayProvider(userId).notifier);
     final state = ref.watch(dashboardOverlayProvider(userId));
     final tfCode = dashboardTimeFrameCode(ref);
-    final selectedLabels = overlaySelectedLabels(state);
-    final expandPath = selectedLabels.isEmpty
-        ? null
-        : _chartComparePath(tfCode, selectedLabels);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -41,18 +36,12 @@ class DashboardChartWidget extends ConsumerWidget {
               state: state,
               overlay: overlay,
               tfCode: tfCode,
-              expandPath: expandPath,
               legendTrailing: _AddSeriesButton(overlay: overlay, state: state),
             ),
           ),
         );
       },
     );
-  }
-
-  String _chartComparePath(String tfCode, List<String> series) {
-    final seriesParam = Uri.encodeComponent(series.join(','));
-    return '/app/chart/compare?context=dashboard&tf=$tfCode&series=$seriesParam';
   }
 }
 
@@ -121,14 +110,12 @@ class _ChartBody extends ConsumerWidget {
     required this.state,
     required this.overlay,
     required this.tfCode,
-    required this.expandPath,
     required this.legendTrailing,
   });
 
   final OverlayChartState state;
   final DashboardOverlayNotifier overlay;
   final String tfCode;
-  final String? expandPath;
   final Widget legendTrailing;
 
   @override
@@ -159,11 +146,9 @@ class _ChartBody extends ConsumerWidget {
         embedMode: true,
         timeFrameCode: tfCode,
         showEndValuePills: false,
+        showExpandButton: false,
+        preNormalizedPercent: true,
         legendTrailing: legendTrailing,
-        expandedChartPath: expandPath,
-        onOpenExpanded: expandPath == null
-            ? null
-            : () => context.push(expandPath!),
         onRemoveSeries: (label) {
           for (final entry in state.series.entries) {
             if (entry.value.label == label) {

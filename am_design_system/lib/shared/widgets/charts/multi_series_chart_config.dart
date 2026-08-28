@@ -26,6 +26,7 @@ class MultiSeriesChartConfig extends Equatable {
     this.onOpenExpanded,
     this.expandedChartPath,
     this.showEndValuePills = true,
+    this.preNormalizedPercent = false,
   });
 
   /// When null, [resolveSelectedSeries] uses [preferredSeriesOrder] + data labels.
@@ -58,6 +59,9 @@ class MultiSeriesChartConfig extends Equatable {
   /// Colored % badges at the right edge of the line chart.
   final bool showEndValuePills;
 
+  /// Values are already % change from each series baseline (overlay charts).
+  final bool preNormalizedPercent;
+
   List<String> resolveSelectedSeries(MultiSeriesChartData data) =>
       selectedSeries ?? data.labels(preferredOrder: preferredSeriesOrder);
 
@@ -75,5 +79,6 @@ class MultiSeriesChartConfig extends Equatable {
         showExpandButton,
         expandedChartPath,
         showEndValuePills,
+        preNormalizedPercent,
       ];
 }

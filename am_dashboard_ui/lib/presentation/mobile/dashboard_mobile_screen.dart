@@ -1,12 +1,10 @@
+import 'package:am_dashboard_ui/presentation/layout/dashboard_customize_sheet.dart';
+import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_provider.dart';
+import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_renderer.dart';
+import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_store.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
-import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_common/am_common.dart';
-import '../shared/widgets/dashboard_summary_widget.dart';
-import '../shared/widgets/dashboard_chart_widget.dart';
-import '../shared/widgets/dashboard_ranking_widget.dart';
-import '../shared/widgets/dashboard_recent_activity_widget.dart';
-import '../shared/widgets/dashboard_portfolio_overview_card.dart';
 import '../shared/widgets/glass_card.dart';
 import 'package:am_design_system/am_design_system.dart';
 
@@ -101,39 +99,6 @@ class _DashboardMobileScreenState
       (_, next) => markIfReady(next),
     );
     ref.listen(portfolioOverviewsProvider(widget.userId), (_, next) => markIfReady(next));
-    ref.listen(dashboardOverlayProvider(widget.userId), (_, next) {
-      if (next.hasAnySeries) {
-        markIfReady(const AsyncData(true));
-      }
-    });
-  }
-
-  Widget _buildSummaryLoading() {
-    return Column(
-      children: [
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: _buildLoadingCard(120)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildLoadingCard(120)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: _buildLoadingCard(120)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildLoadingCard(120)),
-            ],
-          ),
-        ),
-      ],
-    );
   }
 
   Widget _buildStickyHeader({
@@ -167,6 +132,16 @@ class _DashboardMobileScreenState
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (kDashboardCustomizeEnabled) ...[
+                  IconButton(
+                    tooltip: 'Customize dashboard',
+                    onPressed: () => DashboardCustomizeSheet.show(context),
+                    icon: Icon(Icons.tune, color: onSurface, size: 22),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  ),
+                  const SizedBox(width: 4),
+                ],
                 if (widget.onOpenDocIntel != null) ...[
                   _DocIntelAddPortfolioButton(
                     onTap: widget.onOpenDocIntel!,
@@ -199,11 +174,10 @@ class _DashboardMobileScreenState
     final timeFrame = ref.watch(appTimeFrameProvider);
     final tfCode = timeFrame.code;
 
+    final layout = ref.watch(dashboardLayoutProvider);
+
     ref.watch(dashboardParallelKickoffProvider(userId, timeFrame: tfCode));
     _listenDashboardFirstData(ref, tfCode);
-
-    final dashboardAsync = ref.watch(dashboardStreamProvider(userId));
-    final overviewsAsync = ref.watch(portfolioOverviewsProvider(userId));
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -291,87 +265,14 @@ class _DashboardMobileScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // 1 — Summary metrics and Performance Chart
-                          dashboardAsync.when(
-                            skipLoadingOnReload: true,
-                            skipLoadingOnRefresh: true,
-                            data: (summary) =>
-                                DashboardSummaryWidget(summary: summary),
-                            loading: _buildSummaryLoading,
-                            error: (err, stack) => AmErrorWidget(
-                              message: 'Failed to load summary',
-                              onRetry: () => retryDashboardSummary(ref, userId),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Consumer(
-                            builder: (context, ref, child) {
-                              return SizedBox(
-                                height: 350,
-                                child: DashboardChartWidget(userId: userId),
-                              );
-                            },
-                          ),
-
-                          const SizedBox(height: 24),
-                          // 2 — Market Movers
-                          Consumer(
-                            builder: (context, ref, child) {
-                              final topMoversAsync = ref.watch(
-                                moversStreamProvider(userId, timeFrame: tfCode),
-                              );
-                              return topMoversAsync.when(
-                                data: (topMovers) => DashboardRankingWidget(
-                                  gainers: topMovers.gainers,
-                                  losers: topMovers.losers,
-                                ),
-                                loading: () => _buildLoadingCard(350),
-                                error: (err, stack) => DashboardRankingWidget.errorState(),
-                              );
-                            },
-                          ),
-
-                          const SizedBox(height: 24),
-                          // 3 — Recent Activity
-                          DashboardRecentActivitySection(userId: userId),
-
-                          const SizedBox(height: 24),
-                          // 4 — Your Portfolios
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Your Portfolios',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 20,
-                                  color: onSurface,
-                                  fontFamily: 'Inter',
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              overviewsAsync.when(
-                                data: (overviews) => Column(
-                                  children: [
-                                    for (final overview in overviews)
-                                      Padding(
-                                        padding: const EdgeInsets.only(bottom: 12),
-                                        child: DashboardPortfolioOverviewCard(
-                                          overview: overview,
-                                          onTap: () {},
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                loading: () => _buildLoadingCard(100),
-                                error: (err, stack) => AmErrorWidget(
-                                  message: 'Failed to load portfolios',
-                                  onRetry: () => ref.invalidate(
-                                    portfolioOverviewsProvider(userId),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          DashboardLayoutRenderer(
+                            userId: userId,
+                            layout: layout,
+                            timeFrameCode: tfCode,
+                            onOpenDocIntel: widget.onOpenDocIntel,
+                            compactBreakpoint: 99999,
+                            chartHeight: 350,
+                            mobileChartHeight: 350,
                           ),
                         ],
                       ),

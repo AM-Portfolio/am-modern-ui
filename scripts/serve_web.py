@@ -12,6 +12,12 @@ from pathlib import Path
 
 
 class SPARequestHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        # Avoid stale main.dart.js after local rebuilds.
+        if self.path.split("?", 1)[0].endswith((".js", ".html")):
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        super().end_headers()
+
     def send_head(self):
         requested = self.path.split("?", 1)[0]
         file_path = Path(self.translate_path(requested))

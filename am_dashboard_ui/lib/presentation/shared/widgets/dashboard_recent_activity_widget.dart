@@ -1,6 +1,7 @@
 import 'package:am_dashboard_ui/domain/models/activity_item.dart';
 import 'package:am_dashboard_ui/domain/models/recent_activity_response.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+import 'package:am_dashboard_ui/presentation/shared/widgets/recent_activity_mobile_section.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,8 +129,24 @@ class DashboardRecentActivityWidget extends StatelessWidget {
 
   List<ActivityItem> get activities => response.items;
 
+  static bool _isMobile(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < 600;
+
   @override
   Widget build(BuildContext context) {
+    if (_isMobile(context)) {
+      return RecentActivityMobileSection(
+        activities: activities,
+        totalItems: response.totalItems,
+        pageSize: pageSize,
+        onViewAll: onViewAll,
+      );
+    }
+
+    return _buildDesktopTable(context);
+  }
+
+  Widget _buildDesktopTable(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = context.colors.textPrimary;
     final onSurfaceVariant = context.colors.textSecondary;
@@ -181,17 +198,11 @@ class DashboardRecentActivityWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isMobile = MediaQuery.of(context).size.width < 600;
-                if (isMobile) {
-                  return _buildMobileList(activities, isDark, currencyFormat, dateFormat, onSurface, onSurfaceVariant);
-                }
-                
-                final table = SizedBox(
-                  height: 300,
-                  child: PaginatedSortableTable<ActivityItem>(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final table = SizedBox(
+                height: 300,
+                child: PaginatedSortableTable<ActivityItem>(
                   items: activities,
                   pageSize: pageSize,
                   pageSizeOptions: const [10, 25, 50],
@@ -206,8 +217,9 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                   onServerSort: onSort,
                   headerTextStyle: headerStyle,
                   rowTextStyle: rowStyle,
-                  headerBackgroundColor:
-                      isDark ? Colors.transparent : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
+                  headerBackgroundColor: isDark
+                      ? Colors.transparent
+                      : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
                   rowHoverColor: isDark
                       ? Colors.white.withValues(alpha: 0.04)
                       : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
@@ -290,164 +302,17 @@ class DashboardRecentActivityWidget extends StatelessWidget {
                 ),
               );
 
-                if (constraints.maxWidth < 520) {
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(width: 520, child: table),
-                  );
-                }
-                return table;
-              },
-            ),
+              if (constraints.maxWidth < 520) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(width: 520, child: table),
+                );
+              }
+              return table;
+            },
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMobileList(
-    List<ActivityItem> items,
-    bool isDark,
-    NumberFormat currencyFormat,
-    DateFormat dateFormat,
-    Color onSurface,
-    Color onSurfaceVariant,
-  ) {
-    if (items.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Text('No recent activity', style: TextStyle(color: onSurfaceVariant)),
-        ),
-      );
-    }
-    
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: items.length,
-      separatorBuilder: (context, index) => Divider(
-        color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
-        height: 1,
-      ),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        final isBuy = item.description.toLowerCase().contains('buy') || 
-                      item.description.toLowerCase().contains('deposit') ||
-                      (item.quantity != null && item.quantity! > 0);
-        final isSell = item.description.toLowerCase().contains('sell') || 
-                       item.description.toLowerCase().contains('withdraw') ||
-                       (item.quantity != null && item.quantity! < 0);
-        
-        final iconColor = isBuy 
-            ? context.colors.statusSuccess 
-            : isSell 
-                ? context.colors.statusError 
-                : context.colors.textSecondary;
-
-        final iconData = isBuy 
-            ? Icons.arrow_downward_rounded 
-            : isSell 
-                ? Icons.arrow_upward_rounded 
-                : Icons.swap_horiz_rounded;
-
-        final symbol = (item.symbol ?? item.title).toUpperCase();
-        
-        final subtitleDesc = item.description.contains('@') 
-            ? item.description.split('@').last.trim() 
-            : item.description;
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Icon
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  iconData,
-                  color: iconColor,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Body (Title and Date)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      (item.symbol ?? item.title).toUpperCase(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: onSurface,
-                        fontFamily: 'Inter',
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$subtitleDesc • ${dateFormat.format(item.timestamp)}',
-                      style: TextStyle(
-                        color: onSurfaceVariant,
-                        fontSize: 12,
-                        fontFamily: 'Inter',
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Trailing (Amount and Status)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    item.currentValue != null 
-                        ? currencyFormat.format(item.currentValue) 
-                        : (item.quantity != null ? '${item.quantity} units' : ''),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: onSurface,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                  if (item.status != null) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        item.status!,
-                        style: TextStyle(
-                          color: onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

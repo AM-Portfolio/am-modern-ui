@@ -195,17 +195,17 @@ void main() {
   });
 
   group('default overlay selection', () {
-    test('defaults to Overall plus first two portfolios', () {
+    test('defaults to Overall, NIFTY 50, and first portfolio', () {
       expect(
         defaultOverlaySelectedIds([zerodhaA, zerodhaB, groww]),
-        [OverlayChartIds.overall, zerodhaA, zerodhaB],
+        [OverlayChartIds.overall, OverlayChartIds.nifty50, zerodhaA],
       );
     });
 
     test('one portfolio plus Overall and NIFTY 50', () {
       expect(
         defaultOverlaySelectedIds([zerodhaA]),
-        [OverlayChartIds.overall, zerodhaA, OverlayChartIds.nifty50],
+        [OverlayChartIds.overall, OverlayChartIds.nifty50, zerodhaA],
       );
     });
 
@@ -216,7 +216,7 @@ void main() {
           availablePortfolioIds: [zerodhaA, zerodhaB],
           selectionTouched: false,
         ),
-        [OverlayChartIds.overall, zerodhaA, zerodhaB],
+        [OverlayChartIds.overall, OverlayChartIds.nifty50, zerodhaA],
       );
     });
 
@@ -240,7 +240,7 @@ void main() {
         'cccccccc-cccc-cccc-cccc-cccccccccccc',
       ];
       final selected = defaultOverlaySelectedIds(ids);
-      expect(selected, [OverlayChartIds.overall, zerodhaA, zerodhaB]);
+      expect(selected, [OverlayChartIds.overall, OverlayChartIds.nifty50, zerodhaA]);
       expect(selected, hasLength(OverlayChartIds.defaultVisibleLines));
     });
 

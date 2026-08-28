@@ -7,6 +7,9 @@ import 'package:am_dashboard_ui/domain/models/dashboard_summary.dart';
 import 'package:am_dashboard_ui/domain/models/performance_response.dart';
 import 'package:am_dashboard_ui/domain/models/portfolio_overview.dart';
 import 'package:am_dashboard_ui/domain/models/recent_activity_response.dart';
+import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_provider.dart';
+import 'package:am_dashboard_ui/presentation/layout/dashboard_widget_id.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
 import 'package:am_dashboard_ui/domain/models/top_movers_response.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -87,10 +90,27 @@ void dashboardParallelKickoff(
   String timeFrame = '1D',
 }) {
   if (userId.isEmpty) return;
-  ref.watch(dashboardStreamProvider(userId));
-  ref.watch(moversStreamProvider(userId, timeFrame: timeFrame));
-  ref.watch(portfolioOverviewsProvider(userId));
-  ref.watch(recentActivityProvider(userId, page: 0, size: 10));
+  final visible =
+      ref.watch(dashboardLayoutProvider).visibleSlots.map((s) => s.id).toSet();
+  if (visible.contains(DashboardWidgetId.summary)) {
+    ref.watch(dashboardStreamProvider(userId));
+  }
+  if (visible.contains(DashboardWidgetId.movers)) {
+    ref.watch(moversStreamProvider(userId, timeFrame: timeFrame));
+  }
+  if (visible.contains(DashboardWidgetId.portfolioList)) {
+    ref.watch(portfolioOverviewsProvider(userId));
+  }
+  if (visible.contains(DashboardWidgetId.recentActivity)) {
+    ref.watch(recentActivityProvider(userId, page: 0, size: 10));
+  }
+  if (visible.contains(DashboardWidgetId.allocation)) {
+    ref.watch(allocationStreamProvider(userId));
+  }
+  if (visible.contains(DashboardWidgetId.benchmarkComparison) ||
+      visible.contains(DashboardWidgetId.portfolioWealthChart)) {
+    ref.watch(dashboardOverlayProvider(userId));
+  }
 }
 
 double _parseDouble(dynamic val) {

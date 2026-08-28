@@ -477,7 +477,10 @@ class DashboardRepository {
       final rows = _asObjectList(rawPoints);
       final points = <OverlayPoint>[];
       for (final row in rows) {
-        final label = _stringOf(row, const ['time', 'timestamp', 'date']);
+        final label = _stringOf(
+          row,
+          const ['time', 'timestamp', 'date', 'datetime', 'snapshotTime'],
+        );
         final value = _numOf(
           row,
           const ['close', 'price', 'lastPrice', 'value'],
