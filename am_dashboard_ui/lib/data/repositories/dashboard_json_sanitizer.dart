@@ -1,5 +1,47 @@
 /// Normalizes am-analysis dashboard API JSON before Freezed parsing.
 class DashboardJsonSanitizer {
+  static Map<String, dynamic> asObject(dynamic raw) {
+    if (raw is Map<String, dynamic>) return Map<String, dynamic>.from(raw);
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    return <String, dynamic>{};
+  }
+
+  /// REST and STOMP summary payloads: unwrap `{data: ...}`, map
+  /// `investmentValue` → `totalInvested`, and coerce nulls so Freezed parse
+  /// cannot throw `type 'Null' is not a subtype of type 'num'`.
+  static Map<String, dynamic> summary(dynamic raw) {
+    var json = asObject(raw);
+    final nested = json['data'];
+    if (nested is Map && json['totalValue'] == null && json['currentValue'] == null) {
+      json = asObject(nested);
+    }
+    final invested = json['totalInvested'] ?? json['investmentValue'];
+    final value = json['totalValue'] ?? json['currentValue'];
+    json['totalValue'] = _numOrZero(value);
+    json['totalInvested'] = _numOrZero(invested);
+    json['totalGainLoss'] = _numOrZero(json['totalGainLoss']);
+    json['totalGainLossPercentage'] = _numOrZero(json['totalGainLossPercentage']);
+    json['dayChange'] = _numOrZero(json['dayChange'] ?? json['todayGainLoss']);
+    json['dayChangePercentage'] = _numOrZero(
+      json['dayChangePercentage'] ?? json['todayGainLossPercentage'],
+    );
+    json['totalPortfolios'] = _intOrZero(json['totalPortfolios']);
+    return json;
+  }
+
+  static num _numOrZero(dynamic value) {
+    if (value is num && value.isFinite) return value;
+    if (value is String) return num.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  static int _intOrZero(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
   static Map<String, dynamic> performance(
     Map<String, dynamic> json, {
     String defaultTimeFrame = '1M',

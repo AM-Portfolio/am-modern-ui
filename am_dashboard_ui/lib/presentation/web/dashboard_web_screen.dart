@@ -1,4 +1,5 @@
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_common/am_common.dart';
 import '../shared/widgets/dashboard_summary_widget.dart';
@@ -34,8 +35,8 @@ class DashboardWebScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Expanded(
-              child: const ShimmerLoading(
+            const Expanded(
+              child: ShimmerLoading(
                 child: SkeletonBox(
                   width: double.infinity,
                   height: double.infinity,
@@ -79,10 +80,11 @@ class DashboardWebScreen extends ConsumerWidget {
       (_, next) => markIfReady(next),
     );
     ref.listen(portfolioOverviewsProvider(userId), (_, next) => markIfReady(next));
-    ref.listen(
-      historyStreamProvider(userId, timeFrame: tfCode),
-      (_, next) => markIfReady(next),
-    );
+    ref.listen(dashboardOverlayProvider(userId), (_, next) {
+      if (next.hasAnySeries) {
+        markIfReady(const AsyncData(true));
+      }
+    });
   }
 
   Widget _buildSummaryLoading(BuildContext context) {
@@ -138,22 +140,7 @@ class DashboardWebScreen extends ConsumerWidget {
   }
 
   Widget _buildPerformanceChart(WidgetRef ref, String tfCode) {
-    return Consumer(
-      builder: (context, ref, child) {
-        final performanceAsync =
-            ref.watch(historyStreamProvider(userId, timeFrame: tfCode));
-        return performanceAsync.when(
-          data: (performance) => DashboardChartWidget(performance: performance),
-          loading: () => _buildLoadingCard(280, label: 'Loading chart…'),
-          error: (err, stack) => AmErrorWidget(
-            message: 'Failed to load chart',
-            onRetry: () => ref.invalidate(
-              historyStreamProvider(userId, timeFrame: tfCode),
-            ),
-          ),
-        );
-      },
-    );
+    return DashboardChartWidget(userId: userId);
   }
 
   Widget _buildMoversPanel(WidgetRef ref, String tfCode) {
@@ -283,11 +270,13 @@ class DashboardWebScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
                     dashboardAsync.when(
+                      skipLoadingOnReload: true,
+                      skipLoadingOnRefresh: true,
                       data: (summary) => DashboardSummaryWidget(summary: summary),
                       loading: () => _buildSummaryLoading(context),
                       error: (err, stack) => AmErrorWidget(
                         message: 'Failed to load summary',
-                        onRetry: () => ref.invalidate(dashboardStreamProvider(userId)),
+                        onRetry: () => retryDashboardSummary(ref, userId),
                       ),
                     ),
                     const SizedBox(height: 24),

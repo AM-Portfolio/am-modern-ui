@@ -1,4 +1,5 @@
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_common/am_common.dart';
 import '../shared/widgets/dashboard_summary_widget.dart';
@@ -55,8 +56,8 @@ class _DashboardMobileScreenState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Expanded(
-              child: const ShimmerLoading(
+            const Expanded(
+              child: ShimmerLoading(
                 child: SkeletonBox(
                   width: double.infinity,
                   height: double.infinity,
@@ -100,10 +101,11 @@ class _DashboardMobileScreenState
       (_, next) => markIfReady(next),
     );
     ref.listen(portfolioOverviewsProvider(widget.userId), (_, next) => markIfReady(next));
-    ref.listen(
-      historyStreamProvider(widget.userId, timeFrame: tfCode),
-      (_, next) => markIfReady(next),
-    );
+    ref.listen(dashboardOverlayProvider(widget.userId), (_, next) {
+      if (next.hasAnySeries) {
+        markIfReady(const AsyncData(true));
+      }
+    });
   }
 
   Widget _buildSummaryLoading() {
@@ -185,28 +187,6 @@ class _DashboardMobileScreenState
     );
   }
 
-  Widget _sectionScroll({
-    required Widget child,
-    required Future<void> Function() onRefresh,
-    bool enablePullToRefresh = false,
-  }) {
-    final scrollable = SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(
-        parent: BouncingScrollPhysics(),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-      child: child,
-    );
-
-    if (!enablePullToRefresh) return scrollable;
-
-    return RefreshIndicator(
-      color: const Color(0xFF0062FF),
-      onRefresh: onRefresh,
-      child: scrollable,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final userId = widget.userId;
@@ -237,7 +217,7 @@ class _DashboardMobileScreenState
         : context.colors.actionPrimaryBg.withValues(alpha: 0.2);
 
     Future<void> refresh() async {
-      ref.invalidate(dashboardStreamProvider(userId));
+      retryDashboardSummary(ref, userId);
       ref.invalidate(portfolioOverviewsProvider(userId));
     }
 
@@ -313,39 +293,22 @@ class _DashboardMobileScreenState
                         children: [
                           // 1 — Summary metrics and Performance Chart
                           dashboardAsync.when(
+                            skipLoadingOnReload: true,
+                            skipLoadingOnRefresh: true,
                             data: (summary) =>
                                 DashboardSummaryWidget(summary: summary),
                             loading: _buildSummaryLoading,
                             error: (err, stack) => AmErrorWidget(
                               message: 'Failed to load summary',
-                              onRetry: () =>
-                                  ref.invalidate(dashboardStreamProvider(userId)),
+                              onRetry: () => retryDashboardSummary(ref, userId),
                             ),
                           ),
                           const SizedBox(height: 16),
                           Consumer(
                             builder: (context, ref, child) {
-                              final performanceAsync = ref.watch(
-                                historyStreamProvider(userId, timeFrame: tfCode),
-                              );
-                              return performanceAsync.when(
-                                data: (performance) => SizedBox(
-                                  height: 350,
-                                  child: DashboardChartWidget(
-                                    performance: performance,
-                                  ),
-                                ),
-                                loading: () =>
-                                    _buildLoadingCard(350, label: 'Loading chart…'),
-                                error: (err, stack) => AmErrorWidget(
-                                  message: 'Failed to load chart',
-                                  onRetry: () => ref.invalidate(
-                                    historyStreamProvider(
-                                      userId,
-                                      timeFrame: tfCode,
-                                    ),
-                                  ),
-                                ),
+                              return SizedBox(
+                                height: 350,
+                                child: DashboardChartWidget(userId: userId),
                               );
                             },
                           ),

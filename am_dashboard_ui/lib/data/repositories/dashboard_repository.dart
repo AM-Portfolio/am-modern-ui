@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:am_library/am_library.dart';
 import 'package:am_common/am_common.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_dashboard_ui/data/repositories/dashboard_json_sanitizer.dart';
@@ -11,6 +10,8 @@ import 'package:am_dashboard_ui/domain/models/dashboard_summary.dart';
 import 'package:am_dashboard_ui/domain/models/performance_response.dart';
 import 'package:am_dashboard_ui/domain/models/portfolio_overview.dart';
 import 'package:am_dashboard_ui/domain/models/top_movers_response.dart';
+import 'package:am_dashboard_ui/domain/models/overlay_chart_models.dart';
+import 'package:am_dashboard_ui/domain/models/overlay_history_parser.dart';
 
 /// STOMP destinations for per-widget dashboard streaming (gateway relay).
 class DashboardQueueDestinations {
@@ -168,7 +169,20 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/summary',
-        parser: (data) => DashboardSummary.fromJson(data),
+        timeout: const Duration(seconds: 45),
+        parser: (data) {
+          try {
+            return DashboardSummary.fromJson(
+              DashboardJsonSanitizer.summary(data),
+            );
+          } catch (parseError) {
+            AppLogger.error(
+              'Dashboard summary JSON parse failed',
+              error: parseError,
+            );
+            rethrow;
+          }
+        },
       );
     } catch (e) {
       AppLogger.error('Failed to fetch dashboard summary', error: e);
@@ -261,7 +275,7 @@ class DashboardRepository {
 
   Stream<DashboardSummary> watchSummary() => _watchWidget(
         DashboardQueueDestinations.summary,
-        (json) => DashboardSummary.fromJson(json),
+        (json) => DashboardSummary.fromJson(DashboardJsonSanitizer.summary(json)),
       );
 
   Stream<List<ActivityItem>> watchActivity() => _watchWidget(
@@ -299,27 +313,37 @@ class DashboardRepository {
   Stream<T> _watchWidget<T>(String destination, T Function(Map<String, dynamic>) parser) {
     return _stompClient.messages
         .where((frame) => _matchesDestination(frame.headers['destination'], destination))
-        .map((frame) {
-          final body = frame.body;
-          if (body == null || body.isEmpty) {
-            throw StateError('Empty body on $destination');
-          }
-          try {
-            final decoded = jsonDecode(body);
-            if (decoded is! Map<String, dynamic>) {
-              throw FormatException('Expected object on $destination');
-            }
-            final parsed = parser(decoded);
-            AppLogger.info('Dashboard widget update received: ${_widgetLabel(destination)}');
-            return parsed;
-          } catch (e) {
-            AppLogger.error('Failed to parse dashboard frame on $destination', error: e);
-            rethrow;
-          }
-        })
+        .map((frame) => _tryParseWidgetFrame<T>(destination, frame, parser))
+        .where((parsed) => parsed != null)
+        .cast<T>()
         .handleError((Object error, StackTrace stack) {
           AppLogger.error('Error in dashboard stream $destination', error: error);
         });
+  }
+
+  T? _tryParseWidgetFrame<T>(
+    String destination,
+    dynamic frame,
+    T Function(Map<String, dynamic>) parser,
+  ) {
+    final body = frame.body;
+    if (body == null || body.isEmpty) {
+      AppLogger.warning('Empty dashboard frame on $destination — skipped');
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is! Map) {
+        AppLogger.warning('Non-object dashboard frame on $destination — skipped');
+        return null;
+      }
+      final parsed = parser(DashboardJsonSanitizer.asObject(decoded));
+      AppLogger.info('Dashboard widget update received: ${_widgetLabel(destination)}');
+      return parsed;
+    } catch (e) {
+      AppLogger.error('Failed to parse dashboard frame on $destination', error: e);
+      return null;
+    }
   }
 
   String _widgetLabel(String destination) {
@@ -376,5 +400,124 @@ class DashboardRepository {
       }
       return ActivityItem.fromJson(json);
     }).toList() ?? [];
+  }
+
+  /// Same feed as the portfolio history chart (`GET /v1/portfolios/history`).
+  /// 1D uses `/v1/portfolios/intraday`.
+  Future<PortfolioOverlayHistory> getPortfolioHistory(
+    ApiClient portfolioClient, {
+    required String timeFrame,
+  }) async {
+    final isIntraday = timeFrame.toUpperCase() == '1D';
+    final path = isIntraday ? '/v1/portfolios/intraday' : '/v1/portfolios/history';
+    try {
+      final data = await portfolioClient.get(
+        path,
+        queryParams: isIntraday ? null : {'timeFrame': timeFrame},
+        parser: (raw) => raw,
+      );
+      return parsePortfolioOverlayHistory(data, isIntraday: isIntraday);
+    } catch (e) {
+      AppLogger.error('Failed to fetch portfolio history for overlay', error: e);
+      rethrow;
+    }
+  }
+
+  /// Same feed as the market multi-index chart (`GET /v1/analysis/historical-charts`).
+  Future<Map<String, List<OverlayPoint>>> getIndexHistory(
+    ApiClient marketClient, {
+    required List<String> symbols,
+    required String range,
+  }) async {
+    if (symbols.isEmpty) return {};
+    try {
+      final data = await marketClient.get(
+        '/v1/analysis/historical-charts',
+        queryParams: {
+          'symbols': symbols.join(','),
+          'range': range,
+        },
+        parser: (raw) => raw,
+      );
+      return _parseIndexOverlayPoints(data, symbols);
+    } catch (e) {
+      AppLogger.error('Failed to fetch index history for overlay', error: e);
+      rethrow;
+    }
+  }
+
+  Map<String, List<OverlayPoint>> _parseIndexOverlayPoints(
+    dynamic data,
+    List<String> symbols,
+  ) {
+    final result = <String, List<OverlayPoint>>{};
+    Map<String, dynamic>? bySymbol;
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      final inner = map['data'];
+      if (inner is Map) {
+        bySymbol = Map<String, dynamic>.from(inner);
+      } else {
+        bySymbol = map;
+      }
+    }
+    if (bySymbol == null) return result;
+
+    for (final symbol in symbols) {
+      final entry = bySymbol[symbol] ??
+          bySymbol.entries
+              .where((e) => e.key.toUpperCase() == symbol.toUpperCase())
+              .map((e) => e.value)
+              .firstOrNull;
+      if (entry is! Map) continue;
+      final entryMap = Map<String, dynamic>.from(entry);
+      final rawPoints =
+          entryMap['dataPoints'] ?? entryMap['dataPoints'] ?? entryMap['data'];
+      final rows = _asObjectList(rawPoints);
+      final points = <OverlayPoint>[];
+      for (final row in rows) {
+        final label = _stringOf(row, const ['time', 'timestamp', 'date']);
+        final value = _numOf(
+          row,
+          const ['close', 'price', 'lastPrice', 'value'],
+        );
+        if (value == null || !value.isFinite) continue;
+        points.add(OverlayPoint(xLabel: label ?? '', value: value));
+      }
+      if (points.isNotEmpty) result[symbol] = points;
+    }
+    return result;
+  }
+
+  List<Map<String, dynamic>> _asObjectList(dynamic data) {
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    if (data is Map && data['data'] is List) {
+      return _asObjectList(data['data']);
+    }
+    return const [];
+  }
+
+  String? _stringOf(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) continue;
+      final text = value.toString();
+      if (text.isNotEmpty) return text;
+    }
+    return null;
+  }
+
+  double? _numOf(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+    }
+    return null;
   }
 }
