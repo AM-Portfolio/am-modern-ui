@@ -89,43 +89,47 @@ class BasketSuccessPage extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    BasketNavigation.clearBasketSession(userId);
-                    if (BasketNavigation.hasNestedNavigator) {
-                      BasketNavigation.navigatorKey.currentState?.popUntil((route) => route.isFirst);
-                    } else {
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                    }
-                    if (GoRouter.maybeOf(context) != null) {
-                      context.go('/portfolio');
-                    }
-                  },
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: AppButton(
+                          text: 'View in Portfolio',
+                          onPressed: () {
+                            BasketNavigation.clearBasketSession(userId);
+                            if (BasketNavigation.hasNestedNavigator) {
+                              BasketNavigation.navigatorKey.currentState?.popUntil((route) => route.isFirst);
+                            } else {
+                              Navigator.of(context).popUntil((route) => route.isFirst);
+                            }
+                            if (GoRouter.maybeOf(context) != null) {
+                              context.go('/portfolio');
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      SizedBox(
+                        width: double.infinity,
+                        child: AppButton(
+                          text: 'View Basket',
+                          isOutlined: true,
+                          onPressed: () {
+                             BasketNavigation.clearBasketSession(userId);
+                             BasketNavigation.openDashboard(
+                               context,
+                               basketId: basketId,
+                               userId: userId,
+                               portfolioId: portfolioId,
+                             );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                  child: const Text('View in Portfolio'),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {
-                     BasketNavigation.clearBasketSession(userId);
-                     BasketNavigation.openDashboard(
-                       context,
-                       basketId: basketId,
-                       userId: userId,
-                       portfolioId: portfolioId,
-                     );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  ),
-                  child: const Text('View Basket'),
                 ),
               ),
             ],

@@ -1491,8 +1491,7 @@ class _ManualBasketCreatorPageState
   Widget _buildStickyBottomBar(
       BuildContext context, ThemeData theme, double coverage) {
     return Container(
-      padding: EdgeInsets.fromLTRB(
-          16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
         color: context.cardColor,
         border: Border(top: BorderSide(color: context.borderColor)),
@@ -1503,36 +1502,33 @@ class _ManualBasketCreatorPageState
               offset: const Offset(0, -4)),
         ],
       ),
-      child: Row(children: [
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Total Investment',
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(color: context.textSecondary)),
-          Text(
-            '₹${_amountController.text.isEmpty ? "0" : _amountController.text}',
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
+      child: SafeArea(
+        bottom: true,
+        top: false,
+        child: Row(children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Total Investment',
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: context.textSecondary)),
+            Text(
+              '₹${_amountController.text.isEmpty ? "0" : _amountController.text}',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            Text('${coverage.toStringAsFixed(0)}% coverage',
+                style: TextStyle(
+                    color: context.statusSuccess,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500)),
+          ]),
+          const Spacer(),
+          AppButton(
+            text: 'Create Basket',
+            type: AppButtonType.primary,
+            onPressed: _savePortfolio,
           ),
-          Text('${coverage.toStringAsFixed(0)}% coverage',
-              style: TextStyle(
-                  color: context.statusSuccess,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500)),
         ]),
-        const Spacer(),
-        FilledButton(
-          onPressed: _savePortfolio,
-          style: FilledButton.styleFrom(
-            backgroundColor: context.colors.actionPrimaryBg,
-            foregroundColor: context.colors.actionPrimaryFg,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: const Text('Create Basket',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-      ]),
+      ),
     );
   }
 

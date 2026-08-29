@@ -40,7 +40,16 @@ class BasketPreviewPage extends ConsumerWidget {
         portfolioId: portfolioId,
       ),
       loading: () => _buildSkeletonLoader(context),
-      error: (err, stack) => _buildErrorState(context, err.toString(), ref),
+      error: (err, stack) => AmErrorWidget(
+        message: err.toString(),
+        onRetry: () {
+          ref.invalidate(enhancedBasketPreviewProvider(
+            etfIsin: etfIsin,
+            userId: userId,
+            portfolioId: portfolioId,
+          ));
+        },
+      ),
     );
 
     // Apply Dark Theme override for this specific page to match premium aesthetic
@@ -63,35 +72,6 @@ class BasketPreviewPage extends ConsumerWidget {
 
   Widget _buildSkeletonLoader(BuildContext context) {
     return const Center(child: CircularProgressIndicator());
-  }
-
-  Widget _buildErrorState(BuildContext context, String errorMsg, WidgetRef ref) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 48),
-            const SizedBox(height: 16),
-            Text('Failed to load basket preview', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(errorMsg, style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () {
-                ref.invalidate(enhancedBasketPreviewProvider(
-                  etfIsin: etfIsin,
-                  userId: userId,
-                  portfolioId: portfolioId,
-                ));
-              },
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
