@@ -11,26 +11,15 @@ class PreviewHeroHeader extends StatelessWidget {
     required this.opportunity,
   });
 
-  Color _getScoreColor(double score) {
-    if (score >= 75) return Colors.greenAccent;
-    if (score >= 50) return Colors.orangeAccent;
-    return Colors.redAccent;
+  Color _getScoreColor(BuildContext context, double score) {
+    if (score >= 75) return context.statusSuccess;
+    if (score >= 50) return context.statusWarning;
+    return context.statusError;
   }
 
   Color _getSectorColor(String sector) {
     final int hash = sector.hashCode;
-    final List<Color> palette = [
-      Colors.blueAccent,
-      Colors.indigo,
-      Colors.deepPurple,
-      Colors.purple,
-      Colors.pink,
-      Colors.teal,
-      Colors.green,
-      Colors.orange,
-      Colors.deepOrange,
-    ];
-    return palette[hash.abs() % palette.length];
+    return AppColors.getMultiColor(hash.abs());
   }
 
   @override
@@ -39,7 +28,7 @@ class PreviewHeroHeader extends StatelessWidget {
       ..sort((a, b) => b.etfWeight.compareTo(a.etfWeight));
     
     final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
-    final scoreColor = _getScoreColor(opportunity.matchScore);
+    final scoreColor = _getScoreColor(context, opportunity.matchScore);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xxl, AppSpacing.xl, AppSpacing.xl),
@@ -118,7 +107,7 @@ class PreviewHeroHeader extends StatelessWidget {
                                 Text(
                                   'Sub: ${opportunity.substituteMatchScore!.toStringAsFixed(1)}%',
                                   style: TextStyle(
-                                    color: Colors.purple.shade700,
+                                    color: AppColors.primary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 11,
                                   ),
@@ -211,7 +200,7 @@ class PreviewHeroHeader extends StatelessWidget {
                           backgroundColor: _getSectorColor(item.sector),
                           child: Text(
                             item.stockSymbol.isNotEmpty ? item.stockSymbol[0].toUpperCase() : '?',
-                            style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontSize: 10, color: AppColors.textPrimaryDark, fontWeight: FontWeight.bold),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
