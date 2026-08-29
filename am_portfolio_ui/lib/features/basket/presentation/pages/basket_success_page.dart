@@ -93,11 +93,14 @@ class BasketSuccessPage extends StatelessWidget {
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () {
-                    // Navigate to portfolio or pop to root
-                    if (GoRouter.maybeOf(context) != null) {
-                      context.go('/portfolio');
+                    BasketNavigation.clearBasketSession(userId);
+                    if (BasketNavigation.hasNestedNavigator) {
+                      BasketNavigation.navigatorKey.currentState?.popUntil((route) => route.isFirst);
                     } else {
                       Navigator.of(context).popUntil((route) => route.isFirst);
+                    }
+                    if (GoRouter.maybeOf(context) != null) {
+                      context.go('/portfolio');
                     }
                   },
                   style: FilledButton.styleFrom(
@@ -111,6 +114,7 @@ class BasketSuccessPage extends StatelessWidget {
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () {
+                     BasketNavigation.clearBasketSession(userId);
                      BasketNavigation.openDashboard(
                        context,
                        basketId: basketId,

@@ -2503,7 +2503,8 @@ class _AllocationSummaryCardState extends State<_AllocationSummaryCard> with Sin
     _heldAnim = Tween<double>(begin: startHeld, end: widget.heldFraction).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _subAnim = Tween<double>(begin: startSub, end: widget.subFraction).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _missingAnim = Tween<double>(begin: startMissing, end: widget.missingFraction).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _coverageAnim = Tween<double>(begin: startCoverage, end: widget.coverage).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    final targetCoverage = (widget.heldFraction + widget.subFraction) * 100.0;
+    _coverageAnim = Tween<double>(begin: startCoverage, end: targetCoverage).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override
@@ -2573,9 +2574,12 @@ class _AllocationSummaryCardState extends State<_AllocationSummaryCard> with Sin
                 Text('covered',
                     style: TextStyle(
                         fontSize: 10, color: context.textSecondary)),
-              ]),
-            ]),
+                  ]);
+                },
+              ),
+            ],
           ),
+        ),
           const SizedBox(width: 16),
           Expanded(
             child: AnimatedBuilder(
