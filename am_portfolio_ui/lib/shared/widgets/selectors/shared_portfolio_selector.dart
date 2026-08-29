@@ -11,6 +11,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
     required this.onPortfolioSelected,
     required this.idExtractor,
     required this.nameExtractor,
+    this.isBasketExtractor,
     super.key,
     this.isCompact = false,
     this.accentColor,
@@ -33,6 +34,9 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
 
   /// Function to extract Name from the portfolio object
   final String Function(T) nameExtractor;
+
+  /// Function to check if the portfolio is a basket
+  final bool Function(T)? isBasketExtractor;
 
   /// Whether to show in compact mode (icon only)
   final bool isCompact;
@@ -85,11 +89,30 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                   .map(
                     (portfolio) => PopupMenuItem<String>(
                       value: idExtractor(portfolio),
-                      child: Text(
-                        nameExtractor(portfolio),
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            nameExtractor(portfolio),
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          if (isBasketExtractor != null && isBasketExtractor!(portfolio))
+                            Container(
+                              margin: const EdgeInsets.only(left: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                              ),
+                              child: const Text(
+                                'BASKET',
+                                style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.blue),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   )
@@ -145,6 +168,22 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          if (currentPortfolioId != null && portfolios.isNotEmpty && isBasketExtractor != null && isBasketExtractor!(portfolios.firstWhere((p) => idExtractor(p) == currentPortfolioId)))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2.0),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                                ),
+                                child: const Text(
+                                  'BASKET',
+                                  style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.blue),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -194,9 +233,29 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                             .map(
                               (portfolio) => DropdownMenuItem<String>(
                                 value: idExtractor(portfolio),
-                                child: Text(
-                                  nameExtractor(portfolio),
-                                  overflow: TextOverflow.ellipsis,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        nameExtractor(portfolio),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (isBasketExtractor != null && isBasketExtractor!(portfolio))
+                                      Container(
+                                        margin: const EdgeInsets.only(left: 4),
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                                        ),
+                                        child: const Text(
+                                          'BASKET',
+                                          style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.blue),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             )
