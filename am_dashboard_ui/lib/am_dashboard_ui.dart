@@ -10,6 +10,14 @@ export 'data/repositories/dashboard_repository.dart';
 // Providers
 export 'presentation/providers/dashboard_provider.dart';
 export 'presentation/providers/dashboard_timeframe_provider.dart';
+export 'presentation/layout/dashboard_layout_provider.dart';
+
+// Layout
+export 'presentation/layout/dashboard_layout_model.dart';
+export 'presentation/layout/dashboard_widget_id.dart';
+export 'presentation/layout/dashboard_widget_catalog.dart';
+export 'presentation/layout/dashboard_layout_renderer.dart';
+export 'presentation/layout/dashboard_customize_sheet.dart';
 
 // Pages (Router)
 export 'presentation/pages/dashboard_screen.dart';
@@ -20,4 +28,6 @@ export 'presentation/shared/widgets/dashboard_allocation_widget.dart';
 export 'presentation/shared/widgets/dashboard_chart_widget.dart';
 export 'presentation/shared/widgets/dashboard_ranking_widget.dart';
 export 'presentation/shared/widgets/dashboard_recent_activity_widget.dart';
+export 'presentation/shared/widgets/recent_activity_mobile_card.dart';
+export 'presentation/shared/widgets/recent_activity_mobile_section.dart';
 export 'presentation/shared/widgets/dashboard_portfolio_overview_card.dart';

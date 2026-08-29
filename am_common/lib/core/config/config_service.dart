@@ -7,7 +7,8 @@ import '../telemetry/boot_trace.dart';
 import 'app_config.dart';
 
 /// Loads web config: [config.template.json] defaults, then [config.{env}.json],
-/// then [config.json] (env selector locally, domain override in Kubernetes).
+/// then [config.json] (env selector locally, domain override in Kubernetes),
+/// then optional gitignored [config.local.json] (like `.env`).
 class ConfigService {
   static AppConfig? _config;
   static const _envFromDefine = String.fromEnvironment('AM_ENV');
@@ -180,6 +181,12 @@ class ConfigService {
       if (envConfig != null) {
         merged = _deepMerge(merged, envConfig);
       }
+    }
+
+    // Gitignored overlay, like `.env`. 404 is ignored.
+    final localOverlay = await _fetchJson('/config.local.json');
+    if (localOverlay != null) {
+      merged = _deepMerge(merged, localOverlay);
     }
 
     return merged;

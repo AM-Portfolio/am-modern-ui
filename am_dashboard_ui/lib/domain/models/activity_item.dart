@@ -17,6 +17,8 @@ abstract class ActivityItem with _$ActivityItem {
     String? companyName,
     String? sector,
     double? quantity,
+    double? avgBuyingPrice,
+    double? investmentValue,
     double? currentPrice,
     double? currentValue,
     double? profitLoss,

@@ -1,6 +1,9 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import 'package:am_design_system/core/navigation/app_web_navigation.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
@@ -71,6 +74,7 @@ class GlobalSidebar extends StatelessWidget {
                         isDark: isDarkMode,
                         isActive: activeNavItem == item.title,
                         accentColor: _getIconColor(item.title) ?? const Color(0xFF6C5DD3),
+                        navPath: moduleShareUrls?[item.title],
                         onTap: () => onNavigate(item.title),
                         onLongPress: moduleShareUrls?[item.title] == null
                             ? null
@@ -312,6 +316,7 @@ class _GlobalSidebarItem extends StatefulWidget {
   final bool isDark;
   final bool isActive;
   final Color accentColor;
+  final String? navPath;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
   final String? longPressTooltip;
@@ -321,6 +326,7 @@ class _GlobalSidebarItem extends StatefulWidget {
     required this.isDark,
     required this.isActive,
     required this.accentColor,
+    this.navPath,
     required this.onTap,
     this.onLongPress,
     this.longPressTooltip,
@@ -336,14 +342,41 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
   @override
   Widget build(BuildContext context) {
     final isSelected = widget.isActive;
-    
+    final tooltip = kIsWeb && widget.navPath != null
+        ? '${widget.item.title}\nCtrl+click to open in new tab'
+        : widget.item.title;
+
     return Tooltip(
-      message: widget.item.title,
+      message: tooltip,
       preferBelow: false,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onLongPress: widget.onLongPress,
-        child: ConditionalMouseRegion(
+      child: Listener(
+        onPointerDown: (event) {
+          final path = widget.navPath;
+          if (path == null) return;
+          if (event.buttons == kMiddleMouseButton) {
+            AppWebNavigation.navigate(
+              context: context,
+              path: path,
+              onSameTab: widget.onTap,
+              pointerDown: event,
+            );
+          }
+        },
+        child: GestureDetector(
+          onTap: () {
+            final path = widget.navPath;
+            if (path == null) {
+              widget.onTap();
+              return;
+            }
+            AppWebNavigation.navigate(
+              context: context,
+              path: path,
+              onSameTab: widget.onTap,
+            );
+          },
+          onLongPress: widget.onLongPress,
+          child: ConditionalMouseRegion(
           cursor: SystemMouseCursors.click,
           onEnter: (_) => setState(() => _isHovered = true),
           onExit: (_) => setState(() => _isHovered = false),
@@ -385,6 +418,7 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
               ],
             ),
           ),
+        ),
         ),
       ),
     );

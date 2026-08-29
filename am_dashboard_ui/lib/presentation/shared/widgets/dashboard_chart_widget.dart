@@ -1,326 +1,162 @@
-import 'package:am_dashboard_ui/domain/models/performance_response.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:am_library/am_library.dart';
+import 'package:am_dashboard_ui/domain/models/overlay_chart_models.dart';
+import 'package:am_dashboard_ui/domain/models/overlay_series_adapter.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'glass_card.dart';
 
-/// Performance chart — timeframe is controlled globally via [dashboardTimeFrameProvider].
-class DashboardChartWidget extends StatefulWidget {
-  final PerformanceResponse performance;
-
+/// Overlay chart of portfolio wealth vs selected indices (% from first point).
+class DashboardChartWidget extends ConsumerWidget {
   const DashboardChartWidget({
     super.key,
-    required this.performance,
+    required this.userId,
   });
 
+  final String userId;
+
   @override
-  State<DashboardChartWidget> createState() => _DashboardChartWidgetState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final overlay = ref.watch(dashboardOverlayProvider(userId).notifier);
+    final state = ref.watch(dashboardOverlayProvider(userId));
+    final tfCode = dashboardTimeFrameCode(ref);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = constraints.maxHeight.isFinite && constraints.maxHeight > 0
+            ? constraints.maxHeight
+            : 420.0;
+        return SizedBox(
+          width: double.infinity,
+          height: height,
+          child: AmGlassCard(
+            padding: const EdgeInsets.all(16),
+            child: _ChartBody(
+              state: state,
+              overlay: overlay,
+              tfCode: tfCode,
+              legendTrailing: _AddSeriesButton(overlay: overlay, state: state),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
-class _DashboardChartWidgetState extends State<DashboardChartWidget> {
-  bool _showGraph = true;
-  bool _emittedEmpty = false;
+class _AddSeriesButton extends StatelessWidget {
+  const _AddSeriesButton({required this.overlay, required this.state});
 
-  List<DataPoint> get _chartData => widget.performance.chartData;
-
-  bool get _hasPlottableData {
-    if (_chartData.length < 2) return false;
-    final values = _chartData.map((e) => e.value).toList();
-    final minVal = values.reduce((a, b) => a < b ? a : b);
-    final maxVal = values.reduce((a, b) => a > b ? a : b);
-    return maxVal > minVal || maxVal != 0;
-  }
+  final DashboardOverlayNotifier overlay;
+  final OverlayChartState state;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = context.colors;
+    final selected = state.selectedIds.toSet();
+    final remainingOverall = !selected.contains(OverlayChartIds.overall);
+    final remainingPortfolios = state.availablePortfolios
+        .where((p) => !selected.contains(p.id))
+        .toList();
+    final remainingIndices = OverlayChartIds.addableIndices
+        .where((id) => !selected.contains(id))
+        .toList();
+    final canAdd = !state.atCap &&
+        (remainingOverall ||
+            remainingPortfolios.isNotEmpty ||
+            remainingIndices.isNotEmpty);
 
-    final onSurface = context.colors.textPrimary;
-    final onSurfaceVariant = context.colors.textSecondary;
-    final toggleBgColor = isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.1);
-    final emptyStateBg =
-        isDark ? Colors.white.withValues(alpha: 0.02) : context.colors.actionPrimaryBg.withValues(alpha: 0.02);
+    if (!canAdd) return const SizedBox.shrink();
 
-    final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
-    final returnPct = widget.performance.totalReturnPercentage;
-    final returnVal = widget.performance.totalReturnValue;
-    final isPositive = returnPct >= 0;
-    final lastValue = _chartData.isNotEmpty ? _chartData.last.value : 0.0;
-
-    return AmGlassCard(
-      padding: const EdgeInsets.all(16.0),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final hasBoundedHeight =
-              constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
-          final chartArea = _showGraph
-              ? (_hasPlottableData
-                  ? _buildGraphView(isDark)
-                  : _buildEmptyState(
-                      emptyStateBg,
-                      onSurfaceVariant,
-                      isDark,
-                    ))
-              : (_chartData.isNotEmpty
-                  ? _buildTableView(onSurface, onSurfaceVariant, isDark)
-                  : _buildEmptyState(
-                      emptyStateBg,
-                      onSurfaceVariant,
-                      isDark,
-                    ));
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: hasBoundedHeight ? MainAxisSize.max : MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Performance',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                            color: onSurfaceVariant,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                currencyFormat.format(lastValue),
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  color: onSurface,
-                                  fontFamily: 'Inter',
-                                  letterSpacing: -0.5,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 4.0),
-                              child: Text(
-                                '${isPositive ? '+' : ''}${currencyFormat.format(returnVal)} (${returnPct.toStringAsFixed(2)}%)',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isPositive
-                                      ? context.colors.statusSuccess
-                                      : context.colors.statusError,
-                                  fontFamily: 'Inter',
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: toggleBgColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildViewToggle('Graph', true, isDark),
-                        _buildViewToggle('Table', false, isDark),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (hasBoundedHeight)
-                Expanded(child: chartArea)
-              else
-                SizedBox(height: 280, child: chartArea),
-            ],
+    return PopupMenuButton<String>(
+      tooltip: 'Add series',
+      onSelected: overlay.addSeries,
+      itemBuilder: (context) {
+        final items = <PopupMenuEntry<String>>[
+          if (remainingOverall)
+            const PopupMenuItem(
+              value: OverlayChartIds.overall,
+              child: Text(OverlayChartIds.overall),
+            ),
+          for (final p in remainingPortfolios)
+            PopupMenuItem(value: p.id, child: Text(p.label)),
+        ];
+        if (items.isNotEmpty && remainingIndices.isNotEmpty) {
+          items.add(const PopupMenuDivider());
+        }
+        for (final id in remainingIndices) {
+          items.add(
+            PopupMenuItem(
+              value: id,
+              child: Text(id),
+            ),
           );
-        },
+        }
+        return items;
+      },
+      child: Chip(
+        visualDensity: VisualDensity.compact,
+        label: const Text('+'),
+        backgroundColor: colors.actionPrimaryBg.withValues(alpha: 0.08),
+        side: BorderSide(color: colors.border),
       ),
     );
   }
+}
 
-  Widget _buildEmptyState(
-    Color emptyStateBg,
-    Color onSurfaceVariant,
-    bool isDark,
-  ) {
-    if (!_emittedEmpty) {
-      _emittedEmpty = true;
-      ProductTelemetry.instance.emptyState('dashboard_chart_empty');
+class _ChartBody extends ConsumerWidget {
+  const _ChartBody({
+    required this.state,
+    required this.overlay,
+    required this.tfCode,
+    required this.legendTrailing,
+  });
+
+  final OverlayChartState state;
+  final DashboardOverlayNotifier overlay;
+  final String tfCode;
+  final Widget legendTrailing;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    if (state.isBootstrapping) {
+      return const Center(child: CircularProgressIndicator());
     }
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: emptyStateBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : const Color(0xFFF1F5F9),
-        ),
-      ),
-      child: Center(
+
+    final selectedLabels = overlaySelectedLabels(state);
+    if (selectedLabels.isEmpty) {
+      return Center(
         child: Text(
-          'No performance data for ${widget.performance.timeFrame}',
+          'No overlay data for ${state.timeFrame}',
           style: TextStyle(
-            color: onSurfaceVariant,
+            color: colors.textSecondary,
             fontSize: 14,
             fontFamily: 'Inter',
           ),
-          textAlign: TextAlign.center,
         ),
-      ),
-    );
-  }
+      );
+    }
 
-  Widget _buildViewToggle(String label, bool isGraph, bool isDark) {
-    final isSelected = _showGraph == isGraph;
-    return GestureDetector(
-      onTap: () => setState(() => _showGraph = isGraph),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? (isDark ? Colors.white : Colors.white) : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : [],
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected
-                ? (isDark ? Colors.black : context.colors.textPrimary)
-                : context.colors.textSecondary,
-            fontFamily: 'Inter',
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGraphView(bool isDark) {
-    final values = _chartData.map((e) => e.value).toList();
-    final rawMin = values.reduce((a, b) => a < b ? a : b);
-    final rawMax = values.reduce((a, b) => a > b ? a : b);
-    final span = (rawMax - rawMin).abs();
-    final padding = span > 0 ? span * 0.1 : (rawMax.abs() * 0.1).clamp(1.0, double.infinity);
-    final minY = rawMin - padding;
-    final maxY = rawMax + padding;
-    final gridColor = isDark
-        ? Colors.white.withValues(alpha: 0.06)
-        : context.colors.actionPrimaryBg.withValues(alpha: 0.1);
-
-    return LineChart(
-      LineChartData(
-        minY: minY,
-        maxY: maxY,
-        lineBarsData: [
-          LineChartBarData(
-            spots: _chartData.asMap().entries.map((e) {
-              return FlSpot(e.key.toDouble(), e.value.value);
-            }).toList(),
-            isCurved: true,
-            color: context.colors.actionPrimaryBg,
-            barWidth: 2,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              color: context.colors.actionPrimaryBg.withValues(alpha: 0.1),
-            ),
-          ),
-        ],
-        titlesData: const FlTitlesData(show: false),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: (maxY - minY) / 4,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: gridColor,
-            strokeWidth: 1,
-          ),
-        ),
-        borderData: FlBorderData(show: false),
-        lineTouchData: const LineTouchData(enabled: true),
-      ),
-    );
-  }
-
-  Widget _buildTableView(Color onSurface, Color onSurfaceVariant, bool isDark) {
-    final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 2);
-    final reversedData = List<DataPoint>.from(_chartData.reversed);
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: ListView.separated(
-          itemCount: reversedData.length,
-          separatorBuilder: (context, index) => Divider(
-            height: 1,
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
-          ),
-          itemBuilder: (context, index) {
-            final dp = reversedData[index];
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    dp.date,
-                    style: TextStyle(
-                      color: onSurfaceVariant,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                  Text(
-                    currencyFormat.format(dp.value),
-                    style: TextStyle(
-                      color: onSurface,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+    return ComparisonChartView(
+      data: overlayStateToChartData(state),
+      config: MultiSeriesChartConfig(
+        preferredSeriesOrder: selectedLabels,
+        embedMode: true,
+        timeFrameCode: tfCode,
+        showEndValuePills: false,
+        showExpandButton: false,
+        preNormalizedPercent: true,
+        legendTrailing: legendTrailing,
+        onRemoveSeries: (label) {
+          for (final entry in state.series.entries) {
+            if (entry.value.label == label) {
+              overlay.removeSeries(entry.key);
+              return;
+            }
+          }
+        },
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async'; // Required for Timer-based staggered preloading of background historical base prices
 import 'package:provider/provider.dart' hide Consumer;
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
+import 'package:go_router/go_router.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
@@ -17,7 +18,6 @@ import 'package:am_market_ui/features/market/widgets/pinned_indices_grid.dart';
 import 'package:am_market_ui/features/market/widgets/all_indices_drawer.dart';
 import 'package:am_market_ui/features/market/widgets/all_indices_bottom_sheet.dart';
 import '../widgets/top_movers_widget_v2.dart';
-import 'package:am_market_ui/features/market_analysis/presentation/widgets/multi_index_chart.dart';
 import 'package:am_market_common/services/api_service.dart';
 
 /// User Dashboard page with API-driven features
@@ -996,17 +996,29 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     // Multi-Index Chart
                     SizedBox(
                       height: isMobile ? 280 : 400,
-                      child: MultiIndexChart(
-                        historicalData: historicalData,
-                        selectedIndices: selectedIndicesForChart,
-                        isLoading: isLoadingChart,
-                        error: chartError,
-                        isBarChart: isBarChart,
-                        onRemoveIndex: (symbol) {
-                          setState(() {
-                            selectedIndicesForChart = List.from(selectedIndicesForChart)..remove(symbol);
-                          });
-                        },
+                      child: ComparisonChartView(
+                        data: MultiSeriesChartData.fromLegacyMaps(historicalData),
+                        config: MultiSeriesChartConfig(
+                          selectedSeries: selectedIndicesForChart,
+                          isLoading: isLoadingChart,
+                          error: chartError,
+                          isBarChart: isBarChart,
+                          timeFrameCode: selectedTimeframe,
+                          expandedChartPath:
+                              '/app/chart/compare?context=market&tf=$selectedTimeframe&series=${Uri.encodeComponent(selectedIndicesForChart.join(','))}',
+                          onOpenExpanded: () {
+                            context.push(
+                              '/app/chart/compare?context=market&tf=$selectedTimeframe&series=${Uri.encodeComponent(selectedIndicesForChart.join(','))}',
+                            );
+                          },
+                          onRemoveSeries: (symbol) {
+                            setState(() {
+                              selectedIndicesForChart =
+                                  List.from(selectedIndicesForChart)
+                                    ..remove(symbol);
+                            });
+                          },
+                        ),
                       ),
                     ),
                   ],

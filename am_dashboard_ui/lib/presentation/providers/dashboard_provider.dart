@@ -7,6 +7,9 @@ import 'package:am_dashboard_ui/domain/models/dashboard_summary.dart';
 import 'package:am_dashboard_ui/domain/models/performance_response.dart';
 import 'package:am_dashboard_ui/domain/models/portfolio_overview.dart';
 import 'package:am_dashboard_ui/domain/models/recent_activity_response.dart';
+import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_provider.dart';
+import 'package:am_dashboard_ui/presentation/layout/dashboard_widget_id.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
 import 'package:am_dashboard_ui/domain/models/top_movers_response.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -15,6 +18,24 @@ import 'package:am_common/am_common.dart';
 import 'package:am_library/am_library.dart';
 
 part 'dashboard_provider.g.dart';
+
+/// Waits for auth restore on reload — route may pass empty userId while session
+/// is still loading from secure storage.
+@riverpod
+Future<String> dashboardSessionUserId(Ref ref, String routeUserId) async {
+  if (routeUserId.isNotEmpty) return routeUserId;
+  for (var attempt = 0; attempt < 100; attempt++) {
+    final id = await UserContext.instance.userId;
+    if (id != null && id.isNotEmpty) return id;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  throw StateError('Dashboard session not ready');
+}
+
+Future<String> _requireDashboardUserId(Ref ref, String userId) async {
+  if (userId.isNotEmpty) return userId;
+  return ref.watch(dashboardSessionUserIdProvider('').future);
+}
 
 @Riverpod(keepAlive: true)
 Future<DashboardRepository> dashboardRepository(Ref ref) async {
@@ -43,7 +64,10 @@ Future<Map<String, dynamic>> portfolioSummaryFallback(Ref ref) async {
   final client = await ref.watch(portfolioApiClientProvider.future);
   return client.get(
     config.api.portfolio.summaryResource,
-    parser: (data) => data as Map<String, dynamic>,
+    parser: (data) {
+      if (data is Map) return Map<String, dynamic>.from(data);
+      throw const FormatException('Portfolio summary was not an object');
+    },
   );
 }
 
@@ -66,11 +90,27 @@ void dashboardParallelKickoff(
   String timeFrame = '1D',
 }) {
   if (userId.isEmpty) return;
-  ref.watch(dashboardStreamProvider(userId));
-  ref.watch(historyStreamProvider(userId, timeFrame: timeFrame));
-  ref.watch(moversStreamProvider(userId, timeFrame: timeFrame));
-  ref.watch(portfolioOverviewsProvider(userId));
-  ref.watch(recentActivityProvider(userId, page: 0, size: 10));
+  final visible =
+      ref.watch(dashboardLayoutProvider).visibleSlots.map((s) => s.id).toSet();
+  if (visible.contains(DashboardWidgetId.summary)) {
+    ref.watch(dashboardStreamProvider(userId));
+  }
+  if (visible.contains(DashboardWidgetId.movers)) {
+    ref.watch(moversStreamProvider(userId, timeFrame: timeFrame));
+  }
+  if (visible.contains(DashboardWidgetId.portfolioList)) {
+    ref.watch(portfolioOverviewsProvider(userId));
+  }
+  if (visible.contains(DashboardWidgetId.recentActivity)) {
+    ref.watch(recentActivityProvider(userId, page: 0, size: 10));
+  }
+  if (visible.contains(DashboardWidgetId.allocation)) {
+    ref.watch(allocationStreamProvider(userId));
+  }
+  if (visible.contains(DashboardWidgetId.benchmarkComparison) ||
+      visible.contains(DashboardWidgetId.portfolioWealthChart)) {
+    ref.watch(dashboardOverlayProvider(userId));
+  }
 }
 
 double _parseDouble(dynamic val) {
@@ -81,18 +121,83 @@ double _parseDouble(dynamic val) {
 }
 
 DashboardSummary _dashboardSummaryFromPortfolioRaw(Map<String, dynamic> rawData) {
-  final brokerPortfolios = rawData['brokerPortfolios'] as Map?;
-  final totalPortfolios = brokerPortfolios?.keys.length ?? 0;
+  final brokerPortfolios = rawData['brokerPortfolios'] is Map
+      ? rawData['brokerPortfolios'] as Map
+      : null;
+  final brokers = rawData['brokers'];
+  final totalPortfolios = brokerPortfolios?.keys.length ??
+      (brokers is List ? brokers.length : 0);
 
   return DashboardSummary(
-    totalValue: _parseDouble(rawData['currentValue']),
-    totalInvested: _parseDouble(rawData['investmentValue']),
+    totalValue: _parseDouble(rawData['currentValue'] ?? rawData['totalValue']),
+    totalInvested: _parseDouble(
+      rawData['investmentValue'] ?? rawData['totalInvested'],
+    ),
     totalGainLoss: _parseDouble(rawData['totalGainLoss']),
     totalGainLossPercentage: _parseDouble(rawData['totalGainLossPercentage']),
-    dayChange: _parseDouble(rawData['todayGainLoss']),
-    dayChangePercentage: _parseDouble(rawData['todayGainLossPercentage']),
+    dayChange: _parseDouble(rawData['todayGainLoss'] ?? rawData['dayChange']),
+    dayChangePercentage: _parseDouble(
+      rawData['todayGainLossPercentage'] ?? rawData['dayChangePercentage'],
+    ),
     totalPortfolios: totalPortfolios == 0 ? 1 : totalPortfolios,
   );
+}
+
+/// Retry clears keepAlive fallback too — otherwise a prior fallback error
+/// sticks and Retry on the summary widget never recovers.
+void retryDashboardSummary(WidgetRef ref, String userId) {
+  ref.invalidate(portfolioSummaryFallbackProvider);
+  ref.invalidate(dashboardSummaryProvider(userId));
+  ref.invalidate(dashboardStreamProvider(userId));
+}
+
+Future<Map<String, dynamic>> _loadPortfolioSummaryFallback(Ref ref) async {
+  // Prefer cached success. Only invalidate+retry when the keepAlive is in error
+  // — always calling refresh() races when summary/overviews/history fall back
+  // together and intermittently fails the header.
+  final cached = ref.read(portfolioSummaryFallbackProvider);
+  if (cached.hasValue) return cached.requireValue;
+  if (cached.hasError) {
+    ref.invalidate(portfolioSummaryFallbackProvider);
+  }
+  return ref.read(portfolioSummaryFallbackProvider.future);
+}
+
+Future<DashboardSummary> _resolveDashboardSummary(
+  Ref ref,
+  DashboardRepository repository,
+  String userId,
+) async {
+  final portfolioFallback = _loadPortfolioSummaryFallback(ref)
+      .then(_dashboardSummaryFromPortfolioRaw);
+
+  try {
+    return await repository
+        .getSummary(userId)
+        .timeout(const Duration(seconds: 20));
+  } catch (e) {
+    AppLogger.warning(
+      'Failed to get summary from analysis service. Trying fallback to portfolio service...',
+      error: e,
+    );
+    try {
+      return await portfolioFallback.timeout(const Duration(seconds: 20));
+    } catch (fallbackError) {
+      // Last chance: fresh portfolio fetch (clears a poisoned keepAlive).
+      ref.invalidate(portfolioSummaryFallbackProvider);
+      try {
+        final raw = await ref.read(portfolioSummaryFallbackProvider.future)
+            .timeout(const Duration(seconds: 25));
+        return _dashboardSummaryFromPortfolioRaw(raw);
+      } catch (finalError) {
+        AppLogger.error(
+          'Dashboard summary fallback also failed',
+          error: finalError,
+        );
+        rethrow;
+      }
+    }
+  }
 }
 
 List<PortfolioOverview> _portfolioOverviewsFromPortfolioRaw(
@@ -197,46 +302,23 @@ PerformanceResponse _generatePerformanceFromSummary(double totalValue, double to
 @riverpod
 Future<DashboardSummary> dashboardSummary(Ref ref, String userId) async {
   final repository = await ref.watch(dashboardRepositoryProvider.future);
-  try {
-    return await repository.getSummary(userId);
-  } catch (e) {
-    AppLogger.warning(
-      'Failed to get dashboard summary from analysis service. Using portfolio service fallback.',
-      error: e,
-    );
-    final rawData = await ref.read(portfolioSummaryFallbackProvider.future);
-    return _dashboardSummaryFromPortfolioRaw(rawData);
-  }
+  return _resolveDashboardSummary(ref, repository, userId);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
-  if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
+  final resolvedUserId = await _requireDashboardUserId(ref, userId);
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
 
-  DashboardSummary summary;
-  try {
-    summary = await repository.getSummary(userId);
-  } catch (e) {
-    AppLogger.warning(
-      'Failed to get summary from analysis service. Trying fallback to portfolio service...',
-      error: e,
-    );
-    try {
-      final rawData = await ref.read(portfolioSummaryFallbackProvider.future);
-      summary = _dashboardSummaryFromPortfolioRaw(rawData);
-    } catch (fallbackError) {
-      AppLogger.error('Dashboard summary fallback also failed', error: fallbackError);
-      rethrow;
-    }
-  }
-
+  final summary = await _resolveDashboardSummary(ref, repository, resolvedUserId);
   yield summary;
 
-  _attachDashboardStreaming(ref, userId);
+  _attachDashboardStreaming(ref, resolvedUserId);
   try {
-    yield* repository.watchSummary();
+    await for (final next in repository.watchSummary()) {
+      yield next;
+    }
   } catch (e) {
     AppLogger.warning('Dashboard summary live stream unavailable', error: e);
   }
@@ -291,20 +373,20 @@ Stream<AllocationResponse> allocationStream(Ref ref, String userId) async* {
 
 @riverpod
 Stream<TopMoversResponse> moversStream(Ref ref, String userId, {String timeFrame = '1D'}) async* {
-  if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
+  final resolvedUserId = await _requireDashboardUserId(ref, userId);
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   
   TopMoversResponse movers = TopMoversResponse(timeFrame: timeFrame, gainers: [], losers: []);
   try {
-    movers = await repository.getTopMovers(userId, timeFrame: timeFrame);
+    movers = await repository.getTopMovers(resolvedUserId, timeFrame: timeFrame);
   } catch (e) {
     AppLogger.warning('Failed to get top movers from analysis service', error: e);
   }
   
   yield movers;
 
-  _attachDashboardStreaming(ref, userId);
+  _attachDashboardStreaming(ref, resolvedUserId);
   try {
     yield* repository.watchMovers(timeFrame: timeFrame);
   } catch (e) {
@@ -328,7 +410,7 @@ Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFr
       error: e,
     );
     try {
-      final rawData = await ref.read(portfolioSummaryFallbackProvider.future);
+      final rawData = await _loadPortfolioSummaryFallback(ref);
       performance = _performanceFromPortfolioRaw(rawData, timeFrame);
     } catch (fallbackError) {
       sw.stop();
@@ -375,7 +457,7 @@ Future<List<PortfolioOverview>> portfolioOverviews(Ref ref, String userId) async
       error: e,
     );
     try {
-      final rawData = await ref.read(portfolioSummaryFallbackProvider.future);
+      final rawData = await _loadPortfolioSummaryFallback(ref);
       return _portfolioOverviewsFromPortfolioRaw(rawData);
     } catch (fallbackError) {
       AppLogger.error(
@@ -420,7 +502,7 @@ Future<PerformanceResponse> dashboardPerformance(Ref ref, String userId, {String
       'Failed to get performance from analysis service. Using fallback.',
       error: e,
     );
-    final rawData = await ref.read(portfolioSummaryFallbackProvider.future);
+    final rawData = await _loadPortfolioSummaryFallback(ref);
     return _performanceFromPortfolioRaw(rawData, timeFrame);
   }
 }
