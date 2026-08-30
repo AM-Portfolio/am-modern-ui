@@ -114,10 +114,11 @@ class FpBasketPanel extends StatelessWidget {
           ),
           Divider(color: context.colors.border, height: 1),
           // Rows
-          Expanded(
-            child: ListView.builder(
-              itemCount: displayItems.length,
-              itemBuilder: (context, index) {
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: displayItems.length,
+            itemBuilder: (context, index) {
                 final item = displayItems[index];
                 final value = (item.buyQuantity ?? 0) * (item.lastPrice ?? 0);
                 return FpStockRow(
@@ -132,7 +133,6 @@ class FpBasketPanel extends StatelessWidget {
                 );
               },
             ),
-          ),
           // Footer
           Divider(color: context.colors.border, height: 1),
           Padding(
