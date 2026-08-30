@@ -29,6 +29,10 @@ class PreviewHeroHeader extends StatelessWidget {
     
     final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final scoreColor = _getScoreColor(context, opportunity.matchScore);
+    
+    final double heldPct = opportunity.heldMatchScore ?? opportunity.matchScore;
+    final double subPct = opportunity.substituteMatchScore ?? 0.0;
+    final double missingPct = (100.0 - heldPct - subPct).clamp(0.0, 100.0);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xxl, AppSpacing.xl, AppSpacing.xl),
@@ -95,19 +99,30 @@ class PreviewHeroHeader extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Held: ${(opportunity.heldMatchScore ?? opportunity.matchScore).toStringAsFixed(1)}%',
+                                'Held: ${heldPct.toStringAsFixed(1)}%',
                                 style: TextStyle(
                                   color: scoreColor,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 11,
                                 ),
                               ),
-                              if (opportunity.substituteMatchScore != null && opportunity.substituteMatchScore! > 0) ...[
+                              if (subPct > 0) ...[
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Sub: ${opportunity.substituteMatchScore!.toStringAsFixed(1)}%',
+                                  'Sub: ${subPct.toStringAsFixed(1)}%',
                                   style: TextStyle(
                                     color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                              if (missingPct > 0) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Missing: ${missingPct.toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    color: context.statusError,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 11,
                                   ),
