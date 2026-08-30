@@ -53,10 +53,11 @@ class FpEtfPanel extends StatelessWidget {
           ),
           Divider(color: context.colors.border, height: 1),
           // Rows
-          Expanded(
-            child: ListView.builder(
-              itemCount: composition.length,
-              itemBuilder: (context, index) {
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: composition.length,
+            itemBuilder: (context, index) {
                 final item = composition[index];
                 return FpStockRow(
                   symbol: item.stockSymbol,
@@ -68,7 +69,6 @@ class FpEtfPanel extends StatelessWidget {
                 );
               },
             ),
-          ),
           // Footer
           Divider(color: context.colors.border, height: 1),
           Padding(
