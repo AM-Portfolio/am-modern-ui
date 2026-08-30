@@ -12,6 +12,7 @@ import '../../../portfolio/internal/domain/entities/portfolio_holding.dart';
 import '../providers/basket_providers.dart';
 import 'basket_success_page.dart';
 import '../widgets/substitute_selector.dart';
+import '../basket_navigation.dart';
 
 // ---------------------------------------------------------------------------
 // PAGE WIDGET
@@ -223,17 +224,9 @@ class _ManualBasketCreatorPageState
         if (!mounted) return;
         setState(() {
           _currentOpportunity = updatedOpportunity;
-          final Map<String, BasketItem> updatedMap = {
-            for (var item in updatedOpportunity.composition)
-              item.stockSymbol.toLowerCase(): item
-          };
-          _items = _items.map((item) {
-            final updatedItem = updatedMap[item.stockSymbol.toLowerCase()];
-            if (updatedItem != null) {
-              if (_excludedItems.contains(item.stockSymbol)) {
-                return updatedItem.copyWith(clearBuyQuantity: true);
-              }
-              return updatedItem;
+          _items = updatedOpportunity.composition.map((item) {
+            if (_excludedItems.contains(item.stockSymbol)) {
+              return item.copyWith(clearBuyQuantity: true);
             }
             return item;
           }).toList();
@@ -258,24 +251,67 @@ class _ManualBasketCreatorPageState
 
   void _openSubstituteSelectorFor(int originalIdx) {
     final item = _items[originalIdx];
+    final targetQty = item.targetQuantity ?? 0;
+    final heldQty = item.heldQuantity ?? 0;
+    final gapQty = (targetQty - heldQty).clamp(0, double.infinity);
+    final targetVal = gapQty * (item.lastPrice ?? 0);
+    // Needed weight is etfWeight - replicaWeight (if partially filled) or just etfWeight.
+    // Wait, if it's MISSING, replicaWeight is 0. If it's a split substitute, we might want to fill the remaining.
+    // For simplicity, we just pass the remaining etfWeight for the item.
+    final neededWeight = item.etfWeight;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => SubstituteSelector(
         originalSymbol: item.stockSymbol,
+        originalIsin: item.isin,
         requiredMarketCap: item.marketCapCategory ?? '',
         alternatives: item.alternatives,
-        onSelected: (stock) async {
-          setState(() {
-            _items[originalIdx] = _items[originalIdx].copyWith(
-              status: ItemStatus.substitute,
-              userHoldingSymbol: stock.symbol,
-              userHoldingIsin: stock.isin,
-            );
-            _hasCalculated = false;
-          });
+        neededWeight: neededWeight,
+        neededQty: gapQty.toInt(),
+        neededValue: targetVal.toDouble(),
+        onMultiSelected: (selections) async {
           Navigator.of(ctx).pop();
-          _calculateQuantities();
+          setState(() {
+            _isCalculating = true;
+          });
+          try {
+            final assignments = selections.map((s) => {
+              'missingIsin': item.isin ?? item.stockSymbol,
+              'substituteIsin': s.isin,
+              if (s.assignedWeight != null) 'assignedWeight': s.assignedWeight,
+            }).toList();
+
+            final updated = await ref.read(applySubstitutesProvider(request: {
+              'portfolioId': widget.portfolioId,
+              'etfIsin': _currentOpportunity.etfIsin,
+              'currentOpportunity': _currentOpportunity.toJson(),
+              'assignments': assignments,
+            }).future);
+
+            if (!mounted) return;
+            setState(() {
+              _currentOpportunity = updated;
+              _items = updated.composition.map((compItem) {
+                if (_excludedItems.contains(compItem.stockSymbol)) {
+                  return compItem.copyWith(clearBuyQuantity: true);
+                }
+                return compItem;
+              }).toList();
+              _hasCalculated = false;
+            });
+            _calculateQuantities();
+          } catch (e) {
+            if (!mounted) return;
+            setState(() {
+              _isCalculating = false;
+              _hasStaleData = true;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to apply substitutes: $e')),
+            );
+          }
         },
       ),
     );
@@ -289,7 +325,7 @@ class _ManualBasketCreatorPageState
     _openSubstituteSelectorFor(missingIdx);
   }
 
-  Future<void> _savePortfolio() async {
+  void _goToFinalPreview() {
     final amount = double.tryParse(_amountController.text) ?? 0;
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -314,111 +350,23 @@ class _ManualBasketCreatorPageState
       ));
       return;
     }
-    if (_currentOpportunity.readyToReplicate == false) {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: context.cardColor,
-          title: const Text('Low Coverage Warning'),
-          content: Text(
-            'Your basket covers ${_currentOpportunity.replicaScore.toStringAsFixed(1)}% of the ETF. Industry best practice is 90%+.\n\nContinue anyway?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: context.statusWarning,
-                foregroundColor: context.colors.textPrimary, // use textPrimary for better contrast on warning bg
-              ),
-              child: const Text('Create Anyway'),
-            ),
-          ],
-        ),
-      );
-      if (confirm != true) return;
-    }
+
     final basketName = _basketNameController.text.trim();
 
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (c) => const Center(child: CircularProgressIndicator()),
-      );
-
-      final request = {
-        'userId': widget.userId,
-        'sourcePortfolioId': widget.portfolioId,
-        'etfIsin': widget.opportunity.etfIsin,
-        'etfName': widget.opportunity.etfName,
-        'basketName': basketName,
-        'idempotencyKey': DateTime.now().millisecondsSinceEpoch.toString(),
-        'investmentAmount': amount,
-        'replicaScore': _currentOpportunity.replicaScore,
-        'coverageAfterCreation': _currentOpportunity.replicaScore,
-        'remainingMissingCount':
-            _items.where((c) => c.status == ItemStatus.missing).length,
-        'remainingMissing': _items
-            .where((c) => c.status == ItemStatus.missing)
-            .map((c) => c.stockSymbol)
-            .toList(),
-        'lines': _items.map((item) {
-          return {
-            'status':
-                item.status.toString().split('.').last.toUpperCase(),
-            'etfIsin': item.isin,
-            'etfSymbol': item.stockSymbol,
-            'holdingIsin':
-                (item.status == ItemStatus.substitute ||
-                        item.status == ItemStatus.held)
-                    ? (item.userHoldingIsin ?? item.isin)
-                    : item.isin,
-            'holdingSymbol':
-                (item.status == ItemStatus.substitute ||
-                        item.status == ItemStatus.held)
-                    ? (item.userHoldingSymbol ?? item.stockSymbol)
-                    : item.stockSymbol,
-            'quantity': item.buyQuantity,
-            'heldQuantity': (item.heldQuantity != null && item.targetQuantity != null)
-                ? math.min(item.heldQuantity!, item.targetQuantity!)
-                : item.heldQuantity,
-            'averageBuyingPrice': item.lastPrice,
-          };
-        }).toList(),
-      };
-
-      final newBasketId =
-          await ref.read(createBasketPortfolioProvider(request: request).future);
-
-      if (mounted) Navigator.of(context, rootNavigator: true).pop();
-      ref.invalidate(myBasketsProvider(userId: widget.userId, portfolioId: ''));
-
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => BasketSuccessPage(
-              opportunity: _currentOpportunity,
-              basketName: basketName,
-              basketId: newBasketId,
-              userId: widget.userId,
-              portfolioId: widget.portfolioId,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to create basket: $e'),
-          backgroundColor: context.statusError,
-        ));
-      }
-    }
+    BasketNavigation.openFinalPreview(
+      context,
+      args: BasketFinalPreviewArgs(
+        originalOpportunity: widget.opportunity,
+        finalOpportunity: _currentOpportunity,
+        finalItems: List.unmodifiable(_items),
+        investmentAmount: amount,
+        basketName: basketName,
+        userId: widget.userId,
+        portfolioId: widget.portfolioId,
+        excludedItems: _excludedItems,
+        idempotencyKey: DateTime.now().millisecondsSinceEpoch.toString(),
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -614,7 +562,7 @@ class _ManualBasketCreatorPageState
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
-                        onPressed: _savePortfolio,
+                        onPressed: _goToFinalPreview,
                         style: FilledButton.styleFrom(
                           backgroundColor: context.colors.actionPrimaryBg,
                           foregroundColor: context.colors.actionPrimaryFg,
@@ -622,7 +570,7 @@ class _ManualBasketCreatorPageState
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: const Text('Create Basket',
+                        child: const Text('Review & Confirm',
                             style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
@@ -732,9 +680,9 @@ class _ManualBasketCreatorPageState
         ),
         const SizedBox(width: 8),
         FilledButton.icon(
-          onPressed: _savePortfolio,
-          icon: const Icon(Icons.save_alt, size: 16),
-          label: const Text('Save Basket'),
+          onPressed: _goToFinalPreview,
+          icon: const Icon(Icons.arrow_forward, size: 16),
+          label: const Text('Review & Confirm'),
           style: FilledButton.styleFrom(
               backgroundColor: context.colors.actionPrimaryBg,
               foregroundColor: context.colors.actionPrimaryFg),
@@ -1286,20 +1234,17 @@ class _ManualBasketCreatorPageState
           const SizedBox(height: 12),
           _buildInvestmentSummaryCard(context, theme, coverage),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _savePortfolio,
-              icon: const Icon(Icons.arrow_forward, size: 18),
-              label: const Text('Create Basket',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-              style: FilledButton.styleFrom(
-                backgroundColor: context.colors.actionPrimaryBg,
-                foregroundColor: context.colors.actionPrimaryFg,
-                minimumSize: const Size(double.infinity, 52),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
+          FilledButton.icon(
+            onPressed: _goToFinalPreview,
+            icon: const Icon(Icons.arrow_forward, size: 16),
+            label: const Text('Review & Confirm',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.colors.actionPrimaryBg,
+              foregroundColor: context.colors.actionPrimaryFg,
+              minimumSize: const Size(double.infinity, 52),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
           const SizedBox(height: 4),
@@ -1521,11 +1466,14 @@ class _ManualBasketCreatorPageState
                     fontSize: 11,
                     fontWeight: FontWeight.w500)),
           ]),
-          const Spacer(),
-          AppButton(
-            text: 'Create Basket',
-            type: AppButtonType.primary,
-            onPressed: _savePortfolio,
+          FilledButton.icon(
+            icon: const Icon(Icons.arrow_forward, size: 16),
+            label: const Text('Review & Confirm'),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.colors.actionPrimaryBg,
+              foregroundColor: context.colors.actionPrimaryFg,
+            ),
+            onPressed: _goToFinalPreview,
           ),
         ]),
       ),
@@ -1590,7 +1538,7 @@ class _ManualBasketCreatorPageState
           title: const Text('Save Basket'),
           onTap: () {
             Navigator.of(ctx).pop();
-            _savePortfolio();
+            _goToFinalPreview();
           },
         ),
         SizedBox(height: MediaQuery.of(context).padding.bottom),
@@ -1984,6 +1932,11 @@ class _DenseBasketRowState extends State<_DenseBasketRow> {
                                       ? TextDecoration.lineThrough
                                       : null),
                               overflow: TextOverflow.ellipsis),
+                          if (item.status == ItemStatus.held || item.status == ItemStatus.substitute)
+                            Text('(avg: ${item.heldAveragePrice?.toStringAsFixed(0) ?? '-'})',
+                                style: TextStyle(
+                                    fontSize: 9,
+                                    color: context.textSecondary)),
                           if (item.status == ItemStatus.substitute &&
                               item.userHoldingSymbol != null)
                             Text('sub for ${item.stockSymbol}',
@@ -2061,7 +2014,7 @@ class _DenseBasketRowState extends State<_DenseBasketRow> {
                                 fontWeight: FontWeight.bold,
                                 color: context.statusSuccess)),
                         Text(
-                            '@ ₹${item.heldAveragePrice?.toStringAsFixed(0) ?? '—'}',
+                            '@ ₹${item.lastPrice?.toStringAsFixed(0) ?? '—'}',
                             style: TextStyle(
                                 fontSize: 9,
                                 color: context.textTertiary)),
