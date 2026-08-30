@@ -11,6 +11,7 @@ class MarketDataSdkService {
   late final InstrumentManagementApi instrumentApi;
   late final SecurityExplorerApi securityApi;
   late final MarginCalculatorApi marginApi;
+  late final FundamentalAnalysisApi fundamentalApi;
 
   MarketDataSdkService() {
     _apiClient = ApiClient(basePath: EnvDomains.market);
@@ -23,6 +24,7 @@ class MarketDataSdkService {
     instrumentApi = InstrumentManagementApi(_apiClient);
     securityApi = SecurityExplorerApi(_apiClient);
     marginApi = MarginCalculatorApi(_apiClient);
+    fundamentalApi = FundamentalAnalysisApi(_apiClient);
   }
 
   /// Configure authentication — pass the Bearer token string.

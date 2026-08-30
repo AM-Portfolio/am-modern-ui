@@ -184,6 +184,8 @@ class ApiClient {
           return BrokerageCalculationResponse.fromJson(value);
         case 'CookieInfo':
           return CookieInfo.fromJson(value);
+        case 'FundamentalRatiosResponse':
+          return FundamentalRatiosResponse.fromJson(value);
         case 'HistoricalData':
           return HistoricalData.fromJson(value);
         case 'HistoricalDataMetadata':

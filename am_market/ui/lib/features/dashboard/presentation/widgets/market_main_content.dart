@@ -17,6 +17,7 @@ import 'package:am_market_dev/features/developer/admin/historical_sync_page.dart
 import 'package:am_market_ui/shared/widgets/constituents_table.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/heatmap_view.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/heatmap_explorer_view.dart';
+import 'package:am_market_ui/features/equity_insider/presentation/pages/equity_insider_page.dart';
 // MarketAnalyticsPage replaced by AnalysisPage
 
 
@@ -46,6 +47,7 @@ class _MarketMainContentState extends State<MarketMainContent> {
         index == 'ETF Explorer' ||
         index == 'Price Test' || 
         index == 'Market Analysis' ||
+        index == 'Equity Insider' ||
         index == 'Admin Dashboard') { 
       return 'NIFTY 50';
     }
@@ -97,7 +99,10 @@ class _MarketMainContentState extends State<MarketMainContent> {
                 // Index 8: Admin Dashboard
                 const HistoricalSyncPage(),
 
-                // Index 9: Specific Index View (Table/Heatmap/Analytics)
+                // Index 9: Equity Insider
+                const EquityInsiderPage(),
+
+                // Index 10: Specific Index View (Table/Heatmap/Analytics)
                 _buildIndexDetailView(provider),
 
               ],
@@ -105,7 +110,7 @@ class _MarketMainContentState extends State<MarketMainContent> {
           ),
 
           // View Mode Toggler (only for specific index view)
-          if (_determineIndex(selectedIndex) == 9)
+          if (_determineIndex(selectedIndex) == 10)
             Positioned(
               top: 20,
               right: 20,
@@ -131,7 +136,8 @@ class _MarketMainContentState extends State<MarketMainContent> {
       case 'Heatmap Explorer': return 6;
       case 'Market Analysis': return 7;
       case 'Admin Dashboard': return 8;
-      default: return 9; // Specific Index Detail
+      case 'Equity Insider': return 9;
+      default: return 10; // Specific Index Detail
     }
   }
 
