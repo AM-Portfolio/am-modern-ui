@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../data/ai_intent_response.dart';
 import '../providers/ai_chat_provider.dart';
+import 'ai_message_format.dart';
 
 /// Maps widgetId strings from AiIntentResponse to rendered Flutter widgets.
 /// Uses design system [AppColors] and theme-aware context extensions.
@@ -63,6 +64,14 @@ class AiWidgetFactory {
       totalHoldings = holdingsRaw;
     }
 
+    final assetsRaw2 = data['totalAssets'];
+    num? totalAssets;
+    if (assetsRaw2 is num && assetsRaw2 > 0) {
+      totalAssets = assetsRaw2;
+    } else if (totalHoldings != null) {
+      totalAssets = totalHoldings;
+    }
+
     return {
       ...data,
       'totalValue': pick(['totalValue', 'currentValue']),
@@ -72,11 +81,46 @@ class AiWidgetFactory {
       'dayChange': pick(['dayChange', 'todayGainLoss']),
       'dayChangePercentage': pick(['dayChangePercentage', 'todayGainLossPercentage']),
       'totalHoldings': totalHoldings,
+      'totalAssets': totalAssets,
       'totalPortfolios': data['totalPortfolios'] ?? 1,
     };
   }
 
-  static Widget build(AiIntentResponse response) {
+  static List<dynamic> _extractHoldingsList(
+    Map<String, dynamic> data, {
+    String? messageText,
+  }) {
+    for (final key in ['holdings', 'items', 'stocks', 'equityHoldings']) {
+      final raw = data[key];
+      if (raw is List && raw.isNotEmpty) return raw;
+      if (raw is String && raw.trim().isNotEmpty) {
+        try {
+          final decoded = jsonDecode(raw);
+          if (decoded is List && decoded.isNotEmpty) return decoded;
+        } catch (_) {}
+      }
+    }
+    if (messageText != null && messageText.contains('|')) {
+      final rows = AiMessageFormat.parseMarkdownTable(messageText);
+      if (rows.isNotEmpty) {
+        return rows
+            .map((row) => {
+                  'symbol': row['Symbol'] ?? row['symbol'] ?? row['Name'] ?? '',
+                  'name': row['Name'] ?? row['name'] ?? '',
+                  'quantity': row['Quantity'] ?? row['quantity'] ?? '',
+                  'avgPrice': row['Avg. Price (₹)'] ?? row['Avg Price'] ?? '',
+                  'currentValue': row['Investment Value (₹)'] ??
+                      row['Current Value (₹)'] ??
+                      '',
+                })
+            .where((h) => (h['symbol'] ?? '').toString().isNotEmpty)
+            .toList();
+      }
+    }
+    return const [];
+  }
+
+  static Widget build(AiIntentResponse response, {String? messageText}) {
     switch (response.widgetId) {
       case 'PORTFOLIO_SUMMARY':
         return _PortfolioSummaryCard(widgetParams: response.widgetParams);
@@ -85,7 +129,10 @@ class AiWidgetFactory {
       case 'BASKET_CARD':
         return _BasketCard(widgetParams: response.widgetParams);
       case 'HOLDINGS_TABLE':
-        return _HoldingsTableCard(widgetParams: response.widgetParams);
+        return _HoldingsTableCard(
+          widgetParams: response.widgetParams,
+          messageText: messageText,
+        );
       case 'ALLOCATION_PIE_CHART':
         return _AllocationCard(widgetParams: response.widgetParams);
       case 'TOP_MOVERS':
@@ -344,24 +391,44 @@ class _TopMoversCard extends StatelessWidget {
 
 class _HoldingsTableCard extends StatelessWidget {
   final Map<String, dynamic> widgetParams;
-  const _HoldingsTableCard({required this.widgetParams});
+  final String? messageText;
+
+  const _HoldingsTableCard({
+    required this.widgetParams,
+    this.messageText,
+  });
 
   String _holdingLabel(dynamic item) {
     if (item is! Map) return item.toString();
     return (item['symbol'] ?? item['sourceId'] ?? item['name'] ?? '').toString();
   }
 
+  String _cell(dynamic item, List<String> keys) {
+    if (item is! Map) return '';
+    for (final key in keys) {
+      final value = item[key];
+      if (value != null && value.toString().isNotEmpty) return value.toString();
+    }
+    return '';
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = AiWidgetFactory._resolvedData(widgetParams);
-    final holdings = (data['holdings'] as List<dynamic>?) ??
-        (data['items'] as List<dynamic>?) ??
-        const [];
+    final holdings = AiWidgetFactory._extractHoldingsList(
+      data,
+      messageText: messageText,
+    );
     final count = data['count'] is num
         ? (data['count'] as num).toInt()
         : holdings.length;
 
+    if (holdings.isEmpty) return const SizedBox.shrink();
+
+    final displayCount = count > 0 ? count : holdings.length;
+
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -377,36 +444,70 @@ class _HoldingsTableCard extends StatelessWidget {
               Icon(Icons.table_chart_rounded, color: AppColors.tradeAccent, size: 18),
               const SizedBox(width: 6),
               Text(
-                'Holdings Overview ($count)',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary),
+                'Holdings ($displayCount)',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: context.textPrimary,
+                ),
               ),
             ],
           ),
-          if (holdings.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: holdings.take(8).map((h) {
-                final label = _holdingLabel(h);
-                if (label.isEmpty) return const SizedBox.shrink();
-                return Chip(
-                  label: Text(label, style: const TextStyle(fontSize: 10)),
-                  backgroundColor: AppColors.tradeAccent.withValues(alpha: 0.1),
-                  padding: EdgeInsets.zero,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                );
-              }).toList(),
-            ),
-            if (count > 8)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  '+${count - 8} more',
-                  style: TextStyle(fontSize: 11, color: context.textSecondary),
-                ),
+          const SizedBox(height: 10),
+          ...holdings.take(6).map((h) {
+            final symbol = _holdingLabel(h);
+            if (symbol.isEmpty) return const SizedBox.shrink();
+            final qty = _cell(h, ['quantity', 'qty', 'Quantity']);
+            final value = _cell(h, [
+              'currentValue',
+              'investmentValue',
+              'Investment Value (₹)',
+              'Current Value (₹)',
+            ]);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      symbol,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                  ),
+                  if (qty.isNotEmpty)
+                    Expanded(
+                      child: Text(
+                        qty,
+                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
+                  if (value.isNotEmpty)
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        value,
+                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
+                ],
               ),
-          ],
+            );
+          }),
+          if (displayCount > 6)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '+${displayCount - 6} more holdings',
+                style: TextStyle(fontSize: 11, color: context.textSecondary),
+              ),
+            ),
         ],
       ),
     );
@@ -621,8 +722,8 @@ class _PortfolioSummaryCard extends StatelessWidget {
     final totalGainLossPct = data['totalGainLossPercentage'] as num?;
     final dayChange = data['dayChange'] as num?;
     final dayChangePct = data['dayChangePercentage'] as num?;
-    final totalPortfolios = data['totalPortfolios'] as int? ?? 0;
     final totalHoldings = data['totalHoldings'] as int? ?? 0;
+    final totalAssets = data['totalAssets'] as int? ?? totalHoldings;
     final breakdown = (data['portfolioBreakdown'] as List<dynamic>?) ?? const [];
     final best = data['bestPerformer'] as Map<String, dynamic>?;
     final worst = data['worstPerformer'] as Map<String, dynamic>?;
@@ -630,189 +731,293 @@ class _PortfolioSummaryCard extends StatelessWidget {
     final dayIsPositive = (dayChange?.toDouble() ?? 0.0) >= 0;
     final gainIsPositive = (totalGainLoss?.toDouble() ?? 0.0) >= 0;
 
+    final dayPctValue = dayChangePct?.toDouble() ?? 0.0;
+    final dayBadgeText = dayPctValue.abs() < 0.005
+        ? '${_formatPct(dayChangePct ?? 0)} No change today'
+        : '${_formatPct(dayChangePct)} today';
+
     return Container(
-      margin: const EdgeInsets.only(top: 8),
+      margin: const EdgeInsets.only(top: 10),
       decoration: BoxDecoration(
         color: context.cardColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: AppColors.portfolioAccent.withValues(alpha: 0.35)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.borderColor.withValues(alpha: 0.55)),
+        boxShadow: [
+          BoxShadow(
+            color: context.shadow(context.isDark ? 0.32 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 520;
+          final summaryPanel = _buildSummaryPanel(
+            context,
+            totalValue: totalValue,
+            totalInvested: totalInvested,
+            totalGainLoss: totalGainLoss,
+            totalGainLossPct: totalGainLossPct,
+            gainIsPositive: gainIsPositive,
+            totalHoldings: totalHoldings,
+            totalAssets: totalAssets,
+          );
+          final performancePanel = _buildPerformancePanel(
+            context,
+            dayIsPositive: dayIsPositive,
+            dayBadgeText: dayBadgeText,
+          );
+
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                summaryPanel,
+                Divider(height: 1, color: context.dividerColor),
+                performancePanel,
+                if (breakdown.isNotEmpty || best != null || worst != null)
+                  _buildExtras(context, breakdown, best, worst),
+              ],
+            );
+          }
+
+          return Column(
+            children: [
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(flex: 11, child: summaryPanel),
+                    VerticalDivider(width: 1, color: context.dividerColor),
+                    Expanded(flex: 9, child: performancePanel),
+                  ],
+                ),
+              ),
+              if (breakdown.isNotEmpty || best != null || worst != null)
+                _buildExtras(context, breakdown, best, worst),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSummaryPanel(
+    BuildContext context, {
+    required num? totalValue,
+    required num? totalInvested,
+    required num? totalGainLoss,
+    required num? totalGainLossPct,
+    required bool gainIsPositive,
+    required int totalHoldings,
+    required int totalAssets,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(
-            context,
-            totalValue: totalValue,
-            dayChange: dayChange,
-            dayChangePct: dayChangePct,
-            dayIsPositive: dayIsPositive,
+          _PanelTitle(
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'Portfolio Summary',
+            color: AppColors.portfolioAccent,
           ),
-          Divider(height: 1, color: context.dividerColor),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _MetricCell(
-                    label: 'Invested',
-                    value: _formatCurrency(totalInvested),
-                    valueColor: context.textPrimary,
-                  ),
-                ),
-                _VerticalDivider(),
-                Expanded(
-                  child: _MetricCell(
-                    label: 'Gain / Loss',
-                    value: totalGainLoss != null ? _formatCurrency(totalGainLoss) : '₹—',
-                    valueColor: _gainColor(totalGainLoss, context),
-                    badge: totalGainLossPct != null ? _formatPct(totalGainLossPct) : null,
-                    badgePositive: gainIsPositive,
-                  ),
-                ),
-                _VerticalDivider(),
-                Expanded(
-                  child: _MetricCell(
-                    label: 'Today',
-                    value: dayChange != null ? _formatCurrency(dayChange) : '₹—',
-                    valueColor: _gainColor(dayChange, context),
-                    badge: dayChangePct != null ? _formatPct(dayChangePct) : null,
-                    badgePositive: dayIsPositive,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 14),
+          Text(
+            'Current Value',
+            style: TextStyle(fontSize: 11, color: context.textSecondary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            totalValue != null ? _formatCurrency(totalValue) : '₹—',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: context.textPrimary,
+              letterSpacing: -0.6,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(left: 12, right: 12, bottom: 10),
-            child: Row(
-              children: [
-                Icon(Icons.folder_outlined, size: 13, color: context.textSecondary),
-                const SizedBox(width: 4),
-                Text(
-                  '$totalPortfolios ${totalPortfolios == 1 ? 'Portfolio' : 'Portfolios'}',
-                  style: TextStyle(fontSize: 11, color: context.textSecondary),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _GridMetric(
+                  label: 'Invested',
+                  value: _formatCurrency(totalInvested),
+                  valueColor: context.textPrimary,
                 ),
-                const SizedBox(width: 12),
-                Icon(Icons.show_chart_rounded, size: 13, color: context.textSecondary),
-                const SizedBox(width: 4),
-                Text(
-                  '$totalHoldings ${totalHoldings == 1 ? 'Holding' : 'Holdings'}',
-                  style: TextStyle(fontSize: 11, color: context.textSecondary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _GridMetric(
+                  label: 'Gain / Loss',
+                  value: totalGainLoss != null
+                      ? _formatCurrency(totalGainLoss)
+                      : '₹—',
+                  valueColor: _gainColor(totalGainLoss, context),
+                  subValue: totalGainLossPct != null
+                      ? _formatPct(totalGainLossPct)
+                      : null,
+                  subPositive: gainIsPositive,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          if (breakdown.isNotEmpty) ...[
-            Divider(height: 1, color: context.dividerColor),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text(
-                'Breakdown',
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: context.textSecondary,
-                    letterSpacing: 0.4),
-              ),
-            ),
-            ...breakdown.take(4).map((item) => _buildBreakdownRow(context, item as Map<String, dynamic>)),
-            if (breakdown.length > 4)
-              Padding(
-                padding: const EdgeInsets.only(left: 12, right: 12, bottom: 8),
-                child: Text(
-                  '+${breakdown.length - 4} more portfolios',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w500,
-                  ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _IconStat(
+                  icon: Icons.grid_view_rounded,
+                  label: 'Holdings',
+                  value: '$totalHoldings',
                 ),
               ),
-          ],
-          if (best != null || worst != null) ...[
-            Divider(height: 1, color: context.dividerColor),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: [
-                  if (best != null)
-                    _PerformerChip(
-                      symbol: best['symbol'] as String? ?? '—',
-                      pct: best['changePercent'] as num?,
-                      isPositive: true,
-                    ),
-                  if (worst != null)
-                    _PerformerChip(
-                      symbol: worst['symbol'] as String? ?? '—',
-                      pct: worst['changePercent'] as num?,
-                      isPositive: false,
-                    ),
-                ],
+              Expanded(
+                child: _IconStat(
+                  icon: Icons.home_work_outlined,
+                  label: 'Assets',
+                  value: '$totalAssets',
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(
+  Widget _buildPerformancePanel(
     BuildContext context, {
-    required num? totalValue,
-    required num? dayChange,
-    required num? dayChangePct,
     required bool dayIsPositive,
+    required String dayBadgeText,
   }) {
     final dayColor = dayIsPositive ? AppColors.profit : AppColors.loss;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-      child: Row(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: AppColors.portfolioAccent.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.account_balance_wallet_rounded, color: AppColors.portfolioAccent, size: 16),
+          _PanelTitle(
+            icon: Icons.show_chart_rounded,
+            label: 'Portfolio Performance',
+            color: AppColors.primary,
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 120,
+            width: double.infinity,
+            child: _PortfolioAreaChart(isPositive: dayIsPositive),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: dayColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Portfolio Summary', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.textSecondary)),
-                const SizedBox(height: 2),
+                Icon(
+                  dayIsPositive
+                      ? Icons.arrow_drop_up
+                      : Icons.arrow_drop_down,
+                  color: dayColor,
+                  size: 18,
+                ),
                 Text(
-                  totalValue != null ? _formatCurrency(totalValue) : '₹—',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: context.textPrimary, letterSpacing: -0.3),
+                  dayBadgeText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: dayColor,
+                  ),
                 ),
               ],
             ),
           ),
-          if (dayChange != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-              decoration: BoxDecoration(
-                color: dayColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(6),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'View Full Portfolio →',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(dayIsPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down, color: dayColor, size: 16),
-                  Text(
-                    dayChangePct != null ? '${(dayChangePct.toDouble()).abs().toStringAsFixed(2)}%' : _formatCurrency(dayChange),
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: dayColor),
-                  ),
-                ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExtras(
+    BuildContext context,
+    List<dynamic> breakdown,
+    Map<String, dynamic>? best,
+    Map<String, dynamic>? worst,
+  ) {
+    return Column(
+      children: [
+        if (breakdown.isNotEmpty) ...[
+          Divider(height: 1, color: context.dividerColor),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Text(
+              'Breakdown',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: context.textSecondary,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+          ...breakdown
+              .take(4)
+              .map((item) => _buildBreakdownRow(context, item as Map<String, dynamic>)),
+          if (breakdown.length > 4)
+            Padding(
+              padding: const EdgeInsets.only(left: 12, right: 12, bottom: 8),
+              child: Text(
+                '+${breakdown.length - 4} more portfolios',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
         ],
-      ),
+        if (best != null || worst != null) ...[
+          Divider(height: 1, color: context.dividerColor),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                if (best != null)
+                  _PerformerChip(
+                    symbol: best['symbol'] as String? ?? '—',
+                    pct: best['changePercent'] as num?,
+                    isPositive: true,
+                  ),
+                if (worst != null)
+                  _PerformerChip(
+                    symbol: worst['symbol'] as String? ?? '—',
+                    pct: worst['changePercent'] as num?,
+                    isPositive: false,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -895,6 +1100,134 @@ class _PortfolioSummaryCard extends StatelessWidget {
   }
 }
 
+// ── Panel helpers ─────────────────────────────────────────────────────────────
+
+class _PanelTitle extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _PanelTitle({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 16),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: context.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GridMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color valueColor;
+  final String? subValue;
+  final bool subPositive;
+
+  const _GridMetric({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+    this.subValue,
+    this.subPositive = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final subColor = subPositive ? AppColors.profit : AppColors.loss;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: context.surfaceColor.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: context.borderColor.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontSize: 10, color: context.textSecondary)),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: valueColor,
+            ),
+          ),
+          if (subValue != null)
+            Text(
+              subValue!,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: subColor,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IconStat extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _IconStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: context.textSecondary),
+        const SizedBox(width: 6),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 10, color: context.textSecondary)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: context.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 // ── Metric Cell ───────────────────────────────────────────────────────────────
 
 class _MetricCell extends StatelessWidget {
@@ -938,6 +1271,80 @@ class _VerticalDivider extends StatelessWidget {
       color: context.dividerColor,
     );
   }
+}
+
+class _PortfolioAreaChart extends StatelessWidget {
+  final bool isPositive;
+
+  const _PortfolioAreaChart({required this.isPositive});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _AreaChartPainter(
+        color: AppColors.primary,
+        isPositive: isPositive,
+      ),
+      size: Size.infinite,
+    );
+  }
+}
+
+class _AreaChartPainter extends CustomPainter {
+  final Color color;
+  final bool isPositive;
+
+  _AreaChartPainter({required this.color, required this.isPositive});
+
+  List<Offset> _points(Size size) => [
+        Offset(0, size.height * 0.82),
+        Offset(size.width * 0.12, size.height * 0.78),
+        Offset(size.width * 0.28, size.height * 0.72),
+        Offset(size.width * 0.42, size.height * 0.68),
+        Offset(size.width * 0.58, size.height * 0.52),
+        Offset(size.width * 0.72, size.height * 0.38),
+        Offset(size.width * 0.86, size.height * 0.22),
+        Offset(size.width, size.height * 0.12),
+      ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final points = _points(size);
+    final linePath = Path()..moveTo(points.first.dx, points.first.dy);
+    for (var i = 1; i < points.length; i++) {
+      linePath.lineTo(points[i].dx, points[i].dy);
+    }
+
+    final areaPath = Path.from(linePath)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          color.withValues(alpha: 0.35),
+          color.withValues(alpha: 0.02),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    canvas.drawPath(areaPath, fillPaint);
+
+    final linePaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    canvas.drawPath(linePath, linePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AreaChartPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.isPositive != isPositive;
 }
 
 class _PerformerChip extends StatelessWidget {

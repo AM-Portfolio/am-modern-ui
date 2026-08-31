@@ -340,8 +340,35 @@ GoRouter createAppRouter({
           ),
           GoRoute(
             path: AppRoutes.aiChat,
-            builder: (context, state) =>
-                buildAiChatRoute(userId: _userId(context)),
+            builder: (context, state) {
+              final authState = context.read<AuthCubit>().state;
+              String? displayName;
+              if (authState is Authenticated) {
+                displayName = authState.user.displayName?.trim();
+                if (displayName == null || displayName.isEmpty) {
+                  final email = authState.user.email;
+                  if (email.contains('@')) {
+                    final local = email
+                        .split('@')
+                        .first
+                        .replaceAll(RegExp(r'[._-]+'), ' ')
+                        .trim();
+                    if (local.isNotEmpty) {
+                      displayName = local
+                          .split(RegExp(r'\s+'))
+                          .where((p) => p.isNotEmpty)
+                          .map((p) =>
+                              '${p[0].toUpperCase()}${p.substring(1).toLowerCase()}')
+                          .join(' ');
+                    }
+                  }
+                }
+              }
+              return buildAiChatRoute(
+                userId: _userId(context),
+                displayName: displayName,
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.lab,

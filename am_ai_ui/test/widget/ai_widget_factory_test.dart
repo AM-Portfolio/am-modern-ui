@@ -43,8 +43,9 @@ void main() {
 
         expect(find.textContaining('₹'), findsWidgets);
         expect(find.text('Portfolio Summary'), findsOneWidget);
-        expect(find.text('2 Portfolios'), findsOneWidget);
-        expect(find.text('10 Holdings'), findsOneWidget);
+        expect(find.text('Portfolio Performance'), findsOneWidget);
+        expect(find.text('Holdings'), findsOneWidget);
+        expect(find.text('10'), findsWidgets);
       });
 
       testWidgets('maps totalAssets when totalHoldings is zero', (WidgetTester tester) async {
@@ -67,7 +68,9 @@ void main() {
         await tester.pumpWidget(_wrap(AiWidgetFactory.build(response)));
         await tester.pumpAndSettle();
 
-        expect(find.text('106 Holdings'), findsOneWidget);
+        expect(find.text('Holdings'), findsOneWidget);
+        expect(find.text('106'), findsWidgets);
+        expect(find.text('Assets'), findsOneWidget);
       });
     });
 
@@ -95,7 +98,33 @@ void main() {
         await tester.pumpWidget(_wrap(AiWidgetFactory.build(response)));
         await tester.pumpAndSettle();
 
-        expect(find.text('Holdings Overview (3)'), findsOneWidget);
+        expect(find.text('Holdings (3)'), findsOneWidget);
+        expect(find.text('RELIANCE'), findsOneWidget);
+        expect(find.text('TCS'), findsOneWidget);
+      });
+
+      testWidgets('falls back to markdown table in message text', (WidgetTester tester) async {
+        const tableText = '''
+| Symbol | Name | Quantity |
+| --- | --- | --- |
+| RELIANCE | Reliance | 50 |
+| TCS | TCS Ltd | 10 |
+''';
+        final response = AiIntentResponse(
+          message: tableText,
+          widgetId: 'HOLDINGS_TABLE',
+          widgetParams: const {'userId': 'u1', 'data': {}},
+          sessionId: 's',
+          toolsUsed: const ['get_holdings_list'],
+          traceId: 't',
+        );
+
+        await tester.pumpWidget(
+          _wrap(AiWidgetFactory.build(response, messageText: tableText)),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Holdings (2)'), findsOneWidget);
         expect(find.text('RELIANCE'), findsOneWidget);
         expect(find.text('TCS'), findsOneWidget);
       });

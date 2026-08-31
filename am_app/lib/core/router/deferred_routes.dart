@@ -222,8 +222,8 @@ Widget buildMarketRoute({
   );
 }
 
-Widget buildAiChatRoute({required String userId}) {
-  return ai_ui.AiChatScreen(userId: userId);
+Widget buildAiChatRoute({required String userId, String? displayName}) {
+  return ai_ui.AiChatScreen(userId: userId, displayName: displayName);
 }
 
 Widget buildLabRoute() {
