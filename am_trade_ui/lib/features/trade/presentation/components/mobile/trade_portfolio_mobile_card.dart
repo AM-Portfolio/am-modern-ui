@@ -229,6 +229,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true,
       builder: (context) {
         return Container(
           padding: const EdgeInsets.only(top: 12, bottom: 32),
