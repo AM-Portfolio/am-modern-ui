@@ -9,6 +9,7 @@ class TradePortfolioMobileHeader extends StatelessWidget {
     required this.profitableCount,
     required this.totalTrades,
     required this.totalNetProfitLoss,
+    required this.totalUnrealizedPnL,
     required this.avgWinRate,
     super.key,
     this.onRefresh,
@@ -19,6 +20,7 @@ class TradePortfolioMobileHeader extends StatelessWidget {
   final int profitableCount;
   final int totalTrades;
   final double totalNetProfitLoss;
+  final double totalUnrealizedPnL;
   final double avgWinRate;
   final VoidCallback? onRefresh;
 
@@ -27,8 +29,10 @@ class TradePortfolioMobileHeader extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final muted = isDark ? Colors.white54 : Colors.black45;
     final primary = Theme.of(context).colorScheme.primary;
-    final pnlColor =
+    final realizedColor =
         totalNetProfitLoss >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final liveColor =
+        totalUnrealizedPnL >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
     // Keep unused discovery stats available for API compatibility.
     assert(profitableCount >= 0 && totalTrades >= 0 && avgWinRate >= 0);
@@ -53,15 +57,6 @@ class TradePortfolioMobileHeader extends StatelessWidget {
           children: [
             Expanded(
               child: _buildMetricColumn(
-                icon: Icons.folder_special_rounded,
-                label: 'Portfolios',
-                value: '$portfolioCount',
-                color: primary,
-                muted: muted,
-              ),
-            ),
-            Expanded(
-              child: _buildMetricColumn(
                 icon: Icons.account_balance_wallet_rounded,
                 label: 'Value',
                 value: '₹${_formatNum(totalValue)}',
@@ -74,10 +69,22 @@ class TradePortfolioMobileHeader extends StatelessWidget {
                 icon: totalNetProfitLoss >= 0
                     ? Icons.trending_up_rounded
                     : Icons.trending_down_rounded,
-                label: 'P&L',
+                label: 'Realized',
                 value:
                     '${totalNetProfitLoss >= 0 ? '+' : ''}₹${_formatNum(totalNetProfitLoss)}',
-                color: pnlColor,
+                color: realizedColor,
+                muted: muted,
+              ),
+            ),
+            Expanded(
+              child: _buildMetricColumn(
+                icon: totalUnrealizedPnL >= 0
+                    ? Icons.show_chart_rounded
+                    : Icons.trending_down_rounded,
+                label: 'Live P&L',
+                value:
+                    '${totalUnrealizedPnL >= 0 ? '+' : ''}₹${_formatNum(totalUnrealizedPnL)}',
+                color: liveColor,
                 muted: muted,
               ),
             ),

@@ -190,6 +190,8 @@ class _TradePortfolioDiscoveryTemplateState
         widget.portfolios.fold<int>(0, (sum, p) => sum + p.totalTrades);
     final totalNetProfitLoss = widget.portfolios
         .fold<double>(0.0, (sum, p) => sum + (p.netProfitLoss ?? 0.0));
+    final totalUnrealizedPnL = widget.portfolios
+        .fold<double>(0.0, (sum, p) => sum + p.totalGainLoss);
     final avgWinRate = widget.portfolios.isNotEmpty
         ? (widget.portfolios
                 .fold<double>(0.0, (sum, p) => sum + (p.winRate ?? 0.0)) /
@@ -207,6 +209,7 @@ class _TradePortfolioDiscoveryTemplateState
             profitableCount: profitableCount,
             totalTrades: totalTrades,
             totalNetProfitLoss: totalNetProfitLoss,
+            totalUnrealizedPnL: totalUnrealizedPnL,
             avgWinRate: avgWinRate,
             onRefresh: widget.onRefresh,
           );
@@ -324,6 +327,22 @@ class _TradePortfolioDiscoveryTemplateState
                           ? const Color(0xFF10B981)
                           : const Color(0xFFEF4444),
                       valueColor: totalNetProfitLoss >= 0
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFEF4444),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildStatBadge(
+                      label: 'Live P&L',
+                      value:
+                          '${totalUnrealizedPnL >= 0 ? '+' : ''}₹${_formatNum(totalUnrealizedPnL)}',
+                      icon: totalUnrealizedPnL >= 0
+                          ? Icons.show_chart_rounded
+                          : Icons.trending_down_rounded,
+                      iconColor: Colors.white,
+                      iconBgColor: totalUnrealizedPnL >= 0
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFEF4444),
+                      valueColor: totalUnrealizedPnL >= 0
                           ? const Color(0xFF10B981)
                           : const Color(0xFFEF4444),
                     ),
@@ -1146,9 +1165,27 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                         iconColor: p.isTradeProfit
                             ? const Color(0xFF10B981)
                             : const Color(0xFFEF4444),
-                        label: 'Realized P&L',
+                        label: 'Realized',
                         value: p.displayNetProfitLoss,
                         valueColor: p.isTradeProfit
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFEF4444),
+                      ),
+                      Container(
+                          width: 1,
+                          height: 28,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.08)),
+                      _metric(
+                        icon: Icons.show_chart_rounded,
+                        iconColor: p.isProfit
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFEF4444),
+                        label: 'Live P&L',
+                        value: p.displayGainLoss,
+                        valueColor: p.isProfit
                             ? const Color(0xFF10B981)
                             : const Color(0xFFEF4444),
                       ),
