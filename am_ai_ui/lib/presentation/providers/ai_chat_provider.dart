@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
@@ -178,6 +178,25 @@ class AiChatNotifier extends Notifier<ChatState> {
             break;
 
           case StreamEventType.error:
+            if (event.content != null && (event.content!.contains('404') || event.content!.contains('failed') || event.content!.contains('status code of 404'))) {
+              final fallbackResponse = await service.chat(
+                message: text,
+                userId: userId,
+                sessionId: state.sessionId,
+                cancelToken: _cancelToken,
+              );
+              _updateLastMessage(
+                text: fallbackResponse.message,
+                response: fallbackResponse,
+                isStreaming: false,
+                activeTool: null,
+              );
+              state = state.copyWith(
+                isLoading: false,
+                sessionId: fallbackResponse.sessionId.isNotEmpty ? fallbackResponse.sessionId : state.sessionId,
+              );
+              return;
+            }
             fullText.write(event.content ?? 'An error occurred.');
             widgetId = 'ERROR';
             widgetParams = {'reason': event.content ?? 'Stream error', 'traceId': traceId};
@@ -268,6 +287,19 @@ class AiChatNotifier extends Notifier<ChatState> {
     final updated = List<ChatMessage>.from(state.messages);
     updated[messageIndex] = msg.copyWith(userRating: rating);
     state = state.copyWith(messages: updated);
+  }
+
+  /// Confirms a Human-In-The-Loop action (Phase 4 Smart Order).
+  Future<bool> confirmAction({
+    required String confirmToken,
+    required String userId,
+  }) async {
+    final service = ref.read(aiChatServiceProvider);
+    final response = await service.confirmAction(
+      confirmToken: confirmToken,
+      userId: userId,
+    );
+    return response != null && response['status'] == 'confirmed';
   }
 
   /// Drops local messages and resets sessionId for a fresh conversation.

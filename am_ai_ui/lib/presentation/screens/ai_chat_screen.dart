@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -38,7 +38,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     ref.read(aiChatProvider.notifier).sendMessage(
       text: text,
       userId: widget.userId,
-      stream: true,
+      stream: false,
     );
     _scrollToBottom();
   }

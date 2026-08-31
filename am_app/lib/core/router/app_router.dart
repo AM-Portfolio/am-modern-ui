@@ -456,7 +456,10 @@ String? _portfolioIdOnlyRedirect(String location) {
 
 String _userId(BuildContext context) {
   final authState = context.read<AuthCubit>().state;
-  return authState is Authenticated ? authState.user.id : '';
+  if (authState is Authenticated && authState.user.id.isNotEmpty) {
+    return authState.user.id;
+  }
+  return 'anonymous';
 }
 
 void _patchPortfolioSession(BuildContext context, String id, String name) {

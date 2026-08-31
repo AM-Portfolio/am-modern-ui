@@ -46,6 +46,163 @@ void main() {
         expect(find.text('2 Portfolios'), findsOneWidget);
         expect(find.text('10 Holdings'), findsOneWidget);
       });
+
+      testWidgets('maps totalAssets when totalHoldings is zero', (WidgetTester tester) async {
+        final response = AiIntentResponse(
+          message: '',
+          widgetId: 'PORTFOLIO_SUMMARY',
+          widgetParams: {
+            'data': {
+              'totalValue': 886104,
+              'totalInvested': 800000,
+              'totalHoldings': 0,
+              'totalAssets': 106,
+            },
+          },
+          sessionId: 's',
+          toolsUsed: const [],
+          traceId: 't',
+        );
+
+        await tester.pumpWidget(_wrap(AiWidgetFactory.build(response)));
+        await tester.pumpAndSettle();
+
+        expect(find.text('106 Holdings'), findsOneWidget);
+      });
+    });
+
+    group('HOLDINGS_TABLE widget id', () {
+      testWidgets('reads holdings from widgetParams.data', (WidgetTester tester) async {
+        final response = AiIntentResponse(
+          message: '',
+          widgetId: 'HOLDINGS_TABLE',
+          widgetParams: {
+            'userId': 'u1',
+            'data': {
+              'count': 3,
+              'holdings': [
+                {'symbol': 'RELIANCE'},
+                {'symbol': 'TCS'},
+                {'symbol': 'INFY'},
+              ],
+            },
+          },
+          sessionId: 's',
+          toolsUsed: const ['get_holdings_list'],
+          traceId: 't',
+        );
+
+        await tester.pumpWidget(_wrap(AiWidgetFactory.build(response)));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Holdings Overview (3)'), findsOneWidget);
+        expect(find.text('RELIANCE'), findsOneWidget);
+        expect(find.text('TCS'), findsOneWidget);
+      });
+    });
+
+    group('TOP_MOVERS widget id', () {
+      testWidgets('reads gainers from widgetParams.data', (WidgetTester tester) async {
+        final response = AiIntentResponse(
+          message: '',
+          widgetId: 'TOP_MOVERS',
+          widgetParams: {
+            'data': {
+              'gainers': [
+                {'symbol': 'SBIN'},
+                {'symbol': 'HDFCBANK'},
+              ],
+              'losers': [
+                {'symbol': 'WIPRO'},
+              ],
+            },
+          },
+          sessionId: 's',
+          toolsUsed: const ['get_top_movers'],
+          traceId: 't',
+        );
+
+        await tester.pumpWidget(_wrap(AiWidgetFactory.build(response)));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Portfolio Top Movers'), findsOneWidget);
+        expect(find.text('SBIN'), findsOneWidget);
+        expect(find.text('WIPRO'), findsOneWidget);
+      });
+
+      testWidgets('maps market movers array to gainers', (WidgetTester tester) async {
+        final response = AiIntentResponse(
+          message: '',
+          widgetId: 'TOP_MOVERS',
+          widgetParams: {
+            'data': {
+              'source': 'market',
+              'movers': [
+                {'symbol': 'ADANIENT'},
+              ],
+            },
+          },
+          sessionId: 's',
+          toolsUsed: const ['get_market_movers'],
+          traceId: 't',
+        );
+
+        await tester.pumpWidget(_wrap(AiWidgetFactory.build(response)));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Market Top Movers'), findsOneWidget);
+        expect(find.text('ADANIENT'), findsOneWidget);
+      });
+    });
+
+    group('ALLOCATION_PIE_CHART widget id', () {
+      testWidgets('renders sector rows from data', (WidgetTester tester) async {
+        final response = AiIntentResponse(
+          message: '',
+          widgetId: 'ALLOCATION_PIE_CHART',
+          widgetParams: {
+            'data': {
+              'sectorAllocation': {'IT': 35.5, 'Banking': 28.0},
+            },
+          },
+          sessionId: 's',
+          toolsUsed: const ['get_sector_allocation'],
+          traceId: 't',
+        );
+
+        await tester.pumpWidget(_wrap(AiWidgetFactory.build(response)));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Sector Allocation'), findsOneWidget);
+        expect(find.text('IT'), findsOneWidget);
+        expect(find.text('35.5%'), findsOneWidget);
+      });
+    });
+
+    group('RECENT_ACTIVITY widget id', () {
+      testWidgets('renders activity lines from data', (WidgetTester tester) async {
+        final response = AiIntentResponse(
+          message: '',
+          widgetId: 'RECENT_ACTIVITY',
+          widgetParams: {
+            'data': {
+              'count': 1,
+              'activities': [
+                {'side': 'buy', 'symbol': 'RELIANCE', 'quantity': 10},
+              ],
+            },
+          },
+          sessionId: 's',
+          toolsUsed: const ['get_recent_activity'],
+          traceId: 't',
+        );
+
+        await tester.pumpWidget(_wrap(AiWidgetFactory.build(response)));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Recent Activity (1)'), findsOneWidget);
+        expect(find.textContaining('RELIANCE'), findsOneWidget);
+      });
     });
 
     group('BASKET_CARD widget id', () {

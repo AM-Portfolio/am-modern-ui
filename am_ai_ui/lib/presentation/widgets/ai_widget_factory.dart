@@ -1,14 +1,80 @@
-import 'package:dio/dio.dart';
-import 'package:am_common/am_common.dart' as common;
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../data/ai_intent_response.dart';
+import '../providers/ai_chat_provider.dart';
 
 /// Maps widgetId strings from AiIntentResponse to rendered Flutter widgets.
 /// Uses design system [AppColors] and theme-aware context extensions.
 class AiWidgetFactory {
   const AiWidgetFactory._();
+
+  static Map<String, dynamic>? _coerceDataMap(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is Map<String, dynamic>) {
+      if (raw.containsKey('ok') && raw['data'] is Map<String, dynamic>) {
+        return Map<String, dynamic>.from(raw['data'] as Map);
+      }
+      return raw;
+    }
+    if (raw is Map) {
+      final map = Map<String, dynamic>.from(raw);
+      if (map.containsKey('ok') && map['data'] is Map) {
+        return Map<String, dynamic>.from(map['data'] as Map);
+      }
+      return map;
+    }
+    if (raw is String) {
+      try {
+        final decoded = jsonDecode(raw);
+        return _coerceDataMap(decoded);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /// Agent sends tool payloads under [widgetParams.data]; legacy paths may flatten keys.
+  static Map<String, dynamic> _resolvedData(Map<String, dynamic> widgetParams) {
+    return _coerceDataMap(widgetParams['data']) ?? widgetParams;
+  }
+
+  static Map<String, dynamic> _normalizePortfolioData(Map<String, dynamic> data) {
+    num? pick(List<String> keys) {
+      for (final key in keys) {
+        final value = data[key];
+        if (value is num) return value;
+      }
+      return null;
+    }
+
+    final holdingsRaw = data['totalHoldings'];
+    final assetsRaw = data['totalAssets'];
+    num? totalHoldings;
+    if (holdingsRaw is num && holdingsRaw > 0) {
+      totalHoldings = holdingsRaw;
+    } else if (assetsRaw is num) {
+      totalHoldings = assetsRaw;
+    } else if (holdingsRaw is num) {
+      totalHoldings = holdingsRaw;
+    }
+
+    return {
+      ...data,
+      'totalValue': pick(['totalValue', 'currentValue']),
+      'totalInvested': pick(['totalInvested', 'investmentValue']),
+      'totalGainLoss': pick(['totalGainLoss']),
+      'totalGainLossPercentage': pick(['totalGainLossPercentage']),
+      'dayChange': pick(['dayChange', 'todayGainLoss']),
+      'dayChangePercentage': pick(['dayChangePercentage', 'todayGainLossPercentage']),
+      'totalHoldings': totalHoldings,
+      'totalPortfolios': data['totalPortfolios'] ?? 1,
+    };
+  }
 
   static Widget build(AiIntentResponse response) {
     switch (response.widgetId) {
@@ -21,21 +87,11 @@ class AiWidgetFactory {
       case 'HOLDINGS_TABLE':
         return _HoldingsTableCard(widgetParams: response.widgetParams);
       case 'ALLOCATION_PIE_CHART':
-        return _IntentCard(
-          title: 'Allocation Breakdown',
-          subtitle: 'Sector and asset type distribution',
-          icon: Icons.pie_chart_rounded,
-          color: AppColors.portfolioAccent,
-        );
+        return _AllocationCard(widgetParams: response.widgetParams);
       case 'TOP_MOVERS':
         return _TopMoversCard(widgetParams: response.widgetParams);
       case 'RECENT_ACTIVITY':
-        return _IntentCard(
-          title: 'Recent Activity',
-          subtitle: 'Buy/sell transactions and events',
-          icon: Icons.receipt_long_rounded,
-          color: AppColors.marketAccent,
-        );
+        return _RecentActivityCard(widgetParams: response.widgetParams);
       case 'ETF_ANALYSIS':
         return _IntentCard(
           title: 'ETF Analysis',
@@ -192,9 +248,27 @@ class _TopMoversCard extends StatelessWidget {
   final Map<String, dynamic> widgetParams;
   const _TopMoversCard({required this.widgetParams});
 
+  List<dynamic> _moversList(Map<String, dynamic> data, String key) {
+    final raw = data[key];
+    return raw is List<dynamic> ? raw : const [];
+  }
+
+  String _symbol(dynamic item) {
+    if (item is Map) {
+      return (item['symbol'] ?? item['tradingsymbol'] ?? item['name'] ?? '').toString();
+    }
+    return item.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final gainers = (widgetParams['gainers'] as List<dynamic>?) ?? [];
+    final data = AiWidgetFactory._resolvedData(widgetParams);
+    var gainers = _moversList(data, 'gainers');
+    var losers = _moversList(data, 'losers');
+    if (gainers.isEmpty && losers.isEmpty) {
+      gainers = _moversList(data, 'movers');
+    }
+    final isMarket = data['source'] == 'market' || (data.containsKey('movers') && gainers.isNotEmpty);
 
     return Container(
       margin: const EdgeInsets.only(top: 8),
@@ -212,22 +286,48 @@ class _TopMoversCard extends StatelessWidget {
               Icon(Icons.trending_up_rounded, color: AppColors.profit, size: 18),
               const SizedBox(width: 6),
               Text(
-                'Market Top Movers',
+                isMarket ? 'Market Top Movers' : 'Portfolio Top Movers',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary),
               ),
             ],
           ),
           const SizedBox(height: 8),
+          if (gainers.isEmpty && losers.isEmpty)
+            Text(
+              'No movers to display',
+              style: TextStyle(fontSize: 11, color: context.textSecondary),
+            ),
           if (gainers.isNotEmpty) ...[
             Text('Top Gainers', style: TextStyle(fontSize: 11, color: AppColors.profit, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
             Wrap(
               spacing: 6,
               runSpacing: 4,
-              children: gainers.take(3).map((g) {
-                final sym = g is Map ? g['symbol'] : g.toString();
+              children: gainers.take(5).map((g) {
+                final sym = _symbol(g);
+                if (sym.isEmpty) return const SizedBox.shrink();
                 return Chip(
-                  label: Text('$sym', style: const TextStyle(fontSize: 10)),
+                  label: Text(sym, style: const TextStyle(fontSize: 10)),
                   backgroundColor: AppColors.profit.withValues(alpha: 0.1),
+                  padding: EdgeInsets.zero,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                );
+              }).toList(),
+            ),
+          ],
+          if (losers.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('Top Losers', style: TextStyle(fontSize: 11, color: AppColors.loss, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: losers.take(5).map((l) {
+                final sym = _symbol(l);
+                if (sym.isEmpty) return const SizedBox.shrink();
+                return Chip(
+                  label: Text(sym, style: const TextStyle(fontSize: 10)),
+                  backgroundColor: AppColors.loss.withValues(alpha: 0.1),
                   padding: EdgeInsets.zero,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 );
@@ -246,9 +346,20 @@ class _HoldingsTableCard extends StatelessWidget {
   final Map<String, dynamic> widgetParams;
   const _HoldingsTableCard({required this.widgetParams});
 
+  String _holdingLabel(dynamic item) {
+    if (item is! Map) return item.toString();
+    return (item['symbol'] ?? item['sourceId'] ?? item['name'] ?? '').toString();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final holdings = (widgetParams['holdings'] as List<dynamic>?) ?? [];
+    final data = AiWidgetFactory._resolvedData(widgetParams);
+    final holdings = (data['holdings'] as List<dynamic>?) ??
+        (data['items'] as List<dynamic>?) ??
+        const [];
+    final count = data['count'] is num
+        ? (data['count'] as num).toInt()
+        : holdings.length;
 
     return Container(
       margin: const EdgeInsets.only(top: 8),
@@ -258,14 +369,203 @@ class _HoldingsTableCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.tradeAccent.withValues(alpha: 0.35)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.table_chart_rounded, color: AppColors.tradeAccent, size: 18),
-          const SizedBox(width: 6),
-          Text(
-            'Holdings Overview (${holdings.length})',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary),
+          Row(
+            children: [
+              Icon(Icons.table_chart_rounded, color: AppColors.tradeAccent, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                'Holdings Overview ($count)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary),
+              ),
+            ],
           ),
+          if (holdings.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: holdings.take(8).map((h) {
+                final label = _holdingLabel(h);
+                if (label.isEmpty) return const SizedBox.shrink();
+                return Chip(
+                  label: Text(label, style: const TextStyle(fontSize: 10)),
+                  backgroundColor: AppColors.tradeAccent.withValues(alpha: 0.1),
+                  padding: EdgeInsets.zero,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                );
+              }).toList(),
+            ),
+            if (count > 8)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  '+${count - 8} more',
+                  style: TextStyle(fontSize: 11, color: context.textSecondary),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Allocation Card ─────────────────────────────────────────────────────────
+
+class _AllocationCard extends StatelessWidget {
+  final Map<String, dynamic> widgetParams;
+  const _AllocationCard({required this.widgetParams});
+
+  List<MapEntry<String, dynamic>> _sortedEntries(Map<String, dynamic>? map) {
+    if (map == null || map.isEmpty) return const [];
+    final entries = map.entries.toList();
+    entries.sort((a, b) {
+      final av = a.value is num ? (a.value as num).toDouble() : 0.0;
+      final bv = b.value is num ? (b.value as num).toDouble() : 0.0;
+      return bv.compareTo(av);
+    });
+    return entries;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = AiWidgetFactory._resolvedData(widgetParams);
+    final sectorMap = data['sectorAllocation'] as Map<String, dynamic>?;
+    final capMap = data['marketCapAllocation'] as Map<String, dynamic>?;
+    final entries = sectorMap != null && sectorMap.isNotEmpty
+        ? _sortedEntries(sectorMap)
+        : _sortedEntries(capMap);
+    final title = sectorMap != null && sectorMap.isNotEmpty
+        ? 'Sector Allocation'
+        : 'Market Cap Allocation';
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.portfolioAccent.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.pie_chart_rounded, color: AppColors.portfolioAccent, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary),
+              ),
+            ],
+          ),
+          if (entries.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'No allocation data available',
+                style: TextStyle(fontSize: 11, color: context.textSecondary),
+              ),
+            )
+          else
+            ...entries.take(6).map((e) {
+              final pct = e.value is num ? '${(e.value as num).toStringAsFixed(1)}%' : e.value.toString();
+              return Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        e.key,
+                        style: TextStyle(fontSize: 11, color: context.textPrimary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      pct,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.portfolioAccent,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Recent Activity Card ────────────────────────────────────────────────────
+
+class _RecentActivityCard extends StatelessWidget {
+  final Map<String, dynamic> widgetParams;
+  const _RecentActivityCard({required this.widgetParams});
+
+  String _activityLine(dynamic item) {
+    if (item is! Map) return item.toString();
+    final symbol = (item['symbol'] ?? item['tradingsymbol'] ?? '').toString();
+    final side = (item['side'] ?? item['transactionType'] ?? item['type'] ?? '').toString();
+    final qty = item['quantity'] ?? item['qty'];
+    final parts = <String>[];
+    if (side.isNotEmpty) parts.add(side.toUpperCase());
+    if (symbol.isNotEmpty) parts.add(symbol);
+    if (qty != null) parts.add('×$qty');
+    return parts.isEmpty ? 'Activity' : parts.join(' ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = AiWidgetFactory._resolvedData(widgetParams);
+    final activities = (data['activities'] as List<dynamic>?) ??
+        (data['trades'] as List<dynamic>?) ??
+        const [];
+    final count = data['count'] is num ? (data['count'] as num).toInt() : activities.length;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.marketAccent.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.receipt_long_rounded, color: AppColors.marketAccent, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                'Recent Activity ($count)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary),
+              ),
+            ],
+          ),
+          if (activities.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'No recent transactions',
+                style: TextStyle(fontSize: 11, color: context.textSecondary),
+              ),
+            )
+          else
+            ...activities.take(5).map((a) => Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    _activityLine(a),
+                    style: TextStyle(fontSize: 11, color: context.textPrimary),
+                  ),
+                )),
         ],
       ),
     );
@@ -307,7 +607,8 @@ class _PortfolioSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = widgetParams['data'] as Map<String, dynamic>?;
+    final raw = AiWidgetFactory._coerceDataMap(widgetParams['data']);
+    final data = raw == null ? null : AiWidgetFactory._normalizePortfolioData(raw);
 
     // Fallback when data is absent (intent detected but data not yet loaded)
     if (data == null) {
@@ -781,26 +1082,34 @@ class _ErrorBanner extends StatelessWidget {
 
 
 
-class _OrderPreviewCard extends StatefulWidget {
+class _OrderPreviewCard extends ConsumerStatefulWidget {
   final Map<String, dynamic> widgetParams;
   const _OrderPreviewCard({required this.widgetParams});
   @override
-  State<_OrderPreviewCard> createState() => _OrderPreviewCardState();
+  ConsumerState<_OrderPreviewCard> createState() => _OrderPreviewCardState();
 }
 
-class _OrderPreviewCardState extends State<_OrderPreviewCard> {
+class _OrderPreviewCardState extends ConsumerState<_OrderPreviewCard> {
   bool _confirmed = false;
   bool _loading = false;
   String? _error;
 
   Future<void> _confirmOrder() async {
-    final token = widget.widgetParams['confirmToken'];
-    if (token == null) return;
+    final token = widget.widgetParams['confirmToken']?.toString();
+    final userId = widget.widgetParams['userId']?.toString() ?? 'user';
+    if (token == null || token.isEmpty) return;
+
     setState(() { _loading = true; _error = null; });
     try {
-      final dio = Dio(BaseOptions(baseUrl: common.EnvDomains.ai));
-      await dio.post('/v1/ai/actions/confirm', data: {'confirmToken': token});
-      setState(() { _confirmed = true; _loading = false; });
+      final success = await ref.read(aiChatProvider.notifier).confirmAction(
+        confirmToken: token,
+        userId: userId,
+      );
+      if (success) {
+        setState(() { _confirmed = true; _loading = false; });
+      } else {
+        setState(() { _error = 'Failed to execute order. Action rejected.'; _loading = false; });
+      }
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
     }

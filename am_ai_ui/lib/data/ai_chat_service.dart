@@ -9,7 +9,12 @@ import 'ai_stream_event.dart';
 class AiChatService {
   /// Base URL resolved at runtime from config.json → `services.ai`
   /// or defaults to `https://{domain}/ai`.
-  static String get baseUrl => common.EnvDomains.ai;
+  /// Base URL resolved at runtime from config.json → `services.ai`
+  /// or defaults to `https://{domain}/ai/`.
+  static String get baseUrl {
+    final domain = common.EnvDomains.ai.trim();
+    return domain.endsWith('/') ? domain : '$domain/';
+  }
 
   final Dio _dio;
 
@@ -24,7 +29,7 @@ class AiChatService {
   }) async {
     try {
       final response = await _dio.post(
-        '/v1/ai/chat',
+        'v1/ai/chat',
         data: {
           'message': message,
           'userId': userId,
@@ -38,9 +43,9 @@ class AiChatService {
         return AiIntentResponse.error('Request cancelled.');
       }
       final msg = e.response?.data?.toString() ?? e.message ?? 'Unknown error';
-      return AiIntentResponse.error('Agent unavailable: ');
+      return AiIntentResponse.error('Agent unavailable: $msg');
     } catch (e) {
-      return AiIntentResponse.error('Unexpected error: ');
+      return AiIntentResponse.error('Unexpected error: $e');
     }
   }
 
@@ -53,7 +58,7 @@ class AiChatService {
   }) async* {
     try {
       final response = await _dio.post<ResponseBody>(
-        '/v1/ai/chat/stream',
+        'v1/ai/chat/stream',
         data: {
           'message': message,
           'userId': userId,
@@ -126,7 +131,7 @@ class AiChatService {
   }) async {
     try {
       final r = await _dio.post(
-        '/v1/ai/feedback',
+        'v1/ai/feedback',
         data: {
           'sessionId': sessionId,
           'rating': rating,
@@ -146,7 +151,7 @@ class AiChatService {
   }) async {
     try {
       final r = await _dio.post(
-        '/v1/ai/actions/confirm',
+        'v1/ai/actions/confirm',
         data: {
           'confirmToken': confirmToken,
           'userId': userId,
@@ -161,10 +166,11 @@ class AiChatService {
   /// Health check — returns true if the gateway and agents are healthy.
   Future<bool> isHealthy() async {
     try {
-      final r = await _dio.get('/v1/ai/health');
+      final r = await _dio.get('v1/ai/health');
       return r.statusCode == 200;
     } catch (_) {
       return false;
     }
   }
 }
+
