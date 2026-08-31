@@ -24,7 +24,7 @@ class _DevSectionWidgetState extends State<DevSectionWidget> {
   
   @override
   Widget build(BuildContext context) {
-    if (ConfigService.resolvedEnv != 'dev') {
+    if (!DemoLoginConfig.isDevSectionVisible) {
       return const SizedBox.shrink();
     }
 
@@ -99,11 +99,11 @@ class _DevSectionWidgetState extends State<DevSectionWidget> {
                           children: [
                             // Demo Login Button
                             const DemoLoginButtonWidget(),
-                            
-                            SizedBox(height: widget.isCompact ? 16 : 24),
-                            
-                            // Developer Controls Panel
-                            const FeatureFlagPanelWidget(),
+
+                            if (DemoLoginConfig.isDeveloperPanelVisible) ...[
+                              SizedBox(height: widget.isCompact ? 16 : 24),
+                              const FeatureFlagPanelWidget(),
+                            ],
                           ],
                         ),
                       ),

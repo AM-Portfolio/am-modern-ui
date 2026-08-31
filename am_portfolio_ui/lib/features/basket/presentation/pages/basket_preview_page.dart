@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:intl/intl.dart';
 import '../providers/basket_providers.dart';
 import '../basket_navigation.dart';
-import '../widgets/basket_section_header.dart';
 import '../../domain/models/basket_opportunity.dart';
+
+// New Modular Widgets
+import '../widgets/preview/preview_hero_header.dart';
+import '../widgets/preview/preview_section_header.dart';
+import '../widgets/preview/preview_stock_row.dart';
 
 class BasketPreviewPage extends ConsumerWidget {
   final String etfIsin;
@@ -22,7 +27,7 @@ class BasketPreviewPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final opportunityAsync = ref.watch(basketPreviewProvider(
+    final opportunityAsync = ref.watch(enhancedBasketPreviewProvider(
       etfIsin: etfIsin,
       userId: userId,
       portfolioId: portfolioId,
@@ -30,387 +35,300 @@ class BasketPreviewPage extends ConsumerWidget {
 
     final body = opportunityAsync.when(
       data: (opportunity) => _BasketContent(
-        opportunity: opportunity,
+        initialOpportunity: opportunity,
         userId: userId,
         portfolioId: portfolioId,
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      loading: () => _buildSkeletonLoader(context),
+      error: (err, stack) => AmErrorWidget(
+        message: err.toString(),
+        onRetry: () {
+          ref.invalidate(enhancedBasketPreviewProvider(
+            etfIsin: etfIsin,
+            userId: userId,
+            portfolioId: portfolioId,
+          ));
+        },
+      ),
     );
 
-    if (embedded) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          BasketSectionHeader(
-            title: 'Basket Preview',
-            onBack: () => Navigator.of(context).pop(),
-          ),
-          Expanded(child: body),
-        ],
-      );
-    }
-
+    // Apply Dark Theme override for this specific page to match premium aesthetic
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Basket Preview'),
-        centerTitle: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: BackButton(
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
+        ),
       ),
+      backgroundColor: context.colors.scaffoldBackground,
       body: body,
     );
   }
+
+  Widget _buildSkeletonLoader(BuildContext context) {
+    return const Center(child: CircularProgressIndicator());
+  }
 }
 
-class _BasketContent extends StatelessWidget {
-  final BasketOpportunity opportunity;
+class _BasketContent extends ConsumerStatefulWidget {
+  final BasketOpportunity initialOpportunity;
   final String userId;
   final String portfolioId;
 
   const _BasketContent({
-    required this.opportunity,
+    required this.initialOpportunity,
     required this.userId,
     required this.portfolioId,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final heldItems = opportunity.composition
-        .where((item) => item.status == ItemStatus.held)
-        .toList();
-    final substituteItems = opportunity.composition
-        .where((item) => item.status == ItemStatus.substitute)
-        .toList();
-    final missingItems = opportunity.composition
-        .where((item) => item.status == ItemStatus.missing)
-        .toList();
-
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        children: [
-          _EntryHeroCard(opportunity: opportunity),
-          Container(
-             margin: const EdgeInsets.symmetric(horizontal: 16),
-             decoration: BoxDecoration(
-               border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
-             ),
-             child: TabBar(
-               labelColor: context.colors.actionPrimaryBg,
-               unselectedLabelColor: context.textSecondary,
-               indicatorColor: context.colors.actionPrimaryBg,
-               indicatorWeight: 3,
-               isScrollable: true,
-               labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-               tabs: [
-                 Tab(text: "Held (${heldItems.length})"),
-                 Tab(text: "Substitute (${substituteItems.length})"),
-                 Tab(text: "Missing (${missingItems.length})"),
-               ],
-             ),
-           ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _HeldItemsList(items: heldItems),
-                _HeldItemsList(
-                  items: substituteItems,
-                  emptyMessage: 'No substitute holdings for this basket.',
-                ),
-                _MissingItemsList(items: missingItems),
-              ],
-            ),
-          ),
-          _BottomActionBar(
-            onPressed: () {
-              BasketNavigation.openCreator(
-                context,
-                opportunity: opportunity,
-                userId: userId,
-                portfolioId: portfolioId,
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  ConsumerState<_BasketContent> createState() => _BasketContentState();
 }
 
-class _EntryHeroCard extends StatelessWidget {
-  final BasketOpportunity opportunity;
-
-  const _EntryHeroCard({required this.opportunity});
+class _BasketContentState extends ConsumerState<_BasketContent> {
+  late BasketOpportunity _opportunity;
+  final Set<String> _swappingSymbols = {};
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withOpacity(0.1),
-            Theme.of(context).scaffoldBackgroundColor,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  void initState() {
+    super.initState();
+    _opportunity = widget.initialOpportunity;
+  }
+
+  Future<void> _handleSwap(BasketItem item, Alternative selectedAlt) async {
+    setState(() {
+      _swappingSymbols.add(item.stockSymbol);
+    });
+
+    try {
+      final request = {
+        'userId': widget.userId,
+        'portfolioId': widget.portfolioId,
+        'etfIsin': _opportunity.etfIsin,
+        'currentOpportunity': _opportunity.toJson(),
+        'assignments': [
+          {
+            'missingIsin': item.isin,
+            'substituteIsin': selectedAlt.isin,
+            'reason': 'User selected swap'
+          }
+        ],
+      };
+
+      final updatedOpportunity = await ref.read(applySubstitutesProvider(request: request).future);
+      
+      setState(() {
+        _opportunity = updatedOpportunity;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${item.stockSymbol} substituted with ${selectedAlt.symbol}'),
+            backgroundColor: context.colors.statusSuccess,
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  opportunity.etfName,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Based on your holdings, you are ${opportunity.composition.length - opportunity.heldCount} stocks away from replicating this basket.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                 const SizedBox(height: 12),
-                 Row(
-                   children: [
-                     _ScoreBadge(label: "Match Score", score: opportunity.matchScore, color: AppColors.primary),
-                     const SizedBox(width: 12),
-                     _ScoreBadge(label: "Replica Score", score: opportunity.replicaScore, color: AppColors.success),
-                   ],
-                 )
-              ],
-            ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to swap: $e'),
+            backgroundColor: context.colors.statusError,
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ScoreBadge extends StatelessWidget {
-  final String label;
-  final double score;
-  final Color color;
-
-  const _ScoreBadge({required this.label, required this.score, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-     return Container(
-       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-       decoration: BoxDecoration(
-         color: color.withOpacity(0.1),
-         borderRadius: BorderRadius.circular(8),
-         border: Border.all(color: color.withOpacity(0.3)),
-       ),
-       child: Column(
-         crossAxisAlignment: CrossAxisAlignment.start,
-         children: [
-           Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color)),
-           Text("${score.toStringAsFixed(1)}%", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: color)),
-         ],
-       ),
-     );
-  }
-}
-
-class _BasketItemHeader extends StatelessWidget {
-  const _BasketItemHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).canvasColor,
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
-      ),
-      child: Row(
-        children: [
-          Expanded(flex: 4, child: Text("Instrument", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
-          Expanded(flex: 1, child: Text("ETF %", textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
-          Expanded(flex: 1, child: Text("Your %", textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeldItemsList extends StatelessWidget {
-  final List<BasketItem> items;
-  final String emptyMessage;
-
-  const _HeldItemsList({
-    required this.items,
-    this.emptyMessage = 'No held items match this basket.',
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Text(emptyMessage),
-        ),
-      );
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _swappingSymbols.remove(item.stockSymbol);
+        });
+      }
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
-        const _BasketItemHeader(),
         Expanded(
-          child: ListView.separated(
-            itemCount: items.length,
-            separatorBuilder: (c, i) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              final isSubstitute = item.status == ItemStatus.substitute;
-              
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                color: isSubstitute ? AppColors.info.withOpacity(0.05) : null,
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(
-                            "${item.sector} ${item.marketCapCategory != null ? '• ${item.marketCapCategory}' : ''}",
-                            style: Theme.of(context).textTheme.bodySmall
-                          ),
-                          if (isSubstitute)
-                             Padding(
-                               padding: const EdgeInsets.only(top: 4.0),
-                               child: Text("Using: ${item.userHoldingSymbol} (Sub)", style: TextStyle(fontSize: 11, color: AppColors.info, fontStyle: FontStyle.italic)),
-                             )
-                        ],
-                      )
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Text("${item.etfWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right)
-                    ),
-                     Expanded(
-                      flex: 1,
-                      child: Text("${item.userWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right, 
-                        style: TextStyle(fontWeight: FontWeight.bold, color: item.userWeight < item.etfWeight ? AppColors.warning : AppColors.success))
-                    ),
-                  ],
-                ),
-              );
-            },
+          child: _buildScrollableContent(context),
+        ),
+        _BottomActionBar(
+          totalValue: _opportunity.remainingPortfolioValue ?? _opportunity.totalPortfolioValue ?? 0,
+          onPressed: () => BasketNavigation.openCreator(
+            context,
+            opportunity: _opportunity, // Pass the mutable updated state!
+            userId: widget.userId,
+            portfolioId: widget.portfolioId,
           ),
         ),
       ],
     );
   }
-}
 
-class _MissingItemsList extends StatelessWidget {
-  final List<BasketItem> items;
+  Widget _buildScrollableContent(BuildContext context) {
+    final heldItems = _opportunity.composition
+        .where((item) => item.status == ItemStatus.held)
+        .toList();
+    final substituteItems = _opportunity.composition
+        .where((item) => item.status == ItemStatus.substitute)
+        .toList();
+    final missingItems = _opportunity.composition
+        .where((item) => item.status == ItemStatus.missing)
+        .toList();
 
-  const _MissingItemsList({required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(20.0),
-        child: Text('You have all items!'),
-      ));
-    }
-    return Column(
-      children: [
-        const _BasketItemHeader(),
-        Expanded(
-          child: ListView.separated(
-            itemCount: items.length,
-            separatorBuilder: (c, i) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(
-                             "${item.sector} ${item.marketCapCategory != null ? '• ${item.marketCapCategory}' : ''}",
-                             style: Theme.of(context).textTheme.bodySmall
-                          ),
-                        ],
-                      )
-                    ),
-                     Expanded(
-                      flex: 1,
-                      child: Text("${item.etfWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right)
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Text("-", textAlign: TextAlign.right, style: TextStyle(color: Theme.of(context).disabledColor))
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+    // Order of sections: Held -> Substituted -> Missing
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: PreviewHeroHeader(opportunity: _opportunity),
         ),
+        
+        // Held Section
+        if (heldItems.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: PreviewSectionHeader(
+              title: 'Held in Portfolio',
+              subtitle: 'Stocks',
+              statusType: ItemStatus.held,
+            ),
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final item = heldItems[index];
+                return PreviewStockRow(
+                  item: item,
+                  isSwapping: _swappingSymbols.contains(item.stockSymbol),
+                  onSwapSelected: _handleSwap,
+                );
+              },
+              childCount: heldItems.length,
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+        ],
+
+        // Substituted Section
+        if (substituteItems.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: PreviewSectionHeader(
+              title: 'Automatically Substituted',
+              subtitle: 'Stocks',
+              statusType: ItemStatus.substitute,
+            ),
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final item = substituteItems[index];
+                return PreviewStockRow(
+                  item: item,
+                  isSwapping: _swappingSymbols.contains(item.stockSymbol),
+                  onSwapSelected: _handleSwap,
+                );
+              },
+              childCount: substituteItems.length,
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+        ],
+
+        // Missing Section
+        if (missingItems.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: PreviewSectionHeader(
+              title: 'Missing / Swap Required',
+              subtitle: 'Stocks',
+              statusType: ItemStatus.missing,
+            ),
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final item = missingItems[index];
+                return PreviewStockRow(
+                  item: item,
+                  isSwapping: _swappingSymbols.contains(item.stockSymbol),
+                  onSwapSelected: _handleSwap,
+                );
+              },
+              childCount: missingItems.length,
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
+        ],
       ],
     );
   }
 }
 
 class _BottomActionBar extends StatelessWidget {
+  final double totalValue;
   final VoidCallback onPressed;
 
-  const _BottomActionBar({required this.onPressed});
+  const _BottomActionBar({
+    required this.totalValue,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    String formattedValue = formatter.format(totalValue);
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
+        color: context.colors.surface,
+        border: Border(
+          top: BorderSide(color: context.colors.border),
+        ),
       ),
       child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: onPressed,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Available to Invest',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.colors.textDisabled),
+                ),
+                Text(
+                  formattedValue,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            FilledButton(
+              onPressed: onPressed,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Customize & Calculation'),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_ios, size: 14),
+                ],
               ),
             ),
-            child: const Text('Customize & Create Portfolio'),
-          ),
+          ],
         ),
       ),
     );

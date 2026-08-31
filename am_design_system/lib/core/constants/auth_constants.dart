@@ -1,4 +1,5 @@
 
+import 'package:am_common/am_common.dart';
 
 /// Authentication-related constants
 class AuthConstants {
@@ -17,9 +18,9 @@ class AuthConstants {
   static const String logoutSuccess = 'Logged out successfully';
   static const String demoLoginSuccess = 'Welcome to demo mode!';
 
-  // Demo user credentials
-  static const String demoEmail = 'ssd2658@gmail.com';
-  static const String demoPassword = '@M1unish';
+  // Demo user credentials (overridable via AM_DEMO_EMAIL / AM_DEMO_PASSWORD)
+  static String get demoEmail => DemoLoginConfig.email;
+  static String get demoPassword => DemoLoginConfig.password;
   
   // Google Auth
   static const String googleClientId = '307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com';

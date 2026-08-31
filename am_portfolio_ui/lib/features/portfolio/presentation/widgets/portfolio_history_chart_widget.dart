@@ -15,9 +15,12 @@ import '../cubit/portfolio_intraday_cubit.dart';
 import '../cubit/portfolio_intraday_state.dart';
 import '../cubit/portfolio_state.dart';
 import '../../internal/data/dtos/portfolio_intraday_dto.dart';
+import '../utils/history_candle_mapper.dart';
 
 // ignore_for_file: unused_import
 export '../../internal/data/dtos/portfolio_snapshot_dto.dart';
+
+enum _HistoryChartKind { line, candle }
 
 /// A self-contained widget that renders the portfolio history chart.
 ///
@@ -32,11 +35,19 @@ class PortfolioHistoryChartWidget extends ConsumerStatefulWidget {
     required this.portfolioId,
     required this.timeFrame,
     this.height = 320,
+    this.embedMode = false,
+    this.showPortfolioDropdown = true,
+    this.showCandleToggle = true,
+    this.showFormatToggle = true,
   });
 
   final String? portfolioId;
   final TimeFrame timeFrame;
   final double height;
+  final bool embedMode;
+  final bool showPortfolioDropdown;
+  final bool showCandleToggle;
+  final bool showFormatToggle;
 
   @override
   ConsumerState<PortfolioHistoryChartWidget> createState() =>
@@ -50,6 +61,9 @@ class _PortfolioHistoryChartWidgetState
 
   // Active chart format toggle (₹ or %)
   ChartFormat _activeFormat = ChartFormat.primary;
+
+  // Line vs candle (daily history only)
+  _HistoryChartKind _chartKind = _HistoryChartKind.line;
 
   // Custom zoom state managed externally
   double _zoomScale = 1.0;
@@ -84,6 +98,8 @@ class _PortfolioHistoryChartWidgetState
       if (oldWidget.portfolioId != widget.portfolioId) {
         _localSelectedId = null;
       }
+      _chartMinY = null;
+      _chartMaxY = null;
       context.read<PortfolioHistoryCubit>().invalidate();
       _scheduleLoad();
     }
@@ -286,6 +302,11 @@ class _PortfolioHistoryChartWidgetState
       }
     }
 
+    // ── Candle mode (daily history, single series) ─────────────────────────
+    if (_chartKind == _HistoryChartKind.candle) {
+      return _buildCandleChart(state, isAllPortfolios);
+    }
+
     // ── Multi-line mode — "All Portfolios" selected ─────────────────────────
     if (isAllPortfolios && _hasMultipleBrokers(state)) {
       return _buildMultiLineChart(state);
@@ -293,6 +314,51 @@ class _PortfolioHistoryChartWidgetState
 
     // ── Single-line mode — one portfolio selected ───────────────────────────
     return _buildSingleLineChart(state);
+  }
+
+  Widget _buildCandleChart(PortfolioHistoryLoaded state, bool isAllPortfolios) {
+    final padded = _padSnapshots(state.snapshots, widget.timeFrame);
+    final thinned = _thinSnapshots(padded, widget.timeFrame.code);
+    String? lastPeriodUnit;
+    final candles = <CommonCandlePoint>[];
+    double? previousClose;
+    var x = 0;
+    for (final snap in thinned) {
+      if (snap.totalUserWealth?.isNaN == true) {
+        x++;
+        continue;
+      }
+      final entry = snap.portfolios.isEmpty ? null : snap.portfolios.first;
+      final derived = HistoryCandleMapper.derive(
+        close: isAllPortfolios
+            ? snap.totalUserWealth
+            : (entry?.close ?? snap.totalUserWealth),
+        open: isAllPortfolios ? snap.totalUserWealthOpen : entry?.open,
+        high: isAllPortfolios ? snap.totalUserWealthHigh : entry?.high,
+        low: isAllPortfolios ? snap.totalUserWealthLow : entry?.low,
+        previousClose: previousClose,
+      );
+      if (derived == null) {
+        x++;
+        continue;
+      }
+      final label = _getXLabel(snap.snapshotDate, widget.timeFrame.code, lastPeriodUnit);
+      if (label.isNotEmpty) {
+        lastPeriodUnit = _getPeriodUnit(snap.snapshotDate, widget.timeFrame.code);
+      }
+      candles.add(CommonCandlePoint(
+        x: x.toDouble(),
+        open: derived.open,
+        high: derived.high,
+        low: derived.low,
+        close: derived.close,
+        xLabel: label,
+      ));
+      previousClose = derived.close;
+      x++;
+    }
+    if (candles.isEmpty) return _buildEmpty();
+    return _buildChartContainer(candles: candles);
   }
 
   /// Returns true if the snapshot data contains entries from more than 1 broker.
@@ -576,37 +642,15 @@ class _PortfolioHistoryChartWidgetState
     bool isMultiLine = false,
     List<ChartLineData>? allPrimaryLines,
     List<ChartLineData>? allSecondaryLines,
+    List<CommonCandlePoint>? candles,
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final isDesktop = MediaQuery.of(context).size.width >= 1100;
+    final showCandles = candles != null;
     final Color cardBase = isDark ? const Color(0xFF0D1B2A) : const Color(0xFFFFFFFF);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                cardBase.withValues(alpha: isDark ? 0.55 : 0.45),
-                cardBase.withValues(alpha: isDark ? 0.3 : 0.25),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.07)
-                    : Colors.black.withValues(alpha: 0.07)),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, 8)),
-            ],
-          ),
-          child: Column(
+    final inner = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -614,23 +658,38 @@ class _PortfolioHistoryChartWidgetState
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildPortfolioTabs(),
+                  if (widget.showPortfolioDropdown) _buildPortfolioTabs(),
                   const Spacer(),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      AppSegmentedControl<ChartFormat>(
-                        selectedValue: _activeFormat,
-                        children: const {
-                          ChartFormat.primary: '₹',
-                          ChartFormat.secondary: '%',
-                        },
-                        onValueChanged: (val) {
-                          setState(() {
-                            _activeFormat = val;
-                          });
-                        },
-                      ),
+                      if (widget.showCandleToggle &&
+                          widget.timeFrame != TimeFrame.oneDay) ...[
+                        AppSegmentedControl<_HistoryChartKind>(
+                          selectedValue: _chartKind,
+                          children: const {
+                            _HistoryChartKind.line: 'Line',
+                            _HistoryChartKind.candle: 'Candle',
+                          },
+                          onValueChanged: (val) {
+                            setState(() => _chartKind = val);
+                          },
+                        ),
+                        if (!showCandles) const SizedBox(width: 8),
+                      ],
+                      if (widget.showFormatToggle && !showCandles)
+                        AppSegmentedControl<ChartFormat>(
+                          selectedValue: _activeFormat,
+                          children: const {
+                            ChartFormat.primary: '₹',
+                            ChartFormat.secondary: '%',
+                          },
+                          onValueChanged: (val) {
+                            setState(() {
+                              _activeFormat = val;
+                            });
+                          },
+                        ),
                       if (isDesktop) ...[
                         const SizedBox(width: 16),
                         _buildZoomButton(Icons.remove, () => _handleZoomAdjust(-0.2), isDark),
@@ -681,10 +740,36 @@ class _PortfolioHistoryChartWidgetState
                   final bool needsScroll = calculatedWidth > constraints.maxWidth;
                   final double chartWidth = needsScroll ? calculatedWidth : constraints.maxWidth;
 
-                  // Resolve the correct lines for the current toggle state in multi-line mode
                   final List<ChartLineData>? resolvedLines = isMultiLine
                       ? (_activeFormat == ChartFormat.secondary ? allSecondaryLines : allPrimaryLines)
                       : null;
+
+                  ChartAxisScale? rupeeAxis;
+                  if (_activeFormat != ChartFormat.secondary) {
+                    final ys = <double>[];
+                    if (candles != null) {
+                      for (final c in candles) {
+                        ys.addAll([c.open, c.high, c.low, c.close]);
+                      }
+                    } else if (resolvedLines != null) {
+                      for (final line in resolvedLines) {
+                        for (final p in line.points) {
+                          if (p.y.isFinite) ys.add(p.y);
+                        }
+                      }
+                    } else if (singleData != null) {
+                      for (final p in singleData) {
+                        if (p.y.isFinite) ys.add(p.y);
+                      }
+                    }
+                    if (ys.isNotEmpty) rupeeAxis = ChartAxisScale.fromValues(ys);
+                  }
+                  String formatY(double val) {
+                    if (_activeFormat == ChartFormat.secondary && !showCandles) {
+                      return '${val.toStringAsFixed(2)}%';
+                    }
+                    return rupeeAxis?.format(val) ?? ChartAxisScale.compactRupee(val);
+                  }
 
                   Widget chartWidget = SizedBox(
                     width: chartWidth,
@@ -692,6 +777,23 @@ class _PortfolioHistoryChartWidgetState
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
+                        if (showCandles)
+                          ChartFactory.candle(
+                            candles: candles,
+                            config: CommonChartConfig(
+                              xInterval: 1,
+                              enableZoom: false,
+                              lockTooltipToTop: false,
+                              showGrid: true,
+                              showTitles: true,
+                              showTooltips: true,
+                              minY: rupeeAxis?.minY,
+                              maxY: rupeeAxis?.maxY,
+                              yInterval: rupeeAxis?.step,
+                              formatYLabel: formatY,
+                            ),
+                          )
+                        else
                         ChartFactory.area(
                           data: singleData ?? const [],
                           lines: resolvedLines,
@@ -703,18 +805,10 @@ class _PortfolioHistoryChartWidgetState
                             showGrid: true,
                             showTitles: true,
                             showTooltips: true,
-                            formatYLabel: (val) {
-                              if (val == 0) return '0';
-                              final showPercentage = _activeFormat == ChartFormat.secondary;
-                              if (showPercentage) {
-                                return '${val.toStringAsFixed(2)}%';
-                              } else {
-                                if (val.abs() < 10) return val.toStringAsFixed(2);
-                                if (val.abs() >= 1e7) return '${(val / 1e7).toStringAsFixed(2)}Cr';
-                                if (val.abs() >= 1e5) return '${(val / 1e5).toStringAsFixed(2)}L';
-                                return val.toInt().toString();
-                              }
-                            },
+                            minY: rupeeAxis?.minY,
+                            maxY: rupeeAxis?.maxY,
+                            yInterval: rupeeAxis?.step,
+                            formatYLabel: formatY,
                             onZoomChanged: (scale, adjust) {
                               if (_zoomScale != scale || _adjustZoom != adjust) {
                                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -731,8 +825,8 @@ class _PortfolioHistoryChartWidgetState
                             }
                           },
                         ),
-                        // End-of-line badges
-                        if (_chartMinY != null && _chartMaxY != null) ...[
+                        // End-of-line badges (line chart only)
+                        if (!showCandles && _chartMinY != null && _chartMaxY != null) ...[
                           if (isMultiLine && resolvedLines != null)
                             // One badge per broker line, stacked with slight vertical offset if they overlap
                             ...resolvedLines.asMap().entries.map((entry) {
@@ -766,7 +860,37 @@ class _PortfolioHistoryChartWidgetState
                 },
               ),
             ],
+          );
+
+    if (widget.embedMode) {
+      return inner;
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                cardBase.withValues(alpha: isDark ? 0.55 : 0.45),
+                cardBase.withValues(alpha: isDark ? 0.3 : 0.25),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.07)
+                    : Colors.black.withValues(alpha: 0.07)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, 8)),
+            ],
           ),
+          child: inner,
         ),
       ),
     );
@@ -835,8 +959,9 @@ class _PortfolioHistoryChartWidgetState
           final d = startDate.add(Duration(days: i));
           padding.add(PortfolioSnapshotDto(
             snapshotDate: d.toIso8601String(),
-            totalUserWealth: raw.first.totalUserWealth,
-            portfolios: raw.first.portfolios, // carry forward portfolios to prevent multi-line crash
+            // Gaps, not cloned OHLC — otherwise 1M looks like 1W plus fake flat candles.
+            totalUserWealth: double.nan,
+            portfolios: const [],
           ));
         }
         return [...padding, ...raw];
@@ -956,6 +1081,7 @@ class _PortfolioHistoryChartWidgetState
   String _formatNum(double value) {
     if (value >= 1e7) return '${(value / 1e7).toStringAsFixed(2)}Cr';
     if (value >= 1e5) return '${(value / 1e5).toStringAsFixed(2)}L';
+    if (value >= 1e3) return '${(value / 1e3).toStringAsFixed(1)}K';
     return value.toStringAsFixed(0);
   }
 

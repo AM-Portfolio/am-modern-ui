@@ -42,11 +42,11 @@ void main() {
     expect(fetchCount, greaterThanOrEqualTo(1));
 
     open = true;
-    await gate.refresh();
+    await gate.refresh(force: true);
     expect(gate.isOpen, isTrue);
 
     await sub.cancel();
-    gate.dispose();
+    gate.reset();
     expect(values, contains(false));
     expect(values, contains(true));
   });
@@ -58,6 +58,27 @@ void main() {
     );
     await gate.start();
     expect(gate.isOpen, isTrue);
-    gate.dispose();
+    gate.reset();
+  });
+
+  test('MarketStreamingGate skips duplicate refresh within cache window', () async {
+    var fetchCount = 0;
+    final gate = MarketStreamingGate(
+      fetchStatus: ({String exchange = 'NSE'}) async {
+        fetchCount++;
+        return MarketStatus(
+          exchange: exchange,
+          open: true,
+          reason: 'OPEN',
+          sessionStart: '09:15:00',
+          sessionEnd: '15:30:00',
+        );
+      },
+    );
+
+    await gate.start();
+    await gate.refresh();
+    expect(fetchCount, 1);
+    gate.reset();
   });
 }

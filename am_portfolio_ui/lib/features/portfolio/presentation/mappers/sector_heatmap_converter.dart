@@ -184,7 +184,7 @@ class SectorHeatmapConverter {
           : _createSymbolTiles(weight, weight.marketCap);
 
       return HeatmapTileData(
-        id: weight.sectorName,
+        id: 'sector_${weight.sectorName}',
         name: weight.sectorName,
         displayName: _getSectorDisplayName(weight.sectorName),
         weightage: weight.weightPercentage,
@@ -243,7 +243,7 @@ class SectorHeatmapConverter {
     return weight.topStocks
         .map(
           (symbol) => HeatmapTileData(
-            id: symbol,
+            id: 'stock_${weight.sectorName}_$symbol',
             name: symbol,
             displayName: symbol,
             weightage: perStockWeight,
@@ -370,7 +370,7 @@ class SectorHeatmapConverter {
       }
 
       tiles.add(HeatmapTileData(
-        id: 'other',
+        id: 'sector_other',
         name: 'Other',
         displayName: 'Other',
         weightage: combinedWeight,
@@ -399,7 +399,7 @@ class SectorHeatmapConverter {
     final avgPerformance = _calculateSectorPerformance(sector);
 
     return HeatmapTileData(
-      id: sector.sectorName,
+      id: 'sector_${sector.sectorName}',
       name: sector.sectorName,
       displayName: _getSectorDisplayName(sector.sectorName),
       weightage: sectorWeightage.toDouble(),
@@ -460,7 +460,7 @@ class SectorHeatmapConverter {
     if (stockSectorWeightage <= 0) return null;
 
     return HeatmapTileData(
-      id: stock.symbol,
+      id: 'stock_${sector.sectorName}_${stock.symbol}',
       name: stock.symbol,
       displayName: _getStockDisplayName(stock),
       weightage: stockSectorWeightage.toDouble(),

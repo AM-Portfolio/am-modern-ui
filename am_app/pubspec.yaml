@@ -1,7 +1,7 @@
 name: am_app
 description: AM Investment Platform - Lightweight orchestration shell
 publish_to: "none"
-version: 2.0.0
+version: 2.0.0+10
 
 environment:
   sdk: ^3.5.0
@@ -37,6 +37,8 @@ dependencies:
     path: ../am_doc_intelligence_ui
   am_market_ui:
     path: ../am_market/ui
+  am_market_common:
+    path: ../am_market/common
   am_diagnostic_ui:
     path: ../am_diagnostic_ui
   am_analysis_ui:

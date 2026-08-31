@@ -7,7 +7,8 @@ import '../telemetry/boot_trace.dart';
 import 'app_config.dart';
 
 /// Loads web config: [config.template.json] defaults, then [config.{env}.json],
-/// then [config.json] (env selector locally, domain override in Kubernetes).
+/// then [config.json] (env selector locally, domain override in Kubernetes),
+/// then optional gitignored [config.local.json] (like `.env`).
 class ConfigService {
   static AppConfig? _config;
   static const _envFromDefine = String.fromEnvironment('AM_ENV');
@@ -166,6 +167,26 @@ class ConfigService {
     }
     if (bootstrap != null) {
       merged = _deepMerge(merged, bootstrap);
+    }
+
+    // Local web: `config.json` is usually am-dev and has no Helm `env`.
+    // If AM_ENV is dart-defined (prod/dev/preprod), re-apply config.{env}.json
+    // last so localhost can hit prod without overwriting committed config.json.
+    final bootstrapHasEnv = bootstrapEnv != null && bootstrapEnv.isNotEmpty;
+    if (!bootstrapHasEnv &&
+        _envFromDefine.isNotEmpty &&
+        _resolvedEnv.isNotEmpty &&
+        _resolvedEnv != 'local') {
+      final envConfig = await _fetchJson('/config.$_resolvedEnv.json');
+      if (envConfig != null) {
+        merged = _deepMerge(merged, envConfig);
+      }
+    }
+
+    // Gitignored overlay, like `.env`. 404 is ignored.
+    final localOverlay = await _fetchJson('/config.local.json');
+    if (localOverlay != null) {
+      merged = _deepMerge(merged, localOverlay);
     }
 
     return merged;

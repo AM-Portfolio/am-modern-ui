@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/shared/widgets/inputs/glass_text_field.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
@@ -187,26 +188,28 @@ class _LoginFormState extends State<LoginForm> {
                 ],
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                height: 48,
-                child: OutlinedButton.icon(
-                  onPressed: isLoading ? null : _handleDemoLogin,
-                  icon: const Icon(Icons.account_circle),
-                  label: const Text('Demo Login'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Theme.of(context).primaryColor,
-                    side: BorderSide(
-                        color: Theme.of(context)
-                            .primaryColor
-                            .withValues(alpha: 0.5)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+              if (DemoLoginConfig.isDevSectionVisible) ...[
+                SizedBox(
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: isLoading ? null : _handleDemoLogin,
+                    icon: const Icon(Icons.account_circle),
+                    label: const Text('Demo Login'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).primaryColor,
+                      side: BorderSide(
+                          color: Theme.of(context)
+                              .primaryColor
+                              .withValues(alpha: 0.5)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      backgroundColor: Colors.white.withValues(alpha: 0.5),
                     ),
-                    backgroundColor: Colors.white.withValues(alpha: 0.5),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
               GoogleSignInButton(
                 onPressed: isLoading ? null : _handleGoogleSignIn,
               ),
