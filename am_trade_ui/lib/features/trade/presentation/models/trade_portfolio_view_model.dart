@@ -89,8 +89,8 @@ class TradePortfolioViewModel {
   /// Used by the portfolio aggregation layer to overlay live Unrealized P&L
   /// data from am-portfolio on top of the Realized metrics from am-trade-management.
   ///
-  /// **Important:** `netProfitLoss` and `winRate` are intentionally NOT
-  /// overrideable via this method. They are Realized metrics that must never
+  /// **Important:** `netProfitLoss` is intentionally NOT
+  /// overrideable via this method. It is a Realized metric that must never
   /// be confused with Unrealized (live) portfolio values.
   TradePortfolioViewModel copyWith({
     double? totalValue,
@@ -98,6 +98,7 @@ class TradePortfolioViewModel {
     double? totalGainLossPercentage,
     int? holdingsCount,
     DateTime? lastUpdated,
+    double? winRate,
   }) =>
       TradePortfolioViewModel(
         id: id,
@@ -113,7 +114,7 @@ class TradePortfolioViewModel {
         totalTrades: totalTrades,
         netProfitLoss: netProfitLoss,
         netProfitLossPercentage: netProfitLossPercentage,
-        winRate: winRate,
+        winRate: winRate ?? this.winRate,
         winningTrades: winningTrades,
         losingTrades: losingTrades,
         openPositions: openPositions,

@@ -654,6 +654,12 @@ class _TradePortfolioDiscoveryTemplateState
                 child: TradePortfolioMobileCard(
                   portfolio: portfolio,
                   onTap: () => widget.onPortfolioSelected(portfolio),
+                  onEdit: widget.onEditPortfolio != null
+                      ? () => widget.onEditPortfolio!(portfolio)
+                      : null,
+                  onDelete: widget.onDeletePortfolio != null
+                      ? () => widget.onDeletePortfolio!(portfolio)
+                      : null,
                 ),
               );
             }

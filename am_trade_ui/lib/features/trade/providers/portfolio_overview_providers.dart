@@ -127,7 +127,7 @@ final enrichedTradePortfoliosProvider =
 /// - `totalGainLossPercentage`: live percentage wins.
 /// - `netProfitLoss`: ALWAYS kept from trade. This is Realized P&L and must
 ///    never be overridden with the portfolio's unrealized figure.
-/// - `winRate`: ALWAYS kept from trade. Win Rate only applies to closed trades.
+/// - `winRate`: Calculated as (winningTrades + gainersCount) / (totalTrades + totalAssets)
 ///
 /// When `liveSummary` is null (am-portfolio down or no data), the realized-only
 /// view model is returned unchanged — the card degrades gracefully.
@@ -140,13 +140,24 @@ TradePortfolioViewModel _mergeViewModel(
     return realized;
   }
 
+  // Calculate overall win rate using both closed trades and live holdings
+  final int totalWinning = realized.winningTrades + (liveSummary.gainersCount ?? 0);
+  final int totalItems = realized.totalTrades + (liveSummary.totalAssets ?? 0);
+  
+  double? overallWinRate = realized.winRate; // Default to existing if no trades/holdings
+  if (totalItems > 0) {
+    overallWinRate = totalWinning / totalItems;
+  }
+
   return realized.copyWith(
     // Live portfolio metrics override stale trade ledger values
     totalValue: liveSummary.totalValue ?? realized.totalValue,
     totalGainLoss: liveSummary.totalGainLoss ?? realized.totalGainLoss,
     totalGainLossPercentage:
         liveSummary.totalGainLossPercentage ?? realized.totalGainLossPercentage,
-    // NOTE: netProfitLoss and winRate are intentionally NOT overridden here.
-    // They remain as-is from the trade ledger (Realized metrics).
+    // Overall win rate incorporates live gainers
+    winRate: overallWinRate,
+    // NOTE: netProfitLoss is intentionally NOT overridden here.
+    // It remains as-is from the trade ledger (Realized metrics).
   );
 }

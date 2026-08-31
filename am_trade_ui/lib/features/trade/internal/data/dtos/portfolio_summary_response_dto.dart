@@ -29,6 +29,12 @@ abstract class PortfolioSummaryResponseDto with _$PortfolioSummaryResponseDto {
 
     /// Total invested amount (cost basis)
     double? investedValue,
+
+    /// Number of total open holdings (from am-portfolio)
+    int? totalAssets,
+
+    /// Number of open holdings that are currently in profit (from am-portfolio)
+    int? gainersCount,
   }) = _PortfolioSummaryResponseDto;
 
   factory PortfolioSummaryResponseDto.fromJson(Map<String, dynamic> json) =>

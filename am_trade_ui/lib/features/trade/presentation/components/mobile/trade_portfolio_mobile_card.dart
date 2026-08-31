@@ -4,9 +4,17 @@ import 'package:intl/intl.dart';
 import '../../models/trade_portfolio_view_model.dart';
 
 class TradePortfolioMobileCard extends StatelessWidget {
-  const TradePortfolioMobileCard({required this.portfolio, required this.onTap, super.key});
+  const TradePortfolioMobileCard({
+    required this.portfolio,
+    required this.onTap,
+    this.onEdit,
+    this.onDelete,
+    super.key,
+  });
   final TradePortfolioViewModel portfolio;
   final VoidCallback onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -66,23 +74,38 @@ class TradePortfolioMobileCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: Colors.purple.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(3),
-                                border: Border.all(color: Colors.purple.withOpacity(0.3)),
-                              ),
-                              child: Text(
-                                'TRADE',
-                                style: TextStyle(
-                                  fontSize: 7,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.purple[700],
-                                  letterSpacing: 0.3,
+                            if (onEdit != null || onDelete != null)
+                              SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  icon: Icon(
+                                    Icons.more_vert,
+                                    size: 16,
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                                  ),
+                                  onPressed: () => _showOptions(context),
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(3),
+                                  border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                                ),
+                                child: Text(
+                                  'TRADE',
+                                  style: TextStyle(
+                                    fontSize: 7,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.purple[700],
+                                    letterSpacing: 0.3,
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                         Text(
@@ -198,6 +221,57 @@ class TradePortfolioMobileCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _showOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.only(top: 12, bottom: 32),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              if (onEdit != null)
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                  leading: Icon(Icons.edit, color: Theme.of(context).colorScheme.onSurface),
+                  title: const Text('Edit Portfolio', style: TextStyle(fontSize: 16)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    onEdit?.call();
+                  },
+                ),
+              if (onDelete != null)
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: const Text('Delete Portfolio', style: TextStyle(fontSize: 16, color: Colors.red)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    onDelete?.call();
+                  },
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
