@@ -66,6 +66,12 @@ class BasketRepositoryImpl implements BasketRepository {
   }
 
   @override
+  Future<BasketOpportunity> calculateQuantitiesFinalPreview(Map<String, dynamic> request) async {
+    final response = await remoteDataSource.calculateQuantitiesFinalPreview(request);
+    return BasketOpportunity.fromJson(response as Map<String, dynamic>);
+  }
+
+  @override
   Future<BasketOpportunity> applySubstitutes(Map<String, dynamic> request) async {
     final response = await remoteDataSource.applySubstitutes(request);
     return BasketOpportunity.fromJson(response as Map<String, dynamic>);

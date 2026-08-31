@@ -26,6 +26,45 @@ class BasketFinalPreviewPage extends ConsumerStatefulWidget {
 
 class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage> {
   bool _isSubmitting = false;
+  bool _isLoading = true;
+  String? _error;
+  late BasketOpportunity _validatedOpportunity;
+  late List<BasketItem> _validatedItems;
+
+  @override
+  void initState() {
+    super.initState();
+    _validateFinalPreview();
+  }
+
+  Future<void> _validateFinalPreview() async {
+    try {
+      final args = widget.args;
+      final request = {
+        'investmentAmount': args.investmentAmount,
+        'opportunity': args.finalOpportunity.copyWith(composition: args.finalItems).toJson(),
+        'includeHeld': true,
+        'excludedSymbols': args.excludedItems.toList(),
+      };
+      
+      final freshOpportunity = await ref.read(calculateBasketQuantitiesFinalPreviewProvider(request: request).future);
+      
+      if (mounted) {
+        setState(() {
+          _validatedOpportunity = freshOpportunity;
+          _validatedItems = freshOpportunity.composition;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   Future<void> _confirmAndCreate() async {
     setState(() => _isSubmitting = true);
@@ -39,14 +78,14 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
         'basketName': args.basketName,
         'idempotencyKey': args.idempotencyKey,
         'investmentAmount': args.investmentAmount,
-        'replicaScore': args.finalOpportunity.replicaScore,
-        'coverageAfterCreation': args.finalOpportunity.replicaScore,
-        'remainingMissingCount': args.finalItems.where((c) => c.status == ItemStatus.missing).length,
-        'remainingMissing': args.finalItems
+        'replicaScore': _validatedOpportunity.replicaScore,
+        'coverageAfterCreation': _validatedOpportunity.replicaScore,
+        'remainingMissingCount': _validatedItems.where((c) => c.status == ItemStatus.missing).length,
+        'remainingMissing': _validatedItems
             .where((c) => c.status == ItemStatus.missing)
             .map((c) => c.stockSymbol)
             .toList(),
-        'lines': args.finalItems.map((item) {
+        'lines': _validatedItems.map((item) {
           return {
             'status': item.status.toString().split('.').last.toUpperCase(),
             'etfIsin': item.isin,
@@ -74,7 +113,7 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => BasketSuccessPage(
-            opportunity: args.finalOpportunity,
+            opportunity: _validatedOpportunity,
             basketName: args.basketName,
             basketId: newBasketId,
             userId: args.userId,
@@ -95,19 +134,38 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: context.backgroundColor,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: context.backgroundColor,
+        body: Center(
+          child: Text('Failed to load final preview: $_error',
+              style: TextStyle(color: context.statusError)),
+        ),
+      );
+    }
+
     final theme = Theme.of(context);
     final isDesktop = MediaQuery.sizeOf(context).width >= AmBreakpoints.tablet;
     final args = widget.args;
 
-    final heldCount = args.finalItems.where((i) => i.status == ItemStatus.held).length;
-    final subCount = args.finalItems.where((i) => i.status == ItemStatus.substitute).length;
+    final heldCount = _validatedItems.where((i) => i.status == ItemStatus.held).length;
+    final subCount = _validatedItems.where((i) => i.status == ItemStatus.substitute).length;
 
     // Calculate unallocated
-    final unallocated = (args.finalOpportunity.budgetVariance ?? 0) > 0 
-        ? args.finalOpportunity.budgetVariance! 
-        : 0.0;
+    final unallocated = math.max(
+        0.0,
+        args.investmentAmount -
+            (_validatedOpportunity.actualInvestmentCost ??
+                args.investmentAmount));
 
-    final actualCost = args.finalOpportunity.actualInvestmentCost ?? 0.0;
+    final actualCost = _validatedOpportunity.actualInvestmentCost ?? 0.0;
 
     return Scaffold(
       backgroundColor: context.backgroundColor,
@@ -135,8 +193,8 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
                         const SizedBox(width: AppSpacing.xl),
                         Expanded(
                           child: FpBasketPanel(
-                            finalItems: args.finalItems,
-                            replicaScore: args.finalOpportunity.replicaScore,
+                            finalItems: _validatedItems,
+                            replicaScore: _validatedOpportunity.replicaScore,
                             actualInvestmentCost: actualCost,
                             heldCount: heldCount,
                             subCount: subCount,
@@ -150,8 +208,8 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
                         FpEtfPanel(originalOpportunity: args.originalOpportunity),
                         const SizedBox(height: AppSpacing.xl),
                         FpBasketPanel(
-                          finalItems: args.finalItems,
-                          replicaScore: args.finalOpportunity.replicaScore,
+                          finalItems: _validatedItems,
+                          replicaScore: _validatedOpportunity.replicaScore,
                           actualInvestmentCost: actualCost,
                           heldCount: heldCount,
                           subCount: subCount,
@@ -164,7 +222,7 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
             intendedAmount: args.investmentAmount,
             actualCost: actualCost,
             unallocated: unallocated,
-            coverage: args.finalOpportunity.replicaScore,
+            coverage: _validatedOpportunity.replicaScore,
             onConfirm: _confirmAndCreate,
             isSubmitting: _isSubmitting,
           ),

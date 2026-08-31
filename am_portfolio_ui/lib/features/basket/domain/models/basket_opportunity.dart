@@ -9,6 +9,7 @@ class BasketOpportunity {
   final int missingCount;
   final double? heldMatchScore;
   final double? substituteMatchScore;
+  final double? missingMatchScore;
   final double? remainingPortfolioValue;
   final double? investmentAmount;
   final double? totalPortfolioValue;
@@ -33,6 +34,7 @@ class BasketOpportunity {
     this.missingCount = 0,
     this.heldMatchScore,
     this.substituteMatchScore,
+    this.missingMatchScore,
     this.remainingPortfolioValue,
     this.investmentAmount,
     this.totalPortfolioValue,
@@ -59,6 +61,7 @@ class BasketOpportunity {
       missingCount: json['missingCount'] as int? ?? 0,
       heldMatchScore: (json['heldMatchScore'] as num?)?.toDouble(),
       substituteMatchScore: (json['substituteMatchScore'] as num?)?.toDouble(),
+      missingMatchScore: (json['missingMatchScore'] as num?)?.toDouble(),
       remainingPortfolioValue: (json['remainingPortfolioValue'] as num?)?.toDouble(),
       investmentAmount: (json['investmentAmount'] as num?)?.toDouble(),
       totalPortfolioValue: (json['totalPortfolioValue'] as num?)?.toDouble(),
@@ -95,6 +98,7 @@ class BasketOpportunity {
       'missingCount': missingCount,
       'heldMatchScore': heldMatchScore,
       'substituteMatchScore': substituteMatchScore,
+      'missingMatchScore': missingMatchScore,
       'remainingPortfolioValue': remainingPortfolioValue,
       'investmentAmount': investmentAmount,
       'totalPortfolioValue': totalPortfolioValue,
@@ -121,6 +125,7 @@ class BasketOpportunity {
     int? missingCount,
     double? heldMatchScore,
     double? substituteMatchScore,
+    double? missingMatchScore,
     double? remainingPortfolioValue,
     double? investmentAmount,
     double? totalPortfolioValue,
@@ -145,6 +150,7 @@ class BasketOpportunity {
       missingCount: missingCount ?? this.missingCount,
       heldMatchScore: heldMatchScore ?? this.heldMatchScore,
       substituteMatchScore: substituteMatchScore ?? this.substituteMatchScore,
+      missingMatchScore: missingMatchScore ?? this.missingMatchScore,
       remainingPortfolioValue: remainingPortfolioValue ?? this.remainingPortfolioValue,
       investmentAmount: investmentAmount ?? this.investmentAmount,
       totalPortfolioValue: totalPortfolioValue ?? this.totalPortfolioValue,

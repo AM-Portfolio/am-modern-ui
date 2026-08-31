@@ -27,7 +27,7 @@ class BasketPreviewPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final opportunityAsync = ref.watch(enhancedBasketPreviewProvider(
+    final opportunityAsync = ref.watch(basketPreviewProvider(
       etfIsin: etfIsin,
       userId: userId,
       portfolioId: portfolioId,
@@ -43,7 +43,7 @@ class BasketPreviewPage extends ConsumerWidget {
       error: (err, stack) => AmErrorWidget(
         message: err.toString(),
         onRetry: () {
-          ref.invalidate(enhancedBasketPreviewProvider(
+          ref.invalidate(basketPreviewProvider(
             etfIsin: etfIsin,
             userId: userId,
             portfolioId: portfolioId,

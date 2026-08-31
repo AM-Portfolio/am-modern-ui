@@ -26,6 +26,7 @@ class SubstituteSelector extends ConsumerStatefulWidget {
   final double neededWeight;
   final int neededQty;
   final double neededValue;
+  final bool isGapFill;
   final Function(List<SubstituteSelectionEntry>) onMultiSelected;
 
   const SubstituteSelector({
@@ -37,6 +38,7 @@ class SubstituteSelector extends ConsumerStatefulWidget {
     required this.neededWeight,
     required this.neededQty,
     required this.neededValue,
+    this.isGapFill = false,
     required this.onMultiSelected,
   });
 
@@ -203,7 +205,9 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Replace ${widget.originalSymbol}',
+                widget.isGapFill
+                    ? 'Fill Gap for ${widget.originalSymbol}'
+                    : 'Replace ${widget.originalSymbol}',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               IconButton(

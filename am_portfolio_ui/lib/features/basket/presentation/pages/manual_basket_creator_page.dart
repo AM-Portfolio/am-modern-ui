@@ -59,6 +59,7 @@ class _ManualBasketCreatorPageState
   Timer? _debounceTimer;
   double? _actualCost;
   double? _budgetVariance;
+  final Map<String, int> _manualQtyOverrides = {};
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -86,23 +87,7 @@ class _ManualBasketCreatorPageState
   // ---------------------------------------------------------------------------
   // Data helpers
   // ---------------------------------------------------------------------------
-  List<BasketItem> _enrichItemsWithHoldings(
-      List<BasketItem> items, PortfolioHoldings? localHoldings) {
-    if (localHoldings == null) return items;
-    return items.map((item) {
-      final holding = localHoldings.holdings
-          .where((h) =>
-              h.symbol.toLowerCase() == item.stockSymbol.toLowerCase())
-          .firstOrNull;
-      if (holding != null) {
-        return item.copyWith(
-          heldQuantity: holding.quantity,
-          heldAveragePrice: holding.avgPrice,
-        );
-      }
-      return item;
-    }).cast<BasketItem>().toList();
-  }
+
 
   List<BasketItem> _getTabItems(int tabIndex, List<BasketItem> all) {
     switch (tabIndex) {
@@ -157,6 +142,23 @@ class _ManualBasketCreatorPageState
     });
   }
 
+  void _updateTargetQuantity(int index, int delta) {
+    final item = _items[index];
+    if (item.lastPrice == null) return;
+    
+    final symbol = item.stockSymbol;
+    final currentQty = _manualQtyOverrides[symbol] ?? item.targetQuantity?.toInt() ?? 0;
+    final newQty = (currentQty + delta).clamp(0, 999999);
+    
+    setState(() {
+      _manualQtyOverrides[symbol] = newQty;
+      _items[index] = item.copyWith(targetQuantityLocked: true);
+      _hasCalculated = false;
+    });
+    
+    _calculateQuantities();
+  }
+
   void _removeItem(int index) {
     setState(() {
       _excludedItems.add(_items[index].stockSymbol);
@@ -206,9 +208,16 @@ class _ManualBasketCreatorPageState
       });
 
       try {
-        final holdingsAsync = ref.read(portfolioHoldingsProvider(widget.portfolioId!));
-        final localHoldings = holdingsAsync.asData?.value;
-        final itemsToSend = _enrichItemsWithHoldings(_items, localHoldings);
+        final itemsToSend = _items.map((item) {
+          final overrideQty = _manualQtyOverrides[item.stockSymbol];
+          if (overrideQty != null) {
+            return item.copyWith(
+              targetQuantity: overrideQty.toDouble(),
+              targetQuantityLocked: true,
+            );
+          }
+          return item;
+        }).toList();
 
         final updatedOpportunity =
             await ref.read(calculateBasketQuantitiesProvider(
@@ -249,16 +258,24 @@ class _ManualBasketCreatorPageState
     });
   }
 
-  void _openSubstituteSelectorFor(int originalIdx) {
+  void _openSubstituteSelectorFor(int originalIdx, {bool isGapFill = false}) {
     final item = _items[originalIdx];
     final targetQty = item.targetQuantity ?? 0;
     final heldQty = item.heldQuantity ?? 0;
-    final gapQty = (targetQty - heldQty).clamp(0, double.infinity);
-    final targetVal = gapQty * (item.lastPrice ?? 0);
-    // Needed weight is etfWeight - replicaWeight (if partially filled) or just etfWeight.
-    // Wait, if it's MISSING, replicaWeight is 0. If it's a split substitute, we might want to fill the remaining.
-    // For simplicity, we just pass the remaining etfWeight for the item.
-    final neededWeight = item.etfWeight;
+    
+    double gapQtyDouble = targetQty.toDouble();
+    double neededWeight = item.etfWeight;
+    
+    if (isGapFill && (item.status == ItemStatus.held || item.status == ItemStatus.substitute)) {
+      neededWeight = (item.etfWeight - (item.replicaWeight ?? 0)).clamp(0.0, double.infinity);
+      gapQtyDouble = (targetQty - heldQty).clamp(0, double.infinity);
+    }
+
+    if (neededWeight <= 0) {
+      return;
+    }
+    
+    final targetVal = gapQtyDouble * (item.lastPrice ?? 0);
 
     showModalBottomSheet(
       context: context,
@@ -269,8 +286,10 @@ class _ManualBasketCreatorPageState
         requiredMarketCap: item.marketCapCategory ?? '',
         alternatives: item.alternatives,
         neededWeight: neededWeight,
-        neededQty: gapQty.toInt(),
+        neededQty: gapQtyDouble.toInt(),
         neededValue: targetVal.toDouble(),
+        isGapFill: isGapFill,
+
         onMultiSelected: (selections) async {
           Navigator.of(ctx).pop();
           setState(() {
@@ -299,7 +318,6 @@ class _ManualBasketCreatorPageState
                 }
                 return compItem;
               }).toList();
-              _hasCalculated = false;
             });
             _calculateQuantities();
           } catch (e) {
@@ -351,6 +369,12 @@ class _ManualBasketCreatorPageState
       return;
     }
 
+    final coverage = _currentOpportunity.replicaScore;
+    if (coverage < 80.0) {
+      _showCoverageGateDialog(coverage);
+      return;
+    }
+
     final basketName = _basketNameController.text.trim();
 
     BasketNavigation.openFinalPreview(
@@ -365,6 +389,40 @@ class _ManualBasketCreatorPageState
         portfolioId: widget.portfolioId,
         excludedItems: _excludedItems,
         idempotencyKey: DateTime.now().millisecondsSinceEpoch.toString(),
+      ),
+    );
+  }
+
+  void _showCoverageGateDialog(double coverage) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Row(children: [
+          Icon(Icons.shield_outlined, color: context.statusWarning),
+          const SizedBox(width: 8),
+          const Text('Coverage Too Low'),
+        ]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Your current basket coverage is ${coverage.toStringAsFixed(0)}%.'),
+            const SizedBox(height: 8),
+            const Text('You need at least 80% coverage to create a basket.'),
+            const SizedBox(height: 16),
+            const Text('How to improve:'),
+            const Text('• Increase your investment amount'),
+            const Text('• Substitute missing stocks from your portfolio'),
+            const Text('• Use + button to increase held stock quantities'),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK, I\'ll improve coverage'),
+          ),
+        ],
       ),
     );
   }
@@ -397,18 +455,12 @@ class _ManualBasketCreatorPageState
         .length;
     final excludedCount = _excludedItems.length;
 
-    final heldWeight = displayItems
-        .where((i) => i.status == ItemStatus.held)
-        .fold(0.0, (s, i) => s + (i.rebalancedWeight ?? i.etfWeight));
-    final subWeight = displayItems
-        .where((i) => i.status == ItemStatus.substitute)
-        .fold(0.0, (s, i) => s + (i.rebalancedWeight ?? i.etfWeight));
-    final missingWeight = displayItems
-        .where((i) => i.status == ItemStatus.missing)
-        .fold(0.0, (s, i) => s + (i.rebalancedWeight ?? i.etfWeight));
-    final coverage = _hasCalculated
+    final heldWeight = _currentOpportunity.heldMatchScore ?? 0.0;
+    final subWeight = _currentOpportunity.substituteMatchScore ?? 0.0;
+    final missingWeight = _currentOpportunity.missingMatchScore ?? 0.0;
+    final coverage = (_hasCalculated
         ? _currentOpportunity.replicaScore
-        : (heldWeight + subWeight);
+        : (heldWeight + subWeight)).clamp(0.0, 100.0);
 
     // tab-filtered items
     final tabItems = _getTabItems(_tabController.index, displayItems);
@@ -1080,34 +1132,43 @@ class _ManualBasketCreatorPageState
         if (isMobile) {
           rows.add(_MobileBasketCard(
             item: item,
+            hasCalculated: _hasCalculated,
             investedText: _investedText(item),
             isExcluded: _excludedItems.contains(item.stockSymbol),
             onRemove: () => _removeItem(originalIdx),
             onAdd: () => _addItem(originalIdx),
+            onAddGap: () => _openSubstituteSelectorFor(originalIdx, isGapFill: true),
             onSubstitute: () => _openSubstituteSelectorFor(originalIdx),
             onQtyChanged: (v) => _updateQuantity(originalIdx, v),
+            onTargetQtyChanged: (delta) => _updateTargetQuantity(originalIdx, delta),
           ));
         } else if (isTablet) {
           rows.add(_TabletBasketRow(
             item: item,
+            hasCalculated: _hasCalculated,
             investedText: _investedText(item),
             isExcluded: _excludedItems.contains(item.stockSymbol),
             onRemove: () => _removeItem(originalIdx),
             onAdd: () => _addItem(originalIdx),
+            onAddGap: () => _openSubstituteSelectorFor(originalIdx, isGapFill: true),
             onSubstitute: () => _openSubstituteSelectorFor(originalIdx),
             onQtyChanged: (v) => _updateQuantity(originalIdx, v),
+            onTargetQtyChanged: (delta) => _updateTargetQuantity(originalIdx, delta),
           ));
         } else {
           rows.add(_DenseBasketRow(
             item: item,
+            hasCalculated: _hasCalculated,
             investedText: _investedText(item),
             investmentAmount: double.tryParse(_amountController.text) ?? 0.0,
             isExcluded: _excludedItems.contains(item.stockSymbol),
             originalIdx: originalIdx,
             onRemove: () => _removeItem(originalIdx),
             onAdd: () => _addItem(originalIdx),
+            onAddGap: () => _openSubstituteSelectorFor(originalIdx, isGapFill: true),
             onSubstitute: () => _openSubstituteSelectorFor(originalIdx),
             onQtyChanged: (v) => _updateQuantity(originalIdx, v),
+            onTargetQtyChanged: (delta) => _updateTargetQuantity(originalIdx, delta),
           ));
         }
       }
@@ -1831,25 +1892,31 @@ class _SummaryRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _DenseBasketRow extends StatefulWidget {
   final BasketItem item;
+  final bool hasCalculated;
   final String investedText;
   final double investmentAmount;
   final bool isExcluded;
   final int originalIdx;
   final VoidCallback onRemove;
   final VoidCallback onAdd;
+  final VoidCallback onAddGap;
   final VoidCallback onSubstitute;
   final ValueChanged<double> onQtyChanged;
+  final ValueChanged<int>? onTargetQtyChanged;
 
   const _DenseBasketRow({
     required this.item,
+    required this.hasCalculated,
     required this.investedText,
     required this.investmentAmount,
     required this.isExcluded,
     required this.originalIdx,
     required this.onRemove,
     required this.onAdd,
+    required this.onAddGap,
     required this.onSubstitute,
     required this.onQtyChanged,
+    this.onTargetQtyChanged,
   });
 
   @override
@@ -2023,20 +2090,37 @@ class _DenseBasketRowState extends State<_DenseBasketRow> {
                   : Text('—', style: TextStyle(fontSize: 11, color: context.textTertiary))),
           // Needed to Match
           Expanded(
-              flex: 16,
-              child: (item.lastPrice != null)
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${targetQty.toInt()} | ₹${targetVal.toStringAsFixed(0)}',
-                            style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: targetQty > 0 ? FontWeight.w500 : FontWeight.normal,
-                                color: targetQty > 0 ? context.textPrimary : context.textTertiary)),
-                      ],
-                    )
-                  : Text('—', style: TextStyle(fontSize: 11, color: context.textTertiary))),
+            flex: 16,
+            child: (item.lastPrice != null)
+                ? Row(
+                    children: [
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${targetQty.toInt()} | ₹${targetVal.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: targetQty > 0 ? FontWeight.w500 : FontWeight.normal,
+                                  color: targetQty > 0 ? context.textPrimary : context.textTertiary)),
+                        ],
+                      ),
+                      if (widget.hasCalculated && widget.onTargetQtyChanged != null) ...[
+                        const SizedBox(width: 4),
+                        InkWell(
+                          onTap: targetQty > 0 ? () => widget.onTargetQtyChanged!(-1) : null,
+                          child: Icon(Icons.remove_circle_outline,
+                              size: 14, color: targetQty > 0 ? context.textSecondary : context.textTertiary),
+                        ),
+                        const SizedBox(width: 2),
+                        InkWell(
+                          onTap: () => widget.onTargetQtyChanged!(1),
+                          child: Icon(Icons.add_circle_outline, size: 14, color: context.textSecondary),
+                        ),
+                      ]
+                    ],
+                  )
+                : Text('-', style: TextStyle(fontSize: 11, color: context.textTertiary))),
           // Gap
           Expanded(
               flex: 8,
@@ -2109,10 +2193,22 @@ class _DenseBasketRowState extends State<_DenseBasketRow> {
                         ]
                       )
                     else
-                      InkWell(
-                          onTap: widget.onRemove,
-                          child: Icon(Icons.delete_outline,
-                              size: 18, color: context.statusError)),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.hasCalculated && (item.etfWeight - (item.replicaWeight ?? 0)) > 0.01)
+                            InkWell(
+                              onTap: widget.onAddGap,
+                              child: Icon(Icons.add, size: 18, color: context.colors.actionPrimaryBg),
+                            ),
+                          if (widget.hasCalculated && (item.etfWeight - (item.replicaWeight ?? 0)) > 0.01)
+                            const SizedBox(width: 8),
+                          InkWell(
+                            onTap: widget.onRemove,
+                            child: Icon(Icons.delete_outline, size: 18, color: context.statusError),
+                          ),
+                        ]
+                      )
                   ])),
         ]),
       ),
@@ -2125,21 +2221,27 @@ class _DenseBasketRowState extends State<_DenseBasketRow> {
 // ---------------------------------------------------------------------------
 class _TabletBasketRow extends StatelessWidget {
   final BasketItem item;
+  final bool hasCalculated;
   final String investedText;
   final bool isExcluded;
   final VoidCallback onRemove;
   final VoidCallback onAdd;
+  final VoidCallback onAddGap;
   final VoidCallback onSubstitute;
   final ValueChanged<double> onQtyChanged;
+  final ValueChanged<int>? onTargetQtyChanged;
 
   const _TabletBasketRow({
     required this.item,
+    required this.hasCalculated,
     required this.investedText,
     required this.isExcluded,
     required this.onRemove,
     required this.onAdd,
+    required this.onAddGap,
     required this.onSubstitute,
     required this.onQtyChanged,
+    this.onTargetQtyChanged,
   });
 
   @override
@@ -2227,12 +2329,24 @@ class _TabletBasketRow extends StatelessWidget {
                               padding: EdgeInsets.zero,
                               minimumSize: Size.zero),
                           child: const Text('Swap'))
-                      : IconButton(
-                          icon: Icon(Icons.delete_outline,
-                              size: 18, color: context.statusError),
-                          onPressed: onRemove,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (hasCalculated && (item.etfWeight - (item.replicaWeight ?? 0)) > 0.01)
+                              InkWell(
+                                onTap: onAddGap,
+                                child: Icon(Icons.add, size: 18, color: context.colors.actionPrimaryBg),
+                              ),
+                            if (hasCalculated && (item.etfWeight - (item.replicaWeight ?? 0)) > 0.01)
+                              const SizedBox(width: 8),
+                            IconButton(
+                              icon: Icon(Icons.delete_outline,
+                                  size: 18, color: context.statusError),
+                              onPressed: onRemove,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
                         ),
             )),
         const SizedBox(width: 4),
@@ -2246,21 +2360,27 @@ class _TabletBasketRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _MobileBasketCard extends StatelessWidget {
   final BasketItem item;
+  final bool hasCalculated;
   final String investedText;
   final bool isExcluded;
   final VoidCallback onRemove;
   final VoidCallback onAdd;
+  final VoidCallback onAddGap;
   final VoidCallback onSubstitute;
   final ValueChanged<double> onQtyChanged;
+  final ValueChanged<int>? onTargetQtyChanged;
 
   const _MobileBasketCard({
     required this.item,
+    required this.hasCalculated,
     required this.investedText,
     required this.isExcluded,
     required this.onRemove,
     required this.onAdd,
+    required this.onAddGap,
     required this.onSubstitute,
     required this.onQtyChanged,
+    this.onTargetQtyChanged,
   });
 
   @override
@@ -2319,21 +2439,34 @@ class _MobileBasketCard extends StatelessWidget {
                 child: const Text('Swap'),
               )
             else
-              PopupMenuButton<String>(
-                icon: Icon(Icons.more_horiz,
-                    size: 20, color: context.textSecondary),
-                onSelected: (val) {
-                  if (val == 'remove') onRemove();
-                  if (val == 'substitute') onSubstitute();
-                },
-                itemBuilder: (ctx) => [
-                  const PopupMenuItem(
-                      value: 'remove',
-                      child: Text('Remove from basket')),
-                  if (item.alternatives.isNotEmpty)
-                    const PopupMenuItem(
-                        value: 'substitute',
-                        child: Text('Find substitute')),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasCalculated && (item.etfWeight - (item.replicaWeight ?? 0)) > 0.01)
+                    TextButton(
+                      onPressed: onAddGap,
+                      style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          minimumSize: Size.zero),
+                      child: const Text('Add'),
+                    ),
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_horiz,
+                        size: 20, color: context.textSecondary),
+                    onSelected: (val) {
+                      if (val == 'remove') onRemove();
+                      if (val == 'substitute') onSubstitute();
+                    },
+                    itemBuilder: (ctx) => [
+                      const PopupMenuItem(
+                          value: 'remove',
+                          child: Text('Remove from basket')),
+                      if (item.alternatives.isNotEmpty)
+                        const PopupMenuItem(
+                            value: 'substitute',
+                            child: Text('Find substitute')),
+                    ],
+                  ),
                 ],
               ),
           ]),
