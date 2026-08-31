@@ -48,7 +48,7 @@ class AppConstants {
   static const String defaultTradePortfolioSummaryResource =
       '/v1/portfolio-summary';
   static const String defaultTradeHoldingsResource =
-      '/v1/trades/portfolio-details';
+      '/v1/trades/details/portfolio';
   static const String defaultTradeDetailsResource =
       '/v1/trades/details/by-ids';
   static const String defaultTradeCalendarMonthResource =
