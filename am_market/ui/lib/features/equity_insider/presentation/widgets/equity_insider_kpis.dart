@@ -1,84 +1,123 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_sdk/market/api.dart';
+import '../../providers/equity_insider_provider.dart';
 
-class EquityInsiderKpis extends StatelessWidget {
-  final FundamentalRatiosResponse data;
+class EquityInsiderKpis extends ConsumerWidget {
+  final String symbol;
 
-  const EquityInsiderKpis({super.key, required this.data});
+  const EquityInsiderKpis({super.key, required this.symbol});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncData = ref.watch(fundamentalRatiosProvider(symbol));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader(context, 'Valuation & key metrics'),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            int columns = 7;
-            if (constraints.maxWidth < 600) {
-              columns = 4;
-            }
-            if (constraints.maxWidth < 350) {
-              columns = 2;
-            }
+        asyncData.when(
+          data: (data) {
+            if (data == null) return const Text('No ratios available');
+            
+            final isBank = data.casa != null || data.nim != null || data.netNpa != null;
+            
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                int columns = 7;
+                if (constraints.maxWidth < 600) {
+                  columns = 4;
+                }
+                if (constraints.maxWidth < 350) {
+                  columns = 2;
+                }
 
-            return Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildKpi(
-                  context,
-                  label: 'P/E',
-                  value: data.peRatio,
-                  subtitle: 'Valuation',
-                ),
-                _buildKpi(
-                  context,
-                  label: 'P/B',
-                  value: data.pbRatio,
-                  subtitle: 'Valuation',
-                ),
-                _buildKpi(
-                  context,
-                  label: 'ROE %',
-                  value: data.roe,
-                  subtitle: 'Profitability',
-                  isPositive: (data.roe ?? 0) > 15,
-                  isNegative: (data.roe ?? 0) < 0,
-                ),
-                _buildKpi(
-                  context,
-                  label: 'ROCE %',
-                  value: data.roce,
-                  subtitle: 'Profitability',
-                  isPositive: (data.roce ?? 0) > 15,
-                  isNegative: (data.roce ?? 0) < 0,
-                ),
-                _buildKpi(
-                  context,
-                  label: 'ROA %',
-                  value: data.netProfitMarginPercent,
-                  subtitle: 'Efficiency',
-                  isPositive: ((data.netProfitMarginPercent ?? 0) > 10),
-                ),
-                _buildKpi(
-                  context,
-                  label: 'EV/EBITDA',
-                  value: data.evEbitda,
-                  subtitle: 'Valuation',
-                ),
-                _buildKpi(
-                  context,
-                  label: 'Quick Ratio',
-                  value: data.quickRatio,
-                  subtitle: 'Liquidity',
-                  isPositive: (data.quickRatio ?? 0) >= 1.0,
-                  isNegative: (data.quickRatio ?? 0) < 0.7,
-                ),
-              ].map((child) => SizedBox(width: columns == 2 ? (constraints.maxWidth - 8) / 2 : 110, height: 95, child: child)).toList(),
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildKpi(
+                      context,
+                      label: 'P/E',
+                      value: data.peRatio,
+                      subtitle: 'Valuation',
+                    ),
+                    _buildKpi(
+                      context,
+                      label: 'P/B',
+                      value: data.pbRatio,
+                      subtitle: 'Valuation',
+                    ),
+                    _buildKpi(
+                      context,
+                      label: 'ROE %',
+                      value: data.roe,
+                      subtitle: 'Profitability',
+                      isPositive: (data.roe ?? 0) > 15,
+                      isNegative: (data.roe ?? 0) < 0,
+                    ),
+                    _buildKpi(
+                      context,
+                      label: 'ROA %',
+                      value: data.netProfitMarginPercent,
+                      subtitle: 'Efficiency',
+                      isPositive: ((data.netProfitMarginPercent ?? 0) > 1),
+                    ),
+                    if (isBank) ...[
+                      _buildKpi(
+                        context,
+                        label: 'NIM %',
+                        value: data.nim,
+                        subtitle: 'Profitability',
+                        isPositive: (data.nim ?? 0) > 3,
+                      ),
+                      _buildKpi(
+                        context,
+                        label: 'Net NPA %',
+                        value: data.netNpa,
+                        subtitle: 'Asset Quality',
+                        isNegative: (data.netNpa ?? 0) > 1,
+                        isPositive: (data.netNpa ?? 0) < 0.5,
+                      ),
+                      _buildKpi(
+                        context,
+                        label: 'CASA %',
+                        value: data.casa,
+                        subtitle: 'Liquidity',
+                        isPositive: (data.casa ?? 0) > 40,
+                      ),
+                    ] else ...[
+                      _buildKpi(
+                        context,
+                        label: 'ROCE %',
+                        value: data.roce,
+                        subtitle: 'Profitability',
+                        isPositive: (data.roce ?? 0) > 15,
+                        isNegative: (data.roce ?? 0) < 0,
+                      ),
+                      _buildKpi(
+                        context,
+                        label: 'EV/EBITDA',
+                        value: data.evEbitda,
+                        subtitle: 'Valuation',
+                      ),
+                      _buildKpi(
+                        context,
+                        label: 'Quick Ratio',
+                        value: data.quickRatio,
+                        subtitle: 'Liquidity',
+                        isPositive: (data.quickRatio ?? 0) >= 1.0,
+                        isNegative: (data.quickRatio ?? 0) < 0.7,
+                      ),
+                    ],
+                  ].map((child) => SizedBox(width: columns == 2 ? (constraints.maxWidth - 8) / 2 : 110, height: 95, child: child)).toList(),
+                );
+              },
             );
           },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, st) => Text('Failed to load KPIs: $e', style: TextStyle(color: Theme.of(context).colorScheme.error)),
         ),
       ],
     );

@@ -3,37 +3,50 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_sdk/market/api.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-class EquityInsiderFinancials extends StatelessWidget {
-  final FundamentalRatiosResponse data;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/equity_insider_provider.dart';
 
-  const EquityInsiderFinancials({super.key, required this.data});
+class EquityInsiderFinancials extends ConsumerWidget {
+  final String symbol;
+
+  const EquityInsiderFinancials({super.key, required this.symbol});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncData = ref.watch(fundamentalFinancialsProvider(symbol));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader(context, 'Financial performance'),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final isMobile = constraints.maxWidth < 700;
-            if (isMobile) {
-              return Column(
-                children: [
-                  _buildRevenueChart(context),
-                  const SizedBox(height: 16),
-                  _buildBalanceSheetChart(context),
-                ],
-              );
-            }
-            return Row(
-              children: [
-                Expanded(child: _buildRevenueChart(context)),
-                const SizedBox(width: 12),
-                Expanded(child: _buildBalanceSheetChart(context)),
-              ],
+        asyncData.when(
+          data: (data) {
+            if (data == null) return const Text('No financials data available');
+            
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 700;
+                if (isMobile) {
+                  return Column(
+                    children: [
+                      _buildRevenueChart(context, data),
+                      const SizedBox(height: 16),
+                      _buildBalanceSheetChart(context, data),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: _buildRevenueChart(context, data)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildBalanceSheetChart(context, data)),
+                  ],
+                );
+              },
             );
           },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, st) => Text('Error loading financials: $e', style: TextStyle(color: Theme.of(context).colorScheme.error)),
         ),
       ],
     );
@@ -65,7 +78,7 @@ class EquityInsiderFinancials extends StatelessWidget {
     );
   }
 
-  Widget _buildRevenueChart(BuildContext context) {
+  Widget _buildRevenueChart(BuildContext context, FundamentalRatiosResponse data) {
     final statements = _maps(data.incomeStatement);
     // Usually API returns latest first, take 4 and reverse for chronological
     final recent = statements.take(4).toList().reversed.toList();
@@ -108,7 +121,7 @@ class EquityInsiderFinancials extends StatelessWidget {
     );
   }
 
-  Widget _buildBalanceSheetChart(BuildContext context) {
+  Widget _buildBalanceSheetChart(BuildContext context, FundamentalRatiosResponse data) {
     final balance = _maps(data.balanceSheet);
     final recent = balance.take(3).toList().reversed.toList();
 

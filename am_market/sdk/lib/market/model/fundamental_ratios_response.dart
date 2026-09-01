@@ -237,9 +237,15 @@ class FundamentalRatiosResponse {
         
         // Lists
         shareholding: json['shareholding'] is List ? json['shareholding'] as List : [],
-        incomeStatement: financials['incomeStatement'] is List ? financials['incomeStatement'] as List : [],
-        balanceSheet: financials['balanceSheet'] is List ? financials['balanceSheet'] as List : [],
-        cashFlow: financials['cashFlow'] is List ? financials['cashFlow'] as List : [],
+        incomeStatement: financials['incomeStatement'] is List
+            ? financials['incomeStatement'] as List
+            : (json['incomeStatement'] is List ? json['incomeStatement'] as List : []),
+        balanceSheet: financials['balanceSheet'] is List
+            ? financials['balanceSheet'] as List
+            : (json['balanceSheet'] is List ? json['balanceSheet'] as List : []),
+        cashFlow: financials['cashFlow'] is List
+            ? financials['cashFlow'] as List
+            : (json['cashFlow'] is List ? json['cashFlow'] as List : []),
         corporateActions: json['corporateActions'] is List ? json['corporateActions'] as List : [],
       );
     }
@@ -327,5 +333,18 @@ class CompetitorPeer {
       );
     }
     return null;
+  }
+
+  static List<CompetitorPeer> listFromJson(dynamic json, {bool growable = false}) {
+    final result = <CompetitorPeer>[];
+    if (json is List && json.isNotEmpty) {
+      for (final row in json) {
+        final value = CompetitorPeer.fromJson(row);
+        if (value != null) {
+          result.add(value);
+        }
+      }
+    }
+    return result.toList(growable: growable);
   }
 }

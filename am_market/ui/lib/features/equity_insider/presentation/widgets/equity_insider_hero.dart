@@ -1,181 +1,140 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_market_sdk/market/api.dart';
+import 'package:intl/intl.dart';
+import '../../providers/equity_insider_provider.dart';
 
-class EquityInsiderHero extends StatelessWidget {
-  final FundamentalRatiosResponse data;
+class EquityInsiderHero extends ConsumerWidget {
+  final String symbol;
 
-  const EquityInsiderHero({super.key, required this.data});
+  const EquityInsiderHero({super.key, required this.symbol});
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: context.borderColor)),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isNarrow = constraints.maxWidth < 450;
-          
-          if (isNarrow) {
-            return Column(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncData = ref.watch(fundamentalProfileProvider(symbol));
+
+    return asyncData.when(
+      data: (data) {
+        if (data == null) return const Text('No profile data');
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildLeft(context),
-                const SizedBox(height: 16),
-                _buildRight(context),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.symbol ?? symbol,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w500,
+                          color: context.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${data.sector ?? 'Unknown'} · NSE',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: context.textSecondary,
+                          textBaseline: TextBaseline.alphabetic,
+                          letterSpacing: 0.05,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _buildBadge(context, 'Large Cap', isNeutral: true),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '₹${_formatCurrency(data.currentPrice)}',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w500,
+                        color: context.textPrimary,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${data.dayChangePercent != null && data.dayChangePercent! >= 0 ? '+' : ''}${_formatNum(data.dayChange)} today',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: data.dayChangePercent != null && data.dayChangePercent! >= 0
+                            ? const Color(0xFF00C896)
+                            : const Color(0xFFF87171),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'NSE · Live',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: context.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ],
-            );
-          }
-          
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(child: _buildLeft(context)),
-              _buildRight(context),
+            ),
+            if (data.description != null && data.description!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                data.description!,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: context.textSecondary,
+                  height: 1.45,
+                ),
+              ),
             ],
-          );
-        },
-      ),
+            const SizedBox(height: 16),
+            Container(height: 1, color: context.borderColor),
+          ],
+        );
+      },
+      loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator())),
+      error: (e, st) => Text('Error loading profile: $e', style: TextStyle(color: Theme.of(context).colorScheme.error)),
     );
   }
 
-  Widget _buildLeft(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          data.symbol ?? '---',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w500,
-            color: context.textPrimary,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          '${data.sector ?? 'Unknown Sector'} · NSE',
-          style: TextStyle(
-            fontSize: 10,
-            color: context.textSecondary,
-            textBaseline: TextBaseline.alphabetic,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: _buildBadges(context),
-        ),
-      ],
-    );
+  String _formatCurrency(num? val) {
+    if (val == null) return '---';
+    final formatter = NumberFormat('#,##,##0.00', 'en_IN');
+    return formatter.format(val);
   }
 
-  Widget _buildRight(BuildContext context) {
-    final priceStr = data.currentPrice != null
-        ? '₹${data.currentPrice!.toStringAsFixed(2)}'
-        : '₹---';
-
-    final changeStr = data.dayChange != null
-        ? '${data.dayChange! >= 0 ? '+' : ''}${data.dayChange!.toStringAsFixed(2)} today'
-        : '--- today';
-
-    final isPositive = (data.dayChange ?? 0) >= 0;
-    final changeColor = isPositive ? const Color(0xFF00C896) : const Color(0xFFF87171);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          priceStr,
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w500,
-            color: context.textPrimary,
-            letterSpacing: -1,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          changeStr,
-          style: TextStyle(
-            fontSize: 12,
-            color: changeColor,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'NSE · Live',
-          style: TextStyle(
-            fontSize: 10,
-            color: context.textSecondary,
-          ),
-        ),
-      ],
-    );
+  String _formatNum(num? val) {
+    if (val == null) return '---';
+    return val.toStringAsFixed(2);
   }
 
-  List<Widget> _buildBadges(BuildContext context) {
-    final badges = <Widget>[];
-
-    // Day change badge
-    if (data.dayChangePercent != null) {
-      final isPos = data.dayChangePercent! >= 0;
-      final sign = isPos ? '↑ +' : '↓ ';
-      badges.add(_Badge(
-        text: '$sign${data.dayChangePercent!.toStringAsFixed(2)}% today',
-        isPositive: isPos,
-        isNegative: !isPos,
-      ));
-    }
-
-    // Market cap category (Mocked as Large Cap for now since we don't have the exact classification, or we can use sectorMarketCapInr)
-    badges.add(const _Badge(
-      text: 'Equity',
-    ));
-
-    // ROE badge
-    if (data.roe != null) {
-      final roeStr = 'ROE ${data.roe!.toStringAsFixed(1)}%';
-      final isStrong = data.roe! > 15;
-      badges.add(_Badge(
-        text: roeStr,
-        isPositive: isStrong,
-      ));
-    }
-
-    return badges;
-  }
-}
-
-class _Badge extends StatelessWidget {
-  final String text;
-  final bool isPositive;
-  final bool isNegative;
-
-  const _Badge({
-    required this.text,
-    this.isPositive = false,
-    this.isNegative = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBadge(BuildContext context, String text, {bool isPos = false, bool isNeg = false, bool isNeutral = false}) {
     Color bg;
     Color fg;
-
-    if (isPositive) {
+    if (isPos) {
       fg = const Color(0xFF00C896);
-      bg = fg.withOpacity(0.1);
-    } else if (isNegative) {
+      bg = fg.withOpacity(0.10);
+    } else if (isNeg) {
       fg = const Color(0xFFF87171);
-      bg = fg.withOpacity(0.1);
+      bg = fg.withOpacity(0.10);
     } else {
-      fg = context.textSecondary;
+      fg = const Color(0xFF64748B);
       bg = fg.withOpacity(0.15);
     }
 

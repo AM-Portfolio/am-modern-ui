@@ -53,4 +53,84 @@ class FundamentalAnalysisApi {
     }
     return null;
   }
+
+  // ─── Profile: GET /v1/fundamentals/{symbol}/profile ────────────────────────
+
+  Future<Response> getProfileWithHttpInfo(String symbol) async {
+    final path = r'/v1/fundamentals/{symbol}/profile'.replaceAll('{symbol}', symbol);
+    return apiClient.invokeAPI(path, 'GET', [], null, {}, {}, null);
+  }
+
+  Future<FundamentalRatiosResponse?> getProfile(String symbol) async {
+    final response = await getProfileWithHttpInfo(symbol);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      final decoded = await apiClient.deserializeAsync(
+              await _decodeBodyBytes(response), 'FundamentalRatiosResponse');
+      return decoded is FundamentalRatiosResponse ? decoded : null;
+    }
+    return null;
+  }
+
+  // ─── Financials: GET /v1/fundamentals/{symbol}/financials ──────────────────
+
+  Future<Response> getFinancialsWithHttpInfo(String symbol) async {
+    final path = r'/v1/fundamentals/{symbol}/financials'.replaceAll('{symbol}', symbol);
+    return apiClient.invokeAPI(path, 'GET', [], null, {}, {}, null);
+  }
+
+  Future<FundamentalRatiosResponse?> getFinancials(String symbol) async {
+    final response = await getFinancialsWithHttpInfo(symbol);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      final decoded = await apiClient.deserializeAsync(
+              await _decodeBodyBytes(response), 'FundamentalRatiosResponse');
+      return decoded is FundamentalRatiosResponse ? decoded : null;
+    }
+    return null;
+  }
+
+  // ─── Shareholding: GET /v1/fundamentals/{symbol}/shareholding ──────────────
+
+  Future<Response> getShareholdingWithHttpInfo(String symbol) async {
+    final path = r'/v1/fundamentals/{symbol}/shareholding'.replaceAll('{symbol}', symbol);
+    return apiClient.invokeAPI(path, 'GET', [], null, {}, {}, null);
+  }
+
+  Future<List<dynamic>?> getShareholding(String symbol) async {
+    final response = await getShareholdingWithHttpInfo(symbol);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      final decoded = json.decode(await _decodeBodyBytes(response));
+      return decoded is List ? decoded : null;
+    }
+    return null;
+  }
+
+  // ─── Peers: GET /v1/fundamentals/{symbol}/peers ────────────────────────────
+
+  Future<Response> getPeersWithHttpInfo(String symbol) async {
+    final path = r'/v1/fundamentals/{symbol}/peers'.replaceAll('{symbol}', symbol);
+    return apiClient.invokeAPI(path, 'GET', [], null, {}, {}, null);
+  }
+
+  Future<List<CompetitorPeer>?> getPeers(String symbol) async {
+    final response = await getPeersWithHttpInfo(symbol);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      final decoded = json.decode(await _decodeBodyBytes(response));
+      if (decoded is List) {
+        return CompetitorPeer.listFromJson(decoded);
+      }
+    }
+    return null;
+  }
 }

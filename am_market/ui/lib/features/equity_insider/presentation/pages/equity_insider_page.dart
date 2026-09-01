@@ -100,53 +100,31 @@ class _EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
   }
 
   Widget _buildDataView(String symbol) {
-    final asyncData = ref.watch(fundamentalAnalysisProvider(symbol));
     final accentColor = context.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
-
-    return asyncData.when(
-      loading: () => Center(
-        child: CircularProgressIndicator(color: accentColor, strokeWidth: 2),
-      ),
-      error: (err, _) => _ErrorPanel(
-        message: 'Could not load "$symbol".\n\n$err',
-        onBack: () => setState(() => _submittedSymbol = null),
-      ),
-      data: (data) {
-        if (data == null) {
-          return _ErrorPanel(
-            message: 'No fundamental data for "$symbol".',
-            onBack: () => setState(() => _submittedSymbol = null),
-          );
-        }
-        return _FundamentalsBody(
-          data: data,
-          symbol: symbol,
-          controller: _controller,
-          onSearch: _search,
-          onBack: () => setState(() => _submittedSymbol = null),
-        );
-      },
+    return _FundamentalsBody(
+      symbol: symbol,
+      controller: _controller,
+      onSearch: _search,
+      onBack: () => setState(() => _submittedSymbol = null),
     );
   }
 }
 
-class _FundamentalsBody extends StatelessWidget {
+class _FundamentalsBody extends ConsumerWidget {
   const _FundamentalsBody({
-    required this.data,
     required this.symbol,
     required this.controller,
     required this.onSearch,
     required this.onBack,
   });
 
-  final FundamentalRatiosResponse data;
   final String symbol;
   final TextEditingController controller;
   final VoidCallback onSearch;
   final VoidCallback onBack;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final accentColor = context.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
 
     return ListView(
@@ -187,19 +165,15 @@ class _FundamentalsBody extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              EquityInsiderHero(data: data),
+              EquityInsiderHero(symbol: symbol),
               const SizedBox(height: 20),
-              EquityInsiderKpis(data: data),
+              EquityInsiderKpis(symbol: symbol),
               const SizedBox(height: 20),
-              EquityInsiderFinancials(data: data),
-              if (data.shareholding != null && data.shareholding!.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                EquityInsiderShareholding(data: data),
-              ],
-              if (data.peers != null && data.peers!.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                EquityInsiderPeers(peers: data.peers!, currentSymbol: data.symbol ?? symbol),
-              ],
+              EquityInsiderFinancials(symbol: symbol),
+              const SizedBox(height: 20),
+              EquityInsiderShareholding(symbol: symbol),
+              const SizedBox(height: 20),
+              EquityInsiderPeers(symbol: symbol),
             ],
           ),
         ),
