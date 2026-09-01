@@ -6,10 +6,11 @@ import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../data/ai_intent_response.dart';
 import '../providers/ai_chat_provider.dart';
+import '../theme/ai_chat_theme.dart';
 import 'ai_message_format.dart';
 
 /// Maps widgetId strings from AiIntentResponse to rendered Flutter widgets.
-/// Uses design system [AppColors] and theme-aware context extensions.
+/// Uses [AppColorsTheme] via [BuildContext.colors] and [ModuleColors].
 class AiWidgetFactory {
   const AiWidgetFactory._();
 
@@ -120,10 +121,17 @@ class AiWidgetFactory {
     return const [];
   }
 
-  static Widget build(AiIntentResponse response, {String? messageText}) {
+  static Widget build(
+    AiIntentResponse response, {
+    String? messageText,
+    bool embedded = false,
+  }) {
     switch (response.widgetId) {
       case 'PORTFOLIO_SUMMARY':
-        return _PortfolioSummaryCard(widgetParams: response.widgetParams);
+        return _PortfolioSummaryCard(
+          widgetParams: response.widgetParams,
+          embedded: embedded,
+        );
       case 'ORDER_PREVIEW':
         return _OrderPreviewCard(widgetParams: response.widgetParams);
       case 'BASKET_CARD':
@@ -144,14 +152,14 @@ class AiWidgetFactory {
           title: 'ETF Analysis',
           subtitle: 'Overlap and hidden stock exposure',
           icon: Icons.analytics_rounded,
-          color: AppColors.userAccent,
+          color: ModuleColors.dashboard,
         );
       case 'BENCHMARK_COMPARISON':
         return _IntentCard(
           title: 'Benchmark Comparison',
           subtitle: 'Portfolio vs NIFTY 50',
           icon: Icons.compare_arrows_rounded,
-          color: AppColors.accent,
+          color: ModuleColors.reports,
         );
       case 'ERROR':
         return _ErrorBanner(
@@ -188,7 +196,7 @@ class _BasketCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+        border: Border.all(color: context.aiPrimary.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,10 +208,10 @@ class _BasketCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.15),
+                    color: context.aiPrimary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.shopping_basket_rounded, color: AppColors.primary, size: 20),
+                  child: Icon(Icons.shopping_basket_rounded, color: context.aiPrimary, size: 20),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -268,7 +276,7 @@ class _BasketCard extends StatelessWidget {
                     if (weight != null)
                       Text(
                         '${weight.toStringAsFixed(1)}%',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.aiPrimary),
                       ),
                   ],
                 ),
@@ -279,7 +287,7 @@ class _BasketCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                 child: Text(
                   '+${items.length - 3} more assets',
-                  style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 10, color: context.aiPrimary, fontWeight: FontWeight.w500),
                 ),
               ),
           ],
@@ -323,14 +331,14 @@ class _TopMoversCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.profit.withValues(alpha: 0.35)),
+        border: Border.all(color: context.marketPositive.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.trending_up_rounded, color: AppColors.profit, size: 18),
+              Icon(Icons.trending_up_rounded, color: context.marketPositive, size: 18),
               const SizedBox(width: 6),
               Text(
                 isMarket ? 'Market Top Movers' : 'Portfolio Top Movers',
@@ -345,7 +353,7 @@ class _TopMoversCard extends StatelessWidget {
               style: TextStyle(fontSize: 11, color: context.textSecondary),
             ),
           if (gainers.isNotEmpty) ...[
-            Text('Top Gainers', style: TextStyle(fontSize: 11, color: AppColors.profit, fontWeight: FontWeight.w600)),
+            Text('Top Gainers', style: TextStyle(fontSize: 11, color: context.marketPositive, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Wrap(
               spacing: 6,
@@ -355,7 +363,7 @@ class _TopMoversCard extends StatelessWidget {
                 if (sym.isEmpty) return const SizedBox.shrink();
                 return Chip(
                   label: Text(sym, style: const TextStyle(fontSize: 10)),
-                  backgroundColor: AppColors.profit.withValues(alpha: 0.1),
+                  backgroundColor: context.colors.marketPositiveBg,
                   padding: EdgeInsets.zero,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 );
@@ -364,7 +372,7 @@ class _TopMoversCard extends StatelessWidget {
           ],
           if (losers.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text('Top Losers', style: TextStyle(fontSize: 11, color: AppColors.loss, fontWeight: FontWeight.w600)),
+            Text('Top Losers', style: TextStyle(fontSize: 11, color: context.marketNegative, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Wrap(
               spacing: 6,
@@ -374,7 +382,7 @@ class _TopMoversCard extends StatelessWidget {
                 if (sym.isEmpty) return const SizedBox.shrink();
                 return Chip(
                   label: Text(sym, style: const TextStyle(fontSize: 10)),
-                  backgroundColor: AppColors.loss.withValues(alpha: 0.1),
+                  backgroundColor: context.colors.marketNegativeBg,
                   padding: EdgeInsets.zero,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 );
@@ -434,14 +442,14 @@ class _HoldingsTableCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.tradeAccent.withValues(alpha: 0.35)),
+        border: Border.all(color: ModuleColors.trade.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.table_chart_rounded, color: AppColors.tradeAccent, size: 18),
+              Icon(Icons.table_chart_rounded, color: ModuleColors.trade, size: 18),
               const SizedBox(width: 6),
               Text(
                 'Holdings ($displayCount)',
@@ -549,14 +557,14 @@ class _AllocationCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.portfolioAccent.withValues(alpha: 0.35)),
+        border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.pie_chart_rounded, color: AppColors.portfolioAccent, size: 18),
+              Icon(Icons.pie_chart_rounded, color: ModuleColors.portfolio, size: 18),
               const SizedBox(width: 6),
               Text(
                 title,
@@ -591,7 +599,7 @@ class _AllocationCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.portfolioAccent,
+                        color: ModuleColors.portfolio,
                       ),
                     ),
                   ],
@@ -636,14 +644,14 @@ class _RecentActivityCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.marketAccent.withValues(alpha: 0.35)),
+        border: Border.all(color: ModuleColors.market.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.receipt_long_rounded, color: AppColors.marketAccent, size: 18),
+              Icon(Icons.receipt_long_rounded, color: ModuleColors.market, size: 18),
               const SizedBox(width: 6),
               Text(
                 'Recent Activity ($count)',
@@ -677,8 +685,12 @@ class _RecentActivityCard extends StatelessWidget {
 
 class _PortfolioSummaryCard extends StatelessWidget {
   final Map<String, dynamic> widgetParams;
+  final bool embedded;
 
-  const _PortfolioSummaryCard({required this.widgetParams});
+  const _PortfolioSummaryCard({
+    required this.widgetParams,
+    this.embedded = false,
+  });
 
   static final _currencyFmt =
       NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
@@ -703,13 +715,26 @@ class _PortfolioSummaryCard extends StatelessWidget {
 
   Color _gainColor(dynamic raw, BuildContext context) {
     if (raw == null) return context.textSecondary;
-    return (raw as num).toDouble() >= 0 ? AppColors.profit : AppColors.loss;
+    return (raw as num).toDouble() >= 0 ? context.marketPositive : context.marketNegative;
+  }
+
+  String _todayLabel(num? dayChange, num? dayChangePct) {
+    final parts = <String>['Today'];
+    if (dayChange != null) parts.add(_formatCurrency(dayChange));
+    if (dayChangePct != null) parts.add('(${_formatPct(dayChangePct)})');
+    return parts.join(' ');
   }
 
   @override
   Widget build(BuildContext context) {
-    final raw = AiWidgetFactory._coerceDataMap(widgetParams['data']);
-    final data = raw == null ? null : AiWidgetFactory._normalizePortfolioData(raw);
+    final resolved = AiWidgetFactory._resolvedData(widgetParams);
+    final hasMetrics = resolved.containsKey('totalValue') ||
+        resolved.containsKey('currentValue') ||
+        resolved.containsKey('totalInvested') ||
+        resolved.containsKey('investmentValue');
+    final data = hasMetrics
+        ? AiWidgetFactory._normalizePortfolioData(resolved)
+        : null;
 
     // Fallback when data is absent (intent detected but data not yet loaded)
     if (data == null) {
@@ -728,33 +753,33 @@ class _PortfolioSummaryCard extends StatelessWidget {
     final best = data['bestPerformer'] as Map<String, dynamic>?;
     final worst = data['worstPerformer'] as Map<String, dynamic>?;
 
-    final dayIsPositive = (dayChange?.toDouble() ?? 0.0) >= 0;
     final gainIsPositive = (totalGainLoss?.toDouble() ?? 0.0) >= 0;
-
-    final dayPctValue = dayChangePct?.toDouble() ?? 0.0;
-    final dayBadgeText = dayPctValue.abs() < 0.005
-        ? '${_formatPct(dayChangePct ?? 0)} No change today'
-        : '${_formatPct(dayChangePct)} today';
+    final dayIsPositive = (dayChange?.toDouble() ?? 0.0) >= 0;
 
     return Container(
-      margin: const EdgeInsets.only(top: 10),
+      margin: embedded ? EdgeInsets.zero : const EdgeInsets.only(top: 10),
       decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor.withValues(alpha: 0.55)),
-        boxShadow: [
-          BoxShadow(
-            color: context.shadow(context.isDark ? 0.32 : 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        color: embedded ? Colors.transparent : context.cardColor,
+        borderRadius: BorderRadius.circular(embedded ? 12 : 16),
+        border: embedded
+            ? null
+            : Border.all(color: context.borderColor.withValues(alpha: 0.55)),
+        boxShadow: embedded
+            ? null
+            : [
+                BoxShadow(
+                  color: context.shadow(context.isDark ? 0.32 : 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final stacked = constraints.maxWidth < 520;
-          final summaryPanel = _buildSummaryPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSummaryPanel(
             context,
+            embedded: embedded,
             totalValue: totalValue,
             totalInvested: totalInvested,
             totalGainLoss: totalGainLoss,
@@ -762,49 +787,20 @@ class _PortfolioSummaryCard extends StatelessWidget {
             gainIsPositive: gainIsPositive,
             totalHoldings: totalHoldings,
             totalAssets: totalAssets,
-          );
-          final performancePanel = _buildPerformancePanel(
-            context,
+            dayChange: dayChange,
+            dayChangePct: dayChangePct,
             dayIsPositive: dayIsPositive,
-            dayBadgeText: dayBadgeText,
-          );
-
-          if (stacked) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                summaryPanel,
-                Divider(height: 1, color: context.dividerColor),
-                performancePanel,
-                if (breakdown.isNotEmpty || best != null || worst != null)
-                  _buildExtras(context, breakdown, best, worst),
-              ],
-            );
-          }
-
-          return Column(
-            children: [
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(flex: 11, child: summaryPanel),
-                    VerticalDivider(width: 1, color: context.dividerColor),
-                    Expanded(flex: 9, child: performancePanel),
-                  ],
-                ),
-              ),
-              if (breakdown.isNotEmpty || best != null || worst != null)
-                _buildExtras(context, breakdown, best, worst),
-            ],
-          );
-        },
+          ),
+          if (breakdown.isNotEmpty || best != null || worst != null)
+            _buildExtras(context, breakdown, best, worst),
+        ],
       ),
     );
   }
 
   Widget _buildSummaryPanel(
     BuildContext context, {
+    required bool embedded,
     required num? totalValue,
     required num? totalInvested,
     required num? totalGainLoss,
@@ -812,33 +808,58 @@ class _PortfolioSummaryCard extends StatelessWidget {
     required bool gainIsPositive,
     required int totalHoldings,
     required int totalAssets,
+    required num? dayChange,
+    required num? dayChangePct,
+    required bool dayIsPositive,
   }) {
+    final pad = embedded ? 10.0 : 14.0;
+    final valueSize = embedded ? 22.0 : 24.0;
+    final dayColor = dayIsPositive ? context.marketPositive : context.marketNegative;
+
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(pad),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _PanelTitle(
             icon: Icons.account_balance_wallet_outlined,
             label: 'Portfolio Summary',
-            color: AppColors.portfolioAccent,
+            color: ModuleColors.portfolio,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Text(
             'Current Value',
-            style: TextStyle(fontSize: 11, color: context.textSecondary),
+            style: TextStyle(fontSize: 10, color: context.textSecondary),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             totalValue != null ? _formatCurrency(totalValue) : '₹—',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: valueSize,
               fontWeight: FontWeight.w800,
               color: context.textPrimary,
-              letterSpacing: -0.6,
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 14),
+          if (dayChange != null || dayChangePct != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: context.signedMarketBg(dayChange),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _todayLabel(dayChange, dayChangePct),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: dayColor,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
@@ -846,9 +867,10 @@ class _PortfolioSummaryCard extends StatelessWidget {
                   label: 'Invested',
                   value: _formatCurrency(totalInvested),
                   valueColor: context.textPrimary,
+                  compact: embedded,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: _GridMetric(
                   label: 'Gain / Loss',
@@ -860,11 +882,12 @@ class _PortfolioSummaryCard extends StatelessWidget {
                       ? _formatPct(totalGainLossPct)
                       : null,
                   subPositive: gainIsPositive,
+                  compact: embedded,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -882,73 +905,6 @@ class _PortfolioSummaryCard extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPerformancePanel(
-    BuildContext context, {
-    required bool dayIsPositive,
-    required String dayBadgeText,
-  }) {
-    final dayColor = dayIsPositive ? AppColors.profit : AppColors.loss;
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _PanelTitle(
-            icon: Icons.show_chart_rounded,
-            label: 'Portfolio Performance',
-            color: AppColors.primary,
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 120,
-            width: double.infinity,
-            child: _PortfolioAreaChart(isPositive: dayIsPositive),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: dayColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  dayIsPositive
-                      ? Icons.arrow_drop_up
-                      : Icons.arrow_drop_down,
-                  color: dayColor,
-                  size: 18,
-                ),
-                Text(
-                  dayBadgeText,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: dayColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              'View Full Portfolio →',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
         ],
       ),
@@ -987,7 +943,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
                 '+${breakdown.length - 4} more portfolios',
                 style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.primary,
+                  color: context.aiPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1026,7 +982,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
     final value = item['currentValue'] as num?;
     final gainPct = item['gainLossPercent'] as num?;
     final gainIsPos = (gainPct?.toDouble() ?? 0.0) >= 0;
-    final gainColor = gainIsPos ? AppColors.profit : AppColors.loss;
+    final gainColor = gainIsPos ? context.marketPositive : context.marketNegative;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -1057,18 +1013,18 @@ class _PortfolioSummaryCard extends StatelessWidget {
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-            color: AppColors.portfolioAccent.withValues(alpha: 0.35)),
+            color: ModuleColors.portfolio.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.portfolioAccent.withValues(alpha: 0.15),
+              color: ModuleColors.portfolio.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(Icons.account_balance_wallet_rounded,
-                color: AppColors.portfolioAccent, size: 20),
+                color: ModuleColors.portfolio, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1079,7 +1035,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
                   'Portfolio Summary',
                   style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.portfolioAccent,
+                      color: ModuleColors.portfolio,
                       fontSize: 13),
                 ),
                 const SizedBox(height: 2),
@@ -1093,7 +1049,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
           ),
           Icon(Icons.arrow_forward_ios,
               size: 14,
-              color: AppColors.portfolioAccent.withValues(alpha: 0.6)),
+              color: ModuleColors.portfolio.withValues(alpha: 0.6)),
         ],
       ),
     );
@@ -1145,6 +1101,7 @@ class _GridMetric extends StatelessWidget {
   final Color valueColor;
   final String? subValue;
   final bool subPositive;
+  final bool compact;
 
   const _GridMetric({
     required this.label,
@@ -1152,13 +1109,14 @@ class _GridMetric extends StatelessWidget {
     required this.valueColor,
     this.subValue,
     this.subPositive = true,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final subColor = subPositive ? AppColors.profit : AppColors.loss;
+    final subColor = subPositive ? context.marketPositive : context.marketNegative;
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: EdgeInsets.all(compact ? 8 : 10),
       decoration: BoxDecoration(
         color: context.surfaceColor.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(10),
@@ -1168,11 +1126,11 @@ class _GridMetric extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: TextStyle(fontSize: 10, color: context.textSecondary)),
-          const SizedBox(height: 4),
+          SizedBox(height: compact ? 2 : 4),
           Text(
             value,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: compact ? 12 : 13,
               fontWeight: FontWeight.w700,
               color: valueColor,
             ),
@@ -1247,7 +1205,7 @@ class _MetricCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badgeColor = badgePositive ? AppColors.profit : AppColors.loss;
+    final badgeColor = badgePositive ? context.marketPositive : context.marketNegative;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1273,80 +1231,6 @@ class _VerticalDivider extends StatelessWidget {
   }
 }
 
-class _PortfolioAreaChart extends StatelessWidget {
-  final bool isPositive;
-
-  const _PortfolioAreaChart({required this.isPositive});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _AreaChartPainter(
-        color: AppColors.primary,
-        isPositive: isPositive,
-      ),
-      size: Size.infinite,
-    );
-  }
-}
-
-class _AreaChartPainter extends CustomPainter {
-  final Color color;
-  final bool isPositive;
-
-  _AreaChartPainter({required this.color, required this.isPositive});
-
-  List<Offset> _points(Size size) => [
-        Offset(0, size.height * 0.82),
-        Offset(size.width * 0.12, size.height * 0.78),
-        Offset(size.width * 0.28, size.height * 0.72),
-        Offset(size.width * 0.42, size.height * 0.68),
-        Offset(size.width * 0.58, size.height * 0.52),
-        Offset(size.width * 0.72, size.height * 0.38),
-        Offset(size.width * 0.86, size.height * 0.22),
-        Offset(size.width, size.height * 0.12),
-      ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final points = _points(size);
-    final linePath = Path()..moveTo(points.first.dx, points.first.dy);
-    for (var i = 1; i < points.length; i++) {
-      linePath.lineTo(points[i].dx, points[i].dy);
-    }
-
-    final areaPath = Path.from(linePath)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          color.withValues(alpha: 0.35),
-          color.withValues(alpha: 0.02),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-
-    canvas.drawPath(areaPath, fillPaint);
-
-    final linePaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    canvas.drawPath(linePath, linePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _AreaChartPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.isPositive != isPositive;
-}
-
 class _PerformerChip extends StatelessWidget {
   final String symbol;
   final num? pct;
@@ -1360,7 +1244,7 @@ class _PerformerChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isPositive ? AppColors.profit : AppColors.loss;
+    final color = isPositive ? context.marketPositive : context.marketNegative;
     final label = isPositive ? 'Best' : 'Worst';
     final icon =
         isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded;
@@ -1458,19 +1342,19 @@ class _ErrorBanner extends StatelessWidget {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.08),
+        color: context.statusError.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+        border: Border.all(color: context.statusError.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.error_outline, color: AppColors.error, size: 18),
+              Icon(Icons.error_outline, color: context.statusError, size: 18),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(message, style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w500)),
+                child: Text(message, style: TextStyle(color: context.statusError, fontSize: 12, fontWeight: FontWeight.w500)),
               ),
             ],
           ),
@@ -1537,14 +1421,14 @@ class _OrderPreviewCardState extends ConsumerState<_OrderPreviewCard> {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.tradeAccent.withValues(alpha: 0.4), width: 2),
+        border: Border.all(color: ModuleColors.trade.withValues(alpha: 0.4), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.gavel_rounded, color: AppColors.tradeAccent),
+              Icon(Icons.gavel_rounded, color: ModuleColors.trade),
               const SizedBox(width: 8),
               Text('Smart Order Preview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ],
@@ -1555,15 +1439,15 @@ class _OrderPreviewCardState extends ConsumerState<_OrderPreviewCard> {
           Text('Estimated Value: ₹$val', style: TextStyle(fontSize: 14, color: context.textSecondary)),
           const SizedBox(height: 16),
           if (_error != null)
-            Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(_error!, style: TextStyle(color: AppColors.error, fontSize: 12))),
+            Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(_error!, style: TextStyle(color: context.statusError, fontSize: 12))),
           if (_confirmed)
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: AppColors.profit.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: context.colors.marketPositiveBg, borderRadius: BorderRadius.circular(8)),
               child: Row(children: [
-                Icon(Icons.check_circle, color: AppColors.profit),
+                Icon(Icons.check_circle, color: context.marketPositive),
                 const SizedBox(width: 8),
-                Text('Order Placed Successfully!', style: TextStyle(color: AppColors.profit, fontWeight: FontWeight.bold))
+                Text('Order Placed Successfully!', style: TextStyle(color: context.marketPositive, fontWeight: FontWeight.bold))
               ]),
             )
           else if (token != null)
@@ -1571,9 +1455,18 @@ class _OrderPreviewCardState extends ConsumerState<_OrderPreviewCard> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.tradeAccent, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(backgroundColor: ModuleColors.trade, foregroundColor: context.aiOnPrimary),
                     onPressed: _loading ? null : _confirmOrder,
-                    child: _loading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Confirm Order'),
+                    child: _loading
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: context.aiOnPrimary,
+                            ),
+                          )
+                        : const Text('Confirm Order'),
                   ),
                 ),
               ],

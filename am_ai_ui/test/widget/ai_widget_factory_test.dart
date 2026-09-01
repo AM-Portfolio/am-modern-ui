@@ -43,7 +43,7 @@ void main() {
 
         expect(find.textContaining('₹'), findsWidgets);
         expect(find.text('Portfolio Summary'), findsOneWidget);
-        expect(find.text('Portfolio Performance'), findsOneWidget);
+        expect(find.textContaining('Today'), findsOneWidget);
         expect(find.text('Holdings'), findsOneWidget);
         expect(find.text('10'), findsWidgets);
       });

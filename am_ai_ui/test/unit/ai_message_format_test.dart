@@ -26,6 +26,52 @@ Your portfolio holds many positions:
       expect(cleaned, isNot(contains('| Symbol')));
       expect(cleaned, isNot(contains('TCS Ltd')));
     });
+
+    test('strips portfolio metric bullets when summary widget is attached', () {
+      const text = '''
+Here is your portfolio summary:
+- Total Value: ₹8,32,786.37
+- Total Invested: ₹8,32,786.37
+- Total Gain/Loss: ₹0.00 (0.00%)
+- Total Holdings: 106
+Your portfolio is currently showing no gain or loss.
+''';
+      final response = AiIntentResponse(
+        message: text,
+        widgetId: 'PORTFOLIO_SUMMARY',
+        widgetParams: const {},
+        sessionId: 's',
+        toolsUsed: const ['get_portfolio_summary'],
+        traceId: 't',
+      );
+
+      final cleaned = AiMessageFormat.cleanDisplayText(text, response);
+      expect(cleaned, contains('Here is your portfolio summary'));
+      expect(cleaned, contains('no gain or loss'));
+      expect(cleaned, isNot(contains('Total Value')));
+      expect(cleaned, isNot(contains('Total Holdings')));
+    });
+
+    test('strips bold asterisk portfolio metric bullets from agent output', () {
+      const text = '''
+Here is your portfolio summary:
+* **Total Value:** 48,52,788.37
+* **Total Invested:** 48,52,788.37
+Your portfolio currently shows no gain or loss.
+''';
+      final response = AiIntentResponse(
+        message: text,
+        widgetId: 'PORTFOLIO_SUMMARY',
+        widgetParams: const {},
+        sessionId: 's',
+        toolsUsed: const ['get_portfolio_summary'],
+        traceId: 't',
+      );
+
+      final cleaned = AiMessageFormat.cleanDisplayText(text, response);
+      expect(cleaned, contains('Here is your portfolio summary'));
+      expect(cleaned, isNot(contains('48,52,788')));
+    });
   });
 
   group('AiMessageFormat.parseMarkdownTable', () {

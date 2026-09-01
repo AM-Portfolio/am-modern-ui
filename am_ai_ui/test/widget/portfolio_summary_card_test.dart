@@ -201,7 +201,7 @@ void main() {
 
     group('gain/loss color', () {
       testWidgets(
-          'positive totalGainLoss — at least one Text has AppColors.profit color',
+          'positive totalGainLoss — uses theme market-positive color',
           (WidgetTester tester) async {
         await tester.pumpWidget(
           _buildCard(_baseData(
@@ -213,14 +213,15 @@ void main() {
 
         final profitTexts = tester
             .widgetList<Text>(find.byType(Text))
-            .where((t) => t.style?.color == AppColors.profit)
+            .where((t) =>
+                t.style?.color == AppColorsTheme.dark.marketPositiveIndicator)
             .toList();
 
         expect(profitTexts, isNotEmpty);
       });
 
       testWidgets(
-          'negative totalGainLoss — at least one Text has AppColors.loss color',
+          'negative totalGainLoss — uses theme market-negative color',
           (WidgetTester tester) async {
         await tester.pumpWidget(
           _buildCard(_baseData(
@@ -232,7 +233,8 @@ void main() {
 
         final lossTexts = tester
             .widgetList<Text>(find.byType(Text))
-            .where((t) => t.style?.color == AppColors.loss)
+            .where((t) =>
+                t.style?.color == AppColorsTheme.dark.marketNegativeIndicator)
             .toList();
 
         expect(lossTexts, isNotEmpty);

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../providers/ai_chat_provider.dart';
+import '../theme/ai_chat_theme.dart';
 import '../widgets/ai_message_format.dart';
 import '../widgets/ai_widget_factory.dart';
 import '../../data/ai_intent_response.dart';
@@ -47,7 +49,8 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     ref.read(aiChatProvider.notifier).sendMessage(
           text: text,
           userId: widget.userId,
-          stream: false,
+          // Flutter web Dio cannot POST SSE streams (XHR onError); use one-shot.
+          stream: !kIsWeb,
         );
     _scrollToBottom();
   }
@@ -87,12 +90,6 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     return name.split(RegExp(r'\s+')).first;
   }
 
-  String _userInitial(BuildContext context) {
-    final name = _resolveDisplayName(context);
-    if (name.isEmpty) return 'U';
-    return name[0].toUpperCase();
-  }
-
   @override
   void dispose() {
     _input.dispose();
@@ -106,13 +103,11 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     ref.listen(aiChatProvider, (_, __) => _scrollToBottom());
 
     final firstName = _firstName(context);
-    final userInitial = _userInitial(context);
 
     return Scaffold(
       backgroundColor: context.backgroundColor,
       appBar: _ChatAppBar(
         activeTool: chatState.activeTool,
-        userInitial: userInitial,
         onNewChat: () => ref.read(aiChatProvider.notifier).clearChat(),
       ),
       body: Column(
@@ -123,25 +118,42 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                     firstName: firstName,
                     onSuggestion: _send,
                   )
-                : ListView.builder(
-                    controller: _scroll,
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                    itemCount: chatState.messages.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        return _WelcomeHeader(firstName: firstName);
-                      }
-                      final msgIndex = index - 1;
-                      final msg = chatState.messages[msgIndex];
-                      return _MessageBubble(
-                        message: msg,
-                        index: msgIndex,
-                        onRate: (rating) => ref
-                            .read(aiChatProvider.notifier)
-                            .rateMessage(
-                              messageIndex: msgIndex,
-                              rating: rating,
-                            ),
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      const maxContentWidth = 920.0;
+                      final horizontalPad = (constraints.maxWidth - maxContentWidth)
+                              .clamp(0.0, double.infinity) /
+                          2;
+                      final pad = EdgeInsets.fromLTRB(
+                        20 + horizontalPad,
+                        8,
+                        20 + horizontalPad,
+                        16,
+                      );
+                      return ListView.builder(
+                        controller: _scroll,
+                        padding: pad,
+                        itemCount: chatState.messages.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            return _WelcomeHeader(
+                              firstName: firstName,
+                              compact: true,
+                            );
+                          }
+                          final msgIndex = index - 1;
+                          final msg = chatState.messages[msgIndex];
+                          return _MessageBubble(
+                            message: msg,
+                            index: msgIndex,
+                            onRate: (rating) => ref
+                                .read(aiChatProvider.notifier)
+                                .rateMessage(
+                                  messageIndex: msgIndex,
+                                  rating: rating,
+                                ),
+                          );
+                        },
                       );
                     },
                   ),
@@ -162,12 +174,10 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
 class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? activeTool;
-  final String userInitial;
   final VoidCallback onNewChat;
 
   const _ChatAppBar({
     required this.activeTool,
-    required this.userInitial,
     required this.onNewChat,
   });
 
@@ -186,17 +196,17 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
+              gradient: context.aiPrimaryGradient,
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.35),
+                  color: context.aiPrimary.withValues(alpha: 0.35),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+            child: Icon(Icons.auto_awesome, color: context.aiOnPrimary, size: 18),
           ),
           const SizedBox(width: 12),
           Column(
@@ -216,7 +226,7 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
                     : 'AI Gateway Edge',
                 style: TextStyle(
                   color: activeTool != null
-                      ? AppColors.primary
+                      ? context.aiPrimary
                       : context.textSecondary,
                   fontSize: 11,
                   fontWeight:
@@ -229,35 +239,16 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       actions: [
         IconButton(
-          icon: Icon(
-            context.isDark ? Icons.wb_sunny_outlined : Icons.dark_mode_outlined,
-            color: context.textSecondary,
-          ),
-          onPressed: () {
-            try {
-              context.read<ThemeCubit>().toggleTheme();
-            } catch (_) {}
-          },
-          tooltip: context.isDark ? 'Light mode' : 'Dark mode',
-        ),
-        IconButton(
           icon: Icon(Icons.history_rounded, color: context.textSecondary),
-          onPressed: onNewChat,
-          tooltip: 'New conversation',
+          onPressed: () {},
+          tooltip: 'Chat history',
         ),
         Padding(
-          padding: const EdgeInsets.only(right: 12),
-          child: CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.25),
-            child: Text(
-              userInitial,
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          padding: const EdgeInsets.only(right: 8),
+          child: IconButton(
+            icon: Icon(Icons.add_rounded, color: context.textSecondary),
+            onPressed: onNewChat,
+            tooltip: 'New chat',
           ),
         ),
       ],
@@ -273,8 +264,12 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
 
 class _WelcomeHeader extends StatelessWidget {
   final String firstName;
+  final bool compact;
 
-  const _WelcomeHeader({required this.firstName});
+  const _WelcomeHeader({
+    required this.firstName,
+    this.compact = false,
+  });
 
   static String _timeGreeting() {
     final hour = DateTime.now().hour;
@@ -285,8 +280,57 @@ class _WelcomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (compact) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16, top: 4),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: context.aiPrimary.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: context.aiPrimary.withValues(alpha: 0.14),
+            ),
+          ),
+          child: Row(
+            children: [
+              Text(
+                '👋',
+                style: TextStyle(fontSize: 16, height: 1.2),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '${_timeGreeting()}, ',
+                        style: TextStyle(
+                          color: context.textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      TextSpan(
+                        text: firstName,
+                        style: TextStyle(
+                          color: context.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 28, top: 8),
+      padding: const EdgeInsets.only(bottom: 20, top: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -297,39 +341,41 @@ class _WelcomeHeader extends StatelessWidget {
                   text: '👋 ${_timeGreeting()}, ',
                   style: TextStyle(
                     color: context.textSecondary,
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.w500,
+                    height: 1.35,
                   ),
                 ),
                 TextSpan(
                   text: firstName,
                   style: TextStyle(
                     color: context.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    height: 1.2,
+                    letterSpacing: -0.5,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             'How can I help you today?',
             style: TextStyle(
               color: context.textPrimary,
-              fontSize: 26,
-              fontWeight: FontWeight.w700,
-              height: 1.2,
-              letterSpacing: -0.5,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              height: 1.3,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
-            'Your AI financial assistant for smart insights and portfolio management.',
+            'Ask about portfolio, holdings, markets, and more.',
             style: TextStyle(
               color: context.textSecondary,
-              fontSize: 14,
-              height: 1.45,
+              fontSize: 13,
+              height: 1.4,
             ),
           ),
         ],
@@ -359,10 +405,19 @@ class _MessageBubble extends StatelessWidget {
         ? message.text
         : AiMessageFormat.cleanDisplayText(message.text, message.response);
     final baseStyle = TextStyle(
-      color: isUser ? Colors.white : context.textPrimary,
+      color: isUser ? context.aiOnPrimary : context.textPrimary,
       fontSize: 14,
       height: 1.5,
     );
+    final widgetId = message.response?.widgetId;
+    final inlineWidget = !message.isStreaming &&
+        message.response != null &&
+        AiMessageFormat.usesInlineWidgetLayout(widgetId);
+    final showTextBubble = message.isStreaming || displayText.isNotEmpty;
+    final structuredWidget = AiMessageFormat.isStructuredWidget(widgetId);
+    final fallbackText = message.response?.message.trim().isNotEmpty == true
+        ? message.response!.message.trim()
+        : message.text.trim();
 
     if (isUser) {
       return Padding(
@@ -388,11 +443,11 @@ class _MessageBubble extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
+                gradient: context.aiPrimaryGradient,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
+                    color: context.aiPrimary.withValues(alpha: 0.3),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -406,112 +461,92 @@ class _MessageBubble extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
-            margin: const EdgeInsets.only(top: 20, right: 10),
+            width: 28,
+            height: 28,
+            margin: const EdgeInsets.only(top: 2, right: 10),
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(10),
+              gradient: context.aiPrimaryGradient,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: context.aiPrimary.withValues(alpha: 0.22),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+            child: Icon(Icons.auto_awesome, color: context.aiOnPrimary, size: 14),
           ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8, left: 2),
+                  padding: const EdgeInsets.only(bottom: 6, left: 2),
                   child: Text(
                     'AM AI · $time',
                     style: TextStyle(
                       fontSize: 10,
                       color: context.textSecondary,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),
-                if (displayText.isNotEmpty || !message.isStreaming)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
+                if (inlineWidget)
+                  _InlineWidgetMessage(
+                    displayText: displayText,
+                    message: message,
+                    baseStyle: baseStyle,
+                  )
+                else ...[
+                  if (showTextBubble)
+                    _AssistantTextBubble(
+                      message: message,
+                      displayText: displayText,
+                      baseStyle: baseStyle,
                     ),
-                    decoration: BoxDecoration(
-                      color: context.cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: context.borderColor.withValues(alpha: 0.55),
+                  if (!message.isStreaming &&
+                      !showTextBubble &&
+                      !inlineWidget &&
+                      !structuredWidget)
+                    _AssistantTextBubble(
+                      message: message,
+                      displayText: fallbackText.isNotEmpty
+                          ? fallbackText
+                          : 'No response received. Check your connection and try again.',
+                      baseStyle: baseStyle,
+                    ),
+                  if (message.isStreaming && message.activeTool != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6, left: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.bolt_rounded,
+                              size: 12, color: context.aiPrimary),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Running ${AiMessageFormat.toolLabel(message.activeTool!)}…',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: context.aiPrimary,
+                            ),
+                          ),
+                        ],
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.shadow(context.isDark ? 0.28 : 0.06),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
-                    child: message.text.isEmpty && message.isStreaming
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                message.activeTool != null
-                                    ? 'Calling ${AiMessageFormat.toolLabel(message.activeTool!)}…'
-                                    : 'Thinking…',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: context.textSecondary,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ],
-                          )
-                        : AiMessageFormat.richText(
-                            displayText.isNotEmpty
-                                ? displayText
-                                : message.text,
-                            baseStyle,
-                          ),
-                  ),
-                if (message.isStreaming && message.activeTool != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6, left: 4),
-                    child: Row(
-                      children: [
-                        Icon(Icons.bolt_rounded,
-                            size: 12, color: AppColors.primary),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Running ${AiMessageFormat.toolLabel(message.activeTool!)}…',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
+                  if (message.response != null)
+                    AiWidgetFactory.build(
+                      message.response!,
+                      messageText: message.text,
                     ),
-                  ),
-                if (message.response != null)
-                  AiWidgetFactory.build(
-                    message.response!,
-                    messageText: message.text,
-                  ),
+                ],
                 if (!message.isStreaming &&
                     message.text.isNotEmpty &&
                     message.response != null &&
@@ -555,7 +590,7 @@ class _MessageBubble extends StatelessWidget {
                               ? Icons.thumb_up
                               : Icons.thumb_up_outlined,
                           color: message.userRating == 'thumbs_up'
-                              ? AppColors.profit
+                              ? context.marketPositive
                               : context.textSecondary,
                           onTap: () => onRate('thumbs_up'),
                         ),
@@ -565,7 +600,7 @@ class _MessageBubble extends StatelessWidget {
                               ? Icons.thumb_down
                               : Icons.thumb_down_outlined,
                           color: message.userRating == 'thumbs_down'
-                              ? AppColors.loss
+                              ? context.marketNegative
                               : context.textSecondary,
                           onTap: () => onRate('thumbs_down'),
                         ),
@@ -574,6 +609,165 @@ class _MessageBubble extends StatelessWidget {
                   ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AssistantTextBubble extends StatelessWidget {
+  final ChatMessage message;
+  final String displayText;
+  final TextStyle baseStyle;
+  final bool fullWidth;
+
+  const _AssistantTextBubble({
+    required this.message,
+    required this.displayText,
+    required this.baseStyle,
+    this.fullWidth = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final content = message.text.isEmpty && message.isStreaming
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: context.aiPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                message.activeTool != null
+                    ? 'Calling ${AiMessageFormat.toolLabel(message.activeTool!)}…'
+                    : 'Thinking…',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: context.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          )
+        : AiMessageFormat.richText(
+            displayText.isNotEmpty ? displayText : message.text,
+            baseStyle,
+          );
+
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      constraints: fullWidth
+          ? null
+          : BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.78,
+            ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: context.borderColor.withValues(alpha: 0.45),
+        ),
+      ),
+      child: content,
+    );
+  }
+}
+
+class _AssistantIntroLine extends StatelessWidget {
+  final String text;
+  final TextStyle baseStyle;
+
+  const _AssistantIntroLine({
+    required this.text,
+    required this.baseStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 0, 0, 0),
+      decoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(
+            color: context.aiPrimary.withValues(alpha: 0.55),
+            width: 3,
+          ),
+        ),
+      ),
+      child: AiMessageFormat.richText(text, baseStyle),
+    );
+  }
+}
+
+/// Intro line + full-width structured widget (portfolio cards, etc.).
+class _InlineWidgetMessage extends StatelessWidget {
+  final String displayText;
+  final ChatMessage message;
+  final TextStyle baseStyle;
+
+  const _InlineWidgetMessage({
+    required this.displayText,
+    required this.message,
+    required this.baseStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final widget = AiWidgetFactory.build(
+      message.response!,
+      messageText: message.text,
+      embedded: true,
+    );
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.borderColor.withValues(alpha: 0.5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: context.shadow(context.isDark ? 0.22 : 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (displayText.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: _AssistantIntroLine(
+                text: displayText,
+                baseStyle: baseStyle.copyWith(
+                  fontSize: 13.5,
+                  height: 1.45,
+                  color: context.textPrimary,
+                ),
+              ),
+            ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              12,
+              displayText.isNotEmpty ? 12 : 0,
+              12,
+              12,
+            ),
+            child: widget,
           ),
         ],
       ),
@@ -681,13 +875,13 @@ class _FollowUpChip extends StatelessWidget {
           color: context.cardColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.25),
+            color: context.aiPrimary.withValues(alpha: 0.25),
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: AppColors.primary),
+            Icon(icon, size: 14, color: context.aiPrimary),
             const SizedBox(width: 6),
             Text(
               label,
@@ -721,146 +915,153 @@ class _InputBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        border: Border(top: BorderSide(color: context.dividerColor)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: context.cardColor,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: context.borderColor),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4, bottom: 4),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _InputIconButton(
-                              icon: Icons.add_rounded,
-                              onTap: () {},
-                            ),
-                            _InputIconButton(
-                              icon: Icons.mic_none_rounded,
-                              onTap: () {},
-                            ),
-                            _InputIconButton(
-                              icon: Icons.auto_awesome,
-                              onTap: () {},
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: controller,
-                          style: TextStyle(
-                            color: context.textPrimary,
-                            fontSize: 14,
-                          ),
-                          maxLines: 4,
-                          minLines: 1,
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => onSend(),
-                          decoration: InputDecoration(
-                            hintText: 'Ask about your portfolio…',
-                            hintStyle: TextStyle(
-                              color: context.textSecondary,
-                              fontSize: 14,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: isLoading
-                    ? InkWell(
-                        key: const ValueKey('stop'),
-                        onTap: onStop,
-                        borderRadius: BorderRadius.circular(24),
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: AppColors.error.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.error),
-                          ),
-                          child: Icon(Icons.stop_rounded,
-                              color: AppColors.error, size: 22),
-                        ),
-                      )
-                    : InkWell(
-                        key: const ValueKey('send'),
-                        onTap: onSend,
-                        borderRadius: BorderRadius.circular(24),
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.35),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(Icons.send_rounded,
-                              color: Colors.white, size: 18),
-                        ),
-                      ),
-              ),
-            ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const maxContentWidth = 920.0;
+        final horizontalPad =
+            (constraints.maxWidth - maxContentWidth).clamp(0.0, double.infinity) /
+                2;
+        return Container(
+          padding: EdgeInsets.fromLTRB(
+            20 + horizontalPad,
+            10,
+            20 + horizontalPad,
+            16,
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
+            border: Border(top: BorderSide(color: context.dividerColor)),
+          ),
+          child: Column(
             children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: context.cardColor,
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(color: context.borderColor),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.shadow(context.isDark ? 0.2 : 0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4, bottom: 4),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _InputIconButton(
+                                  icon: Icons.add_rounded,
+                                  onTap: () {},
+                                ),
+                                _InputIconButton(
+                                  icon: Icons.mic_none_rounded,
+                                  onTap: () {},
+                                ),
+                                _InputIconButton(
+                                  icon: Icons.auto_awesome,
+                                  onTap: () {},
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: controller,
+                              style: TextStyle(
+                                color: context.textPrimary,
+                                fontSize: 14,
+                              ),
+                              maxLines: 4,
+                              minLines: 1,
+                              textInputAction: TextInputAction.send,
+                              onSubmitted: (_) => onSend(),
+                              decoration: InputDecoration(
+                                hintText: 'Ask about your portfolio…',
+                                hintStyle: TextStyle(
+                                  color: context.textSecondary,
+                                  fontSize: 14,
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: isLoading
+                        ? InkWell(
+                            key: const ValueKey('stop'),
+                            onTap: onStop,
+                            borderRadius: BorderRadius.circular(24),
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: context.statusError.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: context.statusError),
+                              ),
+                              child: Icon(Icons.stop_rounded,
+                                  color: context.statusError, size: 22),
+                            ),
+                          )
+                        : InkWell(
+                            key: const ValueKey('send'),
+                            onTap: onSend,
+                            borderRadius: BorderRadius.circular(24),
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                gradient: context.aiPrimaryGradient,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: context.aiPrimary
+                                        .withValues(alpha: 0.35),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(Icons.send_rounded,
+                                  color: context.aiOnPrimary, size: 18),
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               Text(
-                'Press Enter to send',
+                'AM Finance AI can make mistakes. Verify important information.',
                 style: TextStyle(
                   fontSize: 10,
-                  color: context.textSecondary.withValues(alpha: 0.7),
+                  color: context.textSecondary.withValues(alpha: 0.6),
                 ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            'AM Finance AI can make mistakes. Verify important information.',
-            style: TextStyle(
-              fontSize: 10,
-              color: context.textSecondary.withValues(alpha: 0.6),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

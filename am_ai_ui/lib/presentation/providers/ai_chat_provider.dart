@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import '../../data/ai_chat_service.dart';
@@ -76,6 +77,7 @@ class AiChatNotifier extends Notifier<ChatState> {
     required String userId,
     bool stream = true,
   }) async {
+    if (kIsWeb) stream = false;
     if (text.trim().isEmpty || state.isLoading) return;
 
     final userMsg = ChatMessage(role: ChatRole.user, text: text);
@@ -95,23 +97,36 @@ class AiChatNotifier extends Notifier<ChatState> {
     _cancelToken = CancelToken();
 
     if (!stream) {
-      // One-shot fallback
-      final response = await service.chat(
-        message: text,
-        userId: userId,
-        sessionId: state.sessionId,
-        cancelToken: _cancelToken,
-      );
-      _updateLastMessage(
-        text: response.message,
-        response: response,
-        isStreaming: false,
-        activeTool: null,
-      );
-      state = state.copyWith(
-        isLoading: false,
-        sessionId: response.sessionId.isNotEmpty ? response.sessionId : state.sessionId,
-      );
+      try {
+        final response = await service.chat(
+          message: text,
+          userId: userId,
+          sessionId: state.sessionId,
+          cancelToken: _cancelToken,
+        );
+        _updateLastMessage(
+          text: response.message,
+          response: response,
+          isStreaming: false,
+          activeTool: null,
+        );
+        state = state.copyWith(
+          isLoading: false,
+          sessionId:
+              response.sessionId.isNotEmpty ? response.sessionId : state.sessionId,
+        );
+      } catch (e) {
+        final error = AiIntentResponse.error('Could not reach AI: $e');
+        _updateLastMessage(
+          text: error.message,
+          response: error,
+          isStreaming: false,
+          activeTool: null,
+        );
+        state = state.copyWith(isLoading: false);
+      } finally {
+        _cancelToken = null;
+      }
       return;
     }
 
@@ -178,7 +193,7 @@ class AiChatNotifier extends Notifier<ChatState> {
             break;
 
           case StreamEventType.error:
-            if (event.content != null && (event.content!.contains('404') || event.content!.contains('failed') || event.content!.contains('status code of 404'))) {
+            if (_shouldFallbackToOneShotChat(event.content)) {
               final fallbackResponse = await service.chat(
                 message: text,
                 userId: userId,
@@ -214,17 +229,48 @@ class AiChatNotifier extends Notifier<ChatState> {
       fullText.write('\nError: ');
       widgetId = 'ERROR';
     } finally {
+      var finalText = fullText.toString();
+      var finalWidgetId = widgetId;
+      var finalWidgetParams = widgetParams;
+      var finalToolsUsed = toolsUsed;
+      var finalSessionId = sessionReceived;
+      var finalTraceId = traceId;
+
+      if (_shouldRetryOneShotChat(
+        finalText: finalText,
+        widgetId: finalWidgetId,
+        toolsUsed: finalToolsUsed,
+        cancelled: _cancelToken?.isCancelled ?? false,
+      )) {
+        try {
+          final oneShot = await service.chat(
+            message: text,
+            userId: userId,
+            sessionId: state.sessionId,
+            cancelToken: _cancelToken,
+          );
+          finalText = oneShot.message;
+          finalWidgetId = oneShot.widgetId;
+          finalWidgetParams = oneShot.widgetParams;
+          finalToolsUsed = oneShot.toolsUsed;
+          if (oneShot.sessionId.isNotEmpty) finalSessionId = oneShot.sessionId;
+          if (oneShot.traceId.isNotEmpty) finalTraceId = oneShot.traceId;
+        } catch (_) {
+          // Keep partial stream state if one-shot also fails.
+        }
+      }
+
       final finalResponse = AiIntentResponse(
-        message: fullText.toString(),
-        widgetId: widgetId,
-        widgetParams: widgetParams,
-        sessionId: sessionReceived ?? '',
-        toolsUsed: toolsUsed,
-        traceId: traceId,
+        message: finalText,
+        widgetId: finalWidgetId,
+        widgetParams: finalWidgetParams,
+        sessionId: finalSessionId ?? '',
+        toolsUsed: finalToolsUsed,
+        traceId: finalTraceId,
       );
 
       _updateLastMessage(
-        text: fullText.toString(),
+        text: finalText,
         response: finalResponse,
         isStreaming: false,
         activeTool: null,
@@ -233,10 +279,39 @@ class AiChatNotifier extends Notifier<ChatState> {
       state = state.copyWith(
         isLoading: false,
         activeTool: null,
-        sessionId: sessionReceived,
+        sessionId: finalSessionId,
       );
       _cancelToken = null;
     }
+  }
+
+  /// Stream on web often completes with no tokens/widgets; retry one-shot POST.
+  static bool _shouldRetryOneShotChat({
+    required String finalText,
+    required String widgetId,
+    required List<String> toolsUsed,
+    required bool cancelled,
+  }) {
+    if (cancelled) return false;
+    if (finalText.trim().isNotEmpty &&
+        widgetId != 'NONE' &&
+        widgetId != 'TEXT_RESPONSE') {
+      return false;
+    }
+    if (finalText.trim().isEmpty) return true;
+    return widgetId == 'NONE' ||
+        (widgetId == 'TEXT_RESPONSE' && toolsUsed.isNotEmpty);
+  }
+
+  /// Fall back to POST /v1/ai/chat when SSE is unavailable (e.g. Flutter web XHR).
+  static bool _shouldFallbackToOneShotChat(String? content) {
+    if (content == null || content.isEmpty) return false;
+    final lower = content.toLowerCase();
+    return lower.contains('404') ||
+        lower.contains('xmlhttprequest') ||
+        lower.contains('connection errored') ||
+        lower.contains('network layer') ||
+        lower.contains('stream connection failed');
   }
 
   /// Helper to update the latest assistant bubble in place
