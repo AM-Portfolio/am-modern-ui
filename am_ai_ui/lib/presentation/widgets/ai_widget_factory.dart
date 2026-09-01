@@ -120,10 +120,17 @@ class AiWidgetFactory {
     return const [];
   }
 
-  static Widget build(AiIntentResponse response, {String? messageText}) {
+  static Widget build(
+    AiIntentResponse response, {
+    String? messageText,
+    bool embedded = false,
+  }) {
     switch (response.widgetId) {
       case 'PORTFOLIO_SUMMARY':
-        return _PortfolioSummaryCard(widgetParams: response.widgetParams);
+        return _PortfolioSummaryCard(
+          widgetParams: response.widgetParams,
+          embedded: embedded,
+        );
       case 'ORDER_PREVIEW':
         return _OrderPreviewCard(widgetParams: response.widgetParams);
       case 'BASKET_CARD':
@@ -677,8 +684,12 @@ class _RecentActivityCard extends StatelessWidget {
 
 class _PortfolioSummaryCard extends StatelessWidget {
   final Map<String, dynamic> widgetParams;
+  final bool embedded;
 
-  const _PortfolioSummaryCard({required this.widgetParams});
+  const _PortfolioSummaryCard({
+    required this.widgetParams,
+    this.embedded = false,
+  });
 
   static final _currencyFmt =
       NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
@@ -706,10 +717,23 @@ class _PortfolioSummaryCard extends StatelessWidget {
     return (raw as num).toDouble() >= 0 ? AppColors.profit : AppColors.loss;
   }
 
+  String _todayLabel(num? dayChange, num? dayChangePct) {
+    final parts = <String>['Today'];
+    if (dayChange != null) parts.add(_formatCurrency(dayChange));
+    if (dayChangePct != null) parts.add('(${_formatPct(dayChangePct)})');
+    return parts.join(' ');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final raw = AiWidgetFactory._coerceDataMap(widgetParams['data']);
-    final data = raw == null ? null : AiWidgetFactory._normalizePortfolioData(raw);
+    final resolved = AiWidgetFactory._resolvedData(widgetParams);
+    final hasMetrics = resolved.containsKey('totalValue') ||
+        resolved.containsKey('currentValue') ||
+        resolved.containsKey('totalInvested') ||
+        resolved.containsKey('investmentValue');
+    final data = hasMetrics
+        ? AiWidgetFactory._normalizePortfolioData(resolved)
+        : null;
 
     // Fallback when data is absent (intent detected but data not yet loaded)
     if (data == null) {
@@ -728,33 +752,33 @@ class _PortfolioSummaryCard extends StatelessWidget {
     final best = data['bestPerformer'] as Map<String, dynamic>?;
     final worst = data['worstPerformer'] as Map<String, dynamic>?;
 
-    final dayIsPositive = (dayChange?.toDouble() ?? 0.0) >= 0;
     final gainIsPositive = (totalGainLoss?.toDouble() ?? 0.0) >= 0;
-
-    final dayPctValue = dayChangePct?.toDouble() ?? 0.0;
-    final dayBadgeText = dayPctValue.abs() < 0.005
-        ? '${_formatPct(dayChangePct ?? 0)} No change today'
-        : '${_formatPct(dayChangePct)} today';
+    final dayIsPositive = (dayChange?.toDouble() ?? 0.0) >= 0;
 
     return Container(
-      margin: const EdgeInsets.only(top: 10),
+      margin: embedded ? EdgeInsets.zero : const EdgeInsets.only(top: 10),
       decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor.withValues(alpha: 0.55)),
-        boxShadow: [
-          BoxShadow(
-            color: context.shadow(context.isDark ? 0.32 : 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        color: embedded ? Colors.transparent : context.cardColor,
+        borderRadius: BorderRadius.circular(embedded ? 12 : 16),
+        border: embedded
+            ? null
+            : Border.all(color: context.borderColor.withValues(alpha: 0.55)),
+        boxShadow: embedded
+            ? null
+            : [
+                BoxShadow(
+                  color: context.shadow(context.isDark ? 0.32 : 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final stacked = constraints.maxWidth < 520;
-          final summaryPanel = _buildSummaryPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSummaryPanel(
             context,
+            embedded: embedded,
             totalValue: totalValue,
             totalInvested: totalInvested,
             totalGainLoss: totalGainLoss,
@@ -762,49 +786,20 @@ class _PortfolioSummaryCard extends StatelessWidget {
             gainIsPositive: gainIsPositive,
             totalHoldings: totalHoldings,
             totalAssets: totalAssets,
-          );
-          final performancePanel = _buildPerformancePanel(
-            context,
+            dayChange: dayChange,
+            dayChangePct: dayChangePct,
             dayIsPositive: dayIsPositive,
-            dayBadgeText: dayBadgeText,
-          );
-
-          if (stacked) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                summaryPanel,
-                Divider(height: 1, color: context.dividerColor),
-                performancePanel,
-                if (breakdown.isNotEmpty || best != null || worst != null)
-                  _buildExtras(context, breakdown, best, worst),
-              ],
-            );
-          }
-
-          return Column(
-            children: [
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(flex: 11, child: summaryPanel),
-                    VerticalDivider(width: 1, color: context.dividerColor),
-                    Expanded(flex: 9, child: performancePanel),
-                  ],
-                ),
-              ),
-              if (breakdown.isNotEmpty || best != null || worst != null)
-                _buildExtras(context, breakdown, best, worst),
-            ],
-          );
-        },
+          ),
+          if (breakdown.isNotEmpty || best != null || worst != null)
+            _buildExtras(context, breakdown, best, worst),
+        ],
       ),
     );
   }
 
   Widget _buildSummaryPanel(
     BuildContext context, {
+    required bool embedded,
     required num? totalValue,
     required num? totalInvested,
     required num? totalGainLoss,
@@ -812,9 +807,16 @@ class _PortfolioSummaryCard extends StatelessWidget {
     required bool gainIsPositive,
     required int totalHoldings,
     required int totalAssets,
+    required num? dayChange,
+    required num? dayChangePct,
+    required bool dayIsPositive,
   }) {
+    final pad = embedded ? 10.0 : 14.0;
+    final valueSize = embedded ? 22.0 : 24.0;
+    final dayColor = dayIsPositive ? AppColors.profit : AppColors.loss;
+
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(pad),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -823,22 +825,40 @@ class _PortfolioSummaryCard extends StatelessWidget {
             label: 'Portfolio Summary',
             color: AppColors.portfolioAccent,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Text(
             'Current Value',
-            style: TextStyle(fontSize: 11, color: context.textSecondary),
+            style: TextStyle(fontSize: 10, color: context.textSecondary),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             totalValue != null ? _formatCurrency(totalValue) : '₹—',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: valueSize,
               fontWeight: FontWeight.w800,
               color: context.textPrimary,
-              letterSpacing: -0.6,
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 14),
+          if (dayChange != null || dayChangePct != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: dayColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _todayLabel(dayChange, dayChangePct),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: dayColor,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
@@ -846,9 +866,10 @@ class _PortfolioSummaryCard extends StatelessWidget {
                   label: 'Invested',
                   value: _formatCurrency(totalInvested),
                   valueColor: context.textPrimary,
+                  compact: embedded,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: _GridMetric(
                   label: 'Gain / Loss',
@@ -860,11 +881,12 @@ class _PortfolioSummaryCard extends StatelessWidget {
                       ? _formatPct(totalGainLossPct)
                       : null,
                   subPositive: gainIsPositive,
+                  compact: embedded,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -882,73 +904,6 @@ class _PortfolioSummaryCard extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPerformancePanel(
-    BuildContext context, {
-    required bool dayIsPositive,
-    required String dayBadgeText,
-  }) {
-    final dayColor = dayIsPositive ? AppColors.profit : AppColors.loss;
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _PanelTitle(
-            icon: Icons.show_chart_rounded,
-            label: 'Portfolio Performance',
-            color: AppColors.primary,
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 120,
-            width: double.infinity,
-            child: _PortfolioAreaChart(isPositive: dayIsPositive),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: dayColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  dayIsPositive
-                      ? Icons.arrow_drop_up
-                      : Icons.arrow_drop_down,
-                  color: dayColor,
-                  size: 18,
-                ),
-                Text(
-                  dayBadgeText,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: dayColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              'View Full Portfolio →',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
         ],
       ),
@@ -1145,6 +1100,7 @@ class _GridMetric extends StatelessWidget {
   final Color valueColor;
   final String? subValue;
   final bool subPositive;
+  final bool compact;
 
   const _GridMetric({
     required this.label,
@@ -1152,13 +1108,14 @@ class _GridMetric extends StatelessWidget {
     required this.valueColor,
     this.subValue,
     this.subPositive = true,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final subColor = subPositive ? AppColors.profit : AppColors.loss;
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: EdgeInsets.all(compact ? 8 : 10),
       decoration: BoxDecoration(
         color: context.surfaceColor.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(10),
@@ -1168,11 +1125,11 @@ class _GridMetric extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: TextStyle(fontSize: 10, color: context.textSecondary)),
-          const SizedBox(height: 4),
+          SizedBox(height: compact ? 2 : 4),
           Text(
             value,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: compact ? 12 : 13,
               fontWeight: FontWeight.w700,
               color: valueColor,
             ),
@@ -1271,80 +1228,6 @@ class _VerticalDivider extends StatelessWidget {
       color: context.dividerColor,
     );
   }
-}
-
-class _PortfolioAreaChart extends StatelessWidget {
-  final bool isPositive;
-
-  const _PortfolioAreaChart({required this.isPositive});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _AreaChartPainter(
-        color: AppColors.primary,
-        isPositive: isPositive,
-      ),
-      size: Size.infinite,
-    );
-  }
-}
-
-class _AreaChartPainter extends CustomPainter {
-  final Color color;
-  final bool isPositive;
-
-  _AreaChartPainter({required this.color, required this.isPositive});
-
-  List<Offset> _points(Size size) => [
-        Offset(0, size.height * 0.82),
-        Offset(size.width * 0.12, size.height * 0.78),
-        Offset(size.width * 0.28, size.height * 0.72),
-        Offset(size.width * 0.42, size.height * 0.68),
-        Offset(size.width * 0.58, size.height * 0.52),
-        Offset(size.width * 0.72, size.height * 0.38),
-        Offset(size.width * 0.86, size.height * 0.22),
-        Offset(size.width, size.height * 0.12),
-      ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final points = _points(size);
-    final linePath = Path()..moveTo(points.first.dx, points.first.dy);
-    for (var i = 1; i < points.length; i++) {
-      linePath.lineTo(points[i].dx, points[i].dy);
-    }
-
-    final areaPath = Path.from(linePath)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          color.withValues(alpha: 0.35),
-          color.withValues(alpha: 0.02),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-
-    canvas.drawPath(areaPath, fillPaint);
-
-    final linePaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    canvas.drawPath(linePath, linePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _AreaChartPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.isPositive != isPositive;
 }
 
 class _PerformerChip extends StatelessWidget {

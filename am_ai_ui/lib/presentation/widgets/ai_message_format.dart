@@ -31,6 +31,13 @@ class AiMessageFormat {
     'get_market_cap_allocation': 'Market cap',
   };
 
+  /// Widgets that render beside a short intro instead of below duplicated text.
+  static bool usesInlineWidgetLayout(String? widgetId) =>
+      widgetId == 'PORTFOLIO_SUMMARY';
+
+  static bool isStructuredWidget(String? widgetId) =>
+      widgetId != null && _structuredWidgets.contains(widgetId);
+
   /// Remove raw markdown tables when a structured widget renders the same data.
   static String cleanDisplayText(String text, AiIntentResponse? response) {
     var out = text.trim();
@@ -39,6 +46,9 @@ class AiMessageFormat {
     final widgetId = response?.widgetId ?? 'TEXT_RESPONSE';
     if (_structuredWidgets.contains(widgetId)) {
       out = _stripMarkdownTables(out);
+      if (widgetId == 'PORTFOLIO_SUMMARY') {
+        out = _stripPortfolioMetricBullets(out);
+      }
       out = _collapseBlankLines(out);
     }
     return out;
@@ -121,5 +131,25 @@ class AiMessageFormat {
 
   static String _collapseBlankLines(String text) {
     return text.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+  }
+
+  static final _portfolioMetricLine = RegExp(
+    r"^[\-\*•]?\s*(?:\*\*)?(Total Value|Total Invested|Total Gain|Today's Gain|Total Holdings|Total Portfolios|Total Assets)\b",
+    caseSensitive: false,
+  );
+
+  /// Drop bullet/label lines duplicated by [PORTFOLIO_SUMMARY] cards.
+  static String _stripPortfolioMetricBullets(String text) {
+    final kept = <String>[];
+    for (final line in text.split('\n')) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) {
+        kept.add(line);
+        continue;
+      }
+      if (_portfolioMetricLine.hasMatch(trimmed)) continue;
+      kept.add(line);
+    }
+    return kept.join('\n').trim();
   }
 }
