@@ -10,6 +10,7 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/shell/app_shell.dart';
+import '../../features/chart/comparison_chart_expanded_page.dart';
 import 'app_routes.dart';
 import 'auth_refresh_listenable.dart';
 import 'deferred_routes.dart';
@@ -216,6 +217,24 @@ GoRouter createAppRouter({
                 userId: userId,
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('doc-processor')),
+              );
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.chartCompare,
+            builder: (context, state) {
+              final qp = state.uri.queryParameters;
+              final chartContext = qp['context'] ?? 'market';
+              final tf = qp['tf'] ?? '1W';
+              final seriesRaw = qp['series'] ?? '';
+              final series = seriesRaw.isEmpty
+                  ? <String>[]
+                  : Uri.decodeComponent(seriesRaw).split(',');
+              return ComparisonChartExpandedPage(
+                chartContext: chartContext,
+                timeFrameCode: tf,
+                series: series,
+                userId: _userId(context),
               );
             },
           ),

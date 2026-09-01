@@ -6,6 +6,7 @@ import 'package:am_design_system/am_design_system.dart';
 
 import 'package:am_common/am_common.dart';
 import '../../providers/trade_controller_providers.dart';
+import '../../providers/portfolio_overview_providers.dart';
 import '../../providers/trade_internal_providers.dart';
 import '../../trade_calendar_providers.dart';
 import '../components/templates/trade_portfolio_discovery_template.dart';
@@ -17,6 +18,12 @@ import 'pages/trade_holdings_dashboard_mobile_page.dart';
 import 'journal_mobile_page.dart';
 import '../metrics/trade_metrics_page.dart';
 import '../journal_template/pages/template_browser_page.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/mobile/widgets/portfolio_form_modal.dart';
+import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_create_request_dto.dart';
+import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_update_request_dto.dart';
+import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_list.dart';
+import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
+import '../../internal/domain/entities/trade_portfolio.dart';
 
 /// Trade view types for mobile navigation.
 ///
@@ -28,7 +35,6 @@ enum MobileTradeViewType {
   calendar,
   addTrade,
   journal,
-  metrics,
   templates,
 }
 
@@ -92,8 +98,6 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         _selectedView = MobileTradeViewType.calendar;
       } else if (index == 4) {
         _selectedView = MobileTradeViewType.journal;
-      } else if (index == 5 || index == MobileTradeViewType.metrics.index) {
-        _selectedView = MobileTradeViewType.metrics;
       } else if (index == MobileTradeViewType.templates.index) {
         _selectedView = MobileTradeViewType.templates;
       } else {
@@ -249,12 +253,6 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                     onTap: () => _onViewChanged(MobileTradeViewType.journal),
                   ),
                   SecondarySidebarItem(
-                    title: 'Metrics',
-                    icon: Icons.analytics_outlined,
-                    isSelected: _selectedView == MobileTradeViewType.metrics,
-                    onTap: () => _onViewChanged(MobileTradeViewType.metrics),
-                  ),
-                  SecondarySidebarItem(
                     title: 'Templates',
                     icon: Icons.style_outlined,
                     isSelected: _selectedView == MobileTradeViewType.templates,
@@ -295,8 +293,6 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
           embedded: true,
         );
 
-      case MobileTradeViewType.metrics:
-        return TradeMetricsPage(portfolioId: _currentPortfolioId);
 
       case MobileTradeViewType.templates:
         return const TemplateBrowserPage(embedded: true);
@@ -348,7 +344,12 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
   /// Build portfolios view
   Widget _buildPortfoliosView() => Consumer(
         builder: (context, ref, child) {
-          final portfoliosAsync = ref.watch(tradePortfoliosStreamProvider);
+          final portfoliosAsync = ref.watch(enrichedTradePortfoliosProvider);
+
+          void handleRefresh() {
+            ref.invalidate(tradePortfoliosStreamProvider);
+            ref.invalidate(enrichedTradePortfoliosProvider);
+          }
 
           return portfoliosAsync.when(
             data: (portfolios) => TradePortfolioDiscoveryTemplate(
@@ -357,9 +358,168 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
               onPortfolioSelected: (portfolio) {
                 _onPortfolioSelected(portfolio.id, portfolio.name);
               },
-              onRefresh: () {
-                ref.invalidate(tradePortfoliosStreamProvider);
+              onCreatePortfolio: () {
+                PortfolioFormModal.show(
+                  context: context,
+                  portfolio: null,
+                  onSubmit: (name, desc) async {
+                    final service = ref.read(portfolioServiceProvider).value;
+                    if (service == null) {
+                      throw Exception('Portfolio service not ready');
+                    }
+                    final request = PortfolioCreateRequestDto(
+                      name: name,
+                      description: desc,
+                      currency: 'INR',
+                      initialCapital: 0,
+                    );
+                    final created = await service.createPortfolio(request);
+                    final repository = ref.read(tradeRepositoryProvider).value;
+                    if (repository != null) {
+                      repository.addCachedPortfolio(
+                        TradePortfolio(
+                          id: created.portfolioId,
+                          name: created.portfolioName,
+                          description: desc,
+                        ),
+                      );
+                    }
+                  },
+                );
               },
+              onEditPortfolio: (portfolio) {
+                final portfolioItem = PortfolioItem(
+                  portfolioId: portfolio.id,
+                  portfolioName: portfolio.name,
+                );
+                PortfolioFormModal.show(
+                  context: context,
+                  portfolio: portfolioItem,
+                  onSubmit: (name, desc) async {
+                    final service = ref.read(portfolioServiceProvider).value;
+                    if (service == null) {
+                      throw Exception('Portfolio service not ready');
+                    }
+                    final request = PortfolioUpdateRequestDto(
+                      name: name,
+                      description: desc,
+                      currency: 'INR',
+                    );
+                    await service.updatePortfolio(portfolio.id, request);
+                    final repository = ref.read(tradeRepositoryProvider).value;
+                    repository?.updateCachedPortfolio(
+                        portfolio.id, request.name, request.description);
+                  },
+                );
+              },
+              onDeletePortfolio: (portfolio) async {
+                bool deleteTrades = false;
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => StatefulBuilder(
+                    builder: (ctx, setDialogState) => AlertDialog(
+                      title: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.delete_outline_rounded,
+                                color: Colors.red, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text('Delete Portfolio'),
+                        ],
+                      ),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Are you sure you want to delete "${portfolio.name}"?',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'This action cannot be undone.',
+                            style: TextStyle(color: Colors.grey, fontSize: 13),
+                          ),
+                          const SizedBox(height: 16),
+                          CheckboxListTile(
+                            value: deleteTrades,
+                            onChanged: (v) =>
+                                setDialogState(() => deleteTrades = v ?? false),
+                            title: const Text(
+                              'Also delete all associated trades',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            subtitle: const Text(
+                              'If unchecked, trades remain in the database but will be unassigned.',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            controlAffinity: ListTileControlAffinity.leading,
+                            activeColor: Colors.red,
+                            contentPadding: EdgeInsets.zero,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton.icon(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          icon: const Icon(Icons.delete_rounded, size: 18),
+                          label: const Text('Delete'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+                if (confirm == true && mounted) {
+                  final service = ref.read(portfolioServiceProvider).value;
+                  if (service == null) return;
+                  try {
+                    await service.deletePortfolio(
+                      portfolio.id,
+                      deleteTrades: deleteTrades,
+                    );
+                    if (mounted) {
+                      final repository = ref.read(tradeRepositoryProvider).value;
+                      repository?.removeCachedPortfolio(portfolio.id);
+                      if (_currentPortfolioId == portfolio.id) {
+                        setState(() {
+                          _currentPortfolioId = null;
+                          _currentPortfolioName = null;
+                        });
+                        widget.onPortfolioChanged?.call('', '');
+                      }
+                      handleRefresh();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Portfolio deleted successfully')),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to delete portfolio: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                }
+              },
+              onRefresh: handleRefresh,
               isWebView: false,
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -368,9 +528,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
               isLoading: false,
               errorMessage: error.toString(),
               onPortfolioSelected: (_) {},
-              onRefresh: () {
-                ref.invalidate(tradePortfoliosStreamProvider);
-              },
+              onRefresh: handleRefresh,
               isWebView: false,
             ),
           );
@@ -438,7 +596,6 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
   Widget? _buildFloatingActionButton(BuildContext context) {
     if (_selectedView == MobileTradeViewType.addTrade ||
         _selectedView == MobileTradeViewType.journal ||
-        _selectedView == MobileTradeViewType.metrics ||
         _selectedView == MobileTradeViewType.templates) {
       return null;
     }

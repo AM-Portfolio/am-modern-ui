@@ -9,6 +9,7 @@ abstract class PortfolioItem with _$PortfolioItem {
   const factory PortfolioItem({
     required String portfolioId,
     required String portfolioName,
+    @Default(false) bool isBasket,
   }) = _PortfolioItem;
   const PortfolioItem._();
 

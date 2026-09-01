@@ -17,7 +17,35 @@ class DashboardAllocationWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (allocation.sectors.isEmpty) return const SizedBox.shrink();
+    if (allocation.sectors.isEmpty) {
+      return AmGlassCard(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Allocation',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontFamily: 'Inter',
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No sector allocation data yet.',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     // Sort by value
     final sortedSectors = List.of(allocation.sectors)

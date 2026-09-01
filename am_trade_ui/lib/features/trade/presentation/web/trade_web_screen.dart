@@ -6,6 +6,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
 import '../../internal/domain/entities/trade_controller_entities.dart';
 import '../../internal/domain/entities/metrics/metrics_filter_request.dart';
+import '../../providers/portfolio_overview_providers.dart';
 import '../../providers/trade_internal_providers.dart';
 import '../../providers/trade_report_providers.dart';
 import '../calendar/pages/trade_calendar_analytics_web_page.dart';
@@ -50,11 +51,9 @@ enum TradeViewType {
   portfolios,
   holdings,
   calendar,
-  analysis,
-  report,
   trades,
   journal,
-  marketAnalysis,
+  report,
   unified
 }
 
@@ -157,14 +156,10 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         return 3;
       case TradeViewType.journal:
         return 4;
-      case TradeViewType.analysis:
-        return 5;
-      case TradeViewType.marketAnalysis:
-        return 6;
       case TradeViewType.report:
-        return 7;
+        return 5;
       case TradeViewType.unified:
-        return 8;
+        return 6;
     }
   }
 
@@ -190,12 +185,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             : TradeHoldingsDashboardWebPage(
                 key: ValueKey('holdings_$_currentPortfolioId'),
                 portfolioId: _currentPortfolioId!,
-                onNavigateToChart: (symbol) {
-                  ref
-                      .read(marketAnalysisSymbolProvider.notifier)
-                      .updateSymbol(symbol);
-                  _swipeController.navigateTo(6); // Market Analysis index
-                },
+                onNavigateToChart: null,
               ),
         accentColor: ModuleColors.trade,
       ),
@@ -228,12 +218,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             : TradeListWebPage(
                 key: ValueKey('trades_$_currentPortfolioId'),
                 portfolioId: _currentPortfolioId!,
-                onNavigateToChart: (symbol) {
-                  ref
-                      .read(marketAnalysisSymbolProvider.notifier)
-                      .updateSymbol(symbol);
-                  _swipeController.navigateTo(6); // Market Analysis index
-                },
+                onNavigateToChart: null,
               ),
         accentColor: ModuleColors.trade,
       ),
@@ -244,29 +229,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         page: JournalWebPage(portfolioId: _currentPortfolioId),
         accentColor: ModuleColors.trade,
       ),
-      NavigationItem(
-        title: 'Analysis',
-        subtitle: 'Performance metrics',
-        icon: Icons.analytics_outlined,
-        page: _currentPortfolioId == null
-            ? PortfolioSelectionPrompt(
-                title: 'Analysis',
-                icon: Icons.analytics_outlined,
-                onViewPortfolioList: () => _swipeController.navigateTo(0),
-              )
-            : TradeMetricsPage(
-                key: ValueKey('metrics_$_currentPortfolioId'),
-                portfolioId: _currentPortfolioId!,
-              ),
-        accentColor: ModuleColors.trade,
-      ),
-      NavigationItem(
-        title: 'Market',
-        subtitle: 'Market Analysis',
-        icon: Icons.trending_up_rounded,
-        page: const TradeMarketPage(),
-        accentColor: ModuleColors.trade,
-      ),
+
       NavigationItem(
         title: 'Report',
         subtitle: 'Generate reports',
@@ -610,7 +573,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   Widget _buildPortfoliosView(BuildContext context) {
     return Consumer(
       builder: (context, ref, child) {
-        final portfoliosAsyncValue = ref.watch(tradePortfoliosStreamProvider);
+        final portfoliosAsyncValue = ref.watch(enrichedTradePortfoliosProvider);
 
         return portfoliosAsyncValue.when(
           data: (portfolios) => TradePortfolioDiscoveryTemplate(
@@ -771,6 +734,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             },
             onRefresh: () {
               ref.invalidate(tradePortfoliosStreamProvider);
+              ref.invalidate(enrichedTradePortfoliosProvider);
             },
           ),
           loading: () => TradePortfolioDiscoveryTemplate(
@@ -783,7 +747,10 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             isLoading: false,
             errorMessage: 'Failed to load portfolios: $error',
             onPortfolioSelected: (_) {},
-            onRefresh: () => ref.invalidate(tradePortfoliosStreamProvider),
+            onRefresh: () {
+              ref.invalidate(tradePortfoliosStreamProvider);
+              ref.invalidate(enrichedTradePortfoliosProvider);
+            },
           ),
         );
       },

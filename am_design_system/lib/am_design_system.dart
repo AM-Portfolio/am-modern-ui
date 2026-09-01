@@ -42,6 +42,7 @@ export 'core/cache/cache_provider.dart';
 
 // Navigation Logic
 export 'core/navigation/swipe_navigation_controller.dart';
+export 'core/navigation/app_web_navigation.dart';
 
 // Module System
 export 'core/module/i_module.dart';
@@ -129,6 +130,11 @@ export 'shared/widgets/tables/paginated_sortable_table.dart';
 export 'shared/widgets/tables/adaptive_data_table.dart';
 export 'shared/widgets/charts/chart_factory.dart';
 export 'shared/widgets/charts/chart_types.dart';
+export 'shared/widgets/charts/chart_axis_scale.dart';
+export 'shared/widgets/charts/multi_series_chart_data.dart';
+export 'shared/widgets/charts/multi_series_chart_config.dart';
+export 'shared/widgets/charts/comparison_chart_colors.dart';
+export 'shared/widgets/charts/comparison_chart_view.dart';
 
 // Portfolio Charts & Models
 export 'shared/widgets/portfolio_overview/models/portfolio_overview_data.dart';

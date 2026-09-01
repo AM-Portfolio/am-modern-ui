@@ -47,7 +47,7 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
 
   /// Index of the hidden "Add Trade" NavigationItem in TradeWebScreen's
   /// SwipeNavigationController (beyond the TradeViewType enum range).
-  static const int _webAddTradeIndex = 9;
+  static const int _webAddTradeIndex = 7;
 
   static const _tabSlugs = [
     'portfolios',
@@ -55,11 +55,8 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
     'calendar',
     'trades',
     'journal',
-    'analysis',
-    'market-analysis',
     'report',
     'unified',
-    'metrics',
     'templates',
   ];
 
@@ -79,9 +76,6 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
         return MobileTradeViewType.calendar;
       case 'journal':
         return MobileTradeViewType.journal;
-      case 'metrics':
-      case 'analysis':
-        return MobileTradeViewType.metrics;
       case 'templates':
         return MobileTradeViewType.templates;
       case 'portfolios':
@@ -120,7 +114,7 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
     if (widget.initialTab != oldWidget.initialTab) {
       final next = TradeResponsiveLayout.tabIndexFromSlug(widget.initialTab);
       // Prefer mobile-only slug indices when present in URL.
-      if (widget.initialTab == 'metrics' || widget.initialTab == 'templates') {
+      if (widget.initialTab == 'templates') {
         final mobile = TradeResponsiveLayout._mobileViewFromSlug(widget.initialTab);
         if (_currentTabIndex != mobile.index) {
           setState(() => _currentTabIndex = mobile.index);
@@ -194,11 +188,6 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
                 _onTabChanged(
                   TradeResponsiveLayout.tabIndexFromSlug('journal'),
                 );
-              } else if (index == MobileTradeViewType.metrics.index) {
-                widget.onTabChanged?.call('metrics');
-                if (_currentTabIndex != index) {
-                  setState(() => _currentTabIndex = index);
-                }
               } else if (index == MobileTradeViewType.templates.index) {
                 widget.onTabChanged?.call('templates');
                 if (_currentTabIndex != index) {

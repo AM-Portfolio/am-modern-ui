@@ -1,5 +1,8 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:am_design_system/core/navigation/app_web_navigation.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
 
@@ -17,6 +20,7 @@ class GlobalBottomNavigation extends StatefulWidget {
     this.userName,
     this.isDarkMode = false,
     this.visibleCount = 4,
+    this.moduleShareUrls,
   });
 
   final String activeNavItem;
@@ -25,6 +29,7 @@ class GlobalBottomNavigation extends StatefulWidget {
   final VoidCallback? onProfileTap;
   final String? userName;
   final bool isDarkMode;
+  final Map<String, String>? moduleShareUrls;
 
   /// How many destinations fit in the visible bar (default 4).
   final int visibleCount;
@@ -141,17 +146,42 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
 
                       return KeyedSubtree(
                         key: _keyFor(item.title),
-                        child: GestureDetector(
-                          onTap: () => widget.onNavigate(item.title),
-                          behavior: HitTestBehavior.opaque,
-                          child: SizedBox(
-                            width: itemWidth,
-                            child: _NavItem(
-                              icon: item.icon,
-                              label: item.title,
-                              isActive: isActive,
-                              accentColor: accentColor,
-                              isDarkMode: widget.isDarkMode,
+                        child: Listener(
+                          onPointerDown: (event) {
+                            final path = widget.moduleShareUrls?[item.title];
+                            if (path == null) return;
+                            if (event.buttons == kMiddleMouseButton) {
+                              AppWebNavigation.navigate(
+                                context: context,
+                                path: path,
+                                onSameTab: () => widget.onNavigate(item.title),
+                                pointerDown: event,
+                              );
+                            }
+                          },
+                          child: GestureDetector(
+                            onTap: () {
+                              final path = widget.moduleShareUrls?[item.title];
+                              if (path == null) {
+                                widget.onNavigate(item.title);
+                                return;
+                              }
+                              AppWebNavigation.navigate(
+                                context: context,
+                                path: path,
+                                onSameTab: () => widget.onNavigate(item.title),
+                              );
+                            },
+                            behavior: HitTestBehavior.opaque,
+                            child: SizedBox(
+                              width: itemWidth,
+                              child: _NavItem(
+                                icon: item.icon,
+                                label: item.title,
+                                isActive: isActive,
+                                accentColor: accentColor,
+                                isDarkMode: widget.isDarkMode,
+                              ),
                             ),
                           ),
                         ),
