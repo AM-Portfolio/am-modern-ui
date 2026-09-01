@@ -3,7 +3,7 @@ import 'package:am_analysis_ui/services/real_analysis_service.dart'
 import 'package:am_analysis_ui/widgets/analysis_dashboard.dart'
     deferred as analysis_ui;
 import 'package:am_analysis_core/am_analysis_core.dart' show AnalysisEntityType;
-import 'package:am_ai_ui/presentation/screens/ai_chat_screen.dart' deferred as ai_ui;
+import 'package:am_ai_ui/presentation/screens/ai_chat_screen.dart' as ai_ui;
 import 'package:am_diagnostic_ui/presentation/pages/diagnostic_dashboard_page.dart'
     deferred as diagnostic_ui;
 import 'package:am_doc_intelligence_ui/features/doc_intelligence_screen.dart'
@@ -99,8 +99,6 @@ Future<void> _loadMarket() async {
   ]);
   market_deps.registerMarketAnalysisServiceDi();
 }
-
-Future<void> _loadAi() => ai_ui.loadLibrary();
 
 Future<void> _loadAnalysis() async {
   await Future.wait([
@@ -224,13 +222,8 @@ Widget buildMarketRoute({
   );
 }
 
-Widget buildAiChatRoute({required String userId}) {
-  return DeferredModuleLoader(
-    load: _loadAi,
-    skeleton: const GenericModuleSkeleton(),
-    loadingMessage: 'Loading AI Chat…',
-    builder: () => ai_ui.AiChatScreen(userId: userId),
-  );
+Widget buildAiChatRoute({required String userId, String? displayName}) {
+  return ai_ui.AiChatScreen(userId: userId, displayName: displayName);
 }
 
 Widget buildLabRoute() {

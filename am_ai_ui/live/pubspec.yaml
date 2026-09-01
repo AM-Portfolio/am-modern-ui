@@ -1,4 +1,4 @@
-name: am_ai_ui_example
+﻿name: am_ai_ui_example
 description: "Standalone runner for AI UI"
 publish_to: 'none'
 version: 1.0.0+1
@@ -18,10 +18,12 @@ dependencies:
   am_auth_ui:
     path: ../../am_auth_ui
 
-  # State Management
+  # State Management & Navigation
   flutter_bloc: ^9.1.1
   flutter_riverpod: ^3.0.3
   get_it: ^9.1.1
+  go_router: ^14.0.0
+  growthbook_sdk_flutter: ^3.9.10
 
 dev_dependencies:
   flutter_test:

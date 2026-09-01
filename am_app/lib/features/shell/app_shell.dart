@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -190,9 +189,8 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
             icon: Icons.account_balance_wallet_rounded),
         const SidebarItem(title: 'Trade', icon: Icons.swap_horiz_rounded),
         const SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
-        if (isAdmin)
-          const SidebarItem(
-              title: 'AI Chat', icon: Icons.auto_awesome_rounded),
+        const SidebarItem(
+            title: 'AI Chat', icon: Icons.auto_awesome_rounded),
         if (isAdmin)
           const SidebarItem(
               title: 'Analysis', icon: Icons.analytics_outlined),
@@ -624,14 +622,14 @@ final userId =
                                       icon: Icons.show_chart_rounded,
                                     ),
                                     const SidebarItem(
+                                      title: 'AI Chat',
+                                      icon: Icons.auto_awesome_rounded,
+                                    ),
+                                    const SidebarItem(
                                       title: 'Profile',
                                       icon: Icons.person_rounded,
                                     ),
                                     if (isAdmin) ...[
-                                      const SidebarItem(
-                                        title: 'AI Chat',
-                                        icon: Icons.auto_awesome_rounded,
-                                      ),
                                       const SidebarItem(
                                         title: 'Analysis',
                                         icon: Icons.analytics_outlined,

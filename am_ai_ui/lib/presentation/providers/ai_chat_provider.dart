@@ -1,19 +1,20 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import '../../data/ai_chat_service.dart';
 import '../../data/ai_intent_response.dart';
+import '../../data/ai_stream_event.dart';
 
 // ─── Service Provider ─────────────────────────────────────────────────────────
 
-/// Builds a [Dio] instance pre-wired with [AuthInterceptor] so that every
-/// request to the AI agent carries the `Authorization: Bearer <token>` header.
+/// Builds a [Dio] instance configured for the AI Gateway with [AuthInterceptor].
 final aiChatServiceProvider = Provider<AiChatService>((ref) {
   final dio = Dio(
     BaseOptions(
       baseUrl: AiChatService.baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 45),
       headers: {'Content-Type': 'application/json'},
     ),
   );
@@ -27,63 +28,285 @@ class ChatState {
   final List<ChatMessage> messages;
   final bool isLoading;
   final String? sessionId;
+  final String? activeTool;
+  final String? currentTraceId;
 
   const ChatState({
     this.messages = const [],
     this.isLoading = false,
     this.sessionId,
+    this.activeTool,
+    this.currentTraceId,
   });
 
   ChatState copyWith({
     List<ChatMessage>? messages,
     bool? isLoading,
     String? sessionId,
+    String? activeTool,
+    String? currentTraceId,
   }) =>
       ChatState(
         messages: messages ?? this.messages,
         isLoading: isLoading ?? this.isLoading,
         sessionId: sessionId ?? this.sessionId,
+        activeTool: activeTool,
+        currentTraceId: currentTraceId ?? this.currentTraceId,
       );
 }
 
 // ─── Chat Notifier (Riverpod v3) ──────────────────────────────────────────────
 
 class AiChatNotifier extends Notifier<ChatState> {
-  @override
-  ChatState build() => const ChatState();
+  CancelToken? _cancelToken;
+  StreamSubscription<AiStreamEvent>? _streamSub;
 
-  Future<void> sendMessage({required String text, required String userId}) async {
-    if (text.trim().isEmpty) return;
+  @override
+  ChatState build() {
+    ref.onDispose(() {
+      _cancelToken?.cancel();
+      _streamSub?.cancel();
+    });
+    return const ChatState();
+  }
+
+  /// Sends message and streams token/tool/widget responses in real time.
+  Future<void> sendMessage({
+    required String text,
+    required String userId,
+    bool stream = true,
+  }) async {
+    if (text.trim().isEmpty || state.isLoading) return;
 
     final userMsg = ChatMessage(role: ChatRole.user, text: text);
+    final assistantMsg = ChatMessage(
+      role: ChatRole.assistant,
+      text: '',
+      isStreaming: true,
+    );
+
     state = state.copyWith(
-      messages: [...state.messages, userMsg],
+      messages: [...state.messages, userMsg, assistantMsg],
       isLoading: true,
+      activeTool: null,
     );
 
     final service = ref.read(aiChatServiceProvider);
-    final response = await service.chat(
-      message: text,
-      userId: userId,
-      sessionId: state.sessionId,
-    );
+    _cancelToken = CancelToken();
 
-    final assistantMsg = ChatMessage(
-      role: ChatRole.assistant,
-      text: response.message,
-      response: response,
-    );
+    if (!stream) {
+      // One-shot fallback
+      final response = await service.chat(
+        message: text,
+        userId: userId,
+        sessionId: state.sessionId,
+        cancelToken: _cancelToken,
+      );
+      _updateLastMessage(
+        text: response.message,
+        response: response,
+        isStreaming: false,
+        activeTool: null,
+      );
+      state = state.copyWith(
+        isLoading: false,
+        sessionId: response.sessionId.isNotEmpty ? response.sessionId : state.sessionId,
+      );
+      return;
+    }
 
-    state = state.copyWith(
-      messages: [...state.messages, assistantMsg],
-      isLoading: false,
-      sessionId: response.sessionId.isNotEmpty
-          ? response.sessionId
-          : state.sessionId,
-    );
+    // Real-time SSE streaming path
+    StringBuffer fullText = StringBuffer();
+    String widgetId = 'NONE';
+    Map<String, dynamic> widgetParams = {};
+    String traceId = '';
+    String? sessionReceived = state.sessionId;
+    List<String> toolsUsed = [];
+
+    try {
+      final eventStream = service.chatStream(
+        message: text,
+        userId: userId,
+        sessionId: state.sessionId,
+        cancelToken: _cancelToken,
+      );
+
+      await for (final event in eventStream) {
+        switch (event.type) {
+          case StreamEventType.token:
+            if (event.content != null) {
+              fullText.write(event.content!);
+              _updateLastMessage(text: fullText.toString(), isStreaming: true);
+            }
+            break;
+
+          case StreamEventType.toolStart:
+            state = state.copyWith(activeTool: event.tool);
+            _updateLastMessage(
+              text: fullText.toString(),
+              activeTool: event.tool,
+              isStreaming: true,
+            );
+            break;
+
+          case StreamEventType.toolEnd:
+            if (event.tool != null && !toolsUsed.contains(event.tool!)) {
+              toolsUsed.add(event.tool!);
+            }
+            state = state.copyWith(activeTool: null);
+            _updateLastMessage(
+              text: fullText.toString(),
+              activeTool: null,
+              isStreaming: true,
+            );
+            break;
+
+          case StreamEventType.widget:
+            if (event.widgetId != null) widgetId = event.widgetId!;
+            if (event.widgetParams != null) widgetParams = event.widgetParams!;
+            if (event.sessionId != null && event.sessionId!.isNotEmpty) {
+              sessionReceived = event.sessionId;
+            }
+            break;
+
+          case StreamEventType.done:
+            if (event.traceId != null) traceId = event.traceId!;
+            if (event.sessionId != null && event.sessionId!.isNotEmpty) {
+              sessionReceived = event.sessionId;
+            }
+            if (event.toolsUsed != null) toolsUsed = event.toolsUsed!;
+            break;
+
+          case StreamEventType.error:
+            if (event.content != null && (event.content!.contains('404') || event.content!.contains('failed') || event.content!.contains('status code of 404'))) {
+              final fallbackResponse = await service.chat(
+                message: text,
+                userId: userId,
+                sessionId: state.sessionId,
+                cancelToken: _cancelToken,
+              );
+              _updateLastMessage(
+                text: fallbackResponse.message,
+                response: fallbackResponse,
+                isStreaming: false,
+                activeTool: null,
+              );
+              state = state.copyWith(
+                isLoading: false,
+                sessionId: fallbackResponse.sessionId.isNotEmpty ? fallbackResponse.sessionId : state.sessionId,
+              );
+              return;
+            }
+            fullText.write(event.content ?? 'An error occurred.');
+            widgetId = 'ERROR';
+            widgetParams = {'reason': event.content ?? 'Stream error', 'traceId': traceId};
+            break;
+
+          case StreamEventType.cancelled:
+            fullText.write(' [Stopped]');
+            break;
+
+          case StreamEventType.unknown:
+            break;
+        }
+      }
+    } catch (e) {
+      fullText.write('\nError: ');
+      widgetId = 'ERROR';
+    } finally {
+      final finalResponse = AiIntentResponse(
+        message: fullText.toString(),
+        widgetId: widgetId,
+        widgetParams: widgetParams,
+        sessionId: sessionReceived ?? '',
+        toolsUsed: toolsUsed,
+        traceId: traceId,
+      );
+
+      _updateLastMessage(
+        text: fullText.toString(),
+        response: finalResponse,
+        isStreaming: false,
+        activeTool: null,
+      );
+
+      state = state.copyWith(
+        isLoading: false,
+        activeTool: null,
+        sessionId: sessionReceived,
+      );
+      _cancelToken = null;
+    }
   }
 
-  void clearChat() => state = const ChatState();
+  /// Helper to update the latest assistant bubble in place
+  void _updateLastMessage({
+    required String text,
+    AiIntentResponse? response,
+    bool isStreaming = true,
+    String? activeTool,
+  }) {
+    if (state.messages.isEmpty) return;
+    final updatedList = List<ChatMessage>.from(state.messages);
+    final lastIndex = updatedList.length - 1;
+    final current = updatedList[lastIndex];
+
+    updatedList[lastIndex] = current.copyWith(
+      text: text,
+      response: response ?? current.response,
+      isStreaming: isStreaming,
+      activeTool: activeTool,
+    );
+
+    state = state.copyWith(messages: updatedList);
+  }
+
+  /// Cancels any currently active HTTP/SSE generation.
+  void stopGeneration() {
+    if (_cancelToken != null && !_cancelToken!.isCancelled) {
+      _cancelToken!.cancel('User stopped generation');
+    }
+    state = state.copyWith(isLoading: false, activeTool: null);
+  }
+
+  /// Submits feedback for a completed turn.
+  Future<void> rateMessage({
+    required int messageIndex,
+    required String rating,
+    String? comment,
+  }) async {
+    if (messageIndex < 0 || messageIndex >= state.messages.length) return;
+    final msg = state.messages[messageIndex];
+    final sessionId = msg.response?.sessionId ?? state.sessionId;
+
+    if (sessionId == null || sessionId.isEmpty) return;
+
+    final service = ref.read(aiChatServiceProvider);
+    await service.sendFeedback(sessionId: sessionId, rating: rating, comment: comment);
+
+    final updated = List<ChatMessage>.from(state.messages);
+    updated[messageIndex] = msg.copyWith(userRating: rating);
+    state = state.copyWith(messages: updated);
+  }
+
+  /// Confirms a Human-In-The-Loop action (Phase 4 Smart Order).
+  Future<bool> confirmAction({
+    required String confirmToken,
+    required String userId,
+  }) async {
+    final service = ref.read(aiChatServiceProvider);
+    final response = await service.confirmAction(
+      confirmToken: confirmToken,
+      userId: userId,
+    );
+    return response != null && response['status'] == 'confirmed';
+  }
+
+  /// Drops local messages and resets sessionId for a fresh conversation.
+  void clearChat() {
+    stopGeneration();
+    state = const ChatState();
+  }
 }
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
