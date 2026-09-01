@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../providers/ai_chat_provider.dart';
+import '../theme/ai_chat_theme.dart';
 import '../widgets/ai_message_format.dart';
 import '../widgets/ai_widget_factory.dart';
 import '../../data/ai_intent_response.dart';
@@ -195,17 +196,17 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
+              gradient: context.aiPrimaryGradient,
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.35),
+                  color: context.aiPrimary.withValues(alpha: 0.35),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+            child: Icon(Icons.auto_awesome, color: context.aiOnPrimary, size: 18),
           ),
           const SizedBox(width: 12),
           Column(
@@ -225,7 +226,7 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
                     : 'AI Gateway Edge',
                 style: TextStyle(
                   color: activeTool != null
-                      ? AppColors.primary
+                      ? context.aiPrimary
                       : context.textSecondary,
                   fontSize: 11,
                   fontWeight:
@@ -285,10 +286,10 @@ class _WelcomeHeader extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.06),
+            color: context.aiPrimary.withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.14),
+              color: context.aiPrimary.withValues(alpha: 0.14),
             ),
           ),
           child: Row(
@@ -404,7 +405,7 @@ class _MessageBubble extends StatelessWidget {
         ? message.text
         : AiMessageFormat.cleanDisplayText(message.text, message.response);
     final baseStyle = TextStyle(
-      color: isUser ? Colors.white : context.textPrimary,
+      color: isUser ? context.aiOnPrimary : context.textPrimary,
       fontSize: 14,
       height: 1.5,
     );
@@ -442,11 +443,11 @@ class _MessageBubble extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
+                gradient: context.aiPrimaryGradient,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
+                    color: context.aiPrimary.withValues(alpha: 0.3),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -469,17 +470,17 @@ class _MessageBubble extends StatelessWidget {
             height: 28,
             margin: const EdgeInsets.only(top: 2, right: 10),
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
+              gradient: context.aiPrimaryGradient,
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.22),
+                  color: context.aiPrimary.withValues(alpha: 0.22),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white, size: 14),
+            child: Icon(Icons.auto_awesome, color: context.aiOnPrimary, size: 14),
           ),
           Expanded(
             child: Column(
@@ -527,14 +528,14 @@ class _MessageBubble extends StatelessWidget {
                       child: Row(
                         children: [
                           Icon(Icons.bolt_rounded,
-                              size: 12, color: AppColors.primary),
+                              size: 12, color: context.aiPrimary),
                           const SizedBox(width: 4),
                           Text(
                             'Running ${AiMessageFormat.toolLabel(message.activeTool!)}…',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
-                              color: AppColors.primary,
+                              color: context.aiPrimary,
                             ),
                           ),
                         ],
@@ -589,7 +590,7 @@ class _MessageBubble extends StatelessWidget {
                               ? Icons.thumb_up
                               : Icons.thumb_up_outlined,
                           color: message.userRating == 'thumbs_up'
-                              ? AppColors.profit
+                              ? context.marketPositive
                               : context.textSecondary,
                           onTap: () => onRate('thumbs_up'),
                         ),
@@ -599,7 +600,7 @@ class _MessageBubble extends StatelessWidget {
                               ? Icons.thumb_down
                               : Icons.thumb_down_outlined,
                           color: message.userRating == 'thumbs_down'
-                              ? AppColors.loss
+                              ? context.marketNegative
                               : context.textSecondary,
                           onTap: () => onRate('thumbs_down'),
                         ),
@@ -639,7 +640,7 @@ class _AssistantTextBubble extends StatelessWidget {
                 height: 14,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppColors.primary,
+                  color: context.aiPrimary,
                 ),
               ),
               const SizedBox(width: 8),
@@ -697,7 +698,7 @@ class _AssistantIntroLine extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           left: BorderSide(
-            color: AppColors.primary.withValues(alpha: 0.55),
+            color: context.aiPrimary.withValues(alpha: 0.55),
             width: 3,
           ),
         ),
@@ -874,13 +875,13 @@ class _FollowUpChip extends StatelessWidget {
           color: context.cardColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.25),
+            color: context.aiPrimary.withValues(alpha: 0.25),
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: AppColors.primary),
+            Icon(icon, size: 14, color: context.aiPrimary),
             const SizedBox(width: 6),
             Text(
               label,
@@ -1014,12 +1015,12 @@ class _InputBar extends StatelessWidget {
                               width: 48,
                               height: 48,
                               decoration: BoxDecoration(
-                                color: AppColors.error.withValues(alpha: 0.15),
+                                color: context.statusError.withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: AppColors.error),
+                                border: Border.all(color: context.statusError),
                               ),
                               child: Icon(Icons.stop_rounded,
-                                  color: AppColors.error, size: 22),
+                                  color: context.statusError, size: 22),
                             ),
                           )
                         : InkWell(
@@ -1030,19 +1031,19 @@ class _InputBar extends StatelessWidget {
                               width: 48,
                               height: 48,
                               decoration: BoxDecoration(
-                                gradient: AppColors.primaryGradient,
+                                gradient: context.aiPrimaryGradient,
                                 borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary
+                                    color: context.aiPrimary
                                         .withValues(alpha: 0.35),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
-                              child: const Icon(Icons.send_rounded,
-                                  color: Colors.white, size: 18),
+                              child: Icon(Icons.send_rounded,
+                                  color: context.aiOnPrimary, size: 18),
                             ),
                           ),
                   ),

@@ -6,10 +6,11 @@ import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../data/ai_intent_response.dart';
 import '../providers/ai_chat_provider.dart';
+import '../theme/ai_chat_theme.dart';
 import 'ai_message_format.dart';
 
 /// Maps widgetId strings from AiIntentResponse to rendered Flutter widgets.
-/// Uses design system [AppColors] and theme-aware context extensions.
+/// Uses [AppColorsTheme] via [BuildContext.colors] and [ModuleColors].
 class AiWidgetFactory {
   const AiWidgetFactory._();
 
@@ -151,14 +152,14 @@ class AiWidgetFactory {
           title: 'ETF Analysis',
           subtitle: 'Overlap and hidden stock exposure',
           icon: Icons.analytics_rounded,
-          color: AppColors.userAccent,
+          color: ModuleColors.dashboard,
         );
       case 'BENCHMARK_COMPARISON':
         return _IntentCard(
           title: 'Benchmark Comparison',
           subtitle: 'Portfolio vs NIFTY 50',
           icon: Icons.compare_arrows_rounded,
-          color: AppColors.accent,
+          color: ModuleColors.reports,
         );
       case 'ERROR':
         return _ErrorBanner(
@@ -195,7 +196,7 @@ class _BasketCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+        border: Border.all(color: context.aiPrimary.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,10 +208,10 @@ class _BasketCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.15),
+                    color: context.aiPrimary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.shopping_basket_rounded, color: AppColors.primary, size: 20),
+                  child: Icon(Icons.shopping_basket_rounded, color: context.aiPrimary, size: 20),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -275,7 +276,7 @@ class _BasketCard extends StatelessWidget {
                     if (weight != null)
                       Text(
                         '${weight.toStringAsFixed(1)}%',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.aiPrimary),
                       ),
                   ],
                 ),
@@ -286,7 +287,7 @@ class _BasketCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                 child: Text(
                   '+${items.length - 3} more assets',
-                  style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 10, color: context.aiPrimary, fontWeight: FontWeight.w500),
                 ),
               ),
           ],
@@ -330,14 +331,14 @@ class _TopMoversCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.profit.withValues(alpha: 0.35)),
+        border: Border.all(color: context.marketPositive.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.trending_up_rounded, color: AppColors.profit, size: 18),
+              Icon(Icons.trending_up_rounded, color: context.marketPositive, size: 18),
               const SizedBox(width: 6),
               Text(
                 isMarket ? 'Market Top Movers' : 'Portfolio Top Movers',
@@ -352,7 +353,7 @@ class _TopMoversCard extends StatelessWidget {
               style: TextStyle(fontSize: 11, color: context.textSecondary),
             ),
           if (gainers.isNotEmpty) ...[
-            Text('Top Gainers', style: TextStyle(fontSize: 11, color: AppColors.profit, fontWeight: FontWeight.w600)),
+            Text('Top Gainers', style: TextStyle(fontSize: 11, color: context.marketPositive, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Wrap(
               spacing: 6,
@@ -362,7 +363,7 @@ class _TopMoversCard extends StatelessWidget {
                 if (sym.isEmpty) return const SizedBox.shrink();
                 return Chip(
                   label: Text(sym, style: const TextStyle(fontSize: 10)),
-                  backgroundColor: AppColors.profit.withValues(alpha: 0.1),
+                  backgroundColor: context.colors.marketPositiveBg,
                   padding: EdgeInsets.zero,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 );
@@ -371,7 +372,7 @@ class _TopMoversCard extends StatelessWidget {
           ],
           if (losers.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text('Top Losers', style: TextStyle(fontSize: 11, color: AppColors.loss, fontWeight: FontWeight.w600)),
+            Text('Top Losers', style: TextStyle(fontSize: 11, color: context.marketNegative, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Wrap(
               spacing: 6,
@@ -381,7 +382,7 @@ class _TopMoversCard extends StatelessWidget {
                 if (sym.isEmpty) return const SizedBox.shrink();
                 return Chip(
                   label: Text(sym, style: const TextStyle(fontSize: 10)),
-                  backgroundColor: AppColors.loss.withValues(alpha: 0.1),
+                  backgroundColor: context.colors.marketNegativeBg,
                   padding: EdgeInsets.zero,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 );
@@ -441,14 +442,14 @@ class _HoldingsTableCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.tradeAccent.withValues(alpha: 0.35)),
+        border: Border.all(color: ModuleColors.trade.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.table_chart_rounded, color: AppColors.tradeAccent, size: 18),
+              Icon(Icons.table_chart_rounded, color: ModuleColors.trade, size: 18),
               const SizedBox(width: 6),
               Text(
                 'Holdings ($displayCount)',
@@ -556,14 +557,14 @@ class _AllocationCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.portfolioAccent.withValues(alpha: 0.35)),
+        border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.pie_chart_rounded, color: AppColors.portfolioAccent, size: 18),
+              Icon(Icons.pie_chart_rounded, color: ModuleColors.portfolio, size: 18),
               const SizedBox(width: 6),
               Text(
                 title,
@@ -598,7 +599,7 @@ class _AllocationCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.portfolioAccent,
+                        color: ModuleColors.portfolio,
                       ),
                     ),
                   ],
@@ -643,14 +644,14 @@ class _RecentActivityCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.marketAccent.withValues(alpha: 0.35)),
+        border: Border.all(color: ModuleColors.market.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.receipt_long_rounded, color: AppColors.marketAccent, size: 18),
+              Icon(Icons.receipt_long_rounded, color: ModuleColors.market, size: 18),
               const SizedBox(width: 6),
               Text(
                 'Recent Activity ($count)',
@@ -714,7 +715,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
 
   Color _gainColor(dynamic raw, BuildContext context) {
     if (raw == null) return context.textSecondary;
-    return (raw as num).toDouble() >= 0 ? AppColors.profit : AppColors.loss;
+    return (raw as num).toDouble() >= 0 ? context.marketPositive : context.marketNegative;
   }
 
   String _todayLabel(num? dayChange, num? dayChangePct) {
@@ -813,7 +814,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
   }) {
     final pad = embedded ? 10.0 : 14.0;
     final valueSize = embedded ? 22.0 : 24.0;
-    final dayColor = dayIsPositive ? AppColors.profit : AppColors.loss;
+    final dayColor = dayIsPositive ? context.marketPositive : context.marketNegative;
 
     return Padding(
       padding: EdgeInsets.all(pad),
@@ -823,7 +824,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
           _PanelTitle(
             icon: Icons.account_balance_wallet_outlined,
             label: 'Portfolio Summary',
-            color: AppColors.portfolioAccent,
+            color: ModuleColors.portfolio,
           ),
           const SizedBox(height: 10),
           Text(
@@ -845,7 +846,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: dayColor.withValues(alpha: 0.1),
+                color: context.signedMarketBg(dayChange),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -942,7 +943,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
                 '+${breakdown.length - 4} more portfolios',
                 style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.primary,
+                  color: context.aiPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -981,7 +982,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
     final value = item['currentValue'] as num?;
     final gainPct = item['gainLossPercent'] as num?;
     final gainIsPos = (gainPct?.toDouble() ?? 0.0) >= 0;
-    final gainColor = gainIsPos ? AppColors.profit : AppColors.loss;
+    final gainColor = gainIsPos ? context.marketPositive : context.marketNegative;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -1012,18 +1013,18 @@ class _PortfolioSummaryCard extends StatelessWidget {
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-            color: AppColors.portfolioAccent.withValues(alpha: 0.35)),
+            color: ModuleColors.portfolio.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.portfolioAccent.withValues(alpha: 0.15),
+              color: ModuleColors.portfolio.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(Icons.account_balance_wallet_rounded,
-                color: AppColors.portfolioAccent, size: 20),
+                color: ModuleColors.portfolio, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1034,7 +1035,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
                   'Portfolio Summary',
                   style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.portfolioAccent,
+                      color: ModuleColors.portfolio,
                       fontSize: 13),
                 ),
                 const SizedBox(height: 2),
@@ -1048,7 +1049,7 @@ class _PortfolioSummaryCard extends StatelessWidget {
           ),
           Icon(Icons.arrow_forward_ios,
               size: 14,
-              color: AppColors.portfolioAccent.withValues(alpha: 0.6)),
+              color: ModuleColors.portfolio.withValues(alpha: 0.6)),
         ],
       ),
     );
@@ -1113,7 +1114,7 @@ class _GridMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subColor = subPositive ? AppColors.profit : AppColors.loss;
+    final subColor = subPositive ? context.marketPositive : context.marketNegative;
     return Container(
       padding: EdgeInsets.all(compact ? 8 : 10),
       decoration: BoxDecoration(
@@ -1204,7 +1205,7 @@ class _MetricCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badgeColor = badgePositive ? AppColors.profit : AppColors.loss;
+    final badgeColor = badgePositive ? context.marketPositive : context.marketNegative;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1243,7 +1244,7 @@ class _PerformerChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isPositive ? AppColors.profit : AppColors.loss;
+    final color = isPositive ? context.marketPositive : context.marketNegative;
     final label = isPositive ? 'Best' : 'Worst';
     final icon =
         isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded;
@@ -1341,19 +1342,19 @@ class _ErrorBanner extends StatelessWidget {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.08),
+        color: context.statusError.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+        border: Border.all(color: context.statusError.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.error_outline, color: AppColors.error, size: 18),
+              Icon(Icons.error_outline, color: context.statusError, size: 18),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(message, style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w500)),
+                child: Text(message, style: TextStyle(color: context.statusError, fontSize: 12, fontWeight: FontWeight.w500)),
               ),
             ],
           ),
@@ -1420,14 +1421,14 @@ class _OrderPreviewCardState extends ConsumerState<_OrderPreviewCard> {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.tradeAccent.withValues(alpha: 0.4), width: 2),
+        border: Border.all(color: ModuleColors.trade.withValues(alpha: 0.4), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.gavel_rounded, color: AppColors.tradeAccent),
+              Icon(Icons.gavel_rounded, color: ModuleColors.trade),
               const SizedBox(width: 8),
               Text('Smart Order Preview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ],
@@ -1438,15 +1439,15 @@ class _OrderPreviewCardState extends ConsumerState<_OrderPreviewCard> {
           Text('Estimated Value: ₹$val', style: TextStyle(fontSize: 14, color: context.textSecondary)),
           const SizedBox(height: 16),
           if (_error != null)
-            Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(_error!, style: TextStyle(color: AppColors.error, fontSize: 12))),
+            Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(_error!, style: TextStyle(color: context.statusError, fontSize: 12))),
           if (_confirmed)
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: AppColors.profit.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: context.colors.marketPositiveBg, borderRadius: BorderRadius.circular(8)),
               child: Row(children: [
-                Icon(Icons.check_circle, color: AppColors.profit),
+                Icon(Icons.check_circle, color: context.marketPositive),
                 const SizedBox(width: 8),
-                Text('Order Placed Successfully!', style: TextStyle(color: AppColors.profit, fontWeight: FontWeight.bold))
+                Text('Order Placed Successfully!', style: TextStyle(color: context.marketPositive, fontWeight: FontWeight.bold))
               ]),
             )
           else if (token != null)
@@ -1454,9 +1455,18 @@ class _OrderPreviewCardState extends ConsumerState<_OrderPreviewCard> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.tradeAccent, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(backgroundColor: ModuleColors.trade, foregroundColor: context.aiOnPrimary),
                     onPressed: _loading ? null : _confirmOrder,
-                    child: _loading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Confirm Order'),
+                    child: _loading
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: context.aiOnPrimary,
+                            ),
+                          )
+                        : const Text('Confirm Order'),
                   ),
                 ),
               ],
