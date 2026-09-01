@@ -1,5 +1,5 @@
-import 'package:am_common/am_common.dart';
-import 'package:am_market_sdk/market/api.dart' show ApiClient;
+import 'package:am_common/am_common.dart' hide ApiClient;
+import 'package:am_market_sdk/market/api.dart';
 
 /// Service class to configure and provide Market Data SDK API clients
 class MarketDataSdkService {

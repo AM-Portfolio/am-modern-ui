@@ -100,7 +100,7 @@ class _MarketMainContentState extends State<MarketMainContent> {
                 const HistoricalSyncPage(),
 
                 // Index 9: Equity Insider
-                const EquityInsiderPage(),
+                EquityInsiderPage(),
 
                 // Index 10: Specific Index View (Table/Heatmap/Analytics)
                 _buildIndexDetailView(provider),

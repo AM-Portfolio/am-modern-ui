@@ -11,47 +11,45 @@ class FundamentalAnalysisApi {
 
   final ApiClient apiClient;
 
-  /// Get fundamental ratios for a given symbol
-  ///
-  /// Note: This method returns the HTTP [Response].
-  ///
-  /// Parameters:
-  ///
-  /// * [String] symbol (required):
-  Future<Response> getRatiosWithHttpInfo(String symbol) async {
-    final path = r'/v1/fundamentals/{symbol}/ratios'
-      .replaceAll('{symbol}', symbol);
-    Object? postBody;
+  // ─── Unified Endpoint: GET /v1/fundamentals/{symbol} ───────────────────────
+  // Returns company profile + valuation + profitability + financials in one call.
 
-    final queryParams = <QueryParam>[];
-    final headerParams = <String, String>{};
-    final formParams = <String, String>{};
-
-    const contentTypes = <String>[];
-
-    return apiClient.invokeAPI(
-      path,
-      'GET',
-      queryParams,
-      postBody,
-      headerParams,
-      formParams,
-      contentTypes.isEmpty ? null : contentTypes.first,
-    );
+  Future<Response> getFundamentalsWithHttpInfo(String symbol) async {
+    final path = r'/v1/fundamentals/{symbol}'.replaceAll('{symbol}', symbol);
+    return apiClient.invokeAPI(path, 'GET', [], null, {}, {}, null);
   }
 
-  /// Get fundamental ratios for a given symbol
-  ///
-  /// Parameters:
-  ///
-  /// * [String] symbol (required):
+  /// Get unified fundamental analysis (company profile + ratios + financials).
+  Future<FundamentalRatiosResponse?> getFundamentals(String symbol) async {
+    final response = await getFundamentalsWithHttpInfo(symbol);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      final decoded = await apiClient.deserializeAsync(
+              await _decodeBodyBytes(response), 'FundamentalRatiosResponse');
+      return decoded is FundamentalRatiosResponse ? decoded : null;
+    }
+    return null;
+  }
+
+  // ─── Ratios Only: GET /v1/fundamentals/{symbol}/ratios ─────────────────────
+
+  Future<Response> getRatiosWithHttpInfo(String symbol) async {
+    final path = r'/v1/fundamentals/{symbol}/ratios'.replaceAll('{symbol}', symbol);
+    return apiClient.invokeAPI(path, 'GET', [], null, {}, {}, null);
+  }
+
+  /// Get valuation & profitability ratios for a given symbol.
   Future<FundamentalRatiosResponse?> getRatios(String symbol) async {
     final response = await getRatiosWithHttpInfo(symbol);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'FundamentalRatiosResponse') as FundamentalRatiosResponse;
+      final decoded = await apiClient.deserializeAsync(
+              await _decodeBodyBytes(response), 'FundamentalRatiosResponse');
+      return decoded is FundamentalRatiosResponse ? decoded : null;
     }
     return null;
   }

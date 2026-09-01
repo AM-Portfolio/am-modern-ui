@@ -22,6 +22,7 @@ class FundamentalRatiosResponse {
     this.bookValue,
     this.marketCap,
     this.priceToSales,
+    this.evEbitda,
     this.peers,
     this.currentPrice,
     this.nim,
@@ -36,6 +37,19 @@ class FundamentalRatiosResponse {
     this.incomeStatement,
     this.balanceSheet,
     this.cashFlow,
+    this.description,
+    this.dayHigh,
+    this.dayLow,
+    this.dayChange,
+    this.dayChangePercent,
+    this.sectorMarketCapInr,
+    this.sectorMarketCapUsd,
+    this.week52High,
+    this.week52Low,
+    this.priceCagr1Y,
+    this.priceCagr3Y,
+    this.priceCagr5Y,
+    this.corporateActions,
   });
 
   String? symbol;
@@ -52,6 +66,7 @@ class FundamentalRatiosResponse {
   double? bookValue;
   double? marketCap;
   double? priceToSales;
+  double? evEbitda;
   List<CompetitorPeer>? peers;
   double? currentPrice;
   
@@ -68,12 +83,27 @@ class FundamentalRatiosResponse {
   double? cfoPat;
   double? operatingMarginPercent;
   double? netProfitMarginPercent;
+  double? week52High;
+  double? week52Low;
+  double? priceCagr1Y;
+  double? priceCagr3Y;
+  double? priceCagr5Y;
+
+  // New Profile / Price Metrics
+  String? description;
+  double? dayHigh;
+  double? dayLow;
+  double? dayChange;
+  double? dayChangePercent;
+  double? sectorMarketCapInr;
+  double? sectorMarketCapUsd;
 
   // Financials & Shareholding dynamic lists
   List<dynamic>? shareholding;
   List<dynamic>? incomeStatement;
   List<dynamic>? balanceSheet;
   List<dynamic>? cashFlow;
+  List<dynamic>? corporateActions;
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is FundamentalRatiosResponse &&
@@ -165,6 +195,16 @@ class FundamentalRatiosResponse {
         sector: mapValueOfType<String>(json, r'sector') ??
             mapValueOfType<String>(company, r'sector'),
         industry: mapValueOfType<String>(json, r'industry'),
+        
+        description: mapValueOfType<String>(json, r'description') ??
+            mapValueOfType<String>(company, r'description'),
+        dayHigh: num2d(company['dayHigh']) ?? mapValueOfType<double>(json, r'dayHigh'),
+        dayLow: num2d(company['dayLow']) ?? mapValueOfType<double>(json, r'dayLow'),
+        dayChange: num2d(company['dayChange']) ?? mapValueOfType<double>(json, r'dayChange'),
+        dayChangePercent: num2d(company['dayChangePercent']) ?? mapValueOfType<double>(json, r'dayChangePercent'),
+        sectorMarketCapInr: num2d(company['sectorMarketCapInr']) ?? mapValueOfType<double>(json, r'sectorMarketCapInr'),
+        sectorMarketCapUsd: num2d(company['sectorMarketCapUsd']) ?? mapValueOfType<double>(json, r'sectorMarketCapUsd'),
+
         // Valuation ratios — try nested 'valuation' first, then flat keys
         peRatio: num2d(valuation['pe']) ?? mapValueOfType<double>(json, r'peRatio'),
         pbRatio: num2d(valuation['pb']) ?? mapValueOfType<double>(json, r'pbRatio'),
@@ -175,7 +215,8 @@ class FundamentalRatiosResponse {
         eps: num2d(valuation['eps']) ?? mapValueOfType<double>(json, r'eps'),
         bookValue: num2d(valuation['bookValue']) ?? mapValueOfType<double>(json, r'bookValue'),
         marketCap: num2d(valuation['marketCap']) ?? mapValueOfType<double>(json, r'marketCap'),
-        priceToSales: num2d(valuation['evEbitda']) ?? mapValueOfType<double>(json, r'priceToSales'),
+        priceToSales: num2d(valuation['priceToSales']) ?? mapValueOfType<double>(json, r'priceToSales'),
+        evEbitda: num2d(valuation['evEbitda']) ?? mapValueOfType<double>(json, r'evEbitda'),
         peers: json['peers'] is List ? (json['peers'] as List).map((e) => CompetitorPeer.fromJson(e)).whereType<CompetitorPeer>().toList() : [],
         currentPrice: num2d(company['currentPrice']) ?? mapValueOfType<double>(json, r'currentPrice'),
         
@@ -188,12 +229,18 @@ class FundamentalRatiosResponse {
         cfoPat: num2d(analytics['cfoPat']),
         operatingMarginPercent: num2d(analytics['operatingMarginPercent']),
         netProfitMarginPercent: num2d(analytics['netProfitMarginPercent']),
+        week52High: num2d(analytics['week52High']),
+        week52Low: num2d(analytics['week52Low']),
+        priceCagr1Y: num2d(analytics['priceCagr1Y']),
+        priceCagr3Y: num2d(analytics['priceCagr3Y']),
+        priceCagr5Y: num2d(analytics['priceCagr5Y']),
         
         // Lists
         shareholding: json['shareholding'] is List ? json['shareholding'] as List : [],
         incomeStatement: financials['incomeStatement'] is List ? financials['incomeStatement'] as List : [],
         balanceSheet: financials['balanceSheet'] is List ? financials['balanceSheet'] as List : [],
         cashFlow: financials['cashFlow'] is List ? financials['cashFlow'] as List : [],
+        corporateActions: json['corporateActions'] is List ? json['corporateActions'] as List : [],
       );
     }
     return null;
@@ -231,6 +278,10 @@ class CompetitorPeer {
   double? roa;
   double? evEbitda;
 
+  String? description;
+  double? sectorMarketCapInr;
+  double? sectorMarketCapUsd;
+
   CompetitorPeer({
     this.instrumentKey,
     this.isin,
@@ -246,6 +297,9 @@ class CompetitorPeer {
     this.roce,
     this.roa,
     this.evEbitda,
+    this.description,
+    this.sectorMarketCapInr,
+    this.sectorMarketCapUsd,
   });
 
   static CompetitorPeer? fromJson(dynamic value) {
@@ -267,6 +321,9 @@ class CompetitorPeer {
         roce: num2d(json['roce']),
         roa: num2d(json['roa']),
         evEbitda: num2d(json['evEbitda']),
+        description: json['description']?.toString(),
+        sectorMarketCapInr: num2d(json['sectorMarketCapInr']),
+        sectorMarketCapUsd: num2d(json['sectorMarketCapUsd']),
       );
     }
     return null;
