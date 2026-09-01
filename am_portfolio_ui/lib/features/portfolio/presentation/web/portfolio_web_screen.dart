@@ -123,7 +123,12 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           subtitle: 'Dashboard',
           icon: Icons.dashboard_outlined,
           accentColor: ModuleColors.portfolio,
-          page: const Center(child: CircularProgressIndicator()),
+          page: const Center(
+            child: Text(
+              'No portfolios found. Please create a new portfolio.',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ),
         ),
       ];
     }

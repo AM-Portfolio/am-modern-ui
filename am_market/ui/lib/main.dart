@@ -10,8 +10,12 @@ import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_market_ui/features/market_analysis/services/market_analysis_service.dart';
+import 'package:am_common/am_common.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ConfigService.initialize();
+
   // Initialize Bundle/DI
   final storage = SecureStorageService();
   GetIt.I.registerSingleton<SecureStorageService>(storage);
@@ -68,17 +72,7 @@ class MarketExampleApp extends StatelessWidget {
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: state.themeMode,
-          home: AuthWrapper(
-            child: BlocBuilder<AuthCubit, AuthState>(
-              builder: (context, authState) {
-                String userId = '';
-                if (authState is Authenticated) {
-                  userId = authState.user.id;
-                }
-                return MarketPage(userId: userId);
-              },
-            ),
-          ),
+          home: const MarketPage(userId: 'test_user'),
           debugShowCheckedModeBanner: false,
         );
       },

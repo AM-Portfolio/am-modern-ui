@@ -97,7 +97,7 @@ def get_available_device(env_vars=None):
         return os.environ.get("FLUTTER_DEVICE")
     try:
         is_windows = os.name == "nt"
-        res = subprocess.run(["flutter", "devices"], capture_output=True, text=True, shell=is_windows, timeout=5)
+        res = subprocess.run(["flutter", "devices"], capture_output=True, text=True, encoding="utf-8", shell=is_windows, timeout=5)
         if res.returncode == 0:
             output = res.stdout.lower()
             if "chrome" in output:
@@ -232,6 +232,7 @@ def handle_run(pkg, env_name, flags):
         "flutter", "run", "-d", device,
         f"--web-port={port}",
         "--no-web-resources-cdn",
+        "--web-browser-flag=--disable-web-security",
         f"--web-launch-url={launch_url}",
     ] + defines
     run_cmd(package, cmd, env_vars)

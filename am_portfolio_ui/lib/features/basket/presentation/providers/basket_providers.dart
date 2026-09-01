@@ -10,7 +10,6 @@ import '../../domain/repositories/basket_repository.dart';
 import '../../data/repositories/basket_repository_impl.dart';
 import '../../data/datasources/basket_remote_data_source.dart';
 import '../../../portfolio/providers/portfolio_providers.dart';
-import '../../domain/services/basket_recommendation_service.dart';
 
 part 'basket_providers.g.dart';
 
@@ -98,6 +97,15 @@ Future<BasketOpportunity> calculateBasketQuantities(
 }
 
 @riverpod
+Future<BasketOpportunity> calculateBasketQuantitiesFinalPreview(
+  Ref ref, {
+  required Map<String, dynamic> request,
+}) async {
+  final repository = await ref.watch(basketRepositoryProvider.future);
+  return repository.calculateQuantitiesFinalPreview(request);
+}
+
+@riverpod
 Future<void> deleteBasket(
   Ref ref, {
   required String basketId,
@@ -108,30 +116,6 @@ Future<void> deleteBasket(
     basketId: basketId,
     userId: userId,
   );
-}
-
-@riverpod
-Future<BasketOpportunity> enhancedBasketPreview(
-  Ref ref, {
-  required String etfIsin,
-  required String userId,
-  required String portfolioId,
-}) async {
-  // 1. Fetch raw opportunity
-  final opportunity = await ref.watch(
-    basketPreviewProvider(
-      etfIsin: etfIsin,
-      userId: userId,
-      portfolioId: portfolioId,
-    ).future,
-  );
-  
-  // 2. Fetch current holdings
-  final holdings = await ref.watch(portfolioHoldingsProvider(portfolioId).future);
-  
-  // 3. Enhance opportunity
-  final recommendationService = ref.watch(basketRecommendationServiceProvider);
-  return recommendationService.enhanceOpportunityWithHoldings(opportunity, holdings.holdings);
 }
 
 @riverpod

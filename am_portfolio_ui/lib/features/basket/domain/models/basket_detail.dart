@@ -17,11 +17,14 @@ abstract class BasketDetail with _$BasketDetail {
     @Default(0.0) double totalPnL,
     @Default(0.0) double pnlPercent,
     @Default(0.0) double? coveragePercent,
+    @Default(0.0) double? replicaScore,
+    @Default(0.0) double? coverageAfterCreation,
     @Default(0) int totalItems,
     @Default(0) int heldCount,
     @Default(0) int missingCount,
     @Default(0) int underfundedCount,
     DateTime? createdAt,
+    DateTime? updatedAt,
     @Default([]) List<BasketLineDetail> lines,
   }) = _BasketDetail;
 
@@ -42,6 +45,8 @@ abstract class BasketLineDetail with _$BasketLineDetail {
     @Default(0.0) double pnl,
     double? etfWeight,
     double? rebalancedWeight,
+    String? companyName,
+    String? coversEtfSymbol,
   }) = _BasketLineDetail;
 
   factory BasketLineDetail.fromJson(Map<String, dynamic> json) =>

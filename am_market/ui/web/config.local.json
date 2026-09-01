@@ -1,0 +1,8 @@
+{
+  "services": {
+    "market": "http://localhost:8010/proxy/market",
+    "analysis": "http://localhost:8010/proxy/analysis",
+    "auth": "http://localhost:8010/proxy/identity",
+    "marketWs": "ws://localhost:9000/v1/market-data-stream"
+  }
+}
