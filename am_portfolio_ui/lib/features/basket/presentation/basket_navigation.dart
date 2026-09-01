@@ -127,6 +127,7 @@ class BasketNavigation {
     required String basketId,
     required String userId,
     required String portfolioId,
+    bool fromCreationFlow = false,
   }) {
     final args = {
       'basketId': basketId,
@@ -135,6 +136,12 @@ class BasketNavigation {
 
     final nested = navigatorKey.currentState;
     if (nested != null) {
+      if (fromCreationFlow) {
+        nested.popUntil(
+          (route) =>
+              route.settings.name == explorerRoute || route.isFirst,
+        );
+      }
       nested.pushNamed(dashboardRoute, arguments: args);
       return;
     }
@@ -153,6 +160,46 @@ class BasketNavigation {
         ),
       ),
     );
+  }
+
+  static VoidCallback? _showMyBasketsListener;
+
+  /// BasketExplorer registers this to switch to the My Baskets tab when requested.
+  static void registerMyBasketsListener(VoidCallback listener) {
+    _showMyBasketsListener = listener;
+  }
+
+  static void unregisterMyBasketsListener() {
+    _showMyBasketsListener = null;
+  }
+
+  static void _notifyShowMyBaskets() {
+    _showMyBasketsListener?.call();
+  }
+
+  /// Pop nested basket flow back to explorer and show My Baskets tab.
+  static void returnToMyBaskets(
+    BuildContext context, {
+    required String userId,
+  }) {
+    clearBasketSession(userId);
+
+    final nested = navigatorKey.currentState;
+    if (nested != null) {
+      nested.popUntil(
+        (route) =>
+            route.settings.name == explorerRoute || route.isFirst,
+      );
+      _notifyShowMyBaskets();
+      return;
+    }
+
+    if (GoRouter.maybeOf(context) != null) {
+      context.go('/portfolio/baskets');
+      return;
+    }
+
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   static void clearBasketSession(String userId) {

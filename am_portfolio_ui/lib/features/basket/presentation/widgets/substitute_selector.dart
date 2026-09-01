@@ -27,6 +27,11 @@ class SubstituteSelector extends ConsumerStatefulWidget {
   final int neededQty;
   final double neededValue;
   final bool isGapFill;
+  final bool sectorialBasket;
+  final String? dominantSector;
+  final String? etfName;
+  final List<String> etfConstituentIsins;
+  final String? missingSector;
   final Function(List<SubstituteSelectionEntry>) onMultiSelected;
 
   const SubstituteSelector({
@@ -39,6 +44,11 @@ class SubstituteSelector extends ConsumerStatefulWidget {
     required this.neededQty,
     required this.neededValue,
     this.isGapFill = false,
+    this.sectorialBasket = false,
+    this.dominantSector,
+    this.etfName,
+    this.etfConstituentIsins = const [],
+    this.missingSector,
     required this.onMultiSelected,
   });
 
@@ -111,7 +121,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
       final results = await service.searchStocks(query);
       if (mounted) {
         setState(() {
-          _results = results;
+          _results = _filterSearchResults(results);
           _isLoading = false;
         });
       }
@@ -126,6 +136,10 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
   }
 
   void _toggleAlternativeSelection(Alternative alt) {
+    final available = alt.userWeight > 0.01 && (alt.quantity ?? 0) > 0;
+    if (!available) {
+      return;
+    }
     setState(() {
       if (_selectedIsins.contains(alt.isin)) {
         _selectedIsins.remove(alt.isin);
@@ -154,10 +168,48 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
     for (final alt in _selectedAlternatives) {
       totalWeight += alt.userWeight;
     }
-    // Search stocks usually don't have userWeight, so we just assume full gap if selected?
-    // Actually, backend limits to available weight. If a user selects a searched stock that
-    // isn't in their portfolio, backend handles it (it just fails to consume weight or throws warn).
+    if (_selectedSearchedStocks.isNotEmpty && _selectedIsins.isNotEmpty) {
+      final perPick = widget.neededWeight / _selectedIsins.length;
+      totalWeight += perPick * _selectedSearchedStocks.length;
+    }
     return totalWeight;
+  }
+
+  String _recommendationBanner() {
+    if (widget.sectorialBasket) {
+      final sectorLabel = widget.dominantSector ?? widget.missingSector ?? 'same sector';
+      return 'Recommendation: Select $sectorLabel stocks to fill the gap.';
+    }
+    final indexLabel = widget.etfName ?? 'index';
+    return 'Select from your $indexLabel holdings (index constituents preferred).';
+  }
+
+  bool _sectorMatches(String? candidateSector) {
+    if (!widget.sectorialBasket) return true;
+    final missing = widget.missingSector?.trim().toLowerCase();
+    final candidate = candidateSector?.trim().toLowerCase();
+    if (missing == null || missing.isEmpty || candidate == null || candidate.isEmpty) {
+      return true;
+    }
+    return missing == candidate ||
+        missing.contains(candidate) ||
+        candidate.contains(missing);
+  }
+
+  bool _isConstituent(String? isin) {
+    if (isin == null || isin.isEmpty) return false;
+    return widget.etfConstituentIsins.contains(isin);
+  }
+
+  List<StockSearchResult> _filterSearchResults(List<StockSearchResult> results) {
+    if (widget.sectorialBasket) {
+      return results.where((r) => _sectorMatches(r.sector)).toList();
+    }
+    if (widget.etfConstituentIsins.isNotEmpty) {
+      final constituents = results.where((r) => _isConstituent(r.isin)).toList();
+      if (constituents.isNotEmpty) return constituents;
+    }
+    return results;
   }
 
   void _applySelection() {
@@ -265,9 +317,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _detectedMarketCap != null 
-                      ? 'Recommendation: Select $_detectedMarketCap stocks to fill the gap.'
-                      : 'Fetching original stock details...',
+                  _recommendationBanner(),
                   style: TextStyle(fontSize: 12, color: context.textSecondary),
                 ),
               ],
@@ -343,13 +393,17 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                 itemBuilder: (context, index) {
                   final alt = widget.alternatives[index];
                   final isSelected = _selectedIsins.contains(alt.isin);
+                  final available = alt.userWeight > 0.01 && (alt.quantity ?? 0) > 0;
                   
                   return ListTile(
+                    enabled: available,
                     leading: Checkbox(
                       value: isSelected,
-                      onChanged: (bool? value) {
-                        _toggleAlternativeSelection(alt);
-                      },
+                      onChanged: available
+                          ? (bool? value) {
+                              _toggleAlternativeSelection(alt);
+                            }
+                          : null,
                       activeColor: context.colors.actionPrimaryBg,
                     ),
                     title: Text(alt.symbol, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -360,21 +414,54 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                             ? '${alt.sector} • ₹${alt.lastPrice?.toStringAsFixed(2) ?? "—"}'
                             : '₹${alt.lastPrice?.toStringAsFixed(2) ?? "—"}'),
                         if (alt.quantity != null && alt.quantity! > 0)
-                          Text('Available weight: ${alt.userWeight.toStringAsFixed(2)}% (${alt.quantity?.toInt()} units)',
-                              style: TextStyle(fontSize: 11, color: context.statusSuccess, fontWeight: FontWeight.bold)),
+                          Text(
+                            'Remaining: ${alt.userWeight.toStringAsFixed(1)}% (${alt.quantity!.toInt()} units)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: context.statusSuccess,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        else
+                          Text(
+                            'Fully allocated in other ETF slots',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: context.textTertiary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
                       ],
                     ),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: context.statusSuccess.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text('Recommended',
-                          style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: context.statusSuccess)),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (alt.isSameSector)
+                          Container(
+                            margin: const EdgeInsets.only(right: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: context.statusSuccess.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Same sector',
+                              style: TextStyle(fontSize: 9, color: context.statusSuccess),
+                            ),
+                          ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: context.statusSuccess.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text('Recommended',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: context.statusSuccess)),
+                        ),
+                      ],
                     ),
                     onTap: () => _toggleAlternativeSelection(alt),
                   );
@@ -395,6 +482,8 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
       itemCount: _results.length,
       itemBuilder: (context, index) {
         final stock = _results[index];
+        final isConstituent = _isConstituent(stock.isin);
+        final sectorOk = _sectorMatches(stock.sector);
         final isMatch = _detectedMarketCap != null && 
             stock.marketCapCategory?.toLowerCase() == _detectedMarketCap?.toLowerCase();
         final unknownCap = _detectedMarketCap == null || stock.marketCapCategory == null;
@@ -405,13 +494,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
             value: isSelected,
             onChanged: (bool? value) {
               if (value == true) {
-                if (!isMatch && !unknownCap) {
-                  _showMismatchWarning(context, stock);
-                } else if (unknownCap && _detectedMarketCap != null) {
-                  _showMismatchWarning(context, stock);
-                } else {
-                  _toggleSearchedStockSelection(stock);
-                }
+                _attemptSelectSearchedStock(context, stock, isMatch, unknownCap, sectorOk, isConstituent);
               } else {
                 _toggleSearchedStockSelection(stock);
               }
@@ -433,23 +516,85 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
               ),
               if (!unknownCap && !isMatch)
                 Text('Mismatch', style: TextStyle(fontSize: 10, color: context.statusWarning)),
+              if (!widget.sectorialBasket && widget.etfConstituentIsins.isNotEmpty && !isConstituent)
+                Text('Not in index', style: TextStyle(fontSize: 10, color: context.statusWarning)),
             ],
           ),
           onTap: () {
             if (!isSelected) {
-              if (!isMatch && !unknownCap) {
-                _showMismatchWarning(context, stock);
-              } else if (unknownCap && _detectedMarketCap != null) {
-                _showMismatchWarning(context, stock);
-              } else {
-                _toggleSearchedStockSelection(stock);
-              }
+              _attemptSelectSearchedStock(context, stock, isMatch, unknownCap, sectorOk, isConstituent);
             } else {
               _toggleSearchedStockSelection(stock);
             }
           },
         );
       },
+    );
+  }
+
+  void _attemptSelectSearchedStock(
+    BuildContext context,
+    StockSearchResult stock,
+    bool isMatch,
+    bool unknownCap,
+    bool sectorOk,
+    bool isConstituent,
+  ) {
+    if (widget.sectorialBasket && !sectorOk) {
+      _showSectorWarning(context, stock);
+      return;
+    }
+    if (!widget.sectorialBasket &&
+        widget.etfConstituentIsins.isNotEmpty &&
+        !isConstituent) {
+      _showConstituentWarning(context, stock);
+      return;
+    }
+    if (!isMatch && !unknownCap) {
+      _showMismatchWarning(context, stock);
+    } else if (unknownCap && _detectedMarketCap != null) {
+      _showMismatchWarning(context, stock);
+    } else {
+      _toggleSearchedStockSelection(stock);
+    }
+  }
+
+  void _showSectorWarning(BuildContext context, StockSearchResult stock) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.cardColor,
+        title: const Text('Sector Mismatch'),
+        content: Text(
+          '${stock.symbol} is not in the same sector as ${widget.originalSymbol}. Sectorial baskets require same-sector substitutes.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+        ],
+      ),
+    );
+  }
+
+  void _showConstituentWarning(BuildContext context, StockSearchResult stock) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.cardColor,
+        title: const Text('Not an Index Constituent'),
+        content: Text(
+          '${stock.symbol} is not part of ${widget.etfName ?? 'this index'}. You can still select it, but it may not match the basket profile.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _toggleSearchedStockSelection(stock);
+            },
+            child: const Text('Select Anyway'),
+          ),
+        ],
+      ),
     );
   }
 

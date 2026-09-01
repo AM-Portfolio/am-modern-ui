@@ -7,6 +7,7 @@ import '../../domain/models/basket_enums.dart';
 import '../../domain/models/tracking_basket.dart';
 import '../providers/basket_providers.dart';
 import '../basket_navigation.dart';
+import '../utils/basket_portfolio_sync.dart';
 
 class MyBasketsView extends ConsumerWidget {
   final String userId;
@@ -135,6 +136,12 @@ class _TrackingBasketCard extends ConsumerWidget {
               try {
                 await ref.read(deleteBasketProvider(basketId: basket.basketId, userId: userId).future);
                 ref.invalidate(myBasketsProvider(userId: userId, portfolioId: ''));
+                if (context.mounted) {
+                  await BasketPortfolioSync.afterBasketMutation(
+                    context,
+                    deletedBasketId: basket.basketId,
+                  );
+                }
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Basket deleted'), backgroundColor: Colors.green),

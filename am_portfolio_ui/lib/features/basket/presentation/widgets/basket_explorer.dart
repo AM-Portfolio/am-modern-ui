@@ -31,6 +31,24 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
   String? _selectedThemeId;
   BasketViewMode _viewMode = BasketViewMode.discover;
 
+  @override
+  void initState() {
+    super.initState();
+    BasketNavigation.registerMyBasketsListener(_showMyBasketsTab);
+  }
+
+  @override
+  void dispose() {
+    BasketNavigation.unregisterMyBasketsListener();
+    super.dispose();
+  }
+
+  void _showMyBasketsTab() {
+    if (mounted) {
+      setState(() => _viewMode = BasketViewMode.myBaskets);
+    }
+  }
+
   void _updateQuery({String? query, String? themeId}) {
     setState(() {
       _query = query;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:intl/intl.dart';
 import '../providers/basket_providers.dart';
+import '../utils/basket_api_errors.dart';
 import '../basket_navigation.dart';
 import '../../domain/models/basket_opportunity.dart';
 
@@ -10,6 +11,9 @@ import '../../domain/models/basket_opportunity.dart';
 import '../widgets/preview/preview_hero_header.dart';
 import '../widgets/preview/preview_section_header.dart';
 import '../widgets/preview/preview_stock_row.dart';
+import '../widgets/shared/basket_flow_step.dart';
+import '../widgets/shared/basket_flow_stepper.dart';
+import '../widgets/shared/basket_sticky_action_bar.dart';
 
 class BasketPreviewPage extends ConsumerWidget {
   final String etfIsin;
@@ -34,10 +38,17 @@ class BasketPreviewPage extends ConsumerWidget {
     ));
 
     final body = opportunityAsync.when(
-      data: (opportunity) => _BasketContent(
-        initialOpportunity: opportunity,
-        userId: userId,
-        portfolioId: portfolioId,
+      data: (opportunity) => Column(
+        children: [
+          const BasketFlowStepper(currentStep: BasketFlowStep.preview),
+          Expanded(
+            child: _BasketContent(
+              initialOpportunity: opportunity,
+              userId: userId,
+              portfolioId: portfolioId,
+            ),
+          ),
+        ],
       ),
       loading: () => _buildSkeletonLoader(context),
       error: (err, stack) => AmErrorWidget(
@@ -52,26 +63,28 @@ class BasketPreviewPage extends ConsumerWidget {
       ),
     );
 
-    // Apply Dark Theme override for this specific page to match premium aesthetic
+    if (embedded) {
+      return ColoredBox(
+        color: context.colors.scaffoldBackground,
+        child: body,
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: BackButton(
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          },
-        ),
-      ),
       backgroundColor: context.colors.scaffoldBackground,
       body: body,
     );
   }
 
   Widget _buildSkeletonLoader(BuildContext context) {
-    return const Center(child: CircularProgressIndicator());
+    return Column(
+      children: [
+        const BasketFlowStepper(currentStep: BasketFlowStep.preview),
+        const Expanded(
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ],
+    );
   }
 }
 
@@ -127,10 +140,16 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
       });
       
       if (mounted) {
+        final applied = updatedOpportunity.appliedSubstituteCount ?? 1;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${item.stockSymbol} substituted with ${selectedAlt.symbol}'),
-            backgroundColor: context.colors.statusSuccess,
+            content: Text(
+              substituteApplyMessage(
+                appliedCount: applied,
+                warnings: updatedOpportunity.substituteWarnings,
+              ),
+            ),
+            backgroundColor: applied > 0 ? context.colors.statusSuccess : context.statusWarning,
           ),
         );
       }
@@ -138,7 +157,7 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to swap: $e'),
+            content: Text('Failed to swap: ${basketApiErrorMessage(e)}'),
             backgroundColor: context.colors.statusError,
           ),
         );
@@ -154,16 +173,30 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
 
   @override
   Widget build(BuildContext context) {
+    final available =
+        _opportunity.remainingPortfolioValue ?? _opportunity.totalPortfolioValue ?? 0;
+    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+
     return Column(
       children: [
-        Expanded(
-          child: _buildScrollableContent(context),
-        ),
-        _BottomActionBar(
-          totalValue: _opportunity.remainingPortfolioValue ?? _opportunity.totalPortfolioValue ?? 0,
-          onPressed: () => BasketNavigation.openCreator(
+        Expanded(child: _buildScrollableContent(context)),
+        BasketStickyActionBar(
+          stats: [
+            BasketStatItem(label: 'Available to Invest', value: formatter.format(available)),
+            BasketStatItem(
+              label: 'Match',
+              value: '${_opportunity.replicaScore.toStringAsFixed(0)}%',
+              highlight: _opportunity.replicaScore >= 70,
+            ),
+          ],
+          onBack: () {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+          },
+          primaryLabel: 'Customize Basket',
+          primaryIcon: Icons.arrow_forward,
+          onPrimary: () => BasketNavigation.openCreator(
             context,
-            opportunity: _opportunity, // Pass the mutable updated state!
+            opportunity: _opportunity,
             userId: widget.userId,
             portfolioId: widget.portfolioId,
           ),
@@ -191,146 +224,91 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
         ),
         
         // Held Section
-        if (heldItems.isNotEmpty) ...[
+        if (heldItems.isNotEmpty)
           SliverToBoxAdapter(
-            child: PreviewSectionHeader(
-              title: 'Held in Portfolio',
-              subtitle: 'Stocks',
-              statusType: ItemStatus.held,
-            ),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final item = heldItems[index];
-                return PreviewStockRow(
-                  item: item,
-                  isSwapping: _swappingSymbols.contains(item.stockSymbol),
-                  onSwapSelected: _handleSwap,
-                );
-              },
-              childCount: heldItems.length,
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-        ],
-
-        // Substituted Section
-        if (substituteItems.isNotEmpty) ...[
-          SliverToBoxAdapter(
-            child: PreviewSectionHeader(
-              title: 'Automatically Substituted',
-              subtitle: 'Stocks',
-              statusType: ItemStatus.substitute,
-            ),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final item = substituteItems[index];
-                return PreviewStockRow(
-                  item: item,
-                  isSwapping: _swappingSymbols.contains(item.stockSymbol),
-                  onSwapSelected: _handleSwap,
-                );
-              },
-              childCount: substituteItems.length,
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-        ],
-
-        // Missing Section
-        if (missingItems.isNotEmpty) ...[
-          SliverToBoxAdapter(
-            child: PreviewSectionHeader(
-              title: 'Missing / Swap Required',
-              subtitle: 'Stocks',
-              statusType: ItemStatus.missing,
-            ),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final item = missingItems[index];
-                return PreviewStockRow(
-                  item: item,
-                  isSwapping: _swappingSymbols.contains(item.stockSymbol),
-                  onSwapSelected: _handleSwap,
-                );
-              },
-              childCount: missingItems.length,
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
-        ],
-      ],
-    );
-  }
-}
-
-class _BottomActionBar extends StatelessWidget {
-  final double totalValue;
-  final VoidCallback onPressed;
-
-  const _BottomActionBar({
-    required this.totalValue,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
-    String formattedValue = formatter.format(totalValue);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        border: Border(
-          top: BorderSide(color: context.colors.border),
-        ),
-      ),
-      child: SafeArea(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Available to Invest',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.colors.textDisabled),
-                ),
-                Text(
-                  formattedValue,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            FilledButton(
-              onPressed: onPressed,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
+            child: PreviewSectionCard(
+              child: Column(
                 children: [
-                  Text('Customize & Calculation'),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_ios, size: 14),
+                  PreviewSectionHeader(
+                    title: 'Held in Portfolio',
+                    subtitle: 'Direct ETF matches — your holdings align with ETF targets',
+                    statusType: ItemStatus.held,
+                    itemCount: heldItems.length,
+                  ),
+                  ...heldItems.map(
+                    (item) => PreviewStockRow(
+                      item: item,
+                      isSwapping: _swappingSymbols.contains(item.stockSymbol),
+                      onSwapSelected: _handleSwap,
+                      sectorialBasket: _opportunity.sectorialBasket ?? false,
+                      dominantSector: _opportunity.dominantSector,
+                      etfName: _opportunity.etfName,
+                      etfConstituentIsins: _opportunity.etfConstituentIsins,
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+
+        // Substituted Section
+        if (substituteItems.isNotEmpty)
+          SliverToBoxAdapter(
+            child: PreviewSectionCard(
+              child: Column(
+                children: [
+                  PreviewSectionHeader(
+                    title: 'Automatically Substituted',
+                    subtitle: 'ETF slots covered by similar holdings in your portfolio',
+                    statusType: ItemStatus.substitute,
+                    itemCount: substituteItems.length,
+                  ),
+                  ...substituteItems.map(
+                    (item) => PreviewStockRow(
+                      item: item,
+                      isSwapping: _swappingSymbols.contains(item.stockSymbol),
+                      onSwapSelected: _handleSwap,
+                      sectorialBasket: _opportunity.sectorialBasket ?? false,
+                      dominantSector: _opportunity.dominantSector,
+                      etfName: _opportunity.etfName,
+                      etfConstituentIsins: _opportunity.etfConstituentIsins,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        // Missing Section
+        if (missingItems.isNotEmpty)
+          SliverToBoxAdapter(
+            child: PreviewSectionCard(
+              child: Column(
+                children: [
+                  PreviewSectionHeader(
+                    title: 'Missing / Swap Required',
+                    subtitle: 'Tap a row to pick a substitute from your portfolio',
+                    statusType: ItemStatus.missing,
+                    itemCount: missingItems.length,
+                  ),
+                  ...missingItems.map(
+                    (item) => PreviewStockRow(
+                      item: item,
+                      isSwapping: _swappingSymbols.contains(item.stockSymbol),
+                      onSwapSelected: _handleSwap,
+                      sectorialBasket: _opportunity.sectorialBasket ?? false,
+                      dominantSector: _opportunity.dominantSector,
+                      etfName: _opportunity.etfName,
+                      etfConstituentIsins: _opportunity.etfConstituentIsins,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
+      ],
     );
   }
 }

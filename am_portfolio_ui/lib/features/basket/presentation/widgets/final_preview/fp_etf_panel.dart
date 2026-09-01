@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../../domain/models/basket_opportunity.dart';
+import '../../utils/basket_responsive.dart';
 import 'fp_panel_header.dart';
 import 'fp_stock_row.dart';
 
@@ -16,6 +17,7 @@ class FpEtfPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final composition = originalOpportunity.composition;
+    final compact = BasketResponsive.useCompactPreview(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -34,24 +36,25 @@ class FpEtfPanel extends StatelessWidget {
             constituentsBadge: '${composition.length} Constituents',
           ),
           Divider(color: context.colors.border, height: 1),
-          // Column Headers
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  flex: 0,
-                  child: Text('Stock', style: theme.textTheme.labelSmall?.copyWith(color: context.colors.textSecondary)),
-                ),
-                Expanded(
-                  flex: 0,
-                  child: Text('Weightage (%)', style: theme.textTheme.labelSmall?.copyWith(color: context.colors.textSecondary)),
-                ),
-              ],
+          if (!compact) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    flex: 0,
+                    child: Text('Stock', style: theme.textTheme.labelSmall?.copyWith(color: context.colors.textSecondary)),
+                  ),
+                  Expanded(
+                    flex: 0,
+                    child: Text('Weightage (%)', style: theme.textTheme.labelSmall?.copyWith(color: context.colors.textSecondary)),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Divider(color: context.colors.border, height: 1),
+            Divider(color: context.colors.border, height: 1),
+          ],
           // Rows
           ListView.builder(
             shrinkWrap: true,

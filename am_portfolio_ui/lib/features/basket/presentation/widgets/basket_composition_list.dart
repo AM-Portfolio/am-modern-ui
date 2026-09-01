@@ -1,18 +1,17 @@
-
-
- 
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import '../../domain/models/basket_item.dart';
-import '../../domain/models/basket_enums.dart';
+import 'package:am_design_system/am_design_system.dart';
+
+import '../../domain/models/basket_opportunity.dart';
+import '../shared/basket_item_status_theme.dart';
 
 class BasketCompositionList extends StatefulWidget {
   final List<BasketItem> items;
 
   const BasketCompositionList({
-    Key? key,
+    super.key,
     required this.items,
-  }) : super(key: key);
+  });
 
   @override
   State<BasketCompositionList> createState() => _BasketCompositionListState();
@@ -35,14 +34,14 @@ class _BasketCompositionListState extends State<BasketCompositionList>
   }
 
   List<BasketItem> get _matchedItems {
-    return widget.items.where((item) => item.status == BasketItemStatus.held).toList();
+    return widget.items.where((item) => item.status == ItemStatus.held).toList();
   }
 
   List<BasketItem> get _gapItems {
     return widget.items
         .where((item) =>
-            item.status == BasketItemStatus.missing ||
-            item.status == BasketItemStatus.substitute)
+            item.status == ItemStatus.missing ||
+            item.status == ItemStatus.substitute)
         .toList();
   }
 
@@ -50,24 +49,21 @@ class _BasketCompositionListState extends State<BasketCompositionList>
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Tab Bar
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: context.colors.cardSurface.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(12),
           ),
           child: TabBar(
             controller: _tabController,
             indicator: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.teal.withOpacity(0.6), Colors.green.withOpacity(0.6)],
-              ),
+              color: context.colors.actionPrimaryBg.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             dividerColor: Colors.transparent,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white60,
+            labelColor: context.colors.textPrimary,
+            unselectedLabelColor: context.colors.textSecondary,
             tabs: [
               Tab(
                 child: Row(
@@ -92,14 +88,12 @@ class _BasketCompositionListState extends State<BasketCompositionList>
             ],
           ),
         ),
-        
-        // Tab Views
         Expanded(
           child: TabBarView(
             controller: _tabController,
             children: [
-              _buildStockList(_matchedItems),
-              _buildStockList(_gapItems),
+              _buildStockList(context, _matchedItems),
+              _buildStockList(context, _gapItems),
             ],
           ),
         ),
@@ -107,12 +101,12 @@ class _BasketCompositionListState extends State<BasketCompositionList>
     );
   }
 
-  Widget _buildStockList(List<BasketItem> items) {
+  Widget _buildStockList(BuildContext context, List<BasketItem> items) {
     if (items.isEmpty) {
       return Center(
         child: Text(
           'No items in this category',
-          style: TextStyle(color: Colors.white60),
+          style: TextStyle(color: context.colors.textSecondary),
         ),
       );
     }
@@ -135,16 +129,18 @@ class _BasketCompositionListState extends State<BasketCompositionList>
               ),
             );
           },
-          child: _buildStockItem(item),
+          child: _buildStockItem(context, item),
         );
       },
     );
   }
 
-  Widget _buildStockItem(BasketItem item) {
-    if (item.status == BasketItemStatus.substitute) {
-      return _buildSubstituteItem(item);
+  Widget _buildStockItem(BuildContext context, BasketItem item) {
+    if (item.status == ItemStatus.substitute) {
+      return _buildSubstituteItem(context, item);
     }
+
+    final statusColor = BasketItemStatusTheme.colorFor(context, item.status);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -155,60 +151,55 @@ class _BasketCompositionListState extends State<BasketCompositionList>
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: context.colors.cardSurface.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: _getBorderColor(item.status),
+                color: statusColor.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
             child: Row(
               children: [
-                // Status Icon
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(item.status).withOpacity(0.2),
+                    color: statusColor.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    _getStatusIcon(item.status),
-                    color: _getStatusColor(item.status),
+                    _statusIcon(item.status),
+                    color: statusColor,
                     size: 20,
                   ),
                 ),
                 const SizedBox(width: 16),
-                
-                // Stock Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item.symbol,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        item.stockSymbol,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        item.name,
+                        item.sector,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
+                          color: context.colors.textSecondary,
                           fontSize: 12,
                         ),
                       ),
                     ],
                   ),
                 ),
-                
-                // Weight
                 Text(
-                  '${item.weight.toStringAsFixed(1)}%',
-                  style: const TextStyle(
-                    color: Colors.white70,
+                  '${item.etfWeight.toStringAsFixed(1)}%',
+                  style: TextStyle(
+                    color: context.colors.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -220,7 +211,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
     );
   }
 
-  Widget _buildSubstituteItem(BasketItem item) {
+  Widget _buildSubstituteItem(BuildContext context, BasketItem item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: ClipRRect(
@@ -230,10 +221,10 @@ class _BasketCompositionListState extends State<BasketCompositionList>
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: context.colors.actionPrimaryBg.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.blueAccent.withOpacity(0.3),
+                color: context.colors.actionPrimaryBg.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -241,12 +232,11 @@ class _BasketCompositionListState extends State<BasketCompositionList>
               children: [
                 Row(
                   children: [
-                    // User's Stock
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
+                          color: context.statusSuccess.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -255,15 +245,15 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                             Text(
                               'You Hold',
                               style: TextStyle(
-                                color: Colors.green[200],
+                                color: context.statusSuccess,
                                 fontSize: 10,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              item.userHoldingSymbol ?? '',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              item.userHoldingSymbol ?? item.stockSymbol,
+                              style: TextStyle(
+                                color: context.colors.textPrimary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -271,23 +261,19 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                         ),
                       ),
                     ),
-                    
-                    // Swap Icon
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Icon(
                         Icons.swap_horiz,
-                        color: Colors.blueAccent,
+                        color: context.colors.actionPrimaryBg,
                         size: 28,
                       ),
                     ),
-                    
-                    // Required Stock
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
+                          color: context.statusWarning.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -296,15 +282,15 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                             Text(
                               'ETF Needs',
                               style: TextStyle(
-                                color: Colors.orange[200],
+                                color: context.statusWarning,
                                 fontSize: 10,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              item.symbol,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              item.stockSymbol,
+                              style: TextStyle(
+                                color: context.colors.textPrimary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -314,13 +300,13 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                     ),
                   ],
                 ),
-                
                 if (item.reason != null) ...[
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.2),
+                      color: context.colors.actionPrimaryBg.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -329,14 +315,16 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                         Icon(
                           Icons.info_outline,
                           size: 14,
-                          color: Colors.blue[200],
+                          color: context.colors.actionPrimaryBg,
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          item.reason!,
-                          style: TextStyle(
-                            color: Colors.blue[200],
-                            fontSize: 12,
+                        Flexible(
+                          child: Text(
+                            item.reason!,
+                            style: TextStyle(
+                              color: context.colors.actionPrimaryBg,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       ],
@@ -351,29 +339,12 @@ class _BasketCompositionListState extends State<BasketCompositionList>
     );
   }
 
-  Color _getStatusColor(BasketItemStatus status) {
-    switch (status) {
-      case BasketItemStatus.held:
-        return Colors.greenAccent;
-      case BasketItemStatus.missing:
-        return Colors.orangeAccent;
-      case BasketItemStatus.substitute:
-        return Colors.blueAccent;
-    }
-  }
-
-  Color _getBorderColor(BasketItemStatus status) {
-    return _getStatusColor(status).withOpacity(0.3);
-  }
-
-  IconData _getStatusIcon(BasketItemStatus status) {
-    switch (status) {
-      case BasketItemStatus.held:
-        return Icons.check_circle;
-      case BasketItemStatus.missing:
-        return Icons.add_circle_outline;
-      case BasketItemStatus.substitute:
-        return Icons.swap_horiz;
-    }
+  IconData _statusIcon(ItemStatus status) {
+    return switch (status) {
+      ItemStatus.held => Icons.check_circle,
+      ItemStatus.missing => Icons.add_circle_outline,
+      ItemStatus.substitute => Icons.swap_horiz,
+      ItemStatus.excluded => Icons.remove_circle_outline,
+    };
   }
 }

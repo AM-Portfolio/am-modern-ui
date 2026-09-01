@@ -2,15 +2,19 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:intl/intl.dart';
 import '../basket_navigation.dart';
 import 'basket_success_page.dart';
 import '../providers/basket_providers.dart';
-import '../../../portfolio/providers/portfolio_providers.dart';
 import '../../domain/models/basket_opportunity.dart';
-import '../widgets/final_preview/fp_stepper.dart';
 import '../widgets/final_preview/fp_etf_panel.dart';
 import '../widgets/final_preview/fp_basket_panel.dart';
-import '../widgets/final_preview/fp_summary_bar.dart';
+import '../widgets/shared/basket_flow_step.dart';
+import '../widgets/shared/basket_flow_stepper.dart';
+import '../widgets/shared/basket_sticky_action_bar.dart';
+import '../utils/basket_allocation_math.dart';
+import '../utils/basket_responsive.dart';
+import '../utils/basket_portfolio_sync.dart';
 
 class BasketFinalPreviewPage extends ConsumerStatefulWidget {
   final BasketFinalPreviewArgs args;
@@ -86,21 +90,31 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
             .map((c) => c.stockSymbol)
             .toList(),
         'lines': _validatedItems.map((item) {
+          final lineWeight = item.replicaWeight > 0
+              ? item.replicaWeight
+              : (item.rebalancedWeight ?? item.etfWeight);
+          final isHeldOrSub =
+              item.status == ItemStatus.held || item.status == ItemStatus.substitute;
+          final avgCost = isHeldOrSub
+              ? (item.heldAveragePrice ?? item.lastPrice)
+              : item.lastPrice;
           return {
             'status': item.status.toString().split('.').last.toUpperCase(),
             'etfIsin': item.isin,
             'etfSymbol': item.stockSymbol,
-            'holdingIsin': (item.status == ItemStatus.substitute || item.status == ItemStatus.held)
+            'etfWeight': lineWeight,
+            'holdingIsin': isHeldOrSub
                 ? (item.userHoldingIsin ?? item.isin)
                 : item.isin,
-            'holdingSymbol': (item.status == ItemStatus.substitute || item.status == ItemStatus.held)
+            'holdingSymbol': isHeldOrSub
                 ? (item.userHoldingSymbol ?? item.stockSymbol)
                 : item.stockSymbol,
             'quantity': item.buyQuantity,
             'heldQuantity': (item.heldQuantity != null && item.targetQuantity != null)
                 ? math.min(item.heldQuantity!, item.targetQuantity!)
                 : item.heldQuantity,
-            'averageBuyingPrice': item.lastPrice,
+            'averageBuyingPrice': avgCost,
+            'lastKnownPrice': item.lastPrice,
           };
         }).toList(),
       };
@@ -109,6 +123,7 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
       
       if (!mounted) return;
       ref.invalidate(myBasketsProvider(userId: args.userId, portfolioId: ''));
+      await BasketPortfolioSync.afterBasketMutation(context);
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -151,40 +166,39 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
       );
     }
 
-    final theme = Theme.of(context);
-    final isDesktop = MediaQuery.sizeOf(context).width >= AmBreakpoints.tablet;
+    final isDesktop = BasketResponsive.isDesktop(context);
+    final pagePad = BasketResponsive.pagePadding(context);
     final args = widget.args;
 
     final heldCount = _validatedItems.where((i) => i.status == ItemStatus.held).length;
     final subCount = _validatedItems.where((i) => i.status == ItemStatus.substitute).length;
 
-    // Calculate unallocated
-    final unallocated = math.max(
-        0.0,
-        args.investmentAmount -
-            (_validatedOpportunity.actualInvestmentCost ??
-                args.investmentAmount));
-
     final actualCost = _validatedOpportunity.actualInvestmentCost ?? 0.0;
+    final fmtValue = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final excluded = args.excludedItems;
+    final targetSum = BasketAllocationMath.targetWeightSum(_validatedItems, excluded);
+    final customWeightSum = BasketAllocationMath.totalCustomWeightPercent(
+      _validatedItems,
+      args.investmentAmount,
+      excluded,
+    );
+    final customValue = BasketAllocationMath.totalCustomInvestment(
+      _validatedItems,
+      args.investmentAmount,
+      excluded,
+    );
 
     return Scaffold(
       backgroundColor: context.backgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Final Review: ${args.basketName}',
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: context.cardColor,
-        elevation: 0,
-        centerTitle: false,
-        iconTheme: IconThemeData(color: context.colors.textPrimary),
-      ),
       body: Column(
         children: [
-          const FpStepper(),
+          const BasketFlowStepper(currentStep: BasketFlowStep.finalReview),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.xl),
+              padding: pagePad.copyWith(
+                top: AppSpacing.lg,
+                bottom: AppSpacing.lg,
+              ),
               child: isDesktop
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,6 +209,7 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
                           child: FpBasketPanel(
                             finalItems: _validatedItems,
                             replicaScore: _validatedOpportunity.replicaScore,
+                            investmentAmount: args.investmentAmount,
                             actualInvestmentCost: actualCost,
                             heldCount: heldCount,
                             subCount: subCount,
@@ -210,6 +225,7 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
                         FpBasketPanel(
                           finalItems: _validatedItems,
                           replicaScore: _validatedOpportunity.replicaScore,
+                          investmentAmount: args.investmentAmount,
                           actualInvestmentCost: actualCost,
                           heldCount: heldCount,
                           subCount: subCount,
@@ -218,15 +234,35 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
                     ),
             ),
           ),
-          FpSummaryBar(
-            intendedAmount: args.investmentAmount,
-            actualCost: actualCost,
-            unallocated: unallocated,
-            coverage: _validatedOpportunity.replicaScore,
-            onConfirm: _confirmAndCreate,
-            isSubmitting: _isSubmitting,
+        ],
+      ),
+      bottomNavigationBar: BasketStickyActionBar(
+        stats: [
+          BasketStatItem(
+            label: 'Target Wt',
+            value: '${targetSum.toStringAsFixed(1)}%',
+          ),
+          BasketStatItem(
+            label: 'Allocation Wt',
+            value: '${customWeightSum.toStringAsFixed(1)}%',
+            highlight: customWeightSum >= 80,
+          ),
+          BasketStatItem(
+            label: 'From Holdings',
+            value: fmtValue.format(customValue),
+          ),
+          BasketStatItem(
+            label: 'Match Score',
+            value: '${_validatedOpportunity.replicaScore.toStringAsFixed(0)}%',
+            highlight: _validatedOpportunity.replicaScore >= 80,
           ),
         ],
+        primaryLabel: 'Confirm & Create Basket',
+        primaryIcon: Icons.check,
+        primaryColor: context.statusSuccess,
+        onBack: () => Navigator.of(context).maybePop(),
+        onPrimary: _confirmAndCreate,
+        isLoading: _isSubmitting,
       ),
     );
   }
