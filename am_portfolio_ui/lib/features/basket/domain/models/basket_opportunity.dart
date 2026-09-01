@@ -9,6 +9,7 @@ class BasketOpportunity {
   final int missingCount;
   final double? heldMatchScore;
   final double? substituteMatchScore;
+  final double? missingMatchScore;
   final double? remainingPortfolioValue;
   final double? investmentAmount;
   final double? totalPortfolioValue;
@@ -19,6 +20,11 @@ class BasketOpportunity {
   final double? budgetUtilization;
   final double? heldCoverageValue;
   final List<String> excludedSymbols;
+  final bool? sectorialBasket;
+  final String? dominantSector;
+  final List<String> etfConstituentIsins;
+  final int? appliedSubstituteCount;
+  final List<String> substituteWarnings;
   final List<BasketItem> composition;
   final List<BasketItem> buyList;
 
@@ -33,6 +39,7 @@ class BasketOpportunity {
     this.missingCount = 0,
     this.heldMatchScore,
     this.substituteMatchScore,
+    this.missingMatchScore,
     this.remainingPortfolioValue,
     this.investmentAmount,
     this.totalPortfolioValue,
@@ -43,6 +50,11 @@ class BasketOpportunity {
     this.budgetUtilization,
     this.heldCoverageValue,
     this.excludedSymbols = const [],
+    this.sectorialBasket,
+    this.dominantSector,
+    this.etfConstituentIsins = const [],
+    this.appliedSubstituteCount,
+    this.substituteWarnings = const [],
     this.composition = const [],
     this.buyList = const [],
   });
@@ -59,6 +71,7 @@ class BasketOpportunity {
       missingCount: json['missingCount'] as int? ?? 0,
       heldMatchScore: (json['heldMatchScore'] as num?)?.toDouble(),
       substituteMatchScore: (json['substituteMatchScore'] as num?)?.toDouble(),
+      missingMatchScore: (json['missingMatchScore'] as num?)?.toDouble(),
       remainingPortfolioValue: (json['remainingPortfolioValue'] as num?)?.toDouble(),
       investmentAmount: (json['investmentAmount'] as num?)?.toDouble(),
       totalPortfolioValue: (json['totalPortfolioValue'] as num?)?.toDouble(),
@@ -69,6 +82,17 @@ class BasketOpportunity {
       budgetUtilization: (json['budgetUtilization'] as num?)?.toDouble(),
       heldCoverageValue: (json['heldCoverageValue'] as num?)?.toDouble(),
       excludedSymbols: (json['excludedSymbols'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      sectorialBasket: json['sectorialBasket'] as bool?,
+      dominantSector: json['dominantSector'] as String?,
+      etfConstituentIsins: (json['etfConstituentIsins'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      appliedSubstituteCount: json['appliedSubstituteCount'] as int?,
+      substituteWarnings: (json['substituteWarnings'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
@@ -95,6 +119,7 @@ class BasketOpportunity {
       'missingCount': missingCount,
       'heldMatchScore': heldMatchScore,
       'substituteMatchScore': substituteMatchScore,
+      'missingMatchScore': missingMatchScore,
       'remainingPortfolioValue': remainingPortfolioValue,
       'investmentAmount': investmentAmount,
       'totalPortfolioValue': totalPortfolioValue,
@@ -105,6 +130,11 @@ class BasketOpportunity {
       'budgetUtilization': budgetUtilization,
       'heldCoverageValue': heldCoverageValue,
       'excludedSymbols': excludedSymbols,
+      'sectorialBasket': sectorialBasket,
+      'dominantSector': dominantSector,
+      'etfConstituentIsins': etfConstituentIsins,
+      'appliedSubstituteCount': appliedSubstituteCount,
+      'substituteWarnings': substituteWarnings,
       'composition': composition.map((e) => e.toJson()).toList(),
       'buyList': buyList.map((e) => e.toJson()).toList(),
     };
@@ -121,6 +151,7 @@ class BasketOpportunity {
     int? missingCount,
     double? heldMatchScore,
     double? substituteMatchScore,
+    double? missingMatchScore,
     double? remainingPortfolioValue,
     double? investmentAmount,
     double? totalPortfolioValue,
@@ -131,6 +162,11 @@ class BasketOpportunity {
     double? budgetUtilization,
     double? heldCoverageValue,
     List<String>? excludedSymbols,
+    bool? sectorialBasket,
+    String? dominantSector,
+    List<String>? etfConstituentIsins,
+    int? appliedSubstituteCount,
+    List<String>? substituteWarnings,
     List<BasketItem>? composition,
     List<BasketItem>? buyList,
   }) {
@@ -145,6 +181,7 @@ class BasketOpportunity {
       missingCount: missingCount ?? this.missingCount,
       heldMatchScore: heldMatchScore ?? this.heldMatchScore,
       substituteMatchScore: substituteMatchScore ?? this.substituteMatchScore,
+      missingMatchScore: missingMatchScore ?? this.missingMatchScore,
       remainingPortfolioValue: remainingPortfolioValue ?? this.remainingPortfolioValue,
       investmentAmount: investmentAmount ?? this.investmentAmount,
       totalPortfolioValue: totalPortfolioValue ?? this.totalPortfolioValue,
@@ -155,6 +192,11 @@ class BasketOpportunity {
       budgetUtilization: budgetUtilization ?? this.budgetUtilization,
       heldCoverageValue: heldCoverageValue ?? this.heldCoverageValue,
       excludedSymbols: excludedSymbols ?? this.excludedSymbols,
+      sectorialBasket: sectorialBasket ?? this.sectorialBasket,
+      dominantSector: dominantSector ?? this.dominantSector,
+      etfConstituentIsins: etfConstituentIsins ?? this.etfConstituentIsins,
+      appliedSubstituteCount: appliedSubstituteCount ?? this.appliedSubstituteCount,
+      substituteWarnings: substituteWarnings ?? this.substituteWarnings,
       composition: composition ?? this.composition,
       buyList: buyList ?? this.buyList,
     );
@@ -178,6 +220,7 @@ class BasketItem {
   final String? marketCapCategory;
   final double? marketCapValue;
   final double? targetQuantity;
+  final bool targetQuantityLocked;
   final bool underfunded;
   final double? heldQuantity;
   final double? heldAveragePrice;
@@ -200,6 +243,7 @@ class BasketItem {
     this.marketCapCategory,
     this.marketCapValue,
     this.targetQuantity,
+    this.targetQuantityLocked = false,
     this.underfunded = false,
     this.heldQuantity,
     this.heldAveragePrice,
@@ -227,6 +271,7 @@ class BasketItem {
       marketCapCategory: json['marketCapCategory'] as String?,
       marketCapValue: (json['marketCapValue'] as num?)?.toDouble(),
       targetQuantity: (json['targetQuantity'] as num?)?.toDouble(),
+      targetQuantityLocked: json['targetQuantityLocked'] as bool? ?? false,
       underfunded: json['underfunded'] as bool? ?? false,
       heldQuantity: (json['heldQuantity'] as num?)?.toDouble(),
       heldAveragePrice: (json['heldAveragePrice'] as num?)?.toDouble(),
@@ -255,6 +300,7 @@ class BasketItem {
       'marketCapCategory': marketCapCategory,
       'marketCapValue': marketCapValue,
       'targetQuantity': targetQuantity,
+      'targetQuantityLocked': targetQuantityLocked,
       'underfunded': underfunded,
       'heldQuantity': heldQuantity,
       'heldAveragePrice': heldAveragePrice,
@@ -280,6 +326,7 @@ class BasketItem {
     double? lastPrice,
     List<Alternative>? alternatives,
     double? targetQuantity,
+    bool? targetQuantityLocked,
     bool? underfunded,
     double? heldQuantity,
     double? heldAveragePrice,
@@ -301,6 +348,7 @@ class BasketItem {
       lastPrice: lastPrice ?? this.lastPrice,
       alternatives: alternatives ?? this.alternatives,
       targetQuantity: targetQuantity ?? this.targetQuantity,
+      targetQuantityLocked: targetQuantityLocked ?? this.targetQuantityLocked,
       underfunded: underfunded ?? this.underfunded,
       heldQuantity: heldQuantity ?? this.heldQuantity,
       heldAveragePrice: heldAveragePrice ?? this.heldAveragePrice,

@@ -5,6 +5,7 @@ import '../domain/models/basket_opportunity.dart';
 import 'pages/basket_preview_page.dart';
 import 'pages/basket_dashboard_page.dart';
 import 'pages/manual_basket_creator_page.dart';
+import 'pages/basket_final_preview_page.dart';
 import 'widgets/basket_explorer.dart';
 
 /// Nested basket navigation inside portfolio content (keeps global + secondary sidebars).
@@ -14,6 +15,7 @@ class BasketNavigation {
   static const String explorerRoute = '/';
   static const String previewRoute = '/preview';
   static const String creatorRoute = '/creator';
+  static const String finalPreviewRoute = '/final_preview';
   static const String dashboardRoute = '/dashboard';
   static const int basketsTabIndex = 4;
 
@@ -49,6 +51,12 @@ class BasketNavigation {
             portfolioId: args.portfolioId,
             embedded: true,
           ),
+        );
+      case finalPreviewRoute:
+        final args = settings.arguments! as BasketFinalPreviewArgs;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => BasketFinalPreviewPage(args: args),
         );
       case dashboardRoute:
         final args = settings.arguments! as Map<String, dynamic>;
@@ -119,6 +127,7 @@ class BasketNavigation {
     required String basketId,
     required String userId,
     required String portfolioId,
+    bool fromCreationFlow = false,
   }) {
     final args = {
       'basketId': basketId,
@@ -127,6 +136,12 @@ class BasketNavigation {
 
     final nested = navigatorKey.currentState;
     if (nested != null) {
+      if (fromCreationFlow) {
+        nested.popUntil(
+          (route) =>
+              route.settings.name == explorerRoute || route.isFirst,
+        );
+      }
       nested.pushNamed(dashboardRoute, arguments: args);
       return;
     }
@@ -145,6 +160,46 @@ class BasketNavigation {
         ),
       ),
     );
+  }
+
+  static VoidCallback? _showMyBasketsListener;
+
+  /// BasketExplorer registers this to switch to the My Baskets tab when requested.
+  static void registerMyBasketsListener(VoidCallback listener) {
+    _showMyBasketsListener = listener;
+  }
+
+  static void unregisterMyBasketsListener() {
+    _showMyBasketsListener = null;
+  }
+
+  static void _notifyShowMyBaskets() {
+    _showMyBasketsListener?.call();
+  }
+
+  /// Pop nested basket flow back to explorer and show My Baskets tab.
+  static void returnToMyBaskets(
+    BuildContext context, {
+    required String userId,
+  }) {
+    clearBasketSession(userId);
+
+    final nested = navigatorKey.currentState;
+    if (nested != null) {
+      nested.popUntil(
+        (route) =>
+            route.settings.name == explorerRoute || route.isFirst,
+      );
+      _notifyShowMyBaskets();
+      return;
+    }
+
+    if (GoRouter.maybeOf(context) != null) {
+      context.go('/portfolio/baskets');
+      return;
+    }
+
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   static void clearBasketSession(String userId) {
@@ -240,6 +295,23 @@ class BasketNavigation {
       ),
     );
   }
+
+  static void openFinalPreview(
+    BuildContext context, {
+    required BasketFinalPreviewArgs args,
+  }) {
+    final nested = navigatorKey.currentState;
+    if (nested != null) {
+      nested.pushNamed(finalPreviewRoute, arguments: args);
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BasketFinalPreviewPage(args: args),
+      ),
+    );
+  }
 }
 
 class BasketPreviewArgs {
@@ -286,6 +358,30 @@ class BasketCreatorArgs {
       };
 }
 
+class BasketFinalPreviewArgs {
+  const BasketFinalPreviewArgs({
+    required this.originalOpportunity,
+    required this.finalOpportunity,
+    required this.finalItems,
+    required this.investmentAmount,
+    required this.basketName,
+    required this.userId,
+    required this.portfolioId,
+    required this.excludedItems,
+    required this.idempotencyKey,
+  });
+
+  final BasketOpportunity originalOpportunity;
+  final BasketOpportunity finalOpportunity;
+  final List<BasketItem> finalItems;
+  final double investmentAmount;
+  final String basketName;
+  final String userId;
+  final String portfolioId;
+  final Set<String> excludedItems;
+  final String idempotencyKey;
+}
+
 class _BasketNavigatorObserver extends NavigatorObserver {
   _BasketNavigatorObserver(this.userId);
   final String userId;
@@ -293,7 +389,8 @@ class _BasketNavigatorObserver extends NavigatorObserver {
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
     if (route.settings.name == BasketNavigation.previewRoute ||
-        route.settings.name == BasketNavigation.creatorRoute) {
+        route.settings.name == BasketNavigation.creatorRoute ||
+        route.settings.name == BasketNavigation.finalPreviewRoute) {
       BasketNavigation.clearBasketSession(userId);
     }
   }

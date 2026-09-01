@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_common/am_common.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 
 import '../../domain/models/basket_detail.dart';
 import '../providers/basket_providers.dart';
+import '../basket_navigation.dart';
+import '../widgets/dashboard/bd_allocation_sheet.dart';
+import '../widgets/dashboard/bd_dashboard_math.dart';
+import '../widgets/dashboard/bd_footer_bar.dart';
+import '../widgets/dashboard/bd_holdings_section.dart';
+import '../widgets/dashboard/bd_identity_card.dart';
+import '../widgets/dashboard/bd_kpi_row.dart';
+import '../widgets/dashboard/bd_page_header.dart';
+import '../utils/basket_portfolio_sync.dart';
+import '../utils/basket_responsive.dart';
 
-class BasketDashboardPage extends ConsumerWidget {
+class BasketDashboardPage extends ConsumerStatefulWidget {
   final String basketId;
   final String userId;
   final bool embedded;
@@ -20,267 +29,183 @@ class BasketDashboardPage extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BasketDashboardPage> createState() => _BasketDashboardPageState();
+}
+
+class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
+  BdHoldingsFilter _filter = BdHoldingsFilter.active;
+  DateTime _lastFetchedAt = DateTime.now();
+
+  Future<void> _refresh() async {
+    ref.invalidate(basketDetailProvider(basketId: widget.basketId, userId: widget.userId));
+    setState(() => _lastFetchedAt = DateTime.now());
+    await ref.read(basketDetailProvider(basketId: widget.basketId, userId: widget.userId).future);
+  }
+
+  void _shareBasket(BasketDetail basket) {
+    final summary = 'Basket: ${basket.name}\n'
+        'ETF: ${basket.etfName}\n'
+        'Invested: ₹${basket.totalInvestedValue.toStringAsFixed(0)}\n'
+        'Current: ₹${basket.totalCurrentValue.toStringAsFixed(0)}\n'
+        'Coverage: ${BdDashboardMath.coverageAtCreation(basket).toStringAsFixed(0)}%';
+    Clipboard.setData(ClipboardData(text: summary));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Basket summary copied to clipboard')),
+    );
+  }
+
+  void _downloadCsv(BasketDetail basket) {
+    final buf = StringBuffer('Symbol,Company,Status,Units,AvgPrice,CurrentPrice,Value,PnL,Weight%\n');
+    final total = basket.totalCurrentValue;
+    for (final line in basket.lines) {
+      final weight = BdDashboardMath.basketWeightPercent(line, total);
+      final value = BdDashboardMath.lineCurrentValue(line);
+      buf.writeln(
+        '${line.symbol},${line.companyName ?? ""},${line.status},${line.quantity},'
+        '${line.avgPrice},${line.currentPrice},$value,${line.pnl},${weight.toStringAsFixed(2)}',
+      );
+    }
+    Clipboard.setData(ClipboardData(text: buf.toString()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Holdings CSV copied to clipboard')),
+    );
+  }
+
+  Future<void> _showMoreMenu(BasketDetail basket) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text('Delete basket'),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (action == 'delete' && mounted) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Delete basket?'),
+          content: Text('Remove "${basket.name}" permanently?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+          ],
+        ),
+      );
+      if (confirm == true && mounted) {
+        try {
+          await ref.read(deleteBasketProvider(
+            basketId: widget.basketId,
+            userId: widget.userId,
+          ).future);
+          ref.invalidate(myBasketsProvider(userId: widget.userId, portfolioId: ''));
+          if (mounted) {
+            await BasketPortfolioSync.afterBasketMutation(
+              context,
+              deletedBasketId: widget.basketId,
+            );
+            Navigator.of(context).pop();
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to delete basket: $e')),
+            );
+          }
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final detailAsync = ref.watch(basketDetailProvider(
-      basketId: basketId,
-      userId: userId,
+      basketId: widget.basketId,
+      userId: widget.userId,
     ));
+    final isMobile = BasketResponsive.isMobile(context);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, 
-      appBar: AppBar(
-        title: const Text('Basket Dashboard'),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_horiz),
-            onPressed: () {},
-          ),
-        ],
-        leading: embedded
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).pop(),
-              )
-            : null,
-      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: detailAsync.when(
         data: (basket) {
-          if (basket == null) {
+          if (basket.id.isEmpty) {
             return const Center(child: Text('Basket not found'));
           }
+          final activeLines = basket.lines.where((l) => l.quantity > 0 || l.status.toUpperCase() != 'MISSING').toList();
+          final stockCount = BdDashboardMath.filterLines(basket.lines, BdHoldingsFilter.active).length;
 
-          final colors = context.colors;
-          final pnlColor = basket.totalPnL >= 0 ? Colors.greenAccent.shade400 : Colors.redAccent.shade400;
-          final pnlSign = basket.totalPnL >= 0 ? '+' : '';
-          
-          final dateFormat = DateFormat('MMM dd, yyyy');
-          // Dummy date since it's not in the model yet, fallback to now
-          final createdDateStr = dateFormat.format(DateTime.now());
-
-          final heldLines = basket.lines.where((l) => l.status == 'HELD').toList();
-          final substituteLines = basket.lines.where((l) => l.status == 'SUBSTITUTE').toList();
-          final missingLines = basket.lines.where((l) => l.status == 'MISSING').toList();
-          final underfundedLines = basket.lines.where((l) => l.status == 'UNDERFUNDED').toList();
-
-          return CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header section
-                      Text(
-                        basket.name,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        '${basket.etfName}  ●  Created $createdDateStr',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-
-                      // Summary Cards
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _PremiumSummaryCard(
-                              title: 'Invested Value',
-                              value: '₹${NumberFormat('#,##,##0.00').format(basket.totalCurrentValue - basket.totalPnL)}',
-                            ),
+          return Column(
+            children: [
+              BdPageHeader(
+                onBack: widget.embedded
+                    ? () => BasketNavigation.returnToMyBaskets(
+                          context,
+                          userId: widget.userId,
+                        )
+                    : null,
+                onShare: () => _shareBasket(basket),
+                onDownload: () => _downloadCsv(basket),
+                onMore: () => _showMoreMenu(basket),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _refresh,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        BdIdentityCard(basket: basket, stockCount: stockCount),
+                        const SizedBox(height: 16),
+                        BdKpiRow(basket: basket),
+                        const SizedBox(height: 20),
+                        BdHoldingsSection(
+                          lines: basket.lines,
+                          totalCurrentValue: basket.totalCurrentValue,
+                          filter: _filter,
+                          onFilterChanged: (f) => setState(() => _filter = f),
+                          onViewAllocation: () => BdAllocationSheet.show(
+                            context,
+                            lines: activeLines,
+                            totalCurrentValue: basket.totalCurrentValue,
                           ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: _PremiumSummaryCard(
-                              title: 'Current Value',
-                              value: '₹${NumberFormat('#,##,##0.00').format(basket.totalCurrentValue)}',
-                              trendIcon: basket.totalPnL >= 0 ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                              trendColor: pnlColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      
-                      // Total P&L Card
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: AppRadii.card,
-                          border: Border.all(color: colors.divider),
+                          isMobile: isMobile,
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Total P&L:', style: Theme.of(context).textTheme.titleMedium),
-                            Row(
-                              children: [
-                                Text(
-                                  '$pnlSign₹${NumberFormat('#,##,##0.00').format(basket.totalPnL)}',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: pnlColor,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '($pnlSign${basket.pnlPercent.toStringAsFixed(2)}%)',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: pnlColor,
-                                  ),
-                                ),
-                              ],
-                            )
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(height: AppSpacing.xl),
-
-                      // Composition Progress
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Composition',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          Row(
-                            children: [
-                              _CompactStatusLabel(label: 'Held', count: basket.heldCount, color: Colors.green),
-                              const SizedBox(width: 8),
-                              _CompactStatusLabel(label: 'Sub', count: substituteLines.length, color: Colors.purple),
-                              const SizedBox(width: 8),
-                              _CompactStatusLabel(label: 'Missing', count: basket.missingCount, color: Colors.red),
-                            ],
-                          )
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      // Coverage progress bar
-                      LinearProgressIndicator(
-                        value: (basket.coveragePercent ?? 0) / 100.0,
-                        backgroundColor: colors.divider,
-                        color: colors.actionPrimaryBg,
-                        minHeight: 8,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      const SizedBox(height: 4),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text('${(basket.coveragePercent ?? 0).toStringAsFixed(0)}% Match', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      const Divider(),
-                    ],
+                        const SizedBox(height: AppSpacing.xxl),
+                        // Space so last table rows aren't hidden behind sticky footer
+                        SizedBox(height: isMobile ? 88 : 72),
+                      ],
+                    ),
                   ),
                 ),
               ),
-
-              if (heldLines.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-                    child: Text('Held Assets', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.green)),
-                  ),
-                ),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                      child: _BasketLineTile(line: heldLines[index]),
-                    ),
-                    childCount: heldLines.length,
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-              ],
-
-              if (substituteLines.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-                    child: Text('Substitute Assets', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.purple)),
-                  ),
-                ),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                      child: _BasketLineTile(line: substituteLines[index]),
-                    ),
-                    childCount: substituteLines.length,
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-              ],
-
-              if (underfundedLines.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-                    child: Text('Underfunded Assets', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.orange)),
-                  ),
-                ),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                      child: _BasketLineTile(line: underfundedLines[index]),
-                    ),
-                    childCount: underfundedLines.length,
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-              ],
-
-              if (missingLines.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-                    child: Text('Missing Assets', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.red)),
-                  ),
-                ),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                      child: _BasketLineTile(line: missingLines[index]),
-                    ),
-                    childCount: missingLines.length,
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
-              ],
+              BdFooterBar(basket: basket, lastFetchedAt: _lastFetchedAt),
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(
+        loading: () => Column(
+          children: [
+            const BdPageHeader(),
+            Expanded(child: _DashboardSkeleton(isMobile: isMobile)),
+          ],
+        ),
+        error: (err, _) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              Icon(Icons.error_outline, size: 48, color: context.statusError),
               const SizedBox(height: AppSpacing.md),
-              Text('Failed to load dashboard', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.sm),
-              TextButton(
-                onPressed: () => ref.invalidate(basketDetailProvider(
-                  basketId: basketId,
-                  userId: userId,
-                )),
-                child: const Text('Retry'),
-              ),
+              Text('Failed to load dashboard'),
+              TextButton(onPressed: _refresh, child: const Text('Retry')),
             ],
           ),
         ),
@@ -289,225 +214,40 @@ class BasketDashboardPage extends ConsumerWidget {
   }
 }
 
-class _PremiumSummaryCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData? trendIcon;
-  final Color? trendColor;
+class _DashboardSkeleton extends StatelessWidget {
+  final bool isMobile;
 
-  const _PremiumSummaryCard({
-    required this.title,
-    required this.value,
-    this.trendIcon,
-    this.trendColor,
-  });
+  const _DashboardSkeleton({required this.isMobile});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: AppRadii.card,
-        border: Border.all(color: context.colors.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: context.colors.textSecondary)),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  value,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (trendIcon != null)
-                Icon(trendIcon, color: trendColor, size: 24),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CompactStatusLabel extends StatelessWidget {
-  final String label;
-  final int count;
-  final Color color;
-
-  const _CompactStatusLabel({
-    required this.label,
-    required this.count,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Text(
-        '$label: $count',
-        style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-}
-
-class _HoldingsList extends StatelessWidget {
-  final List<BasketLineDetail> lines;
-
-  const _HoldingsList({required this.lines});
-
-  @override
-  Widget build(BuildContext context) {
-    if (lines.isEmpty) {
-      return const Center(
-        child: Text('No assets in this category.', style: TextStyle(color: Colors.grey)),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      itemCount: lines.length,
-      itemBuilder: (context, index) => _BasketLineTile(line: lines[index]),
-    );
-  }
-}
-
-class _BasketLineTile extends StatelessWidget {
-  final BasketLineDetail line;
-
-  const _BasketLineTile({required this.line});
-
-  @override
-  Widget build(BuildContext context) {
-    Color statusColor;
-    switch (line.status) {
-      case 'HELD':
-        statusColor = Colors.green;
-        break;
-      case 'MISSING':
-        statusColor = Colors.red;
-        break;
-      case 'SUBSTITUTE':
-        statusColor = Colors.purple;
-        break;
-      case 'UNDERFUNDED':
-        statusColor = Colors.orange;
-        break;
-      default:
-        statusColor = Colors.grey;
-    }
-
-    final pnlColor = line.pnl >= 0 ? Colors.green : Colors.red;
-    final pnlSign = line.pnl >= 0 ? '+' : '';
-    final isMissing = line.status == 'MISSING';
-
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
         children: [
-          // Symbol & Sector
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(line.symbol, style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(
-                  line.etfWeight != null ? '${line.etfWeight?.toStringAsFixed(1)}% ETF weight' : 'ETF Stock',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.colors.textSecondary),
-                ),
-              ],
+          Container(height: 80, decoration: BoxDecoration(color: context.colors.border.withValues(alpha: 0.3), borderRadius: AppRadii.card)),
+          const SizedBox(height: AppSpacing.lg),
+          GridView.count(
+            crossAxisCount: isMobile ? 2 : 5,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: AppSpacing.md,
+            crossAxisSpacing: AppSpacing.md,
+            childAspectRatio: 1.5,
+            children: List.generate(isMobile ? 4 : 5, (_) =>
+              Container(decoration: BoxDecoration(color: context.colors.border.withValues(alpha: 0.3), borderRadius: AppRadii.card)),
             ),
           ),
-          
-          // Status Badge
-          Expanded(
-            flex: 2,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
+          const SizedBox(height: AppSpacing.lg),
+          ...List.generate(5, (_) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(color: context.colors.border.withValues(alpha: 0.2), borderRadius: AppRadii.card),
                 ),
-                child: Text(
-                  line.status,
-                  style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ),
-          
-          // Price & PnL
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  isMissing ? '-' : '₹${NumberFormat('#,##,##0.00').format(line.currentPrice)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  isMissing ? '-' : '$pnlSign₹${NumberFormat('#,##,##0.00').format(line.pnl)}',
-                  style: TextStyle(color: isMissing ? Colors.grey : pnlColor, fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          
-          // Weight
-          Expanded(
-            flex: 2,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                line.etfWeight != null ? '${line.etfWeight?.toStringAsFixed(1)}%' : '-',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
+              )),
         ],
       ),
     );
-  }
-}
-
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar _tabBar;
-
-  _SliverAppBarDelegate(this._tabBar);
-
-  @override
-  double get minExtent => _tabBar.preferredSize.height;
-  @override
-  double get maxExtent => _tabBar.preferredSize.height;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: _tabBar,
-    );
-  }
-
-  @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return false;
   }
 }

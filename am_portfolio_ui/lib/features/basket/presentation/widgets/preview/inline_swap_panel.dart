@@ -5,11 +5,21 @@ import '../../../domain/models/basket_opportunity.dart';
 class InlineSwapPanel extends StatefulWidget {
   final List<Alternative> alternatives;
   final ValueChanged<Alternative> onSwapSelected;
+  final bool sectorialBasket;
+  final String? dominantSector;
+  final String? etfName;
+  final List<String> etfConstituentIsins;
+  final String? missingSector;
 
   const InlineSwapPanel({
     super.key,
     required this.alternatives,
     required this.onSwapSelected,
+    this.sectorialBasket = false,
+    this.dominantSector,
+    this.etfName,
+    this.etfConstituentIsins = const [],
+    this.missingSector,
   });
 
   @override
@@ -23,7 +33,7 @@ class _InlineSwapPanelState extends State<InlineSwapPanel> {
   @override
   void initState() {
     super.initState();
-    _filteredAlternatives = widget.alternatives;
+    _filteredAlternatives = _sectorFiltered(widget.alternatives);
   }
 
   @override
@@ -40,19 +50,44 @@ class _InlineSwapPanelState extends State<InlineSwapPanel> {
     super.dispose();
   }
 
+  List<Alternative> _sectorFiltered(List<Alternative> alts) {
+    if (widget.sectorialBasket) {
+      final missing = widget.missingSector?.trim().toLowerCase();
+      if (missing != null && missing.isNotEmpty) {
+        return alts.where((alt) {
+          final sector = alt.sector?.trim().toLowerCase();
+          if (sector == null || sector.isEmpty) return true;
+          return missing == sector || missing.contains(sector) || sector.contains(missing);
+        }).toList();
+      }
+    } else if (widget.etfConstituentIsins.isNotEmpty) {
+      final constituents = alts.where((alt) => widget.etfConstituentIsins.contains(alt.isin)).toList();
+      if (constituents.isNotEmpty) return constituents;
+    }
+    return alts;
+  }
+
   void _filterAlternatives(String query) {
+    final base = _sectorFiltered(widget.alternatives);
     if (query.isEmpty) {
-      setState(() {
-        _filteredAlternatives = widget.alternatives;
-      });
+      setState(() => _filteredAlternatives = base);
       return;
     }
 
     setState(() {
-      _filteredAlternatives = widget.alternatives.where((alt) {
+      _filteredAlternatives = base.where((alt) {
         return alt.symbol.toLowerCase().contains(query.toLowerCase());
       }).toList();
     });
+  }
+
+  String _recommendationBanner() {
+    if (widget.sectorialBasket) {
+      final sectorLabel = widget.dominantSector ?? widget.missingSector ?? 'same sector';
+      return 'Recommendation: Select $sectorLabel stocks to fill the gap.';
+    }
+    final indexLabel = widget.etfName ?? 'index';
+    return 'Select from your $indexLabel holdings (index constituents preferred).';
   }
 
   @override
@@ -75,6 +110,21 @@ class _InlineSwapPanelState extends State<InlineSwapPanel> {
                     ),
               ),
             ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: context.colors.actionPrimaryBg.withValues(alpha: 0.08),
+              borderRadius: AppRadii.input,
+            ),
+            child: Text(
+              _recommendationBanner(),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: context.colors.textSecondary,
+                  ),
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           TextField(

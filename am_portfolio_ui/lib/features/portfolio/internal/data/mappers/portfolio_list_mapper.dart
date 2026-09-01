@@ -17,6 +17,7 @@ class PortfolioListMapper {
     try {
       // Map individual portfolio items
       final portfolioItems = dto.portfolios
+          .where((itemDto) => itemDto.kind?.toUpperCase() != 'DELETED')
           .map(
             (itemDto) {
               String name = itemDto.portfolioName;
@@ -36,10 +37,12 @@ class PortfolioListMapper {
               } else if (lower.contains('kotak')) {
                 name = 'Kotak';
               }
-              
+
+              final kind = itemDto.kind?.toUpperCase();
               return PortfolioItem(
                 portfolioId: itemDto.portfolioId,
                 portfolioName: name,
+                isBasket: kind == 'BASKET',
               );
             },
           )
