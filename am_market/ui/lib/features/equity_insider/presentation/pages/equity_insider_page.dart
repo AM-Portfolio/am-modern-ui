@@ -1,8 +1,7 @@
+import '../../../../core/styles/market_theme_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-import '../../providers/equity_insider_provider.dart';
-import 'package:am_market_sdk/market/api.dart';
 
 import '../widgets/equity_insider_hero.dart';
 import '../widgets/equity_insider_kpis.dart';
@@ -45,7 +44,7 @@ class _EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
   }
 
   Widget _buildEmptySearch() {
-    final accentColor = context.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+    final accentColor = context.marketTheme.chartBlue;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
@@ -100,7 +99,7 @@ class _EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
   }
 
   Widget _buildDataView(String symbol) {
-    final accentColor = context.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+    final accentColor = context.marketTheme.chartBlue;
     return _FundamentalsBody(
       symbol: symbol,
       controller: _controller,
@@ -125,7 +124,7 @@ class _FundamentalsBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accentColor = context.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+    final accentColor = context.marketTheme.chartBlue;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
@@ -195,7 +194,7 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = context.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+    final accentColor = context.marketTheme.chartBlue;
     return TextField(
       controller: controller,
       onSubmitted: (_) => onSubmit(),
@@ -213,7 +212,7 @@ class _SearchField extends StatelessWidget {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: accentColor.withOpacity(0.4)),
+          borderSide: BorderSide(color: accentColor.withValues(alpha: 0.4)),
         ),
         contentPadding: EdgeInsets.symmetric(vertical: compact ? 10 : 14, horizontal: 8),
       ),
@@ -243,7 +242,7 @@ class _ErrorPanel extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline, color: Color(0xFFF87171), size: 40),
+                Icon(Icons.error_outline, color: context.marketTheme.negative, size: 40),
                 const SizedBox(height: 12),
                 Text(
                   message,

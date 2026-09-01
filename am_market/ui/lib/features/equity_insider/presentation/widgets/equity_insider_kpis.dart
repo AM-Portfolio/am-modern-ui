@@ -1,7 +1,7 @@
+import '../../../../core/styles/market_theme_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_market_sdk/market/api.dart';
 import '../../providers/equity_insider_provider.dart';
 
 class EquityInsiderKpis extends ConsumerWidget {
@@ -158,8 +158,8 @@ class EquityInsiderKpis extends ConsumerWidget {
     bool isNegative = false,
   }) {
     Color valColor = context.textPrimary;
-    if (isPositive) valColor = const Color(0xFF00C896);
-    if (isNegative) valColor = const Color(0xFFF87171);
+    if (isPositive) valColor = context.marketTheme.positive;
+    if (isNegative) valColor = context.marketTheme.negative;
 
     return Container(
       padding: const EdgeInsets.all(10),

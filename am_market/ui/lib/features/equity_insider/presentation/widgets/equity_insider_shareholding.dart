@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:am_design_system/am_design_system.dart';
+import '../../../../core/styles/market_theme_extension.dart';
 import '../../providers/equity_insider_provider.dart';
 
 class EquityInsiderShareholding extends ConsumerStatefulWidget {
@@ -36,7 +37,7 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
             final latest = shareholding.first as Map;
             final period = latest['period'] ?? 'Latest';
             
-            final slices = _getSlices(latest);
+            final slices = _getSlices(context, latest);
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,7 +109,7 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
     );
   }
 
-  List<_SliceData> _getSlices(Map latest) {
+  List<_SliceData> _getSlices(BuildContext context, Map latest) {
     final list = <_SliceData>[];
 
     void add(String label, String key, Color color) {
@@ -118,11 +119,11 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
       }
     }
 
-    add('FII / Foreign', 'fiiPercent', const Color(0xFF38BDF8));
-    add('Promoters', 'promotersPercent', const Color(0xFF00C896));
-    add('Mutual Funds', 'mutualFundsPercent', const Color(0xFFA78BFA));
-    add('Retail / Public', 'retailAndOtherPercent', const Color(0xFF64748B));
-    add('DII / Others', 'diiPercent', const Color(0xFF475569));
+    add('FII / Foreign', 'fiiPercent', context.marketTheme.chartBlue);
+    add('Promoters', 'promotersPercent', context.marketTheme.positive);
+    add('Mutual Funds', 'mutualFundsPercent', context.marketTheme.chartPurple);
+    add('Retail / Public', 'retailAndOtherPercent', context.marketTheme.textMuted);
+    add('DII / Others', 'diiPercent', context.marketTheme.textSecondary);
 
     list.sort((a, b) => b.value.compareTo(a.value));
     return list;
@@ -219,7 +220,7 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               margin: const EdgeInsets.only(bottom: 6),
               decoration: BoxDecoration(
-                color: isTouch ? Colors.white.withOpacity(0.04) : Colors.transparent,
+                color: isTouch ? Colors.white.withValues(alpha: 0.04) : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(

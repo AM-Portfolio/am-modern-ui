@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_sdk/market/api.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../../../core/styles/market_theme_extension.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/equity_insider_provider.dart';
@@ -83,8 +84,8 @@ class EquityInsiderFinancials extends ConsumerWidget {
     // Usually API returns latest first, take 4 and reverse for chronological
     final recent = statements.take(4).toList().reversed.toList();
 
-    final Color revColor = const Color(0xFF38BDF8); // #38bdf8 for Revenue
-    final Color patColor = const Color(0xFF00C896); // #00C896 for PAT
+    final Color revColor = context.marketTheme.chartBlue; // Revenue
+    final Color patColor = context.marketTheme.positive; // PAT
 
     return _ChartCard(
       title: 'Revenue & PAT (₹ Cr)',
@@ -125,8 +126,8 @@ class EquityInsiderFinancials extends ConsumerWidget {
     final balance = _maps(data.balanceSheet);
     final recent = balance.take(3).toList().reversed.toList();
 
-    final Color assetsColor = const Color(0xFFA78BFA); // #a78bfa for Assets
-    final Color equityColor = const Color(0xFF38BDF8); // #38bdf8 for Equity
+    final Color assetsColor = context.marketTheme.chartPurple; // Assets
+    final Color equityColor = context.marketTheme.chartBlue; // Equity
 
     return _ChartCard(
       title: 'Balance sheet (₹ Cr)',
@@ -207,9 +208,9 @@ class _ChartCard extends StatelessWidget {
               ),
               Text(
                 periodIndicator,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
-                  color: Color(0xFF38BDF8),
+                  color: context.marketTheme.chartBlue,
                 ),
               ),
             ],
@@ -274,7 +275,7 @@ class _BarChartWidget extends StatelessWidget {
           barRods: [
             BarChartRodData(
               toY: val1,
-              color: color1.withOpacity(0.9),
+              color: color1.withValues(alpha: 0.9),
               width: 8,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(2),
@@ -283,7 +284,7 @@ class _BarChartWidget extends StatelessWidget {
             ),
             BarChartRodData(
               toY: val2,
-              color: color2.withOpacity(0.9),
+              color: color2.withValues(alpha: 0.9),
               width: 8,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(2),
@@ -363,14 +364,14 @@ class _BarChartWidget extends StatelessWidget {
               },
             ),
           ),
-          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
           getDrawingHorizontalLine: (value) => FlLine(
-            color: context.borderColor.withOpacity(0.5),
+            color: context.borderColor.withValues(alpha: 0.5),
             strokeWidth: 1,
           ),
         ),

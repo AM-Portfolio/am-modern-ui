@@ -1,3 +1,4 @@
+import '../../../../core/styles/market_theme_extension.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -163,7 +164,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
 
   DataRow _buildRow(CompetitorPeer p, double maxRoe) {
     final isCurrent = p.symbol == widget.symbol;
-    final rowBg = isCurrent ? const Color(0xFF00C896).withOpacity(0.04) : Colors.transparent;
+    final rowBg = isCurrent ? context.marketTheme.positive.withValues(alpha: 0.04) : Colors.transparent;
     final name = p.companyName ?? '';
     final shortName = name.length > 28 ? '${name.substring(0, 25)}...' : name;
 
@@ -173,7 +174,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
     if (p.dayChangePercent != null) {
       final sign = p.dayChangePercent! >= 0 ? '+' : '';
       dayChangeStr = '$sign${p.dayChangePercent!.toStringAsFixed(2)}%';
-      dayChangeColor = p.dayChangePercent! >= 0 ? const Color(0xFF00C896) : const Color(0xFFF87171);
+      dayChangeColor = p.dayChangePercent! >= 0 ? context.marketTheme.positive : context.marketTheme.negative;
     }
 
     return DataRow(
@@ -182,7 +183,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
         DataCell(
           Container(
             decoration: isCurrent
-                ? const BoxDecoration(border: Border(left: BorderSide(color: Color(0xFF00C896), width: 2)))
+                ? BoxDecoration(border: Border(left: BorderSide(color: context.marketTheme.positive, width: 2)))
                 : null,
             padding: EdgeInsets.only(left: isCurrent ? 8 : 10),
             alignment: Alignment.centerLeft,
@@ -206,12 +207,12 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E2433),
+                          color: context.marketTheme.surface,
                           borderRadius: BorderRadius.circular(3),
                         ),
-                        child: const Text(
+                        child: Text(
                           'YOU',
-                          style: TextStyle(fontSize: 9, color: Color(0xFF475569)),
+                          style: TextStyle(fontSize: 9, color: context.marketTheme.textSecondary),
                         ),
                       ),
                     ],
@@ -220,7 +221,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                 const SizedBox(height: 1),
                 Text(
                   shortName,
-                  style: const TextStyle(fontSize: 10, color: Color(0xFF475569)),
+                  style: TextStyle(fontSize: 10, color: context.marketTheme.textSecondary),
                 ),
               ],
             ),
@@ -264,8 +265,8 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
             p.roce != null ? p.roce!.toStringAsFixed(2) : '—',
             style: TextStyle(
               color: p.roce != null && p.roce! > 30
-                  ? const Color(0xFF00C896)
-                  : (p.roce != null && p.roce! > 15 ? context.textSecondary : const Color(0xFFF87171)),
+                  ? context.marketTheme.positive
+                  : (p.roce != null && p.roce! > 15 ? context.textSecondary : context.marketTheme.negative),
             ),
           ),
         )),
@@ -285,8 +286,8 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
       return Text('—', style: TextStyle(color: context.textSecondary));
     }
     final pct = maxVal > 0 ? (val / maxVal).clamp(0.0, 1.0) : 0.0;
-    final color = val > 30 ? const Color(0xFF00C896) : (val > 15 ? const Color(0xFF378ADD) : const Color(0xFFF87171));
-    final textColor = val > 30 ? const Color(0xFF00C896) : (val > 15 ? context.textSecondary : const Color(0xFFF87171));
+    final color = val > 30 ? context.marketTheme.positive : (val > 15 ? context.marketTheme.blue : context.marketTheme.negative);
+    final textColor = val > 30 ? context.marketTheme.positive : (val > 15 ? context.textSecondary : context.marketTheme.negative);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -297,7 +298,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
           width: 40,
           height: 3,
           decoration: BoxDecoration(
-            color: const Color(0xFF1E2433),
+            color: context.marketTheme.surface,
             borderRadius: BorderRadius.circular(2),
           ),
           child: Row(
@@ -329,7 +330,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
             Text(
               label,
               style: TextStyle(
-                color: isSorted ? const Color(0xFF00C896) : context.textTertiary,
+                color: isSorted ? context.marketTheme.positive : context.textTertiary,
               ),
             ),
             if (sortKey != null) ...[
@@ -339,7 +340,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                     ? (_sortDescending ? Icons.arrow_downward : Icons.arrow_upward)
                     : Icons.unfold_more,
                 size: 10,
-                color: isSorted ? const Color(0xFF00C896) : context.textTertiary.withOpacity(0.5),
+                color: isSorted ? context.marketTheme.positive : context.textTertiary.withValues(alpha: 0.5),
               ),
             ],
           ],
@@ -357,9 +358,9 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF1E2A3A) : Colors.transparent,
+          color: isActive ? context.marketTheme.surface : Colors.transparent,
           border: Border.all(
-            color: isActive ? const Color(0xFF2A3347) : context.borderColor,
+            color: isActive ? context.marketTheme.border : context.borderColor,
           ),
           borderRadius: BorderRadius.circular(6),
         ),
@@ -368,7 +369,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w500,
-            color: isActive ? const Color(0xFF00C896) : context.textSecondary,
+            color: isActive ? context.marketTheme.positive : context.textSecondary,
           ),
         ),
       ),

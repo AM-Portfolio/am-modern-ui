@@ -1,3 +1,4 @@
+import '../../../../core/styles/market_theme_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -76,8 +77,8 @@ class EquityInsiderHero extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 12,
                         color: data.dayChangePercent != null && data.dayChangePercent! >= 0
-                            ? const Color(0xFF00C896)
-                            : const Color(0xFFF87171),
+                            ? context.marketTheme.positive
+                            : context.marketTheme.negative,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -128,14 +129,14 @@ class EquityInsiderHero extends ConsumerWidget {
     Color bg;
     Color fg;
     if (isPos) {
-      fg = const Color(0xFF00C896);
-      bg = fg.withOpacity(0.10);
+      fg = context.marketTheme.positive;
+      bg = fg.withValues(alpha: 0.10);
     } else if (isNeg) {
-      fg = const Color(0xFFF87171);
-      bg = fg.withOpacity(0.10);
+      fg = context.marketTheme.negative;
+      bg = fg.withValues(alpha: 0.10);
     } else {
-      fg = const Color(0xFF64748B);
-      bg = fg.withOpacity(0.15);
+      fg = context.marketTheme.textMuted;
+      bg = fg.withValues(alpha: 0.15);
     }
 
     return Container(
