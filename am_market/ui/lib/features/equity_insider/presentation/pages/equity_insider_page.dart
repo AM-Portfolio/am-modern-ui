@@ -5,6 +5,7 @@ import 'package:am_design_system/am_design_system.dart';
 
 import '../widgets/equity_insider_hero.dart';
 import '../widgets/equity_insider_kpis.dart';
+import '../widgets/equity_insider_chart.dart';
 import '../widgets/equity_insider_financials.dart';
 import '../widgets/equity_insider_shareholding.dart';
 import '../widgets/equity_insider_peers.dart';
@@ -99,7 +100,6 @@ class _EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
   }
 
   Widget _buildDataView(String symbol) {
-    final accentColor = context.marketTheme.chartBlue;
     return _FundamentalsBody(
       symbol: symbol,
       controller: _controller,
@@ -124,39 +124,62 @@ class _FundamentalsBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accentColor = context.marketTheme.chartBlue;
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+      padding: EdgeInsets.fromLTRB(isMobile ? 12 : 20, 16, isMobile ? 12 : 20, 40),
       children: [
         // Top Navigation Bar
-        Row(
-          children: [
-            IconButton(
-              onPressed: onBack,
-              icon: Icon(Icons.arrow_back, color: accentColor),
-            ),
-            Expanded(
-              child: Text(
-                'EQUITY INSIDER',
-                style: TextStyle(
-                  color: context.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
+        if (isMobile) ...[
+          Row(
+            children: [
+              IconButton(
+                onPressed: onBack,
+                icon: Icon(Icons.arrow_back, color: context.marketTheme.chartBlue),
+              ),
+              Expanded(
+                child: Text(
+                  'EQUITY INSIDER',
+                  style: TextStyle(
+                    color: context.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
               ),
-            ),
-            SizedBox(
-              width: 200,
-              child: _SearchField(controller: controller, onSubmit: onSearch, compact: true),
-            ),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _SearchField(controller: controller, onSubmit: onSearch, compact: true),
+        ] else ...[
+          Row(
+            children: [
+              IconButton(
+                onPressed: onBack,
+                icon: Icon(Icons.arrow_back, color: context.marketTheme.chartBlue),
+              ),
+              Expanded(
+                child: Text(
+                  'EQUITY INSIDER',
+                  style: TextStyle(
+                    color: context.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 200,
+                child: _SearchField(controller: controller, onSubmit: onSearch, compact: true),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 16),
         
         // Modular Widgets
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(isMobile ? 12 : 20),
           decoration: BoxDecoration(
             color: context.cardColor,
             borderRadius: BorderRadius.circular(16),
@@ -167,6 +190,8 @@ class _FundamentalsBody extends ConsumerWidget {
               EquityInsiderHero(symbol: symbol),
               const SizedBox(height: 20),
               EquityInsiderKpis(symbol: symbol),
+              const SizedBox(height: 20),
+              EquityInsiderChart(symbol: symbol),
               const SizedBox(height: 20),
               EquityInsiderFinancials(symbol: symbol),
               const SizedBox(height: 20),
@@ -215,46 +240,6 @@ class _SearchField extends StatelessWidget {
           borderSide: BorderSide(color: accentColor.withValues(alpha: 0.4)),
         ),
         contentPadding: EdgeInsets.symmetric(vertical: compact ? 10 : 14, horizontal: 8),
-      ),
-    );
-  }
-}
-
-class _ErrorPanel extends StatelessWidget {
-  const _ErrorPanel({required this.message, required this.onBack});
-  final String message;
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: context.cardColor,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: context.borderColor),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.error_outline, color: context.marketTheme.negative, size: 40),
-                const SizedBox(height: 12),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: context.textPrimary, fontSize: 13, height: 1.5),
-                ),
-                const SizedBox(height: 16),
-                TextButton(onPressed: onBack, child: const Text('Search again')),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
