@@ -259,8 +259,9 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> logout() async {
     final userId = await _storageService.getUserId();
+    final refreshToken = await _storageService.getRefreshToken();
     try {
-      await _dataSource.logout();
+      await _dataSource.logout(refreshToken: refreshToken);
       await _storageService.clearAuthData();
       UserContext.instance.invalidate(); // evict in-memory cache
       if (userId != null && userId.isNotEmpty) {

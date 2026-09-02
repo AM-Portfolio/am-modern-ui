@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../core/network/auth_interceptor.dart';
 import '../core/services/secure_storage_service.dart';
+import '../core/services/token_refresh_service.dart';
 import '../features/authentication/data/datasources/auth_remote_datasource.dart';
 import '../features/authentication/data/datasources/identity_auth_remote_datasource.dart';
 import '../features/authentication/data/datasources/mock_auth_datasource.dart';
@@ -23,6 +24,8 @@ class AuthProviders {
   static SecureStorageService? _secureStorageService;
   static MockDataService? _mockDataService;
   static Dio? _dio;
+  static Dio? _plainDio;
+  static TokenRefreshService? _tokenRefreshService;
   static MockAuthDataSource? _mockAuthDataSource;
   static AuthRemoteDataSource? _authRemoteDataSource;
   static IdentityAuthRemoteDataSource? _identityAuthRemoteDataSource;
@@ -38,14 +41,42 @@ class AuthProviders {
     return _mockDataService!;
   }
 
-  static Dio get dio {
-    _dio ??= Dio(
+  static Dio _createDio() {
+    return Dio(
       BaseOptions(
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
       ),
     );
-    _dio!.interceptors.add(AuthInterceptor(secureStorageService));
+  }
+
+  static Dio get _refreshDio {
+    _plainDio ??= _createDio();
+    return _plainDio!;
+  }
+
+  static TokenRefreshService get tokenRefreshService {
+    _tokenRefreshService ??= TokenRefreshService(
+      storageService: secureStorageService,
+      refreshApi: (refreshToken) => IdentityAuthRemoteDataSource(_refreshDio)
+          .refreshToken(refreshToken),
+    );
+    return _tokenRefreshService!;
+  }
+
+  static Dio get dio {
+    if (_dio != null) {
+      return _dio!;
+    }
+
+    _dio = _createDio();
+    _dio!.interceptors.add(
+      AuthInterceptor(
+        secureStorageService,
+        tokenRefreshService: tokenRefreshService,
+        dio: _dio!,
+      ),
+    );
     return _dio!;
   }
 

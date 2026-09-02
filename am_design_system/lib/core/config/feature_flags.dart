@@ -8,6 +8,10 @@ class FeatureFlags {
   bool useRealEmailService = false;
   bool useIdentityAuth = true;
 
+  /// When true, refresh access tokens proactively (Phase 8 trading).
+  /// Default false: lazy refresh on 401 / cold start only.
+  bool aggressiveTokenRefresh = false;
+
   // Development Features
   bool enableMockDelays = true;
   bool enableErrorSimulation = false;
@@ -33,6 +37,7 @@ class FeatureFlags {
     useRealBackendAPI = false;
     useRealEmailService = false;
     useIdentityAuth = false;
+    aggressiveTokenRefresh = false;
     enableMockDelays = true;
     enableErrorSimulation = false;
     enableDebugLogging = true;
@@ -51,6 +56,7 @@ class FeatureFlags {
     'useRealBackendAPI': useRealBackendAPI,
     'useRealEmailService': useRealEmailService,
     'useIdentityAuth': useIdentityAuth,
+    'aggressiveTokenRefresh': aggressiveTokenRefresh,
     'enableMockDelays': enableMockDelays,
     'enableErrorSimulation': enableErrorSimulation,
     'enableDebugLogging': enableDebugLogging,
@@ -69,6 +75,7 @@ class FeatureFlags {
     useRealBackendAPI = json['useRealBackendAPI'] ?? false;
     useRealEmailService = json['useRealEmailService'] ?? false;
     useIdentityAuth = json['useIdentityAuth'] ?? false;
+    aggressiveTokenRefresh = json['aggressiveTokenRefresh'] ?? false;
     enableMockDelays = json['enableMockDelays'] ?? true;
     enableErrorSimulation = json['enableErrorSimulation'] ?? false;
     enableDebugLogging = json['enableDebugLogging'] ?? true;

@@ -188,14 +188,13 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
   }
 
   @override
-  Future<void> logout() async {
+  Future<void> logout({String? refreshToken}) async {
     try {
       final fullUrl = AuthEndpoints.identityLogout;
-      // Keycloak logout requires refresh token to revoke it
-      // Standard local storage service handles token clearing, 
-      // but let's try calling backend first.
-      // Since logout is void, we don't throw.
-      await _dio.post(fullUrl);
+      final payload = refreshToken != null && refreshToken.isNotEmpty
+          ? {'refresh_token': refreshToken}
+          : null;
+      await _dio.post(fullUrl, data: payload);
     } catch (e) {
       AppLogger.error('Logout API call failed: $e');
     }
