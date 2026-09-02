@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -75,7 +76,7 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
         onError: (error) {
           if (!mounted) return;
           setState(() {
-            _errorMessage = error.toString();
+            _errorMessage = _pollErrorMessage(error);
             _state = DeviceLinkPollState.error;
           });
         },
@@ -84,16 +85,30 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _errorMessage = error.toString();
+        _errorMessage = _pollErrorMessage(error);
         _state = DeviceLinkPollState.error;
       });
     }
   }
 
+  String _pollErrorMessage(Object error) {
+    if (error is DioException) {
+      final status = error.response?.statusCode;
+      if (status == 429) {
+        return 'Too many requests. The QR code will refresh automatically.';
+      }
+      if (status != null && status >= 500) {
+        return 'Sign-in service is temporarily unavailable. Please try again.';
+      }
+    }
+    return 'Could not load the QR code. Please try again.';
+  }
+
   Future<void> _handlePollUpdate(
     DeviceLinkPollState state,
-    DeviceLinkPollUser? user,
-  ) async {
+    DeviceLinkPollUser? user, {
+    WebSessionTokens? tokens,
+  }) async {
     if (!mounted) return;
     if (state == DeviceLinkPollState.expired) {
       await _beginSession();
@@ -104,6 +119,9 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
         userId: user.sub,
         email: user.email ?? user.preferredUsername ?? user.sub,
         displayName: user.preferredUsername,
+        accessToken: tokens?.accessToken,
+        refreshToken: tokens?.refreshToken,
+        expiresInSeconds: tokens?.expiresIn,
       );
       return;
     }

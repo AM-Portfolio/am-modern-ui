@@ -74,5 +74,8 @@ abstract class AuthRepository {
     required String userId,
     required String email,
     String? displayName,
+    String? accessToken,
+    String? refreshToken,
+    int? expiresInSeconds,
   });
 }

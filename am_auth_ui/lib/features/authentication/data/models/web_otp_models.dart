@@ -1,3 +1,5 @@
+import 'device_link_models.dart';
+
 class WebOtpSendResult {
   const WebOtpSendResult({
     required this.otpSessionId,
@@ -39,12 +41,24 @@ class WebOtpVerifyUser {
 }
 
 class WebOtpVerifyResult {
-  const WebOtpVerifyResult({required this.user});
+  const WebOtpVerifyResult({
+    required this.user,
+    this.tokens,
+  });
 
   final WebOtpVerifyUser user;
+  final WebSessionTokens? tokens;
 
   factory WebOtpVerifyResult.fromJson(Map<String, dynamic> json) {
     final userJson = json['user'] as Map<String, dynamic>;
-    return WebOtpVerifyResult(user: WebOtpVerifyUser.fromJson(userJson));
+    WebSessionTokens? tokens;
+    final tokensJson = json['tokens'];
+    if (tokensJson is Map<String, dynamic>) {
+      tokens = WebSessionTokens.fromJson(tokensJson);
+    }
+    return WebOtpVerifyResult(
+      user: WebOtpVerifyUser.fromJson(userJson),
+      tokens: tokens,
+    );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -40,7 +41,7 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = error.toString();
+        _error = _loadErrorMessage(error);
       });
     }
   }
@@ -53,6 +54,13 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
   Future<void> _revokeAll() async {
     await _dataSource.revokeAllSessions();
     await _loadSessions();
+  }
+
+  String _loadErrorMessage(Object error) {
+    if (error is DioException && error.response?.statusCode == 401) {
+      return 'Your session expired. Sign in again, then reopen this page.';
+    }
+    return 'Could not load active sessions. Please try again.';
   }
 
   String _formatTime(double epochSeconds) {
@@ -78,7 +86,26 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!))
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: context.colors.statusError),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: _loadSessions,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
               : _sessions.isEmpty
                   ? const Center(child: Text('No active sessions'))
                   : ListView.separated(

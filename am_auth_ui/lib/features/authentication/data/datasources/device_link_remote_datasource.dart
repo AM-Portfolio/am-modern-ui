@@ -51,9 +51,15 @@ class DeviceLinkRemoteDataSource implements DeviceLinkApi {
     if (userJson is Map<String, dynamic>) {
       user = DeviceLinkPollUser.fromJson(userJson);
     }
+    WebSessionTokens? tokens;
+    final tokensJson = data['tokens'];
+    if (tokensJson is Map<String, dynamic>) {
+      tokens = WebSessionTokens.fromJson(tokensJson);
+    }
     return DeviceLinkPollResult(
       status: data['status'] as String? ?? 'pending',
       user: user,
+      tokens: tokens,
     );
   }
 

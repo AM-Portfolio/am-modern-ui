@@ -24,6 +24,26 @@ class DeviceLinkStartResult {
   }
 }
 
+class WebSessionTokens {
+  const WebSessionTokens({
+    required this.accessToken,
+    this.refreshToken,
+    this.expiresIn,
+  });
+
+  final String accessToken;
+  final String? refreshToken;
+  final int? expiresIn;
+
+  factory WebSessionTokens.fromJson(Map<String, dynamic> json) {
+    return WebSessionTokens(
+      accessToken: json['access_token'] as String,
+      refreshToken: json['refresh_token'] as String?,
+      expiresIn: json['expires_in'] as int?,
+    );
+  }
+}
+
 class DeviceLinkPollUser {
   const DeviceLinkPollUser({
     required this.sub,
@@ -48,10 +68,12 @@ class DeviceLinkPollResult {
   const DeviceLinkPollResult({
     required this.status,
     this.user,
+    this.tokens,
   });
 
   final String status;
   final DeviceLinkPollUser? user;
+  final WebSessionTokens? tokens;
 }
 
 class DeviceLinkPreview {

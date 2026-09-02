@@ -24,7 +24,7 @@ class AuthInterceptor extends Interceptor {
   ) async {
     final token = await _storageService.getAccessToken();
 
-    if (token != null && token.isNotEmpty) {
+    if (token != null && token.isNotEmpty && _shouldAttachBearer(token)) {
       options.headers['Authorization'] = 'Bearer $token';
     }
 
@@ -84,5 +84,12 @@ class AuthInterceptor extends Interceptor {
         path.contains('/auth/logout') ||
         path.contains('/auth/register') ||
         path.contains('/device-link');
+  }
+
+  static bool _shouldAttachBearer(String token) {
+    if (token == 'bff_cookie_session' || token.startsWith('web-access-')) {
+      return false;
+    }
+    return token.split('.').length >= 3;
   }
 }

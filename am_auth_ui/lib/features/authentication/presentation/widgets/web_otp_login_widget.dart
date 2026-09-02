@@ -77,6 +77,9 @@ class _WebOtpLoginWidgetState extends State<WebOtpLoginWidget> {
         userId: result.user.sub,
         email: result.user.email ?? result.user.preferredUsername ?? result.user.sub,
         displayName: result.user.preferredUsername,
+        accessToken: result.tokens?.accessToken,
+        refreshToken: result.tokens?.refreshToken,
+        expiresInSeconds: result.tokens?.expiresIn,
       );
     } catch (error) {
       if (!mounted) return;

@@ -164,9 +164,7 @@ void _registerSubscriptionDependencies() {
       receiveTimeout: const Duration(seconds: 30),
     ),
   );
-  subscriptionDio.interceptors.add(
-    auth_ui.AuthInterceptor(getIt<auth_ui.SecureStorageService>()),
-  );
+  auth_ui.AuthProviders.attachAuthInterceptor(subscriptionDio);
   getIt.registerSingleton<Dio>(
     subscriptionDio,
     instanceName: 'subscriptionDio',

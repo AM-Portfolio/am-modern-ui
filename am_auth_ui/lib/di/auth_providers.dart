@@ -104,8 +104,11 @@ class AuthProviders {
   }
 
   static LoginSessionsRemoteDataSource get loginSessionsRemoteDataSource {
-    _loginSessionsRemoteDataSource ??=
-        LoginSessionsRemoteDataSource(dio);
+    _loginSessionsRemoteDataSource ??= LoginSessionsRemoteDataSource(
+      dio,
+      storage: secureStorageService,
+      cookieDio: cookieDio,
+    );
     return _loginSessionsRemoteDataSource!;
   }
 
@@ -126,14 +129,18 @@ class AuthProviders {
     }
 
     _dio = _createDio();
-    _dio!.interceptors.add(
+    attachAuthInterceptor(_dio!);
+    return _dio!;
+  }
+
+  static void attachAuthInterceptor(Dio dio) {
+    dio.interceptors.add(
       AuthInterceptor(
         secureStorageService,
         tokenRefreshService: tokenRefreshService,
-        dio: _dio!,
+        dio: dio,
       ),
     );
-    return _dio!;
   }
 
   static MockAuthDataSource get mockAuthDataSource {

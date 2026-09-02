@@ -19,7 +19,7 @@ final aiChatServiceProvider = Provider<AiChatService>((ref) {
       headers: {'Content-Type': 'application/json'},
     ),
   );
-  dio.interceptors.add(AuthInterceptor(SecureStorageService()));
+  AuthProviders.attachAuthInterceptor(dio);
   return AiChatService(dio);
 });
 

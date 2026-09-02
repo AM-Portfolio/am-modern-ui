@@ -103,11 +103,17 @@ class AuthCubit extends Cubit<AuthState> {
     required String userId,
     required String email,
     String? displayName,
+    String? accessToken,
+    String? refreshToken,
+    int? expiresInSeconds,
   }) async {
     final result = await _authRepository.persistWebSession(
       userId: userId,
       email: email,
       displayName: displayName,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      expiresInSeconds: expiresInSeconds,
     );
     result.fold(
       (failure) => emit(AuthError(failure.message)),

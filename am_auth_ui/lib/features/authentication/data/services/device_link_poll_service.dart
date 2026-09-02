@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
+
 import '../models/device_link_models.dart';
 
 abstract class DeviceLinkApi {
@@ -50,6 +52,7 @@ class DeviceLinkPollService {
 
   Timer? _pollTimer;
   String? _activeDeviceLinkId;
+  bool _pollInFlight = false;
 
   Future<DeviceLinkPollSession> startSession({
     required String codeVerifier,
@@ -74,34 +77,42 @@ class DeviceLinkPollService {
 
   void startPolling({
     required DeviceLinkPollSession session,
-    required void Function(DeviceLinkPollState state, DeviceLinkPollUser? user)
-        onUpdate,
+    required void Function(
+      DeviceLinkPollState state,
+      DeviceLinkPollUser? user, {
+      WebSessionTokens? tokens,
+    }) onUpdate,
     void Function(Object error)? onError,
   }) {
     stopPolling();
     _activeDeviceLinkId = session.deviceLinkId;
     final interval = Duration(milliseconds: session.pollIntervalMs);
 
-    unawaited(_pollOnce(session, onUpdate, onError));
-
     _pollTimer = Timer.periodic(interval, (_) {
       unawaited(_pollOnce(session, onUpdate, onError));
     });
+    unawaited(_pollOnce(session, onUpdate, onError));
   }
 
   Future<void> _pollOnce(
     DeviceLinkPollSession session,
-    void Function(DeviceLinkPollState state, DeviceLinkPollUser? user) onUpdate,
+    void Function(
+      DeviceLinkPollState state,
+      DeviceLinkPollUser? user, {
+      WebSessionTokens? tokens,
+    }) onUpdate,
     void Function(Object error)? onError,
   ) async {
-    if (_activeDeviceLinkId != session.deviceLinkId) return;
+    if (_activeDeviceLinkId != session.deviceLinkId || _pollInFlight) return;
 
     final nowSeconds = DateTime.now().millisecondsSinceEpoch / 1000;
     if (nowSeconds >= session.expiresAt) {
+      stopPolling();
       onUpdate(DeviceLinkPollState.expired, null);
       return;
     }
 
+    _pollInFlight = true;
     try {
       final result = await _dataSource.pollStatus(
         deviceLinkId: session.deviceLinkId,
@@ -110,16 +121,28 @@ class DeviceLinkPollService {
       switch (result.status) {
         case 'approved':
           stopPolling();
-          onUpdate(DeviceLinkPollState.approved, result.user);
+          onUpdate(
+            DeviceLinkPollState.approved,
+            result.user,
+            tokens: result.tokens,
+          );
         case 'expired':
         case 'cancelled':
+          stopPolling();
           onUpdate(DeviceLinkPollState.expired, null);
         default:
           onUpdate(DeviceLinkPollState.waiting, null);
       }
     } catch (error) {
+      if (_isTransientPollError(error)) {
+        onUpdate(DeviceLinkPollState.waiting, null);
+        return;
+      }
+      stopPolling();
       onError?.call(error);
       onUpdate(DeviceLinkPollState.error, null);
+    } finally {
+      _pollInFlight = false;
     }
   }
 
@@ -135,9 +158,16 @@ class DeviceLinkPollService {
     _pollTimer?.cancel();
     _pollTimer = null;
     _activeDeviceLinkId = null;
+    _pollInFlight = false;
   }
 
   void dispose() {
     stopPolling();
   }
+}
+
+bool _isTransientPollError(Object error) {
+  if (error is! DioException) return false;
+  final status = error.response?.statusCode;
+  return status == 429 || status == 502 || status == 503 || status == 504;
 }
