@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,6 +23,10 @@ class ProfileSettingsPage extends StatefulWidget {
   /// Opens the existing subscription / pricing screen via GoRouter when set.
   final VoidCallback? onOpenSubscription;
 
+  final VoidCallback? onOpenActiveSessions;
+
+  final VoidCallback? onOpenScanWebLogin;
+
   /// When true (e.g. returning from Subscription), pulse Account + Subscription.
   final bool highlightSubscription;
 
@@ -38,6 +43,8 @@ class ProfileSettingsPage extends StatefulWidget {
     this.onOpenPrivacyPolicy,
     this.onOpenTermsOfService,
     this.onOpenSubscription,
+    this.onOpenActiveSessions,
+    this.onOpenScanWebLogin,
     this.highlightSubscription = false,
     this.subscriptionStatusLabel,
     this.isPaidSubscription,
@@ -61,6 +68,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   VoidCallback? get onOpenPrivacyPolicy => widget.onOpenPrivacyPolicy;
   VoidCallback? get onOpenTermsOfService => widget.onOpenTermsOfService;
   VoidCallback? get onOpenSubscription => widget.onOpenSubscription;
+  VoidCallback? get onOpenActiveSessions => widget.onOpenActiveSessions;
+  VoidCallback? get onOpenScanWebLogin => widget.onOpenScanWebLogin;
   String? get subscriptionStatusLabel => widget.subscriptionStatusLabel;
   bool get isPaidSubscription => widget.isPaidSubscription ?? false;
 
@@ -465,6 +474,43 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
               ),
             ],
           ),
+        ),
+
+        const SizedBox(height: 32),
+
+        _buildSectionHeader(context, 'Security', isDark),
+        const SizedBox(height: 16),
+        _buildGlassSection(
+          context,
+          isDark,
+          children: [
+            if (!kIsWeb && onOpenScanWebLogin != null) ...[
+              _buildSettingTile(
+                context,
+                icon: Icons.qr_code_scanner_rounded,
+                title: 'Scan to log in on web',
+                subtitle: 'Approve a browser login from your phone',
+                isDark: isDark,
+                onTap: onOpenScanWebLogin!,
+              ),
+              _buildDivider(isDark),
+            ],
+            _buildSettingTile(
+              context,
+              icon: Icons.devices_other_outlined,
+              title: 'Active sessions',
+              subtitle: 'Review browsers and devices signed in',
+              isDark: isDark,
+              onTap: onOpenActiveSessions ??
+                  () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Active sessions is unavailable here'),
+                      ),
+                    );
+                  },
+            ),
+          ],
         ),
 
         const SizedBox(height: 32),

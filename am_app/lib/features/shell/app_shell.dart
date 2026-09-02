@@ -42,6 +42,8 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   static const double _bottomNavScrollThreshold = 12;
   Timer? _bottomNavHideTimer;
   StreamSubscription<bool>? _marketGateSubscription;
+  StreamSubscription<List<SecurityEventModel>>? _securityEventsSub;
+  SecurityEventModel? _securityAlert;
 
   @override
   void initState() {
@@ -63,6 +65,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       _checkInitialAuthAndConnect();
       _restoreSessionNav();
       _seedPortfolioSelectionFromSession();
+      _startSecurityAlertsIfWeb();
     });
     
     _showBottomNavWithIdleHide();
@@ -73,8 +76,24 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     _bottomNavHideTimer?.cancel();
     _marketGateSubscription?.cancel();
     _marketGateSubscription = null;
+    _securityEventsSub?.cancel();
+    if (kIsWeb) {
+      AuthProviders.securityAlertService.stop();
+    }
     _bottomNavController.dispose();
     super.dispose();
+  }
+
+  void _startSecurityAlertsIfWeb() {
+    if (!kIsWeb) return;
+    final service = AuthProviders.securityAlertService;
+    service.start();
+    _securityEventsSub ??= service.events.listen((events) {
+      if (!mounted) return;
+      setState(() {
+        _securityAlert = events.isNotEmpty ? events.first : null;
+      });
+    });
   }
 
   Future<void> _startMarketStreamingGate() async {
@@ -639,6 +658,24 @@ final userId =
                                 ),
                               ),
                             ),
+                          ),
+                        ),
+                      if (kIsWeb && _securityAlert != null)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: SecurityAlertBanner(
+                            event: _securityAlert!,
+                            onAcknowledge: () async {
+                              await AuthProviders.securityAlertService
+                                  .acknowledge(_securityAlert!.eventId);
+                              if (!mounted) return;
+                              setState(() => _securityAlert = null);
+                            },
+                            onReviewSessions: () {
+                              context.go(AppRoutes.activeSessions);
+                            },
                           ),
                         ),
                     ],
