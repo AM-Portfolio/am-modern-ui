@@ -7,6 +7,7 @@ import 'package:am_design_system/core/errors/exceptions.dart';
 import '../models/auth_result_model.dart';
 import '../models/auth_tokens_model.dart';
 import '../models/user_model.dart';
+import '../models/web_otp_models.dart';
 import 'auth_data_source.dart';
 
 /// Real API implementation of authentication data source for am-identity service
@@ -417,6 +418,40 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
       AuthEndpoints.identityVerifyEmailResend,
       {'email': email},
       action: 'Verify email resend',
+    );
+  }
+
+  Future<WebOtpSendResult> sendWebOtp({
+    required String channel,
+    required String destination,
+  }) async {
+    final response = await _dio.post(
+      AuthEndpoints.identityWebOtpSend,
+      data: {'channel': channel, 'destination': destination},
+      options: Options(
+        headers: {'Content-Type': 'application/json'},
+        extra: const {'withCredentials': true},
+      ),
+    );
+    return WebOtpSendResult.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
+  }
+
+  Future<WebOtpVerifyResult> verifyWebOtp({
+    required String otpSessionId,
+    required String code,
+  }) async {
+    final response = await _dio.post(
+      AuthEndpoints.identityWebOtpVerify,
+      data: {'otp_session_id': otpSessionId, 'code': code},
+      options: Options(
+        headers: {'Content-Type': 'application/json'},
+        extra: const {'withCredentials': true},
+      ),
+    );
+    return WebOtpVerifyResult.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
     );
   }
 

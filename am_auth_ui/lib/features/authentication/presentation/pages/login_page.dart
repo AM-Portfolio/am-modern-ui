@@ -16,6 +16,9 @@ import '../widgets/email_login_form_widget.dart';
 import '../widgets/glass_card_widget.dart';
 import '../widgets/google_login_button_widget.dart';
 import '../widgets/theme_toggle_widget.dart';
+import '../widgets/web_otp_login_widget.dart';
+import '../widgets/web_qr_login_section.dart';
+import 'package:am_design_system/core/config/feature_flags.dart';
 import 'package:am_design_system/shared/widgets/display/interactive_background.dart';
 
 
@@ -180,8 +183,26 @@ class LoginPage extends StatelessWidget {
 
   
   Widget _buildLoginForm(BuildContext context, AuthState state, bool isCompact) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final flags = FeatureFlags();
+
+    if (kIsWeb && flags.enableQrWebLogin) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const WebQrLoginSection(),
+          if (flags.enableWebOtp) ...[
+            SizedBox(height: isCompact ? 16 : 24),
+            const Divider(),
+            SizedBox(height: isCompact ? 16 : 24),
+            const WebOtpLoginWidget(),
+          ],
+          SizedBox(height: isCompact ? 12 : 16),
+          DevSectionWidget(isCompact: isCompact),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
