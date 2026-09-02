@@ -611,5 +611,43 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(UnknownFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, AuthResultEntity>> persistWebSession({
+    required String userId,
+    required String email,
+    String? displayName,
+  }) async {
+    try {
+      await _storageService.saveCookieSessionUser(
+        userId: userId,
+        email: email,
+        displayName: displayName,
+      );
+
+      final userEntity = UserEntity(
+        id: userId,
+        email: email,
+        displayName: displayName,
+        authMethod: 'web_cookie',
+      );
+      final tokensEntity = AuthTokensEntity(
+        accessToken: 'bff_cookie_session',
+        refreshToken: null,
+        expiresAt: DateTime.now().add(const Duration(days: 7)),
+      );
+      final authResult = AuthResultEntity(user: userEntity, tokens: tokensEntity);
+
+      UserContext.instance.populate(
+        accessToken: 'bff_cookie_session',
+        userId: userId,
+        email: email,
+      );
+
+      return Right(authResult);
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
 }
 

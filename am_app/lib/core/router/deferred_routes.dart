@@ -272,6 +272,8 @@ Widget buildProfileRoute({
   VoidCallback? onOpenPrivacyPolicy,
   VoidCallback? onOpenTermsOfService,
   VoidCallback? onOpenSubscription,
+  VoidCallback? onOpenActiveSessions,
+  VoidCallback? onOpenScanWebLogin,
   bool highlightSubscription = false,
 }) {
   return DeferredModuleLoader(
@@ -286,11 +288,22 @@ Widget buildProfileRoute({
         onOpenPrivacyPolicy: onOpenPrivacyPolicy,
         onOpenTermsOfService: onOpenTermsOfService,
         onOpenSubscription: onOpenSubscription,
+        onOpenActiveSessions: onOpenActiveSessions,
+        onOpenScanWebLogin: onOpenScanWebLogin,
         highlightSubscription: highlightSubscription,
         subscriptionStatusLabel: statusLabel,
         isPaidSubscription: isPaid,
       ),
     ),
+  );
+}
+
+Widget buildActiveSessionsRoute() {
+  return DeferredModuleLoader(
+    load: _loadUser,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading sessions…',
+    builder: () => user_ui.ActiveSessionsPage(),
   );
 }
 

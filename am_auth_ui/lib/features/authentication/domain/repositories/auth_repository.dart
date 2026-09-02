@@ -68,4 +68,11 @@ abstract class AuthRepository {
   Future<Either<Failure, void>> requestAccountDeletion({
     required String feedback,
   });
+
+  /// Persist a web BFF cookie session (QR or OTP login).
+  Future<Either<Failure, AuthResultEntity>> persistWebSession({
+    required String userId,
+    required String email,
+    String? displayName,
+  });
 }

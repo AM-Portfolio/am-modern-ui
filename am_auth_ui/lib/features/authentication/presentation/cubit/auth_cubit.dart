@@ -98,6 +98,23 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
+  /// Complete web BFF session after QR or OTP login.
+  Future<void> completeWebSession({
+    required String userId,
+    required String email,
+    String? displayName,
+  }) async {
+    final result = await _authRepository.persistWebSession(
+      userId: userId,
+      email: email,
+      displayName: displayName,
+    );
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (authResult) => emit(Authenticated(authResult.user)),
+    );
+  }
+
   /// Logout
   Future<void> logout() async {
     emit(const AuthLoading());
