@@ -8,6 +8,8 @@ import '../dtos/trade_controller_dtos.dart';
 import '../dtos/trade_holding_dto.dart';
 import '../dtos/trade_portfolio_dto.dart';
 import '../dtos/trade_portfolio_summary_dto.dart';
+import '../../domain/enums/trade_directions.dart';
+import '../../domain/enums/trade_statuses.dart';
 import 'trade_mock_data_helper.dart';
 
 /// Abstract data source for trade data
@@ -66,11 +68,14 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   const TradeRemoteDataSourceImpl({
     required ApiClient apiClient,
     required TradeApiConfig tradeConfig,
+    PortfolioApiConfig? portfolioConfig,
   })  : _apiClient = apiClient,
-        _tradeConfig = tradeConfig;
+        _tradeConfig = tradeConfig,
+        _portfolioConfig = portfolioConfig;
 
   final ApiClient _apiClient;
   final TradeApiConfig _tradeConfig;
+  final PortfolioApiConfig? _portfolioConfig;
 
   /// Helper to safely build URI avoiding double slashes
   String _buildUri(String baseUrl, String resource) {
@@ -164,16 +169,13 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
 
     try {
       // Trade API Spec: GET /v1/trades/details/portfolio/{portfolioId} returns List<TradeDetails>
-      // The backend endpoint configured in ConfigService (holdingsResource) points to a List endpoint, not a Page endpoint.
       final baseUri =
           _buildUri(_tradeConfig.baseUrl, _tradeConfig.holdingsResource);
-      final fullUri =
-          '$baseUri/$portfolioId'; // Pagination params removed as backend ignores/doesn't support them for this endpoint
+      final fullUri = '$baseUri/$portfolioId';
 
       final response = await _apiClient.get<TradeHoldingsDto>(
         fullUri,
         parser: (data) {
-          // Handle List response by wrapping it in TradeHoldingsDto
           if (data is List) {
             final list = data
                 .map((item) =>
@@ -185,16 +187,31 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
                 totalPages: 1,
                 last: true,
                 first: true,
-                size: list.length > 0 ? list.length : 50,
+                size: list.isNotEmpty ? list.length : 50,
                 numberOfElements: list.length,
                 empty: list.isEmpty,
                 pageable: const PageableDto(
                     pageNumber: 0, pageSize: 50, paged: false, unpaged: true));
           }
-          // Fallback if data is already a Map (e.g. if backend changes future)
           return TradeHoldingsDto.fromJson(data! as Map<String, dynamic>);
         },
       );
+
+      // Demo / broker portfolios often have holdings in am-portfolio but no
+      // trade-execution rows. Fall back so Trade → Holdings stays in sync.
+      if (response.empty || response.content.isEmpty) {
+        final fromPortfolio = await _holdingsFromPortfolioApi(portfolioId);
+        if (fromPortfolio != null && !fromPortfolio.empty) {
+          AppLogger.info(
+            'Trade holdings empty — using portfolio holdings fallback '
+            '(${fromPortfolio.totalElements} rows) for $portfolioId',
+            tag: 'TradeRemoteDataSource',
+          );
+          AppLogger.methodExit('getTradeHoldings',
+              tag: 'TradeRemoteDataSource', result: 'success_portfolio_fallback');
+          return fromPortfolio;
+        }
+      }
 
       AppLogger.info('Trade holdings fetched successfully from API',
           tag: 'TradeRemoteDataSource');
@@ -210,6 +227,17 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
+      try {
+        final fromPortfolio = await _holdingsFromPortfolioApi(portfolioId);
+        if (fromPortfolio != null && !fromPortfolio.empty) {
+          AppLogger.info(
+            'Trade holdings API failed — using portfolio holdings fallback',
+            tag: 'TradeRemoteDataSource',
+          );
+          return fromPortfolio;
+        }
+      } catch (_) {}
+
       if (kDebugMode) {
         try {
           AppLogger.info('Loading mock trade holdings',
@@ -224,6 +252,88 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         rethrow;
       }
     }
+  }
+
+  /// GET {portfolioBase}/v1/portfolios/holdings?portfolioId=… and map to trade holdings shape.
+  Future<TradeHoldingsDto?> _holdingsFromPortfolioApi(String portfolioId) async {
+    final portfolio = _portfolioConfig;
+    if (portfolio == null || portfolio.baseUrl.isEmpty) {
+      return null;
+    }
+    final baseUri = _buildUri(portfolio.baseUrl, portfolio.holdingsResource);
+    final fullUri = portfolioId.isEmpty || portfolioId == 'all'
+        ? baseUri
+        : '$baseUri?portfolioId=$portfolioId';
+
+    return _apiClient.get<TradeHoldingsDto>(
+      fullUri,
+      parser: (data) {
+        if (data is! Map) {
+          return const TradeHoldingsDto(empty: true);
+        }
+        final equities = (data['equityHoldings'] as List?) ?? const [];
+        final list = <TradeDetailsDto>[];
+        for (var i = 0; i < equities.length; i++) {
+          final raw = equities[i];
+          if (raw is! Map) continue;
+          final json = Map<String, dynamic>.from(raw);
+          final symbol = (json['symbol'] as String?)?.trim() ?? '';
+          if (symbol.isEmpty) continue;
+          final qty = _asDouble(json['quantity']);
+          final investment = _asDouble(json['investmentCost']);
+          final currentValue = _asDouble(json['currentValue']);
+          final currentPrice = _asDouble(json['currentPrice']);
+          final gainLoss = _asDouble(json['gainLoss']);
+          final gainLossPct = _asDouble(json['gainLossPercentage']);
+          final avgPrice = qty > 0 ? investment / qty : 0.0;
+          final name = (json['name'] as String?)?.trim();
+          final isin = (json['isin'] as String?)?.trim();
+
+          list.add(TradeDetailsDto(
+            tradeId: 'demo-holding-$portfolioId-$symbol-$i',
+            portfolioId: portfolioId,
+            symbol: symbol,
+            instrumentInfo: InstrumentInfoDto(
+              symbol: symbol,
+              isin: isin?.isEmpty == true ? null : isin,
+              description: (name != null && name.isNotEmpty) ? name : symbol,
+            ),
+            status: TradeStatuses.open,
+            tradePositionType: TradeDirections.long,
+            entryInfo: EntryExitInfoDto(
+              price: avgPrice,
+              quantity: qty.round(),
+              totalValue: investment,
+            ),
+            currentPrice: currentPrice,
+            metrics: TradeMetricsDto(
+              profitLoss: gainLoss,
+              profitLossPercentage: gainLossPct,
+            ),
+            notes: currentValue > 0 ? 'currentValue=$currentValue' : null,
+          ));
+        }
+        return TradeHoldingsDto(
+          content: list,
+          totalElements: list.length,
+          totalPages: 1,
+          last: true,
+          first: true,
+          size: list.isNotEmpty ? list.length : 50,
+          numberOfElements: list.length,
+          empty: list.isEmpty,
+          pageable: const PageableDto(
+              pageNumber: 0, pageSize: 50, paged: false, unpaged: true),
+        );
+      },
+    );
+  }
+
+  static double _asDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0;
+    return 0;
   }
 
   @override
