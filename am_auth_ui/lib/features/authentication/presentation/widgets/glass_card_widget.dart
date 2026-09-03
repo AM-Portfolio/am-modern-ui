@@ -196,10 +196,11 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
                       clipBehavior: Clip.hardEdge,
                       children: [
                         // Polished glass edge highlights
+                        // Note: non-uniform BorderSide colors cannot use borderRadius
+                        // (Flutter assertion). Parent ClipRRect already clips corners.
                         Positioned.fill(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(r - 1),
                               border: Border(
                                 top: BorderSide(color: topHighlightColor, width: 1.2),
                                 left: BorderSide(color: leftHighlightColor, width: 1.0),

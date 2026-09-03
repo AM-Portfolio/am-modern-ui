@@ -1,19 +1,6 @@
 {
-  "_comment": "Local development configuration. Toggle 'useOverrides' to hit local services instead of the cluster.",
-  "domain": "am-dev.asrax.in",
-  "useOverrides": false,
-  "overrides": {
-    "auth":      "http://localhost:8001",
-    "users":     "http://localhost:8002",
-    "portfolio": "http://localhost:8003",
-    "market":    "http://localhost:8092",
-    "wsStream":  "ws://localhost:8000/v1/streams",
-    "trades":    "http://localhost:8082",
-    "analysis":  "http://localhost:8090",
-    "docs":      "http://localhost:8085",
-    "gmail":     "http://localhost:8086"
-  },
-  "google": {
-    "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
+  "_comment": "Copy to config.local.json (gitignored, like .env). Merged last over config.{env}.json. Missing file is fine. Example: prod UI + local portfolio.",
+  "services": {
+    "portfolio": "http://localhost:8072"
   }
 }

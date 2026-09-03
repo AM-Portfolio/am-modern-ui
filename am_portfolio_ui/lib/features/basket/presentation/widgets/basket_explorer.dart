@@ -6,6 +6,9 @@ import '../providers/basket_providers.dart';
 import '../basket_navigation.dart';
 import '../../domain/models/basket_opportunity.dart';
 import 'etf_search_bar.dart';
+import '../pages/my_baskets_view.dart';
+
+enum BasketViewMode { discover, myBaskets }
 
 class BasketExplorer extends ConsumerStatefulWidget {
   final String userId;
@@ -26,6 +29,25 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
   bool _emittedEmpty = false;
   String? _lastEmptyQuery;
   String? _selectedThemeId;
+  BasketViewMode _viewMode = BasketViewMode.discover;
+
+  @override
+  void initState() {
+    super.initState();
+    BasketNavigation.registerMyBasketsListener(_showMyBasketsTab);
+  }
+
+  @override
+  void dispose() {
+    BasketNavigation.unregisterMyBasketsListener();
+    super.dispose();
+  }
+
+  void _showMyBasketsTab() {
+    if (mounted) {
+      setState(() => _viewMode = BasketViewMode.myBaskets);
+    }
+  }
 
   void _updateQuery({String? query, String? themeId}) {
     setState(() {
@@ -81,24 +103,63 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Smart Baskets',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Smart Baskets',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      SegmentedButton<BasketViewMode>(
+                        segments: const [
+                          ButtonSegment(
+                            value: BasketViewMode.discover,
+                            label: Text('Discover'),
+                            icon: Icon(Icons.search),
+                          ),
+                          ButtonSegment(
+                            value: BasketViewMode.myBaskets,
+                            label: Text('My Baskets'),
+                            icon: Icon(Icons.shopping_basket),
+                          ),
+                        ],
+                        selected: {_viewMode},
+                        onSelectionChanged: (Set<BasketViewMode> newSelection) {
+                          setState(() {
+                            _viewMode = newSelection.first;
+                          });
+                        },
+                        showSelectedIcon: false,
+                        style: SegmentedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Match your holdings to ETF baskets and see what you already own.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: context.textSecondary,
+                  if (_viewMode == BasketViewMode.discover) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Match your holdings to ETF baskets and see what you already own.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: context.textSecondary,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
-            Padding(
+            if (_viewMode == BasketViewMode.myBaskets)
+              Expanded(
+                child: MyBasketsView(
+                  userId: widget.userId,
+                  portfolioId: widget.portfolioId,
+                ),
+              )
+            else ...[
+              Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.md,
                 AppSpacing.sm + AppSpacing.xs,
@@ -242,6 +303,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                 ),
               ),
             ),
+            ],
           ],
         );
       },

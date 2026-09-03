@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math' as math;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -72,7 +72,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   void dispose() {
     _bottomNavHideTimer?.cancel();
     _marketGateSubscription?.cancel();
-    _stopMarketStreamingGate();
+    _marketGateSubscription = null;
     _bottomNavController.dispose();
     super.dispose();
   }
@@ -92,11 +92,11 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     });
   }
 
-  void _stopMarketStreamingGate() {
+  void _resetMarketStreamingGate() {
     _marketGateSubscription?.cancel();
     _marketGateSubscription = null;
     if (GetIt.instance.isRegistered<common.MarketStreamingGate>()) {
-      GetIt.instance<common.MarketStreamingGate>().stop();
+      GetIt.instance<common.MarketStreamingGate>().reset();
     }
   }
 
@@ -189,9 +189,8 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
             icon: Icons.account_balance_wallet_rounded),
         const SidebarItem(title: 'Trade', icon: Icons.swap_horiz_rounded),
         const SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
-        if (isAdmin)
-          const SidebarItem(
-              title: 'AI Chat', icon: Icons.auto_awesome_rounded),
+        const SidebarItem(
+            title: 'AI Chat', icon: Icons.auto_awesome_rounded),
         if (isAdmin)
           const SidebarItem(
               title: 'Analysis', icon: Icons.analytics_outlined),
@@ -455,7 +454,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
               common.AppLogger.info(
                 'AppShell: AuthState changed to Unauthenticated. Disconnecting STOMP...',
               );
-              _stopMarketStreamingGate();
+              _resetMarketStreamingGate();
               unawaited(_clearFeatureFlagAttributes());
               stompCubit.onConnected = null;
               stompCubit.updateToken(null);
@@ -601,6 +600,7 @@ final userId =
                                   isDarkMode: isDark,
                                   userName: authState.user.displayName,
                                   visibleCount: 5,
+                                  moduleShareUrls: AppRoutes.navTitleToDefaultPath,
                                   onNavigate: (title) =>
                                       _onGlobalNavigate(title, userId),
                                   items: [
@@ -622,14 +622,14 @@ final userId =
                                       icon: Icons.show_chart_rounded,
                                     ),
                                     const SidebarItem(
+                                      title: 'AI Chat',
+                                      icon: Icons.auto_awesome_rounded,
+                                    ),
+                                    const SidebarItem(
                                       title: 'Profile',
                                       icon: Icons.person_rounded,
                                     ),
                                     if (isAdmin) ...[
-                                      const SidebarItem(
-                                        title: 'AI Chat',
-                                        icon: Icons.auto_awesome_rounded,
-                                      ),
                                       const SidebarItem(
                                         title: 'Analysis',
                                         icon: Icons.analytics_outlined,
@@ -648,7 +648,7 @@ final userId =
             },
           );
 
-          if (!authPending) return shell;
+          if (!kIsWeb || !authPending) return shell;
 
           return Stack(
             children: [

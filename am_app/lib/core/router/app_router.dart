@@ -10,6 +10,7 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/shell/app_shell.dart';
+import '../../features/chart/comparison_chart_expanded_page.dart';
 import 'app_routes.dart';
 import 'auth_refresh_listenable.dart';
 import 'deferred_routes.dart';
@@ -81,11 +82,9 @@ GoRouter createAppRouter({
         return AppRoutes.dashboard;
       }
 
-      // Global Analysis + AI Chat are admin-only.
+      // Global Analysis is admin-only.
       if (location == AppRoutes.analysis ||
-          location.startsWith('${AppRoutes.analysis}/') ||
-          location == AppRoutes.aiChat ||
-          location.startsWith('${AppRoutes.aiChat}/')) {
+          location.startsWith('${AppRoutes.analysis}/')) {
         final isAdmin =
             authState is Authenticated && authState.user.isAdmin;
         if (!isAdmin) return AppRoutes.dashboard;
@@ -222,6 +221,24 @@ GoRouter createAppRouter({
             },
           ),
           GoRoute(
+            path: AppRoutes.chartCompare,
+            builder: (context, state) {
+              final qp = state.uri.queryParameters;
+              final chartContext = qp['context'] ?? 'market';
+              final tf = qp['tf'] ?? '1W';
+              final seriesRaw = qp['series'] ?? '';
+              final series = seriesRaw.isEmpty
+                  ? <String>[]
+                  : Uri.decodeComponent(seriesRaw).split(',');
+              return ComparisonChartExpandedPage(
+                chartContext: chartContext,
+                timeFrameCode: tf,
+                series: series,
+                userId: _userId(context),
+              );
+            },
+          ),
+          GoRoute(
             path: '${AppRoutes.portfolio}/:portfolioId/:tab',
             builder: (context, state) {
               final portfolioId = state.pathParameters['portfolioId']!;
@@ -342,8 +359,35 @@ GoRouter createAppRouter({
           ),
           GoRoute(
             path: AppRoutes.aiChat,
-            builder: (context, state) =>
-                buildAiChatRoute(userId: _userId(context)),
+            builder: (context, state) {
+              final authState = context.read<AuthCubit>().state;
+              String? displayName;
+              if (authState is Authenticated) {
+                displayName = authState.user.displayName?.trim();
+                if (displayName == null || displayName.isEmpty) {
+                  final email = authState.user.email;
+                  if (email.contains('@')) {
+                    final local = email
+                        .split('@')
+                        .first
+                        .replaceAll(RegExp(r'[._-]+'), ' ')
+                        .trim();
+                    if (local.isNotEmpty) {
+                      displayName = local
+                          .split(RegExp(r'\s+'))
+                          .where((p) => p.isNotEmpty)
+                          .map((p) =>
+                              '${p[0].toUpperCase()}${p.substring(1).toLowerCase()}')
+                          .join(' ');
+                    }
+                  }
+                }
+              }
+              return buildAiChatRoute(
+                userId: _userId(context),
+                displayName: displayName,
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.lab,
@@ -458,7 +502,10 @@ String? _portfolioIdOnlyRedirect(String location) {
 
 String _userId(BuildContext context) {
   final authState = context.read<AuthCubit>().state;
-  return authState is Authenticated ? authState.user.id : '';
+  if (authState is Authenticated && authState.user.id.isNotEmpty) {
+    return authState.user.id;
+  }
+  return 'anonymous';
 }
 
 void _patchPortfolioSession(BuildContext context, String id, String name) {

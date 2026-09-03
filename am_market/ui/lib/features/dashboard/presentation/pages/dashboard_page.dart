@@ -26,6 +26,7 @@ import 'user_dashboard_page.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/heatmap_explorer_view.dart';
 import 'package:am_market_ui/features/market/widgets/market_header.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_market_ui/features/equity_insider/presentation/pages/equity_insider_page.dart';
 
 /// Market feature page with Swipe Navigation
 class MarketPage extends StatelessWidget {
@@ -135,6 +136,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     'Developer Dashboard': 'developer-dashboard',
     'Dashboard': 'dashboard',
     'Heatmap Explorer': 'heatmap-explorer',
+    'Equity Insider': 'equity-insider',
   };
 
   String _slugForTitle(String title) {
@@ -392,6 +394,12 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         Icons.analytics_rounded,
         'Detailed charts',
       ),
+      _createSidebarItem(
+        7,
+        'Equity Insider',
+        Icons.insights_rounded,
+        'Fundamental analysis',
+      ),
     ];
 
     // Dynamic Indices
@@ -399,7 +407,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         provider.availableIndices?.broad.take(5).length ?? 0;
     final indexItems = <SecondarySidebarItem>[];
     if (provider.availableIndices != null) {
-      var baseIndex = 7;
+      var baseIndex = 8;
       for (final indexName in provider.availableIndices!.broad.take(5)) {
         final i = baseIndex;
         indexItems.add(
@@ -421,7 +429,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       }
     }
 
-    final adminIndex = 7 + dynamicIndicesCount;
+    final adminIndex = 8 + dynamicIndicesCount;
     final developerIndex = adminIndex + 1;
 
     final adminItem = SecondarySidebarItem(
@@ -471,6 +479,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     final userItems = [
       _createSidebarItem(0, 'Dashboard', Icons.home_rounded, 'Overview'),
       _createSidebarItem(1, 'Market Analysis', Icons.analytics_rounded, 'Detailed charts'),
+      _createSidebarItem(2, 'Equity Insider', Icons.insights_rounded, 'Fundamental analysis'),
     ];
 
     return [
@@ -564,6 +573,13 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         page: _wrapPage(const HeatmapExplorerView()),
         accentColor: accentColor,
       ),
+      NavigationItem(
+        title: 'Equity Insider',
+        subtitle: 'Fundamental analysis',
+        icon: Icons.insights_rounded,
+        page: _wrapPage(EquityInsiderPage()),
+        accentColor: accentColor,
+      ),
     ];
 
     // Dynamic Indices
@@ -626,9 +642,13 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         page: _wrapPage(const HeatmapExplorerView()), // Was AnalysisPage(), now consolidated
         accentColor: accentColor,
       ),
-      // Heatmap Explorer removed as it's now Market Analysis
+      NavigationItem(
+        title: 'Equity Insider',
+        subtitle: 'Fundamental analysis',
+        icon: Icons.insights_rounded,
+        page: _wrapPage(EquityInsiderPage()),
+        accentColor: accentColor,
+      ),
     ];
   }
 }
-
-

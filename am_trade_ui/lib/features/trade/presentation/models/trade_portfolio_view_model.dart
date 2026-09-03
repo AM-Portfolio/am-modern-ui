@@ -76,13 +76,49 @@ class TradePortfolioViewModel {
   String get displayTotalTrades => '$totalTrades';
   String get displayNetProfitLoss => '₹${(netProfitLoss ?? 0.0).toStringAsFixed(2)}';
   String get displayNetProfitLossPercentage => '${(netProfitLossPercentage ?? 0.0).toStringAsFixed(2)}%';
-  String get displayWinRate => '${(winRate ?? 0.0).toStringAsFixed(1)}%';
+  String get displayWinRate => '${((winRate ?? 0.0) * 100).toStringAsFixed(1)}%';
   String get displayOpenPositions => '$openPositions';
   String get displayWinLossRecord => '$winningTrades W / $losingTrades L';
   bool get isTradeProfit => (netProfitLoss ?? 0.0) >= 0;
 
   static List<TradePortfolioViewModel> fromEntityList(List<TradePortfolio> entities) =>
       entities.map(TradePortfolioViewModel.fromEntity).toList();
+
+  /// Creates a copy of this view model with the specified fields replaced.
+  ///
+  /// Used by the portfolio aggregation layer to overlay live Unrealized P&L
+  /// data from am-portfolio on top of the Realized metrics from am-trade-management.
+  ///
+  /// **Important:** `netProfitLoss` is intentionally NOT
+  /// overrideable via this method. It is a Realized metric that must never
+  /// be confused with Unrealized (live) portfolio values.
+  TradePortfolioViewModel copyWith({
+    double? totalValue,
+    double? totalGainLoss,
+    double? totalGainLossPercentage,
+    int? holdingsCount,
+    DateTime? lastUpdated,
+    double? winRate,
+  }) =>
+      TradePortfolioViewModel(
+        id: id,
+        name: name,
+        ownerId: ownerId,
+        totalValue: totalValue ?? this.totalValue,
+        totalGainLoss: totalGainLoss ?? this.totalGainLoss,
+        totalGainLossPercentage:
+            totalGainLossPercentage ?? this.totalGainLossPercentage,
+        holdingsCount: holdingsCount ?? this.holdingsCount,
+        description: description,
+        lastUpdated: lastUpdated ?? this.lastUpdated,
+        totalTrades: totalTrades,
+        netProfitLoss: netProfitLoss,
+        netProfitLossPercentage: netProfitLossPercentage,
+        winRate: winRate ?? this.winRate,
+        winningTrades: winningTrades,
+        losingTrades: losingTrades,
+        openPositions: openPositions,
+      );
 }
 
 /// View model for portfolio list

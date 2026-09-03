@@ -4,9 +4,12 @@ import 'package:am_common/am_common.dart';
 
 import '../../domain/models/basket_catalog.dart';
 import '../../domain/models/basket_opportunity.dart';
+import '../../domain/models/tracking_basket.dart';
+import '../../domain/models/basket_detail.dart';
 import '../../domain/repositories/basket_repository.dart';
 import '../../data/repositories/basket_repository_impl.dart';
 import '../../data/datasources/basket_remote_data_source.dart';
+import '../../../portfolio/providers/portfolio_providers.dart';
 
 part 'basket_providers.g.dart';
 
@@ -52,3 +55,79 @@ Future<BasketOpportunity> basketPreview(
     portfolioId: portfolioId,
   );
 }
+
+@riverpod
+Future<BasketOpportunity> applySubstitutes(
+  Ref ref, {
+  required Map<String, dynamic> request,
+}) async {
+  final repository = await ref.watch(basketRepositoryProvider.future);
+  return repository.applySubstitutes(request);
+}
+
+@riverpod
+Future<List<TrackingBasket>> myBaskets(
+  Ref ref, {
+  required String userId,
+  required String portfolioId,
+}) async {
+  final repository = await ref.watch(basketRepositoryProvider.future);
+  return repository.getMyBaskets(
+    userId: userId,
+    portfolioId: portfolioId,
+  );
+}
+
+@riverpod
+Future<String> createBasketPortfolio(
+  Ref ref, {
+  required Map<String, dynamic> request,
+}) async {
+  final repository = await ref.watch(basketRepositoryProvider.future);
+  return repository.createPortfolio(request);
+}
+
+@riverpod
+Future<BasketOpportunity> calculateBasketQuantities(
+  Ref ref, {
+  required Map<String, dynamic> request,
+}) async {
+  final repository = await ref.watch(basketRepositoryProvider.future);
+  return repository.calculateQuantities(request);
+}
+
+@riverpod
+Future<BasketOpportunity> calculateBasketQuantitiesFinalPreview(
+  Ref ref, {
+  required Map<String, dynamic> request,
+}) async {
+  final repository = await ref.watch(basketRepositoryProvider.future);
+  return repository.calculateQuantitiesFinalPreview(request);
+}
+
+@riverpod
+Future<void> deleteBasket(
+  Ref ref, {
+  required String basketId,
+  required String userId,
+}) async {
+  final repository = await ref.watch(basketRepositoryProvider.future);
+  return repository.deleteBasket(
+    basketId: basketId,
+    userId: userId,
+  );
+}
+
+@riverpod
+Future<BasketDetail> basketDetail(
+  Ref ref, {
+  required String basketId,
+  required String userId,
+}) async {
+  final repository = await ref.watch(basketRepositoryProvider.future);
+  return repository.getBasketDetail(
+    basketId: basketId,
+    userId: userId,
+  );
+}
+

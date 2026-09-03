@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../models/market_data.dart';
 import '../models/available_indices.dart';
+import '../models/indices_region.dart';
 import '../models/historical_performance_model.dart';
 import '../models/seasonality_model.dart';
 import '../services/api_service.dart';
@@ -20,7 +21,9 @@ class MarketProvider with ChangeNotifier {
 
   AvailableIndices? _availableIndices;
   StockIndicesMarketData? _currentIndexData;
-  List<StockIndicesMarketData> _allIndicesData = []; // For Market Overview
+  List<StockIndicesMarketData> _allIndicesData = []; // Indian Market Overview
+  List<StockIndicesMarketData> _globalIndicesData = [];
+  IndicesRegion _indicesRegion = IndicesRegion.indian;
   
   String? _selectedIndex;
   bool _isLoading = false;
@@ -176,7 +179,40 @@ class MarketProvider with ChangeNotifier {
   // Restored Getters
   AvailableIndices? get availableIndices => _availableIndices;
   StockIndicesMarketData? get currentIndexData => _currentIndexData;
+  /// Indian indices only (backward-compatible name used across the dashboard).
   List<StockIndicesMarketData> get allIndicesData => _allIndicesData;
+  List<StockIndicesMarketData> get globalIndicesData => _globalIndicesData;
+  IndicesRegion get indicesRegion => _indicesRegion;
+
+  /// Indices shown in All Indices panel for the active region toggle.
+  List<StockIndicesMarketData> get indicesForActiveRegion =>
+      _indicesRegion == IndicesRegion.global ? _globalIndicesData : _allIndicesData;
+
+  /// Union used by Compare Indices (mixed Indian + Global selection).
+  List<StockIndicesMarketData> get indicesForCompare {
+    final bySymbol = <String, StockIndicesMarketData>{};
+    for (final i in _allIndicesData) {
+      bySymbol[i.indexSymbol] = i;
+    }
+    for (final i in _globalIndicesData) {
+      bySymbol[i.indexSymbol] = i;
+    }
+    return bySymbol.values.toList();
+  }
+
+  bool isGlobalSymbol(String symbol) {
+    if (_globalIndicesData.any((e) => e.indexSymbol == symbol)) return true;
+    return _availableIndices?.globalIndices.contains(symbol) ?? false;
+  }
+
+  void setIndicesRegion(IndicesRegion region) {
+    if (_indicesRegion == region) return;
+    _indicesRegion = region;
+    notifyListeners();
+    if (region == IndicesRegion.global && _globalIndicesData.isEmpty) {
+      unawaited(loadGlobalIndicesData());
+    }
+  }
   
   // Cache for specific index constituents (used by Heatmap/Explorers)
   Map<String, List<StockData>> _indexConstituents = {};
@@ -468,8 +504,23 @@ class MarketProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _availableIndices = await _apiService.fetchAvailableIndices();
-      CommonLogger.info("Fetched available indices: ${_availableIndices?.broad.length ?? 0} broad, ${_availableIndices?.sectoral.length ?? 0} sectoral", tag: "MarketProvider.loadIndices");
+      final results = await Future.wait([
+        _apiService.fetchAvailableIndices(),
+        _apiService.fetchAvailableGlobalIndices().catchError((e) {
+          CommonLogger.warning(
+            "Global available indices unavailable: $e",
+            tag: "MarketProvider.loadIndices",
+          );
+          return <String>[];
+        }),
+      ]);
+      final indian = results[0] as AvailableIndices;
+      final global = results[1] as List<String>;
+      _availableIndices = indian.copyWith(globalIndices: global);
+      CommonLogger.info(
+        "Fetched available indices: ${indian.broad.length} broad, ${indian.sectoral.length} sectoral, ${global.length} global",
+        tag: "MarketProvider.loadIndices",
+      );
       if (_availableIndices?.broad.isNotEmpty ?? false) {
         // Auto-select "All Indices" by default to show overview
         selectIndex("All Indices");
@@ -569,45 +620,91 @@ class MarketProvider with ChangeNotifier {
     try {
       // STEP 1: Fetch available indices first if not already loaded
       if (_availableIndices == null) {
-        _availableIndices = await _apiService.fetchAvailableIndices();
+        final indian = await _apiService.fetchAvailableIndices();
+        final global = await _apiService.fetchAvailableGlobalIndices().catchError((e) {
+          CommonLogger.warning(
+            "Global available indices unavailable: $e",
+            tag: "MarketProvider.loadAllIndicesData",
+          );
+          return <String>[];
+        });
+        _availableIndices = indian.copyWith(globalIndices: global);
         CommonLogger.info("Fetched available indices", tag: "MarketProvider.loadAllIndicesData");
-
+      } else if (_availableIndices!.globalIndices.isEmpty) {
+        final global = await _apiService.fetchAvailableGlobalIndices().catchError((_) => <String>[]);
+        _availableIndices = _availableIndices!.copyWith(globalIndices: global);
       }
       
-      // STEP 2: Get all index symbols from available indices
-      List<String> allSymbols = [
-        ...(_availableIndices?.broad ?? []),
-        ...(_availableIndices?.sectoral ?? []),
-      ];
+      // STEP 2: Indian symbols only for _allIndicesData (NSE movers / pinned stay Indian-first)
+      List<String> indianSymbols = _availableIndices?.indianSymbols ?? [];
       
-      if (allSymbols.isEmpty) {
+      if (indianSymbols.isEmpty) {
         _error = "No indices available";
         CommonLogger.warning("No indices available", tag: "MarketProvider.loadAllIndicesData");
 
         return;
       }
       
-      CommonLogger.info("Loading ${allSymbols.length} indices: $allSymbols", tag: "MarketProvider.loadAllIndicesData");
+      CommonLogger.info("Loading ${indianSymbols.length} Indian indices", tag: "MarketProvider.loadAllIndicesData");
 
       
-      // STEP 3: Call batch endpoint with the available symbols
+      // STEP 3: Call batch endpoint with Indian symbols
       _allIndicesData = await _apiService.fetchIndicesBatch(
-        allSymbols, 
+        indianSymbols, 
         forceRefresh: _forceRefresh
       );
       
-      CommonLogger.info("Successfully loaded ${_allIndicesData.length} indices", tag: "MarketProvider.loadAllIndicesData");
+      CommonLogger.info("Successfully loaded ${_allIndicesData.length} Indian indices", tag: "MarketProvider.loadAllIndicesData");
 
-      await _ensurePriceSubscription(allSymbols);
+      // Warm global list in parallel (non-blocking for Indian UI)
+      unawaited(loadGlobalIndicesData());
+
+      await _ensurePriceSubscription(
+        _allIndicesData.take(_maxLiveStreamSymbols).map((e) => e.indexSymbol).toList(),
+      );
       _syncWithPriceService();
 
     } catch (e) {
-      CommonLogger.error("Error loading all indices data", tag: "MarketProvider.loadAllIndicesData", error: e);
-
+      CommonLogger.error("Error loading all indices", tag: "MarketProvider.loadAllIndicesData", error: e);
       _error = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> loadGlobalIndicesData() async {
+    try {
+      if (_availableIndices == null || _availableIndices!.globalIndices.isEmpty) {
+        final global = await _apiService.fetchAvailableGlobalIndices();
+        _availableIndices = (_availableIndices ?? AvailableIndices()).copyWith(globalIndices: global);
+      }
+      final symbols = _availableIndices?.globalIndices ?? [];
+      if (symbols.isEmpty) {
+        _globalIndicesData = [];
+        notifyListeners();
+        return;
+      }
+      CommonLogger.info(
+        "Loading ${symbols.length} global indices",
+        tag: "MarketProvider.loadGlobalIndicesData",
+      );
+      _globalIndicesData = await _apiService.fetchIndicesBatch(
+        symbols,
+        forceRefresh: _forceRefresh,
+      );
+      CommonLogger.info(
+        "Successfully loaded ${_globalIndicesData.length} global indices",
+        tag: "MarketProvider.loadGlobalIndicesData",
+      );
+      notifyListeners();
+    } catch (e) {
+      CommonLogger.error(
+        "Error loading global indices",
+        tag: "MarketProvider.loadGlobalIndicesData",
+        error: e,
+      );
+      // Keep Indian flow healthy even if global fails.
     }
   }
 
@@ -681,14 +778,38 @@ class MarketProvider with ChangeNotifier {
   Future<void> loadHeatmap(String symbol, String timeframe) async {
     CommonLogger.info("Loading heatmap for $symbol ($timeframe)", tag: "MarketProvider.loadHeatmap");
     try {
-      _heatmapValues = await _apiService.fetchHeatmap(symbol, timeframe: timeframe);
+      var values = await _apiService.fetchHeatmap(symbol, timeframe: timeframe);
+      // Stale/bad INDICES 1D Redis cache often returns almost all 0.0 — recompute once.
+      if (_isDegenerateIndicesHeatmap(symbol, timeframe, values)) {
+        CommonLogger.warning(
+          "Degenerate INDICES heatmap cache detected; retrying with forceRefresh",
+          tag: "MarketProvider.loadHeatmap",
+        );
+        values = await _apiService.fetchHeatmap(
+          symbol,
+          timeframe: timeframe,
+          forceRefresh: true,
+        );
+      }
+      _heatmapValues = values;
       notifyListeners();
     } catch (e) {
       CommonLogger.error("Error loading heatmap", tag: "MarketProvider.loadHeatmap", error: e);
-      _heatmapValues = {}; // Clear or keep previous?
-      // Better to clear or show error
+      _heatmapValues = {};
       notifyListeners();
     }
+  }
+
+  bool _isDegenerateIndicesHeatmap(
+    String symbol,
+    String timeframe,
+    Map<String, double> values,
+  ) {
+    if (symbol.toUpperCase() != 'INDICES') return false;
+    if (timeframe.toUpperCase() != '1D') return false;
+    if (values.length < 5) return false;
+    final zeros = values.values.where((v) => v.abs() < 1e-9).length;
+    return zeros * 10 >= values.length * 7;
   }
 
   Future<void> loadSeasonality(String symbol) async {

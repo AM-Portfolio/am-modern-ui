@@ -19,14 +19,13 @@ class MarketStreamingGate {
 
   final MarketStatusClient _client;
 
-  static const Duration _pollInterval = Duration(seconds: 60);
   static const Duration _istOffset = Duration(hours: 5, minutes: 30);
 
   final BehaviorSubject<bool> _isOpenSubject =
       BehaviorSubject<bool>.seeded(true);
 
   MarketStatus? _status;
-  Timer? _pollTimer;
+  DateTime? _lastFetchedAt;
   Timer? _sessionTimer;
   bool _started = false;
   bool _refreshing = false;
@@ -37,30 +36,44 @@ class MarketStreamingGate {
 
   MarketStatus? get status => _status;
 
+  /// Starts the gate once per login — fetches status if not cached.
   Future<void> start() async {
     if (_started) return;
     _started = true;
-    await refresh();
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(_pollInterval, (_) {
-      unawaited(refresh());
-    });
+    await refresh(force: _status == null);
   }
 
+  /// Pauses session-boundary timers (e.g. logout). Keeps cached status.
   void stop() {
     _started = false;
-    _pollTimer?.cancel();
-    _pollTimer = null;
     _sessionTimer?.cancel();
     _sessionTimer = null;
   }
 
-  Future<void> refresh() async {
+  /// Logout: tear down timers and cached status so the next login refetches.
+  void reset() {
+    stop();
+    _status = null;
+    _lastFetchedAt = null;
+    if (!_isOpenSubject.isClosed) {
+      _isOpenSubject.add(true);
+    }
+  }
+
+  Future<void> refresh({bool force = false}) async {
     if (_refreshing) return;
+    if (!force &&
+        _status != null &&
+        _lastFetchedAt != null &&
+        DateTime.now().difference(_lastFetchedAt!) <
+            const Duration(hours: 1)) {
+      return;
+    }
     _refreshing = true;
     try {
       final next = await _client.fetchStatus(exchange: 'NSE');
       _status = next;
+      _lastFetchedAt = DateTime.now();
       _setOpen(next.open);
       _scheduleSessionBoundary(next);
     } catch (e, st) {

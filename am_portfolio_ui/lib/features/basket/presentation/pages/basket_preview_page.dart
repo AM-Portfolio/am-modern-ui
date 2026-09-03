@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:intl/intl.dart';
 import '../providers/basket_providers.dart';
+import '../utils/basket_api_errors.dart';
 import '../basket_navigation.dart';
-import '../widgets/basket_section_header.dart';
 import '../../domain/models/basket_opportunity.dart';
+
+// New Modular Widgets
+import '../widgets/preview/preview_hero_header.dart';
+import '../widgets/preview/preview_section_header.dart';
+import '../widgets/preview/preview_stock_row.dart';
+import '../widgets/shared/basket_flow_step.dart';
+import '../widgets/shared/basket_flow_stepper.dart';
+import '../widgets/shared/basket_sticky_action_bar.dart';
 
 class BasketPreviewPage extends ConsumerWidget {
   final String etfIsin;
@@ -29,390 +38,277 @@ class BasketPreviewPage extends ConsumerWidget {
     ));
 
     final body = opportunityAsync.when(
-      data: (opportunity) => _BasketContent(
-        opportunity: opportunity,
-        userId: userId,
-        portfolioId: portfolioId,
+      data: (opportunity) => Column(
+        children: [
+          const BasketFlowStepper(currentStep: BasketFlowStep.preview),
+          Expanded(
+            child: _BasketContent(
+              initialOpportunity: opportunity,
+              userId: userId,
+              portfolioId: portfolioId,
+            ),
+          ),
+        ],
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      loading: () => _buildSkeletonLoader(context),
+      error: (err, stack) => AmErrorWidget(
+        message: err.toString(),
+        onRetry: () {
+          ref.invalidate(basketPreviewProvider(
+            etfIsin: etfIsin,
+            userId: userId,
+            portfolioId: portfolioId,
+          ));
+        },
+      ),
     );
 
     if (embedded) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          BasketSectionHeader(
-            title: 'Basket Preview',
-            onBack: () => Navigator.of(context).pop(),
-          ),
-          Expanded(child: body),
-        ],
+      return ColoredBox(
+        color: context.colors.scaffoldBackground,
+        child: body,
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Basket Preview'),
-        centerTitle: false,
-      ),
+      backgroundColor: context.colors.scaffoldBackground,
       body: body,
+    );
+  }
+
+  Widget _buildSkeletonLoader(BuildContext context) {
+    return Column(
+      children: [
+        const BasketFlowStepper(currentStep: BasketFlowStep.preview),
+        const Expanded(
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ],
     );
   }
 }
 
-class _BasketContent extends StatelessWidget {
-  final BasketOpportunity opportunity;
+class _BasketContent extends ConsumerStatefulWidget {
+  final BasketOpportunity initialOpportunity;
   final String userId;
   final String portfolioId;
 
   const _BasketContent({
-    required this.opportunity,
+    required this.initialOpportunity,
     required this.userId,
     required this.portfolioId,
   });
 
   @override
+  ConsumerState<_BasketContent> createState() => _BasketContentState();
+}
+
+class _BasketContentState extends ConsumerState<_BasketContent> {
+  late BasketOpportunity _opportunity;
+  final Set<String> _swappingSymbols = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _opportunity = widget.initialOpportunity;
+  }
+
+  Future<void> _handleSwap(BasketItem item, Alternative selectedAlt) async {
+    setState(() {
+      _swappingSymbols.add(item.stockSymbol);
+    });
+
+    try {
+      final request = {
+        'userId': widget.userId,
+        'portfolioId': widget.portfolioId,
+        'etfIsin': _opportunity.etfIsin,
+        'currentOpportunity': _opportunity.toJson(),
+        'assignments': [
+          {
+            'missingIsin': item.isin,
+            'substituteIsin': selectedAlt.isin,
+            'reason': 'User selected swap'
+          }
+        ],
+      };
+
+      final updatedOpportunity = await ref.read(applySubstitutesProvider(request: request).future);
+      
+      setState(() {
+        _opportunity = updatedOpportunity;
+      });
+      
+      if (mounted) {
+        final applied = updatedOpportunity.appliedSubstituteCount ?? 1;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              substituteApplyMessage(
+                appliedCount: applied,
+                warnings: updatedOpportunity.substituteWarnings,
+              ),
+            ),
+            backgroundColor: applied > 0 ? context.colors.statusSuccess : context.statusWarning,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to swap: ${basketApiErrorMessage(e)}'),
+            backgroundColor: context.colors.statusError,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _swappingSymbols.remove(item.stockSymbol);
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final heldItems = opportunity.composition
+    final available =
+        _opportunity.remainingPortfolioValue ?? _opportunity.totalPortfolioValue ?? 0;
+    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+
+    return Column(
+      children: [
+        Expanded(child: _buildScrollableContent(context)),
+        BasketStickyActionBar(
+          stats: [
+            BasketStatItem(label: 'Available to Invest', value: formatter.format(available)),
+            BasketStatItem(
+              label: 'Match',
+              value: '${_opportunity.replicaScore.toStringAsFixed(0)}%',
+              highlight: _opportunity.replicaScore >= 70,
+            ),
+          ],
+          onBack: () {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+          },
+          primaryLabel: 'Customize Basket',
+          primaryIcon: Icons.arrow_forward,
+          onPrimary: () => BasketNavigation.openCreator(
+            context,
+            opportunity: _opportunity,
+            userId: widget.userId,
+            portfolioId: widget.portfolioId,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScrollableContent(BuildContext context) {
+    final heldItems = _opportunity.composition
         .where((item) => item.status == ItemStatus.held)
         .toList();
-    final substituteItems = opportunity.composition
+    final substituteItems = _opportunity.composition
         .where((item) => item.status == ItemStatus.substitute)
         .toList();
-    final missingItems = opportunity.composition
+    final missingItems = _opportunity.composition
         .where((item) => item.status == ItemStatus.missing)
         .toList();
 
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        children: [
-          _EntryHeroCard(opportunity: opportunity),
-          Container(
-             margin: const EdgeInsets.symmetric(horizontal: 16),
-             decoration: BoxDecoration(
-               border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
-             ),
-             child: TabBar(
-               labelColor: context.colors.actionPrimaryBg,
-               unselectedLabelColor: context.textSecondary,
-               indicatorColor: context.colors.actionPrimaryBg,
-               indicatorWeight: 3,
-               isScrollable: true,
-               labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-               tabs: [
-                 Tab(text: "Held (${heldItems.length})"),
-                 Tab(text: "Substitute (${substituteItems.length})"),
-                 Tab(text: "Missing (${missingItems.length})"),
-               ],
-             ),
-           ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _HeldItemsList(items: heldItems),
-                _HeldItemsList(
-                  items: substituteItems,
-                  emptyMessage: 'No substitute holdings for this basket.',
-                ),
-                _MissingItemsList(items: missingItems),
-              ],
-            ),
-          ),
-          _BottomActionBar(
-            onPressed: () {
-              BasketNavigation.openCreator(
-                context,
-                opportunity: opportunity,
-                userId: userId,
-                portfolioId: portfolioId,
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EntryHeroCard extends StatelessWidget {
-  final BasketOpportunity opportunity;
-
-  const _EntryHeroCard({required this.opportunity});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withOpacity(0.1),
-            Theme.of(context).scaffoldBackgroundColor,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    // Order of sections: Held -> Substituted -> Missing
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: PreviewHeroHeader(opportunity: _opportunity),
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  opportunity.etfName,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+        
+        // Held Section
+        if (heldItems.isNotEmpty)
+          SliverToBoxAdapter(
+            child: PreviewSectionCard(
+              child: Column(
+                children: [
+                  PreviewSectionHeader(
+                    title: 'Held in Portfolio',
+                    subtitle: 'Direct ETF matches — your holdings align with ETF targets',
+                    statusType: ItemStatus.held,
+                    itemCount: heldItems.length,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Based on your holdings, you are ${opportunity.composition.length - opportunity.heldCount} stocks away from replicating this basket.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                 const SizedBox(height: 12),
-                 Row(
-                   children: [
-                     _ScoreBadge(label: "Match Score", score: opportunity.matchScore, color: AppColors.primary),
-                     const SizedBox(width: 12),
-                     _ScoreBadge(label: "Replica Score", score: opportunity.replicaScore, color: AppColors.success),
-                   ],
-                 )
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ScoreBadge extends StatelessWidget {
-  final String label;
-  final double score;
-  final Color color;
-
-  const _ScoreBadge({required this.label, required this.score, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-     return Container(
-       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-       decoration: BoxDecoration(
-         color: color.withOpacity(0.1),
-         borderRadius: BorderRadius.circular(8),
-         border: Border.all(color: color.withOpacity(0.3)),
-       ),
-       child: Column(
-         crossAxisAlignment: CrossAxisAlignment.start,
-         children: [
-           Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color)),
-           Text("${score.toStringAsFixed(1)}%", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: color)),
-         ],
-       ),
-     );
-  }
-}
-
-class _BasketItemHeader extends StatelessWidget {
-  const _BasketItemHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).canvasColor,
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
-      ),
-      child: Row(
-        children: [
-          Expanded(flex: 4, child: Text("Instrument", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
-          Expanded(flex: 1, child: Text("ETF %", textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
-          Expanded(flex: 1, child: Text("Your %", textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).hintColor))),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeldItemsList extends StatelessWidget {
-  final List<BasketItem> items;
-  final String emptyMessage;
-
-  const _HeldItemsList({
-    required this.items,
-    this.emptyMessage = 'No held items match this basket.',
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Text(emptyMessage),
-        ),
-      );
-    }
-    return Column(
-      children: [
-        const _BasketItemHeader(),
-        Expanded(
-          child: ListView.separated(
-            itemCount: items.length,
-            separatorBuilder: (c, i) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              final isSubstitute = item.status == ItemStatus.substitute;
-              
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                color: isSubstitute ? AppColors.info.withOpacity(0.05) : null,
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(
-                            "${item.sector} ${item.marketCapCategory != null ? '• ${item.marketCapCategory}' : ''}",
-                            style: Theme.of(context).textTheme.bodySmall
-                          ),
-                          if (isSubstitute)
-                             Padding(
-                               padding: const EdgeInsets.only(top: 4.0),
-                               child: Text("Using: ${item.userHoldingSymbol} (Sub)", style: TextStyle(fontSize: 11, color: AppColors.info, fontStyle: FontStyle.italic)),
-                             )
-                        ],
-                      )
+                  ...heldItems.map(
+                    (item) => PreviewStockRow(
+                      item: item,
+                      isSwapping: _swappingSymbols.contains(item.stockSymbol),
+                      onSwapSelected: _handleSwap,
+                      sectorialBasket: _opportunity.sectorialBasket ?? false,
+                      dominantSector: _opportunity.dominantSector,
+                      etfName: _opportunity.etfName,
+                      etfConstituentIsins: _opportunity.etfConstituentIsins,
                     ),
-                    Expanded(
-                      flex: 1,
-                      child: Text("${item.etfWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right)
-                    ),
-                     Expanded(
-                      flex: 1,
-                      child: Text("${item.userWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right, 
-                        style: TextStyle(fontWeight: FontWeight.bold, color: item.userWeight < item.etfWeight ? AppColors.warning : AppColors.success))
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MissingItemsList extends StatelessWidget {
-  final List<BasketItem> items;
-
-  const _MissingItemsList({required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(20.0),
-        child: Text('You have all items!'),
-      ));
-    }
-    return Column(
-      children: [
-        const _BasketItemHeader(),
-        Expanded(
-          child: ListView.separated(
-            itemCount: items.length,
-            separatorBuilder: (c, i) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(item.stockSymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(
-                             "${item.sector} ${item.marketCapCategory != null ? '• ${item.marketCapCategory}' : ''}",
-                             style: Theme.of(context).textTheme.bodySmall
-                          ),
-                        ],
-                      )
-                    ),
-                     Expanded(
-                      flex: 1,
-                      child: Text("${item.etfWeight.toStringAsFixed(2)}%", textAlign: TextAlign.right)
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Text("-", textAlign: TextAlign.right, style: TextStyle(color: Theme.of(context).disabledColor))
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _BottomActionBar extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  const _BottomActionBar({required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: onPressed,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                  ),
+                ],
               ),
             ),
-            child: const Text('Customize & Create Portfolio'),
           ),
-        ),
-      ),
+
+        // Substituted Section
+        if (substituteItems.isNotEmpty)
+          SliverToBoxAdapter(
+            child: PreviewSectionCard(
+              child: Column(
+                children: [
+                  PreviewSectionHeader(
+                    title: 'Automatically Substituted',
+                    subtitle: 'ETF slots covered by similar holdings in your portfolio',
+                    statusType: ItemStatus.substitute,
+                    itemCount: substituteItems.length,
+                  ),
+                  ...substituteItems.map(
+                    (item) => PreviewStockRow(
+                      item: item,
+                      isSwapping: _swappingSymbols.contains(item.stockSymbol),
+                      onSwapSelected: _handleSwap,
+                      sectorialBasket: _opportunity.sectorialBasket ?? false,
+                      dominantSector: _opportunity.dominantSector,
+                      etfName: _opportunity.etfName,
+                      etfConstituentIsins: _opportunity.etfConstituentIsins,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        // Missing Section
+        if (missingItems.isNotEmpty)
+          SliverToBoxAdapter(
+            child: PreviewSectionCard(
+              child: Column(
+                children: [
+                  PreviewSectionHeader(
+                    title: 'Missing / Swap Required',
+                    subtitle: 'Tap a row to pick a substitute from your portfolio',
+                    statusType: ItemStatus.missing,
+                    itemCount: missingItems.length,
+                  ),
+                  ...missingItems.map(
+                    (item) => PreviewStockRow(
+                      item: item,
+                      isSwapping: _swappingSymbols.contains(item.stockSymbol),
+                      onSwapSelected: _handleSwap,
+                      sectorialBasket: _opportunity.sectorialBasket ?? false,
+                      dominantSector: _opportunity.dominantSector,
+                      etfName: _opportunity.etfName,
+                      etfConstituentIsins: _opportunity.etfConstituentIsins,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
+      ],
     );
   }
 }

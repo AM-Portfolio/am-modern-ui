@@ -8,6 +8,7 @@ enum ChartType {
   pie,
   donut,
   table,
+  candle,
 }
 
 /// Standard data point model for all charts
@@ -26,6 +27,25 @@ class CommonChartDataPoint {
     this.yLabel,
     this.color,
     this.meta,
+  });
+}
+
+/// One OHLC candle for [ChartType.candle].
+class CommonCandlePoint {
+  final double x;
+  final double open;
+  final double high;
+  final double low;
+  final double close;
+  final String? xLabel;
+
+  const CommonCandlePoint({
+    required this.x,
+    required this.open,
+    required this.high,
+    required this.low,
+    required this.close,
+    this.xLabel,
   });
 }
 
@@ -66,6 +86,13 @@ class CommonChartConfig {
   /// Optional custom formatter for Y-axis labels.
   final String Function(double)? formatYLabel;
 
+  /// Optional Y bounds (rupee charts: pass [ChartAxisScale.minY] / [maxY]).
+  final double? minY;
+  final double? maxY;
+
+  /// Optional Y tick interval when [minY]/[maxY] are set.
+  final double? yInterval;
+
   const CommonChartConfig({
     this.showGrid = true,
     this.showTitles = true,
@@ -86,6 +113,9 @@ class CommonChartConfig {
     this.lockTooltipToTop = false,
     this.onZoomChanged,
     this.formatYLabel,
+    this.minY,
+    this.maxY,
+    this.yInterval,
   });
 }
 

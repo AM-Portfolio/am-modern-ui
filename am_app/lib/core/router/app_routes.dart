@@ -22,6 +22,7 @@ class AppRoutes {
   static const termsOfService = '/app/terms-of-service';
   static const subscription = '/app/subscription';
   static const deleteAccount = '/delete-account';
+  static const chartCompare = '/app/chart/compare';
 
   /// Legal pages must be readable without login (Play Store / App Store reviewers).
   static const publicLegalRoutes = {
@@ -156,6 +157,15 @@ class AppRoutes {
   };
 
   static String? pathForNavTitle(String title) => navTitleToDefaultPath[title];
+
+  static String chartComparePath({
+    required String context,
+    required String tf,
+    required List<String> series,
+  }) {
+    final seriesParam = Uri.encodeComponent(series.join(','));
+    return '$chartCompare?context=$context&tf=$tf&series=$seriesParam';
+  }
 
   static String activeNavTitleForLocation(String location) {
     if (location.startsWith(portfolio)) return 'Portfolio';

@@ -54,7 +54,10 @@ final _tradeRemoteDataSourceProvider =
   }
 
   return TradeRemoteDataSourceImpl(
-      apiClient: apiClient, tradeConfig: tradeConfig);
+    apiClient: apiClient,
+    tradeConfig: tradeConfig,
+    portfolioConfig: apiConfig.api.portfolio,
+  );
 });
 
 /// Provider for trade repository

@@ -17,6 +17,29 @@ abstract class BasketRemoteDataSource {
     required String userId,
     required String portfolioId,
   });
+
+  Future<List<dynamic>> getMyBaskets({
+    required String userId,
+
+    required String portfolioId,
+  });
+
+  Future<dynamic> createPortfolio(Map<String, dynamic> request);
+
+  Future<dynamic> applySubstitutes(Map<String, dynamic> request);
+
+  Future<dynamic> calculateQuantities(Map<String, dynamic> request);
+  Future<dynamic> calculateQuantitiesFinalPreview(Map<String, dynamic> request);
+
+  Future<void> deleteBasket({
+    required String basketId,
+    required String userId,
+  });
+
+  Future<dynamic> getBasketDetail({
+    required String basketId,
+    required String userId,
+  });
 }
 
 class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
@@ -71,5 +94,90 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
     );
 
     return BasketOpportunity.fromJson(response as Map<String, dynamic>);
+  }
+
+  @override
+  Future<List<dynamic>> getMyBaskets({
+    required String userId,
+    required String portfolioId,
+  }) async {
+    final response = await apiClient.get(
+      BasketEndpoints.myBaskets,
+      queryParams: {
+        'userId': userId,
+        'portfolioId': portfolioId,
+      },
+      parser: (data) => data,
+    );
+    return response as List<dynamic>;
+  }
+
+  @override
+  Future<dynamic> createPortfolio(Map<String, dynamic> request) async {
+    final response = await apiClient.post(
+      BasketEndpoints.createPortfolio,
+      body: request,
+      parser: (data) => data,
+    );
+    return response;
+  }
+
+  @override
+  Future<dynamic> calculateQuantities(Map<String, dynamic> request) async {
+    final response = await apiClient.post(
+      BasketEndpoints.calculateQuantities,
+      body: request,
+      parser: (data) => data,
+    );
+    return response;
+  }
+
+  @override
+  Future<dynamic> calculateQuantitiesFinalPreview(Map<String, dynamic> request) async {
+    final response = await apiClient.post(
+      BasketEndpoints.calculateQuantitiesFinalPreview,
+      body: request,
+      parser: (data) => data,
+    );
+    return response;
+  }
+
+  @override
+  Future<dynamic> applySubstitutes(Map<String, dynamic> request) async {
+    final response = await apiClient.post(
+      BasketEndpoints.applySubstitutes,
+      body: request,
+      parser: (data) => data,
+    );
+    return response;
+  }
+
+  @override
+  Future<dynamic> getBasketDetail({
+    required String basketId,
+    required String userId,
+  }) async {
+    final response = await apiClient.get(
+      BasketEndpoints.getBasketDetail(basketId),
+      queryParams: {
+        'userId': userId,
+      },
+      parser: (data) => data,
+    );
+    return response;
+  }
+
+  @override
+  Future<void> deleteBasket({
+    required String basketId,
+    required String userId,
+  }) async {
+    await apiClient.delete(
+      BasketEndpoints.deleteBasket(basketId),
+      queryParams: {
+        'userId': userId,
+      },
+      parser: (data) => data,
+    );
   }
 }

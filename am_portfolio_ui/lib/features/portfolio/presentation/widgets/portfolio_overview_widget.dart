@@ -3,7 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'allocation_panel_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'portfolio_history_chart_widget.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/sections/portfolio_comparison_chart_section.dart';
 import 'package:am_analysis_core/am_analysis_core.dart' hide TimeFrame;
 import 'portfolio_top_movers_panel.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
@@ -362,10 +362,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
 
                           // ── ROW 2: Chart + Allocation (or stacked on mobile) ──
                           if (isMobile) ...[
-                              PortfolioHistoryChartWidget(
-                                key: ValueKey('hist_${portfolioId}_${selectedTimeFrame.code}'),
-                                portfolioId: portfolioId,
-                                timeFrame: selectedTimeFrame,
+                              PortfolioComparisonChartSection(
+                                key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),
                                 height: 320,
                               ),
                             const SizedBox(height: 16),
@@ -663,10 +661,8 @@ class _MoversAllocationRow extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              PortfolioHistoryChartWidget(
-                key: ValueKey('hist_${portfolioId}_${selectedTimeFrame.code}'),
-                portfolioId: portfolioId,
-                timeFrame: selectedTimeFrame,
+              PortfolioComparisonChartSection(
+                key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),
                 height: 360,
               ),
               const SizedBox(height: 16),

@@ -1,14 +1,41 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:dio/dio.dart'; // Import Dio for API calls
-import '../../domain/models/basket_opportunity.dart';
-import '../../../../core/constants/basket_endpoints.dart';
-import '../widgets/allocation_bar.dart';
-import '../widgets/basket_section_header.dart';
-import '../../../portfolio/providers/portfolio_providers.dart';
-import '../../../portfolio/internal/domain/entities/portfolio_holding.dart';
 
+import '../../domain/models/basket_opportunity.dart';
+import '../widgets/minimum_investment_warning_widget.dart';
+import '../providers/basket_providers.dart';
+import '../utils/basket_api_errors.dart';
+import '../widgets/substitute_selector.dart';
+import '../basket_navigation.dart';
+import '../widgets/shared/basket_flow_step.dart';
+import '../widgets/shared/basket_flow_stepper.dart';
+import '../widgets/shared/basket_sticky_action_bar.dart';
+import '../utils/basket_allocation_math.dart';
+import '../shared/widgets/basket_stat_pill.dart';
+import '../shared/widgets/basket_group_header.dart';
+import '../customize/widgets/customize_actual_cost_banner.dart';
+import '../customize/widgets/customize_allocation_summary_card.dart';
+import '../customize/widgets/customize_basket_comparison_tab.dart';
+import '../customize/widgets/customize_constituent_row_desktop.dart';
+import '../customize/widgets/customize_constituent_row_mobile.dart';
+import '../customize/widgets/customize_constituent_row_tablet.dart';
+import '../customize/widgets/customize_sector_comparison_tab.dart';
+import '../customize/customize_basket_formatters.dart';
+import '../customize/customize_basket_metrics.dart';
+import '../shared/basket_constituent_grouper.dart';
+import '../shared/basket_item_status_theme.dart';
+import '../shared/basket_panel_styles.dart';
+part '../customize/customize_basket_logic.dart';
+part '../customize/customize_basket_layouts.dart';
+part '../customize/customize_basket_sidebar.dart';
+
+
+// ---------------------------------------------------------------------------
+// PAGE WIDGET
+// ---------------------------------------------------------------------------
 class ManualBasketCreatorPage extends ConsumerStatefulWidget {
   final BasketOpportunity opportunity;
   final String userId;
@@ -29,1066 +56,164 @@ class ManualBasketCreatorPage extends ConsumerStatefulWidget {
 }
 
 class _ManualBasketCreatorPageState
-    extends ConsumerState<ManualBasketCreatorPage> {
+    extends ConsumerState<ManualBasketCreatorPage>
+    with SingleTickerProviderStateMixin {
+  // --- Core state ---
+  late BasketOpportunity _currentOpportunity;
   late List<BasketItem> _items;
-  double? _investmentAmount;
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _basketNameController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  bool _includeHeld = false;
-  bool _isCalculating = false;
+  final Set<String> _excludedItems = {};
+  late TabController _tabController;
 
+  // --- UI state ---
+  bool _isCalculating = false;
+  bool _hasCalculated = false;
+  bool _isCustomAmount = false;
+  bool _hasStaleData = false;
+  bool _showSummaryDrawer = false; // tablet side panel
+  bool _isSidebarCollapsed = false;
+  Timer? _debounceTimer;
+  double? _actualCost;
+  double? _budgetVariance;
+  final Map<String, int> _manualQtyOverrides = {};
+
+  // ---------------------------------------------------------------------------
+  // Lifecycle
+  // ---------------------------------------------------------------------------
   @override
   void initState() {
     super.initState();
-    _items = List.from(widget.opportunity.composition);
-    // Pre-fill amount if totalPortfolioValue is available, maybe default to 10%?
-    // User requested quick sets. Let's start empty or 0.
-  }
-
-  // Enrich items with local holdings data
-  List<BasketItem> _enrichItemsWithHoldings(List<BasketItem> items, PortfolioHoldings? localHoldings) {
-    if (localHoldings == null) return items;
-
-    return items.map((item) {
-      // Find matching holding in local data
-      final holding = localHoldings.holdings
-          .where((h) => h.symbol.toLowerCase() == item.stockSymbol.toLowerCase()) // simplistic match
-          .firstOrNull;
-
-      if (holding != null) {
-        return item.copyWith(
-          heldQuantity: holding.quantity,
-          heldAveragePrice: holding.avgPrice,
-        );
+    _tabController = TabController(length: 5, vsync: this);
+    _tabController.addListener(() => setState(() {}));
+    _currentOpportunity = widget.opportunity;
+    _items = List.from(_currentOpportunity.composition);
+    _basketNameController.text = 'My ${_currentOpportunity.etfName} Basket';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_amountController.text.isEmpty) {
+        final defaultAmount =
+            widget.opportunity.minimumInvestmentAmount ?? 100000.0;
+        _amountController.text = defaultAmount.toInt().toString();
       }
-      return item;
-    }).cast<BasketItem>().toList();
+      _scheduleRecalculate(immediate: true);
+    });
   }
-  
+
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _amountController.dispose();
+    _basketNameController.dispose();
     _scrollController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
-
-  void _updateQuantity(int index, double newQuantity) {
-    setState(() {
-      _items[index] = _items[index].copyWith(buyQuantity: newQuantity);
-    });
-  }
-
-  void _removeItem(int index) {
-    setState(() {
-      _items.removeAt(index);
-    });
-  }
-  
-  void _setAmountByPercentage(double percentage) {
-    final totalPortfolioValue = widget.opportunity.totalPortfolioValue ?? 0.0;
-    if (totalPortfolioValue > 0) {
-      final amount = totalPortfolioValue * (percentage / 100.0);
-      setState(() {
-        _investmentAmount = amount;
-        _amountController.text = amount.toStringAsFixed(0);
-      });
-      _calculateQuantities();
-    } else {
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Total Portfolio Value not available for percentage calculation')),
-      );
-    }
-  }
-
-  Future<void> _calculateQuantities() async {
-    if (_amountController.text.isEmpty) return;
-    
-    final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount <= 0) return;
-
-    setState(() {
-      _isCalculating = true;
-    });
-
-    try {
-      // Direct Dio call for now, ideally strictly use provider/repository
-      final dio = Dio(); 
-      double targetAmount = amount;
-      
-      // Cost Basis Adjustment Logic
-      if (_includeHeld) {
-         final holdingsAsync = ref.read(portfolioHoldingsProvider(widget.userId));
-         final localHoldings = holdingsAsync.asData?.value;
-         
-         if (localHoldings != null) {
-            double totalHeldCost = 0;
-            double totalHeldCurrentVal = 0;
-            
-            for (var item in _items) {
-               final h = localHoldings.holdings.where((h) => h.symbol.toLowerCase() == item.stockSymbol.toLowerCase()).firstOrNull;
-               if (h != null) {
-                  totalHeldCost += h.quantity * h.avgPrice;
-                  totalHeldCurrentVal += h.quantity * (item.lastPrice ?? h.currentPrice);
-               }
-            }
-            
-            // If Input Amount (Cost Basis) > Held Cost, we need to add the difference
-            if (amount > totalHeldCost) {
-               double netNewMoney = amount - totalHeldCost;
-               targetAmount = totalHeldCurrentVal + netNewMoney;
-            }
-         }
-      }
-
-      final response = await dio.post(
-        BasketEndpoints.calculateQuantities,
-        data: {
-          'investmentAmount': targetAmount,
-          'opportunity': widget.opportunity.toJson(), 
-          'includeHeld': _includeHeld,
-        },
-      );
-      
-      if (response.statusCode == 200) {
-        final updatedOpportunity = BasketOpportunity.fromJson(response.data);
-        setState(() {
-           _items = updatedOpportunity.composition;
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error calculating quantities: $e')),
-      );
-    } finally {
-      setState(() {
-        _isCalculating = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Watch local holdings
-    final portfolioHoldingsAsync = ref.watch(portfolioHoldingsProvider(widget.userId));
-    final localHoldings = portfolioHoldingsAsync.asData?.value;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isMobile = screenWidth < AmBreakpoints.mobile; // < 600
+    final isDesktop = screenWidth >= AmBreakpoints.tablet; // >= 1100
 
-    // Enrich items with local data
-    // We create a new list to avoid mutating the state directly in build if _items is modifying
-    // But _items is our source of truth for "Buy Quantity". we need to merge.
-    // Actually, best to just update _items in place or create a view?
-    // If we update _items here, it might trigger rebuilds loops if we perform setState.
-    // Better to create a "displayItems" list for rendering that combines _items (buy qty) + localHoldings (held qty)
-    
-    final displayItems = _enrichItemsWithHoldings(_items, localHoldings);
+    final displayItems = _items;
 
-    final heldItems = displayItems.where((i) => i.status == ItemStatus.held || (i.heldQuantity != null && i.heldQuantity! > 0)).toList();
-    // Logic update: If we found it in local holdings, it IS held, regardless of initial status
-    
-    // Filter for "Other Items" (Not held)
-    // If enriched said it has qty, it is held.
-    final otherItems = displayItems.where((i) => (i.heldQuantity == null || i.heldQuantity == 0)).toList();
-    
-    // Re-verify filtered lists to ensure no dups if logic is mixed
-    // Actually, simpler:
-    // heldItems = anything with heldQuantity > 0
-    // otherItems = anything else
-    
-    // Update _items reference for callbacks? No, callbacks use index on _items.
-    // We need to map interactions on displayItems back to _items.
-    // Since map order is preserved, indices match if we don't filter first.
-    
-    double totalActiveInvestment = 0;
-    final activeCalculationItems = _includeHeld ? displayItems : otherItems;
-    for (var item in activeCalculationItems) {
-      if (item.lastPrice != null) {
-        totalActiveInvestment += item.lastPrice! * item.buyQuantity;
-      }
-    }
+    final heldCount = CustomizeBasketMetrics.heldCount(displayItems);
+    final subCount = CustomizeBasketMetrics.substituteCount(displayItems);
+    final missingCount =
+        CustomizeBasketMetrics.missingCount(displayItems, _excludedItems);
+    final excludedCount = _excludedItems.length;
 
-    final assetRows = <Widget>[
-                  if (otherItems.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 8.0),
-                      child: Text("Stocks to Buy", style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                    ...otherItems.map((item) {
-                       double pct = 0;
-                       if (totalActiveInvestment > 0 && item.lastPrice != null) {
-                         pct = (item.lastPrice! * item.buyQuantity / totalActiveInvestment) * 100;
-                       }
-                       
-                       // Matching Score Logic
-                       double targetPct = item.etfWeight;
-                       double diff = (targetPct - pct).abs();
-                       Widget? matchWidget;
-                       
-                       // If difference is small enough, consider it perfect
-                       if (diff < 0.1) {
-                          matchWidget = Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                               Text("Target: ${targetPct.toStringAsFixed(1)}%", style: TextStyle(fontSize: 9, color: context.textTertiary)),
-                               const SizedBox(height: 2),
-                               Icon(Icons.check_circle, size: 14, color: context.statusSuccess),
-                            ],
-                          );
-                       } else {
-                          double score = (100.0 - diff).clamp(0.0, 100.0);
-                          Color scoreColor = score > 98
-                              ? context.statusSuccess
-                              : (score > 90 ? context.statusWarning : context.statusError);
-                          
-                          matchWidget = Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                               Text("Target: ${targetPct.toStringAsFixed(1)}%", style: TextStyle(fontSize: 9, color: context.textTertiary)),
-                               Container(height: 1, width: 40, color: context.dividerColor, margin: const EdgeInsets.symmetric(vertical: 2)),
-                               Text("Match: ${score.toStringAsFixed(1)}%", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: scoreColor)),
-                            ],
-                          );
-                       }
-                       
-                       return _EditableBasketItemCard(
-                        item: item,
-                        investmentPercentage: pct,
-                        substituteOverride: matchWidget,
-                        onRemove: () {
-                           int realIndex = displayItems.indexOf(item);
-                           _removeItem(realIndex);
-                        },
-                        onQuantityChanged: (val) {
-                           int realIndex = displayItems.indexOf(item);
-                           _updateQuantity(realIndex, val);
-                        },
-                      );
-                    }),
-                  ],
-                  
-                  if (heldItems.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Row(
-                        children: [
-                          const Text("Already Held", style: TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(width: 8),
-                          if (!_includeHeld) 
-                             Text("(Excluded from calculation)", style: TextStyle(fontSize: 12, color: context.textTertiary, fontStyle: FontStyle.italic)),
-                        ],
-                      ),
-                    ),
-                    ...heldItems.map((item) {
-                       double pct = 0;
-                       if (totalActiveInvestment > 0 && item.lastPrice != null) {
-                         pct = (item.lastPrice! * item.buyQuantity / totalActiveInvestment) * 100;
-                       }
-                       
-                       
-                       // Calculation for Held Logic: Target% - Held% = Need%
-                       // Updated Logic: Held% is relative to the Investment Amount (Proposed Basket Size)
-                       double heldPct = 0;
-                       
-                       // We use the investment amount from the controller as the denominator
-                       double targetInvestment = double.tryParse(_amountController.text) ?? totalActiveInvestment;
-                       
-                       // Use Average Price (Cost Basis) for Held Value if available, as per user request
-                       if (item.heldQuantity != null && item.heldAveragePrice != null && targetInvestment > 0) {
-                          double heldValue = item.heldQuantity! * item.heldAveragePrice!;
-                          heldPct = (heldValue / targetInvestment) * 100;
-                       } else if (item.heldQuantity != null && item.lastPrice != null && targetInvestment > 0) {
-                          // Fallback to market value if avg price missing
-                          double heldValue = item.heldQuantity! * item.lastPrice!;
-                          heldPct = (heldValue / targetInvestment) * 100;
-                       } else {
-                          // Fallback to userWeight if heldQuantity is missing (backward compatibility)
-                          heldPct = item.userWeight; 
-                       }
-                       
-                       double targetPct = item.etfWeight;
-                       double diff = targetPct - heldPct;
+    final heldWeight = _currentOpportunity.heldMatchScore ?? 0.0;
+    final subWeight = _currentOpportunity.substituteMatchScore ?? 0.0;
+    final missingWeight = _currentOpportunity.missingMatchScore ?? 0.0;
+    final coverage = CustomizeBasketMetrics.coverage(
+      hasCalculated: _hasCalculated,
+      opportunity: _currentOpportunity,
+    );
 
-                       Widget? calcWidget;
-                       if (diff > 0.1) {
-                          // Under-held
-                          calcWidget = Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                               Text("Held: ${heldPct.toStringAsFixed(1)}%", style: const TextStyle(fontSize: 9, color: Colors.grey)),
-                               Container(height: 1, width: 40, color: Colors.grey.shade300, margin: const EdgeInsets.symmetric(vertical: 2)),
-                               Text("Need: ${diff.toStringAsFixed(1)}%", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
-                            ],
-                          );
-                       } else if (diff < -0.1) {
-                          // Over-held
-                          calcWidget = Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                               Text("Held: ${heldPct.toStringAsFixed(1)}%", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.orange.shade800)),
-                               Container(height: 1, width: 40, color: Colors.grey.shade300, margin: const EdgeInsets.symmetric(vertical: 2)),
-                               const Text("Need: 0%", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green)),
-                            ],
-                          );
-                       } else {
-                          // Fulfilled
-                          calcWidget = Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                               const SizedBox(height: 2),
-                               Text("Fulfilled", style: TextStyle(fontSize: 10, color: Colors.green.shade700, fontWeight: FontWeight.bold)),
-                            ],
-                          );
-                       }
+    final tabItems = BasketConstituentGrouper.filterItems(
+      BasketConstituentGrouper.filterForTabIndex(_tabController.index),
+      displayItems,
+      _excludedItems,
+    );
 
-                      return Opacity(
-                      opacity: _includeHeld ? 1.0 : 0.6,
-                      child: _EditableBasketItemCard(
-                        item: item,
-                        investmentPercentage: _includeHeld ? pct : null,
-                        substituteOverride: calcWidget,
-                        readOnly: !_includeHeld,
-                        onRemove: () {
-                           int realIndex = displayItems.indexOf(item);
-                           _removeItem(realIndex);
-                        },
-                        onQuantityChanged: (val) {
-                           int realIndex = displayItems.indexOf(item);
-                           _updateQuantity(realIndex, val);
-                        },
-                      ),
-                    );
-                    }),
-                  ]
-    ];
+    final isTablet = !isMobile && !isDesktop;
 
-    final content = Scrollbar(
-      controller: _scrollController,
-      thumbVisibility: true,
-      child: CustomScrollView(
-        controller: _scrollController,
-        primary: false,
-        slivers: [
-          SliverToBoxAdapter(
-            child: _SummaryHeader(
-              itemCount: _items.length,
-              etfName: widget.opportunity.etfName,
-              totalPortfolioValue: widget.opportunity.totalPortfolioValue,
-            ),
-          ),
-          if (_items.isNotEmpty)
-            SliverToBoxAdapter(
-              child: _AllocationSummary(items: _items, includeHeld: _includeHeld),
-            ),
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              color: context.cardColor,
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _amountController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Investment Amount (₹)',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm + AppSpacing.xs,
-                              vertical: AppSpacing.sm,
-                            ),
-                          ),
-                          onChanged: (val) {},
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
-                      FilledButton.icon(
-                        onPressed: _isCalculating ? null : _calculateQuantities,
-                        icon: _isCalculating
-                            ? const SizedBox(
-                                width: AppSpacing.md,
-                                height: AppSpacing.md,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.calculate),
-                        label: const Text('Calculate'),
-                      ),
-                    ],
+    final flowTrailing = isMobile
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_isCalculating)
+                const Padding(
+                  padding: EdgeInsets.only(right: 4),
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
-                  Slider(
-                    value: double.tryParse(_amountController.text)?.clamp(5000.0, 1000000.0) ?? 5000.0,
-                    min: 5000.0,
-                    max: 1000000.0,
-                    divisions: 199,
-                    label: _amountController.text,
-                    onChanged: (val) {
-                      setState(() {
-                        _amountController.text = val.toInt().toString();
-                      });
-                    },
-                    onChangeEnd: (val) {
-                      _calculateQuantities();
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Wrap(
-                          spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.xs,
-                          children: [10, 25, 50, 100]
-                              .map(
-                                (p) => OutlinedButton(
-                                  onPressed: () => _setAmountByPercentage(p.toDouble()),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.sm + AppSpacing.xs,
-                                      vertical: AppSpacing.xs,
-                                    ),
-                                    minimumSize: const Size(0, AppSpacing.xl),
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                  child: Text('$p%'),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Text(
-                            'Include Held',
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
-                          Switch(
-                            value: _includeHeld,
-                            onChanged: (val) {
-                              setState(() {
-                                _includeHeld = val;
-                              });
-                              if (_amountController.text.isNotEmpty) {
-                                _calculateQuantities();
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Container(
-              margin: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              padding: const EdgeInsets.all(AppSpacing.sm + AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: context.colors.actionPrimaryBg.withValues(alpha: 0.05),
-                borderRadius: AppRadii.button,
-                border: Border.all(
-                  color: context.colors.actionPrimaryBg.withValues(alpha: 0.1),
+                ),
+              IconButton(
+                icon: const Icon(Icons.more_vert),
+                onPressed: () => _showMobileOptionsMenu(
+                  context,
+                  displayItems,
+                  heldCount,
+                  subCount,
+                  missingCount,
+                  excludedCount,
+                  coverage,
                 ),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, size: 20, color: context.colors.actionPrimaryBg),
-                  const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      "Quantities are optimized to match ETF weights. 'Match Score' shows how closely we can replicate the index given stock prices.",
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.xs,
-              ),
-              child: _StockListHeader(),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.sm,
-              AppSpacing.md,
-              AppSpacing.xl,
-            ),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate(assetRows),
-            ),
-          ),
-        ],
-      ),
-    );
+            ],
+          )
+        : isTablet
+            ? IconButton(
+                icon: Icon(Icons.assessment_outlined,
+                    color: context.colors.actionPrimaryBg),
+                tooltip: 'Portfolio Summary',
+                onPressed: () =>
+                    setState(() => _showSummaryDrawer = !_showSummaryDrawer),
+              )
+            : IconButton(
+                icon: Icon(_isSidebarCollapsed
+                    ? Icons.keyboard_double_arrow_left
+                    : Icons.keyboard_double_arrow_right),
+                tooltip: _isSidebarCollapsed ? 'Show Summary' : 'Hide Summary',
+                onPressed: () =>
+                    setState(() => _isSidebarCollapsed = !_isSidebarCollapsed),
+              );
 
-    final footer = _InvestmentSummaryFooter(
-      items: _items,
-      includeHeld: _includeHeld,
-      onInvest: _savePortfolio,
-    );
+    final content = isDesktop
+        ? _buildDesktopLayout(context, displayItems, tabItems, heldCount,
+            subCount, missingCount, excludedCount, heldWeight, subWeight,
+            missingWeight, coverage)
+        : isMobile
+            ? _buildMobileLayout(context, displayItems, tabItems, heldCount,
+                subCount, missingCount, excludedCount, coverage)
+            : _buildTabletLayout(context, displayItems, tabItems, heldCount,
+                subCount, missingCount, excludedCount, heldWeight, subWeight,
+                missingWeight, coverage);
 
-    final saveAction = TextButton(
-      onPressed: _savePortfolio,
-      child: const Text('Save Portfolio'),
+    final body = Column(
+      children: [
+        _buildFlowChrome(context, trailing: flowTrailing),
+        Expanded(child: content),
+      ],
     );
 
     if (widget.embedded) {
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          BasketSectionHeader(
-            title: 'Customize Basket',
-            onBack: () => Navigator.of(context).pop(),
-            trailing: saveAction,
-          ),
-          Expanded(child: content),
-          footer,
+          Expanded(child: body),
+          _buildBottomActionBar(coverage, displayItems),
         ],
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Customize Basket'),
-        actions: [saveAction],
-      ),
-      body: content,
-      bottomNavigationBar: footer,
-    );
-  }
-
-  void _savePortfolio() {
-    // TODO: Implement save logic when backend endpoint is available
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Portfolio Creation API not yet implemented'),
-        backgroundColor: context.statusWarning,
-      ),
-    );
-  }
-}
-
-class _SummaryHeader extends StatelessWidget {
-  final int itemCount;
-  final String etfName;
-  final double? totalPortfolioValue;
-
-  const _SummaryHeader({
-    required this.itemCount,
-    required this.etfName,
-    this.totalPortfolioValue,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'New Portfolio based on $etfName',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Chip(label: Text('$itemCount Assets')),
-              if (totalPortfolioValue != null && totalPortfolioValue! > 0)
-                 Column(
-                   crossAxisAlignment: CrossAxisAlignment.end,
-                   children: [
-                     Text(
-                       'Portfolio Value',
-                       style: Theme.of(context).textTheme.labelSmall,
-                     ),
-                     Text(
-                       '₹${totalPortfolioValue!.toStringAsFixed(0)}', // Basic formatting
-                       style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                     ),
-                   ],
-                 )
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EditableBasketItemCard extends StatelessWidget {
-  final BasketItem item;
-  final VoidCallback onRemove;
-  final ValueChanged<double> onQuantityChanged;
-  final bool readOnly;
-  final double? investmentPercentage;
-  final Widget? substituteOverride;
-
-  const _EditableBasketItemCard({
-    required this.item,
-    required this.onRemove,
-    required this.onQuantityChanged,
-    this.readOnly = false,
-    this.investmentPercentage,
-    this.substituteOverride,
-  });
-
-  Widget _buildIconBadge(BuildContext context, IconData icon, String tooltip, Color color) {
-    return Tooltip(
-      message: tooltip,
-      child: Container(
-        padding: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: color.withOpacity(0.3), width: 0.5),
-        ),
-        child: Icon(icon, size: 12, color: color),
-      ),
-    );
-  }
-
-  IconData _getSectorIcon(String sectorData) {
-    final sector = sectorData.toLowerCase();
-    if (sector.contains('bank') || sector.contains('finance')) return Icons.account_balance;
-    if (sector.contains('it') || sector.contains('tech')) return Icons.computer;
-    if (sector.contains('auto')) return Icons.directions_car;
-    if (sector.contains('pharma') || sector.contains('health')) return Icons.local_hospital;
-    if (sector.contains('fmcg') || sector.contains('food')) return Icons.shopping_basket;
-    if (sector.contains('metal') || sector.contains('steel')) return Icons.engineering;
-    if (sector.contains('oil') || sector.contains('energy') || sector.contains('power')) return Icons.flash_on;
-    return Icons.business; 
-  }
-
-  Widget _buildCompactInfoRow(BuildContext context, String label, String value, {Color? valueColor, bool isBold = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 1.0),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 24, 
-            child: Text(label, style: const TextStyle(fontSize: 8, color: Colors.grey))
-          ),
-          Text(
-            value, 
-            style: TextStyle(
-              fontSize: 9, 
-              color: valueColor ?? Colors.black87,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal
-            )
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.5)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-        child: Row(
-          children: [
-            // Column 1: Symbol & Info (Flex 22)
-            Expanded(
-              flex: 22,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.stockSymbol,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 2),
-                  const SizedBox(height: 2),
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 2,
-                    children: [
-                      _buildIconBadge(context, _getSectorIcon(item.sector), item.sector, Colors.blue.shade700),
-                      if (item.marketCapCategory != null)
-                        _buildIconBadge(context, Icons.bar_chart, item.marketCapCategory!, Colors.purple.shade700),
-                    ],
-                  ),
-                   if (item.heldQuantity != null && item.heldQuantity! > 0) ...[
-                     const SizedBox(height: 4),
-                     Container(
-                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                       decoration: BoxDecoration(
-                         color: Colors.amber.shade50,
-                         borderRadius: BorderRadius.circular(4),
-                         border: Border.all(color: Colors.amber.shade200),
-                       ),
-                       child: Text(
-                         "Held: ${item.heldQuantity!.toInt()} @ ₹${item.heldAveragePrice?.toStringAsFixed(0) ?? '-'}", 
-                         style: TextStyle(fontSize: 9, color: Colors.amber.shade900, fontWeight: FontWeight.bold)
-                       ),
-                     ),
-                   ]
-                ],
-              ),
-            ),
-            
-            // Column 2: Live Price (Flex 12)
-            Expanded(
-              flex: 12,
-              child: item.lastPrice != null 
-                  ? Text(
-                      "₹${item.lastPrice!.toStringAsFixed(1)}",
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                      textAlign: TextAlign.right, 
-                    )
-                  : const Text("-", textAlign: TextAlign.right),
-            ),
-
-            // Column 3: Target % (Flex 10)
-            Expanded(
-              flex: 10,
-              child: Text(
-                "${item.etfWeight.toStringAsFixed(1)}%",
-                style: Theme.of(context).textTheme.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-            ),
-
-            // Column 4: Actual % (Flex 10)
-            Expanded(
-              flex: 10,
-              child: investmentPercentage != null && investmentPercentage! > 0
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            "${investmentPercentage!.toStringAsFixed(1)}%",
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
-                    )
-                  : const SizedBox(),
-            ),
-
-            // Column 5: Substitute (Flex 8)
-            Expanded(
-              flex: 8,
-              child: substituteOverride ?? (item.status == ItemStatus.substitute
-                  ? const Icon(Icons.swap_horiz, size: 16, color: AppColors.info)
-                  : const SizedBox()), 
-            ),
-
-            // Column 6: Quantity (Flex 18)
-            Expanded(
-              flex: 18,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (!readOnly)
-                        InkWell(
-                          onTap: () {
-                             if (item.buyQuantity > 0) onQuantityChanged(item.buyQuantity - 1);
-                          },
-                          child: const Padding(
-                            padding: EdgeInsets.all(4.0),
-                            child: Icon(Icons.remove_circle_outline, size: 18, color: Colors.grey),
-                          ),
-                        ),
-                      Text(
-                        item.buyQuantity.toInt().toString(),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: readOnly ? Colors.grey : null,
-                        ),
-                      ),
-                      if (!readOnly)
-                        InkWell(
-                          onTap: () => onQuantityChanged(item.buyQuantity + 1),
-                          child: const Padding(
-                            padding: EdgeInsets.all(4.0),
-                            child: Icon(Icons.add_circle_outline, size: 18, color: Colors.grey),
-                          ),
-                        ),
-                    ],
-                  ),
-                  if (item.heldQuantity != null && item.heldQuantity! > 0)
-                     Text(
-                       "Buy: ${(item.buyQuantity - item.heldQuantity!).clamp(0.0, 9999).toInt()}",
-                       style: TextStyle(
-                         fontSize: 9, 
-                         fontWeight: FontWeight.bold,
-                         color: (item.buyQuantity - item.heldQuantity!) > 0 ? Theme.of(context).primaryColor : Colors.green
-                       ),
-                     ),
-                ],
-              ),
-            ),
-
-            // Column 7: Actions (Flex 8)
-            Expanded(
-              flex: 8,
-              child: !readOnly
-                  ? IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                      onPressed: onRemove,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    )
-                  : const SizedBox(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StockListHeader extends StatelessWidget {
-  const _StockListHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _buildHeaderCell(context, "Asset", 22, TextAlign.start),
-        _buildHeaderCell(context, "Price", 12, TextAlign.right), 
-        _buildHeaderCell(context, "Target", 10, TextAlign.center),
-        _buildHeaderCell(context, "Actual", 10, TextAlign.center),
-        _buildHeaderCell(context, "Swap", 8, TextAlign.center),
-        _buildHeaderCell(context, "Qty", 18, TextAlign.center),
-        _buildHeaderCell(context, "", 8, TextAlign.center),
-      ],
-    );
-  }
-
-
-
-  Widget _buildHeaderCell(BuildContext context, String label, int flex, TextAlign align) {
-    return Expanded(
-      flex: flex,
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.grey,
-              fontWeight: FontWeight.bold,
-            ),
-        textAlign: align,
-      ),
-    );
-  }
-}
-
-class _AllocationSummary extends StatelessWidget {
-  final List<BasketItem> items;
-  final bool includeHeld;
-
-  const _AllocationSummary({
-    required this.items,
-    required this.includeHeld,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // 1. Calculate Sector Allocation
-    final Map<String, double> sectorWeights = {};
-    double totalWeight = 0;
-
-    final activeItems = includeHeld ? items : items.where((i) => i.status != ItemStatus.held).toList();
-
-    for (var item in activeItems) {
-       double weight = 0;
-       if (item.lastPrice != null && item.buyQuantity > 0) {
-         weight = item.lastPrice! * item.buyQuantity;
-       } else {
-         weight = item.etfWeight; // Fallback to target weight
-       }
-       
-       sectorWeights[item.sector] = (sectorWeights[item.sector] ?? 0) + weight;
-       totalWeight += weight;
-    }
-
-    final sectorSegments = sectorWeights.entries.map((e) {
-      return AllocationSegment(
-        label: e.key,
-        percentage: totalWeight > 0 ? e.value / totalWeight : 0,
-        color: _getColorForSector(e.key),
-      );
-    }).toList();
-    
-    // Sort by percentage desc
-    sectorSegments.sort((a, b) => b.percentage.compareTo(a.percentage));
-    // Limit to top 4 + Other
-    List<AllocationSegment> displaySegments = [];
-    if (sectorSegments.length > 4) {
-      displaySegments = sectorSegments.take(4).toList();
-      double otherPct = sectorSegments.skip(4).fold(0.0, (sum, s) => sum + s.percentage);
-      displaySegments.add(AllocationSegment(label: "Others", percentage: otherPct, color: Colors.grey.shade400));
-    } else {
-      displaySegments = sectorSegments;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-             children: [
-               Text("Sector Allocation", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
-               // Could toggle between Sector / Market Cap here
-             ],
-          ),
-          const SizedBox(height: 8),
-          AllocationBar(segments: displaySegments),
-        ],
-      ),
-    );
-  }
-
-  Color _getColorForSector(String sector) {
-    // deterministic color generation
-    final colors = [
-      const Color(0xFF2196F3), // Blue
-      const Color(0xFF4CAF50), // Green
-      const Color(0xFFFF9800), // Orange
-      const Color(0xFF9C27B0), // Purple
-      const Color(0xFFF44336), // Red
-      const Color(0xFF00BCD4), // Cyan
-      const Color(0xFFFFEB3B), // Yellow
-      const Color(0xFF795548), // Brown
-      const Color(0xFF607D8B), // Blue Grey
-      const Color(0xFFE91E63), // Pink
-    ];
-    // Use hashcode of sector string for deterministic color assignment
-    // Using codeUnitAt to behave similarly to index if possible, but hash is safer for unknowns
-    return colors[sector.hashCode.abs() % colors.length];
-  }
-}
-
-class _InvestmentSummaryFooter extends StatelessWidget {
-  final List<BasketItem> items;
-  final bool includeHeld;
-  final VoidCallback onInvest;
-
-  const _InvestmentSummaryFooter({
-    required this.items,
-    required this.includeHeld,
-    required this.onInvest,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    double totalPayable = 0;
-    
-    // Logic: 
-    // If includeHeld is false: Payable = Sum(BuyQty * LTP) for only non-held items (BuyQty is total for them anyway)
-    // If includeHeld is true: Payable = Sum(Max(0, BuyQty - HeldQty) * LTP) for ALL items
-    
-    // Current Implementation of `items`:
-    // `_items` contains the valid BasketItems. 
-    // If we are in `includeHeld` mode, all items are active.
-    // If not, only non-held are active.
-    
-    // Wait, the `buyQuantity` in `_items` (which comes from `displayItems` enrichment) represents the TOTAL DESIRED QUANTITY.
-    
-    final activeItems = includeHeld ? items : items.where((i) => i.status != ItemStatus.held).toList();
-
-    for (var item in activeItems) {
-      if (item.lastPrice != null) {
-        double qtyToPayFor = item.buyQuantity;
-        if (includeHeld && item.heldQuantity != null) {
-          qtyToPayFor = (qtyToPayFor - item.heldQuantity!).clamp(0.0, 999999.0);
-        }
-        totalPayable += item.lastPrice! * qtyToPayFor;
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        boxShadow: [
-          BoxShadow(
-            color: context.textPrimary.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Payable Amount",
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textTertiary),
-                ),
-                Text(
-                  "₹${totalPayable.toStringAsFixed(2)}",
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: context.colors.actionPrimaryBg,
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
-            FilledButton(
-              onPressed: totalPayable > 0 ? onInvest : null,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(AppSpacing.xxl * 3, AppSpacing.xl + AppSpacing.md),
-                shape: RoundedRectangleBorder(borderRadius: AppRadii.input),
-              ),
-              child: const Text("Pay & Invest"),
-            ),
-          ],
-        ),
-      ),
+      backgroundColor: context.backgroundColor,
+      body: body,
+      bottomNavigationBar: _buildBottomActionBar(coverage, displayItems),
     );
   }
 }

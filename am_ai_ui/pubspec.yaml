@@ -21,6 +21,7 @@ dependencies:
   am_analysis_ui:
     path: ../am_analysis/ui
 
+  flutter_bloc: ^9.1.1
   flutter_riverpod: ^3.0.3
   dio: ^5.4.0
   intl: ^0.20.2

@@ -26,6 +26,7 @@ part 'auth/http_bearer_auth.dart';
 
 part 'api/brokerage_calculator_api.dart';
 part 'api/cookie_scraper_controller_api.dart';
+part 'api/fundamental_analysis_api.dart';
 part 'api/indices_api.dart';
 part 'api/instrument_management_api.dart';
 part 'api/margin_calculator_api.dart';
@@ -40,6 +41,7 @@ part 'model/audit_data.dart';
 part 'model/brokerage_calculation_request.dart';
 part 'model/brokerage_calculation_response.dart';
 part 'model/cookie_info.dart';
+part 'model/fundamental_ratios_response.dart';
 part 'model/historical_data.dart';
 part 'model/historical_data_metadata.dart';
 part 'model/historical_data_request.dart';

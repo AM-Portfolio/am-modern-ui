@@ -21,6 +21,8 @@ class MarketThemeExtension extends ThemeExtension<MarketThemeExtension> {
   final Color posBadgeBg;
   final Color negBadgeBg;
   final Color blue;
+  final Color chartBlue;
+  final Color chartPurple;
 
   const MarketThemeExtension({
     required this.background,
@@ -38,6 +40,8 @@ class MarketThemeExtension extends ThemeExtension<MarketThemeExtension> {
     required this.posBadgeBg,
     required this.negBadgeBg,
     required this.blue,
+    required this.chartBlue,
+    required this.chartPurple,
   });
 
   // ---------------------------------------------------------------------------
@@ -59,6 +63,8 @@ class MarketThemeExtension extends ThemeExtension<MarketThemeExtension> {
         posBadgeBg: Color(0xFF0A2A1F),
         negBadgeBg: Color(0xFF2A0A0A),
         blue: Color(0xFF378ADD),
+        chartBlue: Color(0xFF38BDF8),
+        chartPurple: Color(0xFFA78BFA),
       );
 
   // ---------------------------------------------------------------------------
@@ -81,6 +87,8 @@ class MarketThemeExtension extends ThemeExtension<MarketThemeExtension> {
         posBadgeBg: Color(0xFFD1FAE5),
         negBadgeBg: Color(0xFFFEE2E2),
         blue: Color(0xFF2563EB),
+        chartBlue: Color(0xFF0EA5E9), // Adjusted for light mode
+        chartPurple: Color(0xFF8B5CF6), // Adjusted for light mode
       );
 
   // ---------------------------------------------------------------------------
@@ -103,6 +111,8 @@ class MarketThemeExtension extends ThemeExtension<MarketThemeExtension> {
     Color? posBadgeBg,
     Color? negBadgeBg,
     Color? blue,
+    Color? chartBlue,
+    Color? chartPurple,
   }) {
     return MarketThemeExtension(
       background: background ?? this.background,
@@ -120,6 +130,8 @@ class MarketThemeExtension extends ThemeExtension<MarketThemeExtension> {
       posBadgeBg: posBadgeBg ?? this.posBadgeBg,
       negBadgeBg: negBadgeBg ?? this.negBadgeBg,
       blue: blue ?? this.blue,
+      chartBlue: chartBlue ?? this.chartBlue,
+      chartPurple: chartPurple ?? this.chartPurple,
     );
   }
 
@@ -145,6 +157,8 @@ class MarketThemeExtension extends ThemeExtension<MarketThemeExtension> {
       posBadgeBg: Color.lerp(posBadgeBg, other.posBadgeBg, t)!,
       negBadgeBg: Color.lerp(negBadgeBg, other.negBadgeBg, t)!,
       blue: Color.lerp(blue, other.blue, t)!,
+      chartBlue: Color.lerp(chartBlue, other.chartBlue, t)!,
+      chartPurple: Color.lerp(chartPurple, other.chartPurple, t)!,
     );
   }
 }
