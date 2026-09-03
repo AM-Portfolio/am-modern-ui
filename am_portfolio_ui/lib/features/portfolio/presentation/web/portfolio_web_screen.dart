@@ -14,6 +14,7 @@ import 'pages/portfolio_holdings_web_page.dart';
 import 'pages/portfolio_heatmap_web_page.dart';
 import 'pages/portfolio_baskets_web_page.dart';
 import 'package:am_user_ui/am_user_ui.dart';
+import '../widgets/demo_portfolio_banner.dart';
 
 /// Web-specific portfolio screen implementation
 class PortfolioWebScreen extends ConsumerStatefulWidget {
@@ -29,6 +30,7 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
     this.onToggleSidebar,
     this.onBack,
     this.addTradeBuilder,
+    this.onOpenDocIntel,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -40,6 +42,7 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final VoidCallback? onOpenDocIntel;
 
   @override
   ConsumerState<PortfolioWebScreen> createState() => _PortfolioWebScreenState();
@@ -235,6 +238,10 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Show demo portfolio banner if the active portfolio is the shared demo
+            if (widget.portfolios != null &&
+                widget.portfolios!.any((p) => p.isDummy))
+              DemoPortfolioBanner(onUploadPortfolio: widget.onOpenDocIntel),
             if (currentIndex == 0)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
