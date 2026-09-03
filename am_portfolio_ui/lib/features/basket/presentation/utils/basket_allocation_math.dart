@@ -113,15 +113,48 @@ class BasketAllocationMath {
     return (customValue / investmentAmount) * 100.0;
   }
 
-  /// Held − ETF target units (positive = excess holdings, negative = short).
-  static int gapUnitsVsEtf(BasketItem item, double investmentAmount) {
+  /// Allocated − ETF target units (positive = over-allocated vs ideal, negative = short).
+  static int gapUnitsVsEtf(
+    BasketItem item,
+    double investmentAmount, {
+    int? manualOverrideQty,
+  }) {
+    final price = item.lastPrice;
+    if (price == null || price <= 0) return 0;
     final base = baseTargetQuantity(item, investmentAmount).floor();
-    final held = _heldQty(item).floor();
-    return held - base;
+    final allocated = allocatedUnits(
+      item,
+      investmentAmount,
+      manualOverrideQty: manualOverrideQty,
+    ).floor();
+    return allocated - base;
   }
 
-  static int excessUnits(BasketItem item, double investmentAmount) {
-    return math.max(0, gapUnitsVsEtf(item, investmentAmount));
+  static int excessUnits(
+    BasketItem item,
+    double investmentAmount, {
+    int? manualOverrideQty,
+  }) {
+    return math.max(
+      0,
+      gapUnitsVsEtf(
+        item,
+        investmentAmount,
+        manualOverrideQty: manualOverrideQty,
+      ),
+    );
+  }
+
+  /// UI leftover when includeHeld=true. Never trust `opportunity.residualCash`.
+  static double leftoverCash({
+    required double investmentAmount,
+    required double heldCoverageValue,
+    required double actualInvestmentCost,
+  }) {
+    return math.max(
+      0,
+      investmentAmount - heldCoverageValue - actualInvestmentCost,
+    );
   }
 
   static bool canIncreaseAllocation(

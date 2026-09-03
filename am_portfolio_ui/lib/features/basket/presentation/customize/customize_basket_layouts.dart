@@ -16,6 +16,7 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
     final targetSum = _targetWeightSum(displayItems);
     final customWeightSum = _totalCustomWeightPercent(displayItems, investAmount);
     final customValue = _totalCustomInvestment(displayItems);
+    final canSaveDraft = _hasCalculated && !_hasStaleData && !_isCalculating;
 
     return BasketStickyActionBar(
       stats: [
@@ -38,7 +39,10 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
           highlight: coverage >= 80,
         ),
       ],
-      onBack: () => Navigator.of(context).maybePop(),
+      onBack: () => _handleBack(),
+      secondaryLabel: 'Save draft',
+      onSecondary: () => _saveDraft(),
+      secondaryEnabled: canSaveDraft,
       primaryLabel: 'Review & Confirm',
       onPrimary: _goToFinalPreview,
       isLoading: _isCalculating,
@@ -352,15 +356,8 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
             actualCost: _actualCost!,
             variance: _budgetVariance!,
             investmentAmount: double.tryParse(_amountController.text) ?? 0.0,
-            residualCash: _currentOpportunity.residualCash,
-            heldCoverage: _currentOpportunity.heldCoverageValue ?? _items
-                .where((i) =>
-                    (i.status == ItemStatus.held ||
-                        i.status == ItemStatus.substitute) &&
-                    i.heldQuantity != null &&
-                    i.lastPrice != null &&
-                    i.targetQuantity != null)
-                .fold(0.0, (s, i) => s + (math.min(i.heldQuantity!, i.targetQuantity!) * i.lastPrice!)),
+            residualCash: _computeResidualCash(),
+            heldCoverage: _heldCoverageValue(),
             formatCurrency: CustomizeBasketFormatters.formatRupee,
           ),
         MinimumInvestmentWarningWidget(
@@ -403,7 +400,7 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
         cell('Asset', 22),
         Tooltip(
           message: 'Allocation % = value from your holdings in this basket ÷ budget',
-          child: cell('Allocation\n(Target | Custom)', 10),
+          child: cell('Allocation\n(Target | of budget)', 10),
         ),
         cell('Your Holding\n(Units | Value)', 16),
         cell('In Basket\n(Units)', 16),
@@ -452,66 +449,44 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
       for (final item in items) {
         final originalIdx = displayItems.indexOf(item);
         if (originalIdx == -1) continue;
-        if (isMobile) {
-          rows.add(CustomizeConstituentRowMobile(
-            item: item,
-            hasCalculated: _hasCalculated,
-            investedText: CustomizeBasketFormatters.investedText(item),
-            isExcluded: _excludedItems.contains(item.stockSymbol),
-            onRemove: () => _removeItem(originalIdx),
-            onAdd: () => _addItem(originalIdx),
-            onAddGap: () => _openSubstituteSelectorFor(originalIdx, isGapFill: true),
-            onSubstitute: () => _openSubstituteSelectorFor(originalIdx),
-            onQtyChanged: (v) => _updateQuantity(originalIdx, v),
-            onTargetQtyChanged: (delta) => _updateTargetQuantity(originalIdx, delta),
-          ));
-        } else if (isTablet) {
-          rows.add(CustomizeConstituentRowTablet(
-            item: item,
-            hasCalculated: _hasCalculated,
-            investedText: CustomizeBasketFormatters.investedText(item),
-            isExcluded: _excludedItems.contains(item.stockSymbol),
-            onRemove: () => _removeItem(originalIdx),
-            onAdd: () => _addItem(originalIdx),
-            onAddGap: () => _openSubstituteSelectorFor(originalIdx, isGapFill: true),
-            onSubstitute: () => _openSubstituteSelectorFor(originalIdx),
-            onQtyChanged: (v) => _updateQuantity(originalIdx, v),
-            onTargetQtyChanged: (delta) => _updateTargetQuantity(originalIdx, delta),
-          ));
-        } else {
-          final investAmount = double.tryParse(_amountController.text) ?? 0.0;
-          final allocated = _allocatedUnits(item, investAmount);
-          rows.add(CustomizeConstituentRowDesktop(
-            item: item,
-            hasCalculated: _hasCalculated || !_isCalculating,
-            investedText: CustomizeBasketFormatters.investedText(item),
-            investmentAmount: investAmount,
-            customWeightPercent: _customWeightFor(item, investAmount),
-            allocatedUnits: allocated,
-            baseTargetQuantity: BasketAllocationMath.baseTargetQuantity(item, investAmount),
-            gapVsEtf: BasketAllocationMath.gapUnitsVsEtf(item, investAmount),
-            canIncrease: BasketAllocationMath.canIncreaseAllocation(
-              item,
-              investAmount,
-              manualOverrideQty: _manualQtyOverrides[item.stockSymbol],
-            ),
-            canDecrease: BasketAllocationMath.canDecreaseAllocation(
-              item,
-              investAmount,
-              manualOverrideQty: _manualQtyOverrides[item.stockSymbol],
-            ),
-            isExcluded: _excludedItems.contains(item.stockSymbol),
-            originalIdx: originalIdx,
-            onRemove: () => _removeItem(originalIdx),
-            onAdd: () => _addItem(originalIdx),
-            onAddGap: () => _openSubstituteSelectorFor(originalIdx, isGapFill: true),
-            onSubstitute: () => _openSubstituteSelectorFor(originalIdx),
-            onQtyChanged: (v) => _updateQuantity(originalIdx, v),
-            onTargetQtyChanged: (delta) => _updateTargetQuantity(originalIdx, delta),
-            onDirectTargetQtySet: (qty) => _setDirectTargetQuantity(originalIdx, qty),
-            onDirectTargetQtyChanged: (qty) => _setDirectTargetQuantity(originalIdx, qty),
-          ));
-        }
+        final investAmount = double.tryParse(_amountController.text) ?? 0.0;
+        final allocated = _allocatedUnits(item, investAmount);
+        final priceOk = item.lastPrice != null && item.lastPrice! > 0;
+        rows.add(BasketConstituentRow(
+          item: item,
+          hasCalculated: _hasCalculated,
+          isExcluded: _excludedItems.contains(item.stockSymbol),
+          investmentAmount: investAmount,
+          customWeightPercent: _customWeightFor(item, investAmount),
+          allocatedUnits: allocated,
+          baseTargetQuantity: BasketAllocationMath.baseTargetQuantity(item, investAmount),
+          gapVsEtf: BasketAllocationMath.gapUnitsVsEtf(
+            item,
+            investAmount,
+            manualOverrideQty: _manualQtyOverrides[item.stockSymbol],
+          ),
+          canIncrease: priceOk &&
+              BasketAllocationMath.canIncreaseAllocation(
+            item,
+            investAmount,
+            manualOverrideQty: _manualQtyOverrides[item.stockSymbol],
+          ),
+          canDecrease: priceOk &&
+              BasketAllocationMath.canDecreaseAllocation(
+            item,
+            investAmount,
+            manualOverrideQty: _manualQtyOverrides[item.stockSymbol],
+          ),
+          originalIdx: originalIdx,
+          onRemove: () => _removeItem(originalIdx),
+          onAdd: () => _addItem(originalIdx),
+          onAddGap: () => _openSubstituteSelectorFor(originalIdx, isGapFill: true),
+          onSubstitute: () => _openSubstituteSelectorFor(originalIdx),
+          onQtyChanged: (v) => _updateQuantity(originalIdx, v),
+          onTargetQtyChanged: (delta) => _updateTargetQuantity(originalIdx, delta),
+          onDirectTargetQtySet: (qty) => _setDirectTargetQuantity(originalIdx, qty),
+          onDirectTargetQtyChanged: (qty) => _setDirectTargetQuantity(originalIdx, qty),
+        ));
       }
     }
 

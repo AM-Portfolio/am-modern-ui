@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
 import '../providers/basket_providers.dart';
+import '../utils/basket_api_errors.dart';
 import '../basket_navigation.dart';
 import '../../domain/models/basket_opportunity.dart';
 import 'etf_search_bar.dart';
@@ -26,10 +27,14 @@ class BasketExplorer extends ConsumerStatefulWidget {
 
 class _BasketExplorerState extends ConsumerState<BasketExplorer> {
   String? _query;
-  bool _emittedEmpty = false;
-  String? _lastEmptyQuery;
+  String? _lastEmptyTelemetryQuery;
   String? _selectedThemeId;
   BasketViewMode _viewMode = BasketViewMode.discover;
+
+  bool get _watchOpportunities {
+    final nested = BasketNavigation.navigatorKey.currentState;
+    return nested == null || !nested.canPop();
+  }
 
   @override
   void initState() {
@@ -53,8 +58,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
     setState(() {
       _query = query;
       _selectedThemeId = themeId;
-      _emittedEmpty = false;
-      _lastEmptyQuery = null;
+      _lastEmptyTelemetryQuery = null;
     });
   }
 
@@ -67,7 +71,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, _) => _ErrorState(
         title: 'Couldn’t load baskets',
-        message: err.toString(),
+        message: basketApiErrorMessage(err),
         onRetry: () => ref.invalidate(basketCatalogProvider),
       ),
       data: (catalog) {
@@ -82,13 +86,37 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
           );
         }
 
-        final opportunitiesAsync = ref.watch(basketOpportunitiesProvider(
+        final opportunitiesProvider = basketOpportunitiesProvider(
           userId: widget.userId,
           portfolioId: widget.portfolioId,
           query: activeQuery,
-        ));
+        );
 
-        final themes = catalog.themes.where((t) => t.featured && t.query.isNotEmpty).toList();
+        ref.listen<AsyncValue<List<BasketOpportunity>>>(
+          opportunitiesProvider,
+          (previous, next) {
+            if (!_watchOpportunities) return;
+            next.whenOrNull(
+              data: (opportunities) {
+                if (opportunities.isEmpty &&
+                    _lastEmptyTelemetryQuery != activeQuery) {
+                  _lastEmptyTelemetryQuery = activeQuery;
+                  ProductTelemetry.instance
+                      .emptyState('basket_opportunities_empty');
+                } else if (opportunities.isNotEmpty) {
+                  _lastEmptyTelemetryQuery = null;
+                }
+              },
+            );
+          },
+        );
+
+        final opportunitiesAsync = _watchOpportunities
+            ? ref.watch(opportunitiesProvider)
+            : ref.read(opportunitiesProvider);
+
+        final themes =
+            catalog.themes.where((t) => t.featured && t.query.isNotEmpty).toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,149 +188,149 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
               )
             else ...[
               Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                AppSpacing.sm + AppSpacing.xs,
-                AppSpacing.md,
-                AppSpacing.sm,
-              ),
-              child: EtfSearchBar(
-                onEtfSelected: (selection) {
-                  if (selection.isin != null) {
-                    if (selection.isin!.contains(',')) {
-                      _updateQuery(query: selection.isin!, themeId: null);
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.sm + AppSpacing.xs,
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                ),
+                child: EtfSearchBar(
+                  onEtfSelected: (selection) {
+                    if (selection.isin != null) {
+                      if (selection.isin!.contains(',')) {
+                        _updateQuery(query: selection.isin!, themeId: null);
+                      } else {
+                        BasketNavigation.openPreview(
+                          context,
+                          etfIsin: selection.isin!,
+                          userId: widget.userId,
+                          portfolioId: widget.portfolioId,
+                        );
+                      }
                     } else {
-                      BasketNavigation.openPreview(
-                        context,
-                        etfIsin: selection.isin!,
-                        userId: widget.userId,
-                        portfolioId: widget.portfolioId,
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Selected ETF has no ISIN')),
                       );
                     }
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Selected ETF has no ISIN')),
-                    );
-                  }
-                },
-                onCleared: () {
-                  _updateQuery(query: catalog.defaultQuery, themeId: null);
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _ThemeChipScroller(
-                child: Row(
-                  children: [
-                    _ThemeChip(
-                      label: 'Top picks',
-                      selected: _selectedThemeId == null,
-                      onTap: () {
-                        _updateQuery(query: catalog.defaultQuery, themeId: null);
-                      },
-                    ),
-                    ...themes.map((entry) {
-                      final isSelected = _selectedThemeId == entry.id;
-                      return Padding(
-                        padding: const EdgeInsets.only(left: AppSpacing.sm),
-                        child: _ThemeChip(
-                          label: entry.label,
-                          selected: isSelected,
-                          onTap: () {
-                            if (isSelected) {
-                              _updateQuery(query: catalog.defaultQuery, themeId: null);
-                            } else {
-                              _updateQuery(query: entry.query, themeId: entry.id);
-                            }
-                          },
-                        ),
-                      );
-                    }),
-                  ],
+                  },
+                  onCleared: () {
+                    _updateQuery(query: catalog.defaultQuery, themeId: null);
+                  },
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
-            Expanded(
-              child: opportunitiesAsync.when(
-                data: (opportunities) {
-                  if (opportunities.isEmpty) {
-                    if (!_emittedEmpty || _lastEmptyQuery != activeQuery) {
-                      _emittedEmpty = true;
-                      _lastEmptyQuery = activeQuery;
-                      ProductTelemetry.instance.emptyState('basket_opportunities_empty');
-                    }
-                    return _EmptyState(
-                      themeSelected: _selectedThemeId != null,
-                      onReset: () {
-                        _updateQuery(query: catalog.defaultQuery, themeId: null);
-                      },
-                    );
-                  }
-                  _emittedEmpty = false;
-                  _lastEmptyQuery = null;
-                  return GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      AppSpacing.xs,
-                      AppSpacing.md,
-                      AppSpacing.md,
-                    ),
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 340,
-                      mainAxisExtent: 220,
-                      crossAxisSpacing: AppSpacing.md,
-                      mainAxisSpacing: AppSpacing.md,
-                    ),
-                    itemCount: opportunities.length,
-                    itemBuilder: (context, index) {
-                      final opp = opportunities[index];
-                      return TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: 1),
-                        duration: Duration(milliseconds: 280 + (index * 40).clamp(0, 200)),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, child) {
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(0, 12 * (1 - value)),
-                              child: child,
-                            ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _ThemeChipScroller(
+                  child: Row(
+                    children: [
+                      _ThemeChip(
+                        label: 'Top picks',
+                        selected: _selectedThemeId == null,
+                        onTap: () {
+                          _updateQuery(query: catalog.defaultQuery, themeId: null);
+                        },
+                      ),
+                      ...themes.map((entry) {
+                        final isSelected = _selectedThemeId == entry.id;
+                        return Padding(
+                          padding: const EdgeInsets.only(left: AppSpacing.sm),
+                          child: _ThemeChip(
+                            label: entry.label,
+                            selected: isSelected,
+                            onTap: () {
+                              if (isSelected) {
+                                _updateQuery(
+                                  query: catalog.defaultQuery,
+                                  themeId: null,
+                                );
+                              } else {
+                                _updateQuery(query: entry.query, themeId: entry.id);
+                              }
+                            },
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
+              Expanded(
+                child: opportunitiesAsync.when(
+                  data: (opportunities) {
+                    if (opportunities.isEmpty) {
+                      return _EmptyState(
+                        themeSelected: _selectedThemeId != null,
+                        onReset: () {
+                          _updateQuery(
+                            query: catalog.defaultQuery,
+                            themeId: null,
                           );
                         },
-                        child: _BasketOpportunityCard(
-                          opportunity: opp,
-                          onTap: () {
-                            ProductTelemetry.instance.featureAction(
-                              'basket_open_preview',
-                              tag: 'basket',
-                              metadata: {'etf_isin': opp.etfIsin},
-                            );
-                            BasketNavigation.openPreview(
-                              context,
-                              etfIsin: opp.etfIsin,
-                              userId: widget.userId,
-                              portfolioId: widget.portfolioId,
+                        onRetry: () => ref.invalidate(opportunitiesProvider),
+                      );
+                    }
+                    return GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        AppSpacing.xs,
+                        AppSpacing.md,
+                        AppSpacing.md,
+                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 340,
+                        mainAxisExtent: 220,
+                        crossAxisSpacing: AppSpacing.md,
+                        mainAxisSpacing: AppSpacing.md,
+                      ),
+                      itemCount: opportunities.length,
+                      itemBuilder: (context, index) {
+                        final opp = opportunities[index];
+                        return TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0, end: 1),
+                          duration: Duration(
+                            milliseconds: 280 + (index * 40).clamp(0, 200),
+                          ),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, child) {
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 12 * (1 - value)),
+                                child: child,
+                              ),
                             );
                           },
-                        ),
-                      );
-                    },
-                  );
-                },
-                loading: () => const _SkeletonGrid(),
-                error: (err, stack) => _ErrorState(
-                  title: 'Couldn’t load opportunities',
-                  message: err.toString(),
-                  onRetry: () => ref.invalidate(basketOpportunitiesProvider(
-                    userId: widget.userId,
-                    portfolioId: widget.portfolioId,
-                    query: activeQuery,
-                  )),
+                          child: _BasketOpportunityCard(
+                            opportunity: opp,
+                            onTap: () {
+                              ProductTelemetry.instance.featureAction(
+                                'basket_open_preview',
+                                tag: 'basket',
+                                metadata: {'etf_isin': opp.etfIsin},
+                              );
+                              BasketNavigation.openPreview(
+                                context,
+                                etfIsin: opp.etfIsin,
+                                userId: widget.userId,
+                                portfolioId: widget.portfolioId,
+                                opportunity: opp,
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  loading: () => const _SkeletonGrid(),
+                  error: (err, stack) => _ErrorState(
+                    title: 'Couldn’t load opportunities',
+                    message: basketApiErrorMessage(err),
+                    onRetry: () => ref.invalidate(opportunitiesProvider),
+                  ),
                 ),
               ),
-            ),
             ],
           ],
         );
@@ -603,45 +631,68 @@ class _ThemeChipScroller extends StatelessWidget {
 class _EmptyState extends StatelessWidget {
   const _EmptyState({
     required this.onReset,
+    this.onRetry,
     this.themeSelected = false,
   });
 
   final VoidCallback onReset;
+  final VoidCallback? onRetry;
   final bool themeSelected;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title = themeSelected ? 'No baskets for this theme' : 'No baskets matched';
+    final title =
+        themeSelected ? 'No baskets for this theme' : 'No baskets matched';
     final body = themeSelected
         ? 'Holdings data may be unavailable for this ETF theme yet. Try Top picks, another theme, or search by symbol/ISIN.'
         : 'Try Top picks or search for an ETF by name or ISIN.';
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.shopping_basket_outlined,
-                size: 48, color: context.textTertiary),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              body,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: context.textSecondary,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.shopping_basket_outlined,
+                      size: 48, color: context.textTertiary),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    body,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: context.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg - 4),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      OutlinedButton(
+                          onPressed: onReset,
+                          child: const Text('Reset filters')),
+                      if (onRetry != null)
+                        FilledButton(
+                            onPressed: onRetry, child: const Text('Retry')),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: AppSpacing.lg - 4),
-            OutlinedButton(onPressed: onReset, child: const Text('Reset filters')),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -660,33 +711,41 @@ class _ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 44, color: context.statusError),
-            const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: context.textSecondary,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 44, color: context.statusError),
+                  const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: context.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  FilledButton(onPressed: onRetry, child: const Text('Retry')),
+                ],
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
-            FilledButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

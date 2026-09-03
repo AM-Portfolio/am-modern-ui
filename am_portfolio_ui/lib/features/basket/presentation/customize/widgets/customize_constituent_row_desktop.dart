@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 import '../../../domain/models/basket_opportunity.dart';
+import '../../../domain/services/basket_currency_formatter.dart';
 import '../../shared/basket_item_status_theme.dart';
+import 'customize_qty_stepper.dart';
 
 class CustomizeConstituentRowDesktop extends StatefulWidget {
   final BasketItem item;
@@ -111,6 +113,7 @@ class _CustomizeConstituentRowDesktopState
     final item = widget.item;
     final isMissing = item.status == ItemStatus.missing && !widget.isExcluded;
 
+    final priceOk = item.lastPrice != null && item.lastPrice! > 0;
     final allocated = widget.allocatedUnits;
     final basketValue = allocated * (item.lastPrice ?? 0.0);
     final targetWeight = item.rebalancedWeight ?? item.etfWeight;
@@ -176,7 +179,7 @@ class _CustomizeConstituentRowDesktopState
                         if (item.status == ItemStatus.held ||
                             item.status == ItemStatus.substitute)
                           Text(
-                              '(avg: ${item.heldAveragePrice?.toStringAsFixed(0) ?? '-'})',
+                              '(avg: ${item.heldAveragePrice != null ? BasketCurrencyFormatter.formatInr(item.heldAveragePrice!) : '-'})',
                               style: TextStyle(
                                   fontSize: 9,
                                   color: context.textSecondary)),
@@ -196,7 +199,7 @@ class _CustomizeConstituentRowDesktopState
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              'Min ₹${(item.lastPrice ?? 0).toStringAsFixed(0)} needed',
+                              'Min ${BasketCurrencyFormatter.formatInr(item.lastPrice ?? 0)} needed',
                               style: TextStyle(
                                   fontSize: 8,
                                   fontWeight: FontWeight.bold,
@@ -245,13 +248,13 @@ class _CustomizeConstituentRowDesktopState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                            '${item.heldQuantity!.toInt()} | ₹${(item.heldQuantity! * item.lastPrice!).toStringAsFixed(0)}',
+                            '${item.heldQuantity!.toInt()} | ${BasketCurrencyFormatter.formatInr(item.heldQuantity! * item.lastPrice!)}',
                             style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: context.statusSuccess)),
                         Text(
-                            '@ ₹${item.lastPrice?.toStringAsFixed(0) ?? '—'}',
+                            '@ ${item.lastPrice != null ? BasketCurrencyFormatter.formatInr(item.lastPrice!) : '—'}',
                             style: TextStyle(
                                 fontSize: 9, color: context.textTertiary)),
                       ],
@@ -261,13 +264,13 @@ class _CustomizeConstituentRowDesktopState
                           fontSize: 11, color: context.textTertiary))),
           Expanded(
             flex: 16,
-            child: (item.lastPrice != null && (item.heldQuantity ?? 0) > 0)
+            child: (priceOk && (item.heldQuantity ?? 0) > 0)
                 ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        '₹${basketValue.toStringAsFixed(0)}',
+                        BasketCurrencyFormatter.formatInr(basketValue),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: allocated > 0
@@ -280,100 +283,70 @@ class _CustomizeConstituentRowDesktopState
                       ),
                       if (widget.hasCalculated &&
                           widget.onTargetQtyChanged != null)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            InkWell(
-                              onTap: widget.canDecrease
-                                  ? () => widget.onTargetQtyChanged!(-1)
-                                  : null,
-                              child: Padding(
-                                padding: const EdgeInsets.all(4),
-                                child: Icon(
-                                  Icons.remove_circle_outline,
-                                  size: 18,
-                                  color: widget.canDecrease
-                                      ? context.textSecondary
-                                      : context.textTertiary,
-                                ),
-                              ),
-                            ),
-                            _editingTargetQty &&
-                                    widget.onDirectTargetQtySet != null
-                                ? SizedBox(
-                                    width: 72,
-                                    height: 28,
-                                    child: TextField(
-                                      controller: _targetQtyController,
-                                      keyboardType: TextInputType.number,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold),
-                                      decoration: InputDecoration(
-                                        isDense: true,
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 4, vertical: 4),
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(6),
-                                        ),
+                        CustomizeQtyStepper(
+                          canIncrease: widget.canIncrease,
+                          canDecrease: widget.canDecrease,
+                          onDecrease: () => widget.onTargetQtyChanged!(-1),
+                          onIncrease: () => widget.onTargetQtyChanged!(1),
+                          child: _editingTargetQty &&
+                                  widget.onDirectTargetQtySet != null
+                              ? SizedBox(
+                                  width: 72,
+                                  height: 28,
+                                  child: TextField(
+                                    controller: _targetQtyController,
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold),
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 4, vertical: 4),
+                                      border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(6),
                                       ),
-                                      onChanged: _onQtyTextChanged,
-                                      onSubmitted: (_) =>
-                                          _commitTargetQtyEdit(),
-                                      onEditingComplete: _commitTargetQtyEdit,
                                     ),
-                                  )
-                                : GestureDetector(
-                                    onTap: widget.onDirectTargetQtySet != null
-                                        ? () => setState(
-                                            () => _editingTargetQty = true)
-                                        : null,
-                                    child: Container(
-                                      constraints:
-                                          const BoxConstraints(minWidth: 72),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: context.colors.surface,
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                            color: context.colors.border),
-                                      ),
-                                      child: Text(
-                                        allocated > 0
-                                            ? '${allocated.toInt()} units'
-                                            : '— units',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: allocated > 0
-                                              ? context.textPrimary
-                                              : context.textTertiary,
-                                        ),
+                                    onChanged: _onQtyTextChanged,
+                                    onSubmitted: (_) =>
+                                        _commitTargetQtyEdit(),
+                                    onEditingComplete: _commitTargetQtyEdit,
+                                  ),
+                                )
+                              : GestureDetector(
+                                  onTap: widget.onDirectTargetQtySet != null
+                                      ? () => setState(
+                                          () => _editingTargetQty = true)
+                                      : null,
+                                  child: Container(
+                                    constraints:
+                                        const BoxConstraints(minWidth: 72),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: context.colors.surface,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                          color: context.colors.border),
+                                    ),
+                                    child: Text(
+                                      allocated > 0
+                                          ? '${allocated.toInt()} units'
+                                          : '— units',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: allocated > 0
+                                            ? context.textPrimary
+                                            : context.textTertiary,
                                       ),
                                     ),
                                   ),
-                            InkWell(
-                              onTap: widget.canIncrease
-                                  ? () => widget.onTargetQtyChanged!(1)
-                                  : null,
-                              child: Padding(
-                                padding: const EdgeInsets.all(4),
-                                child: Icon(
-                                  Icons.add_circle_outline,
-                                  size: 18,
-                                  color: widget.canIncrease
-                                      ? context.textSecondary
-                                      : context.textTertiary,
                                 ),
-                              ),
-                            ),
-                          ],
                         )
                       else
                         Container(
@@ -404,51 +377,19 @@ class _CustomizeConstituentRowDesktopState
           ),
           Expanded(
               flex: 8,
-              child: () {
-                if ((item.heldQuantity ?? 0) <= 0) {
-                  return Text('—',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          fontSize: 11, color: context.textTertiary));
-                }
-                final gap = widget.gapVsEtf;
-                if (gap > 0) {
-                  return Text(
-                    '+$gap',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: context.statusSuccess),
-                  );
-                } else if (gap < 0) {
-                  return Text(
-                    '$gap',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: context.statusWarning),
-                  );
-                } else {
-                  return Text(
-                    '0',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: context.statusSuccess,
-                    ),
-                  );
-                }
-              }()),
+              child: Center(
+                child: CustomizeGapPill(
+                  gapVsEtf: widget.gapVsEtf,
+                  priceOk: priceOk && (item.heldQuantity ?? 0) > 0,
+                ),
+              )),
           Expanded(
               flex: 13,
               child: Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: allocated > 0 && item.lastPrice != null
                     ? Text(
-                        '₹${basketValue.toStringAsFixed(0)}',
+                        BasketCurrencyFormatter.formatInr(basketValue),
                         textAlign: TextAlign.right,
                         style: TextStyle(
                           fontSize: 11,

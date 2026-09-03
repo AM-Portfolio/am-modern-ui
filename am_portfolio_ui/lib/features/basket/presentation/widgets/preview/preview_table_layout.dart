@@ -10,8 +10,20 @@ abstract final class PreviewTableLayout {
   static const int valueFlex = 3;
   static const double statusWidth = 72;
   static const double minTableWidth = 560;
+  static const double compactWidth = 560;
   static const double hPadding = AppSpacing.md;
-  static const double colGap = AppSpacing.sm;
+  static const double colGap = AppSpacing.lg;
+
+  static bool isCompactWidth(double width) =>
+      width.isFinite && width > 0 && width < compactWidth;
+
+  static bool useCompactTable(
+    BuildContext context,
+    BoxConstraints constraints,
+  ) {
+    return BasketResponsive.useCompactPreview(context) ||
+        isCompactWidth(constraints.maxWidth);
+  }
 
   static int get etfPanelFlex => etfNameFlex + etfWeightFlex;
   static int get portfolioPanelFlex => unitsFlex + valueFlex;
@@ -39,15 +51,24 @@ abstract final class PreviewTableLayout {
     if (BasketResponsive.useCompactPreview(context)) {
       return child;
     }
-    if (!BasketResponsive.useScrollablePreviewTable(context)) {
-      return child;
-    }
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: minTableWidth),
-        child: child,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth.isFinite &&
+            constraints.maxWidth > 0 &&
+            constraints.maxWidth < minTableWidth) {
+          return child;
+        }
+        if (!BasketResponsive.useScrollablePreviewTable(context)) {
+          return child;
+        }
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: minTableWidth),
+            child: child,
+          ),
+        );
+      },
     );
   }
 

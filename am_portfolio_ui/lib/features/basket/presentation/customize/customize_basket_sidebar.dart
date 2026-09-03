@@ -259,6 +259,16 @@ extension _ManualBasketCreatorPageSidebar on _ManualBasketCreatorPageState {
         ),
         const Divider(height: 1),
         ListTile(
+          leading: Icon(Icons.drafts_outlined,
+              color: context.colors.actionPrimaryBg),
+          title: const Text('Save draft'),
+          enabled: _hasCalculated && !_hasStaleData && !_isCalculating,
+          onTap: () {
+            Navigator.of(ctx).pop();
+            _saveDraft();
+          },
+        ),
+        ListTile(
           leading: Icon(Icons.save_alt, color: context.colors.actionPrimaryBg),
           title: const Text('Save Basket'),
           onTap: () {
@@ -302,7 +312,11 @@ extension _ManualBasketCreatorPageSidebar on _ManualBasketCreatorPageState {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
         final theme = Theme.of(ctx);
-        return DraggableScrollableSheet(
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+          ),
+          child: DraggableScrollableSheet(
           initialChildSize: 0.7,
           minChildSize: 0.4,
           maxChildSize: 0.95,
@@ -344,6 +358,7 @@ extension _ManualBasketCreatorPageSidebar on _ManualBasketCreatorPageState {
               ]),
             ),
           ),
+        ),
         );
       },
     );

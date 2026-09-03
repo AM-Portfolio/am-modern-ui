@@ -24,6 +24,7 @@ class BasketStickyActionBar extends StatelessWidget {
   final Color? primaryColor;
   final String? secondaryLabel;
   final VoidCallback? onSecondary;
+  final bool secondaryEnabled;
   final VoidCallback? onBack;
 
   const BasketStickyActionBar({
@@ -36,10 +37,11 @@ class BasketStickyActionBar extends StatelessWidget {
     this.primaryColor,
     this.secondaryLabel,
     this.onSecondary,
+    this.secondaryEnabled = true,
     this.onBack,
   });
 
-  static const double _actionHeight = 44;
+  static const double _actionHeight = 48;
 
   Widget _buildStat(BuildContext context, BasketStatItem stat) {
     final theme = Theme.of(context);
@@ -94,17 +96,19 @@ class BasketStickyActionBar extends StatelessWidget {
           : Icon(primaryIcon ?? Icons.arrow_forward, size: 18),
       label: Text(
         isLoading ? 'Please wait…' : primaryLabel,
-        style: const TextStyle(fontWeight: FontWeight.bold),
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         overflow: TextOverflow.ellipsis,
       ),
       style: FilledButton.styleFrom(
         backgroundColor: btnColor,
         foregroundColor: Colors.white,
-        minimumSize: Size(isDesktop ? 180 : 120, _actionHeight),
+        minimumSize: Size(isDesktop ? 220 : 120, _actionHeight),
         padding: EdgeInsets.symmetric(
           horizontal: isDesktop ? AppSpacing.lg : AppSpacing.md,
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.md)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.md + 2),
+        ),
       ),
     );
 
@@ -135,7 +139,7 @@ class BasketStickyActionBar extends StatelessWidget {
           ],
           if (secondaryLabel != null && onSecondary != null) ...[
             OutlinedButton(
-              onPressed: onSecondary,
+              onPressed: (secondaryEnabled && !isLoading) ? onSecondary : null,
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(80, _actionHeight),
               ),
@@ -173,9 +177,11 @@ class BasketStickyActionBar extends StatelessWidget {
           );
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? AppSpacing.md : AppSpacing.lg,
-        vertical: isMobile ? AppSpacing.sm : AppSpacing.md,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md + MediaQuery.viewInsetsOf(context).bottom,
       ),
       decoration: BoxDecoration(
         color: context.colors.surface,
@@ -195,4 +201,4 @@ class BasketStickyActionBar extends StatelessWidget {
     );
   }
 }
-
+

@@ -6,6 +6,7 @@ import '../../domain/models/basket_catalog.dart';
 import '../../domain/models/basket_opportunity.dart';
 import '../../domain/models/tracking_basket.dart';
 import '../../domain/models/basket_detail.dart';
+import '../../domain/models/basket_draft.dart';
 import '../../domain/repositories/basket_repository.dart';
 import '../../data/repositories/basket_repository_impl.dart';
 import '../../data/datasources/basket_remote_data_source.dart';
@@ -26,7 +27,7 @@ Future<BasketCatalog> basketCatalog(Ref ref) async {
   return repository.getCatalog();
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<List<BasketOpportunity>> basketOpportunities(
   Ref ref, {
   required String userId,
@@ -47,7 +48,22 @@ Future<BasketOpportunity> basketPreview(
   required String etfIsin,
   required String userId,
   required String portfolioId,
+  BasketOpportunity? seededOpportunity,
 }) async {
+  if (seededOpportunity != null && seededOpportunity.etfIsin == etfIsin) {
+    try {
+      final holdings =
+          await ref.watch(portfolioHoldingsProvider(portfolioId).future);
+      final fingerprint = BasketOpportunity.fingerprintFromHoldings(
+        holdings.holdings.map((h) => MapEntry(h.symbol, h.quantity)),
+      );
+      if (seededOpportunity.isSeedValidForPreview(fingerprint)) {
+        return seededOpportunity;
+      }
+    } catch (_) {
+      // Holdings unavailable — fall through to POST /preview.
+    }
+  }
   final repository = await ref.watch(basketRepositoryProvider.future);
   return repository.getBasketPreview(
     etfIsin: etfIsin,
@@ -131,3 +147,14 @@ Future<BasketDetail> basketDetail(
   );
 }
 
+/// Draft list for My Baskets (not codegen — avoids build_runner for this slice).
+final basketDraftsProvider = FutureProvider.autoDispose
+    .family<BasketDraftListResult, ({String userId, String portfolioId})>(
+  (ref, args) async {
+    final repository = await ref.watch(basketRepositoryProvider.future);
+    return repository.listDrafts(
+      userId: args.userId,
+      portfolioId: args.portfolioId.isEmpty ? null : args.portfolioId,
+    );
+  },
+);

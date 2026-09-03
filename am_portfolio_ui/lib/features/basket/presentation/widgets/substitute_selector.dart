@@ -201,6 +201,39 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
     return widget.etfConstituentIsins.contains(isin);
   }
 
+  List<Alternative> get _visibleAlternatives {
+    var list = widget.alternatives.where((a) => a.effectiveRemainingQty > 0).toList();
+    if (widget.sectorialBasket) {
+      list = list
+          .where((a) => a.isSameSector || _sectorMatches(a.sector))
+          .toList();
+    }
+    // Live-decrement: hide or reduce remaining for already selected peer ISINs
+    // (selection itself handles over-pick via coverage; UI shows residual remaining).
+    return list;
+  }
+
+  String _remainingLabel(Alternative alt) {
+    final rem = alt.effectiveRemainingQty;
+    final physical = alt.physicalQuantity ?? rem;
+    final usedHere = alt.usedInThisBasketQuantity ?? 0;
+    final usedActive = alt.usedInActiveBasketsQuantity ?? 0;
+    final remInt = rem.round();
+    final physInt = physical.round();
+    final buf = StringBuffer(
+      'Remaining: $remInt of $physInt units (${alt.userWeight.toStringAsFixed(1)}%)',
+    );
+    if (usedHere > 0.01) {
+      buf.write(' · ${usedHere.round()} already used in this basket');
+    } else if (usedActive > 0.01) {
+      buf.write(' · ${usedActive.round()} used in active baskets');
+    }
+    if (alt.indexEtf) {
+      buf.write(' · Index ETF');
+    }
+    return buf.toString();
+  }
+
   List<StockSearchResult> _filterSearchResults(List<StockSearchResult> results) {
     if (widget.sectorialBasket) {
       return results.where((r) => _sectorMatches(r.sector)).toList();
@@ -375,7 +408,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
     }
 
     if (_results.isEmpty && _searchController.text.isEmpty) {
-      if (widget.alternatives.isNotEmpty) {
+      if (_visibleAlternatives.isNotEmpty) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -389,12 +422,13 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
             ),
             Expanded(
               child: ListView.builder(
-                itemCount: widget.alternatives.length,
+                itemCount: _visibleAlternatives.length,
                 itemBuilder: (context, index) {
-                  final alt = widget.alternatives[index];
+                  final alt = _visibleAlternatives[index];
                   final isSelected = _selectedIsins.contains(alt.isin);
-                  final available = alt.userWeight > 0.01 && (alt.quantity ?? 0) > 0;
-                  
+                  final available =
+                      alt.userWeight > 0.01 && alt.effectiveRemainingQty > 0;
+
                   return ListTile(
                     enabled: available,
                     leading: Checkbox(
@@ -406,53 +440,66 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                           : null,
                       activeColor: context.colors.actionPrimaryBg,
                     ),
-                    title: Text(alt.symbol, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text(alt.symbol,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(alt.sector != null
                             ? '${alt.sector} • ₹${alt.lastPrice?.toStringAsFixed(2) ?? "—"}'
                             : '₹${alt.lastPrice?.toStringAsFixed(2) ?? "—"}'),
-                        if (alt.quantity != null && alt.quantity! > 0)
-                          Text(
-                            'Remaining: ${alt.userWeight.toStringAsFixed(1)}% (${alt.quantity!.toInt()} units)',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: context.statusSuccess,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        else
-                          Text(
-                            'Fully allocated in other ETF slots',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: context.textTertiary,
-                              fontStyle: FontStyle.italic,
-                            ),
+                        Text(
+                          _remainingLabel(alt),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.statusSuccess,
+                            fontWeight: FontWeight.bold,
                           ),
+                        ),
                       ],
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (alt.indexEtf)
+                          Container(
+                            margin: const EdgeInsets.only(right: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: context.colors.actionPrimaryBg
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Index ETF',
+                              style: TextStyle(
+                                  fontSize: 9,
+                                  color: context.colors.actionPrimaryBg),
+                            ),
+                          ),
                         if (alt.isSameSector)
                           Container(
                             margin: const EdgeInsets.only(right: 4),
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: context.statusSuccess.withValues(alpha: 0.12),
+                              color:
+                                  context.statusSuccess.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'Same sector',
-                              style: TextStyle(fontSize: 9, color: context.statusSuccess),
+                              style: TextStyle(
+                                  fontSize: 9, color: context.statusSuccess),
                             ),
                           ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: context.statusSuccess.withValues(alpha: 0.15),
+                            color:
+                                context.statusSuccess.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text('Recommended',
@@ -463,7 +510,9 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                         ),
                       ],
                     ),
-                    onTap: () => _toggleAlternativeSelection(alt),
+                    onTap: available
+                        ? () => _toggleAlternativeSelection(alt)
+                        : null,
                   );
                 },
               ),
@@ -471,7 +520,12 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
           ],
         );
       }
-      return Center(child: Text('Type to search for a stock...', style: TextStyle(color: context.textTertiary)));
+      return Center(
+          child: Text(
+              widget.sectorialBasket
+                  ? 'No same-sector holdings with remaining units. Try search.'
+                  : 'Type to search for a stock...',
+              style: TextStyle(color: context.textTertiary)));
     }
 
     if (_results.isEmpty && _searchController.text.isNotEmpty) {

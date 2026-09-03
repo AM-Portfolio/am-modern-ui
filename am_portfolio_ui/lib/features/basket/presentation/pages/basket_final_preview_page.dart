@@ -1,20 +1,22 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:intl/intl.dart';
 import '../basket_navigation.dart';
+import '../../domain/services/basket_currency_formatter.dart';
 import 'basket_success_page.dart';
 import '../providers/basket_providers.dart';
 import '../../domain/models/basket_opportunity.dart';
+import '../../domain/mappers/create_portfolio_request_mapper.dart';
 import '../widgets/final_preview/fp_etf_panel.dart';
 import '../widgets/final_preview/fp_basket_panel.dart';
 import '../widgets/shared/basket_flow_step.dart';
 import '../widgets/shared/basket_flow_stepper.dart';
 import '../widgets/shared/basket_sticky_action_bar.dart';
 import '../utils/basket_allocation_math.dart';
+import '../utils/basket_api_errors.dart';
 import '../utils/basket_responsive.dart';
 import '../utils/basket_portfolio_sync.dart';
+import '../flow/basket_flow_controller.dart';
 
 class BasketFinalPreviewPage extends ConsumerStatefulWidget {
   final BasketFinalPreviewArgs args;
@@ -42,17 +44,31 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
   }
 
   Future<void> _validateFinalPreview() async {
+    final args = widget.args;
+    if (args.trustCustomizeOutput) {
+      if (mounted) {
+        setState(() {
+          _validatedOpportunity =
+              args.finalOpportunity.copyWith(composition: args.finalItems);
+          _validatedItems = args.finalItems;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     try {
-      final args = widget.args;
       final request = {
         'investmentAmount': args.investmentAmount,
         'opportunity': args.finalOpportunity.copyWith(composition: args.finalItems).toJson(),
         'includeHeld': true,
         'excludedSymbols': args.excludedItems.toList(),
       };
-      
-      final freshOpportunity = await ref.read(calculateBasketQuantitiesFinalPreviewProvider(request: request).future);
-      
+
+      final freshOpportunity = await ref.read(
+        calculateBasketQuantitiesFinalPreviewProvider(request: request).future,
+      );
+
       if (mounted) {
         setState(() {
           _validatedOpportunity = freshOpportunity;
@@ -63,7 +79,7 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = basketApiErrorMessage(e);
           _isLoading = false;
         });
       }
@@ -74,55 +90,28 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
     setState(() => _isSubmitting = true);
     try {
       final args = widget.args;
-      final request = {
-        'userId': args.userId,
-        'sourcePortfolioId': args.portfolioId,
-        'etfIsin': args.originalOpportunity.etfIsin,
-        'etfName': args.originalOpportunity.etfName,
-        'basketName': args.basketName,
-        'idempotencyKey': args.idempotencyKey,
-        'investmentAmount': args.investmentAmount,
-        'replicaScore': _validatedOpportunity.replicaScore,
-        'coverageAfterCreation': _validatedOpportunity.replicaScore,
-        'remainingMissingCount': _validatedItems.where((c) => c.status == ItemStatus.missing).length,
-        'remainingMissing': _validatedItems
-            .where((c) => c.status == ItemStatus.missing)
-            .map((c) => c.stockSymbol)
-            .toList(),
-        'lines': _validatedItems.map((item) {
-          final lineWeight = item.replicaWeight > 0
-              ? item.replicaWeight
-              : (item.rebalancedWeight ?? item.etfWeight);
-          final isHeldOrSub =
-              item.status == ItemStatus.held || item.status == ItemStatus.substitute;
-          final avgCost = isHeldOrSub
-              ? (item.heldAveragePrice ?? item.lastPrice)
-              : item.lastPrice;
-          return {
-            'status': item.status.toString().split('.').last.toUpperCase(),
-            'etfIsin': item.isin,
-            'etfSymbol': item.stockSymbol,
-            'etfWeight': lineWeight,
-            'holdingIsin': isHeldOrSub
-                ? (item.userHoldingIsin ?? item.isin)
-                : item.isin,
-            'holdingSymbol': isHeldOrSub
-                ? (item.userHoldingSymbol ?? item.stockSymbol)
-                : item.stockSymbol,
-            'quantity': item.buyQuantity,
-            'heldQuantity': (item.heldQuantity != null && item.targetQuantity != null)
-                ? math.min(item.heldQuantity!, item.targetQuantity!)
-                : item.heldQuantity,
-            'averageBuyingPrice': avgCost,
-            'lastKnownPrice': item.lastPrice,
-          };
-        }).toList(),
-      };
+      final request = CreatePortfolioRequestMapper.toRequest(
+        userId: args.userId,
+        portfolioId: args.portfolioId,
+        originalOpportunity: args.originalOpportunity,
+        validatedOpportunity: _validatedOpportunity,
+        validatedItems: _validatedItems,
+        basketName: args.basketName,
+        idempotencyKey: args.idempotencyKey,
+        investmentAmount: args.investmentAmount,
+        draftId: args.draftId,
+      );
 
       final newBasketId = await ref.read(createBasketPortfolioProvider(request: request).future);
-      
+
       if (!mounted) return;
+      ref.read(basketFlowControllerProvider.notifier).resetFlow();
+      BasketNavigation.clearBasketSession(args.userId);
       ref.invalidate(myBasketsProvider(userId: args.userId, portfolioId: ''));
+      ref.invalidate(basketDraftsProvider((
+        userId: args.userId,
+        portfolioId: args.portfolioId,
+      )));
       await BasketPortfolioSync.afterBasketMutation(context);
 
       Navigator.of(context).pushReplacement(
@@ -139,7 +128,7 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Failed to create basket: $e'),
+        content: Text('Failed to create basket: ${basketApiErrorMessage(e)}'),
         backgroundColor: context.statusError,
       ));
     } finally {
@@ -174,7 +163,6 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
     final subCount = _validatedItems.where((i) => i.status == ItemStatus.substitute).length;
 
     final actualCost = _validatedOpportunity.actualInvestmentCost ?? 0.0;
-    final fmtValue = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final excluded = args.excludedItems;
     final targetSum = BasketAllocationMath.targetWeightSum(_validatedItems, excluded);
     final customWeightSum = BasketAllocationMath.totalCustomWeightPercent(
@@ -249,7 +237,7 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
           ),
           BasketStatItem(
             label: 'From Holdings',
-            value: fmtValue.format(customValue),
+            value: BasketCurrencyFormatter.formatInr(customValue),
           ),
           BasketStatItem(
             label: 'Match Score',

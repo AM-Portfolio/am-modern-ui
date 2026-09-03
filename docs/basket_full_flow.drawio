@@ -1,0 +1,171 @@
+<mxfile host="Electron" modified="2024-01-01T00:00:00.000Z" agent="Antigravity" version="21.0.0" type="device">
+  <diagram id="full_flow" name="Comprehensive Basket Flow">
+    <mxGraphModel dx="1200" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Headers (Dark mode friendly) -->
+        <mxCell id="h1" value="UI Flow Step" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="50" y="20" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="h2" value="Desktop Layout (≥ 1100px)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="360" y="20" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="h3" value="Mobile/Tablet Layout (< 1100px)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="640" y="20" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="h4" value="Backend API Integration" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="920" y="20" width="240" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Step 0: Explorer -->
+        <mxCell id="s0" value="Step 0: Explorer / Catalog&#xa;(Discover &amp; My Baskets)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="50" y="80" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="api0" value="API: /basket/catalog&#xa;(Fetches available ETFs)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="920" y="80" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s0_api" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s0" target="api0">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Step 1: Preview -->
+        <mxCell id="s1" value="Step 1: Preview&#xa;(ETF Composition &amp; Match)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="50" y="200" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_desk" value="PreviewTableLayout&#xa;Full Grid Headers, Side-by-Side cells" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="360" y="180" width="200" height="50" as="geometry" />
+        </mxCell>
+        
+        <!-- GAP 2 NOTE -->
+        <mxCell id="gap2" value="GAP 2: Column padding is too tight&#xa;between 'Weight' and 'Units'" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#000000;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="240" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_gap2" style="endArrow=none;dashed=1;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;strokeColor=#d6b656;" edge="1" parent="1" source="gap2" target="s1_desk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s1_mob" value="Stacked Cards Format&#xa;No Headers, Condensed Badges" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="640" y="205" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="api1" value="API: /portfolio/v1/basket/preview&#xa;(Returns Match Score &amp; Status)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="920" y="200" width="240" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="e_s0_s1" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#aaaaaa;strokeWidth=2;" edge="1" parent="1" source="s0" target="s1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s1_desk" style="endArrow=none;html=1;exitX=1;exitY=0.25;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s1" target="s1_desk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s1_mob" style="endArrow=none;html=1;exitX=1;exitY=0.75;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s1" target="s1_mob">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s1_api" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s1" target="api1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Step 2: Customize -->
+        <mxCell id="s2" value="Step 2: Customize&#xa;(Weights, Quantities &amp; Swaps)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="50" y="380" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s2_desk" value="2-Column Split: Left Table, Right Bar&#xa;Interactive +/- Steppers, Donut Chart" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="360" y="360" width="200" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- GAP 1 NOTE -->
+        <mxCell id="gap1" value="GAP 1: Gap vs ETF does not update&#xa;when user clicks +/- units" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#000000;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="420" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_gap1" style="endArrow=none;dashed=1;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;strokeColor=#d6b656;" edge="1" parent="1" source="gap1" target="s2_desk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s2_mob" value="Single Column (Right Sidebar Drawer)&#xa;NO Steppers (+/-). Editable budget." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="640" y="385" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="api2" value="API: /basket/calculate-quantities&#xa;(Updates Gap &amp; Cost dynamically)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="920" y="380" width="240" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_s1_s2" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#aaaaaa;strokeWidth=2;" edge="1" parent="1" source="s1" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s2_desk" style="endArrow=none;html=1;exitX=1;exitY=0.25;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s2" target="s2_desk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s2_mob" style="endArrow=none;html=1;exitX=1;exitY=0.75;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s2" target="s2_mob">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s2_api" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s2" target="api2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Swap Selector (Sub-step) -->
+        <mxCell id="s2_swap" value="Substitute / Swap Action" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="75" y="520" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="api_swap" value="API: /basket/apply-substitutes&#xa;(Validates &amp; Replaces Missing)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="920" y="510" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s2_swap" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#aaaaaa;" edge="1" parent="1" source="s2" target="s2_swap">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_swap_api" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s2_swap" target="api_swap">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Step 3: Final Review -->
+        <mxCell id="s3" value="Step 3: Final Review&#xa;(ETF vs Custom Comparison)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="50" y="640" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_desk" value="2-Column Side-by-Side&#xa;ETF Card (Left) vs Basket Card (Right)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="360" y="620" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_mob" value="Single Column Stacked&#xa;ETF Card (Top), Basket Card (Bottom)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="640" y="670" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="api3" value="API: /basket/final-preview&#xa;(Re-validates opportunity for step 3)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="920" y="640" width="240" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="e_swap_s3" style="endArrow=classic;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=0;strokeColor=#aaaaaa;strokeWidth=2;" edge="1" parent="1" source="s2_swap" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="e_s3_desk" style="endArrow=none;html=1;exitX=1;exitY=0.25;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s3" target="s3_desk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s3_mob" style="endArrow=none;html=1;exitX=1;exitY=0.75;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s3" target="s3_mob">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s3_api" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s3" target="api3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Step 4: Success -->
+        <mxCell id="s4" value="Step 4: Success &amp; Dashboard&#xa;(Basket Portfolio Created)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="50" y="800" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s4_ui" value="Centered Modal (Desktop)&#xa;Full Screen Page (Mobile)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="360" y="805" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="api4" value="API: /basket/create-portfolio&#xa;(Generates Basket Portfolio ID)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="920" y="800" width="240" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_s3_s4" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#aaaaaa;strokeWidth=2;" edge="1" parent="1" source="s3" target="s4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s4_ui" style="endArrow=none;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s4" target="s4_ui">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s4_api" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#aaaaaa;" edge="1" parent="1" source="s4" target="api4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

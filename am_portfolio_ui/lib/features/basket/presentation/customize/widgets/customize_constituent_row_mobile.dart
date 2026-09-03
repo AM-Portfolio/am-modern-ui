@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 import '../../../domain/models/basket_opportunity.dart';
+import '../../../domain/services/basket_currency_formatter.dart';
 import '../../shared/widgets/basket_status_badge.dart';
 import 'customize_mini_stat.dart';
+import 'customize_qty_stepper.dart';
 
 class CustomizeConstituentRowMobile extends StatelessWidget {
   final BasketItem item;
@@ -16,6 +18,11 @@ class CustomizeConstituentRowMobile extends StatelessWidget {
   final VoidCallback onSubstitute;
   final ValueChanged<double> onQtyChanged;
   final ValueChanged<int>? onTargetQtyChanged;
+  final ValueChanged<int>? onDirectTargetQtySet;
+  final double allocatedUnits;
+  final int gapVsEtf;
+  final bool canIncrease;
+  final bool canDecrease;
 
   const CustomizeConstituentRowMobile({
     super.key,
@@ -29,6 +36,11 @@ class CustomizeConstituentRowMobile extends StatelessWidget {
     required this.onSubstitute,
     required this.onQtyChanged,
     this.onTargetQtyChanged,
+    this.onDirectTargetQtySet,
+    this.allocatedUnits = 0,
+    this.gapVsEtf = 0,
+    this.canIncrease = false,
+    this.canDecrease = false,
   });
 
   @override
@@ -117,7 +129,7 @@ class CustomizeConstituentRowMobile extends StatelessWidget {
             if (item.lastPrice != null)
               CustomizeMiniStat(
                   label: 'Price',
-                  value: '₹${item.lastPrice!.toStringAsFixed(1)}'),
+                  value: BasketCurrencyFormatter.formatInr(item.lastPrice!)),
             const SizedBox(width: 16),
             CustomizeMiniStat(label: 'Invested', value: investedText),
           ]),
@@ -133,11 +145,44 @@ class CustomizeConstituentRowMobile extends StatelessWidget {
                     color: context.statusSuccess.withValues(alpha: 0.3)),
               ),
               child: Text(
-                  'Held: ${item.heldQuantity!.toInt()} units @ ₹${item.heldAveragePrice?.toStringAsFixed(0) ?? "—"}',
+                  'Held: ${item.heldQuantity!.toInt()} units @ ${item.heldAveragePrice != null ? BasketCurrencyFormatter.formatInr(item.heldAveragePrice!) : "—"}',
                   style: TextStyle(
                       fontSize: 10,
                       color: context.statusSuccess,
                       fontWeight: FontWeight.bold)),
+            ),
+          ],
+          if (hasCalculated &&
+              onTargetQtyChanged != null &&
+              !isExcluded &&
+              !isMissing &&
+              (item.heldQuantity ?? 0) > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                CustomizeGapPill(
+                  gapVsEtf: gapVsEtf,
+                  priceOk: item.lastPrice != null && item.lastPrice! > 0,
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: (item.lastPrice == null || item.lastPrice! <= 0)
+                      ? null
+                      : () => showCustomizeQtySheet(
+                            context: context,
+                            item: item,
+                            allocatedUnits: allocatedUnits.toInt(),
+                            gapVsEtf: gapVsEtf,
+                            onDelta: onTargetQtyChanged!,
+                            onSetQty: onDirectTargetQtySet,
+                          ),
+                  child: Text(
+                    allocatedUnits > 0
+                        ? 'Adjust ${allocatedUnits.toInt()} units'
+                        : 'Adjust qty',
+                  ),
+                ),
+              ],
             ),
           ],
         ]),

@@ -34,8 +34,8 @@ class BasketFlowStepper extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 24,
-          height: 24,
+          width: 22,
+          height: 22,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: (isCompleted || isActive) ? color : Colors.transparent,
@@ -65,12 +65,12 @@ class BasketFlowStepper extends StatelessWidget {
     );
   }
 
-  Widget _buildLine(BuildContext context, {double width = 32}) {
+  Widget _buildLine(BuildContext context, {double width = 24}) {
     return Container(
       width: width,
       height: 1,
-      color: context.colors.border,
-      margin: const EdgeInsets.symmetric(horizontal: 12),
+      color: context.colors.border.withValues(alpha: 0.7),
+      margin: const EdgeInsets.symmetric(horizontal: 8),
     );
   }
 
@@ -103,7 +103,7 @@ class BasketFlowStepper extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       for (var i = 0; i < steps.length; i++) ...[
-                        if (i > 0) _buildLine(context, width: compact ? 16 : 32),
+                        if (i > 0) _buildLine(context, width: compact ? 12 : 24),
                         _buildStep(
                           context,
                           steps[i],

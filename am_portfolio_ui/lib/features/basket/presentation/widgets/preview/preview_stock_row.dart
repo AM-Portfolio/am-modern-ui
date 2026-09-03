@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/models/basket_opportunity.dart';
-import '../../utils/basket_responsive.dart';
 import 'inline_swap_panel.dart';
 import 'preview_table_layout.dart';
 
@@ -100,9 +99,11 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
     final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final hasPortfolioData = units > 0 && (widget.item.lastPrice ?? 0) > 0;
     final showDash = !hasPortfolioData && widget.item.status == ItemStatus.missing;
-    final compact = BasketResponsive.useCompactPreview(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = PreviewTableLayout.useCompactTable(context, constraints);
 
-    return Stack(
+        return Stack(
       children: [
         Column(
           children: [
@@ -170,6 +171,8 @@ class _PreviewStockRowState extends State<PreviewStockRow> {
             ),
           ),
       ],
+        );
+      },
     );
   }
 
