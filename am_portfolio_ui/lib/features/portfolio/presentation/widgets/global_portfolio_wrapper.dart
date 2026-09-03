@@ -38,6 +38,7 @@ class _GlobalPortfolioWrapperState
   BuildContext? _portfolioBlocContext;
   bool _portfolioServiceMarked = false;
   bool _portfolioListMarked = false;
+  bool _wasOnBasketsRoute = false;
 
   String? _portfolioIdFromUrl(BuildContext context) {
     final params = GoRouterState.of(context).pathParameters;
@@ -45,6 +46,16 @@ class _GlobalPortfolioWrapperState
     if (id != null && id.isNotEmpty) return id;
     return null;
   }
+
+  bool _isBasketsRoute(BuildContext context) {
+    try {
+      return GoRouterState.of(context).uri.path.contains('/baskets');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool get _deferPortfolioDetailLoad => _isBasketsRoute(context);
 
   bool get _portfolioDetailFetchAllowed =>
       widget.streamingTab == 'Portfolio' || widget.streamingTab == 'Trade';
@@ -85,6 +96,29 @@ class _GlobalPortfolioWrapperState
         _selectedPortfolioName = inheritedName;
       }
     }
+
+    final onBaskets = _isBasketsRoute(context);
+    if (_wasOnBasketsRoute && !onBaskets) {
+      final cubit = _readPortfolioCubit();
+      if (cubit != null &&
+          _selectedPortfolioId != null &&
+          _portfolioDetailFetchAllowed) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _selectedPortfolioId == null) return;
+          _loadPortfolioDetail(cubit, _selectedPortfolioId!);
+        });
+      }
+    }
+    _wasOnBasketsRoute = onBaskets;
+  }
+
+  void _loadPortfolioDetail(PortfolioCubit cubit, String id) {
+    if (_deferPortfolioDetailLoad) return;
+    if (id == 'all') {
+      cubit.loadAllPortfolios();
+    } else {
+      cubit.loadPortfolioById(id);
+    }
   }
 
   void _selectPortfolio(
@@ -100,7 +134,9 @@ class _GlobalPortfolioWrapperState
     try {
       final cubit = innerContext.read<PortfolioCubit>();
       if (id == 'all') {
-        cubit.loadAllPortfolios();
+        if (!_deferPortfolioDetailLoad) {
+          cubit.loadAllPortfolios();
+        }
       } else {
         if (_portfolioStreamingAllowed) {
           cubit.subscribeToPortfolioUpdates(
@@ -108,7 +144,9 @@ class _GlobalPortfolioWrapperState
             forceResubscribe: true,
           );
         }
-        cubit.loadPortfolioById(id);
+        if (!_deferPortfolioDetailLoad) {
+          cubit.loadPortfolioById(id);
+        }
       }
     } catch (_) {
       // PortfolioCubit not ready yet — selection stored for when service loads.
@@ -206,7 +244,9 @@ class _GlobalPortfolioWrapperState
 
     if (_selectedPortfolioId != null) {
       if (_selectedPortfolioId == 'all') {
-        cubit.loadAllPortfolios();
+        if (!_deferPortfolioDetailLoad) {
+          cubit.loadAllPortfolios();
+        }
       } else {
         if (_portfolioStreamingAllowed) {
           cubit.subscribeToPortfolioUpdates(
@@ -214,7 +254,9 @@ class _GlobalPortfolioWrapperState
             forceResubscribe: true,
           );
         }
-        cubit.loadPortfolioById(_selectedPortfolioId!);
+        if (!_deferPortfolioDetailLoad) {
+          cubit.loadPortfolioById(_selectedPortfolioId!);
+        }
       }
     } else if (hasList &&
         cubit.state.portfolioList!.portfolios.isNotEmpty) {
