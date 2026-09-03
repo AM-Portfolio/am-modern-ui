@@ -413,6 +413,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         isSidebarVisible: widget.isSidebarVisible,
         onToggleSidebar: widget.onToggleSidebar,
         addTradeBuilder: widget.addTradeBuilder,
+        onOpenDocIntel: widget.onOpenDocIntel,
       );
     }
   }
