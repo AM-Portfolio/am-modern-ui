@@ -8,8 +8,8 @@ import '../dtos/trade_controller_dtos.dart';
 import '../dtos/trade_holding_dto.dart';
 import '../dtos/trade_portfolio_dto.dart';
 import '../dtos/trade_portfolio_summary_dto.dart';
-import '../domain/enums/trade_directions.dart';
-import '../domain/enums/trade_statuses.dart';
+import '../../domain/enums/trade_directions.dart';
+import '../../domain/enums/trade_statuses.dart';
 import 'trade_mock_data_helper.dart';
 
 /// Abstract data source for trade data
