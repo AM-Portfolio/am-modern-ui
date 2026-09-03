@@ -41,6 +41,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   double _bottomNavScrollAccum = 0;
   static const double _bottomNavScrollThreshold = 12;
   Timer? _bottomNavHideTimer;
+  Timer? _securityAlertHideTimer;
   StreamSubscription<bool>? _marketGateSubscription;
   StreamSubscription<List<SecurityEventModel>>? _securityEventsSub;
   SecurityEventModel? _securityAlert;
@@ -74,6 +75,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   @override
   void dispose() {
     _bottomNavHideTimer?.cancel();
+    _securityAlertHideTimer?.cancel();
     _marketGateSubscription?.cancel();
     _marketGateSubscription = null;
     _securityEventsSub?.cancel();
@@ -90,10 +92,32 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     service.start();
     _securityEventsSub ??= service.events.listen((events) {
       if (!mounted) return;
-      setState(() {
-        _securityAlert = events.isNotEmpty ? events.first : null;
-      });
+      final next = events.isNotEmpty ? events.first : null;
+      if (next == null) {
+        _securityAlertHideTimer?.cancel();
+        setState(() => _securityAlert = null);
+        return;
+      }
+      if (_securityAlert?.eventId == next.eventId) return;
+      _presentSecurityAlert(next);
     });
+  }
+
+  void _presentSecurityAlert(SecurityEventModel event) {
+    _securityAlertHideTimer?.cancel();
+    setState(() => _securityAlert = event);
+    _securityAlertHideTimer = Timer(const Duration(seconds: 5), () {
+      unawaited(_acknowledgeSecurityAlert());
+    });
+  }
+
+  Future<void> _acknowledgeSecurityAlert() async {
+    final alert = _securityAlert;
+    if (alert == null) return;
+    _securityAlertHideTimer?.cancel();
+    await AuthProviders.securityAlertService.acknowledge(alert.eventId);
+    if (!mounted) return;
+    setState(() => _securityAlert = null);
   }
 
   Future<void> _startMarketStreamingGate() async {
@@ -668,10 +692,7 @@ final userId =
                           child: SecurityAlertBanner(
                             event: _securityAlert!,
                             onAcknowledge: () async {
-                              await AuthProviders.securityAlertService
-                                  .acknowledge(_securityAlert!.eventId);
-                              if (!mounted) return;
-                              setState(() => _securityAlert = null);
+                              await _acknowledgeSecurityAlert();
                             },
                             onReviewSessions: () {
                               context.go(AppRoutes.activeSessions);
