@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/core/utils/validators.dart';
 
 import '../cubit/auth_cubit.dart';
@@ -15,10 +17,12 @@ class EmailLoginFormWidget extends StatefulWidget {
     super.key,
     this.isCompact = false,
     this.isLoading = false,
+    this.showTitle = true,
   });
 
   final bool isCompact;
   final bool isLoading;
+  final bool showTitle;
 
   @override
   State<EmailLoginFormWidget> createState() => _EmailLoginFormWidgetState();
@@ -30,6 +34,7 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isHoveringBtn = false;
+  bool _rememberMe = true;
 
   @override
   void dispose() {
@@ -49,6 +54,8 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final primary = context.colors.actionPrimaryBg;
+
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is Authenticated && kIsWeb) {
@@ -61,18 +68,37 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (widget.showTitle) ...[
+                Text(
+                  'Sign in to your account',
+                  style: TextStyle(
+                    fontSize: widget.isCompact ? 18 : 22,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Choose a sign in method and continue.',
+                  style: TextStyle(
+                    fontSize: widget.isCompact ? 12 : 13,
+                    color: context.colors.textSecondary,
+                  ),
+                ),
+                SizedBox(height: widget.isCompact ? 16 : 20),
+              ],
               LiquidTextField(
                 controller: _emailController,
                 enabled: !widget.isLoading,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.email, AutofillHints.username],
-                labelText: 'Email',
+                labelText: 'Email address',
                 hintText: 'Enter your email',
                 prefixIcon: Icons.email_outlined,
                 validator: (value) => Validators.validateEmail(value),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               LiquidTextField(
                 controller: _passwordController,
                 enabled: !widget.isLoading,
@@ -86,9 +112,7 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white70
-                        : const Color(0xFF475569),
+                    color: context.colors.textSecondary,
                   ),
                   onPressed: () =>
                       setState(() => _obscurePassword = !_obscurePassword),
@@ -100,7 +124,52 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                   return null;
                 },
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: Checkbox(
+                      value: _rememberMe,
+                      activeColor: primary,
+                      onChanged: widget.isLoading
+                          ? null
+                          : (value) =>
+                              setState(() => _rememberMe = value ?? false),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Remember Me',
+                      style: TextStyle(
+                        fontSize: widget.isCompact ? 12 : 13,
+                        color: context.colors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: widget.isLoading
+                        ? null
+                        : () => context.push('/forgot-password'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'Forgot Password?',
+                      style: TextStyle(
+                        fontSize: widget.isCompact ? 12 : 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
               MouseRegion(
                 onEnter: (_) => setState(() => _isHoveringBtn = true),
                 onExit: (_) => setState(() => _isHoveringBtn = false),
@@ -114,7 +183,7 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF6366F1)
+                        color: primary
                             .withValues(alpha: _isHoveringBtn ? 0.35 : 0.20),
                         blurRadius: _isHoveringBtn ? 25 : 18,
                         offset: const Offset(0, 8),
@@ -134,8 +203,8 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                           ),
                           gradient: LinearGradient(
                             colors: [
-                              const Color(0xFF6366F1).withValues(alpha: 0.75),
-                              const Color(0xFF7C3AED).withValues(alpha: 0.65),
+                              primary.withValues(alpha: 0.95),
+                              primary.withValues(alpha: 0.85),
                             ],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
@@ -156,8 +225,9 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                                   width: 24,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor:
-                                        AlwaysStoppedAnimation<Color>(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
                                   ),
                                 )
                               : const Text(
@@ -249,12 +319,10 @@ class _LiquidTextFieldState extends State<LiquidTextField> {
         ? Colors.white.withValues(alpha: 0.35)
         : Colors.white.withValues(alpha: 0.45);
 
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final labelColor =
-        isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF475569);
-    final hintColor =
-        isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF64748B);
-    final iconColor = isDark ? Colors.white70 : const Color(0xFF334155);
+    final textColor = context.colors.textPrimary;
+    final labelColor = context.colors.textSecondary;
+    final hintColor = context.colors.textTertiary;
+    final iconColor = context.colors.textSecondary;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
@@ -296,7 +364,7 @@ class _LiquidTextFieldState extends State<LiquidTextField> {
                 border: InputBorder.none,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                errorStyle: const TextStyle(color: Color(0xFFFF6B6B)),
+                errorStyle: TextStyle(color: context.colors.statusError),
               ),
               validator: widget.validator,
             ),

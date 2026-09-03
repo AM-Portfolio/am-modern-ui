@@ -7,12 +7,14 @@ class GlassCardWidget extends StatefulWidget {
   final Widget child;
   final bool isCompact;
   final double? maxWidth;
+  final bool enableMotion;
 
   const GlassCardWidget({
     super.key,
     required this.child,
     this.isCompact = false,
     this.maxWidth,
+    this.enableMotion = true,
   });
 
   @override
@@ -25,19 +27,21 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
   late final Animation<double> _scale;
   late final Animation<double> _opacity;
 
-  Offset _parallax = Offset.zero;   // card translation (max ±5 px)
-  Offset _reflPos = Offset.zero;    // cursor position inside card
+  Offset _parallax = Offset.zero;
+  Offset _reflPos = Offset.zero;
 
   @override
   void initState() {
     super.initState();
     _entry = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 520),
+      duration: Duration(milliseconds: widget.enableMotion ? 520 : 1),
     );
-    _scale = Tween<double>(begin: 0.96, end: 1.0)
-        .animate(CurvedAnimation(parent: _entry, curve: Curves.easeOutCubic));
-    _opacity = Tween<double>(begin: 0.0, end: 1.0)
+    _scale = Tween<double>(
+      begin: widget.enableMotion ? 0.96 : 1.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _entry, curve: Curves.easeOutCubic));
+    _opacity = Tween<double>(begin: widget.enableMotion ? 0.0 : 1.0, end: 1.0)
         .animate(CurvedAnimation(parent: _entry, curve: Curves.easeOutCubic));
     _entry.forward();
   }
@@ -49,7 +53,7 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
   }
 
   void _onHover(PointerEvent e) {
-    if (!mounted) return;
+    if (!widget.enableMotion || !mounted) return;
     final box = context.findRenderObject() as RenderBox?;
     if (box == null) return;
     final sz = box.size;
@@ -64,7 +68,7 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
   }
 
   void _onExit(PointerEvent e) {
-    if (!mounted) return;
+    if (!widget.enableMotion || !mounted) return;
     setState(() {
       _parallax = Offset.zero;
       _reflPos = Offset.zero;
@@ -74,8 +78,10 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final r = widget.isCompact ? 30.0 : 35.0;   // 35px radius for Light Theme
-    final pad = widget.isCompact ? 24.0 : 36.0; // inner padding
+    final r = widget.isCompact ? 28.0 : 32.0;
+    final pad = widget.isCompact
+        ? 22.0
+        : (widget.maxWidth != null && widget.maxWidth! > 600 ? 28.0 : 36.0);
 
     // ── Material & Colors ───────────────────────────────────────────────────
     // Dark Theme: 100% UNCHANGED
@@ -155,18 +161,18 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
         child: MouseRegion(
           onHover: _onHover,
           onExit: _onExit,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-            transform: Matrix4.translationValues(_parallax.dx, _parallax.dy, 0),
-            constraints: BoxConstraints(
-              maxWidth: widget.maxWidth ?? (widget.isCompact ? double.infinity : 440),
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(r),
-              boxShadow: shadowList,
-            ),
-            child: ColorFiltered(
+          child: Transform.translate(
+            offset: _parallax,
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: widget.maxWidth ??
+                    (widget.isCompact ? double.infinity : 440),
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(r),
+                boxShadow: shadowList,
+              ),
+              child: ColorFiltered(
               // saturate(185%) brightness(108%) contrast(104%)
               colorFilter: ColorFilter.matrix(_satBrightnessMatrix(
                 saturation: 1.85,
@@ -262,6 +268,7 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
                 ),
               ),
             ),
+          ),
           ),
         ),
       ),

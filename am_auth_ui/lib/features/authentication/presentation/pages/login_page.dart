@@ -1,25 +1,27 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:am_design_system/core/config/feature_flags.dart';
 import 'package:am_design_system/core/constants/app_config.dart';
-import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
+import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
+import 'package:am_design_system/shared/widgets/display/interactive_background.dart';
+
 import '../../../../core/utils/auth_redirect.dart';
+import '../../../../di/auth_providers.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
-import '../widgets/app_header_widget.dart';
+import '../widgets/auth_method_pill_tabs.dart';
 import '../widgets/dev_section_widget.dart';
 import '../widgets/email_login_form_widget.dart';
 import '../widgets/glass_card_widget.dart';
 import '../widgets/google_login_button_widget.dart';
-import '../widgets/theme_toggle_widget.dart';
 import '../widgets/web_otp_login_widget.dart';
 import '../widgets/web_qr_login_section.dart';
-import 'package:am_design_system/core/config/feature_flags.dart';
-import 'package:am_design_system/shared/widgets/display/interactive_background.dart';
-
 
 /// Redesigned login page with glassmorphism, global theme, and better mobile UX
 class LoginPage extends StatefulWidget {
@@ -40,12 +42,31 @@ enum _WebLoginMethod { classic, scanQr, otp }
 
 class _LoginPageState extends State<LoginPage> {
   _WebLoginMethod _webLoginMethod = _WebLoginMethod.classic;
+  PrefetchedQrSession? _prefetchedQr;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb && FeatureFlags().enableQrWebLogin) {
+      unawaited(_prefetchQr());
+    }
+  }
+
+  Future<void> _prefetchQr() async {
+    try {
+      final session =
+          await prefetchQrSession(AuthProviders.deviceLinkPollService);
+      if (!mounted) return;
+      setState(() => _prefetchedQr = session);
+    } catch (_) {
+      // Section will start its own session if the user opens Scan QR.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final effectiveAppName = widget.appName ?? AppConfig.getAppName();
-    final effectiveAppIcon = widget.appIcon ?? AppConfig.getAppIcon();
-    
+
     return Scaffold(
       body: SafeArea(
         child: BlocConsumer<AuthCubit, AuthState>(
@@ -116,42 +137,30 @@ class _LoginPageState extends State<LoginPage> {
                 return LayoutBuilder(
                   builder: (context, constraints) {
                     final isCompact = constraints.maxWidth < 600;
-                    
+
                     return Stack(
                       children: [
-                        // Background gradient (adapts to theme)
                         _buildBackground(),
-                        
-                        // Main content
                         Center(
                           child: SingleChildScrollView(
                             padding: EdgeInsets.all(isCompact ? 16 : 24),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                // App header (mobile only)
-                                AppHeaderWidget(
-                                  appName: effectiveAppName,
-                                  appIcon: effectiveAppIcon,
-                                  isCompact: isCompact,
-                                ),
-                                if (isCompact) const SizedBox(height: 24),
-                                
-                                // Login card with glassmorphism
-                                GlassCardWidget(
-                                  isCompact: isCompact,
-                                  child: _buildLoginForm(context, state, isCompact),
-                                ),
-                              ],
+                            child: GlassCardWidget(
+                              isCompact: isCompact,
+                              maxWidth: isCompact ? double.infinity : 1080,
+                              enableMotion: false,
+                              child: isCompact
+                                  ? _buildCompactShell(
+                                      context,
+                                      state,
+                                      effectiveAppName,
+                                    )
+                                  : _buildWideShell(
+                                      context,
+                                      state,
+                                      effectiveAppName,
+                                    ),
                             ),
                           ),
-                        ),
-                        
-                        // Theme toggle (top-right)
-                        Positioned(
-                          top: 16,
-                          right: 16,
-                          child: ThemeToggleWidget(iconSize: isCompact ? 20 : 24),
                         ),
                       ],
                     );
@@ -164,7 +173,7 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-  
+
   Widget _buildBackground() {
     return Positioned.fill(
       child: Builder(
@@ -182,33 +191,156 @@ class _LoginPageState extends State<LoginPage> {
           ),
           child: InteractiveBackground(
             baseColor: context.colors.actionPrimaryBg,
-            highlightColor: context.colors.actionPrimaryBg.withValues(alpha: 0.8),
+            highlightColor:
+                context.colors.actionPrimaryBg.withValues(alpha: 0.8),
           ),
         ),
       ),
     );
   }
 
-  
-  Widget _buildLoginForm(BuildContext context, AuthState state, bool isCompact) {
+  Widget _buildCompactShell(
+    BuildContext context,
+    AuthState state,
+    String appName,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Welcome Back!',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: context.colors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Sign in to continue to your account',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            color: context.colors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildLoginForm(context, state, isCompact: true, showEmailTitle: false),
+      ],
+    );
+  }
+
+  Widget _buildWideShell(
+    BuildContext context,
+    AuthState state,
+    String appName,
+  ) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            flex: 5,
+            child: _buildBrandingPanel(context, appName),
+          ),
+          Container(
+            width: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            color: context.colors.divider.withValues(alpha: 0.5),
+          ),
+          Expanded(
+            flex: 5,
+            child: _buildLoginForm(
+              context,
+              state,
+              isCompact: false,
+              showEmailTitle: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBrandingPanel(BuildContext context, String appName) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Welcome back',
+            style: TextStyle(
+              fontSize: 36,
+              fontWeight: FontWeight.w800,
+              height: 1.15,
+              color: context.colors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Sign in to $appName and continue managing your portfolio with confidence.',
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.45,
+              color: context.colors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoginForm(
+    BuildContext context,
+    AuthState state, {
+    required bool isCompact,
+    required bool showEmailTitle,
+  }) {
     final flags = FeatureFlags();
     final showWebLoginTabs =
         kIsWeb && (flags.enableQrWebLogin || flags.enableWebOtp);
 
     if (showWebLoginTabs) {
       final activeMethod = _resolveWebLoginMethod(_webLoginMethod, flags);
+      final panes = <Widget>[
+        _buildClassicLogin(
+          context,
+          state,
+          isCompact,
+          showEmailTitle: showEmailTitle,
+        ),
+        if (flags.enableQrWebLogin)
+          WebQrLoginSection(
+            prefetched: _prefetchedQr,
+            isActive: activeMethod == _WebLoginMethod.scanQr,
+            onSessionUpdated: (session) {
+              setState(() => _prefetchedQr = session);
+            },
+          ),
+        if (flags.enableWebOtp) const WebOtpLoginWidget(),
+      ];
+      final paneIndex = switch (activeMethod) {
+        _WebLoginMethod.classic => 0,
+        _WebLoginMethod.scanQr => flags.enableQrWebLogin ? 1 : 0,
+        _WebLoginMethod.otp => flags.enableQrWebLogin
+            ? (flags.enableWebOtp ? 2 : 0)
+            : (flags.enableWebOtp ? 1 : 0),
+      };
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildWebLoginMethodSwitch(context, isCompact, flags),
+          _buildWebLoginMethodSwitch(context, isCompact, flags, activeMethod),
           SizedBox(height: isCompact ? 16 : 20),
-          switch (activeMethod) {
-            _WebLoginMethod.classic =>
-              _buildClassicLogin(context, state, isCompact),
-            _WebLoginMethod.scanQr => _buildScanQrLogin(context, isCompact),
-            _WebLoginMethod.otp => _buildOtpLogin(context, isCompact),
-          },
+          IndexedStack(
+            index: paneIndex.clamp(0, panes.length - 1),
+            children: panes,
+          ),
           SizedBox(height: isCompact ? 12 : 16),
           DevSectionWidget(isCompact: isCompact),
         ],
@@ -219,7 +351,12 @@ class _LoginPageState extends State<LoginPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        ..._buildClassicLoginChildren(context, state, isCompact),
+        ..._buildClassicLoginChildren(
+          context,
+          state,
+          isCompact,
+          showEmailTitle: showEmailTitle,
+        ),
         SizedBox(height: isCompact ? 12 : 16),
         DevSectionWidget(isCompact: isCompact),
       ],
@@ -242,71 +379,68 @@ class _LoginPageState extends State<LoginPage> {
     BuildContext context,
     bool isCompact,
     FeatureFlags flags,
+    _WebLoginMethod activeMethod,
   ) {
-    final segments = <ButtonSegment<_WebLoginMethod>>[
-      ButtonSegment(
+    final options = <AuthMethodPillOption<_WebLoginMethod>>[
+      AuthMethodPillOption(
         value: _WebLoginMethod.classic,
-        label: Text(
-          isCompact ? 'Email' : 'Email & Google',
-          style: TextStyle(fontSize: isCompact ? 11 : 13),
-        ),
-        icon: Icon(Icons.mail_outline, size: isCompact ? 15 : 18),
+        label: isCompact ? 'Email' : 'Email & Google',
+        icon: Icons.mail_outline,
       ),
       if (flags.enableQrWebLogin)
-        ButtonSegment(
+        const AuthMethodPillOption(
           value: _WebLoginMethod.scanQr,
-          label: Text(
-            isCompact ? 'QR' : 'Scan QR',
-            style: TextStyle(fontSize: isCompact ? 11 : 13),
-          ),
-          icon: Icon(Icons.qr_code_scanner, size: isCompact ? 15 : 18),
+          label: 'Scan QR',
+          icon: Icons.qr_code_2_outlined,
         ),
       if (flags.enableWebOtp)
-        ButtonSegment(
+        const AuthMethodPillOption(
           value: _WebLoginMethod.otp,
-          label: Text(
-            'OTP',
-            style: TextStyle(fontSize: isCompact ? 11 : 13),
-          ),
-          icon: Icon(Icons.pin_outlined, size: isCompact ? 15 : 18),
+          label: 'OTP',
+          icon: Icons.phonelink_lock_outlined,
         ),
     ];
 
-    final activeMethod = _resolveWebLoginMethod(_webLoginMethod, flags);
-
-    return SegmentedButton<_WebLoginMethod>(
-      segments: segments,
-      selected: {activeMethod},
-      showSelectedIcon: false,
-      onSelectionChanged: (selection) {
-        setState(() => _webLoginMethod = selection.first);
-      },
+    return AuthMethodPillTabs<_WebLoginMethod>(
+      options: options,
+      selected: activeMethod,
+      compact: isCompact,
+      accentColor: context.colors.actionPrimaryBg,
+      onChanged: (value) => setState(() => _webLoginMethod = value),
     );
   }
 
   Widget _buildClassicLogin(
     BuildContext context,
     AuthState state,
-    bool isCompact,
-  ) {
+    bool isCompact, {
+    required bool showEmailTitle,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
-      children: _buildClassicLoginChildren(context, state, isCompact),
+      children: _buildClassicLoginChildren(
+        context,
+        state,
+        isCompact,
+        showEmailTitle: showEmailTitle,
+      ),
     );
   }
 
   List<Widget> _buildClassicLoginChildren(
     BuildContext context,
     AuthState state,
-    bool isCompact,
-  ) {
+    bool isCompact, {
+    required bool showEmailTitle,
+  }) {
     return [
       EmailLoginFormWidget(
         isCompact: isCompact,
         isLoading: state is AuthLoading,
+        showTitle: showEmailTitle,
       ),
-      SizedBox(height: isCompact ? 16 : 24),
+      SizedBox(height: isCompact ? 16 : 20),
       Row(
         children: [
           Expanded(child: Divider(color: context.colors.divider)),
@@ -324,79 +458,27 @@ class _LoginPageState extends State<LoginPage> {
           Expanded(child: Divider(color: context.colors.divider)),
         ],
       ),
-      SizedBox(height: isCompact ? 16 : 24),
+      SizedBox(height: isCompact ? 16 : 20),
       GoogleLoginButtonWidget(isLoading: state is AuthLoading),
-      SizedBox(height: isCompact ? 16 : 24),
+      SizedBox(height: isCompact ? 16 : 20),
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Flexible(
-            child: _LiquidAuthLink(
-              text: 'Forgot Password?',
-              isCompact: isCompact,
-              onPressed: () => context.push('/forgot-password'),
+          Text(
+            "Don't have an account? ",
+            style: TextStyle(
+              fontSize: isCompact ? 12 : 13,
+              color: context.colors.textSecondary,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Text(
-              '|',
-              style: TextStyle(
-                color: context.colors.textSecondary,
-                fontSize: isCompact ? 13 : 14,
-              ),
-            ),
-          ),
-          Flexible(
-            child: _LiquidAuthLink(
-              text: 'Create Account',
-              isCompact: isCompact,
-              onPressed: () => context.push('/register'),
-            ),
+          _LiquidAuthLink(
+            text: 'Create Account',
+            isCompact: isCompact,
+            onPressed: () => context.push('/register'),
           ),
         ],
       ),
     ];
-  }
-
-  Widget _buildScanQrLogin(BuildContext context, bool isCompact) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'Open the AM app on your phone, scan the QR code, and approve the login.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: isCompact ? 13 : 14,
-            color: context.colors.textSecondary,
-            height: 1.4,
-          ),
-        ),
-        SizedBox(height: isCompact ? 12 : 16),
-        const WebQrLoginSection(),
-      ],
-    );
-  }
-
-  Widget _buildOtpLogin(BuildContext context, bool isCompact) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'Sign in with a one-time code sent to your email or phone.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: isCompact ? 13 : 14,
-            color: context.colors.textSecondary,
-            height: 1.4,
-          ),
-        ),
-        SizedBox(height: isCompact ? 12 : 16),
-        const WebOtpLoginWidget(),
-      ],
-    );
   }
 }
 
@@ -420,7 +502,8 @@ class _LiquidAuthLinkState extends State<_LiquidAuthLink> {
 
   @override
   Widget build(BuildContext context) {
-    final linkColor = context.colors.textPrimary.withValues(alpha: _isHovering ? 1.0 : 0.75);
+    final linkColor = context.colors.actionPrimaryBg
+        .withValues(alpha: _isHovering ? 1.0 : 0.9);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
@@ -430,9 +513,9 @@ class _LiquidAuthLinkState extends State<_LiquidAuthLink> {
         child: AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 200),
           style: TextStyle(
-            fontSize: widget.isCompact ? 13 : 14,
+            fontSize: widget.isCompact ? 12 : 13,
             color: linkColor,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
           ),
           child: Text(
             widget.text,
@@ -443,4 +526,3 @@ class _LiquidAuthLinkState extends State<_LiquidAuthLink> {
     );
   }
 }
-

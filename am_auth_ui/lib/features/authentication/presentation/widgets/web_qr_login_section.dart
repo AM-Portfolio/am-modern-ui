@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -14,9 +15,58 @@ import '../../../../di/auth_providers.dart';
 import '../../data/models/device_link_models.dart';
 import '../../data/services/device_link_poll_service.dart';
 import '../cubit/auth_cubit.dart';
+import 'auth_circular_timer.dart';
+import 'auth_dual_glow_frame.dart';
+import 'otp_digit_tiles.dart';
+
+/// Prefetched QR session held by [LoginPage] so Scan QR can render instantly.
+class PrefetchedQrSession {
+  const PrefetchedQrSession({
+    required this.session,
+    required this.codeVerifier,
+  });
+
+  final DeviceLinkPollSession session;
+  final String codeVerifier;
+
+  bool get isExpired {
+    final now = DateTime.now().millisecondsSinceEpoch / 1000;
+    return now >= session.expiresAt;
+  }
+}
+
+Future<PrefetchedQrSession> prefetchQrSession(
+  DeviceLinkPollService pollService,
+) async {
+  final codeVerifier = generateCodeVerifier();
+  final challenge = codeChallengeFromVerifier(codeVerifier);
+  final session = await pollService.startSession(
+    codeVerifier: codeVerifier,
+    codeChallenge: challenge,
+    browser: kIsWeb ? 'Web' : null,
+    os: defaultTargetPlatform.name,
+  );
+  return PrefetchedQrSession(session: session, codeVerifier: codeVerifier);
+}
 
 class WebQrLoginSection extends StatefulWidget {
-  const WebQrLoginSection({super.key});
+  const WebQrLoginSection({
+    super.key,
+    this.prefetched,
+    this.isActive = true,
+    this.onSessionUpdated,
+  });
+
+  /// Session started by the login page (optional). When set and fresh, shown
+  /// immediately without a network round-trip.
+  final PrefetchedQrSession? prefetched;
+
+  /// When false, polling is stopped (tab not visible).
+  final bool isActive;
+
+  /// Called when this widget creates or refreshes a session so the parent cache
+  /// can stay in sync.
+  final ValueChanged<PrefetchedQrSession>? onSessionUpdated;
 
   @override
   State<WebQrLoginSection> createState() => _WebQrLoginSectionState();
@@ -28,24 +78,69 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
   DeviceLinkPollSession? _session;
   DeviceLinkPollState _state = DeviceLinkPollState.waiting;
   String? _errorMessage;
-  String? _codeVerifier;
   bool _loading = true;
+  Timer? _tickTimer;
+  int _remainingSeconds = 0;
+  int _totalSeconds = 60;
 
   @override
   void initState() {
     super.initState();
     _pollService = AuthProviders.deviceLinkPollService;
-    if (_flags.enableQrWebLogin) {
-      _beginSession();
-    } else {
+    if (!_flags.enableQrWebLogin) {
       _loading = false;
+      return;
+    }
+    _adoptOrBegin(widget.prefetched);
+  }
+
+  @override
+  void didUpdateWidget(covariant WebQrLoginSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.prefetched != null &&
+        _session == null &&
+        !widget.prefetched!.isExpired) {
+      _applySession(widget.prefetched!);
+    }
+    if (widget.isActive != oldWidget.isActive) {
+      if (widget.isActive) {
+        _ensurePolling();
+      } else {
+        _pollService.stopPolling();
+      }
     }
   }
 
   @override
   void dispose() {
-    _pollService.stopPolling();
+    _tickTimer?.cancel();
+    if (widget.isActive) {
+      _pollService.stopPolling();
+    }
     super.dispose();
+  }
+
+  void _adoptOrBegin(PrefetchedQrSession? prefetched) {
+    if (prefetched != null && !prefetched.isExpired) {
+      _applySession(prefetched);
+      return;
+    }
+    unawaited(_beginSession());
+  }
+
+  void _applySession(PrefetchedQrSession prefetched) {
+    _tickTimer?.cancel();
+    setState(() {
+      _session = prefetched.session;
+      _loading = false;
+      _errorMessage = null;
+      _state = DeviceLinkPollState.waiting;
+      _syncRemaining();
+    });
+    _startTicker();
+    if (widget.isActive) {
+      _ensurePolling();
+    }
   }
 
   Future<void> _beginSession() async {
@@ -57,30 +152,10 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
 
     try {
       await _pollService.cancelActiveSession();
-      _codeVerifier = generateCodeVerifier();
-      final challenge = codeChallengeFromVerifier(_codeVerifier!);
-      final session = await _pollService.startSession(
-        codeVerifier: _codeVerifier!,
-        codeChallenge: challenge,
-        browser: kIsWeb ? 'Web' : null,
-        os: defaultTargetPlatform.name,
-      );
+      final prefetched = await prefetchQrSession(_pollService);
       if (!mounted) return;
-      setState(() {
-        _session = session;
-        _loading = false;
-      });
-      _pollService.startPolling(
-        session: session,
-        onUpdate: _handlePollUpdate,
-        onError: (error) {
-          if (!mounted) return;
-          setState(() {
-            _errorMessage = _pollErrorMessage(error);
-            _state = DeviceLinkPollState.error;
-          });
-        },
-      );
+      widget.onSessionUpdated?.call(prefetched);
+      _applySession(prefetched);
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -89,6 +164,47 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
         _state = DeviceLinkPollState.error;
       });
     }
+  }
+
+  void _ensurePolling() {
+    final session = _session;
+    if (session == null || !widget.isActive) return;
+    _pollService.startPolling(
+      session: session,
+      onUpdate: _handlePollUpdate,
+      onError: (error) {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = _pollErrorMessage(error);
+          _state = DeviceLinkPollState.error;
+        });
+      },
+    );
+  }
+
+  void _syncRemaining() {
+    final session = _session;
+    if (session == null) {
+      _remainingSeconds = 0;
+      return;
+    }
+    final now = DateTime.now().millisecondsSinceEpoch / 1000;
+    _remainingSeconds = (session.expiresAt - now).clamp(0, 300).round();
+    final createdSpan = _totalSeconds;
+    if (_remainingSeconds > createdSpan) {
+      _totalSeconds = _remainingSeconds;
+    }
+  }
+
+  void _startTicker() {
+    _tickTimer?.cancel();
+    _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(_syncRemaining);
+      if (_remainingSeconds <= 0 && widget.isActive) {
+        unawaited(_beginSession());
+      }
+    });
   }
 
   String _pollErrorMessage(Object error) {
@@ -142,71 +258,69 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
     }
 
     final qrData = jsonEncode(_session!.qrPayload);
-    final remainingSeconds =
-        (_session!.expiresAt - DateTime.now().millisecondsSinceEpoch / 1000)
-            .clamp(0, 120)
-            .round();
+    final code = _session!.confirmationCode.replaceAll(RegExp(r'\D'), '');
+    final digits = code.length >= 6
+        ? code.substring(0, 6)
+        : code.padRight(6).substring(0, 6);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Scan with the AM app on your phone',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: context.colors.textSecondary,
-            fontWeight: FontWeight.w600,
+        AuthPaneFrame(
+          footer: AuthCircularTimer(
+            remainingSeconds: _remainingSeconds,
+            totalSeconds: _totalSeconds,
           ),
-        ),
-        const SizedBox(height: 16),
-        Center(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: QrImageView(
-              data: qrData,
-              version: QrVersions.auto,
-              size: 180,
-            ),
+          child: Column(
+            children: [
+              Text(
+                'Open the AM app on your phone, scan the QR code, and approve the login.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: context.colors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: AuthQrFrame(
+                  child: QrImageView(
+                    data: qrData,
+                    version: QrVersions.auto,
+                    size: 160,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              OtpDigitTiles(digits: digits),
+              if (_state != DeviceLinkPollState.waiting) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _state.name,
+                  style: TextStyle(color: context.colors.textSecondary),
+                ),
+              ],
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: context.colors.statusError),
+                ),
+                TextButton(onPressed: _beginSession, child: const Text('Retry')),
+              ],
+            ],
           ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          _state == DeviceLinkPollState.waiting
-              ? 'Waiting for scan… refreshes in ${remainingSeconds}s'
-              : _state.name,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: context.colors.textSecondary),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Confirm this code on your phone',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: context.colors.textSecondary),
         ),
         const SizedBox(height: 8),
         Text(
-          formatConfirmationCode(_session!.confirmationCode),
-          textAlign: TextAlign.center,
+          'Auto-refreshes in ${_remainingSeconds}s',
           style: TextStyle(
-            fontSize: 28,
-            letterSpacing: 6,
-            fontWeight: FontWeight.bold,
-            color: context.colors.textPrimary,
+            color: context.colors.textTertiary,
+            fontSize: 12,
           ),
         ),
-        if (_errorMessage != null) ...[
-          const SizedBox(height: 12),
-          Text(
-            _errorMessage!,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: context.colors.statusError),
-          ),
-          TextButton(onPressed: _beginSession, child: const Text('Retry')),
-        ],
       ],
     );
   }
