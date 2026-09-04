@@ -220,7 +220,7 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               margin: const EdgeInsets.only(bottom: 6),
               decoration: BoxDecoration(
-                color: isTouch ? Colors.white.withValues(alpha: 0.04) : Colors.transparent,
+                color: isTouch ? context.textPrimary.withValues(alpha: 0.04) : context.cardColor.withValues(alpha: 0),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(

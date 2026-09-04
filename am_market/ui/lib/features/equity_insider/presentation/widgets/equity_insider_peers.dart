@@ -7,6 +7,20 @@ import 'package:am_market_sdk/market/api.dart';
 import 'package:intl/intl.dart';
 import '../../providers/equity_insider_provider.dart';
 
+class _PeerColumnDef {
+  final String label;
+  final String key;
+  final double? Function(CompetitorPeer peer) valueGetter;
+  final Widget Function(BuildContext context, CompetitorPeer peer, double maxRoe) cellBuilder;
+
+  const _PeerColumnDef({
+    required this.label,
+    required this.key,
+    required this.valueGetter,
+    required this.cellBuilder,
+  });
+}
+
 class EquityInsiderPeers extends ConsumerStatefulWidget {
   final String symbol;
 
@@ -34,35 +48,140 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
     });
   }
 
-  double _getSortValue(CompetitorPeer peer, String column) {
-    switch (column) {
-      case 'currentPrice':
-        return peer.currentPrice ?? double.negativeInfinity;
-      case 'dayChangePercent':
-        return peer.dayChangePercent ?? double.negativeInfinity;
-      case 'pe':
-        return peer.pe ?? double.negativeInfinity;
-      case 'pb':
-        return peer.pb ?? double.negativeInfinity;
-      case 'roe':
-        return peer.roe ?? double.negativeInfinity;
-      case 'roce':
-        return peer.roce ?? double.negativeInfinity;
-      case 'evEbitda':
-        return peer.evEbitda ?? double.negativeInfinity;
-      default:
-        return double.negativeInfinity;
+  double _getSortValue(CompetitorPeer peer, String column, List<_PeerColumnDef> activeCols) {
+    if (column == 'currentPrice') return peer.currentPrice ?? double.negativeInfinity;
+    if (column == 'dayChangePercent') return peer.dayChangePercent ?? double.negativeInfinity;
+
+    for (final col in activeCols) {
+      if (col.key == column) {
+        return col.valueGetter(peer) ?? double.negativeInfinity;
+      }
     }
+    return double.negativeInfinity;
   }
 
-  List<CompetitorPeer> _getSortedPeers(List<CompetitorPeer> peers) {
+  List<CompetitorPeer> _getSortedPeers(List<CompetitorPeer> peers, List<_PeerColumnDef> activeCols) {
     final list = List<CompetitorPeer>.from(peers);
     list.sort((a, b) {
-      final aVal = _getSortValue(a, _activeSortColumn);
-      final bVal = _getSortValue(b, _activeSortColumn);
+      final aVal = _getSortValue(a, _activeSortColumn, activeCols);
+      final bVal = _getSortValue(b, _activeSortColumn, activeCols);
       return _sortDescending ? bVal.compareTo(aVal) : aVal.compareTo(bVal);
     });
     return list;
+  }
+
+  List<_PeerColumnDef> _resolveActiveColumns(List<CompetitorPeer> peers) {
+    final List<_PeerColumnDef> candidates = [
+      _PeerColumnDef(
+        label: 'P/E',
+        key: 'pe',
+        valueGetter: (p) => p.pe,
+        cellBuilder: (context, p, _) => Text(
+          p.pe != null ? p.pe!.toStringAsFixed(2) : '—',
+          style: TextStyle(color: context.textSecondary),
+        ),
+      ),
+      _PeerColumnDef(
+        label: 'P/B',
+        key: 'pb',
+        valueGetter: (p) => p.pb,
+        cellBuilder: (context, p, _) => Text(
+          p.pb != null ? p.pb!.toStringAsFixed(2) : '—',
+          style: TextStyle(color: context.textSecondary),
+        ),
+      ),
+      _PeerColumnDef(
+        label: 'ROE %',
+        key: 'roe',
+        valueGetter: (p) => p.roe,
+        cellBuilder: (context, p, maxRoe) => _buildMetricBar(context, p.roe, maxRoe),
+      ),
+      _PeerColumnDef(
+        label: 'ROA %',
+        key: 'roa',
+        valueGetter: (p) => p.roa,
+        cellBuilder: (context, p, _) => Text(
+          p.roa != null ? p.roa!.toStringAsFixed(2) : '—',
+          style: TextStyle(
+            color: p.roa != null && p.roa! > 1.5
+                ? context.marketTheme.positive
+                : (p.roa != null && p.roa! < 0 ? context.marketTheme.negative : context.textSecondary),
+          ),
+        ),
+      ),
+      _PeerColumnDef(
+        label: 'NIM %',
+        key: 'nim',
+        valueGetter: (p) => p.nim,
+        cellBuilder: (context, p, _) => Text(
+          p.nim != null ? '${p.nim!.toStringAsFixed(2)}%' : '—',
+          style: TextStyle(
+            color: p.nim != null && p.nim! > 3.0 ? context.marketTheme.positive : context.textSecondary,
+          ),
+        ),
+      ),
+      _PeerColumnDef(
+        label: 'Net NPA %',
+        key: 'netNpa',
+        valueGetter: (p) => p.netNpa,
+        cellBuilder: (context, p, _) => Text(
+          p.netNpa != null ? '${p.netNpa!.toStringAsFixed(2)}%' : '—',
+          style: TextStyle(
+            color: p.netNpa != null && p.netNpa! < 0.5
+                ? context.marketTheme.positive
+                : (p.netNpa != null && p.netNpa! > 1.0 ? context.marketTheme.negative : context.textSecondary),
+          ),
+        ),
+      ),
+      _PeerColumnDef(
+        label: 'CASA %',
+        key: 'casa',
+        valueGetter: (p) => p.casa,
+        cellBuilder: (context, p, _) => Text(
+          p.casa != null ? '${p.casa!.toStringAsFixed(2)}%' : '—',
+          style: TextStyle(color: context.textSecondary),
+        ),
+      ),
+      _PeerColumnDef(
+        label: 'ROCE %',
+        key: 'roce',
+        valueGetter: (p) => p.roce,
+        cellBuilder: (context, p, _) => Text(
+          p.roce != null ? p.roce!.toStringAsFixed(2) : '—',
+          style: TextStyle(
+            color: p.roce != null && p.roce! > 30
+                ? context.marketTheme.positive
+                : (p.roce != null && p.roce! > 15 ? context.textSecondary : context.marketTheme.negative),
+          ),
+        ),
+      ),
+      _PeerColumnDef(
+        label: 'EV/EBITDA',
+        key: 'evEbitda',
+        valueGetter: (p) => p.evEbitda,
+        cellBuilder: (context, p, _) => Text(
+          p.evEbitda != null ? p.evEbitda!.toStringAsFixed(2) : '—',
+          style: TextStyle(color: context.textSecondary),
+        ),
+      ),
+      _PeerColumnDef(
+        label: 'Quick Ratio',
+        key: 'quickRatio',
+        valueGetter: (p) => p.quickRatio,
+        cellBuilder: (context, p, _) => Text(
+          p.quickRatio != null ? p.quickRatio!.toStringAsFixed(2) : '—',
+          style: TextStyle(color: context.textSecondary),
+        ),
+      ),
+    ];
+
+    // Dynamically keep only columns that have populated non-null data across peers
+    return candidates.where((col) {
+      return peers.any((p) {
+        final val = col.valueGetter(p);
+        return val != null && val.isFinite;
+      });
+    }).toList();
   }
 
   @override
@@ -76,10 +195,14 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
         asyncData.when(
           data: (peers) {
             if (peers == null || peers.isEmpty) {
-              return const Text('No peers available');
+              return Text(
+                'No peers available',
+                style: TextStyle(color: context.textSecondary, fontSize: 13),
+              );
             }
 
-            final sortedPeers = _getSortedPeers(peers);
+            final activeCols = _resolveActiveColumns(peers);
+            final sortedPeers = _getSortedPeers(peers, activeCols);
             final double maxRoe = peers.fold(0.0, (m, p) => max(m, p.roe ?? 0.0));
 
             return Container(
@@ -99,11 +222,8 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                       runSpacing: 6,
                       children: [
                         _buildSortTab('Price', 'currentPrice'),
-                        _buildSortTab('P/E', 'pe'),
-                        _buildSortTab('P/B', 'pb'),
-                        _buildSortTab('ROE %', 'roe'),
-                        _buildSortTab('ROCE %', 'roce'),
-                        _buildSortTab('EV/EBITDA', 'evEbitda'),
+                        _buildSortTab('Day Chg', 'dayChangePercent'),
+                        ...activeCols.map((col) => _buildSortTab(col.label, col.key)),
                       ],
                     ),
                   ),
@@ -139,13 +259,11 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                               _buildColumn('COMPANY', null),
                               _buildColumn('PRICE', 'currentPrice', numeric: true),
                               _buildColumn('DAY CHG', 'dayChangePercent', numeric: true),
-                              _buildColumn('P/E', 'pe', numeric: true),
-                              _buildColumn('P/B', 'pb', numeric: true),
-                              _buildColumn('ROE %', 'roe', numeric: true),
-                              _buildColumn('ROCE %', 'roce', numeric: true),
-                              _buildColumn('EV/EBITDA', 'evEbitda', numeric: true),
+                              ...activeCols.map(
+                                (col) => _buildColumn(col.label.toUpperCase(), col.key, numeric: true),
+                              ),
                             ],
-                            rows: sortedPeers.map((p) => _buildRow(p, maxRoe)).toList(),
+                            rows: sortedPeers.map((p) => _buildRow(p, maxRoe, activeCols)).toList(),
                           ),
                         ),
                       );
@@ -156,15 +274,18 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, st) => Text('Error loading peers: $e', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          error: (e, st) => Text(
+            'Error loading peers: $e',
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
         ),
       ],
     );
   }
 
-  DataRow _buildRow(CompetitorPeer p, double maxRoe) {
+  DataRow _buildRow(CompetitorPeer p, double maxRoe, List<_PeerColumnDef> activeCols) {
     final isCurrent = p.symbol == widget.symbol;
-    final rowBg = isCurrent ? context.marketTheme.positive.withValues(alpha: 0.04) : Colors.transparent;
+    final rowBg = isCurrent ? context.marketTheme.positive.withValues(alpha: 0.04) : context.cardColor.withValues(alpha: 0);
     final name = p.companyName ?? '';
     final shortName = name.length > 28 ? '${name.substring(0, 25)}...' : name;
 
@@ -195,7 +316,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      p.symbol ?? '—',
+                      (p.symbol != null && p.symbol!.isNotEmpty) ? p.symbol! : shortName,
                       style: TextStyle(
                         fontWeight: FontWeight.w500,
                         color: context.textPrimary,
@@ -220,7 +341,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  shortName,
+                  (p.symbol != null && p.symbol!.isNotEmpty) ? shortName : (p.sector ?? ''),
                   style: TextStyle(fontSize: 10, color: context.marketTheme.textSecondary),
                 ),
               ],
@@ -238,55 +359,27 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
           alignment: Alignment.centerRight,
           child: Text(
             dayChangeStr,
-            style: TextStyle(color: dayChangeColor),
+            style: TextStyle(color: dayChangeColor, fontWeight: FontWeight.w500),
           ),
         )),
-        DataCell(Container(
-          alignment: Alignment.centerRight,
-          child: Text(
-            p.pe != null ? p.pe!.toStringAsFixed(2) : '—',
-            style: TextStyle(color: context.textSecondary),
-          ),
-        )),
-        DataCell(Container(
-          alignment: Alignment.centerRight,
-          child: Text(
-            p.pb != null ? p.pb!.toStringAsFixed(2) : '—',
-            style: TextStyle(color: context.textSecondary),
-          ),
-        )),
-        DataCell(Container(
-          alignment: Alignment.centerRight,
-          child: _buildMetricBar(p.roe, maxRoe),
-        )),
-        DataCell(Container(
-          alignment: Alignment.centerRight,
-          child: Text(
-            p.roce != null ? p.roce!.toStringAsFixed(2) : '—',
-            style: TextStyle(
-              color: p.roce != null && p.roce! > 30
-                  ? context.marketTheme.positive
-                  : (p.roce != null && p.roce! > 15 ? context.textSecondary : context.marketTheme.negative),
+        ...activeCols.map(
+          (col) => DataCell(
+            Container(
+              alignment: Alignment.centerRight,
+              child: col.cellBuilder(context, p, maxRoe),
             ),
           ),
-        )),
-        DataCell(Container(
-          alignment: Alignment.centerRight,
-          child: Text(
-            p.evEbitda != null ? p.evEbitda!.toStringAsFixed(2) : '—',
-            style: TextStyle(color: context.textSecondary),
-          ),
-        )),
+        ),
       ],
     );
   }
 
-  Widget _buildMetricBar(double? val, double maxVal) {
+  Widget _buildMetricBar(BuildContext context, double? val, double maxVal) {
     if (val == null) {
       return Text('—', style: TextStyle(color: context.textSecondary));
     }
     final pct = maxVal > 0 ? (val / maxVal).clamp(0.0, 1.0) : 0.0;
-    final color = val > 30 ? context.marketTheme.positive : (val > 15 ? context.marketTheme.blue : context.marketTheme.negative);
+    final color = val > 30 ? context.marketTheme.positive : (val > 15 ? context.marketTheme.chartBlue : context.marketTheme.negative);
     final textColor = val > 30 ? context.marketTheme.positive : (val > 15 ? context.textSecondary : context.marketTheme.negative);
 
     return Row(
@@ -358,7 +451,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isActive ? context.marketTheme.surface : Colors.transparent,
+          color: isActive ? context.marketTheme.surface : context.cardColor.withValues(alpha: 0),
           border: Border.all(
             color: isActive ? context.marketTheme.border : context.borderColor,
           ),
