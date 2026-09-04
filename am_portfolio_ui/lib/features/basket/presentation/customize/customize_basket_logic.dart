@@ -291,11 +291,12 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
             _isCalculating = true;
           });
           try {
-            final assignments = selections.map((s) => {
-              final isin = (s.isin).trim();
-              final symbol = (s.symbol).trim();
+            final assignments = selections.map((s) {
+              final isin = s.isin.trim();
+              final symbol = s.symbol.trim();
               return {
-                'missingIsin': item.isin.isNotEmpty ? item.isin : item.stockSymbol,
+                'missingIsin':
+                    item.isin.isNotEmpty ? item.isin : item.stockSymbol,
                 'substituteIsin': isin.isNotEmpty ? isin : symbol,
                 if (symbol.isNotEmpty) 'substituteSymbol': symbol,
                 if (s.assignedWeight != null) 'assignedWeight': s.assignedWeight,
