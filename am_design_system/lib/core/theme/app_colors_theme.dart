@@ -28,6 +28,9 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     required this.premiumGradientEnd,
     required this.premiumActionPrimary,
     required this.promotionalHighlight,
+    required this.aiUsageUsed,
+    required this.aiUsageRemaining,
+    required this.aiUsageTrack,
     required this.scaffoldBackground,
     required this.cardSurface,
     required this.surface,
@@ -66,6 +69,11 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
   final Color premiumActionPrimary;
   final Color promotionalHighlight;
 
+  // AI chat — token usage meter
+  final Color aiUsageUsed;
+  final Color aiUsageRemaining;
+  final Color aiUsageTrack;
+
   // Surfaces
   final Color scaffoldBackground;
   final Color cardSurface;
@@ -100,6 +108,9 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     premiumGradientEnd: Color(0xFF1B1B3A),
     premiumActionPrimary: Color(0xFF1B64F2),
     promotionalHighlight: Color(0xFFE87C00),
+    aiUsageUsed: AppColors.primary,
+    aiUsageRemaining: Color(0xFF4A4F57),
+    aiUsageTrack: Color(0xFF2A2E35),
     scaffoldBackground: AppColors.darkBackground,
     cardSurface: AppColors.darkCard,
     surface: AppColors.darkSurface,
@@ -132,6 +143,9 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     premiumGradientEnd: Color(0xFFE3F2FD),
     premiumActionPrimary: Color(0xFF1B64F2),
     promotionalHighlight: Color(0xFFE87C00),
+    aiUsageUsed: AppColors.primary,
+    aiUsageRemaining: Color(0xFFD0D4DB),
+    aiUsageTrack: Color(0xFFE6E8ED),
     scaffoldBackground: AppColors.lightBackground,
     cardSurface: AppColors.lightCard,
     surface: AppColors.lightSurface,
@@ -164,6 +178,9 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     premiumGradientEnd: Color(0xFF81D4FA),
     premiumActionPrimary: Color(0xFF0288D1),
     promotionalHighlight: Color(0xFFE87C00),
+    aiUsageUsed: Color(0xFF0288D1),
+    aiUsageRemaining: Color(0xFFBFE0F2),
+    aiUsageTrack: Color(0xFFD6EAF5),
     scaffoldBackground: Color(0xFFD1ECF9),
     cardSurface: Colors.white,
     surface: Color(0xFFD1ECF9),
@@ -196,6 +213,9 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     Color? premiumGradientEnd,
     Color? premiumActionPrimary,
     Color? promotionalHighlight,
+    Color? aiUsageUsed,
+    Color? aiUsageRemaining,
+    Color? aiUsageTrack,
     Color? scaffoldBackground,
     Color? cardSurface,
     Color? surface,
@@ -229,6 +249,9 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
       premiumGradientEnd: premiumGradientEnd ?? this.premiumGradientEnd,
       premiumActionPrimary: premiumActionPrimary ?? this.premiumActionPrimary,
       promotionalHighlight: promotionalHighlight ?? this.promotionalHighlight,
+      aiUsageUsed: aiUsageUsed ?? this.aiUsageUsed,
+      aiUsageRemaining: aiUsageRemaining ?? this.aiUsageRemaining,
+      aiUsageTrack: aiUsageTrack ?? this.aiUsageTrack,
       scaffoldBackground: scaffoldBackground ?? this.scaffoldBackground,
       cardSurface: cardSurface ?? this.cardSurface,
       surface: surface ?? this.surface,
@@ -280,6 +303,9 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
           Color.lerp(premiumActionPrimary, other.premiumActionPrimary, t)!,
       promotionalHighlight:
           Color.lerp(promotionalHighlight, other.promotionalHighlight, t)!,
+      aiUsageUsed: Color.lerp(aiUsageUsed, other.aiUsageUsed, t)!,
+      aiUsageRemaining: Color.lerp(aiUsageRemaining, other.aiUsageRemaining, t)!,
+      aiUsageTrack: Color.lerp(aiUsageTrack, other.aiUsageTrack, t)!,
       scaffoldBackground:
           Color.lerp(scaffoldBackground, other.scaffoldBackground, t)!,
       cardSurface: Color.lerp(cardSurface, other.cardSurface, t)!,

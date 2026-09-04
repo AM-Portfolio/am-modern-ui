@@ -206,15 +206,20 @@ jobs:
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@main
     with:
       working_directory: "am_app"
-      build_mode: ${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'release' || 'debug' }}
-      artifact_type: ${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') && 'appbundle' || 'apk' }}
+      # Release AAB required for Play Internal/Production (main, develop, feature, hotfix, or manual preprod/prod)
+      build_mode: ${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/') || (github.event_name == 'workflow_dispatch' && (inputs.target_env == 'preprod' || inputs.target_env == 'prod'))) && 'release' || 'debug' }}
+      artifact_type: ${{ (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/') || (github.event_name == 'workflow_dispatch' && (inputs.target_env == 'preprod' || inputs.target_env == 'prod'))) && 'appbundle' || 'apk' }}
       package_name: "com.asrax.aminvestment"
       run_analyze: true
       run_tests: true
       upload_artifact: true
+      # Play Internal (preprod track) AAB talks to prod APIs
+      am_domain: "am.asrax.in"
+      am_env: "prod"
       # Automatic deployments by branch + Manual overrides
       deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
-      deploy_preprod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
+      # Play Internal: main, develop, feature/*, hotfix/*, or manual target_env=preprod
+      deploy_preprod: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
       deploy_prod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod') }}
       # Map environment names
       gh_env_dev: "android-dev"
