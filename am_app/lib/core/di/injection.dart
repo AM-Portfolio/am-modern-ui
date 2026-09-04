@@ -59,6 +59,43 @@ Future<void> configureCoreDependencies() async {
     () => common.FeatureFlagService(config: common.ConfigService.growthbook),
   );
 
+  getIt.registerLazySingleton<common.OfflineSyncEngine>(() {
+    final engine = common.OfflineSyncEngine(
+      config: common.OfflineSyncConfig(
+        appId: 'am_app',
+        userIdProvider: () => UserContext.instance.cachedUserId,
+        // Central widget cache matrix — edit here, not in feature files.
+        widgets: common.OfflineWidgetCatalog.amAppDefaults,
+      ),
+      isReadsEnabled: () {
+        try {
+          return getIt<common.FeatureFlagService>()
+              .isOn(common.FeatureFlagKeys.offlineReadsV1);
+        } catch (_) {
+          return false;
+        }
+      },
+      isWritesEnabled: () {
+        try {
+          return getIt<common.FeatureFlagService>()
+              .isOn(common.FeatureFlagKeys.offlineWritesV1);
+        } catch (_) {
+          return false;
+        }
+      },
+      canFlush: () async {
+        try {
+          final token =
+              await getIt<SecureStorageService>().getAccessToken();
+          return token != null && token.isNotEmpty;
+        } catch (_) {
+          return false;
+        }
+      },
+    );
+    return engine;
+  });
+
   common.BootTrace.instance.mark('di_core_done');
 }
 

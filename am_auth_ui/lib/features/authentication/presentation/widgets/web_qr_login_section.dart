@@ -79,9 +79,14 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
   DeviceLinkPollState _state = DeviceLinkPollState.waiting;
   String? _errorMessage;
   bool _loading = true;
+  bool _refreshing = false;
   Timer? _tickTimer;
   int _remainingSeconds = 0;
   int _totalSeconds = 60;
+
+  /// Bumped when a session is adopted or a newer load starts so stale
+  /// `_beginSession` work does not cancel a good QR and flash a spinner.
+  int _loadGeneration = 0;
 
   @override
   void initState() {
@@ -113,6 +118,7 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
 
   @override
   void dispose() {
+    _loadGeneration++;
     _tickTimer?.cancel();
     if (widget.isActive) {
       _pollService.stopPolling();
@@ -125,14 +131,24 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
       _applySession(prefetched);
       return;
     }
-    unawaited(_beginSession());
+    // LoginPage prefetches in parallel. Wait briefly so that session can win
+    // instead of starting a second request that cancels the first QR.
+    unawaited(_beginSessionWhenNeeded());
+  }
+
+  Future<void> _beginSessionWhenNeeded() async {
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    if (!mounted || _session != null) return;
+    await _beginSession();
   }
 
   void _applySession(PrefetchedQrSession prefetched) {
+    _loadGeneration++;
     _tickTimer?.cancel();
     setState(() {
       _session = prefetched.session;
       _loading = false;
+      _refreshing = false;
       _errorMessage = null;
       _state = DeviceLinkPollState.waiting;
       _syncRemaining();
@@ -144,22 +160,33 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
   }
 
   Future<void> _beginSession() async {
+    final generation = ++_loadGeneration;
+    // Keep the existing QR on screen while a replacement loads so it does not
+    // flash away into a spinner for several hundred ms.
+    final keepVisible = _session != null;
     setState(() {
-      _loading = true;
+      if (keepVisible) {
+        _refreshing = true;
+      } else {
+        _loading = true;
+      }
       _errorMessage = null;
       _state = DeviceLinkPollState.waiting;
     });
 
     try {
+      if (generation != _loadGeneration) return;
       await _pollService.cancelActiveSession();
+      if (!mounted || generation != _loadGeneration) return;
       final prefetched = await prefetchQrSession(_pollService);
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
       widget.onSessionUpdated?.call(prefetched);
       _applySession(prefetched);
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
       setState(() {
         _loading = false;
+        _refreshing = false;
         _errorMessage = _pollErrorMessage(error);
         _state = DeviceLinkPollState.error;
       });
@@ -201,7 +228,10 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(_syncRemaining);
-      if (_remainingSeconds <= 0 && widget.isActive) {
+      if (_remainingSeconds <= 0 &&
+          widget.isActive &&
+          !_refreshing &&
+          !_loading) {
         unawaited(_beginSession());
       }
     });
@@ -227,6 +257,7 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
   }) async {
     if (!mounted) return;
     if (state == DeviceLinkPollState.expired) {
+      if (_refreshing || _loading) return;
       await _beginSession();
       return;
     }
@@ -248,6 +279,22 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
   Widget build(BuildContext context) {
     if (!_flags.enableQrWebLogin) {
       return const SizedBox.shrink();
+    }
+
+    if (_errorMessage != null && _session == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          children: [
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: context.colors.statusError),
+            ),
+            TextButton(onPressed: _beginSession, child: const Text('Retry')),
+          ],
+        ),
+      );
     }
 
     if (_loading || _session == null) {
@@ -284,12 +331,29 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
               ),
               const SizedBox(height: 16),
               Center(
-                child: AuthQrFrame(
-                  child: QrImageView(
-                    data: qrData,
-                    version: QrVersions.auto,
-                    size: 160,
-                  ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Opacity(
+                      opacity: _refreshing ? 0.45 : 1,
+                      child: AuthQrFrame(
+                        child: QrImageView(
+                          data: qrData,
+                          version: QrVersions.auto,
+                          size: 160,
+                        ),
+                      ),
+                    ),
+                    if (_refreshing)
+                      SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: context.colors.textSecondary,
+                        ),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
@@ -315,7 +379,9 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Auto-refreshes in ${_remainingSeconds}s',
+          _refreshing
+              ? 'Refreshing QR…'
+              : 'Auto-refreshes in ${_remainingSeconds}s',
           style: TextStyle(
             color: context.colors.textTertiary,
             fontSize: 12,

@@ -77,6 +77,7 @@ export 'shared/widgets/containers/selector_container.dart';
 export 'shared/widgets/platform_widget.dart';
 
 // --- Inputs & Controls ---
+export 'shared/widgets/buttons/am_back_button.dart';
 export 'shared/widgets/buttons/app_button.dart';
 export 'shared/widgets/buttons/glossy_button.dart';
 export 'shared/widgets/buttons/reset_button.dart';

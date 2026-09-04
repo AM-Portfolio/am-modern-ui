@@ -553,7 +553,8 @@ final userId =
                     );
                   }
                 },
-                child: Scaffold(
+                child: common.OfflineShell(
+                  child: Scaffold(
                   // Body draws under the floating overlay nav — no reserved slot.
                   extendBody: !isDesktop,
                   body: Stack(
@@ -575,8 +576,17 @@ final userId =
                                   debugPrint('Theme toggle error: $e');
                                 }
                               },
-                              onLogout: () =>
-                                  context.read<AuthCubit>().logout(),
+                              onLogout: () async {
+                                final uid = authState.user.id;
+                                if (GetIt.I.isRegistered<common.OfflineSyncEngine>() &&
+                                    uid.isNotEmpty) {
+                                  await GetIt.I<common.OfflineSyncEngine>()
+                                      .clearUser(uid);
+                                }
+                                if (context.mounted) {
+                                  await context.read<AuthCubit>().logout();
+                                }
+                              },
                               onProfileTap: () =>
                                   context.go(AppRoutes.profile),
                               onNavigate: (title) =>
@@ -701,6 +711,7 @@ final userId =
                         ),
                     ],
                   ),
+                ),
                 ),
               );
             },

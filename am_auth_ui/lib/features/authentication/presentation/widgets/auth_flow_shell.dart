@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
+import 'package:am_design_system/shared/widgets/buttons/am_back_button.dart';
 
 import 'auth_page_background.dart';
 import 'glass_card_widget.dart';
@@ -45,9 +46,26 @@ class AuthFlowShell extends StatelessWidget {
                           isCompact: isCompact,
                           maxWidth: isCompact ? double.infinity : 1080,
                           enableMotion: false,
-                          child: isCompact
-                              ? form
-                              : IntrinsicHeight(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (showBack) ...[
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: AmBackButton(
+                                    label: 'Back',
+                                    compact: isCompact,
+                                    onPressed: onBack ??
+                                        () => Navigator.of(context).maybePop(),
+                                  ),
+                                ),
+                                SizedBox(height: isCompact ? 12 : 16),
+                              ],
+                              if (isCompact)
+                                form
+                              else
+                                IntrinsicHeight(
                                   child: Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
@@ -71,6 +89,8 @@ class AuthFlowShell extends StatelessWidget {
                                     ],
                                   ),
                                 ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -81,19 +101,6 @@ class AuthFlowShell extends StatelessWidget {
                         iconSize: isCompact ? 20 : 24,
                       ),
                     ),
-                    if (showBack)
-                      Positioned(
-                        top: 16,
-                        left: 16,
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.arrow_back,
-                            color: context.colors.textPrimary,
-                          ),
-                          onPressed: onBack ??
-                              () => Navigator.of(context).maybePop(),
-                        ),
-                      ),
                   ],
                 );
               },
