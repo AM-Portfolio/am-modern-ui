@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:am_design_system/shared/widgets/inputs/glass_text_field.dart';
-import '../cubit/auth_cubit.dart';
+
+import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/core/utils/validators.dart';
 
-/// Registration form widget
+import '../cubit/auth_cubit.dart';
+import 'auth_primary_button.dart';
+import 'email_login_form_widget.dart';
+
+/// Modern registration fields matching login LiquidTextField chrome.
 class RegistrationFormWidget extends StatefulWidget {
-  const RegistrationFormWidget({super.key});
+  const RegistrationFormWidget({
+    super.key,
+    this.isCompact = false,
+    this.isLoading = false,
+  });
+
+  final bool isCompact;
+  final bool isLoading;
 
   @override
   State<RegistrationFormWidget> createState() => _RegistrationFormWidgetState();
@@ -35,119 +46,120 @@ class _RegistrationFormWidgetState extends State<RegistrationFormWidget> {
   void _handleRegister() {
     if (_formKey.currentState!.validate()) {
       context.read<AuthCubit>().register(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        confirmPassword: _confirmPasswordController.text,
-        phone: _phoneController.text.trim().isNotEmpty 
-            ? _phoneController.text.trim() 
-            : null,
-      );
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+            confirmPassword: _confirmPasswordController.text,
+            phone: _phoneController.text.trim().isNotEmpty
+                ? _phoneController.text.trim()
+                : null,
+          );
     }
   }
 
   @override
-  Widget build(BuildContext context) => Form(
-    key: _formKey,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Full Name
-        GlassTextField(
-          controller: _nameController,
-          hintText: 'Full Name',
-          prefixIcon: Icons.person_outline,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Please enter your full name';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
+  Widget build(BuildContext context) {
+    final gap = widget.isCompact ? 12.0 : 16.0;
 
-        // Email
-        GlassTextField(
-          controller: _emailController,
-          hintText: 'Email',
-          prefixIcon: Icons.email_outlined,
-          keyboardType: TextInputType.emailAddress,
-          validator: Validators.validateEmail,
-        ),
-        const SizedBox(height: 16),
-
-        // Phone Number (Optional)
-        GlassTextField(
-          controller: _phoneController,
-          hintText: 'Phone Number (Optional)',
-          prefixIcon: Icons.phone_outlined,
-          keyboardType: TextInputType.phone,
-          validator: Validators.validatePhone,
-        ),
-        const SizedBox(height: 16),
-
-        // Password
-        GlassTextField(
-          controller: _passwordController,
-          hintText: 'Password',
-          prefixIcon: Icons.lock_outline,
-          obscureText: _obscurePassword,
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-              color: Colors.black54,
-            ),
-            onPressed: () {
-              setState(() {
-                _obscurePassword = !_obscurePassword;
-              });
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          LiquidTextField(
+            controller: _nameController,
+            enabled: !widget.isLoading,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.name],
+            labelText: 'Full name',
+            hintText: 'Enter your full name',
+            prefixIcon: Icons.person_outline,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter your full name';
+              }
+              return null;
             },
           ),
-          validator: Validators.validatePassword,
-        ),
-        const SizedBox(height: 16),
-
-        // Confirm Password
-        GlassTextField(
-          controller: _confirmPasswordController,
-          hintText: 'Confirm Password',
-          prefixIcon: Icons.lock_outline,
-          obscureText: _obscureConfirmPassword,
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-              color: Colors.black54,
+          SizedBox(height: gap),
+          LiquidTextField(
+            controller: _emailController,
+            enabled: !widget.isLoading,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.email],
+            labelText: 'Email address',
+            hintText: 'Enter your email',
+            prefixIcon: Icons.email_outlined,
+            validator: Validators.validateEmail,
+          ),
+          SizedBox(height: gap),
+          LiquidTextField(
+            controller: _phoneController,
+            enabled: !widget.isLoading,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.telephoneNumber],
+            labelText: 'Phone number',
+            hintText: 'Optional',
+            prefixIcon: Icons.phone_outlined,
+            validator: Validators.validatePhone,
+          ),
+          SizedBox(height: gap),
+          LiquidTextField(
+            controller: _passwordController,
+            enabled: !widget.isLoading,
+            obscureText: _obscurePassword,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.newPassword],
+            labelText: 'Password',
+            hintText: 'Create a password',
+            prefixIcon: Icons.lock_outline,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                color: context.colors.textSecondary,
+              ),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
-            onPressed: () {
-              setState(() {
-                _obscureConfirmPassword = !_obscureConfirmPassword;
-              });
-            },
+            validator: Validators.validatePassword,
           ),
-          validator: (value) =>
-              Validators.validatePasswordMatch(value, _passwordController.text),
-        ),
-        const SizedBox(height: 24),
-
-        // Register Button
-        ElevatedButton(
-          onPressed: _handleRegister,
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.all(16),
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Colors.white,
-            elevation: 5,
-            shadowColor: Theme.of(context).primaryColor.withValues(alpha: 0.4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+          SizedBox(height: gap),
+          LiquidTextField(
+            controller: _confirmPasswordController,
+            enabled: !widget.isLoading,
+            obscureText: _obscureConfirmPassword,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.newPassword],
+            onFieldSubmitted: (_) => _handleRegister(),
+            labelText: 'Confirm password',
+            hintText: 'Re-enter your password',
+            prefixIcon: Icons.lock_outline,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureConfirmPassword
+                    ? Icons.visibility_off
+                    : Icons.visibility,
+                color: context.colors.textSecondary,
+              ),
+              onPressed: () => setState(
+                () => _obscureConfirmPassword = !_obscureConfirmPassword,
+              ),
+            ),
+            validator: (value) => Validators.validatePasswordMatch(
+              value,
+              _passwordController.text,
             ),
           ),
-          child: const Text(
-            'Create Account',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          SizedBox(height: widget.isCompact ? 16 : 20),
+          AuthPrimaryButton(
+            label: 'Create Account',
+            loading: widget.isLoading,
+            onPressed: _handleRegister,
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }

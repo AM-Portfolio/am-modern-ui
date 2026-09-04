@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import '../theme/app_type_scale.dart';
 import 'breakpoints.dart';
 
 /// UI and styling constants
@@ -46,13 +47,13 @@ class UIConstants {
   static const double iconSizeXl = 48.0;
   static const double iconSizeXxl = 64.0;
   
-  /// Font Sizes
-  static const double fontSizeCaption = 12.0;
-  static const double fontSizeBody = 14.0;
-  static const double fontSizeSubtitle = 16.0;
-  static const double fontSizeTitle = 20.0;
-  static const double fontSizeHeadline = 24.0;
-  static const double fontSizeDisplay = 32.0;
+  /// Font Sizes (aliases of [AppTypeScale] — prefer AppTextStyles roles)
+  static const double fontSizeCaption = AppTypeScale.sm;
+  static const double fontSizeBody = AppTypeScale.base;
+  static const double fontSizeSubtitle = AppTypeScale.xl;
+  static const double fontSizeTitle = AppTypeScale.h4;
+  static const double fontSizeHeadline = AppTypeScale.h2;
+  static const double fontSizeDisplay = AppTypeScale.display;
 }
 
 /// Platform-specific constants

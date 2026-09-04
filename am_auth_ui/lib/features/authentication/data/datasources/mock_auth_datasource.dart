@@ -47,7 +47,7 @@ class MockAuthDataSource implements AuthDataSource {
   }
 
   @override
-  Future<void> logout() async {
+  Future<void> logout({String? refreshToken}) async {
     // Mock logout - just delay
     await Future.delayed(const Duration(milliseconds: 500));
   }

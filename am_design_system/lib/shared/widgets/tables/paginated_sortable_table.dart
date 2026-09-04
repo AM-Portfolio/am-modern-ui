@@ -27,6 +27,8 @@ class PaginatedSortableTable<T> extends StatefulWidget {
     this.onServerPageChanged,
     this.onServerPageSizeChanged,
     this.onServerSort,
+    this.scrollController,
+    this.footerTrailing,
   });
 
   final List<T> items;
@@ -52,6 +54,8 @@ class PaginatedSortableTable<T> extends StatefulWidget {
   final ValueChanged<int>? onServerPageChanged;
   final ValueChanged<int>? onServerPageSizeChanged;
   final void Function(int columnIndex, SortDirection direction)? onServerSort;
+  final ScrollController? scrollController;
+  final Widget? footerTrailing;
 
   @override
   State<PaginatedSortableTable<T>> createState() =>
@@ -282,6 +286,7 @@ class _PaginatedSortableTableState<T> extends State<PaginatedSortableTable<T>> {
                   ),
                 )
               : ListView.separated(
+                  controller: widget.scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: pageItems.length,
                   itemBuilder: (context, index) =>
@@ -307,6 +312,7 @@ class _PaginatedSortableTableState<T> extends State<PaginatedSortableTable<T>> {
                       _pageSize = size;
                       _currentPage = 0;
                     }),
+            trailing: widget.footerTrailing,
           ),
       ],
     );
@@ -322,6 +328,7 @@ class _TablePaginationFooter extends StatelessWidget {
     required this.pageSizeOptions,
     required this.onPageChanged,
     required this.onPageSizeChanged,
+    this.trailing,
   });
 
   final int currentPage;
@@ -331,6 +338,7 @@ class _TablePaginationFooter extends StatelessWidget {
   final List<int> pageSizeOptions;
   final ValueChanged<int> onPageChanged;
   final ValueChanged<int> onPageSizeChanged;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -347,6 +355,10 @@ class _TablePaginationFooter extends StatelessWidget {
             '${totalItems == 0 ? 0 : currentPage + 1}/$totalPages',
             style: labelStyle,
           ),
+          if (trailing != null) ...[
+            const SizedBox(width: 8),
+            trailing!,
+          ],
           const Spacer(),
           DropdownButtonHideUnderline(
             child: DropdownButton<int>(

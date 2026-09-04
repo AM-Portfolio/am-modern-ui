@@ -12,8 +12,8 @@ abstract class AuthDataSource {
   /// Login with demo account
   Future<AuthResultModel> demoLogin();
 
-  /// Logout
-  Future<void> logout();
+  /// Logout — pass [refreshToken] when available so the server can revoke it.
+  Future<void> logout({String? refreshToken});
 
   /// Refresh token
   Future<AuthTokensModel> refreshToken(String refreshToken);

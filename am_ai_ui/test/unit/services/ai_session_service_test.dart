@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:am_ai_ui/data/ai_session_models.dart';
 import 'package:am_ai_ui/data/ai_session_service.dart';
@@ -91,6 +92,87 @@ void main() {
     test('shares AI gateway baseUrl with chat service', () {
       expect(AiSessionService.baseUrl, contains('ai'));
       expect(AiSessionService.baseUrl, isNot(contains(':8100')));
+    });
+  });
+
+  group('AiSessionService listSessions unwrap', () {
+    Dio _dioReturning(Object? body, {int status = 200}) {
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test/ai/'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.resolve(
+              Response(
+                requestOptions: options,
+                data: body,
+                statusCode: status,
+              ),
+            );
+          },
+        ),
+      );
+      return dio;
+    }
+
+    test('parses data.items envelope', () async {
+      final service = AiSessionService(
+        _dioReturning({
+          'data': {
+            'items': [
+              {
+                'id': 's1',
+                'title': 'Hello',
+                'product_id': 'am_app',
+                'agent_type': 'fin_portfolio',
+                'channel': 'user_app',
+                'created_at': '2026-09-01T10:00:00Z',
+                'updated_at': '2026-09-01T10:00:00Z',
+              },
+            ],
+          },
+        }),
+      );
+      final list = await service.listSessions();
+      expect(list, hasLength(1));
+      expect(list.first.title, 'Hello');
+    });
+
+    test('parses JSON string body', () async {
+      final service = AiSessionService(
+        _dioReturning(
+          '{"data":{"items":[]}}',
+        ),
+      );
+      final list = await service.listSessions();
+      expect(list, isEmpty);
+    });
+
+    test('parses root list body', () async {
+      final service = AiSessionService(
+        _dioReturning([
+          {
+            'id': 's2',
+            'title': 'Root',
+            'product_id': 'am_app',
+            'agent_type': 'fin_portfolio',
+            'channel': 'user_app',
+            'created_at': '2026-09-01T10:00:00Z',
+            'updated_at': '2026-09-01T10:00:00Z',
+          },
+        ]),
+      );
+      final list = await service.listSessions();
+      expect(list.single.title, 'Root');
+    });
+
+    test('maps HTML body to FormatException', () async {
+      final service = AiSessionService(
+        _dioReturning('<html>login</html>'),
+      );
+      expect(
+        () => service.listSessions(),
+        throwsA(isA<FormatException>()),
+      );
     });
   });
 }

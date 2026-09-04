@@ -8,6 +8,19 @@ class FeatureFlags {
   bool useRealEmailService = false;
   bool useIdentityAuth = true;
 
+  /// When true, refresh access tokens proactively (Phase 8 trading).
+  /// Default false: lazy refresh on 401 / cold start only.
+  bool aggressiveTokenRefresh = false;
+
+  /// Web login: QR code + mobile scan approval (Phase 4b).
+  bool enableQrWebLogin = true;
+
+  /// Web login: email/SMS OTP fallback (Phase 4f). Web only.
+  bool enableWebOtp = true;
+
+  /// Web OTP SMS channel. Default off until SMS delivery is available.
+  bool enableSmsOtp = false;
+
   // Development Features
   bool enableMockDelays = true;
   bool enableErrorSimulation = false;
@@ -33,6 +46,10 @@ class FeatureFlags {
     useRealBackendAPI = false;
     useRealEmailService = false;
     useIdentityAuth = false;
+    aggressiveTokenRefresh = false;
+    enableQrWebLogin = true;
+    enableWebOtp = true;
+    enableSmsOtp = false;
     enableMockDelays = true;
     enableErrorSimulation = false;
     enableDebugLogging = true;
@@ -51,6 +68,10 @@ class FeatureFlags {
     'useRealBackendAPI': useRealBackendAPI,
     'useRealEmailService': useRealEmailService,
     'useIdentityAuth': useIdentityAuth,
+    'aggressiveTokenRefresh': aggressiveTokenRefresh,
+    'enableQrWebLogin': enableQrWebLogin,
+    'enableWebOtp': enableWebOtp,
+    'enableSmsOtp': enableSmsOtp,
     'enableMockDelays': enableMockDelays,
     'enableErrorSimulation': enableErrorSimulation,
     'enableDebugLogging': enableDebugLogging,
@@ -69,6 +90,10 @@ class FeatureFlags {
     useRealBackendAPI = json['useRealBackendAPI'] ?? false;
     useRealEmailService = json['useRealEmailService'] ?? false;
     useIdentityAuth = json['useIdentityAuth'] ?? false;
+    aggressiveTokenRefresh = json['aggressiveTokenRefresh'] ?? false;
+    enableQrWebLogin = json['enableQrWebLogin'] ?? true;
+    enableWebOtp = json['enableWebOtp'] ?? true;
+    enableSmsOtp = json['enableSmsOtp'] ?? false;
     enableMockDelays = json['enableMockDelays'] ?? true;
     enableErrorSimulation = json['enableErrorSimulation'] ?? false;
     enableDebugLogging = json['enableDebugLogging'] ?? true;

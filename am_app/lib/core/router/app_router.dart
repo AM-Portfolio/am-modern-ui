@@ -36,13 +36,31 @@ GoRouter createAppRouter({
     initialLocation: resolveLaunchLocation(launchUri: launchUri),
     overridePlatformDefaultLocation: kIsWeb,
     refreshListenable: refreshListenable,
-    redirect: (context, state) {
+    redirect: (context, state) async {
       final authState = authCubit.state;
       final location = AppRoutes.normalizePath(state.matchedLocation);
       final isAuthenticated = authState is Authenticated;
       final authPending = authState is AuthInitial ||
           authState is AuthLoading ||
           authState is AuthRestoreFailed;
+
+      if (!kIsWeb &&
+          isAuthenticated &&
+          location != AppRoutes.appLock &&
+          AppRoutes.isAuthenticatedAppRoute(location)) {
+        if (await AuthProviders.appLockService.requiresUnlock()) {
+          return AppRoutes.appLock;
+        }
+      }
+
+      if (location == AppRoutes.appLock) {
+        if (!isAuthenticated) return AppRoutes.login;
+        if (kIsWeb) return AppRoutes.dashboard;
+        if (!await AuthProviders.appLockService.requiresUnlock()) {
+          return AppRoutes.dashboard;
+        }
+        return null;
+      }
 
       // Browser opens http://localhost:9000/ — no page registered for `/`.
       if (location == '/' || location.isEmpty) {
@@ -150,30 +168,50 @@ GoRouter createAppRouter({
     routes: [
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const LoginPage(),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: const LoginPage(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (context, state) => const RegisterPage(),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: const RegisterPage(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,
-        builder: (context, state) => const ForgotPasswordPage(),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: const ForgotPasswordPage(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.resetPassword,
-        builder: (context, state) => ResetPasswordPage(
-          resetToken: state.uri.queryParameters['token'],
-          resetCode: state.uri.queryParameters['c'],
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: ResetPasswordPage(
+            resetToken: state.uri.queryParameters['token'],
+            resetCode: state.uri.queryParameters['c'],
+          ),
         ),
       ),
       GoRoute(
         path: AppRoutes.verifyEmail,
-        builder: (context, state) => VerifyEmailPage(
-          token: state.uri.queryParameters['token'],
-          code: state.uri.queryParameters['c'],
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: VerifyEmailPage(
+            token: state.uri.queryParameters['token'],
+            code: state.uri.queryParameters['c'],
+          ),
         ),
       ),
+      if (!kIsWeb)
+        GoRoute(
+          path: AppRoutes.appLock,
+          builder: (context, state) => const AppLockScreen(),
+        ),
       GoRoute(
         path: AppRoutes.deleteAccount,
         builder: (context, state) => const am_user.DeleteAccountPage(),
@@ -427,17 +465,22 @@ GoRouter createAppRouter({
                   : null;
               final authState = context.read<AuthCubit>().state;
               if (authState is Authenticated) {
-                return buildProfileRoute(
-                  userId: authState.user.id,
-                  email: authState.user.email,
-                  displayName: authState.user.displayName,
-                  highlightSubscription: highlightSubscription,
-                  onOpenPrivacyPolicy: () =>
-                      context.go(AppRoutes.privacyPolicy),
-                  onOpenTermsOfService: () =>
-                      context.go(AppRoutes.termsOfService),
-                  onOpenSubscription: openSubscription,
-                );
+              return buildProfileRoute(
+                userId: authState.user.id,
+                email: authState.user.email,
+                displayName: authState.user.displayName,
+                highlightSubscription: highlightSubscription,
+                onOpenPrivacyPolicy: () =>
+                    context.go(AppRoutes.privacyPolicy),
+                onOpenTermsOfService: () =>
+                    context.go(AppRoutes.termsOfService),
+                onOpenSubscription: openSubscription,
+                onOpenActiveSessions: () =>
+                    context.go(AppRoutes.activeSessions),
+                onOpenScanWebLogin: kIsWeb
+                    ? null
+                    : () => context.go(AppRoutes.scanWebLogin),
+              );
               }
               return buildProfileRoute(
                 userId: _userId(context),
@@ -447,6 +490,11 @@ GoRouter createAppRouter({
                 onOpenTermsOfService: () =>
                     context.go(AppRoutes.termsOfService),
                 onOpenSubscription: openSubscription,
+                onOpenActiveSessions: () =>
+                    context.go(AppRoutes.activeSessions),
+                onOpenScanWebLogin: kIsWeb
+                    ? null
+                    : () => context.go(AppRoutes.scanWebLogin),
               );
             },
           ),
@@ -466,6 +514,22 @@ GoRouter createAppRouter({
                     context.go(AppRoutes.profileHighlightSubscription()),
               ),
             ),
+          ),
+          if (!kIsWeb)
+            GoRoute(
+              path: AppRoutes.scanWebLogin,
+              builder: (context, state) => const ScanWebLoginPage(),
+            ),
+          if (!kIsWeb)
+            GoRoute(
+              path: AppRoutes.scanWebLoginConfirm,
+              builder: (context, state) => ScanWebLoginConfirmPage(
+                deviceLinkId: state.uri.queryParameters['id'] ?? '',
+              ),
+            ),
+          GoRoute(
+            path: AppRoutes.activeSessions,
+            builder: (context, state) => buildActiveSessionsRoute(),
           ),
         ],
       ),

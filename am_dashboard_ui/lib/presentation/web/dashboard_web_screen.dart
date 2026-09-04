@@ -58,11 +58,11 @@ class DashboardWebScreen extends ConsumerWidget {
     ref.watch(dashboardParallelKickoffProvider(userId, timeFrame: tfCode));
     _listenDashboardFirstData(ref, tfCode);
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final isDark = context.isDark;
+    final onSurface = context.colors.textPrimary;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: context.colors.scaffoldBackground,
       body: Stack(
         children: [
           if (isDark) ...[
@@ -109,7 +109,12 @@ class DashboardWebScreen extends ConsumerWidget {
           ],
           Positioned.fill(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.md,
+                AppSpacing.lg,
+                AppSpacing.xl + AppSpacing.sm,
+              ),
               child: SizedBox(
                 width: double.infinity,
                 child: Column(
@@ -120,18 +125,17 @@ class DashboardWebScreen extends ConsumerWidget {
                       children: [
                         Text(
                           'Dashboard',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: onSurface,
-                            fontFamily: 'Inter',
-                          ),
+                          style: context.text.sectionTitle().copyWith(
+                                color: onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                         const Spacer(),
                         if (kDashboardCustomizeEnabled)
                           IconButton(
                             tooltip: 'Customize dashboard',
-                            onPressed: () => DashboardCustomizeSheet.show(context),
+                            onPressed: () =>
+                                DashboardCustomizeSheet.show(context),
                             icon: const Icon(Icons.tune),
                           ),
                         if (onOpenDocIntel != null)
@@ -146,16 +150,16 @@ class DashboardWebScreen extends ConsumerWidget {
                             style: TextButton.styleFrom(
                               foregroundColor: onSurface,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
+                                horizontal: AppSpacing.sm + 2,
+                                vertical: AppSpacing.sm - 2,
                               ),
                             ),
                           ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: AppSpacing.md),
                         const GlobalTimeFrameBar(),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.lg),
                     DashboardLayoutRenderer(
                       userId: userId,
                       layout: layout,

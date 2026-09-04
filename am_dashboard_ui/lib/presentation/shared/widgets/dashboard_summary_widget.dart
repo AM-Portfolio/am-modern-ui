@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'glass_card.dart';
 
-/// Pixel-perfect Lumina 4-Card Summary grid based on the new screenshot.
+/// Summary KPI cards using design-system text/spacing/radii tokens.
 class DashboardSummaryWidget extends StatelessWidget {
   final DashboardSummary summary;
 
@@ -15,9 +15,9 @@ class DashboardSummaryWidget extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
+        final gap = SizedBox(width: AppSpacing.md, height: AppSpacing.md);
 
         if (width < 960) {
-          // Mobile & Tablet screens: 2x2 grid
           return Column(
             children: [
               IntrinsicHeight(
@@ -25,18 +25,18 @@ class DashboardSummaryWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(child: _buildPortfolioCard(context, true)),
-                    const SizedBox(width: 16),
+                    gap,
                     Expanded(child: _buildInvestedCard(context)),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: AppSpacing.md),
               IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(child: _buildReturnCard(context)),
-                    const SizedBox(width: 16),
+                    gap,
                     Expanded(child: _buildPortfoliosCard(context)),
                   ],
                 ),
@@ -45,17 +45,16 @@ class DashboardSummaryWidget extends StatelessWidget {
           );
         }
 
-        // Desktop screens: Horizontal row
         return IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: _buildPortfolioCard(context, false)),
-              const SizedBox(width: 16),
+              gap,
               Expanded(child: _buildInvestedCard(context)),
-              const SizedBox(width: 16),
+              gap,
               Expanded(child: _buildReturnCard(context)),
-              const SizedBox(width: 16),
+              gap,
               Expanded(child: _buildPortfoliosCard(context)),
             ],
           ),
@@ -64,131 +63,134 @@ class DashboardSummaryWidget extends StatelessWidget {
     );
   }
 
+  TextStyle _labelStyle(BuildContext context) =>
+      context.text.label().copyWith(color: context.colors.textSecondary);
+
+  TextStyle _valueStyle(BuildContext context, {bool compact = false}) =>
+      context.text
+          .pageTitle(compact: compact)
+          .copyWith(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          );
+
   Widget _buildPortfolioCard(BuildContext context, bool isMobile) {
-    final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
+    final currencyFormat =
+        NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
     final isPositiveDay = summary.dayChangePercentage >= 0;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    final onSurface = context.colors.textPrimary; 
-    final onSurfaceVariant = context.colors.textSecondary;
+    final isDark = context.isDark;
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          'Total Portfolio Value',
-          style: TextStyle(
-            color: onSurfaceVariant,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Inter',
-          ),
-        ),
-        const SizedBox(height: 4),
+        Text('Total Portfolio Value', style: _labelStyle(context)),
+        const SizedBox(height: AppSpacing.xs),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
           child: Text(
             currencyFormat.format(summary.totalValue),
-            style: TextStyle(
-              color: onSurface,
-              fontSize: isMobile ? 20 : 24,
-              fontWeight: FontWeight.w800,
-              fontFamily: 'Inter',
-              letterSpacing: -0.5,
-            ),
+            style: _valueStyle(context, compact: isMobile),
           ),
         ),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Text(
-              '${isPositiveDay ? "+" : ""}${summary.dayChangePercentage}% Today',
-              style: TextStyle(
-                color: isPositiveDay ? context.colors.statusSuccess : context.colors.statusError,
-                fontSize: 12,
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          '${isPositiveDay ? "+" : ""}${summary.dayChangePercentage}% Today',
+          style: context.text.label().copyWith(
+                color: isPositiveDay
+                    ? context.colors.statusSuccess
+                    : context.colors.statusError,
                 fontWeight: FontWeight.w600,
-                fontFamily: 'Inter',
               ),
-            ),
-          ],
         ),
       ],
     );
 
     if (!isDark) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [context.colors.actionPrimaryBg, context.colors.actionPrimaryBg.withValues(alpha: 0.7)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+          color: context.colors.actionPrimaryBg,
+          borderRadius: AppRadii.dialog,
+          border: Border.all(
+            color: context.colors.border.withValues(alpha: 0.2),
           ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: context.colors.actionPrimaryBg.withValues(alpha: 0.25),
-              blurRadius: 16,
-              offset: Offset(0, 8),
-            ),
-          ],
         ),
-        child: content,
+        child: DefaultTextStyle.merge(
+          style: TextStyle(color: context.colors.actionPrimaryFg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Total Portfolio Value',
+                style: context.text.label().copyWith(
+                      color: context.colors.actionPrimaryFg
+                          .withValues(alpha: 0.85),
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  currencyFormat.format(summary.totalValue),
+                  style: context.text
+                      .pageTitle(compact: isMobile)
+                      .copyWith(
+                        color: context.colors.actionPrimaryFg,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                '${isPositiveDay ? "+" : ""}${summary.dayChangePercentage}% Today',
+                style: context.text.label().copyWith(
+                      color: context.colors.actionPrimaryFg,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
     return AmGlassCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: content,
     );
   }
 
   Widget _buildInvestedCard(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = context.colors.textPrimary;
-    final onSurfaceVariant = context.colors.textSecondary;
+    final currencyFormat =
+        NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
 
     return AmGlassCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Total Invested',
-            style: TextStyle(
-              color: onSurfaceVariant,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Inter',
-            ),
-          ),
-          const SizedBox(height: 4),
+          Text('Total Invested', style: _labelStyle(context)),
+          const SizedBox(height: AppSpacing.xs),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
               currencyFormat.format(summary.totalInvested),
-              style: TextStyle(
-                color: onSurface,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                fontFamily: 'Inter',
-              ),
+              style: _valueStyle(context),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             'Principal Capital',
-            style: TextStyle(
-              color: onSurfaceVariant,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Inter',
-            ),
+            style: context.text
+                .caption()
+                .copyWith(color: context.colors.textSecondary),
           ),
         ],
       ),
@@ -196,53 +198,37 @@ class DashboardSummaryWidget extends StatelessWidget {
   }
 
   Widget _buildReturnCard(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
+    final currencyFormat =
+        NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
     final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);
     final isPositiveReturn = summary.totalGainLoss >= 0;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final valueColor = isPositiveReturn 
+    final valueColor = isPositiveReturn
         ? context.colors.statusSuccess
         : context.colors.statusError;
 
     return AmGlassCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Total Return',
-            style: TextStyle(
-              color: context.colors.textSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Inter',
-            ),
-          ),
-          const SizedBox(height: 4),
+          Text('Total Return', style: _labelStyle(context)),
+          const SizedBox(height: AppSpacing.xs),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
               '${isPositiveReturn ? "+" : "-"}${currencyFormat.format(summary.totalGainLoss.abs())}',
-              style: TextStyle(
-                color: valueColor,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                fontFamily: 'Inter',
-              ),
+              style: _valueStyle(context).copyWith(color: valueColor),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             '${isPositiveReturn ? "+" : ""}${percentFormat.format(summary.totalGainLossPercentage / 100)}',
-            style: TextStyle(
-              color: valueColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Inter',
-            ),
+            style: context.text.label().copyWith(
+                  color: valueColor,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ],
       ),
@@ -250,48 +236,28 @@ class DashboardSummaryWidget extends StatelessWidget {
   }
 
   Widget _buildPortfoliosCard(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = context.colors.textPrimary;
-    final onSurfaceVariant = context.colors.textSecondary;
-
     return AmGlassCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Active Portfolios',
-            style: TextStyle(
-              color: onSurfaceVariant,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Inter',
-            ),
-          ),
-          const SizedBox(height: 4),
+          Text('Active Portfolios', style: _labelStyle(context)),
+          const SizedBox(height: AppSpacing.xs),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
               summary.totalPortfolios.toString(),
-              style: TextStyle(
-                color: onSurface,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                fontFamily: 'Inter',
-              ),
+              style: _valueStyle(context),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             'Live Strategies',
-            style: TextStyle(
-              color: onSurfaceVariant,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Inter',
-            ),
+            style: context.text
+                .caption()
+                .copyWith(color: context.colors.textSecondary),
           ),
         ],
       ),

@@ -1,21 +1,31 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import '../../data/ai_chat_service.dart';
+import '../../data/ai_dio_web_credentials.dart';
 import '../../data/ai_session_models.dart';
 import '../../data/ai_session_service.dart';
 
 /// Dio for AI gateway session APIs (same auth as chat).
+///
+/// Web BFF / cookie sessions need credentials so cookies are sent in
+/// normal and incognito windows when the UI host differs from the AI domain.
 final aiSessionServiceProvider = Provider<AiSessionService>((ref) {
   final dio = Dio(
     BaseOptions(
       baseUrl: AiChatService.baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 30),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      extra: kIsWeb ? const {'withCredentials': true} : null,
     ),
   );
-  dio.interceptors.add(AuthInterceptor(SecureStorageService()));
+  if (kIsWeb) configureAiWebCredentials(dio);
+  AuthProviders.attachAuthInterceptor(dio);
   return AiSessionService(dio);
 });
 
@@ -84,6 +94,17 @@ class AiSessionNotifier extends Notifier<SessionListState> {
       }
       if (code == 404) return 'Session not found.';
       return e.message ?? 'Could not reach chat history.';
+    }
+    if (e is FormatException) {
+      final msg = e.message;
+      if (msg.contains('HTML') ||
+          msg.contains('empty') ||
+          msg.contains('non-JSON') ||
+          msg.contains('non-object') ||
+          msg.contains('auth')) {
+        return 'Sign in again to load chat history.';
+      }
+      return 'Could not load chat history.';
     }
     return e.toString();
   }
