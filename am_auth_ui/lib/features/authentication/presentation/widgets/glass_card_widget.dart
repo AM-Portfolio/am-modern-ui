@@ -94,9 +94,6 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
     final gradStart = colors.surface.withValues(alpha: isDark ? 0.16 : 0.22);
     final gradCenter = colors.surface.withValues(alpha: isDark ? 0.08 : 0.12);
     final gradEnd = colors.scaffoldBackground.withValues(alpha: isDark ? 0.04 : 0.08);
-    final outerBorderColor = colors.border.withValues(alpha: isDark ? 0.45 : 0.55);
-    final topHighlightColor = colors.textPrimary.withValues(alpha: 0.28);
-    final leftHighlightColor = colors.textPrimary.withValues(alpha: 0.14);
 
     return FadeTransition(
       opacity: _opacity,
@@ -123,31 +120,11 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             color: baseFill,
-                            border: Border.all(
-                              color: outerBorderColor,
-                              width: 1.0,
-                            ),
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [gradStart, gradCenter, gradEnd],
                               stops: const [0.0, 0.5, 1.0],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            top: BorderSide(
-                              color: topHighlightColor,
-                              width: 1.2,
-                            ),
-                            left: BorderSide(
-                              color: leftHighlightColor,
-                              width: 1.0,
                             ),
                           ),
                         ),
