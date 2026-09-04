@@ -10,6 +10,8 @@ cd /app/am_app
 # Non-host release flags only — do not set AM_DOMAIN / AM_*_BASE_URL / AM_ENV.
 DEFINES="--dart-define=AM_BOOT_TRACE=false --dart-define=AM_BOOT_RUM=true"
 
+export DART_VM_OPTIONS="--old_gen_heap_size=4096"
+
 echo "[docker_build_web] flutter build web --release --no-wasm-dry-run --no-web-resources-cdn --no-tree-shake-icons $DEFINES"
 
 # shellcheck disable=SC2086

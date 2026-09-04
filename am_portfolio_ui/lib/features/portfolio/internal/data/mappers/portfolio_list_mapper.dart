@@ -39,10 +39,14 @@ class PortfolioListMapper {
               }
 
               final kind = itemDto.kind?.toUpperCase();
+              final isDummy = kind == 'DUMMY' ||
+                  kind == 'DEMO' ||
+                  name.toLowerCase().contains('demo');
               return PortfolioItem(
                 portfolioId: itemDto.portfolioId,
                 portfolioName: name,
                 isBasket: kind == 'BASKET',
+                isDummy: isDummy,
               );
             },
           )
