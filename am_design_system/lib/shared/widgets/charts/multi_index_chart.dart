@@ -70,6 +70,7 @@ class MultiIndexChart extends StatefulWidget {
   final String? expandedChartPath;
   final bool showEndValuePills;
   final bool preNormalizedPercent;
+  final bool initialShowAbsoluteValues;
 
   const MultiIndexChart({
     super.key,
@@ -89,6 +90,7 @@ class MultiIndexChart extends StatefulWidget {
     this.expandedChartPath,
     this.showEndValuePills = true,
     this.preNormalizedPercent = false,
+    this.initialShowAbsoluteValues = false,
   }) : assert(
           chartData != null || historicalData != null,
           'Provide chartData or historicalData',
@@ -111,6 +113,7 @@ class MultiIndexChart extends StatefulWidget {
     VoidCallback? onOpenExpanded,
     String? expandedChartPath,
     bool showEndValuePills = true,
+    bool initialShowAbsoluteValues = false,
   }) {
     return MultiIndexChart(
       key: key,
@@ -128,6 +131,7 @@ class MultiIndexChart extends StatefulWidget {
       onOpenExpanded: onOpenExpanded,
       expandedChartPath: expandedChartPath,
       showEndValuePills: showEndValuePills,
+      initialShowAbsoluteValues: initialShowAbsoluteValues,
     );
   }
 
@@ -152,7 +156,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   double _lastChartViewportWidth = 300;
   bool _isPinching = false;
 
-  bool _showAbsoluteValues = false;
+  late bool _showAbsoluteValues;
   List<Map<String, dynamic>> _chartData = [];
   List<String> _activeIndices = [];
   Set<String> _hiddenIndices = {}; // Track indices hidden by the user
@@ -352,6 +356,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   @override
   void initState() {
     super.initState();
+    _showAbsoluteValues = widget.initialShowAbsoluteValues;
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _prepareDataAndRecalculate(isInitial: true);

@@ -1109,4 +1109,21 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       if (!isClosed) emit(PortfolioError('Failed to delete portfolio'));
     }
   }
+
+  /// Clears legacy demo dismiss flag (demo is no longer dismissible — it hides
+  /// automatically once the user has a real portfolio). Kept for API compatibility.
+  Future<void> dismissDemoPortfolio() async {
+    CommonLogger.methodEntry('dismissDemoPortfolio', tag: 'PortfolioCubit');
+    try {
+      await refreshPortfoliosList();
+      loadPortfolioById('all');
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to refresh after demo dismiss',
+        tag: 'PortfolioCubit',
+        error: e,
+      );
+      if (!isClosed) emit(PortfolioError('Failed to restore demo portfolio'));
+    }
+  }
 }

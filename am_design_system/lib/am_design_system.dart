@@ -167,3 +167,6 @@ export 'shared/models/am_mover_item.dart';  // Generic mover tile data model
 // See am_top_movers_panel.dart for full API docs and usage examples.
 export 'shared/widgets/movers/am_top_movers_panel.dart';
 
+// --- Search & Autocomplete ---
+export 'shared/widgets/search/smart_search_anchor.dart';
+
