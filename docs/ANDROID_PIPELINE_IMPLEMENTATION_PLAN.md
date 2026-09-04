@@ -305,8 +305,8 @@ Mobile cannot use web Helm `config.json` the same way — bake env via flavor or
 
 ### 4.4 Versioning
 
-- [ ] `versionName` from `pubspec.yaml`
-- [ ] `versionCode` from `github.run_number` (or equivalent) in CI
+- [x] `versionName` from `pubspec.yaml` (`--build-name`)
+- [x] `versionCode` from `pubspec +N` + `github.run_number` (+ optional `version_code_offset`) in CI (`--build-number`)
 
 ### 4.5 Exit criteria
 
