@@ -121,22 +121,30 @@ class _AMAppState extends ConsumerState<AMApp> {
         },
         child: BlocBuilder<ThemeCubit, ThemeState>(
           builder: (context, themeState) {
-            return MaterialApp.router(
-              title: 'AM Investment Platform',
-              debugShowCheckedModeBanner: false,
-              theme: themeState.lightTheme,
-              darkTheme: themeState.darkTheme,
-              themeMode: themeState.themeMode,
-              localizationsDelegates: const [
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-                FlutterQuillLocalizations.delegate,
-              ],
-              supportedLocales: const [
-                Locale('en', 'US'),
-              ],
-              routerConfig: _router,
+            final brand = BrandConfig.amDefault();
+            AppConfig.setDefaultApp(
+              appName: brand.appName,
+              appIcon: brand.appIcon,
+            );
+            return DesignSystemProvider(
+              config: brand,
+              child: MaterialApp.router(
+                title: brand.appName,
+                debugShowCheckedModeBanner: false,
+                theme: themeState.lightTheme,
+                darkTheme: themeState.darkTheme,
+                themeMode: themeState.themeMode,
+                localizationsDelegates: const [
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                  FlutterQuillLocalizations.delegate,
+                ],
+                supportedLocales: const [
+                  Locale('en', 'US'),
+                ],
+                routerConfig: _router,
+              ),
             );
           },
         ),

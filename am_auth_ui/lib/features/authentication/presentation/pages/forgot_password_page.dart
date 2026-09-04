@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:am_design_system/core/constants/app_config.dart';
+import 'package:am_design_system/core/config/brand_config.dart';
+import 'package:am_design_system/core/theme/app_spacing.dart';
+import 'package:am_design_system/core/theme/app_text_styles.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/core/utils/validators.dart';
 
@@ -16,7 +18,7 @@ class ForgotPasswordPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appName = AppConfig.getAppName();
+    final appName = context.brand.appName;
 
     return AuthFlowShell(
       showBack: true,
@@ -74,38 +76,34 @@ class ForgotPasswordForm extends StatelessWidget {
           children: [
             Text(
               'Forgot password?',
-              style: TextStyle(
-                fontSize: isCompact ? 18 : 22,
-                fontWeight: FontWeight.w700,
-                color: context.colors.textPrimary,
-              ),
+              style: context.text.pageTitle(compact: isCompact).copyWith(
+                    color: context.colors.textPrimary,
+                  ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               'Enter your email and we will send reset instructions.',
-              style: TextStyle(
-                fontSize: isCompact ? 12 : 13,
-                color: context.colors.textSecondary,
-              ),
+              style: context.text.bodyMuted(compact: isCompact).copyWith(
+                    color: context.colors.textSecondary,
+                  ),
             ),
-            SizedBox(height: isCompact ? 16 : 20),
+            SizedBox(height: isCompact ? AppSpacing.md : AppSpacing.md + 4),
             if (loading)
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                 child: Center(child: CircularProgressIndicator()),
               )
             else
               _ForgotPasswordFormContent(isCompact: isCompact),
-            SizedBox(height: isCompact ? 12 : 16),
+            SizedBox(height: isCompact ? AppSpacing.sm + 4 : AppSpacing.md),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   'Remember your password?',
-                  style: TextStyle(
-                    fontSize: isCompact ? 12 : 13,
-                    color: context.colors.textSecondary,
-                  ),
+                  style: context.text.bodyMuted(compact: isCompact).copyWith(
+                        color: context.colors.textSecondary,
+                      ),
                 ),
                 TextButton(
                   onPressed: loading ? null : onLogin,
@@ -117,10 +115,7 @@ class ForgotPasswordForm extends StatelessWidget {
                   ),
                   child: Text(
                     'Sign In',
-                    style: TextStyle(
-                      fontSize: isCompact ? 12 : 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: context.text.link(compact: isCompact),
                   ),
                 ),
               ],

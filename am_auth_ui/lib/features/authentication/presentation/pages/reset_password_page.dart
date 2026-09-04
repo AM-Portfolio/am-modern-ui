@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:am_design_system/core/theme/app_spacing.dart';
+import 'package:am_design_system/core/theme/app_text_styles.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/core/utils/validators.dart';
 
@@ -128,21 +130,18 @@ class _ResetPasswordPageFormState extends State<ResetPasswordPageForm> {
             children: [
               Text(
                 'Reset password',
-                style: TextStyle(
-                  fontSize: isCompact ? 18 : 22,
-                  fontWeight: FontWeight.w700,
-                  color: context.colors.textPrimary,
-                ),
+                style: context.text.pageTitle(compact: isCompact).copyWith(
+                      color: context.colors.textPrimary,
+                    ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 'Enter a new password for your account.',
-                style: TextStyle(
-                  fontSize: isCompact ? 12 : 13,
-                  color: context.colors.textSecondary,
-                ),
+                style: context.text.bodyMuted(compact: isCompact).copyWith(
+                      color: context.colors.textSecondary,
+                    ),
               ),
-              SizedBox(height: isCompact ? 16 : 20),
+              SizedBox(height: isCompact ? AppSpacing.md : AppSpacing.md + 4),
               if (!_hasDeepLink) ...[
                 LiquidTextField(
                   controller: _tokenController,
@@ -221,10 +220,7 @@ class _ResetPasswordPageFormState extends State<ResetPasswordPageForm> {
                 style: TextButton.styleFrom(foregroundColor: primary),
                 child: Text(
                   'Back to Sign In',
-                  style: TextStyle(
-                    fontSize: isCompact ? 12 : 13,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: context.text.link(compact: isCompact),
                 ),
               ),
             ],

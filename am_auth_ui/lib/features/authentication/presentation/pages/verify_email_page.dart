@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:am_design_system/core/theme/app_spacing.dart';
+import 'package:am_design_system/core/theme/app_text_styles.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 
 import '../cubit/auth_cubit.dart';
@@ -107,37 +109,32 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
             children: [
               Text(
                 'Verify email',
-                style: TextStyle(
-                  fontSize: isCompact ? 18 : 22,
-                  fontWeight: FontWeight.w700,
-                  color: context.colors.textPrimary,
-                ),
+                style: context.text.pageTitle(compact: isCompact).copyWith(
+                      color: context.colors.textPrimary,
+                    ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 'Asrax account confirmation',
-                style: TextStyle(
-                  fontSize: isCompact ? 12 : 13,
-                  color: context.colors.textSecondary,
-                ),
+                style: context.text.bodyMuted(compact: isCompact).copyWith(
+                      color: context.colors.textSecondary,
+                    ),
               ),
-              SizedBox(height: isCompact ? 16 : 20),
+              SizedBox(height: isCompact ? AppSpacing.md : AppSpacing.md + 4),
               if (busy)
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                   child: Center(child: CircularProgressIndicator()),
                 )
               else
                 Text(
                   message,
-                  style: TextStyle(
-                    fontSize: isCompact ? 13 : 14,
-                    height: 1.45,
-                    color: context.colors.textSecondary,
-                  ),
+                  style: context.text.body(compact: isCompact).copyWith(
+                        color: context.colors.textSecondary,
+                      ),
                 ),
               if (state is AuthError || !_hasCredential) ...[
-                SizedBox(height: isCompact ? 16 : 20),
+                SizedBox(height: isCompact ? AppSpacing.md : AppSpacing.md + 4),
                 AuthPrimaryButton(
                   label: 'Continue to Sign In',
                   onPressed: () => context.go('/login'),

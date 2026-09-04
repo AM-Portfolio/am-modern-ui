@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 
 import 'package:am_design_system/core/config/feature_flags.dart';
 import 'package:am_design_system/core/constants/app_config.dart';
+import 'package:am_design_system/core/theme/app_spacing.dart';
+import 'package:am_design_system/core/theme/app_text_styles.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
 
@@ -194,22 +196,19 @@ class _LoginPageState extends State<LoginPage> {
         Text(
           'Welcome Back!',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: context.colors.textPrimary,
-          ),
+          style: context.text.heroTitle(compact: true).copyWith(
+                color: context.colors.textPrimary,
+              ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.sm - 2),
         Text(
           'Sign in to continue to your account',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13,
-            color: context.colors.textSecondary,
-          ),
+          style: context.text.bodyMuted().copyWith(
+                color: context.colors.textSecondary,
+              ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: AppSpacing.md + 4),
         _buildLoginForm(context, state, isCompact: true, showEmailTitle: false),
       ],
     );
@@ -256,21 +255,16 @@ class _LoginPageState extends State<LoginPage> {
         children: [
           Text(
             'Welcome back',
-            style: TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              height: 1.15,
-              color: context.colors.textPrimary,
-            ),
+            style: context.text.heroTitle().copyWith(
+                  color: context.colors.textPrimary,
+                ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm + 4),
           Text(
             'Sign in to $appName and continue managing your portfolio with confidence.',
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.45,
-              color: context.colors.textSecondary,
-            ),
+            style: context.text.body().copyWith(
+                  color: context.colors.textSecondary,
+                ),
           ),
         ],
       ),

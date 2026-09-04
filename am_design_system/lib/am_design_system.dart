@@ -11,6 +11,9 @@ export 'core/theme/app_colors.dart';
 export 'core/theme/app_colors_theme.dart';
 export 'core/theme/app_spacing.dart';
 export 'core/theme/app_radii.dart';
+export 'core/theme/app_type_scale.dart';
+export 'core/theme/app_text_styles.dart';
+export 'core/theme/app_component_sizes.dart';
 export 'core/theme/color_extensions.dart';
 export 'core/theme/app_typography.dart';
 export 'core/theme/app_animations.dart';
@@ -20,6 +23,7 @@ export 'core/theme/cubit/theme_cubit.dart';
 export 'core/theme/theme_repository.dart';
 export 'core/config/design_system_config.dart';
 export 'core/config/design_system_provider.dart';
+export 'core/config/brand_config.dart';
 
 // Contracts
 export 'core/contracts/design_contract.dart';
@@ -32,6 +36,7 @@ export 'core/utils/conditional_mouse_region.dart';
 
 // Constants & API Endpoints
 export 'core/constants/app_constants.dart';
+export 'core/constants/app_config.dart';
 export 'core/constants/ui_constants.dart';
 export 'core/constants/breakpoints.dart';
 

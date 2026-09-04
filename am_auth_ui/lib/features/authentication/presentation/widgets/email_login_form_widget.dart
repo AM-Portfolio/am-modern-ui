@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:am_design_system/core/theme/app_spacing.dart';
+import 'package:am_design_system/core/theme/app_text_styles.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/core/utils/validators.dart';
 
@@ -69,21 +71,20 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
               if (widget.showTitle) ...[
                 Text(
                   'Sign in to your account',
-                  style: TextStyle(
-                    fontSize: widget.isCompact ? 18 : 22,
-                    fontWeight: FontWeight.w700,
-                    color: context.colors.textPrimary,
-                  ),
+                  style: context.text
+                      .pageTitle(compact: widget.isCompact)
+                      .copyWith(color: context.colors.textPrimary),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Choose a sign in method and continue.',
-                  style: TextStyle(
-                    fontSize: widget.isCompact ? 12 : 13,
-                    color: context.colors.textSecondary,
-                  ),
+                  style: context.text
+                      .bodyMuted(compact: widget.isCompact)
+                      .copyWith(color: context.colors.textSecondary),
                 ),
-                SizedBox(height: widget.isCompact ? 16 : 20),
+                SizedBox(
+                  height: widget.isCompact ? AppSpacing.md : AppSpacing.md + 4,
+                ),
               ],
               LiquidTextField(
                 controller: _emailController,

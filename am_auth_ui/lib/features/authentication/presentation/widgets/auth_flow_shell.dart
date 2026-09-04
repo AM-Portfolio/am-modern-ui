@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:am_design_system/core/config/brand_config.dart';
+import 'package:am_design_system/core/theme/app_component_sizes.dart';
+import 'package:am_design_system/core/theme/app_spacing.dart';
+import 'package:am_design_system/core/theme/app_text_styles.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
 import 'package:am_design_system/shared/widgets/buttons/am_back_button.dart';
@@ -35,16 +39,21 @@ class AuthFlowShell extends StatelessWidget {
             return LayoutBuilder(
               builder: (context, constraints) {
                 final isCompact = constraints.maxWidth < 600;
+                final brand = context.brand;
 
                 return Stack(
                   children: [
                     const AuthPageBackground(),
                     Center(
                       child: SingleChildScrollView(
-                        padding: EdgeInsets.all(isCompact ? 16 : 24),
+                        padding: EdgeInsets.all(
+                          isCompact ? AppSpacing.md : AppSpacing.lg,
+                        ),
                         child: GlassCardWidget(
                           isCompact: isCompact,
-                          maxWidth: isCompact ? double.infinity : 1080,
+                          maxWidth: isCompact
+                              ? double.infinity
+                              : AppComponentSizes.formMaxWidth,
                           enableMotion: false,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -60,7 +69,11 @@ class AuthFlowShell extends StatelessWidget {
                                         () => Navigator.of(context).maybePop(),
                                   ),
                                 ),
-                                SizedBox(height: isCompact ? 12 : 16),
+                                SizedBox(
+                                  height: isCompact
+                                      ? AppSpacing.sm + 4
+                                      : AppSpacing.md,
+                                ),
                               ],
                               if (isCompact)
                                 form
@@ -75,12 +88,14 @@ class AuthFlowShell extends StatelessWidget {
                                         child: _BrandingPanel(
                                           title: brandingTitle,
                                           subtitle: brandingSubtitle,
+                                          logo: brand.logo,
+                                          appIcon: brand.appIcon,
                                         ),
                                       ),
                                       Container(
                                         width: 1,
                                         margin: const EdgeInsets.symmetric(
-                                          horizontal: 12,
+                                          horizontal: AppSpacing.sm + 4,
                                         ),
                                         color: context.colors.divider
                                             .withValues(alpha: 0.5),
@@ -95,8 +110,8 @@ class AuthFlowShell extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      top: 16,
-                      right: 16,
+                      top: AppSpacing.md,
+                      right: AppSpacing.md,
                       child: ThemeToggleWidget(
                         iconSize: isCompact ? 20 : 24,
                       ),
@@ -116,36 +131,49 @@ class _BrandingPanel extends StatelessWidget {
   const _BrandingPanel({
     required this.title,
     required this.subtitle,
+    this.logo,
+    required this.appIcon,
   });
 
   final String title;
   final String subtitle;
+  final Widget? logo;
+  final IconData appIcon;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm + 4,
+        vertical: AppSpacing.sm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          if (logo != null) ...[
+            logo!,
+            const SizedBox(height: AppSpacing.md),
+          ] else ...[
+            Icon(
+              appIcon,
+              size: 36,
+              color: context.colors.actionPrimaryBg,
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
           Text(
             title,
-            style: TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              height: 1.15,
-              color: context.colors.textPrimary,
-            ),
+            style: context.text.heroTitle().copyWith(
+                  color: context.colors.textPrimary,
+                ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm + 4),
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.45,
-              color: context.colors.textSecondary,
-            ),
+            style: context.text.body().copyWith(
+                  color: context.colors.textSecondary,
+                ),
           ),
         ],
       ),
