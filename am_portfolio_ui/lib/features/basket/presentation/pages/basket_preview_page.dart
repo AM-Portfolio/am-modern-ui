@@ -8,7 +8,6 @@ import '../basket_navigation.dart';
 import '../../domain/models/basket_opportunity.dart';
 import '../flow/basket_flow_controller.dart';
 
-// New Modular Widgets
 import '../widgets/preview/preview_hero_header.dart';
 import '../widgets/preview/preview_comparison_panels.dart';
 import '../widgets/preview/preview_layout.dart';
@@ -123,7 +122,6 @@ class _BasketContent extends ConsumerStatefulWidget {
 
 class _BasketContentState extends ConsumerState<_BasketContent> {
   late BasketOpportunity _opportunity;
-  final Set<String> _swappingSymbols = {};
 
   @override
   void initState() {
@@ -145,91 +143,26 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
     });
   }
 
-  Future<void> _handleSwap(BasketItem item, Alternative selectedAlt) async {
-    setState(() {
-      _swappingSymbols.add(item.stockSymbol);
-    });
-
-    try {
-      final request = {
-        'userId': widget.userId,
-        'portfolioId': widget.portfolioId,
-        'etfIsin': _opportunity.etfIsin,
-        'currentOpportunity': _opportunity.toJson(),
-        'assignments': [
-          {
-            'missingIsin': item.isin,
-            'substituteIsin': selectedAlt.isin,
-            'reason': 'User selected swap'
-          }
-        ],
-      };
-
-      final updatedOpportunity = await ref.read(applySubstitutesProvider(request: request).future);
-
-      setState(() {
-        _opportunity = updatedOpportunity;
-      });
-      ref.read(basketFlowControllerProvider.notifier).updateOpportunity(updatedOpportunity);
-
-      if (mounted) {
-        final applied = updatedOpportunity.appliedSubstituteCount ?? 1;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              substituteApplyMessage(
-                appliedCount: applied,
-                warnings: updatedOpportunity.substituteWarnings,
-              ),
-            ),
-            backgroundColor: applied > 0 ? context.colors.statusSuccess : context.statusWarning,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to swap: ${basketApiErrorMessage(e)}'),
-            backgroundColor: context.colors.statusError,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _swappingSymbols.remove(item.stockSymbol);
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final available =
         _opportunity.remainingPortfolioValue ?? _opportunity.totalPortfolioValue ?? 0;
-    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final formatter =
+        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     return Column(
       children: [
         PreviewHeroHeader(opportunity: _opportunity),
         const SizedBox(height: PreviewLayout.sectionGap),
         Expanded(
-          child: PreviewComparisonPanels(
-            opportunity: _opportunity,
-            swappingSymbols: _swappingSymbols,
-            onSwapSelected: _handleSwap,
-            sectorialBasket: _opportunity.sectorialBasket ?? false,
-            dominantSector: _opportunity.dominantSector,
-            etfName: _opportunity.etfName,
-            etfConstituentIsins: _opportunity.etfConstituentIsins,
-          ),
+          child: PreviewComparisonPanels(opportunity: _opportunity),
         ),
         BasketStickyActionBar(
           stats: [
             BasketStatItem(
-                label: 'Available to Invest',
-                value: formatter.format(available)),
+              label: 'Available to Invest',
+              value: formatter.format(available),
+            ),
             BasketStatItem(
               label: 'Match',
               value: '${_opportunity.replicaScore.toStringAsFixed(0)}%',

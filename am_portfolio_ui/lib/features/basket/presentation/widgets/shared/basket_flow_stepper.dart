@@ -92,7 +92,7 @@ class BasketFlowStepper extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
+            vertical: 6,
           ),
           child: Row(
             children: [

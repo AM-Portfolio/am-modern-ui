@@ -5,28 +5,15 @@ import '../../../domain/models/basket_opportunity.dart';
 import '../../shared/basket_item_status_theme.dart';
 import '../../utils/basket_responsive.dart';
 import '../final_preview/fp_status_pill.dart';
-import 'inline_swap_panel.dart';
 import 'preview_layout.dart';
 
-/// Step-1 Preview: ETF Index vs Your Holdings with aligned rows.
-class PreviewComparisonPanels extends StatefulWidget {
+/// Step-1 Preview: read-only ETF Index vs Your Holdings with aligned rows.
+class PreviewComparisonPanels extends StatelessWidget {
   final BasketOpportunity opportunity;
-  final Set<String> swappingSymbols;
-  final void Function(BasketItem item, Alternative selected)? onSwapSelected;
-  final bool sectorialBasket;
-  final String? dominantSector;
-  final String? etfName;
-  final List<String> etfConstituentIsins;
 
   const PreviewComparisonPanels({
     super.key,
     required this.opportunity,
-    this.swappingSymbols = const {},
-    this.onSwapSelected,
-    this.sectorialBasket = false,
-    this.dominantSector,
-    this.etfName,
-    this.etfConstituentIsins = const [],
   });
 
   /// ETF weight order keeps left/right rows horizontally scannable.
@@ -37,18 +24,8 @@ class PreviewComparisonPanels extends StatefulWidget {
   }
 
   @override
-  State<PreviewComparisonPanels> createState() =>
-      _PreviewComparisonPanelsState();
-}
-
-class _PreviewComparisonPanelsState extends State<PreviewComparisonPanels> {
-  String? _expandedMissingIsin;
-
-  @override
   Widget build(BuildContext context) {
-    final items = PreviewComparisonPanels.orderedItems(
-      widget.opportunity.composition,
-    );
+    final items = orderedItems(opportunity.composition);
     final sideBySide = BasketResponsive.isDesktop(context) ||
         (BasketResponsive.isTablet(context) &&
             MediaQuery.sizeOf(context).width >= 900);
@@ -62,15 +39,7 @@ class _PreviewComparisonPanelsState extends State<PreviewComparisonPanels> {
             ),
             child: _AlignedSideBySideGrid(
               items: items,
-              etfIsin: widget.opportunity.etfIsin,
-              swappingSymbols: widget.swappingSymbols,
-              expandedMissingIsin: _expandedMissingIsin,
-              onToggleMissing: _toggleMissing,
-              onSwapSelected: _handleSwap,
-              sectorialBasket: widget.sectorialBasket,
-              dominantSector: widget.dominantSector,
-              etfName: widget.etfName,
-              etfConstituentIsins: widget.etfConstituentIsins,
+              etfIsin: opportunity.etfIsin,
             ),
           )
         : SingleChildScrollView(
@@ -79,58 +48,19 @@ class _PreviewComparisonPanelsState extends State<PreviewComparisonPanels> {
             ),
             child: _StackedPanels(
               items: items,
-              etfIsin: widget.opportunity.etfIsin,
-              swappingSymbols: widget.swappingSymbols,
-              expandedMissingIsin: _expandedMissingIsin,
-              onToggleMissing: _toggleMissing,
-              onSwapSelected: _handleSwap,
-              sectorialBasket: widget.sectorialBasket,
-              dominantSector: widget.dominantSector,
-              etfName: widget.etfName,
-              etfConstituentIsins: widget.etfConstituentIsins,
+              etfIsin: opportunity.etfIsin,
             ),
           );
-  }
-
-  void _toggleMissing(BasketItem item) {
-    if (item.status != ItemStatus.missing || item.alternatives.isEmpty) {
-      return;
-    }
-    setState(() {
-      final key = item.isin.isNotEmpty ? item.isin : item.stockSymbol;
-      _expandedMissingIsin = _expandedMissingIsin == key ? null : key;
-    });
-  }
-
-  void _handleSwap(BasketItem item, Alternative alt) {
-    setState(() => _expandedMissingIsin = null);
-    widget.onSwapSelected?.call(item, alt);
   }
 }
 
 class _AlignedSideBySideGrid extends StatefulWidget {
   final List<BasketItem> items;
   final String etfIsin;
-  final Set<String> swappingSymbols;
-  final String? expandedMissingIsin;
-  final void Function(BasketItem item) onToggleMissing;
-  final void Function(BasketItem item, Alternative alt) onSwapSelected;
-  final bool sectorialBasket;
-  final String? dominantSector;
-  final String? etfName;
-  final List<String> etfConstituentIsins;
 
   const _AlignedSideBySideGrid({
     required this.items,
     required this.etfIsin,
-    required this.swappingSymbols,
-    required this.expandedMissingIsin,
-    required this.onToggleMissing,
-    required this.onSwapSelected,
-    required this.sectorialBasket,
-    this.dominantSector,
-    this.etfName,
-    this.etfConstituentIsins = const [],
   });
 
   @override
@@ -190,7 +120,7 @@ class _AlignedSideBySideGridState extends State<_AlignedSideBySideGrid> {
               subtitle: '${widget.etfIsin} · Target allocation',
             ),
             columnHeader: const _IndexColumnHeader(),
-            footer: _IndexFooter(),
+            footer: const _IndexFooter(),
             body: ListView.builder(
               controller: _leftScroll,
               padding: EdgeInsets.zero,
@@ -217,36 +147,10 @@ class _AlignedSideBySideGridState extends State<_AlignedSideBySideGrid> {
               controller: _rightScroll,
               padding: EdgeInsets.zero,
               itemCount: widget.items.length,
-              itemBuilder: (context, index) {
-                final item = widget.items[index];
-                final key = item.isin.isNotEmpty ? item.isin : item.stockSymbol;
-                final expanded = widget.expandedMissingIsin == key;
-                final canSwap =
-                    item.status == ItemStatus.missing &&
-                        item.alternatives.isNotEmpty;
-
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _HoldingsDataRow(
-                      item: item,
-                      striped: index.isEven,
-                      swapping: widget.swappingSymbols.contains(item.stockSymbol),
-                      onTap: canSwap ? () => widget.onToggleMissing(item) : null,
-                    ),
-                    if (expanded && canSwap)
-                      InlineSwapPanel(
-                        alternatives: item.alternatives,
-                        sectorialBasket: widget.sectorialBasket,
-                        dominantSector: widget.dominantSector,
-                        etfName: widget.etfName,
-                        etfConstituentIsins: widget.etfConstituentIsins,
-                        missingSector: item.sector,
-                        onSwapSelected: (alt) => widget.onSwapSelected(item, alt),
-                      ),
-                  ],
-                );
-              },
+              itemBuilder: (context, index) => _HoldingsDataRow(
+                item: widget.items[index],
+                striped: index.isEven,
+              ),
             ),
           ),
         ),
@@ -258,26 +162,10 @@ class _AlignedSideBySideGridState extends State<_AlignedSideBySideGrid> {
 class _StackedPanels extends StatelessWidget {
   final List<BasketItem> items;
   final String etfIsin;
-  final Set<String> swappingSymbols;
-  final String? expandedMissingIsin;
-  final void Function(BasketItem item) onToggleMissing;
-  final void Function(BasketItem item, Alternative alt) onSwapSelected;
-  final bool sectorialBasket;
-  final String? dominantSector;
-  final String? etfName;
-  final List<String> etfConstituentIsins;
 
   const _StackedPanels({
     required this.items,
     required this.etfIsin,
-    required this.swappingSymbols,
-    required this.expandedMissingIsin,
-    required this.onToggleMissing,
-    required this.onSwapSelected,
-    required this.sectorialBasket,
-    this.dominantSector,
-    this.etfName,
-    this.etfConstituentIsins = const [],
   });
 
   @override
@@ -292,7 +180,7 @@ class _StackedPanels extends StatelessWidget {
             subtitle: '$etfIsin · Target allocation',
           ),
           columnHeader: const _IndexColumnHeader(),
-          footer: _IndexFooter(),
+          footer: const _IndexFooter(),
           shrinkWrap: true,
           body: Column(
             children: [
@@ -313,32 +201,8 @@ class _StackedPanels extends StatelessWidget {
           shrinkWrap: true,
           body: Column(
             children: [
-              for (var i = 0; i < items.length; i++) ...[
-                _HoldingsDataRow(
-                  item: items[i],
-                  striped: i.isEven,
-                  swapping: swappingSymbols.contains(items[i].stockSymbol),
-                  onTap: items[i].status == ItemStatus.missing &&
-                          items[i].alternatives.isNotEmpty
-                      ? () => onToggleMissing(items[i])
-                      : null,
-                ),
-                if (expandedMissingIsin ==
-                        (items[i].isin.isNotEmpty
-                            ? items[i].isin
-                            : items[i].stockSymbol) &&
-                    items[i].status == ItemStatus.missing &&
-                    items[i].alternatives.isNotEmpty)
-                  InlineSwapPanel(
-                    alternatives: items[i].alternatives,
-                    sectorialBasket: sectorialBasket,
-                    dominantSector: dominantSector,
-                    etfName: etfName,
-                    etfConstituentIsins: etfConstituentIsins,
-                    missingSector: items[i].sector,
-                    onSwapSelected: (alt) => onSwapSelected(items[i], alt),
-                  ),
-              ],
+              for (var i = 0; i < items.length; i++)
+                _HoldingsDataRow(item: items[i], striped: i.isEven),
             ],
           ),
         ),
@@ -376,10 +240,7 @@ class _PreviewTableCard extends StatelessWidget {
           header,
           columnHeader,
           Divider(color: context.colors.border, height: 1),
-          if (shrinkWrap)
-            body
-          else
-            Expanded(child: body),
+          if (shrinkWrap) body else Expanded(child: body),
           if (footer != null) ...[
             Divider(color: context.colors.border, height: 1),
             footer!,
@@ -405,39 +266,40 @@ class _PanelHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        PreviewLayout.cardPadding,
-        PreviewLayout.cardPadding,
-        PreviewLayout.cardPadding,
-        AppSpacing.sm,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: iconColor, size: 20),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: context.colors.textSecondary,
-                      ),
-                ),
-              ],
+    return SizedBox(
+      height: PreviewLayout.panelHeaderHeight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: PreviewLayout.cardPadding,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: iconColor, size: 18),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          height: 1.1,
+                        ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: context.colors.textSecondary,
+                          fontSize: 11,
+                        ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -451,20 +313,23 @@ class _IndexColumnHeader extends StatelessWidget {
     final style = Theme.of(context).textTheme.labelSmall?.copyWith(
           color: context.colors.textSecondary,
           fontWeight: FontWeight.w600,
+          fontSize: 11,
         );
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: PreviewLayout.cardPadding,
-        vertical: AppSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          Expanded(flex: 58, child: Text('Stock', style: style)),
-          Expanded(
-            flex: 42,
-            child: Text('Weight', style: style, textAlign: TextAlign.right),
-          ),
-        ],
+    return SizedBox(
+      height: PreviewLayout.columnHeaderHeight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: PreviewLayout.cardPadding,
+        ),
+        child: Row(
+          children: [
+            Expanded(flex: 58, child: Text('Stock', style: style)),
+            Expanded(
+              flex: 42,
+              child: Text('Weight', style: style, textAlign: TextAlign.right),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -478,21 +343,56 @@ class _HoldingsColumnHeader extends StatelessWidget {
     final style = Theme.of(context).textTheme.labelSmall?.copyWith(
           color: context.colors.textSecondary,
           fontWeight: FontWeight.w600,
+          fontSize: 11,
         );
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: PreviewLayout.cardPadding,
-        vertical: AppSpacing.sm,
+    return SizedBox(
+      height: PreviewLayout.columnHeaderHeight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: PreviewLayout.cardPadding,
+        ),
+        child: Row(
+          children: [
+            Expanded(flex: 25, child: Text('Units', style: style)),
+            Expanded(flex: 45, child: Text('Value', style: style)),
+            Expanded(
+              flex: 30,
+              child: Text('Status', style: style, textAlign: TextAlign.right),
+            ),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          Expanded(flex: 25, child: Text('Units', style: style)),
-          Expanded(flex: 45, child: Text('Value', style: style)),
-          Expanded(
-            flex: 30,
-            child: Text('Status', style: style, textAlign: TextAlign.right),
-          ),
-        ],
+    );
+  }
+}
+
+class _StockAvatar extends StatelessWidget {
+  final String symbol;
+
+  const _StockAvatar({required this.symbol});
+
+  @override
+  Widget build(BuildContext context) {
+    final letter = symbol.isNotEmpty ? symbol[0].toUpperCase() : '?';
+    final hue = (symbol.hashCode.abs() % 360).toDouble();
+    final color = HSLColor.fromAHSL(1, hue, 0.45, 0.45).toColor();
+
+    return Container(
+      width: PreviewLayout.avatarSize,
+      height: PreviewLayout.avatarSize,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        letter,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
       ),
     );
   }
@@ -519,15 +419,20 @@ class _IndexDataRow extends StatelessWidget {
         children: [
           Expanded(
             flex: 58,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                item.stockSymbol,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                overflow: TextOverflow.ellipsis,
-              ),
+            child: Row(
+              children: [
+                _StockAvatar(symbol: item.stockSymbol),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    item.stockSymbol,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -538,16 +443,16 @@ class _IndexDataRow extends StatelessWidget {
               children: [
                 Text(
                   '${w.toStringAsFixed(1)}%',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadii.sm),
                   child: LinearProgressIndicator(
                     value: (w / 100.0).clamp(0.0, 1.0),
-                    minHeight: 4,
+                    minHeight: 3,
                     backgroundColor:
                         context.colors.border.withValues(alpha: 0.4),
                     color: context.colors.actionPrimaryBg,
@@ -563,25 +468,27 @@ class _IndexDataRow extends StatelessWidget {
 }
 
 class _IndexFooter extends StatelessWidget {
+  const _IndexFooter();
+
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: PreviewLayout.cardPadding,
-        vertical: AppSpacing.md,
+        vertical: 8,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             'Total',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           Text(
             '100.0%',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
@@ -594,14 +501,10 @@ class _IndexFooter extends StatelessWidget {
 class _HoldingsDataRow extends StatelessWidget {
   final BasketItem item;
   final bool striped;
-  final bool swapping;
-  final VoidCallback? onTap;
 
   const _HoldingsDataRow({
     required this.item,
     required this.striped,
-    this.swapping = false,
-    this.onTap,
   });
 
   @override
@@ -620,91 +523,75 @@ class _HoldingsDataRow extends StatelessWidget {
     final themeLabel = BasketItemStatusTheme.labelFor(item.status);
     final themeColor = BasketItemStatusTheme.colorFor(context, item.status);
 
-    return Material(
+    return Container(
+      height: PreviewLayout.dataRowHeight,
       color: striped
           ? context.colors.cardSurface.withValues(alpha: 0.35)
           : Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: SizedBox(
-          height: PreviewLayout.dataRowHeight,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: PreviewLayout.cardPadding,
-            ),
-            child: Row(
+      padding: const EdgeInsets.symmetric(
+        horizontal: PreviewLayout.cardPadding,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 25,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  flex: 25,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isMissing ? '0' : (qty?.toStringAsFixed(0) ?? '—'),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                Text(
+                  isMissing ? '0' : (qty?.toStringAsFixed(0) ?? '—'),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                      if (avg != null && !isMissing)
-                        Text(
-                          'avg ${priceFmt.format(avg)}',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: context.colors.textTertiary,
-                                fontSize: 11,
-                              ),
+                ),
+                if (avg != null && !isMissing)
+                  Text(
+                    'avg ${priceFmt.format(avg)}',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: context.colors.textTertiary,
+                          fontSize: 10,
                         ),
-                    ],
                   ),
-                ),
-                Expanded(
-                  flex: 45,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.xl),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isMissing
-                              ? '₹0'
-                              : (value != null ? fmt.format(value) : '—'),
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                        ),
-                        if (price != null && !isMissing)
-                          Text(
-                            '@ ${priceFmt.format(price)}',
-                            style:
-                                Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: context.colors.textTertiary,
-                                      fontSize: 11,
-                                    ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 30,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: swapping
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : FpStatusPill(label: themeLabel, color: themeColor),
-                  ),
-                ),
               ],
             ),
           ),
-        ),
+          Expanded(
+            flex: 45,
+            child: Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.md),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isMissing
+                        ? '₹0'
+                        : (value != null ? fmt.format(value) : '—'),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  if (price != null && !isMissing)
+                    Text(
+                      '@ ${priceFmt.format(price)}',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: context.colors.textTertiary,
+                            fontSize: 10,
+                          ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 30,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: FpStatusPill(label: themeLabel, color: themeColor),
+            ),
+          ),
+        ],
       ),
     );
   }
