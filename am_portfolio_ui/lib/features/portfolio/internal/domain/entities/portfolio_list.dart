@@ -10,6 +10,7 @@ abstract class PortfolioItem with _$PortfolioItem {
     required String portfolioId,
     required String portfolioName,
     @Default(false) bool isBasket,
+    @Default(false) bool isDummy,
   }) = _PortfolioItem;
   const PortfolioItem._();
 
