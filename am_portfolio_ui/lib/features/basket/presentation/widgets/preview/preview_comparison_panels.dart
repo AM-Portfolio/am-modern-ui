@@ -30,31 +30,28 @@ class PreviewComparisonPanels extends StatelessWidget {
         (BasketResponsive.isTablet(context) &&
             MediaQuery.sizeOf(context).width >= 900);
 
-    final pagePad = BasketResponsive.pagePadding(context).copyWith(top: 0);
+    final pagePad = BasketResponsive.pagePadding(context).copyWith(
+      top: 0,
+      bottom: PreviewLayout.sectionGap,
+    );
 
-    return sideBySide
-        ? Padding(
-            padding: pagePad.copyWith(
-              bottom: PreviewLayout.sectionGap,
-            ),
-            child: _AlignedSideBySideGrid(
+    // Always size to full content — parent page scrolls, not the tables.
+    return Padding(
+      padding: pagePad,
+      child: sideBySide
+          ? _AlignedSideBySideGrid(
+              items: items,
+              etfIsin: opportunity.etfIsin,
+            )
+          : _StackedPanels(
               items: items,
               etfIsin: opportunity.etfIsin,
             ),
-          )
-        : SingleChildScrollView(
-            padding: pagePad.copyWith(
-              bottom: PreviewLayout.sectionGap,
-            ),
-            child: _StackedPanels(
-              items: items,
-              etfIsin: opportunity.etfIsin,
-            ),
-          );
+    );
   }
 }
 
-class _AlignedSideBySideGrid extends StatefulWidget {
+class _AlignedSideBySideGrid extends StatelessWidget {
   final List<BasketItem> items;
   final String etfIsin;
 
@@ -64,52 +61,9 @@ class _AlignedSideBySideGrid extends StatefulWidget {
   });
 
   @override
-  State<_AlignedSideBySideGrid> createState() => _AlignedSideBySideGridState();
-}
-
-class _AlignedSideBySideGridState extends State<_AlignedSideBySideGrid> {
-  late final ScrollController _leftScroll;
-  late final ScrollController _rightScroll;
-  bool _syncingScroll = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _leftScroll = ScrollController()..addListener(_syncFromLeft);
-    _rightScroll = ScrollController()..addListener(_syncFromRight);
-  }
-
-  @override
-  void dispose() {
-    _leftScroll.removeListener(_syncFromLeft);
-    _rightScroll.removeListener(_syncFromRight);
-    _leftScroll.dispose();
-    _rightScroll.dispose();
-    super.dispose();
-  }
-
-  void _syncFromLeft() {
-    if (_syncingScroll || !_rightScroll.hasClients) return;
-    _syncingScroll = true;
-    if (_leftScroll.offset != _rightScroll.offset) {
-      _rightScroll.jumpTo(_leftScroll.offset);
-    }
-    _syncingScroll = false;
-  }
-
-  void _syncFromRight() {
-    if (_syncingScroll || !_leftScroll.hasClients) return;
-    _syncingScroll = true;
-    if (_rightScroll.offset != _leftScroll.offset) {
-      _leftScroll.jumpTo(_rightScroll.offset);
-    }
-    _syncingScroll = false;
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: _PreviewTableCard(
@@ -117,18 +71,17 @@ class _AlignedSideBySideGridState extends State<_AlignedSideBySideGrid> {
               icon: Icons.pie_chart_outline,
               iconColor: context.colors.actionPrimaryBg,
               title: 'ETF Index',
-              subtitle: '${widget.etfIsin} · Target allocation',
+              subtitle: '$etfIsin · Target allocation',
             ),
             columnHeader: const _IndexColumnHeader(),
             footer: const _IndexFooter(),
-            body: ListView.builder(
-              controller: _leftScroll,
-              padding: EdgeInsets.zero,
-              itemCount: widget.items.length,
-              itemBuilder: (context, index) => _IndexDataRow(
-                item: widget.items[index],
-                striped: index.isEven,
-              ),
+            shrinkWrap: true,
+            body: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < items.length; i++)
+                  _IndexDataRow(item: items[i], striped: i.isEven),
+              ],
             ),
           ),
         ),
@@ -143,14 +96,13 @@ class _AlignedSideBySideGridState extends State<_AlignedSideBySideGrid> {
             ),
             columnHeader: const _HoldingsColumnHeader(),
             footer: const SizedBox(height: PreviewLayout.cardPadding),
-            body: ListView.builder(
-              controller: _rightScroll,
-              padding: EdgeInsets.zero,
-              itemCount: widget.items.length,
-              itemBuilder: (context, index) => _HoldingsDataRow(
-                item: widget.items[index],
-                striped: index.isEven,
-              ),
+            shrinkWrap: true,
+            body: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < items.length; i++)
+                  _HoldingsDataRow(item: items[i], striped: i.isEven),
+              ],
             ),
           ),
         ),

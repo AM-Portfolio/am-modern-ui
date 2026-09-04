@@ -150,12 +150,21 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
     final formatter =
         NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
+    // Page scrolls as a whole; tables are not independently scrollable.
+    // Sticky action bar stays pinned at the bottom of the viewport.
     return Column(
       children: [
-        PreviewHeroHeader(opportunity: _opportunity),
-        const SizedBox(height: PreviewLayout.sectionGap),
         Expanded(
-          child: PreviewComparisonPanels(opportunity: _opportunity),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                PreviewHeroHeader(opportunity: _opportunity),
+                const SizedBox(height: PreviewLayout.sectionGap),
+                PreviewComparisonPanels(opportunity: _opportunity),
+              ],
+            ),
+          ),
         ),
         BasketStickyActionBar(
           stats: [
