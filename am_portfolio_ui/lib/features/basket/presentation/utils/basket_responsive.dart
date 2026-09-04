@@ -31,4 +31,13 @@ abstract final class BasketResponsive {
     }
     return const EdgeInsets.symmetric(horizontal: AppSpacing.lg);
   }
+
+  /// Tight inset for Preview so dual tables use nearly full content width.
+  static EdgeInsets previewPagePadding(BuildContext context) {
+    if (useCompactPreview(context)) {
+      return const EdgeInsets.symmetric(horizontal: AppSpacing.sm);
+    }
+    // Desktop/tablet: keep a thin edge only (was lg=24, looked like empty gutters).
+    return const EdgeInsets.symmetric(horizontal: AppSpacing.sm);
+  }
 }

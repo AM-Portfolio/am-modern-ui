@@ -2,7 +2,7 @@
 abstract final class PreviewLayout {
   PreviewLayout._();
 
-  static const double sectionGap = 12;
+  static const double sectionGap = 8;
   static const double cardPadding = 12;
   static const double dataRowHeight = 40;
   static const double panelHeaderHeight = 48;

@@ -30,7 +30,7 @@ class PreviewComparisonPanels extends StatelessWidget {
         (BasketResponsive.isTablet(context) &&
             MediaQuery.sizeOf(context).width >= 900);
 
-    final pagePad = BasketResponsive.pagePadding(context).copyWith(
+    final pagePad = BasketResponsive.previewPagePadding(context).copyWith(
       top: 0,
       bottom: PreviewLayout.sectionGap,
     );

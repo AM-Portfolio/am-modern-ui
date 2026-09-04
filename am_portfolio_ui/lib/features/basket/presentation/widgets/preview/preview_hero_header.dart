@@ -56,7 +56,7 @@ class PreviewHeroHeader extends StatelessWidget {
     final formatter =
         NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final compact = BasketResponsive.useCompactPreview(context);
-    final pagePad = BasketResponsive.pagePadding(context);
+    final pagePad = BasketResponsive.previewPagePadding(context);
 
     final heldPct = opportunity.heldMatchScore ?? opportunity.matchScore;
     final subPct = opportunity.substituteMatchScore ?? 0.0;
