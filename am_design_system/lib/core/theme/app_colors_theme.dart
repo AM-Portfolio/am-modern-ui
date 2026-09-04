@@ -36,6 +36,10 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     required this.surface,
     required this.border,
     required this.divider,
+    required this.authBackdropStart,
+    required this.authBackdropMid,
+    required this.authBackdropEnd,
+    required this.authParticleHighlight,
     required this.textPrimary,
     required this.textSecondary,
     required this.textTertiary,
@@ -81,11 +85,25 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
   final Color border;
   final Color divider;
 
+  /// Auth shell backdrop gradient (login / register / forgot password).
+  final Color authBackdropStart;
+  final Color authBackdropMid;
+  final Color authBackdropEnd;
+
+  /// Particle highlight for [InteractiveBackground] on auth pages.
+  final Color authParticleHighlight;
+
   // Text
   final Color textPrimary;
   final Color textSecondary;
   final Color textTertiary;
   final Color textDisabled;
+
+  LinearGradient get authBackdropGradient => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [authBackdropStart, authBackdropMid, authBackdropEnd],
+      );
 
   /// Dark theme semantic palette (maps to existing [AppColors] values).
   static const AppColorsTheme dark = AppColorsTheme(
@@ -116,6 +134,10 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     surface: AppColors.darkSurface,
     border: AppColors.darkBorder,
     divider: AppColors.darkDivider,
+    authBackdropStart: AppColors.darkBackground,
+    authBackdropMid: AppColors.darkBackgroundLight,
+    authBackdropEnd: AppColors.darkBackgroundDeep,
+    authParticleHighlight: AppColors.accentBlue,
     textPrimary: AppColors.textPrimaryDark,
     textSecondary: AppColors.textSecondaryDark,
     textTertiary: AppColors.textTertiaryDark,
@@ -151,6 +173,10 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     surface: AppColors.lightSurface,
     border: AppColors.lightBorder,
     divider: AppColors.lightDivider,
+    authBackdropStart: AppColors.lightAuthBackdropStart,
+    authBackdropMid: AppColors.lightAuthBackdropMid,
+    authBackdropEnd: AppColors.lightAuthBackdropEnd,
+    authParticleHighlight: AppColors.info,
     textPrimary: AppColors.textPrimaryLight,
     textSecondary: AppColors.textSecondaryLight,
     textTertiary: AppColors.textTertiaryLight,
@@ -186,6 +212,10 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     surface: Color(0xFFD1ECF9),
     border: Color(0xFFBFE0F2),
     divider: Color(0xFFD6EAF5),
+    authBackdropStart: Color(0xFFE1F5FE),
+    authBackdropMid: Color(0xFFB3E5FC),
+    authBackdropEnd: Color(0xFF81D4FA),
+    authParticleHighlight: Color(0xFF0288D1),
     textPrimary: AppColors.textPrimaryLight,
     textSecondary: AppColors.textSecondaryLight,
     textTertiary: AppColors.textTertiaryLight,
@@ -221,6 +251,10 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     Color? surface,
     Color? border,
     Color? divider,
+    Color? authBackdropStart,
+    Color? authBackdropMid,
+    Color? authBackdropEnd,
+    Color? authParticleHighlight,
     Color? textPrimary,
     Color? textSecondary,
     Color? textTertiary,
@@ -257,6 +291,11 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
       surface: surface ?? this.surface,
       border: border ?? this.border,
       divider: divider ?? this.divider,
+      authBackdropStart: authBackdropStart ?? this.authBackdropStart,
+      authBackdropMid: authBackdropMid ?? this.authBackdropMid,
+      authBackdropEnd: authBackdropEnd ?? this.authBackdropEnd,
+      authParticleHighlight:
+          authParticleHighlight ?? this.authParticleHighlight,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textTertiary: textTertiary ?? this.textTertiary,
@@ -312,6 +351,12 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
       surface: Color.lerp(surface, other.surface, t)!,
       border: Color.lerp(border, other.border, t)!,
       divider: Color.lerp(divider, other.divider, t)!,
+      authBackdropStart:
+          Color.lerp(authBackdropStart, other.authBackdropStart, t)!,
+      authBackdropMid: Color.lerp(authBackdropMid, other.authBackdropMid, t)!,
+      authBackdropEnd: Color.lerp(authBackdropEnd, other.authBackdropEnd, t)!,
+      authParticleHighlight:
+          Color.lerp(authParticleHighlight, other.authParticleHighlight, t)!,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textTertiary: Color.lerp(textTertiary, other.textTertiary, t)!,

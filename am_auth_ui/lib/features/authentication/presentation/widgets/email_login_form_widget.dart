@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -181,66 +179,48 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                   height: 48,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: primary
-                            .withValues(alpha: _isHoveringBtn ? 0.35 : 0.20),
-                        blurRadius: _isHoveringBtn ? 25 : 18,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 1.2,
+                    ),
+                    gradient: LinearGradient(
+                      colors: [
+                        primary.withValues(alpha: 0.95),
+                        primary.withValues(alpha: 0.85),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            width: 1.2,
-                          ),
-                          gradient: LinearGradient(
-                            colors: [
-                              primary.withValues(alpha: 0.95),
-                              primary.withValues(alpha: 0.85),
-                            ],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                          ),
-                        ),
-                        child: ElevatedButton(
-                          onPressed: widget.isLoading ? null : _handleLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: widget.isLoading
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
-                              : const Text(
-                                  'Sign In',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                        ),
+                  child: ElevatedButton(
+                    onPressed: widget.isLoading ? null : _handleLogin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
+                    child: widget.isLoading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            'Sign In',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -324,51 +304,67 @@ class _LiquidTextFieldState extends State<LiquidTextField> {
     final hintColor = context.colors.textTertiary;
     final iconColor = context.colors.textSecondary;
 
+    final outlineBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(color: borderColor, width: 1.2),
+    );
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              color: baseBgColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: borderColor,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: baseBgColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: TextFormField(
+          controller: widget.controller,
+          enabled: widget.enabled,
+          obscureText: widget.obscureText,
+          keyboardType: widget.keyboardType,
+          textInputAction: widget.textInputAction,
+          autofillHints: widget.autofillHints,
+          onFieldSubmitted: widget.onFieldSubmitted,
+          focusNode: _focusNode,
+          enableSuggestions: !widget.obscureText,
+          autocorrect: false,
+          style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            filled: false,
+            labelText: widget.labelText,
+            labelStyle: TextStyle(color: labelColor, fontSize: 13),
+            floatingLabelBehavior: FloatingLabelBehavior.auto,
+            floatingLabelStyle: TextStyle(
+              color: labelColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            hintText: widget.hintText,
+            hintStyle: TextStyle(color: hintColor, fontSize: 13),
+            prefixIcon: Icon(widget.prefixIcon, color: iconColor, size: 20),
+            suffixIcon: widget.suffixIcon,
+            border: outlineBorder,
+            enabledBorder: outlineBorder,
+            focusedBorder: outlineBorder,
+            disabledBorder: outlineBorder,
+            errorBorder: outlineBorder.copyWith(
+              borderSide: BorderSide(
+                color: context.colors.statusError,
                 width: 1.2,
               ),
             ),
-            child: TextFormField(
-              controller: widget.controller,
-              enabled: widget.enabled,
-              obscureText: widget.obscureText,
-              keyboardType: widget.keyboardType,
-              textInputAction: widget.textInputAction,
-              autofillHints: widget.autofillHints,
-              onFieldSubmitted: widget.onFieldSubmitted,
-              focusNode: _focusNode,
-              enableSuggestions: !widget.obscureText,
-              autocorrect: false,
-              style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
-              decoration: InputDecoration(
-                filled: false,
-                labelText: widget.labelText,
-                labelStyle: TextStyle(color: labelColor, fontSize: 13),
-                hintText: widget.hintText,
-                hintStyle: TextStyle(color: hintColor, fontSize: 13),
-                prefixIcon: Icon(widget.prefixIcon, color: iconColor, size: 20),
-                suffixIcon: widget.suffixIcon,
-                border: InputBorder.none,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                errorStyle: TextStyle(color: context.colors.statusError),
+            focusedErrorBorder: outlineBorder.copyWith(
+              borderSide: BorderSide(
+                color: context.colors.statusError,
+                width: 1.2,
               ),
-              validator: widget.validator,
             ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            errorStyle: TextStyle(color: context.colors.statusError),
           ),
+          validator: widget.validator,
         ),
       ),
     );

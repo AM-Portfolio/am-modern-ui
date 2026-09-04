@@ -15,7 +15,7 @@ final aiSessionServiceProvider = Provider<AiSessionService>((ref) {
       headers: {'Content-Type': 'application/json'},
     ),
   );
-  dio.interceptors.add(AuthInterceptor(SecureStorageService()));
+  AuthProviders.attachAuthInterceptor(dio);
   return AiSessionService(dio);
 });
 

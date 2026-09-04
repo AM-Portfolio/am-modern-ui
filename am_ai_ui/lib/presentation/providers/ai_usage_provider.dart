@@ -13,7 +13,7 @@ final aiUsageServiceProvider = Provider<AiUsageService>((ref) {
       headers: {'Content-Type': 'application/json'},
     ),
   );
-  dio.interceptors.add(AuthInterceptor(SecureStorageService()));
+  AuthProviders.attachAuthInterceptor(dio);
   return AiUsageService(dio);
 });
 

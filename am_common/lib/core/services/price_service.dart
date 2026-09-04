@@ -5,6 +5,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
 import 'package:am_common/core/models/equity_price_mapper.dart';
 import 'package:am_common/core/models/price_update_model.dart';
+import 'package:am_common/core/debug/agent_debug_log.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_library/core/network/websocket/am_stomp_client.dart';
 
@@ -142,6 +143,17 @@ class PriceService {
         'PriceService: subscribe deferred — market streaming closed '
         '(${symbols.length} symbols remembered)',
       );
+      // #region agent log
+      agentDebugLog(
+        location: 'price_service.dart:subscribe',
+        message: 'subscribe deferred because gate closed',
+        hypothesisId: 'H4',
+        data: {
+          'symbolCount': symbols.length,
+          'streamingAllowed': _streamingAllowed,
+        },
+      );
+      // #endregion
       return;
     }
 
@@ -266,6 +278,17 @@ class PriceService {
       'PriceService: STOMP /app/market/subscribe batch=${symbols.length} '
       '(isIndexSymbol: $isIndexSymbol, server-driven provider)',
     );
+    // #region agent log
+    agentDebugLog(
+      location: 'price_service.dart:_gatewayConnect',
+      message: 'sending /app/market/subscribe',
+      hypothesisId: 'H5',
+      data: {
+        'batch': symbols.length,
+        'stompConnected': client.isConnected,
+      },
+    );
+    // #endregion
 
     client.send(
       destination: '/app/market/subscribe',
@@ -326,6 +349,17 @@ class PriceService {
       final symbol = json['symbol'] as String?;
       if (symbol == null || symbol.isEmpty) return;
 
+      // #region agent log
+      agentDebugLog(
+        location: 'price_service.dart:_onStompFrame',
+        message: 'received stock frame',
+        hypothesisId: 'H5',
+        data: {
+          'symbol': symbol,
+          'destination': frame.headers['destination'],
+        },
+      );
+      // #endregion
       _applyQuote(symbol, quoteChangeFromEquityPriceJson(json));
     } catch (e) {
       AppLogger.error('PriceService: Error parsing STOMP frame', error: e);

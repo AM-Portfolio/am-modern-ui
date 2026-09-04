@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:am_library/am_library.dart';
+import 'package:am_common/core/debug/agent_debug_log.dart';
 
 // States for the STOMP connection
 abstract class StompConnectionState extends Equatable {
@@ -68,6 +69,14 @@ class StompConnectionCubit extends Cubit<StompConnectionState> {
   }
 
   void _handleStompStatusChange(StompStatus status) {
+    // #region agent log
+    agentDebugLog(
+      location: 'stomp_connection_cubit.dart:_handleStompStatusChange',
+      message: 'stomp status changed',
+      hypothesisId: 'H5',
+      data: {'status': status.name, 'hasToken': _lastToken != null},
+    );
+    // #endregion
     switch (status) {
       case StompStatus.connecting:
         emit(StompConnecting());

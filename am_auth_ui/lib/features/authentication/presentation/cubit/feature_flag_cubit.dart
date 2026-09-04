@@ -31,6 +31,9 @@ class FeatureFlagCubit extends Cubit<FeatureFlagState> {
       case 'showDeveloperPanel':
         _featureFlags.showDeveloperPanel = value;
         break;
+      case 'enableSmsOtp':
+        _featureFlags.enableSmsOtp = value;
+        break;
     }
     emit(FeatureFlagState(_featureFlags));
   }

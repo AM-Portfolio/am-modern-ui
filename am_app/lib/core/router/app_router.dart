@@ -168,28 +168,43 @@ GoRouter createAppRouter({
     routes: [
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const LoginPage(),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: const LoginPage(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (context, state) => const RegisterPage(),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: const RegisterPage(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,
-        builder: (context, state) => const ForgotPasswordPage(),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: const ForgotPasswordPage(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.resetPassword,
-        builder: (context, state) => ResetPasswordPage(
-          resetToken: state.uri.queryParameters['token'],
-          resetCode: state.uri.queryParameters['c'],
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: ResetPasswordPage(
+            resetToken: state.uri.queryParameters['token'],
+            resetCode: state.uri.queryParameters['c'],
+          ),
         ),
       ),
       GoRoute(
         path: AppRoutes.verifyEmail,
-        builder: (context, state) => VerifyEmailPage(
-          token: state.uri.queryParameters['token'],
-          code: state.uri.queryParameters['c'],
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: VerifyEmailPage(
+            token: state.uri.queryParameters['token'],
+            code: state.uri.queryParameters['c'],
+          ),
         ),
       ),
       if (!kIsWeb)

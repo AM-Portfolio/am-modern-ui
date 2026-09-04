@@ -9,17 +9,18 @@ import 'package:am_design_system/core/config/feature_flags.dart';
 import 'package:am_design_system/core/constants/app_config.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
-import 'package:am_design_system/shared/widgets/display/interactive_background.dart';
 
 import '../../../../core/utils/auth_redirect.dart';
 import '../../../../di/auth_providers.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../widgets/auth_method_pill_tabs.dart';
+import '../widgets/auth_page_background.dart';
 import '../widgets/dev_section_widget.dart';
 import '../widgets/email_login_form_widget.dart';
 import '../widgets/glass_card_widget.dart';
 import '../widgets/google_login_button_widget.dart';
+import '../widgets/theme_toggle_widget.dart';
 import '../widgets/web_otp_login_widget.dart';
 import '../widgets/web_qr_login_section.dart';
 
@@ -140,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     return Stack(
                       children: [
-                        _buildBackground(),
+                        const AuthPageBackground(),
                         Center(
                           child: SingleChildScrollView(
                             padding: EdgeInsets.all(isCompact ? 16 : 24),
@@ -162,6 +163,13 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                         ),
+                        Positioned(
+                          top: 16,
+                          right: 16,
+                          child: ThemeToggleWidget(
+                            iconSize: isCompact ? 20 : 24,
+                          ),
+                        ),
                       ],
                     );
                   },
@@ -169,31 +177,6 @@ class _LoginPageState extends State<LoginPage> {
               },
             );
           },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBackground() {
-    return Positioned.fill(
-      child: Builder(
-        builder: (context) => Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                context.colors.surface,
-                context.colors.scaffoldBackground,
-                context.colors.surface,
-              ],
-            ),
-          ),
-          child: InteractiveBackground(
-            baseColor: context.colors.actionPrimaryBg,
-            highlightColor:
-                context.colors.actionPrimaryBg.withValues(alpha: 0.8),
-          ),
         ),
       ),
     );

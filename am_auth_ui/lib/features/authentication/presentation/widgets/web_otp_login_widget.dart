@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -69,9 +68,10 @@ class _WebOtpLoginWidgetState extends State<WebOtpLoginWidget> {
   }
 
   Future<void> _sendOtp() async {
+    final channel = _flags.enableSmsOtp ? _channel : 'email';
     final destination = _destinationController.text.trim();
     if (destination.isEmpty) {
-      setState(() => _error = _channel == 'email'
+      setState(() => _error = channel == 'email'
           ? 'Enter your email address'
           : 'Enter your phone number');
       return;
@@ -80,10 +80,11 @@ class _WebOtpLoginWidgetState extends State<WebOtpLoginWidget> {
     setState(() {
       _loading = true;
       _error = null;
+      _channel = channel;
     });
     try {
       final result = await AuthProviders.identityAuthRemoteDataSource.sendWebOtp(
-        channel: _channel,
+        channel: channel,
         destination: destination,
       );
       if (!mounted) return;
@@ -153,6 +154,8 @@ class _WebOtpLoginWidgetState extends State<WebOtpLoginWidget> {
 
     final showTimer = _step == WebOtpStep.verify && _sendResult != null;
     final primary = context.colors.actionPrimaryBg;
+    final smsEnabled = _flags.enableSmsOtp;
+    final channel = smsEnabled ? _channel : 'email';
 
     return Column(
       children: [
@@ -167,7 +170,9 @@ class _WebOtpLoginWidgetState extends State<WebOtpLoginWidget> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Sign in with a one-time passcode sent to your email or phone.',
+                smsEnabled
+                    ? 'Sign in with a one-time passcode sent to your email or phone.'
+                    : 'Sign in with a one-time passcode sent to your email.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: context.colors.textSecondary,
@@ -177,37 +182,39 @@ class _WebOtpLoginWidgetState extends State<WebOtpLoginWidget> {
               ),
               const SizedBox(height: 16),
               if (_step == WebOtpStep.destination) ...[
-                AuthMethodPillTabs<String>(
-                  compact: true,
-                  accentColor: primary,
-                  selected: _channel,
-                  onChanged: (value) => setState(() => _channel = value),
-                  options: const [
-                    AuthMethodPillOption(
-                      value: 'email',
-                      label: 'Email',
-                      icon: Icons.email_outlined,
-                    ),
-                    AuthMethodPillOption(
-                      value: 'sms',
-                      label: 'SMS',
-                      icon: Icons.sms_outlined,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
+                if (smsEnabled) ...[
+                  AuthMethodPillTabs<String>(
+                    compact: true,
+                    accentColor: primary,
+                    selected: _channel,
+                    onChanged: (value) => setState(() => _channel = value),
+                    options: const [
+                      AuthMethodPillOption(
+                        value: 'email',
+                        label: 'Email',
+                        icon: Icons.email_outlined,
+                      ),
+                      AuthMethodPillOption(
+                        value: 'sms',
+                        label: 'SMS',
+                        icon: Icons.sms_outlined,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                ],
                 LiquidTextField(
                   controller: _destinationController,
                   enabled: !_loading,
-                  keyboardType: _channel == 'email'
+                  keyboardType: channel == 'email'
                       ? TextInputType.emailAddress
                       : TextInputType.phone,
                   labelText:
-                      _channel == 'email' ? 'Email address' : 'Phone number',
-                  hintText: _channel == 'email'
+                      channel == 'email' ? 'Email address' : 'Phone number',
+                  hintText: channel == 'email'
                       ? 'Enter your email'
                       : 'Enter your phone number',
-                  prefixIcon: _channel == 'email'
+                  prefixIcon: channel == 'email'
                       ? Icons.email_outlined
                       : Icons.phone_outlined,
                 ),
@@ -307,46 +314,34 @@ class _PrimaryActionButton extends StatelessWidget {
             primary.withValues(alpha: 0.85),
           ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: primary.withValues(alpha: 0.25),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: ElevatedButton(
-            onPressed: loading ? null : onPressed,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: loading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(
-                    label,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      fontSize: 15,
-                    ),
-                  ),
+      child: ElevatedButton(
+        onPressed: loading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
+        child: loading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  fontSize: 15,
+                ),
+              ),
       ),
     );
   }

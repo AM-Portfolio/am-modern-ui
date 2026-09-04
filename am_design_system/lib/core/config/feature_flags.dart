@@ -18,6 +18,9 @@ class FeatureFlags {
   /// Web login: email/SMS OTP fallback (Phase 4f). Web only.
   bool enableWebOtp = true;
 
+  /// Web OTP SMS channel. Default off until SMS delivery is available.
+  bool enableSmsOtp = false;
+
   // Development Features
   bool enableMockDelays = true;
   bool enableErrorSimulation = false;
@@ -46,6 +49,7 @@ class FeatureFlags {
     aggressiveTokenRefresh = false;
     enableQrWebLogin = true;
     enableWebOtp = true;
+    enableSmsOtp = false;
     enableMockDelays = true;
     enableErrorSimulation = false;
     enableDebugLogging = true;
@@ -67,6 +71,7 @@ class FeatureFlags {
     'aggressiveTokenRefresh': aggressiveTokenRefresh,
     'enableQrWebLogin': enableQrWebLogin,
     'enableWebOtp': enableWebOtp,
+    'enableSmsOtp': enableSmsOtp,
     'enableMockDelays': enableMockDelays,
     'enableErrorSimulation': enableErrorSimulation,
     'enableDebugLogging': enableDebugLogging,
@@ -88,6 +93,7 @@ class FeatureFlags {
     aggressiveTokenRefresh = json['aggressiveTokenRefresh'] ?? false;
     enableQrWebLogin = json['enableQrWebLogin'] ?? true;
     enableWebOtp = json['enableWebOtp'] ?? true;
+    enableSmsOtp = json['enableSmsOtp'] ?? false;
     enableMockDelays = json['enableMockDelays'] ?? true;
     enableErrorSimulation = json['enableErrorSimulation'] ?? false;
     enableDebugLogging = json['enableDebugLogging'] ?? true;
