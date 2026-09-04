@@ -43,7 +43,7 @@ class PreviewComparisonPanels extends StatelessWidget {
               items: items,
               etfIsin: opportunity.etfIsin,
             )
-          : _StackedPanels(
+          : _MobileCombinedList(
               items: items,
               etfIsin: opportunity.etfIsin,
             ),
@@ -111,11 +111,11 @@ class _AlignedSideBySideGrid extends StatelessWidget {
   }
 }
 
-class _StackedPanels extends StatelessWidget {
+class _MobileCombinedList extends StatelessWidget {
   final List<BasketItem> items;
   final String etfIsin;
 
-  const _StackedPanels({
+  const _MobileCombinedList({
     required this.items,
     required this.etfIsin,
   });
@@ -123,41 +123,248 @@ class _StackedPanels extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _PreviewTableCard(
-          header: _PanelHeader(
-            icon: Icons.pie_chart_outline,
-            iconColor: context.colors.actionPrimaryBg,
-            title: 'ETF Index',
-            subtitle: '$etfIsin · Target allocation',
+        Container(
+          padding: const EdgeInsets.fromLTRB(
+            PreviewLayout.cardPadding,
+            12,
+            PreviewLayout.cardPadding,
+            10,
           ),
-          columnHeader: const _IndexColumnHeader(),
-          footer: const _IndexFooter(),
-          shrinkWrap: true,
-          body: Column(
+          decoration: BoxDecoration(
+            color: context.colors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: context.colors.border),
+          ),
+          child: Row(
             children: [
-              for (var i = 0; i < items.length; i++)
-                _IndexDataRow(item: items[i], striped: i.isEven),
+              Icon(
+                Icons.compare_arrows_rounded,
+                size: 18,
+                color: context.colors.actionPrimaryBg,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Constituents vs Your Holdings',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    Text(
+                      '$etfIsin · ${items.length} stocks',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: context.colors.textSecondary,
+                            fontSize: 11,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
         const SizedBox(height: PreviewLayout.sectionGap),
-        _PreviewTableCard(
-          header: _PanelHeader(
-            icon: Icons.account_balance_wallet_outlined,
-            iconColor: context.statusSuccess,
-            title: 'Your Holdings',
-            subtitle: 'Current portfolio exposure',
-          ),
-          columnHeader: const _HoldingsColumnHeader(),
-          shrinkWrap: true,
-          body: Column(
-            children: [
-              for (var i = 0; i < items.length; i++)
-                _HoldingsDataRow(item: items[i], striped: i.isEven),
-            ],
+        for (var i = 0; i < items.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          _MobileCombinedCard(item: items[i]),
+        ],
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            'Target weights total 100%',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: context.colors.textTertiary,
+                ),
+            textAlign: TextAlign.center,
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _MobileCombinedCard extends StatelessWidget {
+  final BasketItem item;
+
+  const _MobileCombinedCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt =
+        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final priceFmt =
+        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+
+    final w = item.etfWeight.clamp(0.0, 100.0);
+    final isMissing = item.status == ItemStatus.missing;
+    final qty = isMissing ? null : item.heldQuantity;
+    final avg = item.heldAveragePrice;
+    final price = item.lastPrice;
+    final value =
+        (qty != null && price != null && qty > 0) ? qty * price : null;
+    final themeLabel = BasketItemStatusTheme.labelFor(item.status);
+    final themeColor = BasketItemStatusTheme.colorFor(context, item.status);
+    final holdingLabel = item.status == ItemStatus.substitute &&
+            (item.userHoldingSymbol?.isNotEmpty ?? false)
+        ? 'via ${item.userHoldingSymbol}'
+        : null;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: context.colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              _StockAvatar(symbol: item.stockSymbol),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.stockSymbol,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    if (holdingLabel != null)
+                      Text(
+                        holdingLabel,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: context.colors.textSecondary,
+                              fontSize: 11,
+                            ),
+                      ),
+                  ],
+                ),
+              ),
+              FpStatusPill(label: themeLabel, color: themeColor),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Text(
+                'ETF weight',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: context.colors.textSecondary,
+                    ),
+              ),
+              const Spacer(),
+              Text(
+                '${w.toStringAsFixed(1)}%',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            child: LinearProgressIndicator(
+              value: (w / 100.0).clamp(0.0, 1.0),
+              minHeight: 4,
+              backgroundColor: context.colors.border.withValues(alpha: 0.4),
+              color: context.colors.actionPrimaryBg,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: context.colors.cardSurface.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _MobileStat(
+                    label: 'Units',
+                    value: isMissing ? '0' : (qty?.toStringAsFixed(0) ?? '—'),
+                    sub: (!isMissing && avg != null)
+                        ? 'avg ${priceFmt.format(avg)}'
+                        : null,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 32,
+                  color: context.colors.border.withValues(alpha: 0.6),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 10),
+                    child: _MobileStat(
+                      label: 'Value',
+                      value: isMissing
+                          ? '₹0'
+                          : (value != null ? fmt.format(value) : '—'),
+                      sub: (!isMissing && price != null)
+                          ? '@ ${priceFmt.format(price)}'
+                          : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? sub;
+
+  const _MobileStat({
+    required this.label,
+    required this.value,
+    this.sub,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: context.colors.textTertiary,
+                fontSize: 10,
+              ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        if (sub != null)
+          Text(
+            sub!,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: context.colors.textTertiary,
+                  fontSize: 10,
+                ),
+          ),
       ],
     );
   }

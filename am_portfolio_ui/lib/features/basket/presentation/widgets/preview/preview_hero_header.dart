@@ -65,91 +65,123 @@ class PreviewHeroHeader extends StatelessWidget {
         opportunity.remainingPortfolioValue ?? opportunity.totalPortfolioValue ?? 0;
     final constituentCount = opportunity.composition.length;
 
+    final titleAndBadges = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          opportunity.etfName,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                height: 1.15,
+                fontSize: compact ? 15 : null,
+              ),
+          maxLines: compact ? 2 : 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 6),
+        _scoreBadge(context, heldPct, subPct, missingPct),
+      ],
+    );
+
+    final stats = Column(
+      crossAxisAlignment:
+          compact ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Available to Invest',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: context.colors.textSecondary,
+              ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          formatter.format(available),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Constituents: $constituentCount',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: context.colors.textTertiary,
+              ),
+        ),
+      ],
+    );
+
     return Padding(
       padding: pagePad.copyWith(
         top: PreviewLayout.sectionGap,
         bottom: 0,
       ),
       child: Container(
-        constraints: const BoxConstraints(
-          minHeight: 88,
-          maxHeight: PreviewLayout.heroMaxHeight,
+        constraints: BoxConstraints(
+          minHeight: compact ? 0 : 88,
+          maxHeight: compact ? double.infinity : PreviewLayout.heroMaxHeight,
         ),
-        padding: const EdgeInsets.symmetric(
+        padding: EdgeInsets.symmetric(
           horizontal: PreviewLayout.cardPadding,
-          vertical: 12,
+          vertical: compact ? 10 : 12,
         ),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(AppRadii.lg),
           border: Border.all(color: context.colors.border),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: context.colors.actionPrimaryBg.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.auto_awesome,
-                color: context.colors.actionPrimaryBg,
-                size: compact ? 18 : 22,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+        child: compact
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    opportunity.etfName,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          height: 1.15,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: context.colors.actionPrimaryBg
+                              .withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
                         ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                        child: Icon(
+                          Icons.auto_awesome,
+                          color: context.colors.actionPrimaryBg,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(child: titleAndBadges),
+                    ],
                   ),
-                  const SizedBox(height: 6),
-                  _scoreBadge(context, heldPct, subPct, missingPct),
+                  const SizedBox(height: 10),
+                  stats,
+                ],
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color:
+                          context.colors.actionPrimaryBg.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.auto_awesome,
+                      color: context.colors.actionPrimaryBg,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(child: titleAndBadges),
+                  const SizedBox(width: AppSpacing.md),
+                  stats,
                 ],
               ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Available to Invest',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: context.colors.textSecondary,
-                      ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  formatter.format(available),
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Constituents: $constituentCount',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: context.colors.textTertiary,
-                      ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
