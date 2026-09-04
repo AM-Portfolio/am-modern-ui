@@ -292,9 +292,14 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
           });
           try {
             final assignments = selections.map((s) => {
-              'missingIsin': item.isin.isNotEmpty ? item.isin : item.stockSymbol,
-              'substituteIsin': s.isin,
-              if (s.assignedWeight != null) 'assignedWeight': s.assignedWeight,
+              final isin = (s.isin).trim();
+              final symbol = (s.symbol).trim();
+              return {
+                'missingIsin': item.isin.isNotEmpty ? item.isin : item.stockSymbol,
+                'substituteIsin': isin.isNotEmpty ? isin : symbol,
+                if (symbol.isNotEmpty) 'substituteSymbol': symbol,
+                if (s.assignedWeight != null) 'assignedWeight': s.assignedWeight,
+              };
             }).toList();
 
             final updated = await ref.read(applySubstitutesProvider(request: {
