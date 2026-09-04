@@ -95,14 +95,7 @@ class EquityInsiderHero extends ConsumerWidget {
             ),
             if (data.description != null && data.description!.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text(
-                data.description!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: context.textSecondary,
-                  height: 1.45,
-                ),
-              ),
+              _ExpandableDescription(text: data.description!),
             ],
             const SizedBox(height: 16),
             Container(height: 1, color: context.borderColor),
@@ -156,3 +149,103 @@ class EquityInsiderHero extends ConsumerWidget {
     );
   }
 }
+
+class _ExpandableDescription extends StatefulWidget {
+  final String text;
+
+  const _ExpandableDescription({required this.text});
+
+  @override
+  State<_ExpandableDescription> createState() => _ExpandableDescriptionState();
+}
+
+class _ExpandableDescriptionState extends State<_ExpandableDescription> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textStyle = TextStyle(
+          fontSize: 12,
+          color: context.textSecondary,
+          height: 1.45,
+        );
+
+        final textSpan = TextSpan(
+          text: widget.text,
+          style: textStyle,
+        );
+
+        final textPainter = TextPainter(
+          text: textSpan,
+          maxLines: 2,
+          textDirection: Directionality.of(context),
+        )..layout(maxWidth: constraints.maxWidth);
+
+        final isOverflowing = textPainter.didExceedMaxLines;
+
+        if (!isOverflowing) {
+          return Text(
+            widget.text,
+            style: textStyle,
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AnimatedCrossFade(
+              firstChild: Text(
+                widget.text,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: textStyle,
+              ),
+              secondChild: Text(
+                widget.text,
+                style: textStyle,
+              ),
+              crossFadeState: _isExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 200),
+            ),
+            const SizedBox(height: 4),
+            InkWell(
+              borderRadius: BorderRadius.circular(4),
+              onTap: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _isExpanded ? 'Show less' : 'See more',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: context.marketTheme.chartBlue,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(
+                      _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                      size: 16,
+                      color: context.marketTheme.chartBlue,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
