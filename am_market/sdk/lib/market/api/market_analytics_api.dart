@@ -23,8 +23,8 @@ class MarketAnalyticsApi {
   /// * [String] symbol (required):
   ///
   /// * [String] range:
-  Future<Response> getHistoricalChartsWithHttpInfo(String symbol, { String? range, }) async {
-    final path = r'/v1/market-analytics/historical-charts/{symbol}'
+  Future<Response> getHistoricalChartsWithHttpInfo(String symbol, { String? range, bool? isIndexSymbol, }) async {
+    final path = r'/v1/analysis/historical-charts/{symbol}'
       .replaceAll('{symbol}', symbol);
     Object? postBody;
 
@@ -34,6 +34,11 @@ class MarketAnalyticsApi {
 
     if (range != null) {
       queryParams.addAll(_queryParams('', 'range', range));
+    }
+    if (isIndexSymbol != null) {
+      queryParams.addAll(_queryParams('', 'isIndexSymbol', isIndexSymbol));
+    } else {
+      queryParams.addAll(_queryParams('', 'isIndexSymbol', 'false'));
     }
 
     const contentTypes = <String>[];
@@ -59,8 +64,10 @@ class MarketAnalyticsApi {
   /// * [String] symbol (required):
   ///
   /// * [String] range:
-  Future<HistoricalDataResponseV1?> getHistoricalCharts(String symbol, { String? range, }) async {
-    final response = await getHistoricalChartsWithHttpInfo(symbol,  range: range, );
+  ///
+  /// * [bool] isIndexSymbol:
+  Future<HistoricalDataResponseV1?> getHistoricalCharts(String symbol, { String? range, bool? isIndexSymbol, }) async {
+    final response = await getHistoricalChartsWithHttpInfo(symbol,  range: range, isIndexSymbol: isIndexSymbol, );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
@@ -92,7 +99,7 @@ class MarketAnalyticsApi {
   ///
   /// * [bool] expandIndices:
   Future<Response> getMoversWithHttpInfo({ String? type, int? limit, String? indexSymbol, String? timeFrame, bool? expandIndices, }) async {
-    final path = r'/v1/market-analytics/movers';
+    final path = r'/v1/analysis/movers';
     Object? postBody;
 
     final queryParams = <QueryParam>[];
@@ -176,7 +183,7 @@ class MarketAnalyticsApi {
   ///
   /// * [bool] expandIndices:
   Future<Response> getSectorPerformanceWithHttpInfo({ String? indexSymbol, String? timeFrame, bool? expandIndices, }) async {
-    final path = r'/v1/market-analytics/sectors';
+    final path = r'/v1/analysis/sectors';
     Object? postBody;
 
     final queryParams = <QueryParam>[];
