@@ -5,6 +5,17 @@ import 'package:am_common/am_common.dart' as common;
 import 'ai_intent_response.dart';
 import 'ai_stream_event.dart';
 
+/// Thrown when the AI gateway returns HTTP 429 token quota exceeded.
+class AiQuotaExceededException implements Exception {
+  final String message;
+  final Map<String, dynamic> details;
+
+  const AiQuotaExceededException(this.message, {this.details = const {}});
+
+  @override
+  String toString() => message;
+}
+
 /// HTTP and SSE Streaming service for the AM AI Gateway.
 class AiChatService {
   /// Base URL resolved at runtime from config.json → `services.ai`
@@ -42,9 +53,19 @@ class AiChatService {
       if (CancelToken.isCancel(e)) {
         return AiIntentResponse.error('Request cancelled.');
       }
+      if (e.response?.statusCode == 429) {
+        throw _quotaFromResponse(e);
+      }
+      if (e.response?.statusCode == 503) {
+        final msg = _messageFromErrorBody(e.response?.data) ??
+            e.message ??
+            'Subscription or AI service unavailable';
+        return AiIntentResponse.error(msg);
+      }
       final msg = e.response?.data?.toString() ?? e.message ?? 'Unknown error';
       return AiIntentResponse.error('Agent unavailable: $msg');
     } catch (e) {
+      if (e is AiQuotaExceededException) rethrow;
       return AiIntentResponse.error('Unexpected error: $e');
     }
   }
@@ -109,6 +130,16 @@ class AiChatService {
           type: StreamEventType.cancelled,
           content: 'Generation stopped by user.',
         );
+      } else if (e.response?.statusCode == 429) {
+        throw _quotaFromResponse(e);
+      } else if (e.response?.statusCode == 503) {
+        final msg = _messageFromErrorBody(e.response?.data) ??
+            e.message ??
+            'Subscription or AI service unavailable';
+        yield AiStreamEvent(
+          type: StreamEventType.error,
+          content: msg,
+        );
       } else {
         yield AiStreamEvent(
           type: StreamEventType.error,
@@ -116,11 +147,42 @@ class AiChatService {
         );
       }
     } catch (e) {
+      if (e is AiQuotaExceededException) rethrow;
       yield AiStreamEvent(
         type: StreamEventType.error,
         content: e.toString(),
       );
     }
+  }
+
+  static AiQuotaExceededException _quotaFromResponse(DioException e) {
+    final map = _asMap(e.response?.data);
+    final err = map['error'];
+    final details = err is Map
+        ? Map<String, dynamic>.from(err['details'] as Map? ?? err)
+        : Map<String, dynamic>.from(
+            (map['widgetParams'] as Map?) ?? const {},
+          );
+    final message = (map['message'] as String?) ??
+        (err is Map ? err['message'] as String? : null) ??
+        'AI chat token quota exceeded';
+    return AiQuotaExceededException(message, details: details);
+  }
+
+  static String? _messageFromErrorBody(Object? data) {
+    final map = _asMap(data);
+    return map['message'] as String?;
+  }
+
+  static Map<String, dynamic> _asMap(Object? data) {
+    if (data is Map) return Map<String, dynamic>.from(data);
+    if (data is String) {
+      try {
+        final decoded = jsonDecode(data);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+    }
+    return {};
   }
 
   /// Submit user feedback (thumbs up/down) for a session turn.

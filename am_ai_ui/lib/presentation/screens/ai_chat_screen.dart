@@ -6,10 +6,14 @@ import 'package:intl/intl.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../providers/ai_chat_provider.dart';
+import '../providers/ai_session_provider.dart';
+import '../providers/ai_usage_provider.dart';
 import '../theme/ai_chat_theme.dart';
+import '../widgets/ai_history_drawer.dart';
 import '../widgets/ai_message_format.dart';
 import '../widgets/ai_widget_factory.dart';
 import '../../data/ai_intent_response.dart';
+import '../../data/ai_usage_service.dart';
 
 /// AI Chat Screen with SSE real-time streaming, dynamic widgets, Stop Generation, and feedback.
 class AiChatScreen extends ConsumerStatefulWidget {
@@ -29,6 +33,15 @@ class AiChatScreen extends ConsumerStatefulWidget {
 class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   final TextEditingController _input = TextEditingController();
   final ScrollController _scroll = ScrollController();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(aiUsageProvider.notifier).refresh();
+    });
+  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -57,6 +70,54 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
   void _stop() {
     ref.read(aiChatProvider.notifier).stopGeneration();
+  }
+
+  void _openHistory() {
+    ref.read(aiSessionProvider.notifier).refresh();
+    _scaffoldKey.currentState?.openEndDrawer();
+  }
+
+  Future<void> _resumeSession(String sessionId) async {
+    Navigator.of(context).maybePop();
+    try {
+      await ref.read(aiChatProvider.notifier).loadSession(sessionId);
+      _scrollToBottom();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load chat: $e')),
+      );
+    }
+  }
+
+  Future<void> _showUpgradeDialog() async {
+    ref.read(aiChatProvider.notifier).clearQuotaExceeded();
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Token limit reached'),
+        content: const Text(
+          'You’ve used this month’s AI chat tokens. Upgrade your plan for a higher allowance.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('View plans'),
+          ),
+        ],
+      ),
+    );
+    if (go == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Open Profile → Subscription to upgrade your plan.'),
+        ),
+      );
+    }
   }
 
   String _resolveDisplayName(BuildContext context) {
@@ -100,14 +161,26 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(aiChatProvider);
+    final usage = ref.watch(aiUsageProvider);
     ref.listen(aiChatProvider, (_, __) => _scrollToBottom());
+    ref.listen<ChatState>(aiChatProvider, (prev, next) {
+      if (next.quotaExceeded && prev?.quotaExceeded != true) {
+        _showUpgradeDialog();
+      }
+    });
 
     final firstName = _firstName(context);
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: context.backgroundColor,
+      endDrawer: AiHistoryDrawer(
+        activeSessionId: chatState.sessionId,
+        onSelectSession: _resumeSession,
+      ),
       appBar: _ChatAppBar(
         activeTool: chatState.activeTool,
+        onHistory: _openHistory,
         onNewChat: () => ref.read(aiChatProvider.notifier).clearChat(),
       ),
       body: Column(
@@ -161,6 +234,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
           _InputBar(
             controller: _input,
             isLoading: chatState.isLoading,
+            usage: usage,
             onSend: () => _send(),
             onStop: _stop,
           ),
@@ -174,10 +248,12 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
 class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? activeTool;
+  final VoidCallback onHistory;
   final VoidCallback onNewChat;
 
   const _ChatAppBar({
     required this.activeTool,
+    required this.onHistory,
     required this.onNewChat,
   });
 
@@ -240,7 +316,7 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         IconButton(
           icon: Icon(Icons.history_rounded, color: context.textSecondary),
-          onPressed: () {},
+          onPressed: onHistory,
           tooltip: 'Chat history',
         ),
         Padding(
@@ -900,21 +976,44 @@ class _FollowUpChip extends StatelessWidget {
 
 // ─── Input Bar ────────────────────────────────────────────────────────────────
 
-class _InputBar extends StatelessWidget {
+class _InputBar extends ConsumerStatefulWidget {
   final TextEditingController controller;
   final bool isLoading;
+  final AiTokenUsage usage;
   final VoidCallback onSend;
   final VoidCallback onStop;
 
   const _InputBar({
     required this.controller,
     required this.isLoading,
+    required this.usage,
     required this.onSend,
     required this.onStop,
   });
 
   @override
+  ConsumerState<_InputBar> createState() => _InputBarState();
+}
+
+class _InputBarState extends ConsumerState<_InputBar> {
+  bool _usagePanelOpen = false;
+
+  Future<void> _toggleUsagePanel() async {
+    if (!_usagePanelOpen && !widget.usage.hasLimit) {
+      await ref.read(aiUsageProvider.notifier).refresh();
+    }
+    if (!mounted) return;
+    setState(() => _usagePanelOpen = !_usagePanelOpen);
+  }
+
+  void _closeUsagePanel() {
+    if (_usagePanelOpen) setState(() => _usagePanelOpen = false);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final usage = ref.watch(aiUsageProvider);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         const maxContentWidth = 920.0;
@@ -933,7 +1032,27 @@ class _InputBar extends StatelessWidget {
             border: Border(top: BorderSide(color: context.dividerColor)),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
+              ClipRect(
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  heightFactor: _usagePanelOpen ? 1 : 0,
+                  alignment: Alignment.bottomCenter,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 180),
+                    opacity: _usagePanelOpen ? 1 : 0,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _TokenUsagePopover(
+                        usage: usage,
+                        onClose: _closeUsagePanel,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -951,65 +1070,44 @@ class _InputBar extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 4, bottom: 4),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _InputIconButton(
-                                  icon: Icons.add_rounded,
-                                  onTap: () {},
-                                ),
-                                _InputIconButton(
-                                  icon: Icons.mic_none_rounded,
-                                  onTap: () {},
-                                ),
-                                _InputIconButton(
-                                  icon: Icons.auto_awesome,
-                                  onTap: () {},
-                                ),
-                              ],
-                            ),
+                      child: TextField(
+                        controller: widget.controller,
+                        style: TextStyle(
+                          color: context.textPrimary,
+                          fontSize: 14,
+                        ),
+                        maxLines: 4,
+                        minLines: 1,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => widget.onSend(),
+                        decoration: InputDecoration(
+                          hintText: 'Ask about your portfolio…',
+                          hintStyle: TextStyle(
+                            color: context.textSecondary,
+                            fontSize: 14,
                           ),
-                          Expanded(
-                            child: TextField(
-                              controller: controller,
-                              style: TextStyle(
-                                color: context.textPrimary,
-                                fontSize: 14,
-                              ),
-                              maxLines: 4,
-                              minLines: 1,
-                              textInputAction: TextInputAction.send,
-                              onSubmitted: (_) => onSend(),
-                              decoration: InputDecoration(
-                                hintText: 'Ask about your portfolio…',
-                                hintStyle: TextStyle(
-                                  color: context.textSecondary,
-                                  fontSize: 14,
-                                ),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 14,
-                                ),
-                              ),
-                            ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 14,
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
+                  _TokenUsageRingButton(
+                    usage: usage,
+                    isActive: _usagePanelOpen,
+                    onTap: _toggleUsagePanel,
+                  ),
+                  const SizedBox(width: 8),
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
-                    child: isLoading
+                    child: widget.isLoading
                         ? InkWell(
                             key: const ValueKey('stop'),
-                            onTap: onStop,
+                            onTap: widget.onStop,
                             borderRadius: BorderRadius.circular(24),
                             child: Container(
                               width: 48,
@@ -1025,7 +1123,7 @@ class _InputBar extends StatelessWidget {
                           )
                         : InkWell(
                             key: const ValueKey('send'),
-                            onTap: onSend,
+                            onTap: widget.onSend,
                             borderRadius: BorderRadius.circular(24),
                             child: Container(
                               width: 48,
@@ -1066,20 +1164,273 @@ class _InputBar extends StatelessWidget {
   }
 }
 
-class _InputIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
+/// Cursor-style panel — floats above the composer, no modal barrier.
+class _TokenUsagePopover extends StatelessWidget {
+  final AiTokenUsage usage;
+  final VoidCallback onClose;
 
-  const _InputIconButton({required this.icon, required this.onTap});
+  const _TokenUsagePopover({
+    required this.usage,
+    required this.onClose,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(icon, size: 20, color: context.textSecondary),
-      onPressed: onTap,
-      visualDensity: VisualDensity.compact,
-      padding: const EdgeInsets.all(8),
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+    final hasLimit = usage.hasLimit;
+    final barColor = usage.percentFull >= 90
+        ? context.statusError
+        : context.aiPrimary;
+
+    return Material(
+      elevation: 0,
+      color: Colors.transparent,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(14, 12, 10, 14),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: context.borderColor.withValues(alpha: context.isDark ? 0.55 : 0.9),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: context.shadow(context.isDark ? 0.35 : 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'AI chat tokens',
+                    style: TextStyle(
+                      color: context.textSecondary.withValues(alpha: 0.85),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: onClose,
+                  icon: Icon(Icons.close_rounded, size: 18, color: context.textSecondary),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  tooltip: 'Close',
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  hasLimit ? '${usage.percentFull}% Full' : 'Usage unavailable',
+                  style: TextStyle(
+                    color: context.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  usage.detailTokensLabelTilde,
+                  style: TextStyle(
+                    color: context.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _SegmentedUsageBar(usage: usage, usedColor: barColor),
+            const SizedBox(height: 12),
+            _UsageBreakdownRow(
+              color: barColor,
+              label: 'Used this month',
+              value: hasLimit ? '~${AiTokenUsage.formatCount(usage.used)}' : '—',
+            ),
+            const SizedBox(height: 8),
+            _UsageBreakdownRow(
+              color: context.borderColor.withValues(alpha: 0.65),
+              label: 'Remaining',
+              value: hasLimit ? '~${AiTokenUsage.formatCount(usage.remaining)}' : '—',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SegmentedUsageBar extends StatelessWidget {
+  final AiTokenUsage usage;
+  final Color usedColor;
+
+  const _SegmentedUsageBar({
+    required this.usage,
+    required this.usedColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final track = context.borderColor.withValues(alpha: context.isDark ? 0.45 : 0.35);
+    if (!usage.hasLimit) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: SizedBox(height: 8, child: ColoredBox(color: track)),
+      );
+    }
+    final usedFlex = usage.used.clamp(0, usage.limit);
+    final remainFlex = (usage.limit - usage.used).clamp(0, usage.limit);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: SizedBox(
+        height: 8,
+        child: Row(
+          children: [
+            if (usedFlex > 0)
+              Expanded(flex: usedFlex, child: ColoredBox(color: usedColor)),
+            if (remainFlex > 0)
+              Expanded(flex: remainFlex, child: ColoredBox(color: track)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UsageBreakdownRow extends StatelessWidget {
+  final Color color;
+  final String label;
+  final String value;
+
+  const _UsageBreakdownRow({
+    required this.color,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: context.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: context.textPrimary,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Circular ring beside send — toggles the usage popover.
+class _TokenUsageRingButton extends StatelessWidget {
+  final AiTokenUsage usage;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _TokenUsageRingButton({
+    required this.usage,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = usage.fractionUsed;
+    final ringColor = usage.percentFull >= 90
+        ? context.statusError
+        : context.aiPrimary;
+    final tooltip = usage.hasLimit
+        ? '${usage.chipLabel} · ${usage.remainingLabel}'
+        : 'Token usage';
+
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isActive
+                      ? context.aiPrimary.withValues(alpha: 0.12)
+                      : context.cardColor,
+                  border: Border.all(
+                    color: isActive ? context.aiPrimary : context.borderColor,
+                    width: isActive ? 1.5 : 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.shadow(context.isDark ? 0.2 : 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: CircularProgressIndicator(
+                  value: usage.hasLimit ? fill : 0,
+                  strokeWidth: 3.5,
+                  backgroundColor: context.borderColor.withValues(alpha: 0.45),
+                  color: ringColor,
+                ),
+              ),
+              Text(
+                usage.percentLabel,
+                style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: usage.hasLimit && usage.percentFull >= 100 ? 10 : 11,
+                  fontWeight: FontWeight.w700,
+                  height: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
