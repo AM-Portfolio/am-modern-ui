@@ -213,6 +213,9 @@ jobs:
       run_analyze: true
       run_tests: true
       upload_artifact: true
+      # Play Internal (preprod track) AAB talks to prod APIs
+      am_domain: "am.asrax.in"
+      am_env: "prod"
       # Automatic deployments by branch + Manual overrides
       deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
       # Play Internal: main, develop, feature/*, hotfix/*, or manual target_env=preprod
