@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import 'package:am_auth_ui/am_auth_ui.dart';
-import 'package:am_design_system/core/theme/color_extensions.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 class ActiveSessionsPage extends StatefulWidget {
   const ActiveSessionsPage({super.key});
@@ -178,16 +178,18 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
           : _error != null
               ? Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           _error!,
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: context.colors.statusError),
+                          style: context.text.body().copyWith(
+                            color: context.colors.statusError,
+                          ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
                         TextButton(
                           onPressed: _loadSessions,
                           child: const Text('Retry'),
@@ -199,9 +201,10 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
               : _sessions.isEmpty
                   ? const Center(child: Text('No active sessions'))
                   : ListView.separated(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       itemCount: _sessions.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
                       itemBuilder: (context, index) {
                         final session = _sessions[index];
                         return Card(
@@ -218,11 +221,13 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
                               children: [
                                 if (session.current)
                                   Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
+                                    padding: const EdgeInsets.only(
+                                      bottom: AppSpacing.xs,
+                                    ),
                                     child: Chip(
                                       label: Text(
                                         'Current',
-                                        style: TextStyle(
+                                        style: context.text.caption().copyWith(
                                           color: context.colors.textPrimary,
                                         ),
                                       ),

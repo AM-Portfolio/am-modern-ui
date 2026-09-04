@@ -8,6 +8,7 @@ import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_library/am_library.dart';
+import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
 
 import '../../core/navigation/cross_module_section_sequence.dart';
 import '../../core/navigation/cross_section_swipe_host.dart';
@@ -582,6 +583,10 @@ final userId =
                                     uid.isNotEmpty) {
                                   await GetIt.I<common.OfflineSyncEngine>()
                                       .clearUser(uid);
+                                }
+                                if (GetIt.I.isRegistered<am_sub.SubscriptionCubit>()) {
+                                  await GetIt.I<am_sub.SubscriptionCubit>()
+                                      .invalidateCache();
                                 }
                                 if (context.mounted) {
                                   await context.read<AuthCubit>().logout();

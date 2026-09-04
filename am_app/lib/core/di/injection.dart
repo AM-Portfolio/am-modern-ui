@@ -103,7 +103,7 @@ Future<void> configureCoreDependencies() async {
 Future<void> configureFeatureDependencies() async {
   if (_featureDependenciesConfigured) return;
   _featureDependenciesConfigured = true;
-  _registerSubscriptionDependencies();
+  await _registerSubscriptionDependencies();
   common.BootTrace.instance.mark('di_feature_done');
 }
 
@@ -186,7 +186,7 @@ void _registerDashboardDependencies() {
   });
 }
 
-void _registerSubscriptionDependencies() {
+Future<void> _registerSubscriptionDependencies() async {
   String baseUrl = common.EnvDomains.subscription;
   if (baseUrl.endsWith('/subscriptions')) {
     baseUrl = baseUrl.substring(0, baseUrl.length - '/subscriptions'.length);
@@ -213,9 +213,20 @@ void _registerSubscriptionDependencies() {
     ),
   );
 
+  if (!getIt.isRegistered<CacheService>()) {
+    final cache = CacheService();
+    await cache.init();
+    getIt.registerSingleton<CacheService>(cache);
+  }
+
+  getIt.registerLazySingleton<subscription_ui.SubscriptionBrowserCache>(
+    () => subscription_ui.SubscriptionBrowserCache(getIt<CacheService>()),
+  );
+
   getIt.registerLazySingleton<subscription_ui.SubscriptionCubit>(
     () => subscription_ui.SubscriptionCubit(
       getIt<subscription_ui.SubscriptionRemoteDataSource>(),
+      browserCache: getIt<subscription_ui.SubscriptionBrowserCache>(),
     ),
   );
 }

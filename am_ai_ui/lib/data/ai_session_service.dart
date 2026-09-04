@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'ai_chat_service.dart';
 import 'ai_session_models.dart';
@@ -30,6 +32,7 @@ class AiSessionService {
         'offset': offset,
       },
     );
+    _ensureOk(response);
     final data = _unwrapData(response.data);
     final items = data['items'];
     if (items is! List) return const [];
@@ -46,28 +49,84 @@ class AiSessionService {
   /// Load session metadata + messages for resume.
   Future<AiSessionDetail> getSession(String sessionId) async {
     final response = await _dio.get('v1/ai/sessions/$sessionId');
+    _ensureOk(response);
     final data = _unwrapData(response.data);
     return AiSessionDetail.fromJson(data);
   }
 
   /// Soft-delete a session (204 from user-platform).
   Future<void> deleteSession(String sessionId) async {
-    await _dio.delete('v1/ai/sessions/$sessionId');
+    final response = await _dio.delete('v1/ai/sessions/$sessionId');
+    final code = response.statusCode ?? 0;
+    if (code != 204 && (code < 200 || code >= 300)) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        response: response,
+        type: DioExceptionType.badResponse,
+        message: 'Delete session failed ($code)',
+      );
+    }
   }
 
   /// Same base URL resolution as chat — used by unit tests.
   static String get baseUrl => AiChatService.baseUrl;
 
+  void _ensureOk(Response<dynamic> response) {
+    final code = response.statusCode ?? 0;
+    if (code >= 200 && code < 300) return;
+    throw DioException(
+      requestOptions: response.requestOptions,
+      response: response,
+      type: DioExceptionType.badResponse,
+      message: 'Session API HTTP $code',
+    );
+  }
+
   Map<String, dynamic> _unwrapData(Object? body) {
-    if (body is! Map) {
-      throw const FormatException('Session API returned non-object body');
+    final normalized = _normalizeBody(body);
+    if (normalized == null) {
+      throw const FormatException(
+        'Session API returned empty body (check sign-in / cookies)',
+      );
     }
-    final map = Map<String, dynamic>.from(body);
+    if (normalized is List) {
+      return {'items': normalized};
+    }
+    if (normalized is! Map) {
+      throw FormatException(
+        'Session API returned non-object body (${normalized.runtimeType})',
+      );
+    }
+    final map = Map<String, dynamic>.from(normalized);
     final data = map['data'];
     if (data is Map<String, dynamic>) return data;
     if (data is Map) return Map<String, dynamic>.from(data);
+    if (data is List) return {'items': data};
     // Some proxies may return the list payload at the root.
     if (map.containsKey('items') || map.containsKey('session')) return map;
     throw const FormatException('Session API missing data envelope');
+  }
+
+  /// Accepts Map, List, JSON string, or empty → null.
+  Object? _normalizeBody(Object? body) {
+    if (body == null) return null;
+    if (body is Map || body is List) return body;
+    if (body is! String) return body;
+
+    final trimmed = body.trim();
+    if (trimmed.isEmpty) return null;
+    // HTML / gateway error pages often start with <! or <html
+    if (trimmed.startsWith('<')) {
+      throw const FormatException(
+        'Session API returned HTML instead of JSON (auth or gateway)',
+      );
+    }
+    try {
+      return jsonDecode(trimmed);
+    } on FormatException {
+      throw const FormatException(
+        'Session API returned non-JSON text body',
+      );
+    }
   }
 }

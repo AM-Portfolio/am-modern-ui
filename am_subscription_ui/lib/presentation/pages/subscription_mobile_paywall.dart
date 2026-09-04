@@ -159,11 +159,9 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
         centerTitle: true,
         title: Text(
           'Subscription',
-          style: TextStyle(
-            color: onSurface,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
+          style: context.text.sectionTitle(compact: true).copyWith(
+                color: onSurface,
+              ),
         ),
       ),
       body: BlocConsumer<SubscriptionCubit, SubscriptionState>(
@@ -205,6 +203,8 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
 
           List<Plan> plans = const [];
           Subscription? current;
+          final isRefreshing =
+              state is SubscriptionLoaded && state.refreshing;
 
           if (state is SubscriptionLoaded) {
             plans = state.plans;
@@ -218,25 +218,23 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
           } else if (state is SubscriptionError) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'Couldn’t load plans',
-                      style: TextStyle(
-                        color: onSurface,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                      ),
+                      style: context.text.sectionTitle().copyWith(
+                            color: onSurface,
+                          ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       state.message,
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: muted),
+                      style: context.text.bodyMuted().copyWith(color: muted),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.lg),
                     FilledButton(
                       style: FilledButton.styleFrom(backgroundColor: context.colors.premiumActionPrimary),
                       onPressed: () => context
@@ -276,6 +274,7 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
 
           return Column(
             children: [
+              if (isRefreshing) const LinearProgressIndicator(minHeight: 2),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -314,35 +313,27 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                       Text(
                         hasPaid ? 'Your Premium Access' : 'Unlock more with Premium',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: onSurface,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          height: 1.2,
-                          letterSpacing: -0.4,
-                        ),
+                        style: context.text.heroTitle(compact: true).copyWith(
+                              color: onSurface,
+                            ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: AppSpacing.sm + 2),
                       Text(
                         hasPaid
                             ? 'You’re on ${current!.planName}. Manage or switch plans below.'
                             : 'See more, move faster — analytics, live data, and AI tools in one upgrade.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: muted,
-                          fontSize: 15,
-                          height: 1.4,
-                        ),
+                        style: context.text.bodyMuted().copyWith(color: muted),
                       ),
                       if (hasPaid) ...[
-                        const SizedBox(height: 20),
+                        const SizedBox(height: AppSpacing.lg),
                         _CurrentPlanBanner(
                           subscription: current!,
                           isDark: isDark,
                           colors: context.colors,
                         ),
                       ],
-                      const SizedBox(height: 28),
+                      const SizedBox(height: AppSpacing.xl - 4),
                       _DurationChips(
                         isAnnual: _isAnnual,
                         isDark: isDark,
@@ -350,7 +341,7 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                         onChanged: (annual) =>
                             setState(() => _isAnnual = annual),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.lg),
                       _PlanPicker(
                         isDark: isDark,
                         colors: context.colors,
@@ -362,14 +353,12 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                         onSelect: (tier) =>
                             setState(() => _selectedTier = tier),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: AppSpacing.xl - 4),
                       Text(
                         'What you get',
-                        style: TextStyle(
-                          color: onSurface,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                        ),
+                        style: context.text.sectionTitle(compact: true).copyWith(
+                              color: onSurface,
+                            ),
                       ),
                       const SizedBox(height: 12),
                       ...benefits.map(
@@ -856,13 +845,9 @@ class _BottomCtaBar extends StatelessWidget {
                     disabledBackgroundColor: colors.divider,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: AppRadii.chip,
                     ),
-                    textStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
-                    ),
+                    textStyle: context.text.button(compact: true),
                   ),
                   child: Text(
                     isBusy

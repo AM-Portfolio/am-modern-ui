@@ -46,23 +46,27 @@ enum _WebLoginMethod { classic, scanQr, otp }
 class _LoginPageState extends State<LoginPage> {
   _WebLoginMethod _webLoginMethod = _WebLoginMethod.classic;
   PrefetchedQrSession? _prefetchedQr;
+  Future<PrefetchedQrSession>? _prefetchQrFuture;
 
   @override
   void initState() {
     super.initState();
     if (kIsWeb && FeatureFlags().enableQrWebLogin) {
-      unawaited(_prefetchQr());
+      _prefetchQrFuture = _prefetchQr();
     }
   }
 
-  Future<void> _prefetchQr() async {
+  Future<PrefetchedQrSession> _prefetchQr() async {
     try {
       final session =
           await prefetchQrSession(AuthProviders.deviceLinkPollService);
-      if (!mounted) return;
-      setState(() => _prefetchedQr = session);
-    } catch (_) {
-      // Section will start its own session if the user opens Scan QR.
+      if (mounted) {
+        setState(() => _prefetchedQr = session);
+      }
+      return session;
+    } catch (e) {
+      // Section will start its own session if prefetch fails.
+      rethrow;
     }
   }
 
@@ -283,16 +287,19 @@ class _LoginPageState extends State<LoginPage> {
 
     if (showWebLoginTabs) {
       final activeMethod = _resolveWebLoginMethod(_webLoginMethod, flags);
+      // Match QR/OTP: one short pane blurb, no large in-tab header.
       final panes = <Widget>[
         _buildClassicLogin(
           context,
           state,
           isCompact,
-          showEmailTitle: showEmailTitle,
+          showEmailTitle: false,
+          showPaneBlurb: true,
         ),
         if (flags.enableQrWebLogin)
           WebQrLoginSection(
             prefetched: _prefetchedQr,
+            prefetchFuture: _prefetchQrFuture,
             isActive: activeMethod == _WebLoginMethod.scanQr,
             onSessionUpdated: (session) {
               setState(() => _prefetchedQr = session);
@@ -392,6 +399,7 @@ class _LoginPageState extends State<LoginPage> {
     AuthState state,
     bool isCompact, {
     required bool showEmailTitle,
+    bool showPaneBlurb = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -401,6 +409,7 @@ class _LoginPageState extends State<LoginPage> {
         state,
         isCompact,
         showEmailTitle: showEmailTitle,
+        showPaneBlurb: showPaneBlurb,
       ),
     );
   }
@@ -410,8 +419,20 @@ class _LoginPageState extends State<LoginPage> {
     AuthState state,
     bool isCompact, {
     required bool showEmailTitle,
+    bool showPaneBlurb = false,
   }) {
     return [
+      if (showPaneBlurb) ...[
+        Text(
+          'Sign in with your email and password, or continue with Google.',
+          textAlign: TextAlign.center,
+          style: context.text.bodyMuted(compact: true).copyWith(
+                color: context.colors.textSecondary,
+                height: 1.4,
+              ),
+        ),
+        const SizedBox(height: 16),
+      ],
       EmailLoginFormWidget(
         isCompact: isCompact,
         isLoading: state is AuthLoading,

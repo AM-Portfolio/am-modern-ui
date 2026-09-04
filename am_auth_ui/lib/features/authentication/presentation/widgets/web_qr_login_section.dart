@@ -53,6 +53,7 @@ class WebQrLoginSection extends StatefulWidget {
   const WebQrLoginSection({
     super.key,
     this.prefetched,
+    this.prefetchFuture,
     this.isActive = true,
     this.onSessionUpdated,
   });
@@ -60,6 +61,9 @@ class WebQrLoginSection extends StatefulWidget {
   /// Session started by the login page (optional). When set and fresh, shown
   /// immediately without a network round-trip.
   final PrefetchedQrSession? prefetched;
+
+  /// In-flight prefetch from [LoginPage]. Awaited instead of a second start.
+  final Future<PrefetchedQrSession>? prefetchFuture;
 
   /// When false, polling is stopped (tab not visible).
   final bool isActive;
@@ -131,13 +135,24 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
       _applySession(prefetched);
       return;
     }
-    // LoginPage prefetches in parallel. Wait briefly so that session can win
-    // instead of starting a second request that cancels the first QR.
-    unawaited(_beginSessionWhenNeeded());
+    // Await the login-page prefetch instead of starting a second /start.
+    unawaited(_awaitPrefetchOrBegin());
   }
 
-  Future<void> _beginSessionWhenNeeded() async {
-    await Future<void>.delayed(const Duration(milliseconds: 80));
+  Future<void> _awaitPrefetchOrBegin() async {
+    final future = widget.prefetchFuture;
+    if (future != null) {
+      try {
+        final session = await future;
+        if (!mounted || _session != null) return;
+        if (!session.isExpired) {
+          _applySession(session);
+          return;
+        }
+      } catch (_) {
+        // Fall through to a local start.
+      }
+    }
     if (!mounted || _session != null) return;
     await _beginSession();
   }

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
+import '../../data/ai_dio_web_credentials.dart';
 import '../../data/ai_usage_service.dart';
 
 final aiUsageServiceProvider = Provider<AiUsageService>((ref) {
@@ -10,9 +11,11 @@ final aiUsageServiceProvider = Provider<AiUsageService>((ref) {
       baseUrl: AiUsageService.baseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 15),
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      extra: kIsWeb ? const {'withCredentials': true} : null,
     ),
   );
+  if (kIsWeb) configureAiWebCredentials(dio);
   AuthProviders.attachAuthInterceptor(dio);
   return AiUsageService(dio);
 });
